@@ -1,10 +1,12 @@
 defmodule Thunderline.MixProject do
   use Mix.Project
 
+  @version "2.0.0"
+
   def project do
     [
       app: :thunderline,
-      version: "2.0.0",
+      version: @version,
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:elixir, :app],
@@ -103,7 +105,8 @@ defmodule Thunderline.MixProject do
       {:polaris, "~> 0.1"},
 
       # Code Quality & Development Tools
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:git_ops, "~> 2.6.1", only: [:dev]}
     ]
   end
 

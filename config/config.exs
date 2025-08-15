@@ -134,6 +134,15 @@ config :ash, :compatible_foreign_key_types, [
 config :mnesia,
   dir: ~c".mnesia/#{Mix.env}/#{node()}"        # Using ~c for charlist
 
+# Configure git_ops for semantic versioning and changelog automation
+config :git_ops,
+  mix_project: Mix.Project.get!(),
+  changelog_file: "CHANGELOG.md",
+  repository_url: "https://github.com/mo/thunderline",
+  manage_mix_version?: true,
+  manage_readme_version: "README.md",
+  version_tag_prefix: "v"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
