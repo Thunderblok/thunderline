@@ -37,7 +37,11 @@ defmodule Thunderline.Application do
       Thunderline.NeuralBridge,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
-      {Oban, AshOban.config(Application.fetch_env!(:thunderline, :ash_domains), Application.fetch_env!(:thunderline, Oban))},
+      {Oban,
+       AshOban.config(
+         Application.fetch_env!(:thunderline, :ash_domains),
+         Application.fetch_env!(:thunderline, Oban)
+       )},
 
       # ⚡🌐 THUNDERGATE - Gateway Services
       Thundergate.ThunderBridge,

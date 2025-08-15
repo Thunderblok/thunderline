@@ -24,6 +24,10 @@ defmodule ThunderlineWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :graphql do
+    plug AshGraphql.Plug
+  end
+
   scope "/", ThunderlineWeb do
     pipe_through :dashboard
 
@@ -69,6 +73,20 @@ defmodule ThunderlineWeb.Router do
     get "/metrics", MetricsController, :index
     get "/health", HealthController, :check
     get "/domains/:domain/stats", DomainStatsController, :show
+  end
+
+  # GraphQL API
+  scope "/gql" do
+    pipe_through [:graphql]
+
+    forward "/playground",
+            Absinthe.Plug.GraphiQL,
+            schema: Module.concat(["ThunderlineWeb.GraphqlSchema"]),
+            interface: :playground
+
+    forward "/",
+      Absinthe.Plug,
+      schema: Module.concat(["ThunderlineWeb.GraphqlSchema"])
   end
 
   # LiveDashboard for development

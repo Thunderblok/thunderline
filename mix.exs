@@ -30,6 +30,7 @@ defmodule Thunderline.MixProject do
 
   defp deps do
     [
+      {:oban, "~> 2.0"},
       {:ash_authentication, "~> 4.0"},
       {:igniter, "~> 0.6", only: [:dev, :test]},
 
@@ -56,7 +57,7 @@ defmodule Thunderline.MixProject do
       {:ash_postgres, "~> 2.0"},
       {:ash_graphql, "~> 1.0"},
       {:ash_json_api, "~> 1.0"},
-      {:ash_oban, "~> 0.2"},
+      {:ash_oban, "~> 0.4"},
       {:ash_events, "~> 0.4.3"},
       {:opentelemetry_ash, "~> 0.1.3"},
       {:ash_state_machine, "~> 0.2.12"},

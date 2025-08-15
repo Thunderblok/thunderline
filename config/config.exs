@@ -65,10 +65,12 @@ config :spark,
   ]
 
 config :thunderline,
+  ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [
     Thunderline.Accounts,
-    Thunderline.Support,  # Simple test domain following Ash guide
+    # Simple test domain following Ash guide
+    Thunderline.Support,
     # 7-Domain Federation Architecture
     # ⚡🔥 Compute & Acceleration
     Thunderline.Thunderbolt.Domain,
@@ -160,7 +162,10 @@ config :git_ops,
 # Configure Oban for background job processing with AshOban integration
 config :thunderline, Oban,
   repo: Thunderline.Repo,
-  plugins: [Oban.Plugins.Pruner],
+  plugins: [
+    Oban.Plugins.Cron,
+    Oban.Plugins.Pruner
+  ],
   queues: [
     default: 10,
     cross_domain: 5,

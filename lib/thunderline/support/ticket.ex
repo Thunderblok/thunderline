@@ -5,10 +5,22 @@ defmodule Thunderline.Support.Ticket do
   Using ETS data layer for initial testing before moving to PostgreSQL.
   """
 
-  # This turns this module into a resource using the in memory ETS data layer
+  # This turns this module into a resource using Postgres data layer for AshOban triggers
   use Ash.Resource,
     domain: Thunderline.Support,
-    data_layer: Ash.DataLayer.Ets
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshOban, AshGraphql.Resource]
+
+  require Ash.Query
+
+  postgres do
+    table "support_tickets"
+    repo Thunderline.Repo
+  end
+
+  graphql do
+    type :ticket
+  end
 
   actions do
     # Use the default implementation of the :read action
@@ -29,6 +41,52 @@ defmodule Thunderline.Support.Ticket do
       end
 
       change set_attribute(:status, :closed)
+      change set_attribute(:closed_at, &DateTime.utc_now/0)
+    end
+
+    # Action to process tickets in background
+    update :process do
+      accept []
+
+      validate attribute_equals(:status, :open) do
+        message "Only open tickets can be processed"
+      end
+
+      change set_attribute(:status, :processing)
+      change set_attribute(:processed_at, &DateTime.utc_now/0)
+    end
+
+    # Action for automatic escalation
+    update :escalate do
+      accept []
+
+      change set_attribute(:escalated, true)
+      change set_attribute(:escalated_at, &DateTime.utc_now/0)
+    end
+  end
+
+  # AshOban configuration with working triggers
+  oban do
+    triggers do
+      # Process open tickets every minute
+      trigger :process_tickets do
+        action :process
+        where expr(status == :open and is_nil(processed_at))
+        scheduler_cron "* * * * *"  # Every minute
+        queue :default
+      end
+
+      # Escalate tickets that haven't been processed in 5 minutes
+      trigger :escalate_tickets do
+        action :escalate
+        where expr(
+          status == :open and
+          not escalated and
+          inserted_at < ago(5, :minute)
+        )
+        scheduler_cron "*/2 * * * *"  # Every 2 minutes
+        queue :scheduled_workflows
+      end
     end
   end
 
@@ -51,7 +109,7 @@ defmodule Thunderline.Support.Ticket do
       # The available constraints depend on the type
       # Since atoms are generally only used when we know all of the values
       # it provides a `one_of` constraint, that only allows those values
-      constraints [one_of: [:open, :closed]]
+      constraints [one_of: [:open, :processing, :closed]]
 
       # The status defaulting to open makes sense
       default :open
@@ -59,5 +117,19 @@ defmodule Thunderline.Support.Ticket do
       # We also don't want status to ever be `nil`
       allow_nil? false
     end
+
+    # Escalation flag
+    attribute :escalated, :boolean do
+      default false
+    end
+
+    # Timestamps for tracking processing
+    attribute :processed_at, :utc_datetime_usec
+    attribute :escalated_at, :utc_datetime_usec
+    attribute :closed_at, :utc_datetime_usec
+
+    # Auto-managed timestamps
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 end

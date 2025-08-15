@@ -1,4 +1,5 @@
 import Config
+config :thunderline, Oban, testing: :manual
 config :thunderline, token_signing_secret: "QnSxy5agB4izHalnSgxl23Q+Gx+Jt+Ve"
 config :bcrypt_elixir, log_rounds: 1
 config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true

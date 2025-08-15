@@ -376,7 +376,7 @@ defmodule Thunderline.ErlangBridge do
     result = execute_erlang_command(command, params)
 
     # Broadcast command execution event
-    EventBus.broadcast("erlang_commands", %{
+    EventBus.legacy_broadcast("erlang_commands", %{
       command: command,
       params: params,
       result: result,
@@ -909,7 +909,7 @@ defmodule Thunderline.ErlangBridge do
           broadcast_to_subscribers(state.subscribers, {:erlang_state_update, new_state})
 
           # Also broadcast to EventBus for dashboard
-          EventBus.broadcast("system_metrics", new_state)
+          EventBus.legacy_broadcast("system_metrics", new_state)
         end
 
         # Schedule next update

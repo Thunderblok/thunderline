@@ -5,12 +5,16 @@ config :ash, policies: [show_policy_breakdowns?: true]
 config :thunderline, Thunderline.Repo,
   username: "postgres",
   password: "postgres",
-  hostname: "localhost",
+  hostname: "127.0.0.1",
   database: "thunderline_dev",
   port: 5432,
+  pool_size: 10,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  socket_options: [:inet],
+  connect_timeout: 60_000,
+  pool_timeout: 60_000,
+  ownership_timeout: 60_000
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
