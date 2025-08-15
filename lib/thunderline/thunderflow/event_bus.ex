@@ -73,12 +73,19 @@ defmodule Thunderline.EventBus do
     # Enqueue to Mnesia instead of PubSub
     priority = Map.get(payload, :priority, :normal)
 
-    Thunderflow.MnesiaProducer.enqueue_event(
-      Thunderflow.MnesiaProducer,
-      event,
-      pipeline_type: :general,
-      priority: priority
-    )
+    try do
+      Thunderflow.MnesiaProducer.enqueue_event(
+        Thunderflow.MnesiaProducer,
+        event,
+        pipeline_type: :general,
+        priority: priority
+      )
+    rescue
+      error ->
+        Logger.warning("MnesiaProducer not available, falling back to PubSub: #{inspect(error)}")
+        PubSub.broadcast(@pubsub, "events:#{event_type}", event)
+        :ok
+    end
   end
 
   @doc """

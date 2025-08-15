@@ -14,6 +14,7 @@ defmodule Thunderline.Application do
   """
 
   use Application
+  require Logger
 
   @impl true
   def start(_type, _args) do
@@ -37,11 +38,8 @@ defmodule Thunderline.Application do
       Thunderline.NeuralBridge,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
-      {Oban,
-       AshOban.config(
-         Application.fetch_env!(:thunderline, :ash_domains),
-         Application.fetch_env!(:thunderline, Oban)
-       )},
+      # Oban with AshOban integration - must start after repo
+      {Oban, oban_config()},
 
       # ⚡🌐 THUNDERGATE - Gateway Services
       Thundergate.ThunderBridge,
@@ -72,5 +70,20 @@ defmodule Thunderline.Application do
   def config_change(changed, _new, removed) do
     ThunderlineWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  # Private helper to configure AshOban with proper error handling
+  defp oban_config do
+    try do
+      ash_domains = Application.fetch_env!(:thunderline, :ash_domains)
+      oban_config = Application.fetch_env!(:thunderline, Oban)
+      
+      AshOban.config(ash_domains, oban_config)
+    rescue
+      error ->
+        Logger.error("Failed to configure AshOban: #{inspect(error)}")
+        # Fallback to basic Oban config without Ash integration
+        Application.fetch_env!(:thunderline, Oban)
+    end
   end
 end

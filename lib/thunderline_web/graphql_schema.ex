@@ -26,4 +26,13 @@ defmodule ThunderlineWeb.GraphqlSchema do
   subscription do
     # Custom Absinthe subscriptions can be placed here
   end
+
+  # Add proper error handling middleware
+  def middleware(middleware, _field, %{identifier: :mutation}) do
+    middleware ++ [AshGraphql.DefaultErrorHandler]
+  end
+
+  def middleware(middleware, _field, _object) do
+    middleware
+  end
 end

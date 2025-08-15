@@ -11,6 +11,11 @@ defmodule Thunderline.Support do
     resource Thunderline.Support.Ticket
   end
 
+  authorization do
+    # Enable authorization by default
+    authorize :by_default
+  end
+
   graphql do
     queries do
       # Create a field called `get_ticket` that uses the `read` action to fetch a single ticket

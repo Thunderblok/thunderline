@@ -9,7 +9,8 @@ defmodule Thunderline.Support.Ticket do
   use Ash.Resource,
     domain: Thunderline.Support,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshOban, AshGraphql.Resource]
+    extensions: [AshOban, AshGraphql.Resource],
+    authorizers: [Ash.Policy.Authorizer]
 
   require Ash.Query
 
@@ -65,6 +66,19 @@ defmodule Thunderline.Support.Ticket do
     end
   end
 
+  # Authorization policies - CRITICAL for AshOban to work
+  policies do
+    # Allow AshOban to bypass authorization for background jobs
+    bypass AshOban.Checks.AshObanInteraction do
+      authorize_if always()
+    end
+
+    # Default policy for regular access
+    policy always() do
+      authorize_if always()
+    end
+  end
+
   # AshOban configuration with working triggers
   oban do
     triggers do
@@ -74,6 +88,7 @@ defmodule Thunderline.Support.Ticket do
         where expr(status == :open and is_nil(processed_at))
         scheduler_cron "* * * * *"  # Every minute
         queue :default
+        max_attempts 3
       end
 
       # Escalate tickets that haven't been processed in 5 minutes
@@ -86,6 +101,7 @@ defmodule Thunderline.Support.Ticket do
         )
         scheduler_cron "*/2 * * * *"  # Every 2 minutes
         queue :scheduled_workflows
+        max_attempts 2
       end
     end
   end
