@@ -1,4 +1,3 @@
-
 defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
   @moduledoc """
   Individual CA cluster managing a 3D cellular automata space with
@@ -8,18 +7,27 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
 
   use GenServer
 
-  @default_evolution_interval 100  # 100ms = 10 generations/second
+  # 100ms = 10 generations/second
+  @default_evolution_interval 100
 
   defstruct [
     :cluster_id,
-    :dimensions,           # {X, Y, Z} grid dimensions
-    :ca_rules,            # Current CA rules for evolution
-    :cell_processes,      # Map of {X,Y,Z} -> CellPid
-    :generation,          # Current generation number
-    :evolution_timer,     # Timer for automatic evolution
-    :evolution_interval,  # Milliseconds between generations
-    :stats,               # Performance statistics
-    paused: false         # Evolution paused flag
+    # {X, Y, Z} grid dimensions
+    :dimensions,
+    # Current CA rules for evolution
+    :ca_rules,
+    # Map of {X,Y,Z} -> CellPid
+    :cell_processes,
+    # Current generation number
+    :generation,
+    # Timer for automatic evolution
+    :evolution_timer,
+    # Milliseconds between generations
+    :evolution_interval,
+    # Performance statistics
+    :stats,
+    # Evolution paused flag
+    paused: false
   ]
 
   # ====================================================================
@@ -105,6 +113,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
       cell_count: map_size(state.cell_processes),
       performance: state.stats
     }
+
     {:reply, {:ok, cluster_stats}, state}
   end
 
@@ -112,10 +121,12 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
     case Map.get(state.cell_processes, {x, y, z}) do
       nil ->
         {:reply, {:error, :cell_not_found}, state}
+
       cell_pid ->
         case Thunderline.Thunderbolt.ThunderCell.CACell.get_state(cell_pid) do
           {:ok, cell_state} ->
             {:reply, {:ok, cell_state}, state}
+
           error ->
             {:reply, error, state}
         end
@@ -136,6 +147,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
       nil -> :ok
       timer -> Process.cancel_timer(timer)
     end
+
     {:reply, :ok, %{state | paused: true, evolution_timer: nil}}
   end
 
@@ -144,6 +156,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
       true ->
         timer = Process.send_after(self(), :evolve_generation, state.evolution_interval)
         {:reply, :ok, %{state | paused: false, evolution_timer: timer}}
+
       false ->
         {:reply, {:error, :not_paused}, state}
     end
@@ -163,6 +176,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
     case state.paused do
       true ->
         {:noreply, state}
+
       false ->
         {new_state, generation_time} = perform_evolution(state)
         stats = update_stats(new_state.stats, generation_time)
@@ -170,10 +184,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
         # Schedule next evolution
         timer = Process.send_after(self(), :evolve_generation, state.evolution_interval)
 
-        updated_state = %{new_state |
-          evolution_timer: timer,
-          stats: stats
-        }
+        updated_state = %{new_state | evolution_timer: timer, stats: stats}
         {:noreply, updated_state}
     end
   end
@@ -185,6 +196,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
         new_cell_pid = restart_cell(coord, state.ca_rules)
         new_cell_processes = Map.put(state.cell_processes, coord, new_cell_pid)
         {:noreply, %{state | cell_processes: new_cell_processes}}
+
       :not_found ->
         {:noreply, state}
     end
@@ -200,6 +212,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
     Enum.each(state.cell_processes, fn {_coord, cell_pid} ->
       Thunderline.Thunderbolt.ThunderCell.CACell.stop(cell_pid)
     end)
+
     :ok
   end
 
@@ -213,7 +226,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
   # ====================================================================
 
   defp initialize_cell_grid({x, y, z}, ca_rules) do
-    for xi <- 0..(x-1), yi <- 0..(y-1), zi <- 0..(z-1), into: %{} do
+    for xi <- 0..(x - 1), yi <- 0..(y - 1), zi <- 0..(z - 1), into: %{} do
       coord = {xi, yi, zi}
       cell_pid = start_cell_process(coord, ca_rules)
       {coord, cell_pid}
@@ -253,9 +266,13 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
 
   defp get_neighbor_states({x, y, z}, state) do
     neighbor_coords = get_3d_neighbors(x, y, z, state.dimensions)
+
     Enum.map(neighbor_coords, fn coord ->
       case Map.get(state.cell_processes, coord) do
-        nil -> :dead  # Out of bounds cells are considered dead
+        # Out of bounds cells are considered dead
+        nil ->
+          :dead
+
         cell_pid ->
           case Thunderline.Thunderbolt.ThunderCell.CACell.get_state(cell_pid) do
             {:ok, cell_state} -> cell_state
@@ -266,10 +283,11 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
   end
 
   defp get_3d_neighbors(x, y, z, {max_x, max_y, max_z}) do
-    for xi <- (x-1)..(x+1),
-        yi <- (y-1)..(y+1),
-        zi <- (z-1)..(z+1),
-        {xi, yi, zi} != {x, y, z},  # Exclude self
+    for xi <- (x - 1)..(x + 1),
+        yi <- (y - 1)..(y + 1),
+        zi <- (z - 1)..(z + 1),
+        # Exclude self
+        {xi, yi, zi} != {x, y, z},
         xi >= 0 and xi < max_x,
         yi >= 0 and yi < max_y,
         zi >= 0 and zi < max_z do
@@ -287,9 +305,12 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
   defp default_ca_rules do
     %{
       name: "Conway's Game of Life 3D",
-      birth_neighbors: [5, 6, 7],     # Neighbors needed for birth
-      survival_neighbors: [4, 5, 6],  # Neighbors needed for survival
-      neighbor_type: :moore_3d         # 26-neighbor Moore neighborhood
+      # Neighbors needed for birth
+      birth_neighbors: [5, 6, 7],
+      # Neighbors needed for survival
+      survival_neighbors: [4, 5, 6],
+      # 26-neighbor Moore neighborhood
+      neighbor_type: :moore_3d
     }
   end
 
@@ -308,12 +329,13 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Cluster do
     current_avg = stats.avg_generation_time
     new_avg = (current_avg * (total_gens - 1) + generation_time) / total_gens
 
-    %{stats |
-      total_generations: total_gens,
-      avg_generation_time: new_avg,
-      min_generation_time: min(stats.min_generation_time, generation_time),
-      max_generation_time: max(stats.max_generation_time, generation_time),
-      last_generation_time: generation_time
+    %{
+      stats
+      | total_generations: total_gens,
+        avg_generation_time: new_avg,
+        min_generation_time: min(stats.min_generation_time, generation_time),
+        max_generation_time: max(stats.max_generation_time, generation_time),
+        last_generation_time: generation_time
     }
   end
 end

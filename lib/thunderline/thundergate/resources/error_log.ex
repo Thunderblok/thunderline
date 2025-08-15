@@ -14,46 +14,28 @@ defmodule Thunderline.Thundergate.Resources.ErrorLog do
 
   import Ash.Resource.Change.Builtins
 
-
-
   postgres do
     table "error_logs"
     repo Thunderline.Repo
-  end
-
-#   notifiers do
-#     module Thunderline.PubSub
-#     prefix "thundereye:errors"
-#
-#     publish :create, ["error:logged", :severity]
-#     publish :update, ["error:updated", :id]
-#   end
-
-  attributes do
-    uuid_primary_key :id
-    attribute :domain, :string, allow_nil?: false
-    attribute :error_type, :string, allow_nil?: false
-    attribute :message, :string, allow_nil?: false
-    attribute :severity, :atom, constraints: [one_of: [:debug, :info, :warning, :error, :critical]]
-    attribute :stack_trace, :string
-    attribute :context, :map, default: %{}
-    attribute :node_name, :string
-    attribute :process_id, :string
-    attribute :user_id, :uuid
-    attribute :request_id, :string
-    attribute :metadata, :map, default: %{}
-    attribute :resolved, :boolean, default: false
-    attribute :resolution_notes, :string
-    create_timestamp :occurred_at
-    update_timestamp :updated_at
   end
 
   actions do
     defaults [:read]
 
     create :log_error do
-      accept [:domain, :error_type, :message, :severity, :stack_trace, :context,
-              :node_name, :process_id, :user_id, :request_id, :metadata]
+      accept [
+        :domain,
+        :error_type,
+        :message,
+        :severity,
+        :stack_trace,
+        :context,
+        :node_name,
+        :process_id,
+        :user_id,
+        :request_id,
+        :metadata
+      ]
 
       change set_attribute(:occurred_at, &DateTime.utc_now/0)
     end
@@ -93,29 +75,63 @@ defmodule Thunderline.Thundergate.Resources.ErrorLog do
     end
   end
 
+  preparations do
+    prepare build(sort: [occurred_at: :desc])
+  end
+
+  #   notifiers do
+  #     module Thunderline.PubSub
+  #     prefix "thundereye:errors"
+  #
+  #     publish :create, ["error:logged", :severity]
+  #     publish :update, ["error:updated", :id]
+  #   end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :domain, :string, allow_nil?: false
+    attribute :error_type, :string, allow_nil?: false
+    attribute :message, :string, allow_nil?: false
+
+    attribute :severity, :atom,
+      constraints: [one_of: [:debug, :info, :warning, :error, :critical]]
+
+    attribute :stack_trace, :string
+    attribute :context, :map, default: %{}
+    attribute :node_name, :string
+    attribute :process_id, :string
+    attribute :user_id, :uuid
+    attribute :request_id, :string
+    attribute :metadata, :map, default: %{}
+    attribute :resolved, :boolean, default: false
+    attribute :resolution_notes, :string
+    create_timestamp :occurred_at
+    update_timestamp :updated_at
+  end
+
   calculations do
-    calculate :age_minutes, :integer, expr(
-      fragment("EXTRACT(EPOCH FROM (? - ?))/60", now(), occurred_at)
-    )
+    calculate :age_minutes,
+              :integer,
+              expr(fragment("EXTRACT(EPOCH FROM (? - ?))/60", now(), occurred_at))
 
-    calculate :is_stale, :boolean, expr(
-      occurred_at < ago(24, :hour) and resolved == false
-    )
+    calculate :is_stale, :boolean, expr(occurred_at < ago(24, :hour) and resolved == false)
 
-    calculate :error_frequency, :integer, expr(
-      fragment("""
-      (SELECT COUNT(*) FROM error_logs el2
-       WHERE el2.error_type = ?
-       AND el2.occurred_at > ?)
-      """, error_type, ago(1, :hour))
-    )
+    calculate :error_frequency,
+              :integer,
+              expr(
+                fragment(
+                  """
+                  (SELECT COUNT(*) FROM error_logs el2
+                   WHERE el2.error_type = ?
+                   AND el2.occurred_at > ?)
+                  """,
+                  error_type,
+                  ago(1, :hour)
+                )
+              )
   end
 
   identities do
     identity :unique_error_occurrence, [:domain, :error_type, :message, :occurred_at]
-  end
-
-  preparations do
-    prepare build(sort: [occurred_at: :desc])
   end
 end

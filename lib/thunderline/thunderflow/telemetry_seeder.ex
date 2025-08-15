@@ -21,6 +21,7 @@ defmodule Thunderline.TelemetrySeeder do
       {:ok, created_snapshots} ->
         Logger.info("Successfully created #{length(created_snapshots)} telemetry snapshots")
         {:ok, created_snapshots}
+
       {:error, reason} ->
         Logger.error("Failed to seed telemetry data: #{inspect(reason)}")
         {:error, reason}
@@ -37,7 +38,7 @@ defmodule Thunderline.TelemetrySeeder do
   defp create_snapshot(_snapshot_params, {:error, reason}), do: {:error, reason}
 
   defp create_window_snapshot(index) do
-    base_time = System.system_time(:millisecond) - (index * 10000)
+    base_time = System.system_time(:millisecond) - index * 10000
 
     %{
       coordinator_id: "dashboard-#{index}",
@@ -59,7 +60,7 @@ defmodule Thunderline.TelemetrySeeder do
       latency_p95_us: :rand.uniform(12000) + 3000,
       latency_p99_us: :rand.uniform(20000) + 5000,
       latency_p999_us: :rand.uniform(50000) + 10000,
-      latency_max_us: :rand.uniform(100000) + 20000,
+      latency_max_us: :rand.uniform(100_000) + 20000,
       queue_depth_mean: :rand.uniform() * 50.0,
       queue_depth_max: :rand.uniform(200) + 50,
       backpressure_events: :rand.uniform(10),
@@ -69,8 +70,8 @@ defmodule Thunderline.TelemetrySeeder do
       memory_usage_max_mb: :rand.uniform(800) + 200,
       gc_count: :rand.uniform(50) + 10,
       gc_total_time_ms: :rand.uniform(1000) + 100,
-      network_bytes_in: :rand.uniform(1000000) + 100000,
-      network_bytes_out: :rand.uniform(800000) + 80000,
+      network_bytes_in: :rand.uniform(1_000_000) + 100_000,
+      network_bytes_out: :rand.uniform(800_000) + 80000,
       coordination_messages: :rand.uniform(200) + 50,
       coordination_latency_us: :rand.uniform(5000) + 500,
       error_count: :rand.uniform(3),
@@ -116,7 +117,7 @@ defmodule Thunderline.TelemetrySeeder do
         "coordination_delay" => :rand.uniform() > 0.7
       },
       error_count: :rand.uniform(8) + 2,
-      latency_max_us: :rand.uniform(200000) + 50000,
+      latency_max_us: :rand.uniform(200_000) + 50000,
       queue_depth_max: :rand.uniform(500) + 100,
       cpu_usage_mean: :rand.uniform(30.0) + 70.0,
       metadata: %{

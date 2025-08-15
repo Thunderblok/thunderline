@@ -23,15 +23,24 @@ defmodule Thunderline.NeuralBridge do
 
   # State structure for neural integration
   defstruct [
-    :cerebros_topology,      # Neural architecture from Erlang team
-    :axon_models,           # Deep learning models per level
-    :nx_tensors,            # Current CA state as tensors
-    :neural_connections,    # Skip connections between levels
-    :training_state,        # Active training loops
-    :performance_metrics,   # Real-time performance data
-    :gpu_enabled,          # GPU acceleration status
-    :learning_rate,        # Adaptive learning rate
-    :generation_count      # Current CA generation
+    # Neural architecture from Erlang team
+    :cerebros_topology,
+    # Deep learning models per level
+    :axon_models,
+    # Current CA state as tensors
+    :nx_tensors,
+    # Skip connections between levels
+    :neural_connections,
+    # Active training loops
+    :training_state,
+    # Real-time performance data
+    :performance_metrics,
+    # GPU acceleration status
+    :gpu_enabled,
+    # Adaptive learning rate
+    :learning_rate,
+    # Current CA generation
+    :generation_count
   ]
 
   ## Public API
@@ -115,9 +124,10 @@ defmodule Thunderline.NeuralBridge do
       cerebros_connected: cerebros_topology != %{}
     })
 
-    new_state = %{state |
-      cerebros_topology: cerebros_topology,
-      nx_tensors: %{backend: nx_backend}
+    new_state = %{
+      state
+      | cerebros_topology: cerebros_topology,
+        nx_tensors: %{backend: nx_backend}
     }
 
     {:reply, {:ok, :initialized}, new_state}
@@ -135,10 +145,11 @@ defmodule Thunderline.NeuralBridge do
     # Initialize neural state tensors
     nx_tensors = initialize_ca_tensors(state)
 
-    new_state = %{state |
-      axon_models: axon_models,
-      neural_connections: neural_connections,
-      nx_tensors: Map.merge(state.nx_tensors, nx_tensors)
+    new_state = %{
+      state
+      | axon_models: axon_models,
+        neural_connections: neural_connections,
+        nx_tensors: Map.merge(state.nx_tensors, nx_tensors)
     }
 
     architecture_summary = %{
@@ -220,10 +231,7 @@ defmodule Thunderline.NeuralBridge do
       neural_activity: calculate_neural_activity(updated_tensors)
     })
 
-    new_state = %{state |
-      nx_tensors: updated_tensors,
-      generation_count: new_generation
-    }
+    new_state = %{state | nx_tensors: updated_tensors, generation_count: new_generation}
 
     {:noreply, new_state}
   end
@@ -235,6 +243,7 @@ defmodule Thunderline.NeuralBridge do
       {:ok, topology} ->
         Logger.info("✅ Connected to Erlang Cerebros system")
         topology
+
       {:error, reason} ->
         Logger.warning("⚠️ Could not connect to Cerebros: #{inspect(reason)}")
         %{}
@@ -267,7 +276,8 @@ defmodule Thunderline.NeuralBridge do
     |> Axon.conv(64, 3, activation: :relu, name: "micro_conv2")
     |> Axon.global_avg_pool()
     |> Axon.dense(128, activation: :relu, name: "micro_dense1")
-    |> Axon.dense(2, activation: :sigmoid, name: "micro_output")  # [alive, energy]
+    # [alive, energy]
+    |> Axon.dense(2, activation: :sigmoid, name: "micro_output")
   end
 
   defp create_level_model(:meso, _index, _state) do
@@ -279,7 +289,8 @@ defmodule Thunderline.NeuralBridge do
     |> Axon.max_pool(2)
     |> Axon.flatten()
     |> Axon.dense(256, activation: :relu, name: "meso_dense1")
-    |> Axon.dense(10, activation: :softmax, name: "meso_output")  # CA rule predictions
+    # CA rule predictions
+    |> Axon.dense(10, activation: :softmax, name: "meso_output")
   end
 
   defp create_level_model(:macro, _index, _state) do
@@ -293,7 +304,8 @@ defmodule Thunderline.NeuralBridge do
     |> Axon.global_avg_pool()
     |> Axon.dense(1024, activation: :relu, name: "macro_dense1")
     |> Axon.dense(256, activation: :relu, name: "macro_dense2")
-    |> Axon.dense(50, activation: :tanh, name: "macro_output")  # Global coordination signals
+    # Global coordination signals
+    |> Axon.dense(50, activation: :tanh, name: "macro_output")
   end
 
   defp create_skip_connections(levels, models) do
@@ -302,12 +314,13 @@ defmodule Thunderline.NeuralBridge do
     |> Enum.with_index()
     |> Enum.reduce(%{}, fn {level, index}, acc ->
       # Create connections to other levels (skip connections)
-      connections = levels
-      |> Enum.with_index()
-      |> Enum.filter(fn {_other_level, other_index} -> other_index != index end)
-      |> Enum.map(fn {other_level, _other_index} ->
-        create_skip_connection(level, other_level, models)
-      end)
+      connections =
+        levels
+        |> Enum.with_index()
+        |> Enum.filter(fn {_other_level, other_index} -> other_index != index end)
+        |> Enum.map(fn {other_level, _other_index} ->
+          create_skip_connection(level, other_level, models)
+        end)
 
       Map.put(acc, level, connections)
     end)
@@ -321,8 +334,10 @@ defmodule Thunderline.NeuralBridge do
       from: from_level,
       to: to_level,
       connection_type: :skip,
-      strength: :rand.uniform(),  # Random strength (Cerebros feature)
-      delay: :rand.uniform(5),    # Random delay (1-5 generations)
+      # Random strength (Cerebros feature)
+      strength: :rand.uniform(),
+      # Random delay (1-5 generations)
+      delay: :rand.uniform(5),
       from_model: from_model,
       to_model: to_model
     }
@@ -367,9 +382,11 @@ defmodule Thunderline.NeuralBridge do
     training_loops
     |> Enum.map(fn {level, loop} ->
       # Start async training process for each level
-      pid = spawn_link(fn ->
-        train_level_async(level, loop, state)
-      end)
+      pid =
+        spawn_link(fn ->
+          train_level_async(level, loop, state)
+        end)
+
       {level, pid}
     end)
     |> Map.new()
@@ -425,9 +442,10 @@ defmodule Thunderline.NeuralBridge do
     case ca_update do
       %{grid: grid, generation: gen} when is_list(grid) ->
         # Convert grid to tensor format
-        tensor_data = grid
-        |> Enum.map(fn cell -> [cell.x, cell.y, cell.z, if(cell.alive, do: 1.0, else: 0.0)] end)
-        |> Nx.tensor()
+        tensor_data =
+          grid
+          |> Enum.map(fn cell -> [cell.x, cell.y, cell.z, if(cell.alive, do: 1.0, else: 0.0)] end)
+          |> Nx.tensor()
 
         %{
           ca_tensor: tensor_data,
@@ -475,7 +493,8 @@ defmodule Thunderline.NeuralBridge do
     models
     |> Enum.map(fn {_level, model} ->
       # Estimate parameters (simplified)
-      100_000  # Placeholder - would calculate actual parameters
+      # Placeholder - would calculate actual parameters
+      100_000
     end)
     |> Enum.sum()
   end
@@ -484,7 +503,8 @@ defmodule Thunderline.NeuralBridge do
     tensors
     |> Enum.map(fn {_key, tensor} ->
       try do
-        Nx.size(tensor) * 4  # 4 bytes per float32
+        # 4 bytes per float32
+        Nx.size(tensor) * 4
       rescue
         _ -> 0
       end
@@ -506,7 +526,9 @@ defmodule Thunderline.NeuralBridge do
         pids
         |> Map.values()
         |> Enum.any?(&Process.alive?/1)
-      _ -> false
+
+      _ ->
+        false
     end
   end
 
@@ -531,11 +553,11 @@ defmodule Thunderline.NeuralBridge do
           {Nx.random_uniform({1, 512, 512, 5}), Nx.random_uniform({1, 50})}
         end)
     end
-    |> Stream.take(1000)  # 1000 training samples
+    # 1000 training samples
+    |> Stream.take(1000)
   end
 
   defp broadcast_neural_update(neural_data) do
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, "neural_updates",
-      {:neural_update, neural_data})
+    Phoenix.PubSub.broadcast(Thunderline.PubSub, "neural_updates", {:neural_update, neural_data})
   end
 end

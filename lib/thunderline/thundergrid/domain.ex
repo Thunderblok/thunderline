@@ -17,6 +17,15 @@ defmodule Thunderline.Thundergrid.Domain do
     validate_config_inclusion?: false,
     extensions: [AshGraphql.Domain, AshJsonApi.Domain]
 
+  graphql do
+    authorize? false
+  end
+
+  json_api do
+    prefix "/api/thundergrid"
+    log_errors?(true)
+  end
+
   resources do
     # All Thundergrid resources
     resource Thunderline.Thundergrid.Resources.SpatialCoordinate
@@ -25,14 +34,5 @@ defmodule Thunderline.Thundergrid.Domain do
     resource Thunderline.Thundergrid.Resources.ZoneEvent
     resource Thunderline.Thundergrid.Resources.ChunkState
     # GridZone and GridResource are embedded resources - not listed in domain
-  end
-
-  graphql do
-    authorize? false
-  end
-
-  json_api do
-    prefix "/api/thundergrid"
-    log_errors? true
   end
 end

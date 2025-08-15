@@ -12,27 +12,9 @@ defmodule Thunderline.Thundergate.Resources.PerformanceTrace do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "performance_traces"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-    attribute :trace_id, :string, allow_nil?: false
-    attribute :span_name, :string, allow_nil?: false
-    attribute :duration_ms, :integer, allow_nil?: false
-    attribute :status, :atom, constraints: [one_of: [:success, :error, :timeout]]
-    attribute :domain, :string
-    attribute :operation, :string
-    attribute :metadata, :map, default: %{}
-    attribute :parent_span_id, :string
-    attribute :node_name, :string
-    create_timestamp :started_at
-    update_timestamp :completed_at
   end
 
   actions do
@@ -62,23 +44,41 @@ defmodule Thunderline.Thundergate.Resources.PerformanceTrace do
     end
   end
 
+  preparations do
+    prepare build(sort: [started_at: :desc])
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :trace_id, :string, allow_nil?: false
+    attribute :span_name, :string, allow_nil?: false
+    attribute :duration_ms, :integer, allow_nil?: false
+    attribute :status, :atom, constraints: [one_of: [:success, :error, :timeout]]
+    attribute :domain, :string
+    attribute :operation, :string
+    attribute :metadata, :map, default: %{}
+    attribute :parent_span_id, :string
+    attribute :node_name, :string
+    create_timestamp :started_at
+    update_timestamp :completed_at
+  end
+
   calculations do
     calculate :is_slow, :boolean, expr(duration_ms > 1000)
-    calculate :performance_grade, :atom, expr(
-      cond do
-        duration_ms < 100 -> :excellent
-        duration_ms < 500 -> :good
-        duration_ms < 1000 -> :acceptable
-        true -> :slow
-      end
-    )
+
+    calculate :performance_grade,
+              :atom,
+              expr(
+                cond do
+                  duration_ms < 100 -> :excellent
+                  duration_ms < 500 -> :good
+                  duration_ms < 1000 -> :acceptable
+                  true -> :slow
+                end
+              )
   end
 
   identities do
     identity :unique_span, [:trace_id, :span_name]
-  end
-
-  preparations do
-    prepare build(sort: [started_at: :desc])
   end
 end

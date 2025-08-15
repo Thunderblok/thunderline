@@ -71,8 +71,8 @@ defmodule ThunderlineWeb.MetricsLive do
     <div class="metrics-dashboard">
       <div class="header-section mb-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-4">System Metrics</h1>
-
-        <!-- Controls -->
+        
+    <!-- Controls -->
         <div class="bg-white rounded-lg shadow p-4 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Domain Selection -->
@@ -83,18 +83,34 @@ defmodule ThunderlineWeb.MetricsLive do
                 phx-change="select_domain"
                 name="domain"
               >
-                <option value="thundercore" selected={@selected_domain == "thundercore"}>ThunderCore</option>
-                <option value="thunderbit" selected={@selected_domain == "thunderbit"}>ThunderBit</option>
-                <option value="thunderbolt" selected={@selected_domain == "thunderbolt"}>ThunderBolt</option>
-                <option value="thunderblock" selected={@selected_domain == "thunderblock"}>ThunderBlock</option>
-                <option value="thundergrid" selected={@selected_domain == "thundergrid"}>ThunderGrid</option>
-                <option value="thunderblock" selected={@selected_domain == "thunderblock"}>ThunderVault</option>
-                <option value="thundercom" selected={@selected_domain == "thundercom"}>ThunderCom</option>
-                <option value="thundereye" selected={@selected_domain == "thundereye"}>ThunderEye</option>
+                <option value="thundercore" selected={@selected_domain == "thundercore"}>
+                  ThunderCore
+                </option>
+                <option value="thunderbit" selected={@selected_domain == "thunderbit"}>
+                  ThunderBit
+                </option>
+                <option value="thunderbolt" selected={@selected_domain == "thunderbolt"}>
+                  ThunderBolt
+                </option>
+                <option value="thunderblock" selected={@selected_domain == "thunderblock"}>
+                  ThunderBlock
+                </option>
+                <option value="thundergrid" selected={@selected_domain == "thundergrid"}>
+                  ThunderGrid
+                </option>
+                <option value="thunderblock" selected={@selected_domain == "thunderblock"}>
+                  ThunderVault
+                </option>
+                <option value="thundercom" selected={@selected_domain == "thundercom"}>
+                  ThunderCom
+                </option>
+                <option value="thundereye" selected={@selected_domain == "thundereye"}>
+                  ThunderEye
+                </option>
               </select>
             </div>
-
-            <!-- Time Range -->
+            
+    <!-- Time Range -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Time Range</label>
               <select
@@ -109,8 +125,8 @@ defmodule ThunderlineWeb.MetricsLive do
                 <option value="7d" selected={@time_range == "7d"}>7 days</option>
               </select>
             </div>
-
-            <!-- Refresh Rate -->
+            
+    <!-- Refresh Rate -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Refresh (seconds)</label>
               <input
@@ -122,10 +138,10 @@ defmodule ThunderlineWeb.MetricsLive do
                 phx-change="adjust_refresh_rate"
                 name="rate"
               />
-              <span class="text-sm text-gray-500"><%= @refresh_rate %>s</span>
+              <span class="text-sm text-gray-500">{@refresh_rate}s</span>
             </div>
-
-            <!-- Status -->
+            
+    <!-- Status -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <div class="flex items-center">
@@ -143,28 +159,38 @@ defmodule ThunderlineWeb.MetricsLive do
           <!-- Domain Metrics -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
-              <%= String.capitalize(@selected_domain) %> Metrics
+              {String.capitalize(@selected_domain)} Metrics
             </h2>
 
-            <%= render_domain_metrics(assigns) %>
+            {render_domain_metrics(assigns)}
           </div>
-
-          <!-- Performance Graph -->
+          
+    <!-- Performance Graph -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Performance Trends</h2>
             <div class="h-64 bg-gray-50 rounded border-2 border-dashed border-gray-300 flex items-center justify-center">
               <div class="text-center text-gray-500">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <svg
+                  class="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
                 </svg>
                 <p class="mt-2 text-sm font-medium">Performance Chart</p>
-                <p class="text-sm">Time range: <%= @time_range %></p>
+                <p class="text-sm">Time range: {@time_range}</p>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Side Panel -->
+        
+    <!-- Side Panel -->
         <div class="space-y-6">
           <!-- System Overview -->
           <div class="bg-white rounded-lg shadow p-6">
@@ -174,31 +200,33 @@ defmodule ThunderlineWeb.MetricsLive do
               <div class="space-y-3">
                 <div class="flex justify-between">
                   <span class="text-gray-600">Node:</span>
-                  <span class="font-mono text-sm text-blue-600"><%= Map.get(system_metrics, :node, "unknown") %></span>
+                  <span class="font-mono text-sm text-blue-600">
+                    {Map.get(system_metrics, :node, "unknown")}
+                  </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Uptime:</span>
                   <span class="font-mono text-sm text-green-600">
-                    <%= format_uptime(Map.get(system_metrics, :uptime, 0)) %>
+                    {format_uptime(Map.get(system_metrics, :uptime, 0))}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Processes:</span>
                   <span class="font-mono text-sm text-gray-900">
-                    <%= Map.get(system_metrics, :process_count, 0) %>
+                    {Map.get(system_metrics, :process_count, 0)}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Schedulers:</span>
                   <span class="font-mono text-sm text-gray-900">
-                    <%= Map.get(system_metrics, :schedulers, 0) %>
+                    {Map.get(system_metrics, :schedulers, 0)}
                   </span>
                 </div>
               </div>
             <% end %>
           </div>
-
-          <!-- Memory Usage -->
+          
+    <!-- Memory Usage -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Memory Usage</h3>
 
@@ -207,37 +235,49 @@ defmodule ThunderlineWeb.MetricsLive do
                 <div>
                   <div class="flex justify-between text-sm">
                     <span class="text-gray-600">Total</span>
-                    <span class="font-mono"><%= format_bytes(Map.get(memory, :total, 0)) %></span>
+                    <span class="font-mono">{format_bytes(Map.get(memory, :total, 0))}</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div class="bg-blue-500 h-2 rounded-full" style={"width: #{calculate_memory_percentage(memory, :total)}%"}></div>
+                    <div
+                      class="bg-blue-500 h-2 rounded-full"
+                      style={"width: #{calculate_memory_percentage(memory, :total)}%"}
+                    >
+                    </div>
                   </div>
                 </div>
 
                 <div>
                   <div class="flex justify-between text-sm">
                     <span class="text-gray-600">Processes</span>
-                    <span class="font-mono"><%= format_bytes(Map.get(memory, :processes, 0)) %></span>
+                    <span class="font-mono">{format_bytes(Map.get(memory, :processes, 0))}</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div class="bg-green-500 h-2 rounded-full" style={"width: #{calculate_memory_percentage(memory, :processes)}%"}></div>
+                    <div
+                      class="bg-green-500 h-2 rounded-full"
+                      style={"width: #{calculate_memory_percentage(memory, :processes)}%"}
+                    >
+                    </div>
                   </div>
                 </div>
 
                 <div>
                   <div class="flex justify-between text-sm">
                     <span class="text-gray-600">System</span>
-                    <span class="font-mono"><%= format_bytes(Map.get(memory, :system, 0)) %></span>
+                    <span class="font-mono">{format_bytes(Map.get(memory, :system, 0))}</span>
                   </div>
                   <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div class="bg-yellow-500 h-2 rounded-full" style={"width: #{calculate_memory_percentage(memory, :system)}%"}></div>
+                    <div
+                      class="bg-yellow-500 h-2 rounded-full"
+                      style={"width: #{calculate_memory_percentage(memory, :system)}%"}
+                    >
+                    </div>
                   </div>
                 </div>
               </div>
             <% end %>
           </div>
-
-          <!-- Event Metrics -->
+          
+    <!-- Event Metrics -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Event Processing</h3>
 
@@ -246,32 +286,32 @@ defmodule ThunderlineWeb.MetricsLive do
                 <div class="flex justify-between">
                   <span class="text-gray-600">Processed:</span>
                   <span class="font-mono text-sm text-green-600">
-                    <%= Map.get(events, :total_processed, 0) |> format_number() %>
+                    {Map.get(events, :total_processed, 0) |> format_number()}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Rate/sec:</span>
                   <span class="font-mono text-sm text-blue-600">
-                    <%= Map.get(events, :processing_rate, 0) %>
+                    {Map.get(events, :processing_rate, 0)}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Queue Size:</span>
                   <span class="font-mono text-sm text-yellow-600">
-                    <%= Map.get(events, :queue_size, 0) %>
+                    {Map.get(events, :queue_size, 0)}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Failed:</span>
                   <span class="font-mono text-sm text-red-600">
-                    <%= Map.get(events, :failed_events, 0) %>
+                    {Map.get(events, :failed_events, 0)}
                   </span>
                 </div>
               </div>
             <% end %>
           </div>
-
-          <!-- Mnesia Status -->
+          
+    <!-- Mnesia Status -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Mnesia Status</h3>
 
@@ -280,19 +320,19 @@ defmodule ThunderlineWeb.MetricsLive do
                 <div class="flex justify-between">
                   <span class="text-gray-600">Status:</span>
                   <span class={status_color(Map.get(mnesia, :status))}>
-                    <%= Map.get(mnesia, :status, :unknown) |> to_string() |> String.capitalize() %>
+                    {Map.get(mnesia, :status, :unknown) |> to_string() |> String.capitalize()}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Tables:</span>
                   <span class="font-mono text-sm text-gray-900">
-                    <%= Map.get(mnesia, :tables, 0) %>
+                    {Map.get(mnesia, :tables, 0)}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">Nodes:</span>
                   <span class="font-mono text-sm text-blue-600">
-                    <%= length(Map.get(mnesia, :nodes, [])) %>
+                    {length(Map.get(mnesia, :nodes, []))}
                   </span>
                 </div>
               </div>
@@ -314,6 +354,7 @@ defmodule ThunderlineWeb.MetricsLive do
     if connected?(socket) do
       Process.send_after(self(), :refresh_metrics, socket.assigns.refresh_rate * 1000)
     end
+
     socket
   end
 
@@ -327,10 +368,10 @@ defmodule ThunderlineWeb.MetricsLive do
       <%= for {key, value} <- @domain_metrics do %>
         <div class="text-center p-4 bg-gray-50 rounded-lg">
           <div class="text-2xl font-bold text-blue-600">
-            <%= format_metric_value(value) %>
+            {format_metric_value(value)}
           </div>
           <div class="text-sm text-gray-600 capitalize">
-            <%= format_metric_key(key) %>
+            {format_metric_key(key)}
           </div>
         </div>
       <% end %>
@@ -412,7 +453,7 @@ defmodule ThunderlineWeb.MetricsLive do
     value = Map.get(memory, type, 0)
 
     if total > 0 do
-      min(100, (value / total) * 100)
+      min(100, value / total * 100)
     else
       0
     end

@@ -14,74 +14,19 @@ defmodule Thunderline.Thunderflow.Resources.SystemAction do
   postgres do
     table "system_actions"
     repo Thunderline.Repo
+
+    identity_wheres_to_sql unique_pending_action: "status = 'pending'"
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :action_type, :atom do
-      allow_nil? false
-      constraints one_of: [
-        :system_reset,
-        :emergency_stop,
-        :health_check,
-        :system_restart,
-        :safe_mode,
-        :maintenance_mode,
-        :start_streaming,
-        :stop_streaming,
-        :thunderbolt_action,
-        :create_thunderbolt
-      ]
-    end
-
-    attribute :action_name, :string do
-      allow_nil? false
-      constraints max_length: 100
-    end
-
-    attribute :parameters, :map do
-      allow_nil? true
-      default %{}
-    end
-
-    attribute :initiated_by, :string do
-      allow_nil? false
-      default "dashboard"
-      constraints max_length: 50
-    end
-
-    attribute :status, :atom do
-      allow_nil? false
-      default :pending
-      constraints one_of: [:pending, :executing, :completed, :failed, :cancelled]
-    end
-
-    attribute :result, :map do
-      allow_nil? true
-    end
-
-    attribute :error_message, :string do
-      allow_nil? true
-      constraints max_length: 500
-    end
-
-    attribute :execution_time_ms, :integer do
-      allow_nil? true
-      constraints min: 0
-    end
-
-    attribute :initiated_at, :utc_datetime_usec do
-      allow_nil? false
-      default &DateTime.utc_now/0
-    end
-
-    attribute :completed_at, :utc_datetime_usec do
-      allow_nil? true
-    end
-
-    create_timestamp :created_at
-    update_timestamp :updated_at
+  code_interface do
+    define :create, action: :create
+    define :start_execution, action: :start_execution
+    define :complete_success, action: :complete_success
+    define :complete_failure, action: :complete_failure
+    define :cancel, action: :cancel
+    define :recent_actions, action: :recent_actions
+    define :by_status, action: :by_status, args: [:status]
+    define :by_action_type, action: :by_action_type, args: [:action_type]
   end
 
   actions do
@@ -137,23 +82,93 @@ defmodule Thunderline.Thunderflow.Resources.SystemAction do
     end
   end
 
+  attributes do
+    uuid_primary_key :id
+
+    attribute :action_type, :atom do
+      allow_nil? false
+
+      constraints one_of: [
+                    :system_reset,
+                    :emergency_stop,
+                    :health_check,
+                    :system_restart,
+                    :safe_mode,
+                    :maintenance_mode,
+                    :start_streaming,
+                    :stop_streaming,
+                    :thunderbolt_action,
+                    :create_thunderbolt
+                  ]
+    end
+
+    attribute :action_name, :string do
+      allow_nil? false
+      constraints max_length: 100
+    end
+
+    attribute :parameters, :map do
+      allow_nil? true
+      default %{}
+    end
+
+    attribute :initiated_by, :string do
+      allow_nil? false
+      default "dashboard"
+      constraints max_length: 50
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      default :pending
+      constraints one_of: [:pending, :executing, :completed, :failed, :cancelled]
+    end
+
+    attribute :result, :map do
+      allow_nil? true
+    end
+
+    attribute :error_message, :string do
+      allow_nil? true
+      constraints max_length: 500
+    end
+
+    attribute :execution_time_ms, :integer do
+      allow_nil? true
+      constraints min: 0
+    end
+
+    attribute :initiated_at, :utc_datetime_usec do
+      allow_nil? false
+      default &DateTime.utc_now/0
+    end
+
+    attribute :completed_at, :utc_datetime_usec do
+      allow_nil? true
+    end
+
+    create_timestamp :created_at
+    update_timestamp :updated_at
+  end
+
   calculations do
-    calculate :duration_seconds, :decimal, expr(
-      fragment("EXTRACT(EPOCH FROM (? - ?))", completed_at, initiated_at)
-    ) do
+    calculate :duration_seconds,
+              :decimal,
+              expr(fragment("EXTRACT(EPOCH FROM (? - ?))", completed_at, initiated_at)) do
       load [:completed_at, :initiated_at]
     end
 
-    calculate :is_completed, :boolean, expr(
-      status in [:completed, :failed, :cancelled]
-    )
+    calculate :is_completed, :boolean, expr(status in [:completed, :failed, :cancelled])
 
-    calculate :success_rate, :decimal, expr(
-      fragment(
-        "CASE WHEN ? = 'completed' THEN 1.0 WHEN ? IN ('failed', 'cancelled') THEN 0.0 ELSE NULL END",
-        status, status
-      )
-    )
+    calculate :success_rate,
+              :decimal,
+              expr(
+                fragment(
+                  "CASE WHEN ? = 'completed' THEN 1.0 WHEN ? IN ('failed', 'cancelled') THEN 0.0 ELSE NULL END",
+                  status,
+                  status
+                )
+              )
   end
 
   identities do
@@ -163,20 +178,14 @@ defmodule Thunderline.Thunderflow.Resources.SystemAction do
     end
   end
 
-  code_interface do
-    define :create, action: :create
-    define :start_execution, action: :start_execution
-    define :complete_success, action: :complete_success
-    define :complete_failure, action: :complete_failure
-    define :cancel, action: :cancel
-    define :recent_actions, action: :recent_actions
-    define :by_status, action: :by_status, args: [:status]
-    define :by_action_type, action: :by_action_type, args: [:action_type]
-  end
-
   # Helper functions for dashboard integration
 
-  def track_dashboard_action(action_type, action_name, parameters \\ %{}, initiated_by \\ "dashboard") do
+  def track_dashboard_action(
+        action_type,
+        action_name,
+        parameters \\ %{},
+        initiated_by \\ "dashboard"
+      ) do
     create(%{
       action_type: action_type,
       action_name: action_name,
@@ -193,7 +202,9 @@ defmodule Thunderline.Thunderflow.Resources.SystemAction do
           result: result,
           execution_time_ms: execution_time_ms
         })
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -204,22 +215,25 @@ defmodule Thunderline.Thunderflow.Resources.SystemAction do
           error_message: error_message,
           execution_time_ms: execution_time_ms
         })
-      error -> error
+
+      error ->
+        error
     end
   end
 
   def get_dashboard_metrics do
     recent_actions = recent_actions!()
-    
+
     total_actions = Enum.count(recent_actions)
     completed_actions = Enum.count(recent_actions, &(&1.status == :completed))
     failed_actions = Enum.count(recent_actions, &(&1.status == :failed))
-    
-    success_rate = if total_actions > 0 do
-      (completed_actions / total_actions * 100) |> Float.round(1)
-    else
-      0.0
-    end
+
+    success_rate =
+      if total_actions > 0 do
+        (completed_actions / total_actions * 100) |> Float.round(1)
+      else
+        0.0
+      end
 
     %{
       total_actions_24h: total_actions,
@@ -234,7 +248,7 @@ defmodule Thunderline.Thunderflow.Resources.SystemAction do
 
   defp calculate_avg_execution_time(actions) do
     completed_actions = Enum.filter(actions, &(&1.execution_time_ms != nil))
-    
+
     if Enum.count(completed_actions) > 0 do
       completed_actions
       |> Enum.map(& &1.execution_time_ms)

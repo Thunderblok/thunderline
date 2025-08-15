@@ -14,6 +14,77 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
     repo Thunderline.Repo
   end
 
+  code_interface do
+    define :create
+    define :create_grid_problem
+    define :create_max_cut_problem
+    define :read
+    define :update
+    define :destroy
+    define :list, action: :read
+  end
+
+  actions do
+    defaults [:create, :read, :update, :destroy]
+
+    create :create_grid_problem do
+      description "Create a grid-based Ising problem"
+
+      argument :height, :integer, allow_nil?: false
+      argument :width, :integer, allow_nil?: false
+      argument :coupling_type, :atom, default: :uniform
+      argument :coupling_strength, :float, default: 1.0
+
+      change fn changeset, _context ->
+        height = Ash.Changeset.get_argument(changeset, :height)
+        width = Ash.Changeset.get_argument(changeset, :width)
+        coupling_type = Ash.Changeset.get_argument(changeset, :coupling_type)
+        coupling_strength = Ash.Changeset.get_argument(changeset, :coupling_strength)
+
+        coupling_matrix =
+          case coupling_type do
+            :uniform ->
+              %{type: :uniform, strength: coupling_strength}
+
+            :anisotropic ->
+              %{
+                type: :anisotropic,
+                horizontal: coupling_strength,
+                vertical: coupling_strength * 0.5
+              }
+
+            _ ->
+              %{type: :custom}
+          end
+
+        changeset
+        |> Ash.Changeset.change_attribute(:topology, :grid_2d)
+        |> Ash.Changeset.change_attribute(:dimensions, %{height: height, width: width})
+        |> Ash.Changeset.change_attribute(:coupling_matrix, coupling_matrix)
+        |> Ash.Changeset.change_attribute(:problem_type, :ising_model)
+      end
+    end
+
+    create :create_max_cut_problem do
+      description "Create a Max-Cut optimization problem"
+
+      argument :num_vertices, :integer, allow_nil?: false
+      argument :edges, {:array, :map}, allow_nil?: false
+
+      change fn changeset, _context ->
+        num_vertices = Ash.Changeset.get_argument(changeset, :num_vertices)
+        edges = Ash.Changeset.get_argument(changeset, :edges)
+
+        changeset
+        |> Ash.Changeset.change_attribute(:topology, :graph)
+        |> Ash.Changeset.change_attribute(:dimensions, %{vertices: num_vertices})
+        |> Ash.Changeset.change_attribute(:edge_list, edges)
+        |> Ash.Changeset.change_attribute(:problem_type, :max_cut)
+        |> Ash.Changeset.change_attribute(:coupling_matrix, %{type: :from_edges})
+      end
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -75,57 +146,6 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
     update_timestamp :updated_at
   end
 
-  actions do
-    defaults [:create, :read, :update, :destroy]
-
-    create :create_grid_problem do
-      description "Create a grid-based Ising problem"
-
-      argument :height, :integer, allow_nil?: false
-      argument :width, :integer, allow_nil?: false
-      argument :coupling_type, :atom, default: :uniform
-      argument :coupling_strength, :float, default: 1.0
-
-      change fn changeset, _context ->
-        height = Ash.Changeset.get_argument(changeset, :height)
-        width = Ash.Changeset.get_argument(changeset, :width)
-        coupling_type = Ash.Changeset.get_argument(changeset, :coupling_type)
-        coupling_strength = Ash.Changeset.get_argument(changeset, :coupling_strength)
-
-        coupling_matrix = case coupling_type do
-          :uniform -> %{type: :uniform, strength: coupling_strength}
-          :anisotropic -> %{type: :anisotropic, horizontal: coupling_strength, vertical: coupling_strength * 0.5}
-          _ -> %{type: :custom}
-        end
-
-        changeset
-        |> Ash.Changeset.change_attribute(:topology, :grid_2d)
-        |> Ash.Changeset.change_attribute(:dimensions, %{height: height, width: width})
-        |> Ash.Changeset.change_attribute(:coupling_matrix, coupling_matrix)
-        |> Ash.Changeset.change_attribute(:problem_type, :ising_model)
-      end
-    end
-
-    create :create_max_cut_problem do
-      description "Create a Max-Cut optimization problem"
-
-      argument :num_vertices, :integer, allow_nil?: false
-      argument :edges, {:array, :map}, allow_nil?: false
-
-      change fn changeset, _context ->
-        num_vertices = Ash.Changeset.get_argument(changeset, :num_vertices)
-        edges = Ash.Changeset.get_argument(changeset, :edges)
-
-        changeset
-        |> Ash.Changeset.change_attribute(:topology, :graph)
-        |> Ash.Changeset.change_attribute(:dimensions, %{vertices: num_vertices})
-        |> Ash.Changeset.change_attribute(:edge_list, edges)
-        |> Ash.Changeset.change_attribute(:problem_type, :max_cut)
-        |> Ash.Changeset.change_attribute(:coupling_matrix, %{type: :from_edges})
-      end
-    end
-  end
-
   relationships do
     has_many :optimization_runs, Thunderline.Thunderbolt.Resources.IsingOptimizationRun do
       source_attribute :id
@@ -133,25 +153,22 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
     end
   end
 
-  code_interface do
-    define :create
-    define :create_grid_problem
-    define :create_max_cut_problem
-    define :read
-    define :update
-    define :destroy
-    define :list, action: :read
-  end
-
   def to_lattice(problem) when is_struct(problem) do
     case problem.topology do
       :grid_2d ->
         %{height: height, width: width} = problem.dimensions
-        coupling_opts = case problem.coupling_matrix do
-          %{type: :uniform, strength: s} -> [coupling: :uniform]
-          %{type: :anisotropic, horizontal: h, vertical: v} -> [coupling: {:anisotropic, {h, v}}]
-          _ -> [coupling: :uniform]
-        end
+
+        coupling_opts =
+          case problem.coupling_matrix do
+            %{type: :uniform, strength: s} ->
+              [coupling: :uniform]
+
+            %{type: :anisotropic, horizontal: h, vertical: v} ->
+              [coupling: {:anisotropic, {h, v}}]
+
+            _ ->
+              [coupling: :uniform]
+          end
 
         Thunderline.ThunderIsing.Lattice.grid_2d(height, width, coupling_opts)
 
@@ -160,9 +177,10 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
         edges = problem.edge_list || []
 
         # Convert edge maps to tuples
-        edge_tuples = Enum.map(edges, fn %{from: from, to: to, weight: weight} ->
-          {from, to, weight}
-        end)
+        edge_tuples =
+          Enum.map(edges, fn %{from: from, to: to, weight: weight} ->
+            {from, to, weight}
+          end)
 
         Thunderline.ThunderIsing.Lattice.max_cut_problem(edge_tuples, num_vertices)
     end

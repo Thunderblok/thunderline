@@ -43,13 +43,16 @@ defmodule Thunderflow.EventProducer do
       PubSub.subscribe(@pubsub_name, topic)
     end)
 
-    Logger.info("Thunderflow EventProducer started, subscribed to #{length(@event_topics)} topics")
+    Logger.info(
+      "Thunderflow EventProducer started, subscribed to #{length(@event_topics)} topics"
+    )
 
-    {:producer, %{
-      demand: 0,
-      events: :queue.new(),
-      pipeline_routing: opts[:pipeline_routing] || :auto
-    }}
+    {:producer,
+     %{
+       demand: 0,
+       events: :queue.new(),
+       pipeline_routing: opts[:pipeline_routing] || :auto
+     }}
   end
 
   @impl GenStage
@@ -57,10 +60,7 @@ defmodule Thunderflow.EventProducer do
     total_demand = incoming_demand + pending_demand
     {events_to_send, remaining_events} = take_events(state.events, total_demand)
 
-    new_state = %{state |
-      demand: total_demand - length(events_to_send),
-      events: remaining_events
-    }
+    new_state = %{state | demand: total_demand - length(events_to_send), events: remaining_events}
 
     {:noreply, events_to_send, new_state}
   end
@@ -129,9 +129,16 @@ defmodule Thunderflow.EventProducer do
   defp determine_pipeline_hint(event_type, payload) do
     cond do
       # Real-time events
-      event_type in [:agent_spawned, :agent_updated, :agent_terminated,
-                     :chunk_created, :chunk_updated, :system_metrics,
-                     :websocket_message, :dashboard_update] ->
+      event_type in [
+        :agent_spawned,
+        :agent_updated,
+        :agent_terminated,
+        :chunk_created,
+        :chunk_updated,
+        :system_metrics,
+        :websocket_message,
+        :dashboard_update
+      ] ->
         "realtime"
 
       # Cross-domain events
@@ -146,9 +153,10 @@ defmodule Thunderflow.EventProducer do
 
   defp has_cross_domain_routing?(payload) when is_map(payload) do
     Map.has_key?(payload, "target_domain") or
-    Map.has_key?(payload, "route_to") or
-    Map.has_key?(payload, "cross_domain")
+      Map.has_key?(payload, "route_to") or
+      Map.has_key?(payload, "cross_domain")
   end
+
   defp has_cross_domain_routing?(_), do: false
 
   defp route_event_to_pipeline(broadway_event, state) do
@@ -212,16 +220,14 @@ defmodule Thunderflow.EventProducer do
   end
 
   defp add_events_to_queue(events, state) do
-    new_events_queue = Enum.reduce(events, state.events, fn event, queue ->
-      :queue.in(encode_event(event), queue)
-    end)
+    new_events_queue =
+      Enum.reduce(events, state.events, fn event, queue ->
+        :queue.in(encode_event(event), queue)
+      end)
 
     {events_to_send, remaining_events} = take_events(new_events_queue, state.demand)
 
-    new_state = %{state |
-      demand: state.demand - length(events_to_send),
-      events: remaining_events
-    }
+    new_state = %{state | demand: state.demand - length(events_to_send), events: remaining_events}
 
     {:noreply, events_to_send, new_state}
   end
@@ -229,13 +235,16 @@ defmodule Thunderflow.EventProducer do
   defp take_events(queue, demand) when demand > 0 do
     take_events(queue, demand, [])
   end
+
   defp take_events(queue, _demand), do: {[], queue}
 
   defp take_events(queue, 0, acc), do: {Enum.reverse(acc), queue}
+
   defp take_events(queue, demand, acc) do
     case :queue.out(queue) do
       {{:value, event}, remaining_queue} ->
         take_events(remaining_queue, demand - 1, [event | acc])
+
       {:empty, queue} ->
         {Enum.reverse(acc), queue}
     end

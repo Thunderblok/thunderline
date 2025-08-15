@@ -11,12 +11,80 @@ defmodule Thunderline.Thunderblock.Resources.VaultUserToken do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "user_tokens"
     repo Thunderline.Repo
+  end
+
+  actions do
+    defaults [:create, :read, :update, :destroy]
+
+    create :build_email_token do
+      accept [:user_id, :context, :sent_to]
+
+      change fn changeset, _context ->
+        token = :crypto.strong_rand_bytes(32)
+
+        # 24 hours
+
+        expires_at = DateTime.add(DateTime.utc_now(), 60 * 60 * 24, :second)
+
+        changeset
+        |> Ash.Changeset.change_attribute(:token, token)
+        |> Ash.Changeset.change_attribute(:expires_at, expires_at)
+      end
+    end
+
+    create :build_session_token do
+      accept [:user_id]
+
+      change fn changeset, _context ->
+        token = :crypto.strong_rand_bytes(32)
+
+        # 30 days
+
+        expires_at = DateTime.add(DateTime.utc_now(), 60 * 60 * 24 * 30, :second)
+
+        changeset
+        |> Ash.Changeset.change_attribute(:token, token)
+        |> Ash.Changeset.change_attribute(:context, :session)
+        |> Ash.Changeset.change_attribute(:expires_at, expires_at)
+      end
+    end
+
+    update :mark_as_used do
+      accept []
+      change set_attribute(:used_at, &DateTime.utc_now/0)
+    end
+
+    read :valid_tokens do
+      filter expr(is_nil(used_at) and expires_at > now())
+    end
+
+    read :by_user_and_token do
+      argument :user_id, :uuid do
+        allow_nil? false
+      end
+
+      argument :token, :binary do
+        allow_nil? false
+      end
+
+      filter expr(user_id == ^arg(:user_id) and token == ^arg(:token))
+    end
+  end
+
+  preparations do
+    prepare build(load: [:user])
+  end
+
+  validations do
+    validate present([:token, :context, :expires_at])
+
+    validate compare(:expires_at, greater_than: &DateTime.utc_now/0) do
+      on [:create, :update]
+      message "Token expiration must be in the future"
+    end
   end
 
   attributes do
@@ -55,70 +123,6 @@ defmodule Thunderline.Thunderblock.Resources.VaultUserToken do
     belongs_to :user, Thunderline.Thunderblock.Resources.VaultUser do
       allow_nil? false
       attribute_writable? true
-    end
-  end
-
-  actions do
-    defaults [:create, :read, :update, :destroy]
-
-    create :build_email_token do
-      accept [:user_id, :context, :sent_to]
-
-      change fn changeset, _context ->
-        token = :crypto.strong_rand_bytes(32)
-        expires_at = DateTime.add(DateTime.utc_now(), 60 * 60 * 24, :second) # 24 hours
-
-        changeset
-        |> Ash.Changeset.change_attribute(:token, token)
-        |> Ash.Changeset.change_attribute(:expires_at, expires_at)
-      end
-    end
-
-    create :build_session_token do
-      accept [:user_id]
-
-      change fn changeset, _context ->
-        token = :crypto.strong_rand_bytes(32)
-        expires_at = DateTime.add(DateTime.utc_now(), 60 * 60 * 24 * 30, :second) # 30 days
-
-        changeset
-        |> Ash.Changeset.change_attribute(:token, token)
-        |> Ash.Changeset.change_attribute(:context, :session)
-        |> Ash.Changeset.change_attribute(:expires_at, expires_at)
-      end
-    end
-
-    update :mark_as_used do
-      accept []
-      change set_attribute(:used_at, &DateTime.utc_now/0)
-    end
-
-    read :valid_tokens do
-      filter expr(is_nil(used_at) and expires_at > now())
-    end
-
-    read :by_user_and_token do
-      argument :user_id, :uuid do
-        allow_nil? false
-      end
-
-      argument :token, :binary do
-        allow_nil? false
-      end
-
-      filter expr(user_id == ^arg(:user_id) and token == ^arg(:token))
-    end
-  end
-
-  preparations do
-    prepare build(load: [:user])
-  end
-
-  validations do
-    validate present([:token, :context, :expires_at])
-    validate compare(:expires_at, greater_than: &DateTime.utc_now/0) do
-      on [:create, :update]
-      message "Token expiration must be in the future"
     end
   end
 

@@ -1,11 +1,13 @@
 import Config
+config :ash, policies: [show_policy_breakdowns?: true]
 
-# Configure the database
+# Configure the AshPostgres repo
 config :thunderline, Thunderline.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
   database: "thunderline_dev",
+  port: 5432,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -64,7 +66,7 @@ config :thunderline, ThunderlineWeb.Endpoint,
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :thunderline, dev_routes: true
+config :thunderline, dev_routes: true, token_signing_secret: "vadctdmv/MrdcKdJvG1Bl3woZoYMGKXL"
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"

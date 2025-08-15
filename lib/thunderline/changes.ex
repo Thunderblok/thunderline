@@ -11,10 +11,14 @@ defmodule Thunderline.Changes.PruneWorkingMemory do
 
     Ash.Changeset.after_action(changeset, fn rec, _ ->
       ttl = Map.get(rec, ttl_field, 300_000)
+
       pruned =
         rec
         |> Map.get(field, %{})
-        |> Enum.reject(fn {_k, %{"t" => t}} -> now - t > ttl; _ -> false end)
+        |> Enum.reject(fn
+          {_k, %{"t" => t}} -> now - t > ttl
+          _ -> false
+        end)
         |> Map.new()
 
       {:ok, Map.put(rec, field, pruned)}
@@ -30,6 +34,7 @@ defmodule Thunderline.Changes.RunNodeLogic do
 
   def change(cs, opts, _ctx) do
     fun = opts[:dispatch]
+
     Ash.Changeset.after_action(cs, fn rec, ctx ->
       result = fun.(rec, ctx.arguments[:context])
       {:ok, Map.put(rec, :tick_result, result)}
@@ -45,11 +50,12 @@ defmodule Thunderline.Changes.ApplyTickResult do
 
   def change(cs, opts, _ctx) do
     status_field = opts[:status_field] || :status
-    wm_field     = opts[:wm_field]     || :working_memory
+    wm_field = opts[:wm_field] || :working_memory
     now = System.system_time(:millisecond)
 
     Ash.Changeset.after_action(cs, fn rec, _ ->
       %{status: st, scratch: scratch} = Map.get(rec, :tick_result, %{status: :idle, scratch: %{}})
+
       stamped =
         scratch
         |> Enum.map(fn {k, v} -> {k, %{"v" => v, "t" => now}} end)
@@ -73,9 +79,10 @@ defmodule Thunderline.Changes.PutInMap do
 
   def change(cs, opts, _ctx) do
     field = opts[:field]
+
     Ash.Changeset.after_action(cs, fn rec, ctx ->
       path = String.split(ctx.arguments[:path], ".")
-      val  = ctx.arguments[:value]
+      val = ctx.arguments[:value]
       new_map = put_in(rec |> Map.get(field, %{}), path, val)
       {:ok, Map.put(rec, field, new_map)}
     end)
@@ -90,6 +97,7 @@ defmodule Thunderline.Changes.DeleteInMap do
 
   def change(cs, opts, _ctx) do
     field = opts[:field]
+
     Ash.Changeset.after_action(cs, fn rec, ctx ->
       path = String.split(ctx.arguments[:path], ".")
       {_, new_map} = pop_in(rec |> Map.get(field, %{}), path)

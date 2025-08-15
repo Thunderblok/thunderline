@@ -115,8 +115,14 @@ defmodule ThunderlineWeb.MetricsController do
 
   defp generate_domain_metrics do
     domains = [
-      :thundercore, :thunderbit, :thunderbolt, :thunderblock,
-      :thundergrid, :thundervault, :thundercom, :thundereye
+      :thundercore,
+      :thunderbit,
+      :thunderbolt,
+      :thunderblock,
+      :thundergrid,
+      :thundervault,
+      :thundercom,
+      :thundereye
     ]
 
     Enum.map(domains, fn domain ->
@@ -143,6 +149,7 @@ defmodule ThunderlineWeb.MetricsController do
   end
 
   defp format_prometheus_value(value) when is_number(value), do: value
+
   defp format_prometheus_value(value) when is_atom(value) do
     case value do
       true -> 1
@@ -157,5 +164,6 @@ defmodule ThunderlineWeb.MetricsController do
       _ -> 0
     end
   end
+
   defp format_prometheus_value(_), do: 0
 end

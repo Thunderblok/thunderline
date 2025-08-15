@@ -1,10 +1,10 @@
 defmodule ThunderlineWeb.DashboardLive.Components.ProfilePanel do
   @moduledoc """
   Profile Panel Component for Thunderblock Dashboard
-  
+
   Displays profile updates, news feed, and recent activities from Thundervault.
   """
-  
+
   use Phoenix.Component
   import ThunderlineWeb.CoreComponents
 
@@ -56,36 +56,36 @@ defmodule ThunderlineWeb.DashboardLive.Components.ProfilePanel do
         "w-8 h-8 rounded-full flex items-center justify-center text-sm",
         activity_icon_color(@update.type)
       ]}>
-        <%= activity_icon(@update.type) %>
+        {activity_icon(@update.type)}
       </div>
 
       <%!-- Update Content --%>
       <div class="flex-1 min-w-0">
         <div class="flex items-baseline justify-between">
-          <h5 class="text-sm font-semibold text-white truncate"><%= @update.title %></h5>
-          <span class="text-xs text-gray-500 ml-2"><%= format_update_time(@update.timestamp) %></span>
+          <h5 class="text-sm font-semibold text-white truncate">{@update.title}</h5>
+          <span class="text-xs text-gray-500 ml-2">{format_update_time(@update.timestamp)}</span>
         </div>
-        
-        <p class="text-xs text-gray-300 mt-1 line-clamp-2"><%= @update.description %></p>
-        
+
+        <p class="text-xs text-gray-300 mt-1 line-clamp-2">{@update.description}</p>
+
         <%!-- Metrics --%>
         <%= if @update.metrics do %>
           <div class="flex items-center space-x-4 mt-2">
             <%= for {key, value} <- @update.metrics do %>
               <div class="flex items-center space-x-1">
-                <span class="text-xs text-gray-500"><%= format_metric_key(key) %>:</span>
-                <span class="text-xs font-mono text-purple-300"><%= value %></span>
+                <span class="text-xs text-gray-500">{format_metric_key(key)}:</span>
+                <span class="text-xs font-mono text-purple-300">{value}</span>
               </div>
             <% end %>
           </div>
         <% end %>
-        
+
         <%!-- Tags --%>
         <%= if @update.tags && !Enum.empty?(@update.tags) do %>
           <div class="flex flex-wrap gap-1 mt-2">
             <%= for tag <- Enum.take(@update.tags, 3) do %>
               <span class="inline-block px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded border border-purple-500/30">
-                <%= tag %>
+                {tag}
               </span>
             <% end %>
           </div>
@@ -120,12 +120,12 @@ defmodule ThunderlineWeb.DashboardLive.Components.ProfilePanel do
   defp format_update_time(%DateTime{} = datetime) do
     now = DateTime.utc_now()
     diff = DateTime.diff(now, datetime, :second)
-    
+
     cond do
       diff < 60 -> "#{diff}s"
       diff < 3600 -> "#{div(diff, 60)}m"
       diff < 86400 -> "#{div(diff, 3600)}h"
-      diff < 604800 -> "#{div(diff, 86400)}d"
+      diff < 604_800 -> "#{div(diff, 86400)}d"
       true -> Calendar.strftime(datetime, "%m/%d")
     end
   end
@@ -153,7 +153,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.ProfilePanel do
       %{
         id: "2",
         type: :knowledge,
-        title: "Knowledge Graph Updated", 
+        title: "Knowledge Graph Updated",
         description: "Added 23 new knowledge nodes connecting Thunderbit processing patterns",
         timestamp: DateTime.add(DateTime.utc_now(), -420, :second),
         metrics: %{nodes_added: 23, connections: 67},

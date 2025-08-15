@@ -17,108 +17,54 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
   end
 
   # ============================================================================
+  # JSON API
+  # ============================================================================
+
+  json_api do
+    type "ruleset"
+
+    routes do
+      base("/rulesets")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:update)
+      patch(:activate, route: "/:id/activate")
+      patch(:tune_alpha_gains, route: "/:id/tune-alpha")
+      patch(:optimize, route: "/:id/optimize")
+    end
+  end
+
+  # ============================================================================
+  # GRAPHQL
+  # ============================================================================
+
+  graphql do
+    type :ruleset
+
+    queries do
+      get :get_ruleset, :read
+      list :list_rulesets, :read
+      list :active_rulesets, :active_rulesets
+      get :latest_ruleset, :latest_version
+    end
+
+    mutations do
+      create :create_ruleset, :create
+      update :update_ruleset, :update
+      update :activate_ruleset, :activate
+      update :tune_ruleset_alphas, :tune_alpha_gains
+      update :optimize_ruleset, :optimize
+    end
+  end
+
+  # ============================================================================
   # EVENTS
   # ============================================================================
 
   events do
-    event_log Thunderline.Thunderflow.Events.Event
-    current_action_versions create: 1, update: 1, destroy: 1
-  end
-
-  # ============================================================================
-  # ATTRIBUTES
-  # ============================================================================
-
-  attributes do
-    uuid_primary_key :id
-
-    # Core Identity
-    attribute :version, :integer, allow_nil?: false, public?: true
-    attribute :name, :string, allow_nil?: false, public?: true
-    attribute :description, :string, public?: true
-
-    # Lane Rules Configuration
-    attribute :x_lane_rule, :atom, allow_nil?: false, public?: true,
-      constraints: [one_of: [:majority_hysteresis, :diffusion_threshold, :lifelike, :wavelet]]
-    attribute :y_lane_rule, :atom, allow_nil?: false, public?: true,
-      constraints: [one_of: [:majority_hysteresis, :diffusion_threshold, :lifelike, :wavelet]]
-    attribute :z_lane_rule, :atom, allow_nil?: false, public?: true,
-      constraints: [one_of: [:majority_hysteresis, :diffusion_threshold, :lifelike, :wavelet]]
-
-    # Lane Rule Parameters
-    attribute :x_lane_params, :map, public?: true, default: %{}
-    attribute :y_lane_params, :map, public?: true, default: %{}
-    attribute :z_lane_params, :map, public?: true, default: %{}
-
-    # Cross-Lane Coupling (α-gains)
-    attribute :alpha_xy, :float, allow_nil?: false, public?: true, default: 0.35,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :alpha_xz, :float, allow_nil?: false, public?: true, default: 0.15,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :alpha_yx, :float, allow_nil?: false, public?: true, default: 0.35,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :alpha_yz, :float, allow_nil?: false, public?: true, default: 0.20,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :alpha_zx, :float, allow_nil?: false, public?: true, default: 0.15,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :alpha_zy, :float, allow_nil?: false, public?: true, default: 0.25,
-      constraints: [min: 0.0, max: 1.0]
-
-    # Scheduling Configuration
-    attribute :schedule_type, :atom, allow_nil?: false, public?: true, default: :hybrid_event_wave,
-      constraints: [one_of: [:sync_sweep, :async_event, :hybrid_event_wave]]
-    attribute :schedule_params, :map, public?: true, default: %{}
-
-    # Boundary Conditions
-    attribute :boundaries, :map, public?: true, default: %{wrap: true}
-
-    # Parameter Bounds (for optimization)
-    attribute :parameter_bounds, :map, public?: true, default: %{}
-
-    # Objective Function (for Cerebros optimization)
-    attribute :objective_function, :map, public?: true, default: %{
-      name: "pathflow_robustness",
-      metrics: ["latency_ms_p95", "stability", "energy_per_update", "accuracy"],
-      weights: [0.3, 0.2, 0.2, 0.3]
-    }
-
-    # Status and Deployment
-    attribute :status, :atom, allow_nil?: false, public?: true, default: :draft,
-      constraints: [one_of: [:draft, :active, :deprecated, :archived]]
-    attribute :deployed_at, :utc_datetime_usec, public?: true
-    attribute :performance_score, :float, public?: true
-
-    # Security and Validation
-    attribute :signature, :string, public?: true
-    attribute :signature_algorithm, :string, public?: true, default: "ed25519"
-    attribute :signed_by, :string, public?: true
-
-    # Metadata
-    attribute :metadata, :map, public?: true, default: %{}
-
-    attribute :lane_configuration_id, :uuid do
-      description "Lane configuration that uses this rule set"
-      allow_nil? true
-      public? true
-    end
-
-    # Timestamps
-    create_timestamp :created_at
-    update_timestamp :updated_at
-  end
-
-  # ============================================================================
-  # RELATIONSHIPS
-  # ============================================================================
-
-  relationships do
-    has_many :lane_metrics, Thunderline.Thunderbolt.Resources.LaneMetrics do
-      public? true
-    end
-
-    has_many :coupling_configs, Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
-      public? true
-    end
+    event_log(Thunderline.Thunderflow.Events.Event)
+    current_action_versions(create: 1, update: 1, destroy: 1)
   end
 
   # ============================================================================
@@ -130,11 +76,26 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
 
     create :create do
       accept [
-        :name, :description, :x_lane_rule, :y_lane_rule, :z_lane_rule,
-        :x_lane_params, :y_lane_params, :z_lane_params,
-        :alpha_xy, :alpha_xz, :alpha_yx, :alpha_yz, :alpha_zx, :alpha_zy,
-        :schedule_type, :schedule_params, :boundaries, :parameter_bounds,
-        :objective_function, :metadata
+        :name,
+        :description,
+        :x_lane_rule,
+        :y_lane_rule,
+        :z_lane_rule,
+        :x_lane_params,
+        :y_lane_params,
+        :z_lane_params,
+        :alpha_xy,
+        :alpha_xz,
+        :alpha_yx,
+        :alpha_yz,
+        :alpha_zx,
+        :alpha_zy,
+        :schedule_type,
+        :schedule_params,
+        :boundaries,
+        :parameter_bounds,
+        :objective_function,
+        :metadata
       ]
 
       change fn changeset, _ ->
@@ -148,11 +109,26 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
 
     update :update do
       accept [
-        :name, :description, :x_lane_rule, :y_lane_rule, :z_lane_rule,
-        :x_lane_params, :y_lane_params, :z_lane_params,
-        :alpha_xy, :alpha_xz, :alpha_yx, :alpha_yz, :alpha_zx, :alpha_zy,
-        :schedule_type, :schedule_params, :boundaries, :parameter_bounds,
-        :objective_function, :metadata
+        :name,
+        :description,
+        :x_lane_rule,
+        :y_lane_rule,
+        :z_lane_rule,
+        :x_lane_params,
+        :y_lane_params,
+        :z_lane_params,
+        :alpha_xy,
+        :alpha_xz,
+        :alpha_yx,
+        :alpha_yz,
+        :alpha_zx,
+        :alpha_zy,
+        :schedule_type,
+        :schedule_params,
+        :boundaries,
+        :parameter_bounds,
+        :objective_function,
+        :metadata
       ]
 
       change before_action(&increment_version/1)
@@ -196,44 +172,139 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
   end
 
   # ============================================================================
-  # JSON API
+  # ATTRIBUTES
   # ============================================================================
 
-  json_api do
-    type "ruleset"
+  attributes do
+    uuid_primary_key :id
 
-    routes do
-      base "/rulesets"
-      get :read
-      index :read
-      post :create
-      patch :update
-      patch :activate, route: "/:id/activate"
-      patch :tune_alpha_gains, route: "/:id/tune-alpha"
-      patch :optimize, route: "/:id/optimize"
+    # Core Identity
+    attribute :version, :integer, allow_nil?: false, public?: true
+    attribute :name, :string, allow_nil?: false, public?: true
+    attribute :description, :string, public?: true
+
+    # Lane Rules Configuration
+    attribute :x_lane_rule, :atom,
+      allow_nil?: false,
+      public?: true,
+      constraints: [one_of: [:majority_hysteresis, :diffusion_threshold, :lifelike, :wavelet]]
+
+    attribute :y_lane_rule, :atom,
+      allow_nil?: false,
+      public?: true,
+      constraints: [one_of: [:majority_hysteresis, :diffusion_threshold, :lifelike, :wavelet]]
+
+    attribute :z_lane_rule, :atom,
+      allow_nil?: false,
+      public?: true,
+      constraints: [one_of: [:majority_hysteresis, :diffusion_threshold, :lifelike, :wavelet]]
+
+    # Lane Rule Parameters
+    attribute :x_lane_params, :map, public?: true, default: %{}
+    attribute :y_lane_params, :map, public?: true, default: %{}
+    attribute :z_lane_params, :map, public?: true, default: %{}
+
+    # Cross-Lane Coupling (α-gains)
+    attribute :alpha_xy, :float,
+      allow_nil?: false,
+      public?: true,
+      default: 0.35,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :alpha_xz, :float,
+      allow_nil?: false,
+      public?: true,
+      default: 0.15,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :alpha_yx, :float,
+      allow_nil?: false,
+      public?: true,
+      default: 0.35,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :alpha_yz, :float,
+      allow_nil?: false,
+      public?: true,
+      default: 0.20,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :alpha_zx, :float,
+      allow_nil?: false,
+      public?: true,
+      default: 0.15,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :alpha_zy, :float,
+      allow_nil?: false,
+      public?: true,
+      default: 0.25,
+      constraints: [min: 0.0, max: 1.0]
+
+    # Scheduling Configuration
+    attribute :schedule_type, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :hybrid_event_wave,
+      constraints: [one_of: [:sync_sweep, :async_event, :hybrid_event_wave]]
+
+    attribute :schedule_params, :map, public?: true, default: %{}
+
+    # Boundary Conditions
+    attribute :boundaries, :map, public?: true, default: %{wrap: true}
+
+    # Parameter Bounds (for optimization)
+    attribute :parameter_bounds, :map, public?: true, default: %{}
+
+    # Objective Function (for Cerebros optimization)
+    attribute :objective_function, :map,
+      public?: true,
+      default: %{
+        name: "pathflow_robustness",
+        metrics: ["latency_ms_p95", "stability", "energy_per_update", "accuracy"],
+        weights: [0.3, 0.2, 0.2, 0.3]
+      }
+
+    # Status and Deployment
+    attribute :status, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :draft,
+      constraints: [one_of: [:draft, :active, :deprecated, :archived]]
+
+    attribute :deployed_at, :utc_datetime_usec, public?: true
+    attribute :performance_score, :float, public?: true
+
+    # Security and Validation
+    attribute :signature, :string, public?: true
+    attribute :signature_algorithm, :string, public?: true, default: "ed25519"
+    attribute :signed_by, :string, public?: true
+
+    # Metadata
+    attribute :metadata, :map, public?: true, default: %{}
+
+    attribute :lane_configuration_id, :uuid do
+      description "Lane configuration that uses this rule set"
+      allow_nil? true
+      public? true
     end
+
+    # Timestamps
+    create_timestamp :created_at
+    update_timestamp :updated_at
   end
 
   # ============================================================================
-  # GRAPHQL
+  # RELATIONSHIPS
   # ============================================================================
 
-  graphql do
-    type :ruleset
-
-    queries do
-      get :get_ruleset, :read
-      list :list_rulesets, :read
-      list :active_rulesets, :active_rulesets
-      get :latest_ruleset, :latest_version
+  relationships do
+    has_many :lane_metrics, Thunderline.Thunderbolt.Resources.LaneMetrics do
+      public? true
     end
 
-    mutations do
-      create :create_ruleset, :create
-      update :update_ruleset, :update
-      update :activate_ruleset, :activate
-      update :tune_ruleset_alphas, :tune_alpha_gains
-      update :optimize_ruleset, :optimize
+    has_many :coupling_configs, Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
+      public? true
     end
   end
 

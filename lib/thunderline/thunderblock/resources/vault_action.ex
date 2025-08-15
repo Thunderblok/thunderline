@@ -13,17 +13,136 @@ defmodule Thunderline.Thunderblock.Resources.VaultAction do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "actions"
     repo Thunderline.Repo
   end
 
   events do
-    event_log Thunderline.Thunderflow.Events.Event
-    current_action_versions create: 1, update: 1, destroy: 1
+    event_log(Thunderline.Thunderflow.Events.Event)
+    current_action_versions(create: 1, update: 1, destroy: 1)
+  end
+
+  actions do
+    defaults [:create, :read, :update, :destroy]
+
+    create :queue_action do
+      accept [
+        :agent_id,
+        :type,
+        :name,
+        :parameters,
+        :priority,
+        :confidence_score,
+        :decision_id,
+        :parent_action_id
+      ]
+
+      change set_attribute(:status, :pending)
+    end
+
+    update :start_execution do
+      accept []
+
+      change set_attribute(:status, :executing)
+      change set_attribute(:started_at, &DateTime.utc_now/0)
+    end
+
+    update :complete_action do
+      accept [:result, :success]
+      require_atomic? false
+
+      change set_attribute(:status, :completed)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+
+      change fn changeset, _context ->
+        started_at = Ash.Changeset.get_attribute(changeset, :started_at)
+
+        if started_at do
+          duration = DateTime.diff(DateTime.utc_now(), started_at, :millisecond)
+          Ash.Changeset.change_attribute(changeset, :duration_ms, duration)
+        else
+          changeset
+        end
+      end
+    end
+
+    update :fail_action do
+      accept [:error_message]
+      require_atomic? false
+
+      change set_attribute(:status, :failed)
+      change set_attribute(:success, false)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+
+      change fn changeset, _context ->
+        started_at = Ash.Changeset.get_attribute(changeset, :started_at)
+
+        if started_at do
+          duration = DateTime.diff(DateTime.utc_now(), started_at, :millisecond)
+          Ash.Changeset.change_attribute(changeset, :duration_ms, duration)
+        else
+          changeset
+        end
+      end
+    end
+
+    update :cancel_action do
+      accept []
+
+      change set_attribute(:status, :cancelled)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+    end
+
+    read :by_agent do
+      argument :agent_id, :uuid, allow_nil?: false
+      filter expr(agent_id == ^arg(:agent_id))
+    end
+
+    read :by_status do
+      argument :status, :atom, allow_nil?: false
+      filter expr(status == ^arg(:status))
+    end
+
+    read :pending_actions do
+      filter expr(status == :pending)
+      prepare build(sort: [priority: :desc, inserted_at: :asc])
+    end
+
+    read :recent_actions do
+      argument :hours, :integer, default: 24
+      filter expr(inserted_at > ago(^arg(:hours), :hour))
+      prepare build(sort: [inserted_at: :desc])
+    end
+
+    read :successful_actions do
+      filter expr(success == true)
+    end
+
+    read :failed_actions do
+      filter expr(success == false)
+    end
+  end
+
+  preparations do
+    prepare build(load: [:agent])
+  end
+
+  validations do
+    validate present([:agent_id, :type, :name])
+    validate string_length(:name, min: 1, max: 100)
+    validate numericality(:priority, greater_than: 0, less_than_or_equal_to: 1000)
+
+    validate numericality(:confidence_score,
+               greater_than_or_equal_to: 0,
+               less_than_or_equal_to: 1
+             ) do
+      where present(:confidence_score)
+    end
+
+    validate numericality(:duration_ms, greater_than_or_equal_to: 0) do
+      where present(:duration_ms)
+    end
   end
 
   attributes do
@@ -129,117 +248,11 @@ defmodule Thunderline.Thunderblock.Resources.VaultAction do
     end
   end
 
-  actions do
-    defaults [:create, :read, :update, :destroy]
-
-    create :queue_action do
-      accept [:agent_id, :type, :name, :parameters, :priority, :confidence_score, :decision_id, :parent_action_id]
-
-      change set_attribute(:status, :pending)
-    end
-
-    update :start_execution do
-      accept []
-
-      change set_attribute(:status, :executing)
-      change set_attribute(:started_at, &DateTime.utc_now/0)
-    end
-
-    update :complete_action do
-      accept [:result, :success]
-      require_atomic? false
-
-      change set_attribute(:status, :completed)
-      change set_attribute(:completed_at, &DateTime.utc_now/0)
-
-      change fn changeset, _context ->
-        started_at = Ash.Changeset.get_attribute(changeset, :started_at)
-        if started_at do
-          duration = DateTime.diff(DateTime.utc_now(), started_at, :millisecond)
-          Ash.Changeset.change_attribute(changeset, :duration_ms, duration)
-        else
-          changeset
-        end
-      end
-    end
-
-    update :fail_action do
-      accept [:error_message]
-      require_atomic? false
-
-      change set_attribute(:status, :failed)
-      change set_attribute(:success, false)
-      change set_attribute(:completed_at, &DateTime.utc_now/0)
-
-      change fn changeset, _context ->
-        started_at = Ash.Changeset.get_attribute(changeset, :started_at)
-        if started_at do
-          duration = DateTime.diff(DateTime.utc_now(), started_at, :millisecond)
-          Ash.Changeset.change_attribute(changeset, :duration_ms, duration)
-        else
-          changeset
-        end
-      end
-    end
-
-    update :cancel_action do
-      accept []
-
-      change set_attribute(:status, :cancelled)
-      change set_attribute(:completed_at, &DateTime.utc_now/0)
-    end
-
-    read :by_agent do
-      argument :agent_id, :uuid, allow_nil?: false
-      filter expr(agent_id == ^arg(:agent_id))
-    end
-
-    read :by_status do
-      argument :status, :atom, allow_nil?: false
-      filter expr(status == ^arg(:status))
-    end
-
-    read :pending_actions do
-      filter expr(status == :pending)
-      prepare build(sort: [priority: :desc, inserted_at: :asc])
-    end
-
-    read :recent_actions do
-      argument :hours, :integer, default: 24
-      filter expr(inserted_at > ago(^arg(:hours), :hour))
-      prepare build(sort: [inserted_at: :desc])
-    end
-
-    read :successful_actions do
-      filter expr(success == true)
-    end
-
-    read :failed_actions do
-      filter expr(success == false)
-    end
-  end
-
-  preparations do
-    prepare build(load: [:agent])
-  end
-
   aggregates do
     count :child_action_count, :child_actions
 
     avg :average_child_duration, :child_actions, :duration_ms do
       authorize? false
-    end
-  end
-
-  validations do
-    validate present([:agent_id, :type, :name])
-    validate string_length(:name, min: 1, max: 100)
-    validate numericality(:priority, greater_than: 0, less_than_or_equal_to: 1000)
-    validate numericality(:confidence_score, greater_than_or_equal_to: 0, less_than_or_equal_to: 1) do
-      where present(:confidence_score)
-    end
-    validate numericality(:duration_ms, greater_than_or_equal_to: 0) do
-      where present(:duration_ms)
     end
   end
 

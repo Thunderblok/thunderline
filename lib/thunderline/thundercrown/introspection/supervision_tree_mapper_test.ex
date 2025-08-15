@@ -34,6 +34,7 @@ defmodule Thunderline.Thundercrown.Introspection.SupervisionTreeMapperTest do
     Enum.each(domains, fn {domain, processes} ->
       if length(processes) > 0 do
         IO.puts("  #{String.upcase(to_string(domain))}: #{length(processes)} process(es)")
+
         Enum.each(processes, fn process_tree ->
           {name, type, _info} = ExRoseTree.get_term(process_tree)
           IO.puts("    - #{name} (#{type})")
@@ -52,10 +53,11 @@ defmodule Thunderline.Thundercrown.Introspection.SupervisionTreeMapperTest do
     IO.puts("=" |> String.duplicate(40))
 
     # Create a simple rose tree
-    tree = ExRoseTree.new(:root, [
-      ExRoseTree.new(:child1, [:grandchild1, :grandchild2]),
-      ExRoseTree.new(:child2, [:grandchild3])
-    ])
+    tree =
+      ExRoseTree.new(:root, [
+        ExRoseTree.new(:child1, [:grandchild1, :grandchild2]),
+        ExRoseTree.new(:child2, [:grandchild3])
+      ])
 
     IO.puts("\n📊 Testing rose tree basic operations...")
     IO.puts("Root term: #{inspect(ExRoseTree.get_term(tree))}")

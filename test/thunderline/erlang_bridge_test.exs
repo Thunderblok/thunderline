@@ -44,6 +44,7 @@ defmodule Thunderline.ErlangBridgeTest do
               rule_set: :conway,
               boundary_conditions: :periodic
             }
+
             assert {:ok, _result} = ErlangBridge.evolve_thunderbolt(bolt_id, evolution_params)
 
             # Clean up
@@ -154,7 +155,8 @@ defmodule Thunderline.ErlangBridgeTest do
         # Should handle errors gracefully
         case result do
           {:error, _reason} -> assert true
-          {:ok, _} -> assert true  # Some might succeed in mock mode
+          # Some might succeed in mock mode
+          {:ok, _} -> assert true
         end
       end
     end

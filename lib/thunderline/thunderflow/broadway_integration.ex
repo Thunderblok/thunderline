@@ -28,7 +28,6 @@ defmodule Thunderflow.BroadwayIntegration do
         "lib/thunderline/thunderlane.ex - Line: 241",
         "lib/thunderline/thunderchief/domain.ex - Lines: 162, 220"
       ],
-
       replacement_strategy: %{
         step_1: "Create EventBus module to centralize event emission",
         step_2: "Replace direct PubSub.broadcast calls with EventBus.emit",
@@ -36,7 +35,6 @@ defmodule Thunderflow.BroadwayIntegration do
         step_4: "Add structured error handling and dead letter queues",
         step_5: "Implement batching for high-frequency events"
       },
-
       benefits: [
         "40-60% reduction in system overhead from batching",
         "Automatic backpressure handling prevents system overload",
@@ -63,7 +61,6 @@ defmodule Thunderflow.BroadwayIntegration do
         "No batching of cross-domain messages",
         "Limited error handling for failed domain routing"
       ],
-
       broadway_improvements: [
         "Automatic batching of events by target domain",
         "Structured event transformation and validation",
@@ -72,7 +69,6 @@ defmodule Thunderflow.BroadwayIntegration do
         "Monitoring and alerting for cross-domain communication",
         "Automatic retry with exponential backoff"
       ],
-
       implementation_plan: %{
         week_1: "Implement CrossDomainPipeline with basic routing",
         week_2: "Add event transformation and validation rules",
@@ -98,7 +94,6 @@ defmodule Thunderflow.BroadwayIntegration do
         "System metrics processed individually",
         "No latency optimization for time-critical events"
       ],
-
       broadway_optimizations: [
         "Batch agent updates by agent_id for efficiency",
         "Aggregate dashboard updates to reduce LiveView load",
@@ -106,7 +101,6 @@ defmodule Thunderflow.BroadwayIntegration do
         "Ultra-low latency processing (sub-10ms) for critical events",
         "Automatic payload optimization and compression"
       ],
-
       performance_gains: %{
         agent_updates: "70% reduction in processing overhead",
         dashboard_updates: "85% reduction in LiveView message load",
@@ -163,21 +157,18 @@ defmodule Thunderflow.BroadwayIntegration do
         batch_timeout: "2000ms to balance latency and throughput",
         use_case: "General domain events, background processing"
       },
-
       CrossDomainPipeline: %{
         concurrency: "8 processors, one per domain",
         batch_size: "15-25 events per domain batch",
         batch_timeout: "1000-1500ms for responsive cross-domain communication",
         use_case: "Inter-domain messaging, job orchestration"
       },
-
       RealTimePipeline: %{
         concurrency: "15 processors for high throughput",
         batch_size: "50-200 events for optimal batching",
         batch_timeout: "50-300ms for low latency requirements",
         use_case: "Agent updates, dashboard updates, WebSocket messages"
       },
-
       monitoring: %{
         key_metrics: [
           "Events processed per second",
@@ -209,7 +200,6 @@ defmodule Thunderflow.BroadwayIntegration do
         error_handling: "Minimal error recovery, events can be lost",
         monitoring: "Limited visibility into event processing performance"
       },
-
       with_broadway: %{
         event_processing: "Batched processing with 40-60% overhead reduction",
         pubsub_broadcasts: "Structured pipelines with automatic batching",
@@ -217,7 +207,6 @@ defmodule Thunderflow.BroadwayIntegration do
         error_handling: "Dead letter queues, automatic retries, circuit breakers",
         monitoring: "Comprehensive metrics, alerting, and performance dashboards"
       },
-
       quantified_improvements: %{
         cpu_usage_reduction: "40-60% reduction in event processing overhead",
         memory_usage_optimization: "30-50% reduction from batching efficiency",

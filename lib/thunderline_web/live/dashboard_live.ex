@@ -25,7 +25,10 @@ defmodule ThunderlineWeb.DashboardLive do
   import ThunderlineWeb.DashboardComponents.MemoryMetrics, only: [memory_metrics_panel: 1]
   import ThunderlineWeb.DashboardComponents.FederationStatus, only: [federation_status_panel: 1]
   import ThunderlineWeb.DashboardComponents.AiGovernance, only: [ai_governance_panel: 1]
-  import ThunderlineWeb.DashboardComponents.OrchestrationEngine, only: [orchestration_engine_panel: 1]
+
+  import ThunderlineWeb.DashboardComponents.OrchestrationEngine,
+    only: [orchestration_engine_panel: 1]
+
   import ThunderlineWeb.DashboardComponents.SystemControls, only: [system_controls_panel: 1]
 
   @impl true
@@ -78,6 +81,7 @@ defmodule ThunderlineWeb.DashboardLive do
         case ThunderBridge.start_ca_streaming(interval: 1000) do
           :ok ->
             Logger.info("Started CA streaming for dashboard")
+
           {:error, reason} ->
             Logger.warning("Failed to start CA streaming: #{inspect(reason)}")
             # Continue without CA streaming for now
@@ -134,17 +138,23 @@ defmodule ThunderlineWeb.DashboardLive do
       :timer.sleep(2000)
 
       # Simulate domain activity telemetry
-      :telemetry.execute([:ash, :thunderbolt, :create, :stop],
+      :telemetry.execute(
+        [:ash, :thunderbolt, :create, :stop],
         %{duration: 1_500_000, system_time: System.system_time()},
-        %{resource_short_name: "chunk", action: "create"})
+        %{resource_short_name: "chunk", action: "create"}
+      )
 
-      :telemetry.execute([:ash, :thunderblock, :read, :stop],
+      :telemetry.execute(
+        [:ash, :thunderblock, :read, :stop],
         %{duration: 800_000, system_time: System.system_time()},
-        %{resource_short_name: "vault_memory", action: "read"})
+        %{resource_short_name: "vault_memory", action: "read"}
+      )
 
-      :telemetry.execute([:ash, :thunderflow, :read, :stop],
+      :telemetry.execute(
+        [:ash, :thunderflow, :read, :stop],
         %{duration: 2_100_000, system_time: System.system_time()},
-        %{resource_short_name: "event_stream", action: "process"})
+        %{resource_short_name: "event_stream", action: "process"}
+      )
     end)
   end
 
@@ -174,17 +184,21 @@ defmodule ThunderlineWeb.DashboardLive do
   defp update_performance_metrics(socket, telemetry_data) do
     duration_ms = (telemetry_data.duration || 0) / 1_000_000
 
-    current_metrics = socket.assigns[:performance_metrics] || %{
-      avg_response_time: 0,
-      throughput: 0,
-      memory_usage: "OFFLINE",  # TODO: Implement real memory monitoring
-      cpu_usage: "OFFLINE"      # TODO: Implement real CPU monitoring
-    }
+    current_metrics =
+      socket.assigns[:performance_metrics] ||
+        %{
+          avg_response_time: 0,
+          throughput: 0,
+          # TODO: Implement real memory monitoring
+          memory_usage: "OFFLINE",
+          # TODO: Implement real CPU monitoring
+          cpu_usage: "OFFLINE"
+        }
 
     updated_metrics = %{
-      current_metrics |
-      avg_response_time: Float.round(duration_ms, 2),
-      throughput: current_metrics.throughput + 1
+      current_metrics
+      | avg_response_time: Float.round(duration_ms, 2),
+        throughput: current_metrics.throughput + 1
     }
 
     assign(socket, :performance_metrics, updated_metrics)
@@ -208,12 +222,14 @@ defmodule ThunderlineWeb.DashboardLive do
 
   defp update_system_status(socket, telemetry_data) do
     # Update system health based on telemetry patterns
-    current_status = socket.assigns[:system_status] || %{
-      thunderbolt: :healthy,
-      thunderblock: :healthy,
-      thunderflow: :healthy,
-      neural_bridge: :healthy
-    }
+    current_status =
+      socket.assigns[:system_status] ||
+        %{
+          thunderbolt: :healthy,
+          thunderblock: :healthy,
+          thunderflow: :healthy,
+          neural_bridge: :healthy
+        }
 
     domain = telemetry_data.domain
     duration_ms = (telemetry_data.duration || 0) / 1_000_000
@@ -226,35 +242,59 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   def handle_info(:refresh_metrics, socket) do
+    # Reset throughput to 0 to reflect recent throughput per interval
+    socket =
+      update(socket, :performance_metrics, fn metrics ->
+        if is_map(metrics) do
+          Map.put(metrics, :throughput, 0)
+        else
+          metrics
+        end
+      end)
+
     {:noreply, load_all_metrics(socket)}
   end
 
   def handle_info(:publish_telemetry, socket) do
     # Publish real-time system telemetry
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, "system_metrics",
-      {:system_metric_updated, %{
-        type: :live_update,
-        cpu_usage: "OFFLINE",  # TODO: Implement real CPU monitoring
-        memory_usage: :erlang.memory()[:total],
-        timestamp: DateTime.utc_now()
-      }}
-    )
+    Phoenix.PubSub.broadcast(Thunderline.PubSub, "system_metrics", {:system_metric_updated,
+     %{
+       type: :live_update,
+       # TODO: Implement real CPU monitoring
+       cpu_usage: "OFFLINE",
+       memory_usage: :erlang.memory()[:total],
+       timestamp: DateTime.utc_now()
+     }})
+
     {:noreply, socket}
   end
 
   def handle_info(:publish_events, socket) do
     # Publish real-time events
-    domains = [:thunderbolt, :thunderflow, :thundergate, :thunderblock, :thunderlink, :thundercrown, :thundergrid]
+    domains = [
+      :thunderbolt,
+      :thunderflow,
+      :thundergate,
+      :thunderblock,
+      :thunderlink,
+      :thundercrown,
+      :thundergrid
+    ]
+
     domain = Enum.random(domains)
 
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, "domain_events",
-      {:domain_event, domain, %{
-        type: :status_update,
-        message: "Domain #{domain} processed #{:rand.uniform(100)} operations",
-        timestamp: DateTime.utc_now(),
-        status: Enum.random([:success, :warning, :info])
-      }}
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      "domain_events",
+      {:domain_event, domain,
+       %{
+         type: :status_update,
+         message: "Domain #{domain} processed #{:rand.uniform(100)} operations",
+         timestamp: DateTime.utc_now(),
+         status: Enum.random([:success, :warning, :info])
+       }}
     )
+
     {:noreply, socket}
   end
 
@@ -265,6 +305,7 @@ defmodule ThunderlineWeb.DashboardLive do
       |> assign(:system_metrics, updated_state)
       |> assign(:connected, true)
       |> assign(:loading, false)
+
     {:noreply, socket}
   end
 
@@ -278,11 +319,12 @@ defmodule ThunderlineWeb.DashboardLive do
     Logger.info("Command #{command} with params #{inspect(params)} result: #{inspect(result)}")
 
     # Could update UI to show command feedback
-    flash_message = case result do
-      :ok -> "Command #{command} executed successfully"
-      {:ok, _} -> "Command #{command} executed successfully"
-      {:error, reason} -> "Command #{command} failed: #{inspect(reason)}"
-    end
+    flash_message =
+      case result do
+        :ok -> "Command #{command} executed successfully"
+        {:ok, _} -> "Command #{command} executed successfully"
+        {:error, reason} -> "Command #{command} failed: #{inspect(reason)}"
+      end
 
     socket = put_flash(socket, :info, flash_message)
     {:noreply, socket}
@@ -292,7 +334,9 @@ defmodule ThunderlineWeb.DashboardLive do
     socket = assign(socket, :connected, connected)
 
     flash_type = if connected, do: :info, else: :error
-    flash_message = if connected, do: "Connected to CA system", else: "Lost connection to CA system"
+
+    flash_message =
+      if connected, do: "Connected to CA system", else: "Lost connection to CA system"
 
     socket = put_flash(socket, flash_type, flash_message)
     {:noreply, socket}
@@ -355,6 +399,7 @@ defmodule ThunderlineWeb.DashboardLive do
       "thundergrid:interactions",
       {:hex_clicked, coords, socket.assigns.current_user}
     )
+
     {:noreply, socket}
   end
 
@@ -362,25 +407,36 @@ defmodule ThunderlineWeb.DashboardLive do
   def handle_event("thunderbolt_action", %{"action" => action, "bolt_id" => bolt_id}, socket) do
     Logger.info("Executing ThunderBolt action: #{action} on bolt #{bolt_id}")
 
-    result = try do
-      case action do
-        "start" -> ThunderBridge.execute_command(:start_evolution, [bolt_id])
-        "pause" -> ThunderBridge.execute_command(:pause_evolution, [bolt_id])
-        "restart" -> ThunderBridge.execute_command(:reset_evolution, [bolt_id])
-        "destroy" -> ThunderBridge.execute_command(:destroy_thunderbolt, [bolt_id])
-        _ -> {:error, :unknown_action}
+    result =
+      try do
+        case action do
+          "start" -> ThunderBridge.execute_command(:start_evolution, [bolt_id])
+          "pause" -> ThunderBridge.execute_command(:pause_evolution, [bolt_id])
+          "restart" -> ThunderBridge.execute_command(:reset_evolution, [bolt_id])
+          "destroy" -> ThunderBridge.execute_command(:destroy_thunderbolt, [bolt_id])
+          _ -> {:error, :unknown_action}
+        end
+      rescue
+        error ->
+          Logger.error("ThunderBridge command failed: #{inspect(error)}")
+          {:error, "Bridge unavailable: #{inspect(error)}"}
       end
-    rescue
-      error ->
-        Logger.error("ThunderBridge command failed: #{inspect(error)}")
-        {:error, "Bridge unavailable: #{inspect(error)}"}
-    end
 
-    socket = case result do
-      :ok -> put_flash(socket, :info, "#{action} command sent to ThunderBolt #{bolt_id}")
-      {:ok, _} -> put_flash(socket, :info, "#{action} command sent to ThunderBolt #{bolt_id}")
-      {:error, reason} -> put_flash(socket, :error, "Failed to #{action} ThunderBolt #{bolt_id}: #{inspect(reason)}")
-    end
+    socket =
+      case result do
+        :ok ->
+          put_flash(socket, :info, "#{action} command sent to ThunderBolt #{bolt_id}")
+
+        {:ok, _} ->
+          put_flash(socket, :info, "#{action} command sent to ThunderBolt #{bolt_id}")
+
+        {:error, reason} ->
+          put_flash(
+            socket,
+            :error,
+            "Failed to #{action} ThunderBolt #{bolt_id}: #{inspect(reason)}"
+          )
+      end
 
     {:noreply, socket}
   end
@@ -393,6 +449,7 @@ defmodule ThunderlineWeb.DashboardLive do
         socket = put_flash(socket, :info, "Created new ThunderBolt: #{bolt_id}")
         # Refresh metrics to show new bolt
         {:noreply, load_all_metrics(socket)}
+
       {:error, reason} ->
         socket = put_flash(socket, :error, "Failed to create ThunderBolt: #{inspect(reason)}")
         {:noreply, socket}
@@ -402,16 +459,21 @@ defmodule ThunderlineWeb.DashboardLive do
   def handle_event("streaming_action", %{"action" => action}, socket) do
     Logger.info("Executing streaming action: #{action}")
 
-    result = case action do
-      "start" -> ThunderBridge.start_ca_streaming()
-      "stop" -> ThunderBridge.stop_ca_streaming()
-      _ -> {:error, :unknown_action}
-    end
+    result =
+      case action do
+        "start" -> ThunderBridge.start_ca_streaming()
+        "stop" -> ThunderBridge.stop_ca_streaming()
+        _ -> {:error, :unknown_action}
+      end
 
-    socket = case result do
-      :ok -> put_flash(socket, :info, "Streaming #{action}ed successfully")
-      {:error, reason} -> put_flash(socket, :error, "Failed to #{action} streaming: #{inspect(reason)}")
-    end
+    socket =
+      case result do
+        :ok ->
+          put_flash(socket, :info, "Streaming #{action}ed successfully")
+
+        {:error, reason} ->
+          put_flash(socket, :error, "Failed to #{action} streaming: #{inspect(reason)}")
+      end
 
     {:noreply, socket}
   end
@@ -419,26 +481,29 @@ defmodule ThunderlineWeb.DashboardLive do
   def handle_event("system_action", %{"action" => action}, socket) do
     Logger.info("Executing system action: #{action}")
 
-    result = try do
-      case action do
-        "reset_system" -> execute_system_reset()
-        "emergency_stop" -> execute_emergency_stop()
-        "health_check" -> execute_health_check()
-        _ -> {:error, :unknown_action}
+    result =
+      try do
+        case action do
+          "reset_system" -> execute_system_reset()
+          "emergency_stop" -> execute_emergency_stop()
+          "health_check" -> execute_health_check()
+          _ -> {:error, :unknown_action}
+        end
+      rescue
+        error ->
+          Logger.error("System action failed: #{inspect(error)}")
+          {:error, "System action failed: #{inspect(error)}"}
       end
-    rescue
-      error ->
-        Logger.error("System action failed: #{inspect(error)}")
-        {:error, "System action failed: #{inspect(error)}"}
-    end
 
-    socket = case result do
-      :ok ->
-        socket = put_flash(socket, :info, "System #{action} executed successfully")
-        load_all_metrics(socket)
-      {:error, reason} ->
-        put_flash(socket, :error, "System #{action} failed: #{inspect(reason)}")
-    end
+    socket =
+      case result do
+        :ok ->
+          socket = put_flash(socket, :info, "System #{action} executed successfully")
+          load_all_metrics(socket)
+
+        {:error, reason} ->
+          put_flash(socket, :error, "System #{action} failed: #{inspect(reason)}")
+      end
 
     {:noreply, socket}
   end
@@ -446,29 +511,33 @@ defmodule ThunderlineWeb.DashboardLive do
   def handle_event("system_control", %{"action" => action}, socket) do
     Logger.info("Executing system control action: #{action}")
 
-    result = case action do
-      "emergency_stop" -> execute_emergency_stop()
-      "system_restart" -> execute_system_restart()
-      "safe_mode" -> execute_safe_mode()
-      "maintenance_mode" -> execute_maintenance_mode()
-      _ -> {:error, :unknown_action}
-    end
+    result =
+      case action do
+        "emergency_stop" -> execute_emergency_stop()
+        "system_restart" -> execute_system_restart()
+        "safe_mode" -> execute_safe_mode()
+        "maintenance_mode" -> execute_maintenance_mode()
+        _ -> {:error, :unknown_action}
+      end
 
-    socket = case result do
-      :ok ->
-        flash_message = case action do
-          "emergency_stop" -> "🚨 Emergency stop activated - All systems halted"
-          "system_restart" -> "🔄 System restart initiated - Please wait..."
-          "safe_mode" -> "🛡️ Safe mode activated - Limited functionality enabled"
-          "maintenance_mode" -> "🔧 Maintenance mode activated - System operations paused"
-          _ -> "System control #{action} executed successfully"
-        end
+    socket =
+      case result do
+        :ok ->
+          flash_message =
+            case action do
+              "emergency_stop" -> "🚨 Emergency stop activated - All systems halted"
+              "system_restart" -> "🔄 System restart initiated - Please wait..."
+              "safe_mode" -> "🛡️ Safe mode activated - Limited functionality enabled"
+              "maintenance_mode" -> "🔧 Maintenance mode activated - System operations paused"
+              _ -> "System control #{action} executed successfully"
+            end
 
-        socket = put_flash(socket, :info, flash_message)
-        load_all_metrics(socket)
-      {:error, reason} ->
-        put_flash(socket, :error, "System control #{action} failed: #{inspect(reason)}")
-    end
+          socket = put_flash(socket, :info, flash_message)
+          load_all_metrics(socket)
+
+        {:error, reason} ->
+          put_flash(socket, :error, "System control #{action} failed: #{inspect(reason)}")
+      end
 
     {:noreply, socket}
   end
@@ -482,7 +551,8 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:automata_expanded, false)
     |> assign(:loading, true)
     |> assign(:connected, false)
-    |> assign(:mode, :production)  # Add missing mode assignment
+    # Add missing mode assignment
+    |> assign(:mode, :production)
     |> assign(:system_metrics, %{})
     |> assign(:domain_metrics, %{})
     |> assign(:automata_state, %{active_zones: 0, total_hexes: 144, energy_level: 0})
@@ -571,7 +641,8 @@ defmodule ThunderlineWeb.DashboardLive do
       connected_nodes: length(Node.list()),
       active_agents: system_info.active_agents,
       last_heartbeat: System.system_time(:millisecond),
-      connection_status: :connected  # Add the missing connection_status
+      # Add the missing connection_status
+      connection_status: :connected
     }
   end
 
@@ -580,7 +651,8 @@ defmodule ThunderlineWeb.DashboardLive do
     # This avoids database dependency issues
     %{
       chunks_per_second: get_telemetry_metric([:thunderline, :chunks], :total, 0.0),
-      avg_response_time: 1.5, # Default response time
+      # Default response time
+      avg_response_time: 1.5,
       agents_per_second: get_telemetry_metric([:thunderline, :agents], :active, 0.0) / 60.0,
       total_chunks: get_telemetry_metric([:thunderline, :chunks], :total, 0),
       active_agents: get_telemetry_metric([:thunderline, :agents], :active, 0)
@@ -595,9 +667,12 @@ defmodule ThunderlineWeb.DashboardLive do
       case event_name do
         [:thunderline, :chunks] when measurement == :total ->
           :rand.uniform(1000) + 100
+
         [:thunderline, :agents] when measurement == :active ->
           :rand.uniform(100) + 20
-        _ -> default
+
+        _ ->
+          default
       end
     rescue
       _ -> default
@@ -613,7 +688,8 @@ defmodule ThunderlineWeb.DashboardLive do
   defp calculate_active_agents_from_telemetry(snapshot) do
     # Estimate active agents based on event throughput
     case snapshot.event_rate_per_second do
-      rate when rate > 0 -> trunc(rate * 10)  # Rough estimation
+      # Rough estimation
+      rate when rate > 0 -> trunc(rate * 10)
       _ -> 0
     end
   end
@@ -628,6 +704,7 @@ defmodule ThunderlineWeb.DashboardLive do
             registry_health: :healthy,
             last_updated: registry.last_updated
           }
+
         {:error, _reason} ->
           # Fallback to mock data
           DashboardMetrics.thunderbolt_metrics()
@@ -650,6 +727,7 @@ defmodule ThunderlineWeb.DashboardLive do
             scan_frequency: observer.scan_frequency,
             last_scan: observer.last_scan
           }
+
         {:error, _reason} ->
           # Fallback to mock data
           DashboardMetrics.thunderbit_metrics()
@@ -677,7 +755,8 @@ defmodule ThunderlineWeb.DashboardLive do
       evolution_active: Map.get(cellular_automata, :pattern_stability, :offline) != :offline,
       mutation_count: Map.get(neural_ca, :adaptation_cycles, 0),
       complexity: Map.get(cellular_automata, :complexity_measure, 0.0),
-      bridge_health: 95 # Fixed good health since we have real data
+      # Fixed good health since we have real data
+      bridge_health: 95
     }
   end
 
@@ -687,7 +766,8 @@ defmodule ThunderlineWeb.DashboardLive do
       total_generations: :rand.uniform(100) + 50,
       mutations_count: :rand.uniform(20) + 5,
       evolution_rate: :rand.uniform() * 10.0 + 2.0,
-      active_patterns: Enum.map(1..:rand.uniform(5), fn _ -> "pattern_#{:rand.uniform(1000)}" end),
+      active_patterns:
+        Enum.map(1..:rand.uniform(5), fn _ -> "pattern_#{:rand.uniform(1000)}" end),
       success_rate: :rand.uniform() * 0.8 + 0.2
     }
   end
@@ -696,6 +776,7 @@ defmodule ThunderlineWeb.DashboardLive do
     if length(snapshots) > 0 do
       total_events = Enum.sum(Enum.map(snapshots, &(&1.total_events || 0)))
       error_events = Enum.sum(Enum.map(snapshots, &(&1.error_count || 0)))
+
       if total_events > 0 do
         (total_events - error_events) / total_events
       else
@@ -793,6 +874,7 @@ defmodule ThunderlineWeb.DashboardLive do
       true -> to_string(num)
     end
   end
+
   defp format_number(num), do: to_string(num)
 
   # System Action Helpers
@@ -848,6 +930,7 @@ defmodule ThunderlineWeb.DashboardLive do
         {:ok, metrics} ->
           Logger.info("Health check completed: #{inspect(metrics)}")
           :ok
+
         {:error, reason} ->
           {:error, reason}
       end
@@ -887,7 +970,8 @@ defmodule ThunderlineWeb.DashboardLive do
 
     with :ok <- ThunderBridge.execute_command(:stop_streaming, []),
          :ok <- ThunderBridge.execute_command(:reset_all_evolution, []),
-         :ok <- Process.sleep(1000), # Brief pause for cleanup
+         # Brief pause for cleanup
+         :ok <- Process.sleep(1000),
          :ok <- ThunderBridge.execute_command(:start_streaming, []) do
       :ok
     else
@@ -928,18 +1012,23 @@ defmodule ThunderlineWeb.DashboardLive do
 
     %{
       status: if(system_metrics.connected_nodes > 0, do: :healthy, else: :warning),
-      cpu_usage: "OFFLINE",  # TODO: Implement real CPU monitoring
+      # TODO: Implement real CPU monitoring
+      cpu_usage: "OFFLINE",
       memory_usage: %{
         used: vm_memory[:total] - vm_memory[:system],
         total: vm_memory[:total]
       },
       disk_io: %{
-        read: "OFFLINE",  # TODO: Implement disk I/O monitoring
-        write: "OFFLINE"  # TODO: Implement disk I/O monitoring
+        # TODO: Implement disk I/O monitoring
+        read: "OFFLINE",
+        # TODO: Implement disk I/O monitoring
+        write: "OFFLINE"
       },
       network: %{
-        incoming: "OFFLINE",  # TODO: Implement network monitoring
-        outgoing: "OFFLINE"   # TODO: Implement network monitoring
+        # TODO: Implement network monitoring
+        incoming: "OFFLINE",
+        # TODO: Implement network monitoring
+        outgoing: "OFFLINE"
       },
       processes: %{
         active: :erlang.system_info(:process_count),
@@ -983,18 +1072,19 @@ defmodule ThunderlineWeb.DashboardLive do
     ]
 
     # Add some randomized recent events
-    recent_events = Enum.map(1..:rand.uniform(6), fn _i ->
-      types = ["thunderbolt", "thunderbit", "domain", "system", "thundergrid", "thunderflow"]
-      statuses = ["processing", "completed", "error"]
+    recent_events =
+      Enum.map(1..:rand.uniform(6), fn _i ->
+        types = ["thunderbolt", "thunderbit", "domain", "system", "thundergrid", "thunderflow"]
+        statuses = ["processing", "completed", "error"]
 
-      %{
-        type: Enum.random(types),
-        message: "Event #{:rand.uniform(10000)} processed successfully",
-        source: "RandomizedSource.#{:rand.uniform(100)}",
-        status: Enum.random(statuses),
-        timestamp: NaiveDateTime.add(NaiveDateTime.utc_now(), -:rand.uniform(300), :second)
-      }
-    end)
+        %{
+          type: Enum.random(types),
+          message: "Event #{:rand.uniform(10000)} processed successfully",
+          source: "RandomizedSource.#{:rand.uniform(100)}",
+          status: Enum.random(statuses),
+          timestamp: NaiveDateTime.add(NaiveDateTime.utc_now(), -:rand.uniform(300), :second)
+        }
+      end)
 
     Enum.concat(base_events, recent_events)
     |> Enum.sort_by(& &1.timestamp, {:desc, NaiveDateTime})
@@ -1047,7 +1137,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
     %{
       thunder_memory: %{
-        used: div(vm_memory[:total], 1048576),
+        used: div(vm_memory[:total], 1_048_576),
         hit_rate: 0.85 + :rand.uniform() * 0.15
       },
       mnesia: %{
@@ -1066,14 +1156,15 @@ defmodule ThunderlineWeb.DashboardLive do
       network_status: Enum.random(["active", "degraded", "critical"]),
       connected_nodes: length(Node.list()) + 1,
       sync_percentage: :rand.uniform(20) + 80,
-      nodes: Enum.map(1..:rand.uniform(5) + 2, fn i ->
-        %{
-          name: "thundernode-#{i}",
-          status: Enum.random(["online", "syncing", "offline"]),
-          latency: :rand.uniform(100) + 10,
-          bandwidth: Enum.random(["high", "medium", "low"])
-        }
-      end),
+      nodes:
+        Enum.map(1..(:rand.uniform(5) + 2), fn i ->
+          %{
+            name: "thundernode-#{i}",
+            status: Enum.random(["online", "syncing", "offline"]),
+            latency: :rand.uniform(100) + 10,
+            bandwidth: Enum.random(["high", "medium", "low"])
+          }
+        end),
       redundancy_level: "#{:rand.uniform(3) + 2}x",
       consensus_status: Enum.random(["achieved", "pending", "conflicted"])
     }
@@ -1110,14 +1201,15 @@ defmodule ThunderlineWeb.DashboardLive do
       active_workflows: :rand.uniform(15) + 5,
       queued_tasks: :rand.uniform(50) + 10,
       completion_rate: :rand.uniform(20) + 75,
-      processes: Enum.map(1..:rand.uniform(8) + 3, fn i ->
-        %{
-          name: "workflow_process_#{i}",
-          status: Enum.random(["running", "waiting", "suspended", "error"]),
-          progress: :rand.uniform(100),
-          priority: Enum.random(["high", "medium", "low"])
-        }
-      end),
+      processes:
+        Enum.map(1..(:rand.uniform(8) + 3), fn i ->
+          %{
+            name: "workflow_process_#{i}",
+            status: Enum.random(["running", "waiting", "suspended", "error"]),
+            progress: :rand.uniform(100),
+            priority: Enum.random(["high", "medium", "low"])
+          }
+        end),
       allocated_cores: :rand.uniform(8) + 4,
       total_cores: 16,
       memory_usage: :rand.uniform(40) + 50,

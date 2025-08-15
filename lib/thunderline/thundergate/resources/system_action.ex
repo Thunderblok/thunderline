@@ -14,6 +14,68 @@ defmodule Thunderline.Thundergate.Resources.SystemAction do
 
   import Ash.Resource.Change.Builtins
 
+  postgres do
+    table "thundereye_system_actions"
+    repo Thunderline.Repo
+
+    custom_indexes do
+      index [:domain, :status], name: "system_actions_domain_status_idx"
+      index [:action_name, :inserted_at], name: "system_actions_name_time_idx"
+      index [:status, :inserted_at], name: "system_actions_status_time_idx"
+    end
+  end
+
+  code_interface do
+    define :record
+    define :complete, args: [:result_data, :duration_ms]
+    define :fail, args: [:error_data, :duration_ms]
+    define :archive_old_actions, action: :archive_old_actions
+  end
+
+  actions do
+    defaults [:read]
+
+    create :record do
+      description "Record a system action"
+      accept [:action_name, :domain, :status, :result_data, :error_data, :duration_ms, :metadata]
+    end
+
+    update :complete do
+      # Complete a system action with results
+      accept [:status, :result_data, :duration_ms]
+      require_atomic? false
+
+      change fn changeset, _context ->
+        Ash.Changeset.change_attribute(changeset, :status, :completed)
+      end
+    end
+
+    update :fail do
+      description "Mark action as failed"
+      accept [:status, :error_data, :duration_ms]
+      require_atomic? false
+
+      change fn changeset, _context ->
+        Ash.Changeset.change_attribute(changeset, :status, :failed)
+      end
+    end
+
+    destroy :archive_old_actions do
+      description "Archive old system actions"
+      filter expr(inserted_at < ago(30, :day))
+    end
+  end
+
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy always() do
+      authorize_if always()
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -61,67 +123,5 @@ defmodule Thunderline.Thundergate.Resources.SystemAction do
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
-  end
-
-  actions do
-    defaults [:read]
-
-    create :record do
-      description "Record a system action"
-      accept [:action_name, :domain, :status, :result_data, :error_data, :duration_ms, :metadata]
-    end
-
-    update :complete do
-      # Complete a system action with results
-      accept [:status, :result_data, :duration_ms]
-      require_atomic? false
-
-      change fn changeset, _context ->
-        Ash.Changeset.change_attribute(changeset, :status, :completed)
-      end
-    end
-
-    update :fail do
-      description "Mark action as failed"
-      accept [:status, :error_data, :duration_ms]
-      require_atomic? false
-
-      change fn changeset, _context ->
-        Ash.Changeset.change_attribute(changeset, :status, :failed)
-      end
-    end
-
-    destroy :archive_old_actions do
-      description "Archive old system actions"
-      filter expr(inserted_at < ago(30, :day))
-    end
-  end
-
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    policy always() do
-      authorize_if always()
-    end
-  end
-
-  code_interface do
-    define :record
-    define :complete, args: [:result_data, :duration_ms]
-    define :fail, args: [:error_data, :duration_ms]
-    define :archive_old_actions, action: :archive_old_actions
-  end
-
-  postgres do
-    table "thundereye_system_actions"
-    repo Thunderline.Repo
-
-    custom_indexes do
-      index [:domain, :status], name: "system_actions_domain_status_idx"
-      index [:action_name, :inserted_at], name: "system_actions_name_time_idx"
-      index [:status, :inserted_at], name: "system_actions_status_time_idx"
-    end
   end
 end

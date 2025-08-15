@@ -30,7 +30,8 @@ defmodule ThunderlineWeb.AutomataLive do
      |> assign(:generation, 0)
      |> assign(:pattern_buffer, [])
      |> assign(:running, false)
-     |> assign(:speed, 100)}  # milliseconds between generations
+     # milliseconds between generations
+     |> assign(:speed, 100)}
   end
 
   @impl true
@@ -90,7 +91,9 @@ defmodule ThunderlineWeb.AutomataLive do
   def handle_info(:next_generation, socket) do
     if socket.assigns.running do
       new_generation = socket.assigns.generation + 1
-      new_pattern = generate_next_pattern(socket.assigns.active_rule, socket.assigns.pattern_buffer)
+
+      new_pattern =
+        generate_next_pattern(socket.assigns.active_rule, socket.assigns.pattern_buffer)
 
       # Schedule next generation
       schedule_next_generation(socket.assigns.speed)
@@ -127,8 +130,8 @@ defmodule ThunderlineWeb.AutomataLive do
                 <option value="rule_184" selected={@active_rule == :rule_184}>Rule 184</option>
               </select>
             </div>
-
-            <!-- Speed Control -->
+            
+    <!-- Speed Control -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Speed (ms)</label>
               <input
@@ -140,22 +143,22 @@ defmodule ThunderlineWeb.AutomataLive do
                 phx-change="adjust_speed"
                 name="speed"
               />
-              <span class="text-sm text-gray-500"><%= @speed %>ms</span>
+              <span class="text-sm text-gray-500">{@speed}ms</span>
             </div>
-
-            <!-- Generation Counter -->
+            
+    <!-- Generation Counter -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Generation</label>
-              <div class="text-2xl font-mono text-blue-600"><%= @generation %></div>
+              <div class="text-2xl font-mono text-blue-600">{@generation}</div>
             </div>
-
-            <!-- Control Buttons -->
+            
+    <!-- Control Buttons -->
             <div class="flex space-x-2">
               <button
                 phx-click="toggle_simulation"
                 class={"px-4 py-2 rounded-md font-medium text-white #{if @running, do: "bg-red-500 hover:bg-red-600", else: "bg-green-500 hover:bg-green-600"}"}
               >
-                <%= if @running, do: "Stop", else: "Start" %>
+                {if @running, do: "Stop", else: "Start"}
               </button>
               <button
                 phx-click="reset_simulation"
@@ -178,10 +181,12 @@ defmodule ThunderlineWeb.AutomataLive do
               <div class="pattern-display font-mono text-green-400 text-xs leading-none">
                 <%= for {row, idx} <- Enum.with_index(Enum.take(@pattern_buffer, -50)) do %>
                   <div class="pattern-row">
-                    <span class="generation-num text-gray-500 mr-2"><%= String.pad_leading("#{length(@pattern_buffer) - 50 + idx}", 3, "0") %></span>
+                    <span class="generation-num text-gray-500 mr-2">
+                      {String.pad_leading("#{length(@pattern_buffer) - 50 + idx}", 3, "0")}
+                    </span>
                     <%= for cell <- row do %>
                       <span class={if cell == 1, do: "text-green-400", else: "text-gray-800"}>
-                        <%= if cell == 1, do: "█", else: "·" %>
+                        {if cell == 1, do: "█", else: "·"}
                       </span>
                     <% end %>
                   </div>
@@ -190,8 +195,8 @@ defmodule ThunderlineWeb.AutomataLive do
             </div>
           </div>
         </div>
-
-        <!-- Stats and Info -->
+        
+    <!-- Stats and Info -->
         <div class="space-y-6">
           <!-- Current State -->
           <div class="bg-white rounded-lg shadow p-6">
@@ -199,22 +204,22 @@ defmodule ThunderlineWeb.AutomataLive do
             <div class="space-y-3">
               <div class="flex justify-between">
                 <span class="text-gray-600">Rule:</span>
-                <span class="font-mono text-blue-600"><%= @active_rule %></span>
+                <span class="font-mono text-blue-600">{@active_rule}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Generation:</span>
-                <span class="font-mono text-green-600"><%= @generation %></span>
+                <span class="font-mono text-green-600">{@generation}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Status:</span>
                 <span class={"font-medium #{if @running, do: "text-green-600", else: "text-gray-500"}"}>
-                  <%= if @running, do: "Running", else: "Stopped" %>
+                  {if @running, do: "Running", else: "Stopped"}
                 </span>
               </div>
             </div>
           </div>
-
-          <!-- Automata Metrics -->
+          
+    <!-- Automata Metrics -->
           <%= if @automata_state != %{} do %>
             <div class="bg-white rounded-lg shadow p-6">
               <h3 class="text-lg font-semibold text-gray-800 mb-4">System Metrics</h3>
@@ -223,13 +228,14 @@ defmodule ThunderlineWeb.AutomataLive do
                   <div>
                     <div class="text-sm text-gray-600">Active Rules</div>
                     <div class="text-sm font-mono text-blue-600">
-                      <%= Enum.join(Map.get(cellular_automata, :active_rules, []), ", ") %>
+                      {Enum.join(Map.get(cellular_automata, :active_rules, []), ", ")}
                     </div>
                   </div>
                   <div>
                     <div class="text-sm text-gray-600">Complexity</div>
                     <div class="text-sm font-mono text-purple-600">
-                      <%= Map.get(cellular_automata, :complexity_measure, 0) |> :erlang.float_to_binary(decimals: 3) %>
+                      {Map.get(cellular_automata, :complexity_measure, 0)
+                      |> :erlang.float_to_binary(decimals: 3)}
                     </div>
                   </div>
                 <% end %>
@@ -238,38 +244,38 @@ defmodule ThunderlineWeb.AutomataLive do
                   <div>
                     <div class="text-sm text-gray-600">Learning Rate</div>
                     <div class="text-sm font-mono text-orange-600">
-                      <%= Map.get(neural_ca, :learning_rate, 0) |> :erlang.float_to_binary(decimals: 4) %>
+                      {Map.get(neural_ca, :learning_rate, 0) |> :erlang.float_to_binary(decimals: 4)}
                     </div>
                   </div>
                   <div>
                     <div class="text-sm text-gray-600">Convergence</div>
                     <div class="text-sm font-mono text-green-600">
-                      <%= Map.get(neural_ca, :convergence, 0) |> :erlang.float_to_binary(decimals: 3) %>
+                      {Map.get(neural_ca, :convergence, 0) |> :erlang.float_to_binary(decimals: 3)}
                     </div>
                   </div>
                 <% end %>
               </div>
             </div>
           <% end %>
-
-          <!-- Pattern Analysis -->
+          
+    <!-- Pattern Analysis -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Pattern Analysis</h3>
             <div class="space-y-3">
               <div class="flex justify-between">
                 <span class="text-gray-600">Buffer Size:</span>
-                <span class="font-mono text-gray-900"><%= length(@pattern_buffer) %></span>
+                <span class="font-mono text-gray-900">{length(@pattern_buffer)}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Pattern Width:</span>
                 <span class="font-mono text-gray-900">
-                  <%= if length(@pattern_buffer) > 0, do: length(hd(@pattern_buffer)), else: 0 %>
+                  {if length(@pattern_buffer) > 0, do: length(hd(@pattern_buffer)), else: 0}
                 </span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Density:</span>
                 <span class="font-mono text-blue-600">
-                  <%= calculate_density(@pattern_buffer) |> :erlang.float_to_binary(decimals: 3) %>
+                  {calculate_density(@pattern_buffer) |> :erlang.float_to_binary(decimals: 3)}
                 </span>
               </div>
             </div>
@@ -389,9 +395,11 @@ defmodule ThunderlineWeb.AutomataLive do
     end
   end
 
-  defp apply_rule_logic(_, _), do: 0  # Default fallback
+  # Default fallback
+  defp apply_rule_logic(_, _), do: 0
 
   defp calculate_density([]), do: 0.0
+
   defp calculate_density(pattern_buffer) do
     total_cells =
       pattern_buffer

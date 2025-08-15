@@ -20,14 +20,16 @@ defmodule Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor do
       Thunderline.Thunderbolt.ThunderCell.Cluster,
       cluster_config
     }
-    
+
     case DynamicSupervisor.start_child(__MODULE__, child_spec) do
       {:ok, pid} ->
         Logger.info("Started ThunderCell cluster: #{inspect(cluster_config.cluster_id)}")
         {:ok, pid}
+
       {:error, {:already_started, pid}} ->
         Logger.info("ThunderCell cluster already started: #{inspect(cluster_config.cluster_id)}")
         {:ok, pid}
+
       error ->
         Logger.error("Failed to start ThunderCell cluster: #{inspect(error)}")
         error
@@ -39,11 +41,13 @@ defmodule Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor do
       nil ->
         Logger.warning("Cluster not found: #{inspect(cluster_id)}")
         {:error, :not_found}
+
       pid ->
         case DynamicSupervisor.terminate_child(__MODULE__, pid) do
           :ok ->
             Logger.info("Stopped ThunderCell cluster: #{inspect(cluster_id)}")
             :ok
+
           error ->
             Logger.error("Failed to stop ThunderCell cluster: #{inspect(error)}")
             error
@@ -72,7 +76,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor do
   @impl true
   def init(_opts) do
     Logger.info("Starting ThunderCell ClusterSupervisor...")
-    
+
     # Use :one_for_one strategy - if a cluster crashes, restart only that cluster
     DynamicSupervisor.init(
       strategy: :one_for_one,

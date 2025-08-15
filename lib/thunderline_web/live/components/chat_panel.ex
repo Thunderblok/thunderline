@@ -1,10 +1,10 @@
 defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
   @moduledoc """
   Chat Panel Component for Thunderblock Dashboard
-  
+
   Displays real-time chat messages and social feed from Thunderblock communities.
   """
-  
+
   use Phoenix.Component
   import ThunderlineWeb.CoreComponents
 
@@ -44,8 +44,8 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
 
       <%!-- Input Area --%>
       <div class="flex space-x-2">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Type a message..."
           class="flex-1 bg-black/30 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-400/50 focus:bg-black/40"
         />
@@ -69,17 +69,17 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
         "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
         avatar_color(@message.user_id)
       ]}>
-        <%= String.first(@message.username) %>
+        {String.first(@message.username)}
       </div>
 
       <%!-- Message Content --%>
       <div class="flex-1 min-w-0">
         <div class="flex items-baseline space-x-2">
-          <span class="font-semibold text-white"><%= @message.username %></span>
-          <span class="text-gray-500"><%= format_message_time(@message.timestamp) %></span>
+          <span class="font-semibold text-white">{@message.username}</span>
+          <span class="text-gray-500">{format_message_time(@message.timestamp)}</span>
         </div>
-        <p class="text-gray-300 break-words"><%= @message.content %></p>
-        
+        <p class="text-gray-300 break-words">{@message.content}</p>
+
         <%!-- Message Type Indicator --%>
         <%= if @message.type != :text do %>
           <div class="mt-1">
@@ -99,7 +99,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
       "inline-flex items-center px-2 py-1 rounded text-xs font-medium",
       type_badge_classes(@type)
     ]}>
-      <%= type_icon(@type) %> <%= String.capitalize(to_string(@type)) %>
+      {type_icon(@type)} {String.capitalize(to_string(@type))}
     </span>
     """
   end
@@ -108,9 +108,16 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
 
   defp avatar_color(user_id) do
     colors = [
-      "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500",
-      "bg-purple-500", "bg-pink-500", "bg-indigo-500", "bg-cyan-500"
+      "bg-red-500",
+      "bg-blue-500",
+      "bg-green-500",
+      "bg-yellow-500",
+      "bg-purple-500",
+      "bg-pink-500",
+      "bg-indigo-500",
+      "bg-cyan-500"
     ]
+
     hash = :erlang.phash2(user_id, length(colors))
     Enum.at(colors, hash)
   end
@@ -129,7 +136,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
   defp format_message_time(%DateTime{} = datetime) do
     now = DateTime.utc_now()
     diff = DateTime.diff(now, datetime, :second)
-    
+
     cond do
       diff < 60 -> "#{diff}s"
       diff < 3600 -> "#{div(diff, 60)}m"
@@ -151,7 +158,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
         type: :system
       },
       %{
-        id: "2", 
+        id: "2",
         user_id: "thunder_ops",
         username: "ThunderOps",
         content: "New agent cluster deployed to Zone 4",
@@ -185,7 +192,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
       %{
         id: "6",
         user_id: "automata_core",
-        username: "Automata Core", 
+        username: "Automata Core",
         content: "Cellular automata pattern: 144 hexes active",
         timestamp: DateTime.add(DateTime.utc_now(), -30, :second),
         type: :system

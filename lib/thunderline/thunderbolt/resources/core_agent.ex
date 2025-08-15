@@ -9,12 +9,31 @@ defmodule Thunderline.Thunderbolt.Resources.CoreAgent do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "thundercore_agents"
     repo Thunderline.Repo
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :register do
+      description "Register new system agent"
+      primary? true
+      accept [:agent_name, :agent_type, :capabilities]
+      change set_attribute(:status, :active)
+    end
+
+    update :heartbeat do
+      description "Update agent heartbeat"
+      accept [:status, :current_task]
+      change set_attribute(:last_heartbeat, &DateTime.utc_now/0)
+    end
+
+    read :active_agents do
+      description "Get all active agents"
+      filter expr(status == :active)
+    end
   end
 
   attributes do
@@ -51,28 +70,6 @@ defmodule Thunderline.Thunderbolt.Resources.CoreAgent do
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :register do
-      description "Register new system agent"
-      primary? true
-      accept [:agent_name, :agent_type, :capabilities]
-      change set_attribute(:status, :active)
-    end
-
-    update :heartbeat do
-      description "Update agent heartbeat"
-      accept [:status, :current_task]
-      change set_attribute(:last_heartbeat, &DateTime.utc_now/0)
-    end
-
-    read :active_agents do
-      description "Get all active agents"
-      filter expr(status == :active)
-    end
   end
 
   identities do

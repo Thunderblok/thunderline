@@ -45,220 +45,86 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   import Ash.Resource.Change.Builtins
   import Ash.Expr
 
-  # ===== ATTRIBUTES =====
-  attributes do
-    uuid_primary_key :id
+  # ===== POSTGRES CONFIGURATION =====
+  postgres do
+    table "thunderblock_knowledge_nodes"
+    repo Thunderline.Repo
 
-    attribute :node_type, :atom do
-      allow_nil? false
-      description "Type of knowledge node"
-      default :concept
-      constraints [one_of: [:concept, :entity, :relationship, :cluster, :taxonomy,
-                           :pattern, :rule, :hypothesis, :insight, :contradiction]]
+    references do
+      # reference :audit_logs, on_delete: :delete, on_update: :update
     end
 
-    attribute :title, :string do
-      allow_nil? false
-      description "Primary title or name of the knowledge node"
-      constraints min_length: 1, max_length: 500
+    custom_indexes do
+      index [:node_type, :knowledge_domain], name: "knowledge_nodes_type_domain_idx"
+      index [:verification_status, :centrality_score], name: "knowledge_nodes_verification_idx"
+      index [:confidence_level, :evidence_strength], name: "knowledge_nodes_quality_idx"
+      index [:indexing_status], name: "knowledge_nodes_indexing_idx"
+      index "USING GIN (aliases)", name: "knowledge_nodes_aliases_idx"
+      index "USING GIN (semantic_tags)", name: "knowledge_nodes_tags_idx"
+      index "USING GIN (source_domains)", name: "knowledge_nodes_sources_idx"
+      index "USING GIN (relationship_data)", name: "knowledge_nodes_relationships_idx"
+      index "USING GIN (taxonomy_path)", name: "knowledge_nodes_taxonomy_idx"
+      index "USING GIN (memory_record_ids)", name: "knowledge_nodes_memories_idx"
+      index "USING GIN (embedding_vector_ids)", name: "knowledge_nodes_embeddings_idx"
     end
 
-    attribute :description, :string do
-      allow_nil? true
-      description "Detailed description of the knowledge node"
-      constraints max_length: 5000
+    check_constraints do
+      check_constraint :valid_confidence, "confidence_level >= 0.0 AND confidence_level <= 1.0"
+      check_constraint :valid_evidence, "evidence_strength >= 0.0 AND evidence_strength <= 1.0"
+      check_constraint :valid_centrality, "centrality_score >= 0.0 AND centrality_score <= 1.0"
+      check_constraint :valid_title_length, "char_length(title) > 0"
     end
-
-    attribute :aliases, {:array, :string} do
-      allow_nil? false
-      description "Alternative names and synonyms"
-      default []
-    end
-
-    attribute :knowledge_domain, :string do
-      allow_nil? false
-      description "Primary knowledge domain or category"
-      # constraints [one_of: ["general", "technical", "social", "temporal", "spatial",
-      #                     "causal", "procedural", "declarative", "episodic", "semantic"]]
-    end
-
-    attribute :source_domains, {:array, :string} do
-      allow_nil? false
-      description "Thunderline domains contributing to this knowledge"
-      default []
-    end
-
-    attribute :confidence_level, :decimal do
-      allow_nil? false
-      description "Confidence in the knowledge accuracy (0.0 to 1.0)"
-      default Decimal.new("1.0")
-      constraints min: Decimal.new("0.0"), max: Decimal.new("1.0")
-    end
-
-    attribute :evidence_strength, :decimal do
-      allow_nil? false
-      description "Strength of supporting evidence (0.0 to 1.0)"
-      default Decimal.new("1.0")
-      constraints min: Decimal.new("0.0"), max: Decimal.new("1.0")
-    end
-
-    attribute :centrality_score, :decimal do
-      allow_nil? false
-      description "Importance within the knowledge graph (0.0 to 1.0)"
-      default Decimal.new("0.5")
-      constraints min: Decimal.new("0.0"), max: Decimal.new("1.0")
-    end
-
-    attribute :memory_record_ids, {:array, :uuid} do
-      allow_nil? false
-      description "Associated memory records providing evidence"
-      default []
-    end
-
-    attribute :embedding_vector_ids, {:array, :uuid} do
-      allow_nil? false
-      description "Associated embedding vectors for semantic similarity"
-      default []
-    end
-
-    attribute :relationship_data, :map do
-      allow_nil? false
-      description "Relationships to other knowledge nodes"
-      default %{
-        "parent_nodes" => [],        # Broader concepts
-        "child_nodes" => [],         # More specific concepts
-        "related_nodes" => [],       # Peer concepts
-        "contradicts_nodes" => [],   # Contradictory concepts
-        "supports_nodes" => [],      # Supporting concepts
-        "temporal_next" => [],       # Sequential knowledge
-        "causal_effects" => []       # Cause-effect relationships
-      }
-    end
-
-    attribute :semantic_tags, {:array, :string} do
-      allow_nil? false
-      description "Semantic tags for categorization and discovery"
-      default []
-    end
-
-    attribute :temporal_data, :map do
-      allow_nil? false
-      description "Temporal aspects of the knowledge"
-      default %{
-        "created_timestamp" => nil,
-        "last_updated" => nil,
-        "validity_period" => nil,
-        "temporal_context" => nil,
-        "historical_versions" => []
-      }
-    end
-
-    attribute :spatial_data, :map do
-      allow_nil? false
-      description "Spatial or contextual location information"
-      default %{
-        "coordinates" => nil,
-        "regions" => [],
-        "domains" => [],
-        "scope" => "global"
-      }
-    end
-
-    attribute :graph_metrics, :map do
-      allow_nil? false
-      description "Graph analysis metrics"
-      default %{
-        "degree_centrality" => 0.0,
-        "betweenness_centrality" => 0.0,
-        "clustering_coefficient" => 0.0,
-        "pagerank_score" => 0.0,
-        "connected_components" => 1
-      }
-    end
-
-    attribute :knowledge_quality, :map do
-      allow_nil? false
-      description "Quality assessment metrics"
-      default %{
-        "completeness" => 0.0,
-        "consistency" => 1.0,
-        "currency" => 1.0,
-        "accuracy" => 1.0,
-        "relevance" => 1.0,
-        "citation_count" => 0
-      }
-    end
-
-    attribute :consolidation_data, :map do
-      allow_nil? false
-      description "Knowledge consolidation and deduplication info"
-      default %{
-        "consolidated_from" => [],
-        "duplicate_candidates" => [],
-        "consolidation_status" => "active",
-        "merge_history" => []
-      }
-    end
-
-    attribute :discovery_data, :map do
-      allow_nil? false
-      description "Knowledge discovery and emergence tracking"
-      default %{
-        "discovery_method" => "manual",
-        "discovery_confidence" => 1.0,
-        "discovery_sources" => [],
-        "emergence_patterns" => []
-      }
-    end
-
-    attribute :access_patterns, :map do
-      allow_nil? false
-      description "Usage and access pattern analysis"
-      default %{
-        "access_count" => 0,
-        "last_accessed" => nil,
-        "access_frequency" => 0.0,
-        "query_patterns" => [],
-        "user_interactions" => []
-      }
-    end
-
-    attribute :verification_status, :atom do
-      allow_nil? false
-      description "Knowledge verification and validation status"
-      default :unverified
-      constraints [one_of: [:unverified, :pending, :verified, :disputed, :deprecated, :archived]]
-    end
-
-    attribute :indexing_status, :atom do
-      allow_nil? false
-      description "Graph indexing and search status"
-      default :pending
-      constraints [one_of: [:pending, :indexing, :indexed, :reindex_needed, :index_failed]]
-    end
-
-    attribute :taxonomy_path, {:array, :string} do
-      allow_nil? false
-      description "Hierarchical taxonomy classification path"
-      default []
-    end
-
-    attribute :metadata, :map do
-      allow_nil? false
-      description "Additional flexible metadata"
-      default %{}
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
   end
 
-  # ===== RELATIONSHIPS =====
-  relationships do
-    # has_many :audit_logs, Thunderline.Thunderblock.Resources.VaultAuditLog do
-    #   source_attribute :id
-    #   destination_attribute :knowledge_node_id
-    # end
+  # ===== JSON API CONFIGURATION =====
+  json_api do
+    type "knowledge_node"
+
+    routes do
+      base("/knowledge")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:update)
+      delete(:destroy)
+    end
+  end
+
+  # ===== POLICIES =====
+  # ===== POLICIES =====
+  # policies do
+  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+  #     authorize_if always()
+  #   end
+
+  #   policy always() do
+  #     authorize_if always()
+  #   end
+  # end
+
+  # ===== CODE INTERFACE =====
+  code_interface do
+    define :create
+    define :update
+    define :add_relationship, args: [:target_node_id, :relationship_type, :relationship_strength]
+    define :remove_relationship, args: [:target_node_id, :relationship_type]
+    define :consolidate_knowledge, args: [:duplicate_node_ids]
+    define :record_access, args: [:access_type, :user_context]
+    define :verify_knowledge, args: [:verification_result, :verification_evidence]
+
+    define :search_knowledge,
+      args: [:search_term, :knowledge_domains, :node_types, :min_confidence]
+
+    define :traverse_graph, args: [:start_node_id, :relationship_types, :max_depth, :direction]
+    define :by_domain, args: [:knowledge_domain]
+    # TODO: Comment out interface for commented-out actions
+    # define :high_centrality, args: [:min_centrality]
+    # define :find_related, args: [:node_id, :relationship_strength_threshold]
+    # define :contradictions, action: :contradictions
+    # define :taxonomy_level, args: [:taxonomy_path]
+    define :optimize_relationships, action: :optimize_relationships
+    define :recalculate_metrics, action: :recalculate_metrics
+    define :cleanup_deprecated, action: :cleanup_deprecated
   end
 
   # ===== ACTIONS =====
@@ -267,18 +133,34 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
     create :create do
       description "Create a new knowledge node"
-      accept [:node_type, :title, :description, :aliases, :knowledge_domain, :source_domains,
-              :confidence_level, :evidence_strength, :memory_record_ids, :embedding_vector_ids,
-              :relationship_data, :semantic_tags, :temporal_data, :spatial_data,
-              :taxonomy_path, :metadata]
+
+      accept [
+        :node_type,
+        :title,
+        :description,
+        :aliases,
+        :knowledge_domain,
+        :source_domains,
+        :confidence_level,
+        :evidence_strength,
+        :memory_record_ids,
+        :embedding_vector_ids,
+        :relationship_data,
+        :semantic_tags,
+        :temporal_data,
+        :spatial_data,
+        :taxonomy_path,
+        :metadata
+      ]
 
       change fn changeset, _context ->
         current_time = DateTime.utc_now()
         temporal_data = Ash.Changeset.get_attribute(changeset, :temporal_data) || %{}
 
-        updated_temporal = temporal_data
-        |> Map.put("created_timestamp", current_time)
-        |> Map.put("last_updated", current_time)
+        updated_temporal =
+          temporal_data
+          |> Map.put("created_timestamp", current_time)
+          |> Map.put("last_updated", current_time)
 
         changeset
         |> Ash.Changeset.change_attribute(:temporal_data, updated_temporal)
@@ -286,34 +168,48 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       end
 
       change after_action(fn _changeset, node, _context ->
-        # Link to memory records and embeddings
-        link_knowledge_resources(node)
+               # Link to memory records and embeddings
+               link_knowledge_resources(node)
 
-        # Calculate initial graph metrics
-        calculate_graph_metrics(node)
+               # Calculate initial graph metrics
+               calculate_graph_metrics(node)
 
-        # Schedule knowledge indexing
-        schedule_knowledge_indexing(node)
+               # Schedule knowledge indexing
+               schedule_knowledge_indexing(node)
 
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderblock:knowledge",
-          {:knowledge_node_created, %{
-            node_id: node.id,
-            node_type: node.node_type,
-            knowledge_domain: node.knowledge_domain
-          }}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thunderblock:knowledge",
+                 {:knowledge_node_created,
+                  %{
+                    node_id: node.id,
+                    node_type: node.node_type,
+                    knowledge_domain: node.knowledge_domain
+                  }}
+               )
 
-        {:ok, node}
-      end)
+               {:ok, node}
+             end)
     end
 
     update :update do
       description "Update knowledge node information"
-      accept [:title, :description, :aliases, :knowledge_domain, :confidence_level,
-              :evidence_strength, :relationship_data, :semantic_tags, :temporal_data,
-              :spatial_data, :taxonomy_path, :metadata]
+
+      accept [
+        :title,
+        :description,
+        :aliases,
+        :knowledge_domain,
+        :confidence_level,
+        :evidence_strength,
+        :relationship_data,
+        :semantic_tags,
+        :temporal_data,
+        :spatial_data,
+        :taxonomy_path,
+        :metadata
+      ]
+
       require_atomic? false
 
       change fn changeset, _context ->
@@ -326,20 +222,20 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       end
 
       change after_action(fn _changeset, node, _context ->
-        # Recalculate graph metrics
-        calculate_graph_metrics(node)
+               # Recalculate graph metrics
+               calculate_graph_metrics(node)
 
-        # Schedule reindexing
-        schedule_knowledge_indexing(node)
+               # Schedule reindexing
+               schedule_knowledge_indexing(node)
 
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderblock:knowledge",
-          {:knowledge_node_updated, %{node_id: node.id}}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thunderblock:knowledge",
+                 {:knowledge_node_updated, %{node_id: node.id}}
+               )
 
-        {:ok, node}
-      end)
+               {:ok, node}
+             end)
     end
 
     update :add_relationship do
@@ -370,17 +266,19 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         current_relationships = Ash.Changeset.get_attribute(changeset, :relationship_data) || %{}
 
         # Add to appropriate relationship list
-        relationship_key = case rel_type do
-          "parent" -> "parent_nodes"
-          "child" -> "child_nodes"
-          "related" -> "related_nodes"
-          "contradicts" -> "contradicts_nodes"
-          "supports" -> "supports_nodes"
-          "temporal_next" -> "temporal_next"
-          "causal_effect" -> "causal_effects"
-        end
+        relationship_key =
+          case rel_type do
+            "parent" -> "parent_nodes"
+            "child" -> "child_nodes"
+            "related" -> "related_nodes"
+            "contradicts" -> "contradicts_nodes"
+            "supports" -> "supports_nodes"
+            "temporal_next" -> "temporal_next"
+            "causal_effect" -> "causal_effects"
+          end
 
         current_list = Map.get(current_relationships, relationship_key, [])
+
         relationship_entry = %{
           "node_id" => target_id,
           "strength" => strength,
@@ -388,11 +286,12 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         }
 
         # Avoid duplicates
-        updated_list = if Enum.any?(current_list, &(&1["node_id"] == target_id)) do
-          current_list
-        else
-          [relationship_entry | current_list]
-        end
+        updated_list =
+          if Enum.any?(current_list, &(&1["node_id"] == target_id)) do
+            current_list
+          else
+            [relationship_entry | current_list]
+          end
 
         updated_relationships = Map.put(current_relationships, relationship_key, updated_list)
 
@@ -400,10 +299,10 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       end
 
       change after_action(fn _changeset, node, _context ->
-        # Recalculate graph metrics for affected nodes
-        recalculate_network_metrics(node)
-        {:ok, node}
-      end)
+               # Recalculate graph metrics for affected nodes
+               recalculate_network_metrics(node)
+               {:ok, node}
+             end)
     end
 
     update :remove_relationship do
@@ -425,15 +324,16 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
         current_relationships = Ash.Changeset.get_attribute(changeset, :relationship_data) || %{}
 
-        relationship_key = case rel_type do
-          "parent" -> "parent_nodes"
-          "child" -> "child_nodes"
-          "related" -> "related_nodes"
-          "contradicts" -> "contradicts_nodes"
-          "supports" -> "supports_nodes"
-          "temporal_next" -> "temporal_next"
-          "causal_effect" -> "causal_effects"
-        end
+        relationship_key =
+          case rel_type do
+            "parent" -> "parent_nodes"
+            "child" -> "child_nodes"
+            "related" -> "related_nodes"
+            "contradicts" -> "contradicts_nodes"
+            "supports" -> "supports_nodes"
+            "temporal_next" -> "temporal_next"
+            "causal_effect" -> "causal_effects"
+          end
 
         current_list = Map.get(current_relationships, relationship_key, [])
         updated_list = Enum.reject(current_list, &(&1["node_id"] == target_id))
@@ -463,22 +363,26 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         # Merge data from duplicate nodes (this would fetch and merge their data)
         {merged_memories, merged_embeddings} = merge_duplicate_node_data(duplicate_ids)
 
-        updated_consolidation = current_consolidation
-        |> Map.put("consolidated_from", duplicate_ids)
-        |> Map.put("consolidation_status", "consolidated")
-        |> Map.put("consolidation_timestamp", DateTime.utc_now())
+        updated_consolidation =
+          current_consolidation
+          |> Map.put("consolidated_from", duplicate_ids)
+          |> Map.put("consolidation_status", "consolidated")
+          |> Map.put("consolidation_timestamp", DateTime.utc_now())
 
         changeset
         |> Ash.Changeset.change_attribute(:consolidation_data, updated_consolidation)
         |> Ash.Changeset.change_attribute(:memory_record_ids, current_memories ++ merged_memories)
-        |> Ash.Changeset.change_attribute(:embedding_vector_ids, current_embeddings ++ merged_embeddings)
+        |> Ash.Changeset.change_attribute(
+          :embedding_vector_ids,
+          current_embeddings ++ merged_embeddings
+        )
       end
 
       change after_action(fn _changeset, node, context ->
-        # Mark duplicate nodes as consolidated
-        mark_nodes_as_duplicates(context.arguments.duplicate_node_ids, node.id)
-        {:ok, node}
-      end)
+               # Mark duplicate nodes as consolidated
+               mark_nodes_as_duplicates(context.arguments.duplicate_node_ids, node.id)
+               {:ok, node}
+             end)
     end
 
     update :record_access do
@@ -500,11 +404,12 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         current_patterns = Ash.Changeset.get_attribute(changeset, :access_patterns) || %{}
         access_count = Map.get(current_patterns, "access_count", 0) + 1
 
-        updated_patterns = current_patterns
-        |> Map.put("access_count", access_count)
-        |> Map.put("last_accessed", DateTime.utc_now())
-        |> Map.put("access_frequency", calculate_access_frequency(current_patterns))
-        |> update_access_patterns(access_type, user_context)
+        updated_patterns =
+          current_patterns
+          |> Map.put("access_count", access_count)
+          |> Map.put("last_accessed", DateTime.utc_now())
+          |> Map.put("access_frequency", calculate_access_frequency(current_patterns))
+          |> update_access_patterns(access_type, user_context)
 
         Ash.Changeset.change_attribute(changeset, :access_patterns, updated_patterns)
       end
@@ -529,21 +434,24 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         current_quality = Ash.Changeset.get_attribute(changeset, :knowledge_quality) || %{}
 
         # Update quality metrics based on verification
-        updated_quality = case result do
-          :verified ->
-            current_quality
-            |> Map.put("accuracy", 1.0)
-            |> Map.put("currency", 1.0)
-            |> Map.put("citation_count", Map.get(current_quality, "citation_count", 0) + 1)
-          :disputed ->
-            current_quality
-            |> Map.put("accuracy", 0.5)
-            |> Map.put("consistency", 0.5)
-          :deprecated ->
-            current_quality
-            |> Map.put("currency", 0.0)
-            |> Map.put("relevance", 0.0)
-        end
+        updated_quality =
+          case result do
+            :verified ->
+              current_quality
+              |> Map.put("accuracy", 1.0)
+              |> Map.put("currency", 1.0)
+              |> Map.put("citation_count", Map.get(current_quality, "citation_count", 0) + 1)
+
+            :disputed ->
+              current_quality
+              |> Map.put("accuracy", 0.5)
+              |> Map.put("consistency", 0.5)
+
+            :deprecated ->
+              current_quality
+              |> Map.put("currency", 0.0)
+              |> Map.put("relevance", 0.0)
+          end
 
         changeset
         |> Ash.Changeset.change_attribute(:verification_status, result)
@@ -639,7 +547,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         allow_nil? false
       end
 
-      filter expr(knowledge_domain == ^arg(:knowledge_domain) and verification_status != :deprecated)
+      filter expr(
+               knowledge_domain == ^arg(:knowledge_domain) and verification_status != :deprecated
+             )
 
       prepare build(sort: [centrality_score: :desc, confidence_level: :desc])
     end
@@ -738,91 +648,273 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       filter expr(verification_status == :deprecated and updated_at < ago(90, :day))
 
       change after_action(fn _changeset, nodes, _context ->
-        for node <- nodes do
-          cleanup_knowledge_references(node)
-        end
-        {:ok, nodes}
-      end)
+               for node <- nodes do
+                 cleanup_knowledge_references(node)
+               end
+
+               {:ok, nodes}
+             end)
     end
   end
 
-  # ===== POLICIES =====
-  # ===== POLICIES =====
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-
-  #   policy always() do
-  #     authorize_if always()
-  #   end
-  # end
-
-  # ===== CODE INTERFACE =====
-  code_interface do
-    define :create
-    define :update
-    define :add_relationship, args: [:target_node_id, :relationship_type, :relationship_strength]
-    define :remove_relationship, args: [:target_node_id, :relationship_type]
-    define :consolidate_knowledge, args: [:duplicate_node_ids]
-    define :record_access, args: [:access_type, :user_context]
-    define :verify_knowledge, args: [:verification_result, :verification_evidence]
-    define :search_knowledge, args: [:search_term, :knowledge_domains, :node_types, :min_confidence]
-    define :traverse_graph, args: [:start_node_id, :relationship_types, :max_depth, :direction]
-    define :by_domain, args: [:knowledge_domain]
-    # TODO: Comment out interface for commented-out actions
-    # define :high_centrality, args: [:min_centrality]
-    # define :find_related, args: [:node_id, :relationship_strength_threshold]
-    # define :contradictions, action: :contradictions
-    # define :taxonomy_level, args: [:taxonomy_path]
-    define :optimize_relationships, action: :optimize_relationships
-    define :recalculate_metrics, action: :recalculate_metrics
-    define :cleanup_deprecated, action: :cleanup_deprecated
+  # ===== PREPARATIONS =====
+  preparations do
+    # :audit_logs removed - resource doesn't exist
+    prepare build(load: [:memory_records, :embedding_vectors])
   end
 
-  # ===== POSTGRES CONFIGURATION =====
-  postgres do
-    table "thunderblock_knowledge_nodes"
-    repo Thunderline.Repo
-
-    references do
-      # reference :audit_logs, on_delete: :delete, on_update: :update
-    end
-
-    custom_indexes do
-      index [:node_type, :knowledge_domain], name: "knowledge_nodes_type_domain_idx"
-      index [:verification_status, :centrality_score], name: "knowledge_nodes_verification_idx"
-      index [:confidence_level, :evidence_strength], name: "knowledge_nodes_quality_idx"
-      index [:indexing_status], name: "knowledge_nodes_indexing_idx"
-      index "USING GIN (aliases)", name: "knowledge_nodes_aliases_idx"
-      index "USING GIN (semantic_tags)", name: "knowledge_nodes_tags_idx"
-      index "USING GIN (source_domains)", name: "knowledge_nodes_sources_idx"
-      index "USING GIN (relationship_data)", name: "knowledge_nodes_relationships_idx"
-      index "USING GIN (taxonomy_path)", name: "knowledge_nodes_taxonomy_idx"
-      index "USING GIN (memory_record_ids)", name: "knowledge_nodes_memories_idx"
-      index "USING GIN (embedding_vector_ids)", name: "knowledge_nodes_embeddings_idx"
-    end
-
-    check_constraints do
-      check_constraint :valid_confidence, "confidence_level >= 0.0 AND confidence_level <= 1.0"
-      check_constraint :valid_evidence, "evidence_strength >= 0.0 AND evidence_strength <= 1.0"
-      check_constraint :valid_centrality, "centrality_score >= 0.0 AND centrality_score <= 1.0"
-      check_constraint :valid_title_length, "char_length(title) > 0"
-    end
+  # ===== VALIDATIONS =====
+  validations do
+    validate present([:node_type, :title, :knowledge_domain])
+    # validate {Thundervault.Validations, :valid_relationship_structure}, on: [:create, :update]
+    # validate {Thundervault.Validations, :valid_taxonomy_path}, on: [:create, :update]
   end
 
-  # ===== JSON API CONFIGURATION =====
-  json_api do
-    type "knowledge_node"
+  # ===== ATTRIBUTES =====
+  attributes do
+    uuid_primary_key :id
 
-    routes do
-      base "/knowledge"
-      get :read
-      index :read
-      post :create
-      patch :update
-      delete :destroy
+    attribute :node_type, :atom do
+      allow_nil? false
+      description "Type of knowledge node"
+      default :concept
+
+      constraints one_of: [
+                    :concept,
+                    :entity,
+                    :relationship,
+                    :cluster,
+                    :taxonomy,
+                    :pattern,
+                    :rule,
+                    :hypothesis,
+                    :insight,
+                    :contradiction
+                  ]
     end
+
+    attribute :title, :string do
+      allow_nil? false
+      description "Primary title or name of the knowledge node"
+      constraints min_length: 1, max_length: 500
+    end
+
+    attribute :description, :string do
+      allow_nil? true
+      description "Detailed description of the knowledge node"
+      constraints max_length: 5000
+    end
+
+    attribute :aliases, {:array, :string} do
+      allow_nil? false
+      description "Alternative names and synonyms"
+      default []
+    end
+
+    attribute :knowledge_domain, :string do
+      allow_nil? false
+      description "Primary knowledge domain or category"
+      # constraints [one_of: ["general", "technical", "social", "temporal", "spatial",
+      #                     "causal", "procedural", "declarative", "episodic", "semantic"]]
+    end
+
+    attribute :source_domains, {:array, :string} do
+      allow_nil? false
+      description "Thunderline domains contributing to this knowledge"
+      default []
+    end
+
+    attribute :confidence_level, :decimal do
+      allow_nil? false
+      description "Confidence in the knowledge accuracy (0.0 to 1.0)"
+      default Decimal.new("1.0")
+      constraints min: Decimal.new("0.0"), max: Decimal.new("1.0")
+    end
+
+    attribute :evidence_strength, :decimal do
+      allow_nil? false
+      description "Strength of supporting evidence (0.0 to 1.0)"
+      default Decimal.new("1.0")
+      constraints min: Decimal.new("0.0"), max: Decimal.new("1.0")
+    end
+
+    attribute :centrality_score, :decimal do
+      allow_nil? false
+      description "Importance within the knowledge graph (0.0 to 1.0)"
+      default Decimal.new("0.5")
+      constraints min: Decimal.new("0.0"), max: Decimal.new("1.0")
+    end
+
+    attribute :memory_record_ids, {:array, :uuid} do
+      allow_nil? false
+      description "Associated memory records providing evidence"
+      default []
+    end
+
+    attribute :embedding_vector_ids, {:array, :uuid} do
+      allow_nil? false
+      description "Associated embedding vectors for semantic similarity"
+      default []
+    end
+
+    attribute :relationship_data, :map do
+      allow_nil? false
+      description "Relationships to other knowledge nodes"
+      # Broader concepts
+      default %{
+        "parent_nodes" => [],
+
+        # More specific concepts
+        "child_nodes" => [],
+
+        # Peer concepts
+        "related_nodes" => [],
+
+        # Contradictory concepts
+        "contradicts_nodes" => [],
+
+        # Supporting concepts
+        "supports_nodes" => [],
+
+        # Sequential knowledge
+        "temporal_next" => [],
+
+        # Cause-effect relationships
+        "causal_effects" => []
+      }
+    end
+
+    attribute :semantic_tags, {:array, :string} do
+      allow_nil? false
+      description "Semantic tags for categorization and discovery"
+      default []
+    end
+
+    attribute :temporal_data, :map do
+      allow_nil? false
+      description "Temporal aspects of the knowledge"
+
+      default %{
+        "created_timestamp" => nil,
+        "last_updated" => nil,
+        "validity_period" => nil,
+        "temporal_context" => nil,
+        "historical_versions" => []
+      }
+    end
+
+    attribute :spatial_data, :map do
+      allow_nil? false
+      description "Spatial or contextual location information"
+
+      default %{
+        "coordinates" => nil,
+        "regions" => [],
+        "domains" => [],
+        "scope" => "global"
+      }
+    end
+
+    attribute :graph_metrics, :map do
+      allow_nil? false
+      description "Graph analysis metrics"
+
+      default %{
+        "degree_centrality" => 0.0,
+        "betweenness_centrality" => 0.0,
+        "clustering_coefficient" => 0.0,
+        "pagerank_score" => 0.0,
+        "connected_components" => 1
+      }
+    end
+
+    attribute :knowledge_quality, :map do
+      allow_nil? false
+      description "Quality assessment metrics"
+
+      default %{
+        "completeness" => 0.0,
+        "consistency" => 1.0,
+        "currency" => 1.0,
+        "accuracy" => 1.0,
+        "relevance" => 1.0,
+        "citation_count" => 0
+      }
+    end
+
+    attribute :consolidation_data, :map do
+      allow_nil? false
+      description "Knowledge consolidation and deduplication info"
+
+      default %{
+        "consolidated_from" => [],
+        "duplicate_candidates" => [],
+        "consolidation_status" => "active",
+        "merge_history" => []
+      }
+    end
+
+    attribute :discovery_data, :map do
+      allow_nil? false
+      description "Knowledge discovery and emergence tracking"
+
+      default %{
+        "discovery_method" => "manual",
+        "discovery_confidence" => 1.0,
+        "discovery_sources" => [],
+        "emergence_patterns" => []
+      }
+    end
+
+    attribute :access_patterns, :map do
+      allow_nil? false
+      description "Usage and access pattern analysis"
+
+      default %{
+        "access_count" => 0,
+        "last_accessed" => nil,
+        "access_frequency" => 0.0,
+        "query_patterns" => [],
+        "user_interactions" => []
+      }
+    end
+
+    attribute :verification_status, :atom do
+      allow_nil? false
+      description "Knowledge verification and validation status"
+      default :unverified
+      constraints one_of: [:unverified, :pending, :verified, :disputed, :deprecated, :archived]
+    end
+
+    attribute :indexing_status, :atom do
+      allow_nil? false
+      description "Graph indexing and search status"
+      default :pending
+      constraints one_of: [:pending, :indexing, :indexed, :reindex_needed, :index_failed]
+    end
+
+    attribute :taxonomy_path, {:array, :string} do
+      allow_nil? false
+      description "Hierarchical taxonomy classification path"
+      default []
+    end
+
+    attribute :metadata, :map do
+      allow_nil? false
+      description "Additional flexible metadata"
+      default %{}
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  # ===== RELATIONSHIPS =====
+  relationships do
+    # has_many :audit_logs, Thunderline.Thunderblock.Resources.VaultAuditLog do
+    #   source_attribute :id
+    #   destination_attribute :knowledge_node_id
+    # end
   end
 
   # ===== OBAN CONFIGURATION =====
@@ -849,18 +941,6 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   # ===== IDENTITIES =====
   identities do
     identity :unique_title_domain, [:title, :knowledge_domain]
-  end
-
-  # ===== VALIDATIONS =====
-  validations do
-    validate present([:node_type, :title, :knowledge_domain])
-    # validate {Thundervault.Validations, :valid_relationship_structure}, on: [:create, :update]
-    # validate {Thundervault.Validations, :valid_taxonomy_path}, on: [:create, :update]
-  end
-
-  # ===== PREPARATIONS =====
-  preparations do
-    prepare build(load: [:memory_records, :embedding_vectors]) # :audit_logs removed - resource doesn't exist
   end
 
   # ===== PRIVATE FUNCTIONS =====

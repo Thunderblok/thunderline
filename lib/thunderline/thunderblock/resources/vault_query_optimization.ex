@@ -16,6 +16,106 @@ defmodule Thunderline.Thunderblock.Resources.VaultQueryOptimization do
 
   import Ash.Expr
 
+  postgres do
+    table "thunderblock_query_optimizations"
+    repo Thunderline.Repo
+
+    custom_indexes do
+      index [:query_hash], unique: true, name: "query_optimizations_hash_idx"
+      index [:avg_execution_time], name: "query_optimizations_avg_time_idx"
+      index [:frequency], name: "query_optimizations_frequency_idx"
+      index "USING GIN (optimization_suggestions)", name: "query_optimizations_suggestions_idx"
+    end
+  end
+
+  code_interface do
+    define :analyze_query
+    define :update_stats, args: [:execution_time_ms]
+    # TODO: Add performance_stats action before uncommenting
+    # define :performance_stats, action: :performance_stats
+    define :slow_queries
+    define :frequent_queries
+  end
+
+  actions do
+    defaults [:read]
+
+    create :analyze_query do
+      description "Analyze query performance"
+
+      accept [
+        :query_hash,
+        :query_sql,
+        :execution_time_ms,
+        :rows_examined,
+        :rows_returned,
+        :index_usage,
+        :execution_plan,
+        :optimization_suggestions
+      ]
+
+      change fn changeset, _context ->
+        execution_time = Ash.Changeset.get_attribute(changeset, :execution_time_ms)
+
+        changeset
+        |> Ash.Changeset.change_attribute(:avg_execution_time, execution_time)
+      end
+
+      upsert? true
+      upsert_identity :unique_query_hash
+      upsert_fields [:frequency, :avg_execution_time, :execution_time_ms, :updated_at]
+    end
+
+    update :update_stats do
+      description "Update query execution statistics"
+      accept [:frequency, :avg_execution_time, :execution_time_ms]
+      require_atomic? false
+
+      change fn changeset, _context ->
+        current_freq = Ash.Changeset.get_attribute(changeset, :frequency) || 1
+        current_avg = Ash.Changeset.get_attribute(changeset, :avg_execution_time)
+        new_execution_time = Ash.Changeset.get_attribute(changeset, :execution_time_ms)
+
+        new_freq = current_freq + 1
+
+        new_avg =
+          if current_avg && new_execution_time do
+            total_time = Decimal.mult(current_avg, Decimal.new(current_freq))
+            new_total = Decimal.add(total_time, new_execution_time)
+            Decimal.div(new_total, Decimal.new(new_freq))
+          else
+            new_execution_time || current_avg
+          end
+
+        changeset
+        |> Ash.Changeset.change_attribute(:frequency, new_freq)
+        |> Ash.Changeset.change_attribute(:avg_execution_time, new_avg)
+      end
+    end
+
+    read :performance_analysis do
+      description "Analyze query performance patterns with sorting"
+    end
+
+    read :slow_queries do
+      description "Identify slow queries for optimization"
+    end
+
+    read :frequent_queries do
+      description "List frequently executed queries"
+    end
+  end
+
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy always() do
+      authorize_if always()
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -84,96 +184,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultQueryOptimization do
     update_timestamp :updated_at
   end
 
-  actions do
-    defaults [:read]
-
-    create :analyze_query do
-      description "Analyze query performance"
-      accept [:query_hash, :query_sql, :execution_time_ms, :rows_examined, :rows_returned,
-              :index_usage, :execution_plan, :optimization_suggestions]
-
-      change fn changeset, _context ->
-        execution_time = Ash.Changeset.get_attribute(changeset, :execution_time_ms)
-
-        changeset
-        |> Ash.Changeset.change_attribute(:avg_execution_time, execution_time)
-      end
-
-      upsert? true
-      upsert_identity :unique_query_hash
-      upsert_fields [:frequency, :avg_execution_time, :execution_time_ms, :updated_at]
-    end
-
-    update :update_stats do
-      description "Update query execution statistics"
-      accept [:frequency, :avg_execution_time, :execution_time_ms]
-      require_atomic? false
-
-      change fn changeset, _context ->
-        current_freq = Ash.Changeset.get_attribute(changeset, :frequency) || 1
-        current_avg = Ash.Changeset.get_attribute(changeset, :avg_execution_time)
-        new_execution_time = Ash.Changeset.get_attribute(changeset, :execution_time_ms)
-
-        new_freq = current_freq + 1
-        new_avg = if current_avg && new_execution_time do
-          total_time = Decimal.mult(current_avg, Decimal.new(current_freq))
-          new_total = Decimal.add(total_time, new_execution_time)
-          Decimal.div(new_total, Decimal.new(new_freq))
-        else
-          new_execution_time || current_avg
-        end
-
-        changeset
-        |> Ash.Changeset.change_attribute(:frequency, new_freq)
-        |> Ash.Changeset.change_attribute(:avg_execution_time, new_avg)
-      end
-    end
-
-    read :performance_analysis do
-      description "Analyze query performance patterns with sorting"
-    end
-
-    read :slow_queries do
-      description "Identify slow queries for optimization"
-    end
-
-    read :frequent_queries do
-      description "List frequently executed queries"
-    end
-  end
-
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    policy always() do
-      authorize_if always()
-    end
-  end
-
-  code_interface do
-    define :analyze_query
-    define :update_stats, args: [:execution_time_ms]
-    # TODO: Add performance_stats action before uncommenting
-    # define :performance_stats, action: :performance_stats
-    define :slow_queries
-    define :frequent_queries
-  end
-
   identities do
     identity :unique_query_hash, [:query_hash]
-  end
-
-  postgres do
-    table "thunderblock_query_optimizations"
-    repo Thunderline.Repo
-
-    custom_indexes do
-      index [:query_hash], unique: true, name: "query_optimizations_hash_idx"
-      index [:avg_execution_time], name: "query_optimizations_avg_time_idx"
-      index [:frequency], name: "query_optimizations_frequency_idx"
-      index "USING GIN (optimization_suggestions)", name: "query_optimizations_suggestions_idx"
-    end
   end
 end

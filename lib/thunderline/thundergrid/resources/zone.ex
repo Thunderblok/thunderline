@@ -12,12 +12,149 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "zones"
     repo Thunderline.Repo
+  end
+
+  actions do
+    defaults [:create, :read, :update, :destroy]
+
+    create :spawn_zone do
+      accept [:q, :r, :aspect, :entropy, :energy_level, :max_agents, :properties]
+
+      change set_attribute(:agent_count, 0)
+      change set_attribute(:is_active, true)
+    end
+
+    update :add_agent do
+      accept []
+      require_atomic? false
+
+      change increment(:agent_count)
+
+      validate fn changeset, _context ->
+        current_count = Ash.Changeset.get_attribute(changeset, :agent_count) || 0
+        max_agents = Ash.Changeset.get_attribute(changeset, :max_agents) || 10
+
+        if current_count >= max_agents do
+          {:error, "Zone at maximum agent capacity"}
+        else
+          :ok
+        end
+      end
+    end
+
+    update :remove_agent do
+      accept []
+      require_atomic? false
+
+      change fn changeset, _context ->
+        current_count = Ash.Changeset.get_attribute(changeset, :agent_count) || 0
+        new_count = max(0, current_count - 1)
+        Ash.Changeset.change_attribute(changeset, :agent_count, new_count)
+      end
+    end
+
+    update :adjust_entropy do
+      argument :delta, :decimal, allow_nil?: false
+      require_atomic? false
+
+      change fn changeset, context ->
+        current_entropy = Ash.Changeset.get_attribute(changeset, :entropy) || Decimal.new("0.0")
+        delta = context.arguments.delta
+        new_entropy = Decimal.add(current_entropy, delta)
+
+        clamped_entropy =
+          Decimal.max(Decimal.new("0.0"), Decimal.min(new_entropy, Decimal.new("1.0")))
+
+        Ash.Changeset.change_attribute(changeset, :entropy, clamped_entropy)
+      end
+    end
+
+    update :deactivate do
+      accept []
+      require_atomic? false
+      change set_attribute(:is_active, false)
+    end
+
+    update :activate do
+      accept []
+      require_atomic? false
+      change set_attribute(:is_active, true)
+    end
+
+    read :by_coordinates do
+      argument :q, :integer, allow_nil?: false
+      argument :r, :integer, allow_nil?: false
+
+      filter expr(q == ^arg(:q) and r == ^arg(:r))
+      get? true
+    end
+
+    read :by_aspect do
+      argument :aspect, :atom, allow_nil?: false
+      filter expr(aspect == ^arg(:aspect))
+    end
+
+    read :active_zones do
+      filter expr(is_active == true)
+    end
+
+    read :available_zones do
+      filter expr(is_active == true and agent_count < max_agents)
+      prepare build(sort: [agent_count: :asc, entropy: :asc])
+    end
+
+    read :high_entropy_zones do
+      filter expr(entropy >= 0.7)
+      prepare build(sort: [entropy: :desc])
+    end
+
+    read :in_radius do
+      argument :center_q, :integer, allow_nil?: false
+      argument :center_r, :integer, allow_nil?: false
+      argument :radius, :integer, allow_nil?: false, default: 1
+
+      # Hexagonal distance calculation: max(|q1-q2|, |r1-r2|, |q1+r1-q2-r2|)
+      filter expr(
+               max(
+                 abs(q - ^arg(:center_q)),
+                 abs(r - ^arg(:center_r)),
+                 abs(q + r - (^arg(:center_q) + ^arg(:center_r)))
+               ) <= ^arg(:radius)
+             )
+    end
+  end
+
+  preparations do
+    prepare build(load: [:agents])
+  end
+
+  validations do
+    validate present([:q, :r, :aspect])
+    validate numericality(:entropy, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
+    validate numericality(:energy_level, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
+    validate numericality(:agent_count, greater_than_or_equal_to: 0)
+    validate numericality(:max_agents, greater_than: 0)
+
+    # Ensure coordinates create valid hexagonal grid position
+    validate fn changeset, _context ->
+      q = Ash.Changeset.get_attribute(changeset, :q)
+      r = Ash.Changeset.get_attribute(changeset, :r)
+
+      if q && r do
+        # In axial coordinates, q + r + s = 0 (where s = -q - r)
+        # This is always true, but we validate reasonable bounds
+        if abs(q) > 1000 or abs(r) > 1000 do
+          {:error, "Zone coordinates must be within reasonable bounds (-1000 to 1000)"}
+        else
+          :ok
+        end
+      else
+        :ok
+      end
+    end
   end
 
   attributes do
@@ -97,118 +234,6 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
     end
   end
 
-  actions do
-    defaults [:create, :read, :update, :destroy]
-
-    create :spawn_zone do
-      accept [:q, :r, :aspect, :entropy, :energy_level, :max_agents, :properties]
-
-      change set_attribute(:agent_count, 0)
-      change set_attribute(:is_active, true)
-    end
-
-    update :add_agent do
-      accept []
-      require_atomic? false
-
-      change increment(:agent_count)
-
-      validate fn changeset, _context ->
-        current_count = Ash.Changeset.get_attribute(changeset, :agent_count) || 0
-        max_agents = Ash.Changeset.get_attribute(changeset, :max_agents) || 10
-
-        if current_count >= max_agents do
-          {:error, "Zone at maximum agent capacity"}
-        else
-          :ok
-        end
-      end
-    end
-
-    update :remove_agent do
-      accept []
-      require_atomic? false
-
-      change fn changeset, _context ->
-        current_count = Ash.Changeset.get_attribute(changeset, :agent_count) || 0
-        new_count = max(0, current_count - 1)
-        Ash.Changeset.change_attribute(changeset, :agent_count, new_count)
-      end
-    end
-
-    update :adjust_entropy do
-      argument :delta, :decimal, allow_nil?: false
-      require_atomic? false
-
-      change fn changeset, context ->
-        current_entropy = Ash.Changeset.get_attribute(changeset, :entropy) || Decimal.new("0.0")
-        delta = context.arguments.delta
-        new_entropy = Decimal.add(current_entropy, delta)
-        clamped_entropy = Decimal.max(Decimal.new("0.0"), Decimal.min(new_entropy, Decimal.new("1.0")))
-
-        Ash.Changeset.change_attribute(changeset, :entropy, clamped_entropy)
-      end
-    end
-
-    update :deactivate do
-      accept []
-      require_atomic? false
-      change set_attribute(:is_active, false)
-    end
-
-    update :activate do
-      accept []
-      require_atomic? false
-      change set_attribute(:is_active, true)
-    end
-
-    read :by_coordinates do
-      argument :q, :integer, allow_nil?: false
-      argument :r, :integer, allow_nil?: false
-
-      filter expr(q == ^arg(:q) and r == ^arg(:r))
-      get? true
-    end
-
-    read :by_aspect do
-      argument :aspect, :atom, allow_nil?: false
-      filter expr(aspect == ^arg(:aspect))
-    end
-
-    read :active_zones do
-      filter expr(is_active == true)
-    end
-
-    read :available_zones do
-      filter expr(is_active == true and agent_count < max_agents)
-      prepare build(sort: [agent_count: :asc, entropy: :asc])
-    end
-
-    read :high_entropy_zones do
-      filter expr(entropy >= 0.7)
-      prepare build(sort: [entropy: :desc])
-    end
-
-    read :in_radius do
-      argument :center_q, :integer, allow_nil?: false
-      argument :center_r, :integer, allow_nil?: false
-      argument :radius, :integer, allow_nil?: false, default: 1
-
-      # Hexagonal distance calculation: max(|q1-q2|, |r1-r2|, |q1+r1-q2-r2|)
-      filter expr(
-        max(
-          abs(q - ^arg(:center_q)),
-          abs(r - ^arg(:center_r)),
-          abs((q + r) - (^arg(:center_q) + ^arg(:center_r)))
-        ) <= ^arg(:radius)
-      )
-    end
-  end
-
-  preparations do
-    prepare build(load: [:agents])
-  end
-
   # TODO: Re-enable aggregates when agent relationships are properly established
   # aggregates do
   #   count :agent_count_agg, :agents
@@ -228,32 +253,6 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
 
     calculate :zone_stability, :decimal, expr(1.0 - entropy) do
       description "Zone stability (inverse of entropy)"
-    end
-  end
-
-  validations do
-    validate present([:q, :r, :aspect])
-    validate numericality(:entropy, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
-    validate numericality(:energy_level, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
-    validate numericality(:agent_count, greater_than_or_equal_to: 0)
-    validate numericality(:max_agents, greater_than: 0)
-
-    # Ensure coordinates create valid hexagonal grid position
-    validate fn changeset, _context ->
-      q = Ash.Changeset.get_attribute(changeset, :q)
-      r = Ash.Changeset.get_attribute(changeset, :r)
-
-      if q && r do
-        # In axial coordinates, q + r + s = 0 (where s = -q - r)
-        # This is always true, but we validate reasonable bounds
-        if abs(q) > 1000 or abs(r) > 1000 do
-          {:error, "Zone coordinates must be within reasonable bounds (-1000 to 1000)"}
-        else
-          :ok
-        end
-      else
-        :ok
-      end
     end
   end
 

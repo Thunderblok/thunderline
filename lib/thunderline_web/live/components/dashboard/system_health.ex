@@ -28,19 +28,33 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
         <div class="relative w-24 h-24">
           <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
             <%!-- Background circle --%>
-            <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8"
-                    fill="none" class="text-gray-700"/>
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="none"
+              class="text-gray-700"
+            />
             <%!-- Progress circle --%>
-            <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8"
-                    fill="none" class={cpu_color(@health[:cpu_usage])}
-                    stroke-dasharray={251.2}
-                    stroke-dashoffset={251.2 - (251.2 * (@health[:cpu_usage] || 0) / 100)}
-                    stroke-linecap="round"
-                    class="transition-all duration-1000"/>
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              stroke="currentColor"
+              stroke-width="8"
+              fill="none"
+              class={cpu_color(@health[:cpu_usage])}
+              stroke-dasharray={251.2}
+              stroke-dashoffset={251.2 - 251.2 * (@health[:cpu_usage] || 0) / 100}
+              stroke-linecap="round"
+              class="transition-all duration-1000"
+            />
           </svg>
           <div class="absolute inset-0 flex items-center justify-center">
             <div class="text-center">
-              <div class="text-lg font-bold text-white"><%= @health[:cpu_usage] || 0 %>%</div>
+              <div class="text-lg font-bold text-white">{@health[:cpu_usage] || 0}%</div>
               <div class="text-xs text-gray-400">CPU</div>
             </div>
           </div>
@@ -52,16 +66,20 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm text-gray-300">Memory</span>
           <span class="text-sm font-mono text-cyan-300">
-            <%= format_memory(@health[:memory_usage][:used]) %> /
-            <%= format_memory(@health[:memory_usage][:total]) %>
+            {format_memory(@health[:memory_usage][:used])} / {format_memory(
+              @health[:memory_usage][:total]
+            )}
           </span>
         </div>
         <div class="w-full bg-gray-700 rounded-full h-2">
-          <div class={[
-            "h-2 rounded-full transition-all duration-1000",
-            memory_color(@health[:memory_usage])
-          ]}
-          style={"width: #{memory_percentage(@health[:memory_usage])}%"}></div>
+          <div
+            class={[
+              "h-2 rounded-full transition-all duration-1000",
+              memory_color(@health[:memory_usage])
+            ]}
+            style={"width: #{memory_percentage(@health[:memory_usage])}%"}
+          >
+          </div>
         </div>
       </div>
 
@@ -75,7 +93,7 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
               <span class="text-xs text-gray-400">Read</span>
             </div>
             <div class="text-sm font-mono text-green-300">
-              <%= format_bandwidth(@health[:disk_io][:read]) %>
+              {format_bandwidth(@health[:disk_io][:read])}
             </div>
           </div>
           <div class="bg-black/20 rounded-lg p-3">
@@ -84,7 +102,7 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
               <span class="text-xs text-gray-400">Write</span>
             </div>
             <div class="text-sm font-mono text-orange-300">
-              <%= format_bandwidth(@health[:disk_io][:write]) %>
+              {format_bandwidth(@health[:disk_io][:write])}
             </div>
           </div>
         </div>
@@ -100,7 +118,7 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
               <span class="text-xs text-gray-400">In</span>
             </div>
             <div class="text-sm font-mono text-blue-300">
-              <%= format_bandwidth(@health[:network][:incoming]) %>
+              {format_bandwidth(@health[:network][:incoming])}
             </div>
           </div>
           <div class="bg-black/20 rounded-lg p-3">
@@ -109,7 +127,7 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
               <span class="text-xs text-gray-400">Out</span>
             </div>
             <div class="text-sm font-mono text-purple-300">
-              <%= format_bandwidth(@health[:network][:outgoing]) %>
+              {format_bandwidth(@health[:network][:outgoing])}
             </div>
           </div>
         </div>
@@ -120,15 +138,15 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
         <div class="grid grid-cols-2 gap-3 text-xs">
           <div>
             <span class="text-gray-400">Active:</span>
-            <span class="text-white font-mono ml-1"><%= @health[:processes][:active] %></span>
+            <span class="text-white font-mono ml-1">{@health[:processes][:active]}</span>
           </div>
           <div>
             <span class="text-gray-400">Total:</span>
-            <span class="text-white font-mono ml-1"><%= @health[:processes][:total] %></span>
+            <span class="text-white font-mono ml-1">{@health[:processes][:total]}</span>
           </div>
         </div>
         <div class="mt-2 text-xs text-gray-400">
-          Uptime: <%= format_uptime(@health[:uptime]) %>
+          Uptime: {format_uptime(@health[:uptime])}
         </div>
       </div>
     </div>
@@ -146,7 +164,7 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
       status_badge_class(@status)
     ]}>
       <div class={["w-2 h-2 rounded-full", status_dot_class(@status)]}></div>
-      <span><%= status_text(@status) %></span>
+      <span>{status_text(@status)}</span>
     </div>
     """
   end
@@ -159,7 +177,8 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
   defp cpu_color(_), do: "text-green-400"
 
   defp memory_color(%{used: used, total: total}) do
-    percentage = (used / total) * 100
+    percentage = used / total * 100
+
     cond do
       percentage > 90 -> "bg-red-400"
       percentage > 70 -> "bg-orange-400"
@@ -169,11 +188,15 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
   end
 
   defp memory_percentage(%{used: used, total: total}) do
-    ((used / total) * 100) |> Float.round(1)
+    (used / total * 100) |> Float.round(1)
   end
 
-  defp status_badge_class(:healthy), do: "bg-green-500/20 text-green-300 border border-green-500/30"
-  defp status_badge_class(:warning), do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+  defp status_badge_class(:healthy),
+    do: "bg-green-500/20 text-green-300 border border-green-500/30"
+
+  defp status_badge_class(:warning),
+    do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+
   defp status_badge_class(:error), do: "bg-red-500/20 text-red-300 border border-red-500/30"
   defp status_badge_class(_), do: "bg-gray-500/20 text-gray-300 border border-gray-500/30"
 
@@ -195,6 +218,7 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
       true -> "#{bytes}B"
     end
   end
+
   defp format_memory(_), do: "0B"
 
   defp format_bandwidth(bytes_per_sec) when is_integer(bytes_per_sec) do
@@ -204,6 +228,7 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
       true -> "#{bytes_per_sec}B/s"
     end
   end
+
   defp format_bandwidth(_), do: "0B/s"
 
   defp format_uptime(seconds) when is_integer(seconds) do
@@ -217,5 +242,6 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
       true -> "#{minutes}m"
     end
   end
+
   defp format_uptime(_), do: "0m"
 end

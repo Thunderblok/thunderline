@@ -25,9 +25,9 @@ defmodule SimpleNeuralTest do
 
     # Test neural architecture creation
     case ErlangBridge.create_neural_architecture(:test_cerebros, %{
-      max_levels: 3,
-      connectivity_density: 0.4
-    }) do
+           max_levels: 3,
+           connectivity_density: 0.4
+         }) do
       {:ok, arch_id} ->
         IO.puts("✅ Neural architecture created: #{inspect(arch_id)}")
 
@@ -42,10 +42,10 @@ defmodule SimpleNeuralTest do
 
     # Test neuron creation
     case ErlangBridge.create_neuron(:test_bolt, {5, 5, 5}, %{
-      threshold: 1.0,
-      type: :excitatory,
-      refractory_period: 2
-    }) do
+           threshold: 1.0,
+           type: :excitatory,
+           refractory_period: 2
+         }) do
       {:ok, neuron_id} ->
         IO.puts("✅ Neuron created: #{inspect(neuron_id)}")
         test_neuron_operations(neuron_id)
@@ -61,9 +61,9 @@ defmodule SimpleNeuralTest do
 
     # Test multi-scale hierarchy
     case ErlangBridge.create_scale_hierarchy(:test_bolt, %{
-      base_resolution: {16, 16, 8},
-      max_levels: 4
-    }) do
+           base_resolution: {16, 16, 8},
+           max_levels: 4
+         }) do
       {:ok, hierarchy_id} ->
         IO.puts("✅ Scale hierarchy created: #{inspect(hierarchy_id)}")
 
@@ -77,10 +77,15 @@ defmodule SimpleNeuralTest do
     IO.puts("\n📡 Testing Asynchronous Operations...")
 
     # Test asynchronous operations (these should always work)
-    result1 = ErlangBridge.propagate_neural_signal(:test_level, %{
-      signal_type: :activation,
-      intensity: 0.8
-    }, System.system_time(:millisecond))
+    result1 =
+      ErlangBridge.propagate_neural_signal(
+        :test_level,
+        %{
+          signal_type: :activation,
+          intensity: 0.8
+        },
+        System.system_time(:millisecond)
+      )
 
     result2 = ErlangBridge.fire_neuron(:test_neuron, 1.5)
     result3 = ErlangBridge.simulate_neural_step(:test_bolt)

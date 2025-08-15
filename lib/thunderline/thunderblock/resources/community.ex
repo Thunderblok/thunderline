@@ -17,46 +17,12 @@ defmodule Thunderblock.Resources.Community do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :community_id, :uuid do
-      description "Reference to the main community"
-      allow_nil? false
-    end
-
-    attribute :execution_zone_id, :uuid do
-      description "Associated execution zone"
-      allow_nil? true
-    end
-
-    attribute :resource_allocation, :map do
-      description "Resource allocation configuration"
-      default %{}
-    end
-
-    attribute :performance_metrics, :map do
-      description "Performance metrics for the community execution zone"
-      default %{}
-    end
-
-    attribute :status, :atom do
-      description "Community execution status"
-      constraints one_of: [:active, :inactive, :suspended, :provisioning, :error]
-      default :provisioning
-    end
-
-    attribute :created_at, :utc_datetime_usec do
-      description "Creation timestamp"
-      default &DateTime.utc_now/0
-      allow_nil? false
-    end
-
-    attribute :updated_at, :utc_datetime_usec do
-      description "Last update timestamp"
-      default &DateTime.utc_now/0
-      allow_nil? false
-    end
+  code_interface do
+    define :create, args: [:community_id, :initial_resources]
+    define :update, args: [:execution_zone_id, :resource_allocation, :status]
+    define :activate
+    define :suspend
+    define :destroy
   end
 
   actions do
@@ -115,12 +81,46 @@ defmodule Thunderblock.Resources.Community do
     end
   end
 
-  code_interface do
-    define :create, args: [:community_id, :initial_resources]
-    define :update, args: [:execution_zone_id, :resource_allocation, :status]
-    define :activate
-    define :suspend
-    define :destroy
+  attributes do
+    uuid_primary_key :id
+
+    attribute :community_id, :uuid do
+      description "Reference to the main community"
+      allow_nil? false
+    end
+
+    attribute :execution_zone_id, :uuid do
+      description "Associated execution zone"
+      allow_nil? true
+    end
+
+    attribute :resource_allocation, :map do
+      description "Resource allocation configuration"
+      default %{}
+    end
+
+    attribute :performance_metrics, :map do
+      description "Performance metrics for the community execution zone"
+      default %{}
+    end
+
+    attribute :status, :atom do
+      description "Community execution status"
+      constraints one_of: [:active, :inactive, :suspended, :provisioning, :error]
+      default :provisioning
+    end
+
+    attribute :created_at, :utc_datetime_usec do
+      description "Creation timestamp"
+      default &DateTime.utc_now/0
+      allow_nil? false
+    end
+
+    attribute :updated_at, :utc_datetime_usec do
+      description "Last update timestamp"
+      default &DateTime.utc_now/0
+      allow_nil? false
+    end
   end
 
   # Change implementations
@@ -140,24 +140,28 @@ defmodule Thunderblock.Resources.Community do
       zone_id = generate_zone_id()
 
       # Update community with zone information
-      updated_community = community
-      |> Ash.Changeset.for_update(:update, %{
+      updated_community =
+        community
+        |> Ash.Changeset.for_update(:update, %{
           execution_zone_id: zone_id,
           status: :active
         })
-      |> Ash.update!()
+        |> Ash.update!()
 
       Logger.info("Execution zone #{zone_id} provisioned for community #{community.community_id}")
 
       {:ok, updated_community}
     rescue
       error ->
-        Logger.error("Failed to provision execution zone for community #{community.community_id}: #{inspect(error)}")
+        Logger.error(
+          "Failed to provision execution zone for community #{community.community_id}: #{inspect(error)}"
+        )
 
         # Update status to error
-        error_community = community
-        |> Ash.Changeset.for_update(:update, %{status: :error})
-        |> Ash.update!()
+        error_community =
+          community
+          |> Ash.Changeset.for_update(:update, %{status: :error})
+          |> Ash.update!()
 
         {:ok, error_community}
     end
@@ -288,8 +292,8 @@ defmodule Thunderblock.Resources.Community do
 
         community
         |> Ash.Changeset.for_update(:update, %{
-            performance_metrics: updated_metrics
-          })
+          performance_metrics: updated_metrics
+        })
         |> Ash.update()
 
       nil ->

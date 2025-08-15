@@ -27,16 +27,17 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
       send(self(), :load_initial_data)
     end
 
-    {:ok, assign(socket,
-      lane_configurations: [],
-      consensus_runs: [],
-      performance_metrics: [],
-      telemetry_snapshots: [],
-      live_updates: true,
-      visualization_mode: :nested_hexagon,
-      loading: true,
-      error: nil
-    )}
+    {:ok,
+     assign(socket,
+       lane_configurations: [],
+       consensus_runs: [],
+       performance_metrics: [],
+       telemetry_snapshots: [],
+       live_updates: true,
+       visualization_mode: :nested_hexagon,
+       loading: true,
+       error: nil
+     )}
   end
 
   def handle_info(:load_initial_data, socket) do
@@ -47,20 +48,22 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
       performance = load_performance_metrics()
       telemetry = load_telemetry_snapshots()
 
-      {:noreply, assign(socket,
-        lane_configurations: lanes,
-        consensus_runs: consensus,
-        performance_metrics: performance,
-        telemetry_snapshots: telemetry,
-        loading: false,
-        error: nil
-      )}
+      {:noreply,
+       assign(socket,
+         lane_configurations: lanes,
+         consensus_runs: consensus,
+         performance_metrics: performance,
+         telemetry_snapshots: telemetry,
+         loading: false,
+         error: nil
+       )}
     rescue
       error ->
-        {:noreply, assign(socket,
-          loading: false,
-          error: "Failed to load dashboard data: #{inspect(error)}"
-        )}
+        {:noreply,
+         assign(socket,
+           loading: false,
+           error: "Failed to load dashboard data: #{inspect(error)}"
+         )}
     end
   end
 
@@ -105,35 +108,34 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
           <div class="error-overlay">
             <div class="error-container pulse-glow">
               <div class="error-icon">⚠️</div>
-              <div class="error-text"><%= @error %></div>
+              <div class="error-text">{@error}</div>
               <button phx-click="retry_load" class="retry-button">Retry</button>
             </div>
           </div>
         <% else %>
           <!-- Main Dashboard Container with Retro-Future Styling -->
           <div class="dashboard-container">
-
-        <!-- Nested Hexagonal Lane Visualization -->
-        <div class="panel hexagonal-lanes-panel">
-          <.hexagonal_lane_grid lanes={@lane_configurations} />
-        </div>
-
-        <!-- Radial Burst Consensus Visualization -->
-        <div class="panel radial-consensus-panel">
-          <.radial_consensus_burst runs={@consensus_runs} />
-        </div>
-
-        <!-- Flowing Performance Streams -->
-        <div class="panel performance-flow-panel">
-          <.performance_gradient_flow metrics={@performance_metrics} />
-        </div>
-
-        <!-- Multi-Layer Telemetry Visualization -->
-        <div class="panel telemetry-layers-panel">
-          <.telemetry_nested_layers snapshots={@telemetry_snapshots} />
-        </div>
-
-      </div>
+            
+    <!-- Nested Hexagonal Lane Visualization -->
+            <div class="panel hexagonal-lanes-panel">
+              <.hexagonal_lane_grid lanes={@lane_configurations} />
+            </div>
+            
+    <!-- Radial Burst Consensus Visualization -->
+            <div class="panel radial-consensus-panel">
+              <.radial_consensus_burst runs={@consensus_runs} />
+            </div>
+            
+    <!-- Flowing Performance Streams -->
+            <div class="panel performance-flow-panel">
+              <.performance_gradient_flow metrics={@performance_metrics} />
+            </div>
+            
+    <!-- Multi-Layer Telemetry Visualization -->
+            <div class="panel telemetry-layers-panel">
+              <.telemetry_nested_layers snapshots={@telemetry_snapshots} />
+            </div>
+          </div>
         <% end %>
       <% end %>
     </div>
@@ -337,34 +339,37 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
       <div class="hexagon-layers">
         <!-- Outer hexagonal boundary -->
         <div class="hexagon-layer outer-boundary"></div>
-
-        <!-- Lane family rings -->
-        <div :for={{layer_index, lanes} <- Enum.with_index(group_lanes_by_family(@lanes))}
-             class={"hexagon-layer lane-family-#{layer_index}"}>
-
-          <div :for={lane <- lanes}
-               class={"lane-node #{lane_status_class(lane)} #{lane_type_class(lane)}"}
-               title={"Lane #{lane.id}: #{lane.name} (#{lane.state})"}>
+        
+    <!-- Lane family rings -->
+        <div
+          :for={{layer_index, lanes} <- Enum.with_index(group_lanes_by_family(@lanes))}
+          class={"hexagon-layer lane-family-#{layer_index}"}
+        >
+          <div
+            :for={lane <- lanes}
+            class={"lane-node #{lane_status_class(lane)} #{lane_type_class(lane)}"}
+            title={"Lane #{lane.id}: #{lane.name} (#{lane.state})"}
+          >
             <div class="lane-inner-glow"></div>
-            <span class="lane-label"><%= String.slice(lane.name, 0, 3) %></span>
+            <span class="lane-label">{String.slice(lane.name, 0, 3)}</span>
           </div>
         </div>
-
-        <!-- Central coordination hub -->
+        
+    <!-- Central coordination hub -->
         <div class="coordination-hub pulse-glow">
           <div class="hub-center"></div>
           <div class="hub-label">CORE</div>
         </div>
       </div>
-
-      <!-- Lane statistics overlay -->
+      
+    <!-- Lane statistics overlay -->
       <div class="lane-stats">
         <div class="stat-item">
-          <span class="stat-value"><%= Enum.count(@lanes, &(&1.state == :active)) %></span>
+          <span class="stat-value">{Enum.count(@lanes, &(&1.state == :active))}</span>
           <span class="stat-label">Active Lanes</span>
         </div>
         <div class="stat-item">
-          <span class="stat-value"><%= calculate_total_coupling(@lanes) |> Float.round(2) %></span>
+          <span class="stat-value">{calculate_total_coupling(@lanes) |> Float.round(2)}</span>
           <span class="stat-label">α-Coupling</span>
         </div>
       </div>
@@ -518,12 +523,13 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
         <div class="consensus-center">
           <div class="center-core pulse-glow"></div>
         </div>
-
-        <!-- Radial consensus streams -->
-        <div :for={{index, run} <- Enum.with_index(@runs)}
-             class={"consensus-ray ray-#{rem(index, 8)} rotate-burst"}
-             style={"--delay: #{index * 0.2}s"}>
-
+        
+    <!-- Radial consensus streams -->
+        <div
+          :for={{index, run} <- Enum.with_index(@runs)}
+          class={"consensus-ray ray-#{rem(index, 8)} rotate-burst"}
+          style={"--delay: #{index * 0.2}s"}
+        >
           <div class={"ray-segment segment-1 #{consensus_intensity_class(run)}"}>
             <div class="ray-glow"></div>
           </div>
@@ -534,24 +540,26 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
             <div class="ray-glow"></div>
           </div>
         </div>
-
-        <!-- Orbital consensus indicators -->
+        
+    <!-- Orbital consensus indicators -->
         <div class="consensus-orbits">
-          <div :for={run <- @runs}
-               class={"orbital-indicator #{consensus_status_class(run)}"}
-               title={"Matrix #{run.matrix_size}x#{run.matrix_size} - #{run.status}"}>
+          <div
+            :for={run <- @runs}
+            class={"orbital-indicator #{consensus_status_class(run)}"}
+            title={"Matrix #{run.matrix_size}x#{run.matrix_size} - #{run.status}"}
+          >
           </div>
         </div>
       </div>
-
-      <!-- Consensus metrics -->
+      
+    <!-- Consensus metrics -->
       <div class="consensus-metrics">
         <div class="metric-bar">
           <span class="metric-label">Success Rate</span>
           <div class="metric-progress">
             <div class="progress-fill" style={"width: #{calculate_success_rate(@runs)}%"}></div>
           </div>
-          <span class="metric-value"><%= calculate_success_rate(@runs) %>%</span>
+          <span class="metric-value">{calculate_success_rate(@runs)}%</span>
         </div>
       </div>
     </div>
@@ -697,25 +705,28 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
 
       <div class="flow-visualization">
         <!-- Flowing performance streams -->
-        <div :for={{scale, metrics} <- group_metrics_by_scale(@metrics)}
-             class={"performance-stream #{scale}-scale flow-gradient"}>
-
+        <div
+          :for={{scale, metrics} <- group_metrics_by_scale(@metrics)}
+          class={"performance-stream #{scale}-scale flow-gradient"}
+        >
           <div class="stream-path">
             <div class="flow-segments">
-              <div :for={metric <- Enum.take(metrics, 5)}
-                   class={"flow-segment #{performance_intensity_class(metric.value)}"}
-                   style={"--flow-delay: #{metric.step_number * 0.1}s"}>
+              <div
+                :for={metric <- Enum.take(metrics, 5)}
+                class={"flow-segment #{performance_intensity_class(metric.value)}"}
+                style={"--flow-delay: #{metric.step_number * 0.1}s"}
+              >
               </div>
             </div>
           </div>
 
           <div class="stream-label">
-            <span class="scale-name"><%= String.upcase(to_string(scale)) %></span>
-            <span class="scale-value"><%= calculate_avg_performance(metrics) |> Float.round(3) %></span>
+            <span class="scale-name">{String.upcase(to_string(scale))}</span>
+            <span class="scale-value">{calculate_avg_performance(metrics) |> Float.round(3)}</span>
           </div>
         </div>
-
-        <!-- Central performance nexus -->
+        
+    <!-- Central performance nexus -->
         <div class="performance-nexus">
           <div class="nexus-core pulse-glow"></div>
           <div class="performance-rings">
@@ -890,36 +901,39 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
 
       <div class="nested-layers-viz">
         <!-- Multi-layer nested structure -->
-        <div :for={{layer_index, snapshots} <- Enum.with_index(group_snapshots_by_type(@snapshots))}
-             class={"telemetry-layer layer-#{layer_index} pulse-glow"}
-             style={"--layer-delay: #{layer_index * 0.3}s"}>
-
+        <div
+          :for={{layer_index, snapshots} <- Enum.with_index(group_snapshots_by_type(@snapshots))}
+          class={"telemetry-layer layer-#{layer_index} pulse-glow"}
+          style={"--layer-delay: #{layer_index * 0.3}s"}
+        >
           <div class="layer-border"></div>
           <div class="layer-content">
             <div class="layer-metrics">
-              <span class="metric-count"><%= Enum.count(snapshots) %></span>
-              <span class="metric-type"><%= get_snapshot_type_name(layer_index) %></span>
+              <span class="metric-count">{Enum.count(snapshots)}</span>
+              <span class="metric-type">{get_snapshot_type_name(layer_index)}</span>
             </div>
           </div>
         </div>
-
-        <!-- Central telemetry core -->
+        
+    <!-- Central telemetry core -->
         <div class="telemetry-core">
           <div class="core-pulse pulse-glow"></div>
           <div class="core-stats">
             <div class="stat-line">
-              <span class="stat-value"><%= calculate_total_events(@snapshots) %></span>
+              <span class="stat-value">{calculate_total_events(@snapshots)}</span>
               <span class="stat-unit">events/sec</span>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Real-time telemetry stream -->
+      
+    <!-- Real-time telemetry stream -->
       <div class="telemetry-stream">
-        <div :for={snapshot <- Enum.take(@snapshots, 10)}
-             class={"stream-dot #{snapshot_priority_class(snapshot)}"}
-             style={"--stream-delay: #{snapshot.window_start_ms * 0.001}s"}>
+        <div
+          :for={snapshot <- Enum.take(@snapshots, 10)}
+          class={"stream-dot #{snapshot_priority_class(snapshot)}"}
+          style={"--stream-delay: #{snapshot.window_start_ms * 0.001}s"}
+        >
         </div>
       </div>
     </div>
@@ -1124,7 +1138,7 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
   end
 
   defp calculate_success_rate(runs) do
-    successful = Enum.count(runs, & &1.success == true)
+    successful = Enum.count(runs, &(&1.success == true))
     total = Enum.count(runs)
     if total > 0, do: (successful / total * 100) |> round(), else: 0
   end
@@ -1165,6 +1179,7 @@ defmodule ThunderlineWeb.Live.Components.ThunderlaneDashboard do
 
   defp add_performance_metric(metrics, new_metric) do
     # Add new performance metric to the list
-    [new_metric | metrics] |> Enum.take(100)  # Keep last 100 metrics
+    # Keep last 100 metrics
+    [new_metric | metrics] |> Enum.take(100)
   end
 end

@@ -11,125 +11,21 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: :embedded,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource]
-  import Ash.Resource.Change.Builtins
-  import Ash.Resource.Change.Builtins
 
+  import Ash.Resource.Change.Builtins
+  import Ash.Resource.Change.Builtins
 
   json_api do
     type "orchestration_event"
 
     routes do
-      base "/orchestration-events"
-      get :read
+      base("/orchestration-events")
+      get(:read)
       index :read
-      post :create
+      post(:create)
       get :timeline, route: "/timeline"
       get :audit_trail, route: "/audit/:chunk_id"
     end
-  end
-
-  attributes do
-    uuid_primary_key :id
-
-    # Event identification
-    attribute :event_type, :atom, constraints: [
-      one_of: [
-        :chunk_created, :chunk_destroyed, :chunk_activated, :chunk_optimized,
-        :activation_rule_triggered, :activation_rule_trained, :resource_allocated,
-        :resource_rebalanced, :resource_scaled, :health_check_performed,
-        :health_degraded, :health_recovered, :remediation_triggered,
-        :ml_prediction_made, :optimization_completed, :error_occurred,
-        :system_event, :user_action, :external_trigger
-      ]
-    ], allow_nil?: false
-
-    attribute :event_category, :atom, constraints: [
-      one_of: [:lifecycle, :performance, :health, :scaling, :ml_ai, :error, :audit]
-    ], default: :lifecycle
-
-    attribute :severity, :atom, constraints: [
-      one_of: [:debug, :info, :warning, :error, :critical]
-    ], default: :info
-
-    # Event content
-    attribute :title, :string, allow_nil?: false
-    attribute :description, :string
-    attribute :event_data, :map, default: %{}
-    attribute :context_data, :map, default: %{}
-
-    # Performance and metrics
-    attribute :duration_ms, :integer
-    attribute :resource_impact, :map, default: %{}
-    attribute :performance_metrics, :map, default: %{}
-
-    # Tracing and correlation
-    attribute :correlation_id, :string
-    attribute :trace_id, :string
-    attribute :parent_event_id, :uuid
-    attribute :session_id, :string
-
-    # System context
-    attribute :cluster_node, :string, default: "localhost"
-    attribute :system_version, :string
-    attribute :triggered_by, :string  # user_id, system, external_api, etc.
-
-    # Result and outcome
-    attribute :status, :atom, constraints: [
-      one_of: [:pending, :in_progress, :completed, :failed, :cancelled]
-    ], default: :completed
-
-    attribute :result_data, :map, default: %{}
-    attribute :error_details, :map, default: %{}
-
-    # Foreign keys for relationships
-    attribute :chunk_id, :uuid
-    attribute :activation_rule_id, :uuid
-    attribute :resource_allocation_id, :uuid
-
-    timestamps()
-  end
-
-  relationships do
-  belongs_to :chunk, Thunderline.Thunderbolt.Resources.Chunk do
-      attribute_writable? true
-    end
-
-  belongs_to :activation_rule, Thunderline.Thunderbolt.Resources.ActivationRule do
-      attribute_writable? true
-    end
-
-  belongs_to :resource_allocation, Thunderline.Thunderbolt.Resources.ResourceAllocation do
-      attribute_writable? true
-    end
-
-    # Self-referential for event hierarchies
-    belongs_to :parent_event, __MODULE__ do
-      source_attribute :parent_event_id
-      destination_attribute :id
-    end
-
-    has_many :child_events, __MODULE__ do
-      source_attribute :id
-      destination_attribute :parent_event_id
-    end
-  end
-
-  calculations do
-    calculate :event_age_hours, :decimal, expr(
-      datetime_diff(now(), inserted_at, :hour)
-    )
-
-    calculate :is_error_event, :boolean, expr(
-      severity in [:error, :critical] or status == :failed
-    )
-
-    calculate :has_performance_impact, :boolean, expr(
-      not is_nil(duration_ms) and duration_ms > 1000
-    )
-
-    calculate :event_summary, :string, expr(
-      "#{event_type}: #{title} (#{status})"
-    )
   end
 
   actions do
@@ -137,10 +33,21 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
 
     create :log_event do
       accept [
-        :event_type, :event_category, :severity, :title, :description,
-        :event_data, :context_data, :duration_ms, :resource_impact,
-        :performance_metrics, :correlation_id, :trace_id, :triggered_by,
-        :status, :result_data
+        :event_type,
+        :event_category,
+        :severity,
+        :title,
+        :description,
+        :event_data,
+        :context_data,
+        :duration_ms,
+        :resource_impact,
+        :performance_metrics,
+        :correlation_id,
+        :trace_id,
+        :triggered_by,
+        :status,
+        :result_data
       ]
 
       change before_action(&generate_trace_ids/1)
@@ -149,8 +56,14 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
 
     create :log_chunk_event do
       accept [
-        :event_type, :event_category, :severity, :title, :description,
-        :event_data, :context_data, :chunk_id
+        :event_type,
+        :event_category,
+        :severity,
+        :title,
+        :description,
+        :event_data,
+        :context_data,
+        :chunk_id
       ]
 
       change before_action(&enrich_chunk_context/1)
@@ -159,8 +72,13 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
 
     create :log_error_event do
       accept [
-        :title, :description, :event_data, :error_details, :chunk_id,
-        :correlation_id, :trace_id
+        :title,
+        :description,
+        :event_data,
+        :error_details,
+        :chunk_id,
+        :correlation_id,
+        :trace_id
       ]
 
       change set_attribute(:event_type, :error_occurred)
@@ -232,6 +150,130 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
     end
   end
 
+  attributes do
+    uuid_primary_key :id
+
+    # Event identification
+    attribute :event_type, :atom,
+      constraints: [
+        one_of: [
+          :chunk_created,
+          :chunk_destroyed,
+          :chunk_activated,
+          :chunk_optimized,
+          :activation_rule_triggered,
+          :activation_rule_trained,
+          :resource_allocated,
+          :resource_rebalanced,
+          :resource_scaled,
+          :health_check_performed,
+          :health_degraded,
+          :health_recovered,
+          :remediation_triggered,
+          :ml_prediction_made,
+          :optimization_completed,
+          :error_occurred,
+          :system_event,
+          :user_action,
+          :external_trigger
+        ]
+      ],
+      allow_nil?: false
+
+    attribute :event_category, :atom,
+      constraints: [
+        one_of: [:lifecycle, :performance, :health, :scaling, :ml_ai, :error, :audit]
+      ],
+      default: :lifecycle
+
+    attribute :severity, :atom,
+      constraints: [
+        one_of: [:debug, :info, :warning, :error, :critical]
+      ],
+      default: :info
+
+    # Event content
+    attribute :title, :string, allow_nil?: false
+    attribute :description, :string
+    attribute :event_data, :map, default: %{}
+    attribute :context_data, :map, default: %{}
+
+    # Performance and metrics
+    attribute :duration_ms, :integer
+    attribute :resource_impact, :map, default: %{}
+    attribute :performance_metrics, :map, default: %{}
+
+    # Tracing and correlation
+    attribute :correlation_id, :string
+    attribute :trace_id, :string
+    attribute :parent_event_id, :uuid
+    attribute :session_id, :string
+
+    # System context
+    attribute :cluster_node, :string, default: "localhost"
+    attribute :system_version, :string
+
+    # user_id, system, external_api, etc.
+
+    attribute :triggered_by, :string
+
+    # Result and outcome
+    attribute :status, :atom,
+      constraints: [
+        one_of: [:pending, :in_progress, :completed, :failed, :cancelled]
+      ],
+      default: :completed
+
+    attribute :result_data, :map, default: %{}
+    attribute :error_details, :map, default: %{}
+
+    # Foreign keys for relationships
+    attribute :chunk_id, :uuid
+    attribute :activation_rule_id, :uuid
+    attribute :resource_allocation_id, :uuid
+
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :chunk, Thunderline.Thunderbolt.Resources.Chunk do
+      attribute_writable? true
+    end
+
+    belongs_to :activation_rule, Thunderline.Thunderbolt.Resources.ActivationRule do
+      attribute_writable? true
+    end
+
+    belongs_to :resource_allocation, Thunderline.Thunderbolt.Resources.ResourceAllocation do
+      attribute_writable? true
+    end
+
+    # Self-referential for event hierarchies
+    belongs_to :parent_event, __MODULE__ do
+      source_attribute :parent_event_id
+      destination_attribute :id
+    end
+
+    has_many :child_events, __MODULE__ do
+      source_attribute :id
+      destination_attribute :parent_event_id
+    end
+  end
+
+  calculations do
+    calculate :event_age_hours, :decimal, expr(datetime_diff(now(), inserted_at, :hour))
+
+    calculate :is_error_event,
+              :boolean,
+              expr(severity in [:error, :critical] or status == :failed)
+
+    calculate :has_performance_impact,
+              :boolean,
+              expr(not is_nil(duration_ms) and duration_ms > 1000)
+
+    calculate :event_summary, :string, expr("#{event_type}: #{title} (#{status})")
+  end
+
   # TODO: Configure pub_sub when proper extension is available
   # pub_sub do
   #   publish :event_logged, ["thunderbolt:events:logged", :event_type]
@@ -245,10 +287,13 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
   # Private action implementations
   defp generate_trace_ids(changeset) do
     # Generate correlation and trace IDs if not provided
-    correlation_id = Ash.Changeset.get_attribute(changeset, :correlation_id) ||
-                    Ecto.UUID.generate()
-    trace_id = Ash.Changeset.get_attribute(changeset, :trace_id) ||
-               Ecto.UUID.generate()
+    correlation_id =
+      Ash.Changeset.get_attribute(changeset, :correlation_id) ||
+        Ecto.UUID.generate()
+
+    trace_id =
+      Ash.Changeset.get_attribute(changeset, :trace_id) ||
+        Ecto.UUID.generate()
 
     changeset
     |> Ash.Changeset.change_attribute(:correlation_id, correlation_id)
@@ -291,6 +336,7 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
       "thunderbolt:alerts:error",
       {:error_event, event}
     )
+
     {:ok, event}
   end
 
@@ -313,6 +359,7 @@ defmodule Thunderline.Thunderbolt.Resources.OrchestrationEvent do
       "thunderbolt:events:completed",
       {:event_completed, event}
     )
+
     {:ok, event}
   end
 end

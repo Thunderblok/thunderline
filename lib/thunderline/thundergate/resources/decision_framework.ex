@@ -13,52 +13,9 @@ defmodule Thunderline.Thundergate.Resources.DecisionFramework do
 
   import Ash.Resource.Change.Builtins
 
-
-
   postgres do
     table "decision_frameworks"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-
-    attribute :name, :string do
-      allow_nil? false
-      constraints [max_length: 200]
-      description "Framework name"
-    end
-
-    attribute :description, :string do
-      description "Detailed description of the decision framework"
-    end
-
-    attribute :framework_type, :atom do
-      allow_nil? false
-      constraints [one_of: [:rule_based, :weighted_scoring, :threshold, :consensus]]
-      description "Type of decision framework"
-    end
-
-    attribute :configuration, :map do
-      default %{}
-      description "Framework-specific configuration parameters"
-    end
-
-    attribute :active, :boolean do
-      default true
-      description "Whether this framework is currently active"
-    end
-
-    attribute :version, :string do
-      default "1.0.0"
-      description "Framework version for evolution tracking"
-    end
-
-    timestamps()
-  end
-
-  relationships do
-    # Future: Add relationships as needed
   end
 
   actions do
@@ -90,20 +47,10 @@ defmodule Thunderline.Thundergate.Resources.DecisionFramework do
     end
   end
 
-  calculations do
-    # Future: Add calculations as needed
-  end
-
   policies do
     # Simple policy - allow all for now, can be refined later
     policy always() do
       authorize_if always()
-    end
-  end
-
-  identities do
-    identity :unique_name, [:name] do
-      description "Framework names must be unique"
     end
   end
 
@@ -114,6 +61,57 @@ defmodule Thunderline.Thundergate.Resources.DecisionFramework do
 
     validate match(:version, ~r/^\d+\.\d+\.\d+$/) do
       message "Version must follow semantic versioning (e.g., 1.0.0)"
+    end
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      constraints max_length: 200
+      description "Framework name"
+    end
+
+    attribute :description, :string do
+      description "Detailed description of the decision framework"
+    end
+
+    attribute :framework_type, :atom do
+      allow_nil? false
+      constraints one_of: [:rule_based, :weighted_scoring, :threshold, :consensus]
+      description "Type of decision framework"
+    end
+
+    attribute :configuration, :map do
+      default %{}
+      description "Framework-specific configuration parameters"
+    end
+
+    attribute :active, :boolean do
+      default true
+      description "Whether this framework is currently active"
+    end
+
+    attribute :version, :string do
+      default "1.0.0"
+      description "Framework version for evolution tracking"
+    end
+
+    timestamps()
+  end
+
+  relationships do
+    # Future: Add relationships as needed
+  end
+
+  calculations do
+    # Future: Add calculations as needed
+  end
+
+  identities do
+    identity :unique_name, [:name] do
+      description "Framework names must be unique"
     end
   end
 end

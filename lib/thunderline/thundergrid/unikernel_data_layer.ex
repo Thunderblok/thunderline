@@ -118,14 +118,16 @@ defmodule Thundergrid.UnikernelDataLayer do
       size: Map.get(unikernel_data, :chunk_size, %{x: 64, y: 64, z: 64}),
       tick_rate: Map.get(unikernel_data, :tick_rate, 60),
       active: Map.get(unikernel_data, :is_active, false),
-      voxel_count: calculate_voxel_count(Map.get(unikernel_data, :chunk_size, %{x: 64, y: 64, z: 64})),
+      voxel_count:
+        calculate_voxel_count(Map.get(unikernel_data, :chunk_size, %{x: 64, y: 64, z: 64})),
       active_voxels: Map.get(unikernel_data, :active_voxel_count, 0),
-      ca_rules: Map.get(unikernel_data, :ca_rules, %{
-        birth_rules: [3],
-        survival_rules: [2, 3],
-        neighborhood: :moore,
-        boundary_conditions: :periodic
-      }),
+      ca_rules:
+        Map.get(unikernel_data, :ca_rules, %{
+          birth_rules: [3],
+          survival_rules: [2, 3],
+          neighborhood: :moore,
+          boundary_conditions: :periodic
+        }),
       performance_metrics: Map.get(unikernel_data, :performance_metrics, %{}),
       last_tick: Map.get(unikernel_data, :current_tick, 0),
       state_snapshot: Map.get(unikernel_data, :voxel_grid_compressed),
@@ -141,7 +143,8 @@ defmodule Thundergrid.UnikernelDataLayer do
       size: %{x: 64, y: 64, z: 64},
       tick_rate: 60,
       active: false,
-      voxel_count: 262_144, # 64^3
+      # 64^3
+      voxel_count: 262_144,
       active_voxels: 0,
       ca_rules: %{
         birth_rules: [3],
@@ -157,7 +160,8 @@ defmodule Thundergrid.UnikernelDataLayer do
     }
   end
 
-  defp calculate_voxel_count(%{x: x, y: y, z: z}) when is_integer(x) and is_integer(y) and is_integer(z) do
+  defp calculate_voxel_count(%{x: x, y: y, z: z})
+       when is_integer(x) and is_integer(y) and is_integer(z) do
     x * y * z
   end
 

@@ -12,6 +12,154 @@ defmodule Thunderline.Thundergrid.Resources.ChunkState do
 
   alias Thunderline.Thunderlane
 
+  actions do
+    defaults [:read]
+
+    create :spawn_chunk do
+      description "Spawn a new CA chunk in the unikernel"
+
+      argument :size, :map do
+        allow_nil? false
+        description "Chunk size {x, y, z}"
+      end
+
+      argument :ca_rules, :map do
+        description "Initial CA rule configuration"
+      end
+
+      change fn changeset, _context ->
+        size = Ash.Changeset.get_argument(changeset, :size)
+        ca_rules = Ash.Changeset.get_argument(changeset, :ca_rules)
+
+        # Generate unique chunk ID
+        chunk_id = "chunk_#{System.unique_integer([:positive])}"
+
+        # Calculate voxel count
+        voxel_count = size.x * size.y * size.z
+
+        changeset
+        |> Ash.Changeset.change_attribute(:chunk_id, chunk_id)
+        |> Ash.Changeset.change_attribute(:size, size)
+        |> Ash.Changeset.change_attribute(:voxel_count, voxel_count)
+        |> Ash.Changeset.change_attribute(
+          :ca_rules,
+          ca_rules ||
+            %{
+              birth_rules: [3],
+              survival_rules: [2, 3],
+              neighborhood: :moore,
+              boundary_conditions: :periodic
+            }
+        )
+      end
+
+      change after_action(fn changeset, chunk_state, _context ->
+               # Spawn chunk in unikernel via Thunderlane
+               size_tuple = {chunk_state.size.x, chunk_state.size.y, chunk_state.size.z}
+
+               case Thunderlane.spawn_chunk(size_tuple) do
+                 {:ok, _unikernel_response} ->
+                   # Set CA rules
+                   Thunderlane.set_ca_rules(chunk_state.chunk_id, chunk_state.ca_rules)
+                   {:ok, chunk_state}
+
+                 {:error, reason} ->
+                   {:error, "Failed to spawn chunk in unikernel: #{inspect(reason)}"}
+               end
+             end)
+    end
+
+    update :set_ca_rules do
+      description "Update cellular automata rules for the chunk"
+      require_atomic? false
+
+      argument :ca_rules, :map do
+        allow_nil? false
+        description "New CA rule configuration"
+      end
+
+      change fn changeset, _context ->
+        ca_rules = Ash.Changeset.get_argument(changeset, :ca_rules)
+        Ash.Changeset.change_attribute(changeset, :ca_rules, ca_rules)
+      end
+
+      change after_action(fn changeset, chunk_state, _context ->
+               # Update rules in unikernel
+               case Thunderlane.set_ca_rules(chunk_state.chunk_id, chunk_state.ca_rules) do
+                 {:ok, _} ->
+                   {:ok, chunk_state}
+
+                 {:error, reason} ->
+                   {:error, "Failed to update CA rules: #{inspect(reason)}"}
+               end
+             end)
+    end
+
+    update :start_computation do
+      description "Start tick generation for the chunk"
+      require_atomic? false
+
+      argument :tick_rate, :integer do
+        description "Ticks per second"
+        default 60
+      end
+
+      change fn changeset, _context ->
+        tick_rate = Ash.Changeset.get_argument(changeset, :tick_rate)
+
+        changeset
+        |> Ash.Changeset.change_attribute(:tick_rate, tick_rate)
+        |> Ash.Changeset.change_attribute(:active, true)
+      end
+
+      change after_action(fn changeset, chunk_state, _context ->
+               case Thunderlane.start_tick_generation(chunk_state.chunk_id, chunk_state.tick_rate) do
+                 {:ok, _} ->
+                   {:ok, chunk_state}
+
+                 {:error, reason} ->
+                   {:error, "Failed to start computation: #{inspect(reason)}"}
+               end
+             end)
+    end
+
+    update :stop_computation do
+      description "Stop tick generation for the chunk"
+      require_atomic? false
+
+      change fn changeset, _context ->
+        Ash.Changeset.change_attribute(changeset, :active, false)
+      end
+
+      change after_action(fn changeset, chunk_state, _context ->
+               case Thunderlane.stop_tick_generation(chunk_state.chunk_id) do
+                 {:ok, _} ->
+                   {:ok, chunk_state}
+
+                 {:error, reason} ->
+                   {:error, "Failed to stop computation: #{inspect(reason)}"}
+               end
+             end)
+    end
+
+    read :get_realtime_state do
+      description "Get real-time state from unikernel"
+
+      get? true
+
+      filter expr(chunk_id == ^arg(:chunk_id))
+
+      argument :chunk_id, :string do
+        allow_nil? false
+      end
+
+      prepare fn query, _context ->
+        # This will trigger the custom data layer to fetch from unikernel
+        query
+      end
+    end
+  end
+
   attributes do
     uuid_v7_primary_key :id
 
@@ -53,6 +201,7 @@ defmodule Thunderline.Thundergrid.Resources.ChunkState do
     attribute :ca_rules, :map do
       allow_nil? false
       description "Cellular automata rule configuration"
+
       default %{
         birth_rules: [3],
         survival_rules: [2, 3],
@@ -78,150 +227,6 @@ defmodule Thunderline.Thundergrid.Resources.ChunkState do
     timestamps()
   end
 
-  actions do
-    defaults [:read]
-
-    create :spawn_chunk do
-      description "Spawn a new CA chunk in the unikernel"
-
-      argument :size, :map do
-        allow_nil? false
-        description "Chunk size {x, y, z}"
-      end
-
-      argument :ca_rules, :map do
-        description "Initial CA rule configuration"
-      end
-
-      change fn changeset, _context ->
-        size = Ash.Changeset.get_argument(changeset, :size)
-        ca_rules = Ash.Changeset.get_argument(changeset, :ca_rules)
-
-        # Generate unique chunk ID
-        chunk_id = "chunk_#{System.unique_integer([:positive])}"
-
-        # Calculate voxel count
-        voxel_count = size.x * size.y * size.z
-
-        changeset
-        |> Ash.Changeset.change_attribute(:chunk_id, chunk_id)
-        |> Ash.Changeset.change_attribute(:size, size)
-        |> Ash.Changeset.change_attribute(:voxel_count, voxel_count)
-        |> Ash.Changeset.change_attribute(:ca_rules, ca_rules || %{
-          birth_rules: [3],
-          survival_rules: [2, 3],
-          neighborhood: :moore,
-          boundary_conditions: :periodic
-        })
-      end
-
-      change after_action(fn changeset, chunk_state, _context ->
-        # Spawn chunk in unikernel via Thunderlane
-        size_tuple = {chunk_state.size.x, chunk_state.size.y, chunk_state.size.z}
-
-        case Thunderlane.spawn_chunk(size_tuple) do
-          {:ok, _unikernel_response} ->
-            # Set CA rules
-            Thunderlane.set_ca_rules(chunk_state.chunk_id, chunk_state.ca_rules)
-            {:ok, chunk_state}
-
-          {:error, reason} ->
-            {:error, "Failed to spawn chunk in unikernel: #{inspect(reason)}"}
-        end
-      end)
-    end
-
-    update :set_ca_rules do
-      description "Update cellular automata rules for the chunk"
-      require_atomic? false
-
-      argument :ca_rules, :map do
-        allow_nil? false
-        description "New CA rule configuration"
-      end
-
-      change fn changeset, _context ->
-        ca_rules = Ash.Changeset.get_argument(changeset, :ca_rules)
-        Ash.Changeset.change_attribute(changeset, :ca_rules, ca_rules)
-      end
-
-      change after_action(fn changeset, chunk_state, _context ->
-        # Update rules in unikernel
-        case Thunderlane.set_ca_rules(chunk_state.chunk_id, chunk_state.ca_rules) do
-          {:ok, _} ->
-            {:ok, chunk_state}
-
-          {:error, reason} ->
-            {:error, "Failed to update CA rules: #{inspect(reason)}"}
-        end
-      end)
-    end
-
-    update :start_computation do
-      description "Start tick generation for the chunk"
-      require_atomic? false
-
-      argument :tick_rate, :integer do
-        description "Ticks per second"
-        default 60
-      end
-
-      change fn changeset, _context ->
-        tick_rate = Ash.Changeset.get_argument(changeset, :tick_rate)
-
-        changeset
-        |> Ash.Changeset.change_attribute(:tick_rate, tick_rate)
-        |> Ash.Changeset.change_attribute(:active, true)
-      end
-
-      change after_action(fn changeset, chunk_state, _context ->
-        case Thunderlane.start_tick_generation(chunk_state.chunk_id, chunk_state.tick_rate) do
-          {:ok, _} ->
-            {:ok, chunk_state}
-
-          {:error, reason} ->
-            {:error, "Failed to start computation: #{inspect(reason)}"}
-        end
-      end)
-    end
-
-    update :stop_computation do
-      description "Stop tick generation for the chunk"
-      require_atomic? false
-
-      change fn changeset, _context ->
-        Ash.Changeset.change_attribute(changeset, :active, false)
-      end
-
-      change after_action(fn changeset, chunk_state, _context ->
-        case Thunderlane.stop_tick_generation(chunk_state.chunk_id) do
-          {:ok, _} ->
-            {:ok, chunk_state}
-
-          {:error, reason} ->
-            {:error, "Failed to stop computation: #{inspect(reason)}"}
-        end
-      end)
-    end
-
-    read :get_realtime_state do
-      description "Get real-time state from unikernel"
-
-      get? true
-
-      filter expr(chunk_id == ^arg(:chunk_id))
-
-      argument :chunk_id, :string do
-        allow_nil? false
-      end
-
-      prepare fn query, _context ->
-        # This will trigger the custom data layer to fetch from unikernel
-        query
-      end
-    end
-  end
-
   calculations do
     calculate :utilization_percentage, :float do
       description "Percentage of active voxels"
@@ -229,7 +234,7 @@ defmodule Thunderline.Thundergrid.Resources.ChunkState do
       calculation fn records, _context ->
         Enum.map(records, fn record ->
           if record.voxel_count > 0 do
-            (record.active_voxels / record.voxel_count) * 100
+            record.active_voxels / record.voxel_count * 100
           else
             0.0
           end
@@ -242,20 +247,24 @@ defmodule Thunderline.Thundergrid.Resources.ChunkState do
 
       calculation fn records, _context ->
         Enum.map(records, fn record ->
-          utilization = if record.voxel_count > 0 do
-            (record.active_voxels / record.voxel_count) * 100
-          else
-            0.0
-          end
+          utilization =
+            if record.voxel_count > 0 do
+              record.active_voxels / record.voxel_count * 100
+            else
+              0.0
+            end
 
           # Score based on tick rate achievement and utilization
-          tick_efficiency = case record.performance_metrics do
-            %{actual_tick_rate: actual} when is_number(actual) ->
-              min(actual / record.tick_rate, 1.0)
-            _ -> 0.0
-          end
+          tick_efficiency =
+            case record.performance_metrics do
+              %{actual_tick_rate: actual} when is_number(actual) ->
+                min(actual / record.tick_rate, 1.0)
 
-          (tick_efficiency * 50) + (utilization * 50) / 100
+              _ ->
+                0.0
+            end
+
+          tick_efficiency * 50 + utilization * 50 / 100
         end)
       end
     end

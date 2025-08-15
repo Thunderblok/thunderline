@@ -11,9 +11,9 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: :embedded,
     extensions: [AshJsonApi.Resource, AshOban.Resource, AshGraphql.Resource]
-  import Ash.Resource.Change.Builtins
-  import Ash.Resource.Change.Builtins
 
+  import Ash.Resource.Change.Builtins
+  import Ash.Resource.Change.Builtins
 
   # IN-MEMORY CONFIGURATION (sqlite removed)
   # Using :embedded data layer
@@ -22,14 +22,88 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
     type "activation_rule"
 
     routes do
-      base "/activation-rules"
-      get :read
+      base("/activation-rules")
+      get(:read)
       index :read
-      post :create
-      patch :update
-      delete :destroy
-      patch :evaluate, route: "/:id/evaluate"
-      patch :train, route: "/:id/train"
+      post(:create)
+      patch(:update)
+      delete(:destroy)
+      patch(:evaluate, route: "/:id/evaluate")
+      patch(:train, route: "/:id/train")
+    end
+  end
+
+  actions do
+    defaults [:read, :create, :update, :destroy]
+
+    create :create_ml_rule do
+      accept [
+        :name,
+        :description,
+        :rule_type,
+        :enabled,
+        :priority,
+        :trigger_conditions,
+        :ml_model_config,
+        :prediction_weights,
+        :max_activations_per_minute,
+        :target_active_percentage
+      ]
+
+      change before_action(&initialize_ml_model/1)
+      change after_action(&register_for_evaluation/2)
+    end
+
+    update :evaluate do
+      accept []
+      argument :chunk_state, :map, allow_nil?: false
+      argument :context_data, :map, default: %{}
+
+      change before_action(&run_evaluation_logic/1)
+      change after_action(&record_evaluation_result/2)
+      change after_action(&create_orchestration_event/2)
+    end
+
+    update :train do
+      accept []
+      argument :training_data, {:array, :map}, allow_nil?: false
+
+      change before_action(&execute_training_cycle/1)
+      change set_attribute(:last_training, &DateTime.utc_now/0)
+      change after_action(&validate_model_accuracy/2)
+    end
+
+    update :update_performance do
+      accept [
+        :activation_success_rate,
+        :false_positive_rate,
+        :avg_activation_time_ms,
+        :total_evaluations,
+        :successful_activations
+      ]
+
+      change after_action(&check_performance_thresholds/2)
+    end
+
+    read :active_rules do
+      filter expr(enabled == true)
+    end
+
+    read :high_priority_rules do
+      filter expr(enabled == true and priority > 70)
+    end
+
+    read :rules_needing_training do
+      filter expr(is_due_for_training == true)
+    end
+
+    read :effective_rules do
+      filter expr(effectiveness_score > 70)
+    end
+
+    read :rules_for_chunk do
+      argument :chunk_id, :uuid, allow_nil?: false
+      filter expr(chunk_id == ^arg(:chunk_id))
     end
   end
 
@@ -39,34 +113,50 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
     # Rule metadata
     attribute :name, :string, allow_nil?: false
     attribute :description, :string
-    attribute :rule_type, :atom, constraints: [
-      one_of: [:energy_threshold, :signal_density, :neighbor_activity,
-               :external_demand, :temporal_pattern, :ml_prediction, :hybrid]
-    ], default: :energy_threshold
+
+    attribute :rule_type, :atom,
+      constraints: [
+        one_of: [
+          :energy_threshold,
+          :signal_density,
+          :neighbor_activity,
+          :external_demand,
+          :temporal_pattern,
+          :ml_prediction,
+          :hybrid
+        ]
+      ],
+      default: :energy_threshold
 
     # Rule configuration
     attribute :enabled, :boolean, default: true
-    attribute :priority, :integer, default: 50  # 1-100, higher = more important
-    attribute :trigger_conditions, :map, default: %{
-      energy_min: 100,
-      signal_count_min: 5,
-      neighbor_active_count_min: 2
-    }
+
+    # 1-100, higher = more important
+    attribute :priority, :integer, default: 50
+
+    attribute :trigger_conditions, :map,
+      default: %{
+        energy_min: 100,
+        signal_count_min: 5,
+        neighbor_active_count_min: 2
+      }
 
     # ML and AI parameters
-    attribute :ml_model_config, :map, default: %{
-      algorithm: "decision_tree",
-      features: ["energy", "signal_density", "neighbor_activity"],
-      accuracy_threshold: 0.85
-    }
+    attribute :ml_model_config, :map,
+      default: %{
+        algorithm: "decision_tree",
+        features: ["energy", "signal_density", "neighbor_activity"],
+        accuracy_threshold: 0.85
+      }
 
-    attribute :prediction_weights, :map, default: %{
-      energy: 0.3,
-      signals: 0.2,
-      neighbors: 0.2,
-      external: 0.2,
-      temporal: 0.1
-    }
+    attribute :prediction_weights, :map,
+      default: %{
+        energy: 0.3,
+        signals: 0.2,
+        neighbors: 0.2,
+        external: 0.2,
+        temporal: 0.1
+      }
 
     # Performance tracking
     attribute :activation_success_rate, :decimal, default: Decimal.new("0.0")
@@ -97,84 +187,27 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
   end
 
   calculations do
-    calculate :effectiveness_score, :decimal, expr(
-      (activation_success_rate - false_positive_rate) * 100
-    )
+    calculate :effectiveness_score,
+              :decimal,
+              expr((activation_success_rate - false_positive_rate) * 100)
 
-    calculate :is_due_for_training, :boolean, expr(
-      is_nil(last_training) or
-      last_training < ago(7, :day) or
-      activation_success_rate < 0.8
-    )
+    calculate :is_due_for_training,
+              :boolean,
+              expr(
+                is_nil(last_training) or
+                  last_training < ago(7, :day) or
+                  activation_success_rate < 0.8
+              )
 
-    calculate :activations_per_hour, :decimal, expr(
-      if(total_evaluations > 0,
-         successful_activations / (total_evaluations / 60.0),
-         0)
-    )
-  end
-
-  actions do
-    defaults [:read, :create, :update, :destroy]
-
-    create :create_ml_rule do
-      accept [
-        :name, :description, :rule_type, :enabled, :priority,
-        :trigger_conditions, :ml_model_config, :prediction_weights,
-        :max_activations_per_minute, :target_active_percentage
-      ]
-
-      change before_action(&initialize_ml_model/1)
-      change after_action(&register_for_evaluation/2)
-    end
-
-    update :evaluate do
-      accept []
-      argument :chunk_state, :map, allow_nil?: false
-      argument :context_data, :map, default: %{}
-
-      change before_action(&run_evaluation_logic/1)
-      change after_action(&record_evaluation_result/2)
-      change after_action(&create_orchestration_event/2)
-    end
-
-    update :train do
-      accept []
-      argument :training_data, {:array, :map}, allow_nil?: false
-
-      change before_action(&execute_training_cycle/1)
-      change set_attribute(:last_training, &DateTime.utc_now/0)
-      change after_action(&validate_model_accuracy/2)
-    end
-
-    update :update_performance do
-      accept [
-        :activation_success_rate, :false_positive_rate,
-        :avg_activation_time_ms, :total_evaluations, :successful_activations
-      ]
-      change after_action(&check_performance_thresholds/2)
-    end
-
-    read :active_rules do
-      filter expr(enabled == true)
-    end
-
-    read :high_priority_rules do
-      filter expr(enabled == true and priority > 70)
-    end
-
-    read :rules_needing_training do
-      filter expr(is_due_for_training == true)
-    end
-
-    read :effective_rules do
-      filter expr(effectiveness_score > 70)
-    end
-
-    read :rules_for_chunk do
-      argument :chunk_id, :uuid, allow_nil?: false
-      filter expr(chunk_id == ^arg(:chunk_id))
-    end
+    calculate :activations_per_hour,
+              :decimal,
+              expr(
+                if(
+                  total_evaluations > 0,
+                  successful_activations / (total_evaluations / 60.0),
+                  0
+                )
+              )
   end
 
   # oban do
@@ -207,11 +240,12 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
     # For now, set up basic decision tree structure
     ml_config = Ash.Changeset.get_attribute(changeset, :ml_model_config)
 
-    updated_config = Map.merge(ml_config, %{
-      initialized_at: DateTime.utc_now(),
-      model_id: Ecto.UUID.generate(),
-      status: "initialized"
-    })
+    updated_config =
+      Map.merge(ml_config, %{
+        initialized_at: DateTime.utc_now(),
+        model_id: Ecto.UUID.generate(),
+        status: "initialized"
+      })
 
     Ash.Changeset.change_attribute(changeset, :ml_model_config, updated_config)
   end
@@ -223,6 +257,7 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
       "thunderbolt:activation:registry",
       {:rule_registered, rule}
     )
+
     {:ok, rule}
   end
 
@@ -231,11 +266,12 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
     # This would analyze chunk state, context data, and apply ML models
     # For now, implement simple threshold-based logic
 
-    changeset = Ash.Changeset.change_attribute(
-      changeset,
-      :last_evaluation,
-      DateTime.utc_now()
-    )
+    changeset =
+      Ash.Changeset.change_attribute(
+        changeset,
+        :last_evaluation,
+        DateTime.utc_now()
+      )
 
     # Increment evaluation counter
     current_evaluations = Ash.Changeset.get_attribute(changeset, :total_evaluations)
@@ -249,6 +285,7 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
       "thunderbolt:activation:result",
       {:evaluation_completed, rule.id, %{timestamp: DateTime.utc_now()}}
     )
+
     {:ok, rule}
   end
 
@@ -282,6 +319,7 @@ defmodule Thunderline.Thunderbolt.Resources.ActivationRule do
         {:performance_degraded, rule}
       )
     end
+
     {:ok, rule}
   end
 end

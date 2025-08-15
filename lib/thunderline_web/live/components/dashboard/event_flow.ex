@@ -20,21 +20,22 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
                   "px-2 py-1 text-xs rounded-full",
                   event_type_class(event.type)
                 ]}>
-                  <%= event.type %>
+                  {event.type}
                 </span>
                 <span class="text-xs text-gray-400">
-                  <%= format_timestamp(event.timestamp) %>
+                  {format_timestamp(event.timestamp)}
                 </span>
               </div>
               <div class="text-sm text-gray-300 truncate">
-                <%= event.message %>
+                {event.message}
               </div>
               <div class="flex items-center justify-between mt-2">
-                <span class="text-xs text-gray-500"><%= event.source %></span>
+                <span class="text-xs text-gray-500">{event.source}</span>
                 <div class={[
                   "w-2 h-2 rounded-full animate-pulse",
                   status_indicator_class(event.status)
-                ]}></div>
+                ]}>
+                </div>
               </div>
             </div>
           <% end %>
@@ -44,10 +45,17 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
     """
   end
 
-  defp event_type_class("thunderbolt"), do: "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-  defp event_type_class("thunderbit"), do: "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+  defp event_type_class("thunderbolt"),
+    do: "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+
+  defp event_type_class("thunderbit"),
+    do: "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+
   defp event_type_class("domain"), do: "bg-green-500/20 text-green-300 border border-green-500/30"
-  defp event_type_class("system"), do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+
+  defp event_type_class("system"),
+    do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+
   defp event_type_class(_), do: "bg-gray-500/20 text-gray-300 border border-gray-500/30"
 
   defp status_indicator_class("processing"), do: "bg-yellow-400"

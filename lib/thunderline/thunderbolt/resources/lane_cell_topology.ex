@@ -17,115 +17,56 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
   end
 
   # ============================================================================
+  # JSON API
+  # ============================================================================
+
+  json_api do
+    type "cell_topology"
+
+    routes do
+      base("/topologies")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:update)
+      patch(:partition, route: "/:id/partition")
+      patch(:distribute, route: "/:id/distribute")
+      patch(:rebalance, route: "/:id/rebalance")
+      patch(:update_distribution_health, route: "/:id/health")
+    end
+  end
+
+  # ============================================================================
+  # GRAPHQL
+  # ============================================================================
+
+  graphql do
+    type :cell_topology
+
+    queries do
+      get :get_topology, :read
+      list :list_topologies, :read
+      list :active_topologies, :active_topologies
+      list :topologies_needing_rebalancing, :needs_rebalancing
+    end
+
+    mutations do
+      create :create_topology, :create
+      update :update_topology, :update
+      update :partition_topology, :partition
+      update :distribute_topology, :distribute
+      update :rebalance_topology, :rebalance
+      update :update_topology_health, :update_distribution_health
+    end
+  end
+
+  # ============================================================================
   # EVENTS
   # ============================================================================
 
   events do
-    event_log Thunderline.Thunderflow.Events.Event
-    current_action_versions create: 1, update: 1, destroy: 1
-  end
-
-  # ============================================================================
-  # ATTRIBUTES
-  # ============================================================================
-
-  attributes do
-    uuid_primary_key :id
-
-    # Core Identity
-    attribute :name, :string, allow_nil?: false, public?: true
-    attribute :description, :string, public?: true
-
-    # Foreign Keys for Relationships
-    attribute :lane_coordinator_id, :uuid, public?: true
-
-    # 3D Grid Dimensions
-    attribute :width, :integer, allow_nil?: false, public?: true,
-      constraints: [min: 1, max: 4096]
-    attribute :height, :integer, allow_nil?: false, public?: true,
-      constraints: [min: 1, max: 4096]
-    attribute :depth, :integer, allow_nil?: false, public?: true,
-      constraints: [min: 1, max: 1024]
-
-    # Cell Configuration
-    attribute :total_cells, :integer, public?: true
-    attribute :cells_per_partition, :integer, public?: true
-    attribute :partition_count, :integer, public?: true
-
-    # Topology Type
-    attribute :topology_type, :atom, allow_nil?: false, public?: true, default: :rectangular,
-      constraints: [one_of: [:rectangular, :hexagonal, :triangular, :torus, :sphere, :custom]]
-
-    # Boundary Conditions
-    attribute :boundary_x, :atom, allow_nil?: false, public?: true, default: :wrap,
-      constraints: [one_of: [:wrap, :fixed, :reflect, :absorb]]
-    attribute :boundary_y, :atom, allow_nil?: false, public?: true, default: :wrap,
-      constraints: [one_of: [:wrap, :fixed, :reflect, :absorb]]
-    attribute :boundary_z, :atom, allow_nil?: false, public?: true, default: :wrap,
-      constraints: [one_of: [:wrap, :fixed, :reflect, :absorb]]
-
-    # Neighborhood Configuration
-    attribute :neighborhood_type, :atom, allow_nil?: false, public?: true, default: :moore_3d,
-      constraints: [one_of: [:moore_3d, :von_neumann_3d, :custom_3d]]
-    attribute :neighborhood_radius, :integer, allow_nil?: false, public?: true, default: 1,
-      constraints: [min: 1, max: 5]
-
-    # Partitioning Strategy
-    attribute :partitioning_strategy, :atom, allow_nil?: false, public?: true, default: :grid_3d,
-      constraints: [one_of: [:grid_3d, :spatial_hash, :hilbert_curve, :load_balanced, :custom]]
-    attribute :partitioning_config, :map, public?: true, default: %{}
-
-    # THUNDERCELL Distribution
-    attribute :thundercell_nodes, :map, public?: true, default: %{}
-    attribute :partition_assignments, :map, public?: true, default: %{}
-    attribute :node_load_balance, :map, public?: true, default: %{}
-
-    # Performance Metrics
-    attribute :average_neighbors_per_cell, :float, public?: true
-    attribute :max_partition_size, :integer, public?: true
-    attribute :min_partition_size, :integer, public?: true
-    attribute :load_variance, :float, public?: true
-
-    # Status and Health
-    attribute :status, :atom, allow_nil?: false, public?: true, default: :designed,
-      constraints: [one_of: [:designed, :partitioned, :distributed, :active, :error]]
-    attribute :distribution_health, :float, public?: true, default: 1.0,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :last_rebalance_at, :utc_datetime_usec, public?: true
-
-    # Optimization
-    attribute :locality_score, :float, public?: true
-    attribute :communication_overhead, :float, public?: true
-    attribute :memory_efficiency, :float, public?: true
-
-    # Initialization State
-    attribute :initial_state_pattern, :atom, public?: true,
-      constraints: [one_of: [:random, :checkerboard, :stripes, :custom, :loaded]]
-    attribute :initial_state_config, :map, public?: true, default: %{}
-    attribute :initial_state_seed, :integer, public?: true
-
-    # Configuration
-    attribute :config, :map, public?: true, default: %{}
-    attribute :metadata, :map, public?: true, default: %{}
-
-    # Timestamps
-    create_timestamp :created_at
-    update_timestamp :updated_at
-  end
-
-  # ============================================================================
-  # RELATIONSHIPS
-  # ============================================================================
-
-  relationships do
-    belongs_to :coordinator, Thunderline.Thunderbolt.Resources.LaneCoordinator do
-      attribute_writable? true
-      public? true
-    end
-
-    has_many :topology_metrics, Thunderline.Thunderbolt.Resources.LaneMetrics do
-      public? true
-    end
+    event_log(Thunderline.Thunderflow.Events.Event)
+    current_action_versions(create: 1, update: 1, destroy: 1)
   end
 
   # ============================================================================
@@ -137,10 +78,25 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
 
     create :create do
       accept [
-        :name, :description, :width, :height, :depth, :topology_type,
-        :boundary_x, :boundary_y, :boundary_z, :neighborhood_type, :neighborhood_radius,
-        :partitioning_strategy, :partitioning_config, :initial_state_pattern,
-        :initial_state_config, :initial_state_seed, :config, :metadata, :coordinator_id
+        :name,
+        :description,
+        :width,
+        :height,
+        :depth,
+        :topology_type,
+        :boundary_x,
+        :boundary_y,
+        :boundary_z,
+        :neighborhood_type,
+        :neighborhood_radius,
+        :partitioning_strategy,
+        :partitioning_config,
+        :initial_state_pattern,
+        :initial_state_config,
+        :initial_state_seed,
+        :config,
+        :metadata,
+        :coordinator_id
       ]
 
       change fn changeset, _ ->
@@ -160,10 +116,23 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
 
     update :update do
       accept [
-        :name, :description, :width, :height, :depth, :topology_type,
-        :boundary_x, :boundary_y, :boundary_z, :neighborhood_type, :neighborhood_radius,
-        :partitioning_strategy, :partitioning_config, :initial_state_pattern,
-        :initial_state_config, :config, :metadata
+        :name,
+        :description,
+        :width,
+        :height,
+        :depth,
+        :topology_type,
+        :boundary_x,
+        :boundary_y,
+        :boundary_z,
+        :neighborhood_type,
+        :neighborhood_radius,
+        :partitioning_strategy,
+        :partitioning_config,
+        :initial_state_pattern,
+        :initial_state_config,
+        :config,
+        :metadata
       ]
 
       change fn changeset, _ ->
@@ -171,7 +140,9 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
         case {Ash.Changeset.get_attribute(changeset, :width),
               Ash.Changeset.get_attribute(changeset, :height),
               Ash.Changeset.get_attribute(changeset, :depth)} do
-          {nil, nil, nil} -> changeset
+          {nil, nil, nil} ->
+            changeset
+
           {w, h, d} ->
             width = w || Ash.Changeset.get_data(changeset).width
             height = h || Ash.Changeset.get_data(changeset).height
@@ -229,46 +200,141 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
   end
 
   # ============================================================================
-  # JSON API
+  # ATTRIBUTES
   # ============================================================================
 
-  json_api do
-    type "cell_topology"
+  attributes do
+    uuid_primary_key :id
 
-    routes do
-      base "/topologies"
-      get :read
-      index :read
-      post :create
-      patch :update
-      patch :partition, route: "/:id/partition"
-      patch :distribute, route: "/:id/distribute"
-      patch :rebalance, route: "/:id/rebalance"
-      patch :update_distribution_health, route: "/:id/health"
-    end
+    # Core Identity
+    attribute :name, :string, allow_nil?: false, public?: true
+    attribute :description, :string, public?: true
+
+    # Foreign Keys for Relationships
+    attribute :lane_coordinator_id, :uuid, public?: true
+
+    # 3D Grid Dimensions
+    attribute :width, :integer, allow_nil?: false, public?: true, constraints: [min: 1, max: 4096]
+
+    attribute :height, :integer,
+      allow_nil?: false,
+      public?: true,
+      constraints: [min: 1, max: 4096]
+
+    attribute :depth, :integer, allow_nil?: false, public?: true, constraints: [min: 1, max: 1024]
+
+    # Cell Configuration
+    attribute :total_cells, :integer, public?: true
+    attribute :cells_per_partition, :integer, public?: true
+    attribute :partition_count, :integer, public?: true
+
+    # Topology Type
+    attribute :topology_type, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :rectangular,
+      constraints: [one_of: [:rectangular, :hexagonal, :triangular, :torus, :sphere, :custom]]
+
+    # Boundary Conditions
+    attribute :boundary_x, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :wrap,
+      constraints: [one_of: [:wrap, :fixed, :reflect, :absorb]]
+
+    attribute :boundary_y, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :wrap,
+      constraints: [one_of: [:wrap, :fixed, :reflect, :absorb]]
+
+    attribute :boundary_z, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :wrap,
+      constraints: [one_of: [:wrap, :fixed, :reflect, :absorb]]
+
+    # Neighborhood Configuration
+    attribute :neighborhood_type, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :moore_3d,
+      constraints: [one_of: [:moore_3d, :von_neumann_3d, :custom_3d]]
+
+    attribute :neighborhood_radius, :integer,
+      allow_nil?: false,
+      public?: true,
+      default: 1,
+      constraints: [min: 1, max: 5]
+
+    # Partitioning Strategy
+    attribute :partitioning_strategy, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :grid_3d,
+      constraints: [one_of: [:grid_3d, :spatial_hash, :hilbert_curve, :load_balanced, :custom]]
+
+    attribute :partitioning_config, :map, public?: true, default: %{}
+
+    # THUNDERCELL Distribution
+    attribute :thundercell_nodes, :map, public?: true, default: %{}
+    attribute :partition_assignments, :map, public?: true, default: %{}
+    attribute :node_load_balance, :map, public?: true, default: %{}
+
+    # Performance Metrics
+    attribute :average_neighbors_per_cell, :float, public?: true
+    attribute :max_partition_size, :integer, public?: true
+    attribute :min_partition_size, :integer, public?: true
+    attribute :load_variance, :float, public?: true
+
+    # Status and Health
+    attribute :status, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :designed,
+      constraints: [one_of: [:designed, :partitioned, :distributed, :active, :error]]
+
+    attribute :distribution_health, :float,
+      public?: true,
+      default: 1.0,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :last_rebalance_at, :utc_datetime_usec, public?: true
+
+    # Optimization
+    attribute :locality_score, :float, public?: true
+    attribute :communication_overhead, :float, public?: true
+    attribute :memory_efficiency, :float, public?: true
+
+    # Initialization State
+    attribute :initial_state_pattern, :atom,
+      public?: true,
+      constraints: [one_of: [:random, :checkerboard, :stripes, :custom, :loaded]]
+
+    attribute :initial_state_config, :map, public?: true, default: %{}
+    attribute :initial_state_seed, :integer, public?: true
+
+    # Configuration
+    attribute :config, :map, public?: true, default: %{}
+    attribute :metadata, :map, public?: true, default: %{}
+
+    # Timestamps
+    create_timestamp :created_at
+    update_timestamp :updated_at
   end
 
   # ============================================================================
-  # GRAPHQL
+  # RELATIONSHIPS
   # ============================================================================
 
-  graphql do
-    type :cell_topology
-
-    queries do
-      get :get_topology, :read
-      list :list_topologies, :read
-      list :active_topologies, :active_topologies
-      list :topologies_needing_rebalancing, :needs_rebalancing
+  relationships do
+    belongs_to :coordinator, Thunderline.Thunderbolt.Resources.LaneCoordinator do
+      attribute_writable? true
+      public? true
     end
 
-    mutations do
-      create :create_topology, :create
-      update :update_topology, :update
-      update :partition_topology, :partition
-      update :distribute_topology, :distribute
-      update :rebalance_topology, :rebalance
-      update :update_topology_health, :update_distribution_health
+    has_many :topology_metrics, Thunderline.Thunderbolt.Resources.LaneMetrics do
+      public? true
     end
   end
 
@@ -296,7 +362,9 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
     config = Ash.Changeset.get_attribute(changeset, :partitioning_config) || %{}
 
     case validate_strategy_config(strategy, config) do
-      :ok -> changeset
+      :ok ->
+        changeset
+
       {:error, message} ->
         Ash.Changeset.add_error(changeset, field: :partitioning_config, message: message)
     end
@@ -307,7 +375,9 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
 
     # Validate that all nodes are reachable
     case validate_node_connectivity(nodes) do
-      :ok -> changeset
+      :ok ->
+        changeset
+
       {:error, message} ->
         Ash.Changeset.add_error(changeset, field: :thundercell_nodes, message: message)
     end
@@ -399,14 +469,19 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
     case strategy do
       :grid_3d ->
         validate_grid_3d_config(config)
+
       :spatial_hash ->
         validate_spatial_hash_config(config)
+
       :hilbert_curve ->
         validate_hilbert_curve_config(config)
+
       :load_balanced ->
         validate_load_balanced_config(config)
+
       :custom ->
         validate_custom_config(config)
+
       _ ->
         :ok
     end

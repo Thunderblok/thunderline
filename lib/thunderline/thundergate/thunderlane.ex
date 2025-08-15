@@ -106,7 +106,9 @@ defmodule Thundergate.Thunderlane do
     # Schedule periodic state synchronization
     schedule_state_sync(sync_interval)
 
-    Logger.info("[Thunderlane] Initializing bridge to thundercore.unikernel at #{unikernel_host}:#{unikernel_port}")
+    Logger.info(
+      "[Thunderlane] Initializing bridge to thundercore.unikernel at #{unikernel_host}:#{unikernel_port}"
+    )
 
     {:ok, state}
   end

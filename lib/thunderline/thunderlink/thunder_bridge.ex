@@ -93,8 +93,11 @@ defmodule Thunderline.ThunderBridge do
     # Subscribe to ErlangBridge events with error handling
     try do
       case ErlangBridge.subscribe_events(self()) do
-        :ok -> Logger.info("Subscribed to ErlangBridge events")
-        {:error, reason} -> Logger.warning("Failed to subscribe to ErlangBridge: #{inspect(reason)}")
+        :ok ->
+          Logger.info("Subscribed to ErlangBridge events")
+
+        {:error, reason} ->
+          Logger.warning("Failed to subscribe to ErlangBridge: #{inspect(reason)}")
       end
     rescue
       error ->
@@ -132,6 +135,7 @@ defmodule Thunderline.ThunderBridge do
     case build_dashboard_system_state() do
       {:ok, system_state} ->
         {:reply, {:ok, system_state}, %{state | last_system_state: system_state}}
+
       {:error, reason} ->
         # Return cached state if available, otherwise error
         case state.last_system_state do
@@ -139,6 +143,7 @@ defmodule Thunderline.ThunderBridge do
             Logger.warning("Using cached system state due to error: #{inspect(reason)}")
             cached_with_warning = Map.put(cached, :connection_warning, true)
             {:reply, {:ok, cached_with_warning}, state}
+
           _ ->
             {:reply, {:error, reason}, state}
         end
@@ -151,6 +156,7 @@ defmodule Thunderline.ThunderBridge do
         # Transform for dashboard consumption
         dashboard_registry = transform_thunderbolt_registry(registry)
         {:reply, {:ok, dashboard_registry}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -162,6 +168,7 @@ defmodule Thunderline.ThunderBridge do
         # Transform for dashboard consumption
         dashboard_data = transform_thunderbit_data(observer_data)
         {:reply, {:ok, dashboard_data}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -174,7 +181,10 @@ defmodule Thunderline.ThunderBridge do
 
     # Broadcast command result to dashboard subscribers
     broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
-      :command_result, command, params, result
+      :command_result,
+      command,
+      params,
+      result
     })
 
     {:reply, result, state}
@@ -205,6 +215,7 @@ defmodule Thunderline.ThunderBridge do
       :ok ->
         Logger.info("Started CA streaming for dashboard")
         {:reply, :ok, %{state | ca_streaming: true}}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -215,6 +226,7 @@ defmodule Thunderline.ThunderBridge do
       :ok ->
         Logger.info("Stopped CA streaming")
         {:reply, :ok, %{state | ca_streaming: false}}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -226,32 +238,39 @@ defmodule Thunderline.ThunderBridge do
     dashboard_state = transform_erlang_state_for_dashboard(new_state)
 
     broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
-      :system_state_update, dashboard_state
+      :system_state_update,
+      dashboard_state
     })
 
     # Update performance history
     new_history = update_performance_history(state.performance_history, new_state)
 
-    {:noreply, %{state |
-      last_system_state: dashboard_state,
-      performance_history: new_history,
-      erlang_connected: true
-    }}
+    {:noreply,
+     %{
+       state
+       | last_system_state: dashboard_state,
+         performance_history: new_history,
+         erlang_connected: true
+     }}
   end
 
   def handle_info({:event_bus, "system_metrics", metrics}, state) do
     # Forward EventBus metrics to dashboard subscribers
     broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
-      :metrics_update, metrics
+      :metrics_update,
+      metrics
     })
+
     {:noreply, state}
   end
 
   def handle_info({:event_bus, "erlang_commands", command_event}, state) do
     # Forward command events to dashboard subscribers
     broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
-      :command_event, command_event
+      :command_event,
+      command_event
     })
+
     {:noreply, state}
   end
 
@@ -263,7 +282,8 @@ defmodule Thunderline.ThunderBridge do
       Logger.info("Erlang connection status changed: #{health_status.erlang_connected}")
 
       broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
-        :connection_status_changed, health_status.erlang_connected
+        :connection_status_changed,
+        health_status.erlang_connected
       })
     end
 
@@ -275,6 +295,16 @@ defmodule Thunderline.ThunderBridge do
     new_subscribers = MapSet.delete(state.dashboard_subscribers, pid)
     Logger.debug("Dashboard subscriber removed: #{inspect(pid)}")
     {:noreply, %{state | dashboard_subscribers: new_subscribers}}
+  end
+
+  def handle_info({:system_metric_updated, metric_data}, state) do
+    # Handle system metric updates - forward to dashboard subscribers if needed
+    Logger.debug("Received system metric update: #{inspect(metric_data)}")
+
+    # Optionally forward to dashboard subscribers
+    # broadcast_to_dashboard_subscribers(state, {:metric_update, metric_data})
+
+    {:noreply, state}
   end
 
   def handle_info(msg, state) do
@@ -304,6 +334,7 @@ defmodule Thunderline.ThunderBridge do
           }
 
           {:ok, dashboard_state}
+
         {:error, reason} ->
           {:error, reason}
       end
@@ -322,6 +353,7 @@ defmodule Thunderline.ThunderBridge do
       last_updated: DateTime.utc_now()
     }
   end
+
   defp transform_thunderbolt_registry(registry), do: registry
 
   defp transform_thunderbit_data(observer_data) do
@@ -349,31 +381,36 @@ defmodule Thunderline.ThunderBridge do
     # Extract uptime from Erlang state or calculate from start time
     case get_in(erlang_state, [:thunderbolt_registry, :uptime]) do
       uptime when is_integer(uptime) -> uptime
-      _ -> :rand.uniform(10000) # Fallback for now
+      # Fallback for now
+      _ -> :rand.uniform(10000)
     end
   end
 
   defp count_active_thunderbolts(erlang_state) do
     case get_in(erlang_state, [:thunderbolt_registry, :active_count]) do
       count when is_integer(count) -> count
-      _ -> :rand.uniform(50) # Fallback
+      # Fallback
+      _ -> :rand.uniform(50)
     end
   end
 
-  defp get_total_chunks(_erlang_state), do: 144 # Standard 12x12 grid
+  # Standard 12x12 grid
+  defp get_total_chunks(_erlang_state), do: 144
 
   defp get_connected_nodes(erlang_state) do
     case get_in(erlang_state, [:system, :connected_nodes]) do
       nodes when is_list(nodes) -> length(nodes)
       count when is_integer(count) -> count
-      _ -> 1 # At least this node
+      # At least this node
+      _ -> 1
     end
   end
 
   defp get_memory_usage(erlang_state) do
     case get_in(erlang_state, [:system, :memory_usage]) do
       memory when is_integer(memory) -> memory
-      _ -> :erlang.memory(:total) # Get actual Erlang memory
+      # Get actual Erlang memory
+      _ -> :erlang.memory(:total)
     end
   end
 
@@ -422,6 +459,7 @@ defmodule Thunderline.ThunderBridge do
 
   defp calculate_bolt_health(bolt) do
     energy = Map.get(bolt, :energy, 0)
+
     cond do
       energy > 80 -> :excellent
       energy > 60 -> :good
@@ -435,11 +473,12 @@ defmodule Thunderline.ThunderBridge do
     case ErlangBridge.get_system_state() do
       {:ok, state} ->
         # Handle case where thunderbolt_evolution data might be an error tuple
-        evolution_data = case Map.get(state, :thunderbolt_evolution) do
-          %{} = data -> data
-          {:error, _} -> %{}
-          _ -> %{}
-        end
+        evolution_data =
+          case Map.get(state, :thunderbolt_evolution) do
+            %{} = data -> data
+            {:error, _} -> %{}
+            _ -> %{}
+          end
 
         stats = %{
           total_generations: Map.get(evolution_data, :total_generations, 0),
@@ -448,7 +487,9 @@ defmodule Thunderline.ThunderBridge do
           active_patterns: Map.get(evolution_data, :active_patterns, []),
           success_rate: Map.get(evolution_data, :success_rate, 0.0)
         }
+
         {:ok, stats}
+
       {:error, _reason} ->
         # Return default stats when system state is unavailable
         default_stats = %{
@@ -458,6 +499,7 @@ defmodule Thunderline.ThunderBridge do
           active_patterns: [],
           success_rate: 0.0
         }
+
         {:ok, default_stats}
     end
   end
@@ -511,6 +553,7 @@ defmodule Thunderline.ThunderBridge do
 
   defp calculate_average(metrics, field) do
     values = Enum.map(metrics, &Map.get(&1, field, 0))
+
     case values do
       [] -> 0.0
       _ -> Enum.sum(values) / length(values)
@@ -518,6 +561,7 @@ defmodule Thunderline.ThunderBridge do
   end
 
   defp calculate_trend(metrics) when length(metrics) < 2, do: :stable
+
   defp calculate_trend(metrics) do
     recent = Enum.take(metrics, -5)
     older = Enum.take(metrics, 5)
@@ -541,7 +585,7 @@ defmodule Thunderline.ThunderBridge do
     else
       avg_response = calculate_average(recent_metrics, :response_time)
       # Health score inversely related to response time
-      max(0.0, min(1.0, 1.0 - (avg_response / 1000.0)))
+      max(0.0, min(1.0, 1.0 - avg_response / 1000.0))
     end
   end
 

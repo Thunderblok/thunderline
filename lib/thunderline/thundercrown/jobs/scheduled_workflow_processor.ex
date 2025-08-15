@@ -66,11 +66,12 @@ defmodule Thunderline.Thundercrown.Jobs.ScheduledWorkflowProcessor do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "scheduled_health_checks",
-      {:health_check_requested, %{
-        workflow_id: workflow_id,
-        scope: Map.get(config, "scope", "all_domains"),
-        timestamp: DateTime.utc_now()
-      }}
+      {:health_check_requested,
+       %{
+         workflow_id: workflow_id,
+         scope: Map.get(config, "scope", "all_domains"),
+         timestamp: DateTime.utc_now()
+       }}
     )
 
     :ok
@@ -81,11 +82,12 @@ defmodule Thunderline.Thundercrown.Jobs.ScheduledWorkflowProcessor do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "scheduled_maintenance",
-      {:maintenance_requested, %{
-        workflow_id: workflow_id,
-        operations: Map.get(config, "operations", []),
-        timestamp: DateTime.utc_now()
-      }}
+      {:maintenance_requested,
+       %{
+         workflow_id: workflow_id,
+         operations: Map.get(config, "operations", []),
+         timestamp: DateTime.utc_now()
+       }}
     )
 
     :ok
@@ -96,11 +98,12 @@ defmodule Thunderline.Thundercrown.Jobs.ScheduledWorkflowProcessor do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "scheduled_backups",
-      {:backup_requested, %{
-        workflow_id: workflow_id,
-        backup_type: Map.get(config, "backup_type", "incremental"),
-        timestamp: DateTime.utc_now()
-      }}
+      {:backup_requested,
+       %{
+         workflow_id: workflow_id,
+         backup_type: Map.get(config, "backup_type", "incremental"),
+         timestamp: DateTime.utc_now()
+       }}
     )
 
     :ok

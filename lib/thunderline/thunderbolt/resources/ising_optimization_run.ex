@@ -14,90 +14,22 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationRun do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :problem_id, :uuid do
-      description "ID of the optimization problem this run belongs to"
-      allow_nil? false
+  code_interface do
+    calculations do
+      # TODO: Re-enable when calculation syntax is clarified
+      # define_for Thunderline.ThunderIsing.Domain
     end
 
-    attribute :name, :string do
-      description "Name for this optimization run"
-    end
-
-    attribute :algorithm, :atom do
-      description "Optimization algorithm used"
-      constraints one_of: [:simulated_annealing, :parallel_tempering, :distributed, :metropolis_hastings]
-      allow_nil? false
-    end
-
-    attribute :parameters, :map do
-      description "Algorithm parameters (temperatures, schedules, etc.)"
-      allow_nil? false
-    end
-
-    attribute :status, :atom do
-      description "Current status of the optimization run"
-      constraints one_of: [:queued, :running, :completed, :failed, :timeout]
-      default :queued
-    end
-
-    attribute :result, :map do
-      description "Optimization result (final energy, spins, convergence info)"
-    end
-
-    attribute :energy_history, {:array, :float} do
-      description "Energy values throughout optimization"
-      default []
-    end
-
-    attribute :magnetization_history, {:array, :float} do
-      description "Magnetization values throughout optimization"
-      default []
-    end
-
-    attribute :final_energy, :float do
-      description "Final energy achieved"
-    end
-
-    attribute :final_magnetization, :float do
-      description "Final magnetization"
-    end
-
-    attribute :steps_completed, :integer do
-      description "Number of optimization steps completed"
-      default 0
-    end
-
-    attribute :runtime_ms, :integer do
-      description "Total runtime in milliseconds"
-    end
-
-    attribute :converged, :boolean do
-      description "Whether optimization converged to stopping criterion"
-      default false
-    end
-
-    attribute :error_message, :string do
-      description "Error message if optimization failed"
-    end
-
-    attribute :metrics, :map do
-      description "Additional performance and quality metrics"
-      default %{}
-    end
-
-    create_timestamp :created_at
-    update_timestamp :updated_at
-
-    attribute :started_at, :utc_datetime do
-      description "When optimization actually started"
-    end
-
-    attribute :completed_at, :utc_datetime do
-      description "When optimization completed"
-    end
+    define :create
+    define :start_run
+    define :complete_run
+    define :fail_run
+    define :read
+    define :update
+    define :destroy
+    define :by_problem
+    define :recent_runs
+    define :successful_runs
   end
 
   actions do
@@ -181,6 +113,99 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationRun do
     end
   end
 
+  attributes do
+    uuid_primary_key :id
+
+    attribute :problem_id, :uuid do
+      description "ID of the optimization problem this run belongs to"
+      allow_nil? false
+    end
+
+    attribute :name, :string do
+      description "Name for this optimization run"
+    end
+
+    attribute :algorithm, :atom do
+      description "Optimization algorithm used"
+
+      constraints one_of: [
+                    :simulated_annealing,
+                    :parallel_tempering,
+                    :distributed,
+                    :metropolis_hastings
+                  ]
+
+      allow_nil? false
+    end
+
+    attribute :parameters, :map do
+      description "Algorithm parameters (temperatures, schedules, etc.)"
+      allow_nil? false
+    end
+
+    attribute :status, :atom do
+      description "Current status of the optimization run"
+      constraints one_of: [:queued, :running, :completed, :failed, :timeout]
+      default :queued
+    end
+
+    attribute :result, :map do
+      description "Optimization result (final energy, spins, convergence info)"
+    end
+
+    attribute :energy_history, {:array, :float} do
+      description "Energy values throughout optimization"
+      default []
+    end
+
+    attribute :magnetization_history, {:array, :float} do
+      description "Magnetization values throughout optimization"
+      default []
+    end
+
+    attribute :final_energy, :float do
+      description "Final energy achieved"
+    end
+
+    attribute :final_magnetization, :float do
+      description "Final magnetization"
+    end
+
+    attribute :steps_completed, :integer do
+      description "Number of optimization steps completed"
+      default 0
+    end
+
+    attribute :runtime_ms, :integer do
+      description "Total runtime in milliseconds"
+    end
+
+    attribute :converged, :boolean do
+      description "Whether optimization converged to stopping criterion"
+      default false
+    end
+
+    attribute :error_message, :string do
+      description "Error message if optimization failed"
+    end
+
+    attribute :metrics, :map do
+      description "Additional performance and quality metrics"
+      default %{}
+    end
+
+    create_timestamp :created_at
+    update_timestamp :updated_at
+
+    attribute :started_at, :utc_datetime do
+      description "When optimization actually started"
+    end
+
+    attribute :completed_at, :utc_datetime do
+      description "When optimization completed"
+    end
+  end
+
   relationships do
     belongs_to :problem, Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
       source_attribute :problem_id
@@ -191,25 +216,8 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationRun do
   aggregates do
     # TODO: Add aggregates after confirming proper syntax
     # average :avg_energy, :energy_history, :average
-    min :min_energy, :energy_history
-    max :max_energy, :energy_history
-  end
-
-  code_interface do
-    calculations do
-    # TODO: Re-enable when calculation syntax is clarified
-    # define_for Thunderline.ThunderIsing.Domain
-  end
-    define :create
-    define :start_run
-    define :complete_run
-    define :fail_run
-    define :read
-    define :update
-    define :destroy
-    define :by_problem
-    define :recent_runs
-    define :successful_runs
+    min(:min_energy, :energy_history)
+    max(:max_energy, :energy_history)
   end
 
   def compute_convergence_metrics(run) when is_struct(run) do
@@ -222,10 +230,11 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationRun do
       mean_final = Enum.sum(final_portion) / length(final_portion)
 
       # Compute variance in final portion
-      variance = final_portion
-      |> Enum.map(&((&1 - mean_final) ** 2))
-      |> Enum.sum()
-      |> Kernel./(length(final_portion))
+      variance =
+        final_portion
+        |> Enum.map(&((&1 - mean_final) ** 2))
+        |> Enum.sum()
+        |> Kernel./(length(final_portion))
 
       # Energy improvement rate
       initial_energy = List.last(energies)

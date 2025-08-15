@@ -10,8 +10,76 @@ defmodule Thunderline.Thundergate.Resources.AuditLog do
     domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
+
   import Ash.Resource.Change.Builtins
 
+  postgres do
+    table "thundereye_audit_logs"
+    repo Thunderline.Repo
+
+    custom_indexes do
+      index [:target_resource_type, :target_resource_id], name: "audit_logs_target_idx"
+      index [:actor_id, :action_type], name: "audit_logs_actor_idx"
+      index [:inserted_at], name: "audit_logs_time_idx"
+    end
+  end
+
+  # policies do
+  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+  #     authorize_if always()
+  #   end
+  #
+  #   policy always() do
+  #     authorize_if always()
+  #   end
+  # end
+
+  code_interface do
+    define :log_action
+    define :by_user, args: [:user_id]
+    define :by_resource, args: [:resource_type, :resource_id]
+    define :archive_old_logs, action: :archive_old_logs
+  end
+
+  actions do
+    defaults [:read]
+
+    create :log_action do
+      description "Create audit log entry"
+
+      accept [
+        :action_type,
+        :target_resource_type,
+        :target_resource_id,
+        :actor_id,
+        :actor_type,
+        :changes,
+        :metadata
+      ]
+    end
+
+    read :by_user do
+      description "Get audit logs for specific user"
+      argument :user_id, :uuid, allow_nil?: false
+      filter expr(actor_id == ^arg(:user_id))
+    end
+
+    read :by_resource do
+      description "Get audit logs for specific resource"
+      argument :resource_type, :atom, allow_nil?: false
+      argument :resource_id, :uuid, allow_nil?: false
+
+      filter expr(
+               target_resource_type == ^arg(:resource_type) and
+                 target_resource_id == ^arg(:resource_id)
+             )
+    end
+
+    destroy :archive_old_logs do
+      description "Archive old audit logs"
+      filter expr(inserted_at < ago(365, :day))
+    end
+  end
 
   attributes do
     uuid_primary_key :id
@@ -58,61 +126,5 @@ defmodule Thunderline.Thundergate.Resources.AuditLog do
     end
 
     create_timestamp :inserted_at
-  end
-
-  actions do
-    defaults [:read]
-
-    create :log_action do
-      description "Create audit log entry"
-      accept [:action_type, :target_resource_type, :target_resource_id,
-              :actor_id, :actor_type, :changes, :metadata]
-    end
-
-    read :by_user do
-      description "Get audit logs for specific user"
-      argument :user_id, :uuid, allow_nil?: false
-      filter expr(actor_id == ^arg(:user_id))
-    end
-
-    read :by_resource do
-      description "Get audit logs for specific resource"
-      argument :resource_type, :atom, allow_nil?: false
-      argument :resource_id, :uuid, allow_nil?: false
-      filter expr(target_resource_type == ^arg(:resource_type) and target_resource_id == ^arg(:resource_id))
-    end
-
-    destroy :archive_old_logs do
-      description "Archive old audit logs"
-      filter expr(inserted_at < ago(365, :day))
-    end
-  end
-
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-  #
-  #   policy always() do
-  #     authorize_if always()
-  #   end
-  # end
-
-  code_interface do
-    define :log_action
-    define :by_user, args: [:user_id]
-    define :by_resource, args: [:resource_type, :resource_id]
-    define :archive_old_logs, action: :archive_old_logs
-  end
-
-  postgres do
-    table "thundereye_audit_logs"
-    repo Thunderline.Repo
-
-    custom_indexes do
-      index [:target_resource_type, :target_resource_id], name: "audit_logs_target_idx"
-      index [:actor_id, :action_type], name: "audit_logs_actor_idx"
-      index [:inserted_at], name: "audit_logs_time_idx"
-    end
   end
 end

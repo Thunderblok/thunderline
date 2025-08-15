@@ -12,13 +12,116 @@ defmodule Thunderline.Thunderbolt.Resources.TelemetrySnapshot do
     extensions: [AshJsonApi.Resource],
     authorizers: [Ash.Policy.Authorizer]
 
+  postgres do
+    table "thunderlane_telemetry_snapshots"
+    repo Thunderline.Repo
+  end
+
   json_api do
     type "telemetry_snapshots"
   end
 
-  postgres do
-    table "thunderlane_telemetry_snapshots"
-    repo Thunderline.Repo
+  code_interface do
+    define :create
+    define :read
+    define :capture_window_snapshot
+    define :capture_burst_snapshot
+    define :capture_anomaly_snapshot
+  end
+
+  actions do
+    defaults [:read]
+
+    create :create do
+      accept [
+        :coordinator_id,
+        :snapshot_type,
+        :window_start_ms,
+        :window_end_ms,
+        :window_duration_ms,
+        :total_events,
+        :event_rate_per_second,
+        :burst_count,
+        :anti_bunching_effectiveness,
+        :displacement_mean,
+        :displacement_variance,
+        :tail_exponent,
+        :tail_fit_quality,
+        :latency_mean_us,
+        :latency_median_us,
+        :latency_p90_us,
+        :latency_p95_us,
+        :latency_p99_us,
+        :latency_p999_us,
+        :latency_max_us,
+        :queue_depth_mean,
+        :queue_depth_max,
+        :backpressure_events,
+        :dropped_events,
+        :cpu_usage_mean,
+        :memory_usage_mean_mb,
+        :memory_usage_max_mb,
+        :gc_count,
+        :gc_total_time_ms,
+        :network_bytes_in,
+        :network_bytes_out,
+        :coordination_messages,
+        :coordination_latency_us,
+        :error_count,
+        :anomaly_score,
+        :anomaly_features,
+        :lane_configuration_id,
+        :rule_oracle_id,
+        :metadata
+      ]
+    end
+
+    create :capture_window_snapshot do
+      accept [
+        :coordinator_id,
+        :window_start_ms,
+        :window_end_ms,
+        :total_events,
+        :latency_mean_us,
+        :latency_p99_us,
+        :cpu_usage_mean,
+        :lane_configuration_id
+      ]
+
+      change set_attribute(:snapshot_type, "window")
+    end
+
+    create :capture_burst_snapshot do
+      accept [
+        :coordinator_id,
+        :burst_count,
+        :anti_bunching_effectiveness,
+        :displacement_mean,
+        :tail_exponent,
+        :rule_oracle_id
+      ]
+
+      change set_attribute(:snapshot_type, "burst")
+    end
+
+    create :capture_anomaly_snapshot do
+      accept [
+        :coordinator_id,
+        :anomaly_score,
+        :anomaly_features,
+        :error_count,
+        :latency_max_us,
+        :queue_depth_max
+      ]
+
+      change set_attribute(:snapshot_type, "anomaly")
+    end
+  end
+
+  policies do
+    policy always() do
+      authorize_if always()
+    end
   end
 
   attributes do
@@ -32,7 +135,7 @@ defmodule Thunderline.Thunderbolt.Resources.TelemetrySnapshot do
     attribute :snapshot_type, :atom do
       description "Type of telemetry snapshot"
       allow_nil? false
-      constraints [one_of: [:window, :burst, :anomaly, :baseline]]
+      constraints one_of: [:window, :burst, :anomaly, :baseline]
     end
 
     attribute :window_start_ms, :integer do
@@ -64,7 +167,7 @@ defmodule Thunderline.Thunderbolt.Resources.TelemetrySnapshot do
 
     attribute :anti_bunching_effectiveness, :float do
       description "Effectiveness of anti-bunching measures (0.0 to 1.0)"
-      constraints [min: 0.0, max: 1.0]
+      constraints min: 0.0, max: 1.0
     end
 
     # CTRW tail statistics
@@ -82,7 +185,7 @@ defmodule Thunderline.Thunderbolt.Resources.TelemetrySnapshot do
 
     attribute :tail_fit_quality, :float do
       description "R-squared value for exponential tail fit quality"
-      constraints [min: 0.0, max: 1.0]
+      constraints min: 0.0, max: 1.0
     end
 
     # Latency distribution
@@ -136,7 +239,7 @@ defmodule Thunderline.Thunderbolt.Resources.TelemetrySnapshot do
     # System resource metrics
     attribute :cpu_usage_mean, :float do
       description "Mean CPU usage percentage during window"
-      constraints [min: 0.0, max: 100.0]
+      constraints min: 0.0, max: 100.0
     end
 
     attribute :memory_usage_mean_mb, :integer do
@@ -225,89 +328,57 @@ defmodule Thunderline.Thunderbolt.Resources.TelemetrySnapshot do
   end
 
   calculations do
-    calculate :throughput_score, :float, expr(
-      fragment("CASE WHEN ? > 0 THEN ?::float / ? ELSE 0.0 END",
-        window_duration_ms, total_events, window_duration_ms)
-    ) do
+    calculate :throughput_score,
+              :float,
+              expr(
+                fragment(
+                  "CASE WHEN ? > 0 THEN ?::float / ? ELSE 0.0 END",
+                  window_duration_ms,
+                  total_events,
+                  window_duration_ms
+                )
+              ) do
       description "Events processed per millisecond"
     end
 
-    calculate :latency_stability, :float, expr(
-      fragment("""
-        CASE
-          WHEN ? > 0 AND ? > 0 THEN
-            1.0 - (?::float - ?) / ?
-          ELSE 0.0
-        END
-      """, latency_mean_us, latency_median_us,
-           latency_p99_us, latency_median_us, latency_mean_us)
-    ) do
+    calculate :latency_stability,
+              :float,
+              expr(
+                fragment(
+                  """
+                    CASE
+                      WHEN ? > 0 AND ? > 0 THEN
+                        1.0 - (?::float - ?) / ?
+                      ELSE 0.0
+                    END
+                  """,
+                  latency_mean_us,
+                  latency_median_us,
+                  latency_p99_us,
+                  latency_median_us,
+                  latency_mean_us
+                )
+              ) do
       description "Stability score based on latency distribution"
     end
 
-    calculate :system_health_score, :float, expr(
-      fragment("""
-        LEAST(1.0,
-          (1.0 - ?::float / 100.0) * 0.4 +  -- CPU component
-          (1.0 - ?::float / 100.0) * 0.3 +  -- Anti-bunching component
-          (1.0 - ?::float / 1000.0) * 0.3   -- Error rate component
-        )
-      """, cpu_usage_mean,
-           fragment("100.0 - ? * 100.0", anti_bunching_effectiveness),
-           error_count)
-    ) do
+    calculate :system_health_score,
+              :float,
+              expr(
+                fragment(
+                  """
+                    LEAST(1.0,
+                      (1.0 - ?::float / 100.0) * 0.4 +  -- CPU component
+                      (1.0 - ?::float / 100.0) * 0.3 +  -- Anti-bunching component
+                      (1.0 - ?::float / 1000.0) * 0.3   -- Error rate component
+                    )
+                  """,
+                  cpu_usage_mean,
+                  fragment("100.0 - ? * 100.0", anti_bunching_effectiveness),
+                  error_count
+                )
+              ) do
       description "Overall system health score (0.0 to 1.0)"
     end
-  end
-
-  actions do
-    defaults [:read]
-
-    create :create do
-      accept [:coordinator_id, :snapshot_type, :window_start_ms, :window_end_ms,
-              :window_duration_ms, :total_events, :event_rate_per_second,
-              :burst_count, :anti_bunching_effectiveness, :displacement_mean,
-              :displacement_variance, :tail_exponent, :tail_fit_quality,
-              :latency_mean_us, :latency_median_us, :latency_p90_us,
-              :latency_p95_us, :latency_p99_us, :latency_p999_us, :latency_max_us,
-              :queue_depth_mean, :queue_depth_max, :backpressure_events,
-              :dropped_events, :cpu_usage_mean, :memory_usage_mean_mb,
-              :memory_usage_max_mb, :gc_count, :gc_total_time_ms,
-              :network_bytes_in, :network_bytes_out, :coordination_messages,
-              :coordination_latency_us, :error_count, :anomaly_score,
-              :anomaly_features, :lane_configuration_id, :rule_oracle_id, :metadata]
-    end
-
-    create :capture_window_snapshot do
-      accept [:coordinator_id, :window_start_ms, :window_end_ms, :total_events,
-              :latency_mean_us, :latency_p99_us, :cpu_usage_mean, :lane_configuration_id]
-      change set_attribute(:snapshot_type, "window")
-    end
-
-    create :capture_burst_snapshot do
-      accept [:coordinator_id, :burst_count, :anti_bunching_effectiveness,
-              :displacement_mean, :tail_exponent, :rule_oracle_id]
-      change set_attribute(:snapshot_type, "burst")
-    end
-
-    create :capture_anomaly_snapshot do
-      accept [:coordinator_id, :anomaly_score, :anomaly_features, :error_count,
-              :latency_max_us, :queue_depth_max]
-      change set_attribute(:snapshot_type, "anomaly")
-    end
-  end
-
-  policies do
-    policy always() do
-      authorize_if always()
-    end
-  end
-
-  code_interface do
-    define :create
-    define :read
-    define :capture_window_snapshot
-    define :capture_burst_snapshot
-    define :capture_anomaly_snapshot
   end
 end

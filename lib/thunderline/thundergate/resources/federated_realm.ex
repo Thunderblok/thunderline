@@ -10,8 +10,36 @@ defmodule Thunderline.Thundergate.Resources.FederatedRealm do
     domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
+
   import Ash.Resource.Change.Builtins
 
+  postgres do
+    table "thundercom_federated_realms"
+    repo Thunderline.Repo
+
+    custom_indexes do
+      index [:realm_name], unique: true
+      index [:trust_level]
+      index [:connection_status]
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:realm_name, :federation_url, :trust_level, :protocol_versions, :metadata]
+    end
+
+    update :establish_connection do
+      accept [:connection_status, :trust_level]
+    end
+
+    read :by_trust_level do
+      argument :trust_level, :atom, allow_nil?: false
+      filter expr(trust_level == ^arg(:trust_level))
+    end
+  end
 
   attributes do
     uuid_primary_key :id
@@ -54,33 +82,5 @@ defmodule Thunderline.Thundergate.Resources.FederatedRealm do
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      accept [:realm_name, :federation_url, :trust_level, :protocol_versions, :metadata]
-    end
-
-    update :establish_connection do
-      accept [:connection_status, :trust_level]
-    end
-
-    read :by_trust_level do
-      argument :trust_level, :atom, allow_nil?: false
-      filter expr(trust_level == ^arg(:trust_level))
-    end
-  end
-
-  postgres do
-    table "thundercom_federated_realms"
-    repo Thundercom.Repo
-
-    custom_indexes do
-      index [:realm_name], unique: true
-      index [:trust_level]
-      index [:connection_status]
-    end
   end
 end

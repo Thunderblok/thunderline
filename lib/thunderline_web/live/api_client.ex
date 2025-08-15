@@ -6,7 +6,12 @@ defmodule ThunderlineWeb.Live.ApiClient do
   Handles data fetching from all Thunderlane backend resources with proper error handling.
   """
 
-  alias Thunderline.Thunderflow.Resources.{LaneLaneConfiguration, LaneConsensusRun, LanePerformanceMetric, LaneTelemetrySnapshot}
+  alias Thunderline.Thunderflow.Resources.{
+    LaneLaneConfiguration,
+    LaneConsensusRun,
+    LanePerformanceMetric,
+    LaneTelemetrySnapshot
+  }
 
   @doc """
   Fetches all lane configurations with their current states and coupling data.
@@ -124,7 +129,8 @@ defmodule ThunderlineWeb.Live.ApiClient do
     cond do
       lane.name && String.contains?(lane.name, "Neural") -> :neural
       lane.name && String.contains?(lane.name, "Ising") -> :ising
-      true -> :ca  # default to cellular automata
+      # default to cellular automata
+      true -> :ca
     end
   end
 
@@ -133,21 +139,27 @@ defmodule ThunderlineWeb.Live.ApiClient do
       lane.name && String.contains?(lane.name, "X") -> :x_slice
       lane.name && String.contains?(lane.name, "Y") -> :y_slice
       lane.name && String.contains?(lane.name, "Z") -> :z_slice
-      true -> :x_slice  # default
+      # default
+      true -> :x_slice
     end
   end
 
   defp calculate_coupling_strength(lane) do
     # Calculate from lane's alpha values
     case lane do
-      %{alpha_xy: alpha_xy, alpha_xz: alpha_xz} when not is_nil(alpha_xy) and not is_nil(alpha_xz) ->
+      %{alpha_xy: alpha_xy, alpha_xz: alpha_xz}
+      when not is_nil(alpha_xy) and not is_nil(alpha_xz) ->
         (alpha_xy + alpha_xz) / 2.0
+
       %{alpha_xy: alpha_xy} when not is_nil(alpha_xy) ->
         alpha_xy
+
       %{alpha_xz: alpha_xz} when not is_nil(alpha_xz) ->
         alpha_xz
+
       _ ->
-        0.5  # default coupling
+        # default coupling
+        0.5
     end
   end
 
@@ -167,16 +179,49 @@ defmodule ThunderlineWeb.Live.ApiClient do
   # Fallback data to prevent dashboard crashes
   defp default_lane_configurations do
     [
-      %{id: "default_1", name: "Alpha-X", state: :active, lane_type: :ca, family: :x_slice, coupling_strength: 0.8},
-      %{id: "default_2", name: "Beta-Y", state: :draft, lane_type: :ising, family: :y_slice, coupling_strength: 0.6},
-      %{id: "default_3", name: "Gamma-Z", state: :draft, lane_type: :neural, family: :z_slice, coupling_strength: 0.9}
+      %{
+        id: "default_1",
+        name: "Alpha-X",
+        state: :active,
+        lane_type: :ca,
+        family: :x_slice,
+        coupling_strength: 0.8
+      },
+      %{
+        id: "default_2",
+        name: "Beta-Y",
+        state: :draft,
+        lane_type: :ising,
+        family: :y_slice,
+        coupling_strength: 0.6
+      },
+      %{
+        id: "default_3",
+        name: "Gamma-Z",
+        state: :draft,
+        lane_type: :neural,
+        family: :z_slice,
+        coupling_strength: 0.9
+      }
     ]
   end
 
   defp default_consensus_runs do
     [
-      %{id: "default_1", matrix_size: 64, status: :converged, trigger_reason: "system_init", success: true},
-      %{id: "default_2", matrix_size: 32, status: :running, trigger_reason: "scheduled", success: nil}
+      %{
+        id: "default_1",
+        matrix_size: 64,
+        status: :converged,
+        trigger_reason: "system_init",
+        success: true
+      },
+      %{
+        id: "default_2",
+        matrix_size: 32,
+        status: :running,
+        trigger_reason: "scheduled",
+        success: nil
+      }
     ]
   end
 

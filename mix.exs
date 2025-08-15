@@ -11,8 +11,10 @@ defmodule Thunderline.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:elixir, :app],
       start_permanent: Mix.env() == :prod,
+      listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      consolidate_protocols: Mix.env() != :dev
     ]
   end
 
@@ -28,10 +30,11 @@ defmodule Thunderline.MixProject do
 
   defp deps do
     [
+      {:ash_authentication, "~> 4.0"},
+      {:igniter, "~> 0.6", only: [:dev, :test]},
+
       # Phoenix
       {:phoenix, "~> 1.8.0"},
-      {:phoenix_ecto, "~> 4.4"},
-      {:ecto_sql, "~> 3.6"},
       {:phoenix_html, "~> 4.0"},
       {:live_ex_webrtc, "~> 0.8.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
@@ -47,7 +50,7 @@ defmodule Thunderline.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:swoosh, "~> 1.16"},
 
-      # Ash Framework
+      # Ash Framework (includes PostgreSQL support)
       {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.0"},
       {:ash_postgres, "~> 2.0"},
@@ -58,9 +61,6 @@ defmodule Thunderline.MixProject do
       {:opentelemetry_ash, "~> 0.1.3"},
       {:ash_state_machine, "~> 0.2.12"},
       {:ash_admin, "~> 0.11"},
-
-      # Database
-      {:postgrex, ">= 0.0.0"},
 
       # Additional deps
       {:uuid, "~> 1.1"},
@@ -78,9 +78,10 @@ defmodule Thunderline.MixProject do
       {:ex_sctp, "~> 0.1.2"},
       {:eagl, "~> 0.9.0"},
       {:simple_sat, "~> 0.1.3"},
-      {:stb_image, "~> 0.6"},  # Required for eagl image loading
-      {:ex_rose_tree, "~> 0.1.3"},  # For supervision tree visualization
-
+      # Required for eagl image loading
+      {:stb_image, "~> 0.6"},
+      # For supervision tree visualization
+      {:ex_rose_tree, "~> 0.1.3"},
 
       # Memory and Security
 
@@ -112,10 +113,8 @@ defmodule Thunderline.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      setup: ["deps.get", "ash.setup", "assets.setup", "assets.build"],
+      test: ["ash.setup --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind default", "esbuild default"],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]

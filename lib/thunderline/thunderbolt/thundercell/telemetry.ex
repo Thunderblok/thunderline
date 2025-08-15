@@ -7,7 +7,8 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Telemetry do
   use GenServer
   require Logger
 
-  @collection_interval 5_000  # 5 seconds
+  # 5 seconds
+  @collection_interval 5_000
 
   defstruct [
     :start_time,
@@ -53,6 +54,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Telemetry do
       metrics: initialize_metrics(),
       start_time: System.monotonic_time(:millisecond)
     }
+
     {:ok, state}
   end
 
@@ -100,10 +102,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Telemetry do
     # Schedule next collection
     timer = Process.send_after(self(), :collect_metrics, @collection_interval)
 
-    updated_state = %{state |
-      metrics: new_metrics,
-      collection_timer: timer
-    }
+    updated_state = %{state | metrics: new_metrics, collection_timer: timer}
     {:noreply, updated_state}
   end
 
@@ -117,6 +116,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Telemetry do
       nil -> :ok
       timer -> Process.cancel_timer(timer)
     end
+
     :ok
   end
 
@@ -147,25 +147,28 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Telemetry do
   defp update_generation_metrics(metrics, cluster_id, generation_time) do
     # Update cluster-specific metrics
     cluster_metrics = Map.get(metrics, :cluster_metrics, %{})
-    cluster_stats = Map.get(cluster_metrics, cluster_id, %{
-      generations: 0,
-      total_time: 0,
-      avg_time: 0.0,
-      min_time: :infinity,
-      max_time: 0
-    })
+
+    cluster_stats =
+      Map.get(cluster_metrics, cluster_id, %{
+        generations: 0,
+        total_time: 0,
+        avg_time: 0.0,
+        min_time: :infinity,
+        max_time: 0
+      })
 
     new_generations = Map.get(cluster_stats, :generations) + 1
     new_total_time = Map.get(cluster_stats, :total_time) + generation_time
     new_avg_time = new_total_time / new_generations
 
-    updated_cluster_stats = %{cluster_stats |
-      generations: new_generations,
-      total_time: new_total_time,
-      avg_time: new_avg_time,
-      min_time: min(Map.get(cluster_stats, :min_time), generation_time),
-      max_time: max(Map.get(cluster_stats, :max_time), generation_time),
-      last_generation_time: generation_time
+    updated_cluster_stats = %{
+      cluster_stats
+      | generations: new_generations,
+        total_time: new_total_time,
+        avg_time: new_avg_time,
+        min_time: min(Map.get(cluster_stats, :min_time), generation_time),
+        max_time: max(Map.get(cluster_stats, :max_time), generation_time),
+        last_generation_time: generation_time
     }
 
     updated_cluster_metrics = Map.put(cluster_metrics, cluster_id, updated_cluster_stats)
@@ -176,18 +179,16 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Telemetry do
     global_total_time = Map.get(global_stats, :total_generation_time) + generation_time
     global_avg_time = global_total_time / global_generations
 
-    updated_global_stats = %{global_stats |
-      total_generations: global_generations,
-      total_generation_time: global_total_time,
-      avg_generation_time: global_avg_time,
-      min_generation_time: min(Map.get(global_stats, :min_generation_time), generation_time),
-      max_generation_time: max(Map.get(global_stats, :max_generation_time), generation_time)
+    updated_global_stats = %{
+      global_stats
+      | total_generations: global_generations,
+        total_generation_time: global_total_time,
+        avg_generation_time: global_avg_time,
+        min_generation_time: min(Map.get(global_stats, :min_generation_time), generation_time),
+        max_generation_time: max(Map.get(global_stats, :max_generation_time), generation_time)
     }
 
-    %{metrics |
-      cluster_metrics: updated_cluster_metrics,
-      generation_stats: updated_global_stats
-    }
+    %{metrics | cluster_metrics: updated_cluster_metrics, generation_stats: updated_global_stats}
   end
 
   defp update_cluster_event_metrics(metrics, cluster_id, event) do

@@ -296,7 +296,8 @@ defmodule ThunderlineWeb.DomainStatsController do
         Map.has_key?(metrics, :memory_usage) and metrics.memory_usage > 90 ->
           ["High memory usage" | issues]
 
-        true -> issues
+        true ->
+          issues
       end
 
     case length(issues) do

@@ -10,8 +10,36 @@ defmodule Thunderline.Thundergate.Resources.RealmIdentity do
     domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource]
+
   import Ash.Resource.Change.Builtins
 
+  postgres do
+    table "thundercom_realm_identities"
+    repo Thunderline.Repo
+
+    custom_indexes do
+      index [:realm_id]
+      index [:fingerprint], unique: true
+      index [:verification_status]
+    end
+  end
+
+  actions do
+    defaults [:read]
+
+    create :create do
+      accept [:realm_id, :public_key, :key_algorithm, :fingerprint]
+    end
+
+    update :verify_identity do
+      accept [:verification_status, :verified_at]
+      require_atomic? false
+
+      change fn changeset, _context ->
+        Ash.Changeset.change_attribute(changeset, :verified_at, DateTime.utc_now())
+      end
+    end
+  end
 
   attributes do
     uuid_primary_key :id
@@ -55,38 +83,10 @@ defmodule Thunderline.Thundergate.Resources.RealmIdentity do
     update_timestamp :updated_at
   end
 
-  actions do
-    defaults [:read]
-
-    create :create do
-      accept [:realm_id, :public_key, :key_algorithm, :fingerprint]
-    end
-
-    update :verify_identity do
-      accept [:verification_status, :verified_at]
-      require_atomic? false
-
-      change fn changeset, _context ->
-        Ash.Changeset.change_attribute(changeset, :verified_at, DateTime.utc_now())
-      end
-    end
-  end
-
   relationships do
     belongs_to :federated_realm, Thunderline.Thundergate.Resources.FederatedRealm do
       source_attribute :realm_id
       destination_attribute :id
-    end
-  end
-
-  postgres do
-    table "thundercom_realm_identities"
-    repo Thundercom.Repo
-
-    custom_indexes do
-      index [:realm_id]
-      index [:fingerprint], unique: true
-      index [:verification_status]
     end
   end
 end

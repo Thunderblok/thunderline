@@ -19,20 +19,20 @@ defmodule ThunderlineWeb.DashboardComponents.AiGovernance do
               "px-2 py-1 text-xs rounded-full",
               governance_status_class(@governance_data.status)
             ]}>
-              <%= String.upcase(@governance_data.status) %>
+              {String.upcase(@governance_data.status)}
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div class="text-center">
               <div class="text-xl font-bold text-cyan-300">
-                <%= @governance_data.active_policies %>
+                {@governance_data.active_policies}
               </div>
               <div class="text-xs text-gray-400">Policies</div>
             </div>
             <div class="text-center">
               <div class="text-xl font-bold text-purple-300">
-                <%= @governance_data.compliance_score %>%
+                {@governance_data.compliance_score}%
               </div>
               <div class="text-xs text-gray-400">Compliance</div>
             </div>
@@ -48,16 +48,17 @@ defmodule ThunderlineWeb.DashboardComponents.AiGovernance do
                   <div class={[
                     "w-2 h-2 rounded-full",
                     severity_indicator_class(violation.severity)
-                  ]}></div>
-                  <span class="text-xs text-gray-300 truncate"><%= violation.policy %></span>
+                  ]}>
+                  </div>
+                  <span class="text-xs text-gray-300 truncate">{violation.policy}</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <span class="text-xs text-gray-400"><%= violation.agent %></span>
+                  <span class="text-xs text-gray-400">{violation.agent}</span>
                   <span class={[
                     "text-xs px-1 py-0.5 rounded",
                     severity_class(violation.severity)
                   ]}>
-                    <%= violation.severity %>
+                    {violation.severity}
                   </span>
                 </div>
               </div>
@@ -70,18 +71,18 @@ defmodule ThunderlineWeb.DashboardComponents.AiGovernance do
           <div class="space-y-2">
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">Monitored Agents</span>
-              <span class="text-blue-300"><%= @governance_data.monitored_agents %></span>
+              <span class="text-blue-300">{@governance_data.monitored_agents}</span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">Audit Trail Events</span>
-              <span class="text-green-300"><%= @governance_data.audit_events %></span>
+              <span class="text-green-300">{@governance_data.audit_events}</span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">Risk Assessment</span>
               <span class={[
                 risk_color(@governance_data.risk_level)
               ]}>
-                <%= String.upcase(@governance_data.risk_level) %>
+                {String.upcase(@governance_data.risk_level)}
               </span>
             </div>
           </div>
@@ -92,11 +93,11 @@ defmodule ThunderlineWeb.DashboardComponents.AiGovernance do
           <div class="space-y-1">
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">Explainable Decisions</span>
-              <span class="text-cyan-300"><%= @governance_data.explainable_percentage %>%</span>
+              <span class="text-cyan-300">{@governance_data.explainable_percentage}%</span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">Human Oversight</span>
-              <span class="text-purple-300"><%= @governance_data.human_oversight_percentage %>%</span>
+              <span class="text-purple-300">{@governance_data.human_oversight_percentage}%</span>
             </div>
           </div>
         </div>
@@ -105,10 +106,18 @@ defmodule ThunderlineWeb.DashboardComponents.AiGovernance do
     """
   end
 
-  defp governance_status_class("compliant"), do: "bg-green-500/20 text-green-300 border border-green-500/30"
-  defp governance_status_class("monitoring"), do: "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-  defp governance_status_class("violation"), do: "bg-red-500/20 text-red-300 border border-red-500/30"
-  defp governance_status_class("review"), do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+  defp governance_status_class("compliant"),
+    do: "bg-green-500/20 text-green-300 border border-green-500/30"
+
+  defp governance_status_class("monitoring"),
+    do: "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+
+  defp governance_status_class("violation"),
+    do: "bg-red-500/20 text-red-300 border border-red-500/30"
+
+  defp governance_status_class("review"),
+    do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+
   defp governance_status_class(_), do: "bg-gray-500/20 text-gray-300 border border-gray-500/30"
 
   defp severity_indicator_class("critical"), do: "bg-red-400 animate-pulse"

@@ -17,17 +17,12 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :workflow_id, :string, allow_nil?: false
-    attribute :step_name, :atom, allow_nil?: false
-    attribute :target_count, :integer, allow_nil?: false
-    attribute :current_count, :integer, default: 0
-    attribute :status, :atom, default: :pending, constraints: [one_of: [:pending, :in_progress, :completed, :failed]]
-    attribute :domain_context, :atom, allow_nil?: false
-    attribute :next_step_config, :map, default: %{}
+  code_interface do
+    domain Thunderline.Thunderblock.Domain
 
-    timestamps()
+    define :create
+    define :increment_count
+    define :for_workflow, args: [:workflow_id, :step_name]
   end
 
   actions do
@@ -44,7 +39,10 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
 
         changeset
         |> Ash.Changeset.change_attribute(:current_count, new_count)
-        |> Ash.Changeset.change_attribute(:status, if(new_count >= target, do: :completed, else: :in_progress))
+        |> Ash.Changeset.change_attribute(
+          :status,
+          if(new_count >= target, do: :completed, else: :in_progress)
+        )
       end
     end
 
@@ -52,17 +50,28 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
       argument :workflow_id, :string, allow_nil?: false
       argument :step_name, :atom
 
-      filter expr(workflow_id == ^arg(:workflow_id) and
-                  (is_nil(^arg(:step_name)) or step_name == ^arg(:step_name)))
+      filter expr(
+               workflow_id == ^arg(:workflow_id) and
+                 (is_nil(^arg(:step_name)) or step_name == ^arg(:step_name))
+             )
     end
   end
 
-  code_interface do
-    domain Thunderline.Thunderblock.Domain
+  attributes do
+    uuid_primary_key :id
+    attribute :workflow_id, :string, allow_nil?: false
+    attribute :step_name, :atom, allow_nil?: false
+    attribute :target_count, :integer, allow_nil?: false
+    attribute :current_count, :integer, default: 0
 
-    define :create
-    define :increment_count
-    define :for_workflow, args: [:workflow_id, :step_name]
+    attribute :status, :atom,
+      default: :pending,
+      constraints: [one_of: [:pending, :in_progress, :completed, :failed]]
+
+    attribute :domain_context, :atom, allow_nil?: false
+    attribute :next_step_config, :map, default: %{}
+
+    timestamps()
   end
 
   # AshOban configuration for orchestration automation

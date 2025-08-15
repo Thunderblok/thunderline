@@ -9,46 +9,9 @@ defmodule Thunderline.Thunderbolt.Resources.MagMacroCommand do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "thundermag_macro_commands"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-
-    attribute :command_type, :atom do
-      allow_nil? false
-    end
-
-    attribute :macro_input, :string do
-      allow_nil? false
-    end
-
-    attribute :micro_tasks, {:array, :map} do
-      allow_nil? false
-      default []
-    end
-
-    attribute :status, :atom do
-      allow_nil? false
-      default :pending
-    end
-
-    attribute :execution_metadata, :map do
-      default %{}
-    end
-
-    attribute :session_id, :uuid
-    attribute :zone_preferences, {:array, :string}, default: []
-    attribute :priority, :atom, default: :normal
-    attribute :estimated_duration_ms, :integer
-    attribute :actual_duration_ms, :integer
-
-    timestamps()
   end
 
   actions do
@@ -99,6 +62,40 @@ defmodule Thunderline.Thunderbolt.Resources.MagMacroCommand do
 
   preparations do
     prepare build(load: [:micro_tasks, :execution_metadata])
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :command_type, :atom do
+      allow_nil? false
+    end
+
+    attribute :macro_input, :string do
+      allow_nil? false
+    end
+
+    attribute :micro_tasks, {:array, :map} do
+      allow_nil? false
+      default []
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      default :pending
+    end
+
+    attribute :execution_metadata, :map do
+      default %{}
+    end
+
+    attribute :session_id, :uuid
+    attribute :zone_preferences, {:array, :string}, default: []
+    attribute :priority, :atom, default: :normal
+    attribute :estimated_duration_ms, :integer
+    attribute :actual_duration_ms, :integer
+
+    timestamps()
   end
 
   # === Private Functions ===

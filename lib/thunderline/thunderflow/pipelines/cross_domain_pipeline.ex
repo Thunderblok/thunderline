@@ -16,12 +16,14 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {Thunderflow.MnesiaProducer, [
-          table: Thunderflow.CrossDomainEvents,
-          poll_interval: 800,
-          max_batch_size: 40,
-          broadway_name: __MODULE__
-        ]}
+        module:
+          {Thunderflow.MnesiaProducer,
+           [
+             table: Thunderflow.CrossDomainEvents,
+             poll_interval: 800,
+             max_batch_size: 40,
+             broadway_name: __MODULE__
+           ]}
       ],
       processors: [
         default: [
@@ -166,6 +168,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
           "thunderflow:broadcast_completed",
           {:broadcast_events_processed, length(events)}
         )
+
         messages
 
       {:error, reason} ->
@@ -196,9 +199,11 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     })
   end
 
-  defp apply_transformation_rules(%{"transformation_rules" => rules} = event) when is_list(rules) do
+  defp apply_transformation_rules(%{"transformation_rules" => rules} = event)
+       when is_list(rules) do
     Enum.reduce(rules, event, &apply_transformation_rule/2)
   end
+
   defp apply_transformation_rules(event), do: event
 
   defp apply_transformation_rule(%{"type" => "field_mapping", "mappings" => mappings}, event) do
@@ -303,21 +308,30 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     end)
   end
 
-  defp create_domain_job("thundercore", params), do: Thunderchief.Jobs.ThundercoreProcessor.new(params) |> Oban.insert()
-  defp create_domain_job("thunderblock", params), do: Thunderchief.Jobs.ThundervaultProcessor.new(params) |> Oban.insert()
-  defp create_domain_job("thunderbolt", params), do: Thunderchief.Jobs.ThunderboltProcessor.new(params) |> Oban.insert()
-  defp create_domain_job("thunderblock", params), do: Thunderchief.Jobs.ThunderblockProcessor.new(params) |> Oban.insert()
+  defp create_domain_job("thundercore", params),
+    do: Thunderchief.Jobs.ThundercoreProcessor.new(params) |> Oban.insert()
+
+  defp create_domain_job("thunderblock", params),
+    do: Thunderchief.Jobs.ThundervaultProcessor.new(params) |> Oban.insert()
+
+  defp create_domain_job("thunderbolt", params),
+    do: Thunderchief.Jobs.ThunderboltProcessor.new(params) |> Oban.insert()
+
+  defp create_domain_job("thunderblock", params),
+    do: Thunderchief.Jobs.ThunderblockProcessor.new(params) |> Oban.insert()
+
   defp create_domain_job(_, _), do: {:error, :unknown_domain}
 
   defp notify_domain_processing_complete(domain, event_count) do
     PubSub.broadcast(
       Thunderline.PubSub,
       "thunderflow:domain_processing",
-      {:domain_events_processed, %{
-        domain: domain,
-        event_count: event_count,
-        timestamp: DateTime.utc_now()
-      }}
+      {:domain_events_processed,
+       %{
+         domain: domain,
+         event_count: event_count,
+         timestamp: DateTime.utc_now()
+       }}
     )
   end
 

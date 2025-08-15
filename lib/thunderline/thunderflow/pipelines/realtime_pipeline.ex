@@ -16,12 +16,15 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {Thunderflow.MnesiaProducer, [
-          table: Thunderflow.RealTimeEvents,
-          poll_interval: 100,  # Very fast polling for real-time events
-          max_batch_size: 100,
-          broadway_name: __MODULE__
-        ]}
+        module:
+          {Thunderflow.MnesiaProducer,
+           [
+             table: Thunderflow.RealTimeEvents,
+             # Very fast polling for real-time events
+             poll_interval: 100,
+             max_batch_size: 100,
+             broadway_name: __MODULE__
+           ]}
       ],
       processors: [
         default: [
@@ -34,7 +37,8 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
         agent_updates: [
           concurrency: 8,
           batch_size: 100,
-          batch_timeout: 100  # Very low latency for agent updates
+          # Very low latency for agent updates
+          batch_timeout: 100
         ],
         system_metrics: [
           concurrency: 4,
@@ -49,7 +53,8 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
         websocket_broadcasts: [
           concurrency: 6,
           batch_size: 200,
-          batch_timeout: 50  # Minimal latency for real-time UX
+          # Minimal latency for real-time UX
+          batch_timeout: 50
         ]
       ]
     )
@@ -92,11 +97,13 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
         PubSub.broadcast(
           Thunderline.PubSub,
           "thunderline:agents:batch_update",
-          {:agent_batch_processed, %{
-            count: length(events),
-            timestamp: DateTime.utc_now()
-          }}
+          {:agent_batch_processed,
+           %{
+             count: length(events),
+             timestamp: DateTime.utc_now()
+           }}
         )
+
         messages
 
       {:error, reason} ->
@@ -121,6 +128,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
           "thunderline:metrics:update",
           {:metrics_batch_processed, aggregated_metrics}
         )
+
         messages
 
       {:error, reason} ->
@@ -146,6 +154,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
           "thunderline_web:dashboard",
           {:dashboard_batch_update, dashboard_payload}
         )
+
         messages
 
       {:error, reason} ->
@@ -199,10 +208,14 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     Map.take(event, essential_fields)
   end
 
-  defp calculate_latency_budget(%{"event_type" => "agent_state_change"}), do: 10  # 10ms budget
-  defp calculate_latency_budget(%{"event_type" => "system_alert"}), do: 5       # 5ms budget
-  defp calculate_latency_budget(%{"event_type" => "dashboard_update"}), do: 50  # 50ms budget
-  defp calculate_latency_budget(_), do: 100                                     # 100ms default
+  # 10ms budget
+  defp calculate_latency_budget(%{"event_type" => "agent_state_change"}), do: 10
+  # 5ms budget
+  defp calculate_latency_budget(%{"event_type" => "system_alert"}), do: 5
+  # 50ms budget
+  defp calculate_latency_budget(%{"event_type" => "dashboard_update"}), do: 50
+  # 100ms default
+  defp calculate_latency_budget(_), do: 100
 
   defp determine_realtime_batcher(%{"event_type" => event_type}) do
     case event_type do
@@ -219,7 +232,8 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
         :websocket_broadcasts
 
       _ ->
-        :dashboard_updates  # Default fallback
+        # Default fallback
+        :dashboard_updates
     end
   end
 
@@ -249,9 +263,10 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   defp process_system_metrics_batch(events) do
     # Process metrics in parallel for different subsystems
-    metrics_by_subsystem = Enum.group_by(events, fn event ->
-      get_in(event, ["data", "subsystem"])
-    end)
+    metrics_by_subsystem =
+      Enum.group_by(events, fn event ->
+        get_in(event, ["data", "subsystem"])
+      end)
 
     Enum.each(metrics_by_subsystem, fn {subsystem, metrics} ->
       processed_metrics = aggregate_subsystem_metrics(subsystem, metrics)
@@ -399,7 +414,8 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
       |> Enum.map(fn event ->
         processed_at = event["processed_at"] || System.system_time(:microsecond)
         timestamp = event["timestamp"] || processed_at
-        abs(processed_at - timestamp) / 1000  # Convert to milliseconds
+        # Convert to milliseconds
+        abs(processed_at - timestamp) / 1000
       end)
 
     if length(latencies) > 0 do

@@ -27,238 +27,103 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
+
   import Ash.Resource.Change.Builtins
 
+  # ===== POSTGRES CONFIGURATION =====
+  postgres do
+    table "thunderblock_pac_homes"
+    repo Thunderline.Repo
 
-  # ===== ATTRIBUTES =====
-  attributes do
-    uuid_primary_key :id
-
-    attribute :home_name, :string do
-      allow_nil? false
-      description "Human-readable PAC home name"
-      constraints min_length: 1, max_length: 100
+    references do
+      reference :community, on_delete: :delete, on_update: :update
+      reference :zone_container, on_delete: :delete, on_update: :update
+      reference :system_events, on_delete: :delete, on_update: :update
     end
 
-    attribute :home_slug, :string do
-      allow_nil? false
-      description "URL-safe PAC home identifier"
-      constraints min_length: 1, max_length: 50, match: ~r/^[a-z0-9\-_]+$/
+    custom_indexes do
+      index [:home_slug, :community_id], unique: true, name: "pac_homes_slug_community_idx"
+      index [:owner_id, :status], name: "pac_homes_owner_idx"
+      index [:community_id, :status], name: "pac_homes_community_idx"
+      index [:status, :last_activity], name: "pac_homes_activity_idx"
+      index [:suspended_until], name: "pac_homes_suspension_idx"
+      index [:last_health_check], name: "pac_homes_health_idx"
+      index "USING GIN (agent_registry)", name: "pac_homes_agents_idx"
+      index "USING GIN (current_usage)", name: "pac_homes_usage_idx"
+      index "USING GIN (health_metrics)", name: "pac_homes_health_metrics_idx"
+      index "USING GIN (tags)", name: "pac_homes_tags_idx"
     end
 
-    attribute :status, :atom do
-      allow_nil? false
-      description "Current PAC home operational status"
-      default :provisioning
-      constraints one_of: [:provisioning, :active, :suspended, :maintenance, :terminated, :failed]
+    check_constraints do
+      check_constraint :valid_resource_limits, "jsonb_typeof(resource_limits) = 'object'"
+      check_constraint :valid_current_usage, "jsonb_typeof(current_usage) = 'object'"
+      check_constraint :suspension_logic, "(status = 'suspended') = (suspended_until IS NOT NULL)"
     end
-
-    attribute :owner_id, :uuid do
-      allow_nil? false
-      description "ID of the PAC home owner/user"
-    end
-
-    attribute :pac_config, :map do
-      allow_nil? false
-      description "PAC-specific configuration and preferences"
-      default %{
-        "auto_start_agents" => true,
-        "agent_restart_policy" => "on_failure",
-        "enable_scheduling" => true,
-        "enable_networking" => true,
-        "enable_persistence" => true,
-        "privacy_mode" => "community_visible"
-      }
-    end
-
-    attribute :resource_limits, :map do
-      allow_nil? false
-      description "Resource allocation limits for this PAC home"
-      default %{
-        "max_agents" => 10,
-        "max_memory_mb" => 256,
-        "max_cpu_percent" => 50,
-        "max_storage_mb" => 1024,
-        "max_network_connections" => 20,
-        "max_scheduled_tasks" => 50
-      }
-    end
-
-    attribute :current_usage, :map do
-      allow_nil? false
-      description "Current resource usage metrics"
-      default %{
-        "agent_count" => 0,
-        "memory_mb" => 0,
-        "cpu_percent" => 0,
-        "storage_mb" => 0,
-        "network_connections" => 0,
-        "scheduled_tasks" => 0
-      }
-    end
-
-    attribute :agent_registry, :map do
-      allow_nil? false
-      description "Registry of deployed agents and their status"
-      default %{}
-      # Format: %{agent_id => %{name, status, type, last_seen, config}}
-    end
-
-    attribute :networking_config, :map do
-      allow_nil? false
-      description "Network configuration and connectivity settings"
-      default %{
-        "internal_ip" => nil,
-        "exposed_ports" => [],
-        "allowed_domains" => [],
-        "blocked_domains" => [],
-        "proxy_enabled" => false,
-        "ssl_enabled" => true
-      }
-    end
-
-    attribute :storage_config, :map do
-      allow_nil? false
-      description "Storage and persistence configuration"
-      default %{
-        "vault_mount_id" => nil,
-        "backup_enabled" => true,
-        "backup_frequency" => "daily",
-        "retention_days" => 30,
-        "encryption_enabled" => true
-      }
-    end
-
-    attribute :community_integration, :map do
-      allow_nil? false
-      description "Community-specific integration settings"
-      default %{
-        "shared_channels" => [],
-        "shared_resources" => [],
-        "community_roles" => [],
-        "federation_level" => "basic",
-        "cross_community_access" => false
-      }
-    end
-
-    attribute :agent_permissions, :map do
-      allow_nil? false
-      description "Permissions for agents within this PAC home"
-      default %{
-        "can_send_messages" => true,
-        "can_create_channels" => false,
-        "can_invite_users" => false,
-        "can_access_community_data" => false,
-        "can_execute_commands" => true,
-        "can_schedule_tasks" => true,
-        "can_access_external_apis" => false
-      }
-    end
-
-    attribute :automation_config, :map do
-      allow_nil? false
-      description "Personal automation and workflow configuration"
-      default %{
-        "workflows_enabled" => true,
-        "triggers_enabled" => true,
-        "max_concurrent_workflows" => 5,
-        "workflow_timeout_minutes" => 30,
-        "enable_ai_assistance" => true
-      }
-    end
-
-    attribute :health_metrics, :map do
-      allow_nil? false
-      description "PAC home health and performance metrics"
-      default %{
-        "uptime_percent" => 100.0,
-        "avg_response_time_ms" => 0,
-        "error_rate" => 0.0,
-        "agent_success_rate" => 100.0,
-        "resource_efficiency" => 1.0
-      }
-    end
-
-    attribute :last_activity, :utc_datetime do
-      allow_nil? true
-      description "Timestamp of last user or agent activity"
-    end
-
-    attribute :last_health_check, :utc_datetime do
-      allow_nil? true
-      description "Timestamp of last health check"
-    end
-
-    attribute :provisioned_at, :utc_datetime do
-      allow_nil? true
-      description "Timestamp when PAC home was fully provisioned"
-    end
-
-    attribute :suspended_until, :utc_datetime do
-      allow_nil? true
-      description "Timestamp until which PAC home is suspended"
-    end
-
-    attribute :suspension_reason, :string do
-      allow_nil? true
-      description "Reason for PAC home suspension"
-      constraints max_length: 500
-    end
-
-    attribute :backup_schedule, :map do
-      allow_nil? false
-      description "Backup scheduling and retention configuration"
-      default %{
-        "enabled" => true,
-        "frequency" => "daily",
-        "retention_count" => 7,
-        "last_backup" => nil,
-        "next_backup" => nil
-      }
-    end
-
-    attribute :tags, {:array, :string} do
-      allow_nil? false
-      description "PAC home categorization tags"
-      default []
-    end
-
-    attribute :metadata, :map do
-      allow_nil? false
-      description "Additional PAC home metadata"
-      default %{}
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
   end
 
-  # ===== RELATIONSHIPS =====
-  relationships do
-    belongs_to :community, Thunderline.Thunderlink.Resources.Community do
-      attribute_writable? true
-      source_attribute :community_id
-      destination_attribute :id
+  # ===== JSON API CONFIGURATION =====
+  json_api do
+    type "pac_home"
+
+    routes do
+      base("/pac_homes")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:update)
+      delete(:destroy)
+
+      # PAC home management endpoints
+      route(:post, "/:id/suspend", :suspend)
+      route(:post, "/:id/unsuspend", :unsuspend)
+      route(:post, "/:id/deploy_agent", :deploy_agent)
+      route(:post, "/:id/terminate_agent", :terminate_agent)
+      route(:patch, "/:id/update_usage", :update_usage)
+      route(:post, "/:id/health_check", :health_check)
+      route(:post, "/:id/backup", :backup_now)
+
+      # Query endpoints removed - use regular index with query parameters instead
+      # Example: GET /pac_homes?filter[owner_id]=123
+      # Example: GET /pac_homes?filter[status]=active
+
+      # Maintenance endpoints
+      route(:delete, "/cleanup_terminated", :cleanup_terminated)
+      route(:patch, "/auto_unsuspend", :auto_unsuspend)
     end
+  end
 
-    belongs_to :zone_container, Thunderblock.Resources.ZoneContainer do
-      source_attribute :zone_container_id
-      destination_attribute :id
-    end
+  # ===== POLICIES =====
+  # policies do
+  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+  #     authorize_if always()
+  #   end
+  #
+  #   policy always() do
+  #     authorize_if always()
+  #   end
+  # end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
-      destination_attribute :target_resource_id
-      filter expr(target_resource_type == :pac_home)
-    end
-
-    # Note: In full implementation, would relate to actual agent resources
-    # has_many :agents, Thunderbit.Resources.Agent do
-    #   destination_attribute :pac_home_id
-    # end
-
-    # has_many :scheduled_tasks, Thunderbit.Resources.ScheduledTask do
-    #   destination_attribute :pac_home_id
-    # end
+  # ===== CODE INTERFACE =====
+  code_interface do
+    define :create
+    define :update
+    define :suspend, args: [:id, :reason, :duration_hours]
+    define :unsuspend, args: [:id]
+    define :deploy_agent, args: [:id, :agent_config]
+    define :terminate_agent, args: [:id, :agent_id], action: :terminate_agent
+    define :update_usage, args: [:id, :current_usage, :health_metrics, :last_activity]
+    define :health_check, args: []
+    define :backup_now, args: []
+    define :by_owner, args: [:owner_id]
+    define :by_community, args: [:community_id]
+    define :by_status, args: [:status]
+    define :active_homes, action: :active_homes
+    define :resource_usage, args: [:threshold_percent]
+    define :suspended_homes, action: :suspended_homes
+    define :health_issues, action: :health_issues
+    define :backup_needed, action: :backup_needed
+    define :cleanup_terminated, action: :cleanup_terminated
+    define :auto_unsuspend, action: :auto_unsuspend
   end
 
   # ===== ACTIONS =====
@@ -267,10 +132,24 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
     create :create do
       description "Create and provision a new PAC home"
-      accept [:home_name, :home_slug, :owner_id, :pac_config, :resource_limits,
-              :networking_config, :storage_config, :community_integration,
-              :agent_permissions, :automation_config, :backup_schedule,
-              :tags, :metadata, :community_id, :zone_container_id]
+
+      accept [
+        :home_name,
+        :home_slug,
+        :owner_id,
+        :pac_config,
+        :resource_limits,
+        :networking_config,
+        :storage_config,
+        :community_integration,
+        :agent_permissions,
+        :automation_config,
+        :backup_schedule,
+        :tags,
+        :metadata,
+        :community_id,
+        :zone_container_id
+      ]
 
       change fn changeset, _context ->
         changeset
@@ -279,37 +158,49 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
       end
 
       change after_action(fn _changeset, pac_home, _context ->
-        # Provision PAC execution environment
-        provision_pac_environment(pac_home)
+               # Provision PAC execution environment
+               provision_pac_environment(pac_home)
 
-        # Initialize default agents if configured
-        initialize_default_agents(pac_home)
+               # Initialize default agents if configured
+               initialize_default_agents(pac_home)
 
-        # Set up backup scheduling
-        setup_backup_schedule(pac_home)
+               # Set up backup scheduling
+               setup_backup_schedule(pac_home)
 
-        # Register with community
-        register_with_community(pac_home)
+               # Register with community
+               register_with_community(pac_home)
 
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderblock:communities:#{pac_home.community_id}",
-          {:pac_home_created, %{
-            pac_home_id: pac_home.id,
-            owner_id: pac_home.owner_id,
-            home_name: pac_home.home_name
-          }}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thunderblock:communities:#{pac_home.community_id}",
+                 {:pac_home_created,
+                  %{
+                    pac_home_id: pac_home.id,
+                    owner_id: pac_home.owner_id,
+                    home_name: pac_home.home_name
+                  }}
+               )
 
-        {:ok, pac_home}
-      end)
+               {:ok, pac_home}
+             end)
     end
 
     update :update do
       description "Update PAC home configuration"
-      accept [:home_name, :pac_config, :resource_limits, :networking_config,
-              :storage_config, :community_integration, :agent_permissions,
-              :automation_config, :backup_schedule, :tags, :metadata]
+
+      accept [
+        :home_name,
+        :pac_config,
+        :resource_limits,
+        :networking_config,
+        :storage_config,
+        :community_integration,
+        :agent_permissions,
+        :automation_config,
+        :backup_schedule,
+        :tags,
+        :metadata
+      ]
     end
 
     update :activate do
@@ -324,23 +215,24 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
       end
 
       change after_action(fn _changeset, pac_home, _context ->
-        # Start PAC services and agents
-        start_pac_services(pac_home)
+               # Start PAC services and agents
+               start_pac_services(pac_home)
 
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderblock:pac_homes:#{pac_home.id}",
-          {:pac_home_activated, %{pac_home_id: pac_home.id, owner_id: pac_home.owner_id}}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thunderblock:pac_homes:#{pac_home.id}",
+                 {:pac_home_activated, %{pac_home_id: pac_home.id, owner_id: pac_home.owner_id}}
+               )
 
-        {:ok, pac_home}
-      end)
+               {:ok, pac_home}
+             end)
     end
 
     action :suspend, :struct do
       description "Suspend PAC home operations"
 
       argument :id, :uuid, allow_nil?: false
+
       argument :reason, :string do
         allow_nil? false
       end
@@ -356,13 +248,14 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
         suspended_until = DateTime.add(DateTime.utc_now(), duration * 3600, :second)
 
         # Update the PAC home
-        updated_pac_home = pac_home
-        |> Ash.Changeset.for_update(:internal_suspend, %{
-          status: :suspended,
-          suspended_until: suspended_until,
-          suspension_reason: reason
-        })
-        |> Thunderblock.Domain.update!()
+        updated_pac_home =
+          pac_home
+          |> Ash.Changeset.for_update(:internal_suspend, %{
+            status: :suspended,
+            suspended_until: suspended_until,
+            suspension_reason: reason
+          })
+          |> Thunderblock.Domain.update!()
 
         # Suspend PAC services
         suspend_pac_services(updated_pac_home)
@@ -392,13 +285,17 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
       run fn input, _context ->
         case Ash.get!(Thunderblock.Resources.PACHome, input.arguments.id) do
-          nil -> {:error, "PAC home not found"}
+          nil ->
+            {:error, "PAC home not found"}
+
           pac_home ->
-            result = Ash.update!(pac_home, :_unsuspend_internal, %{
-              status: :active,
-              suspended_until: nil,
-              suspension_reason: nil
-            })
+            result =
+              Ash.update!(pac_home, :_unsuspend_internal, %{
+                status: :active,
+                suspended_until: nil,
+                suspension_reason: nil
+              })
+
             {:ok, result}
         end
       end
@@ -417,17 +314,17 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
       end
 
       change after_action(fn _changeset, pac_home, _context ->
-        # Resume PAC services
-        resume_pac_services(pac_home)
+               # Resume PAC services
+               resume_pac_services(pac_home)
 
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderblock:pac_homes:#{pac_home.id}",
-          {:pac_home_unsuspended, %{pac_home_id: pac_home.id}}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thunderblock:pac_homes:#{pac_home.id}",
+                 {:pac_home_unsuspended, %{pac_home_id: pac_home.id}}
+               )
 
-        {:ok, pac_home}
-      end)
+               {:ok, pac_home}
+             end)
     end
 
     # Convert deploy_agent to action type for JSON API route
@@ -444,7 +341,9 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
       run fn input, _context ->
         case Ash.get!(Thunderblock.Resources.PACHome, input.arguments.id) do
-          nil -> {:error, "PAC home not found"}
+          nil ->
+            {:error, "PAC home not found"}
+
           pac_home ->
             agent_config = input.arguments.agent_config
             agent_id = Map.get(agent_config, "id", Ash.UUID.generate())
@@ -465,11 +364,12 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
             updated_registry = Map.put(current_registry, agent_id, agent_entry)
             updated_usage = Map.put(current_usage, "agent_count", map_size(updated_registry))
 
-            result = Ash.update!(pac_home, :_deploy_agent_internal, %{
-              agent_registry: updated_registry,
-              current_usage: updated_usage,
-              last_activity: DateTime.utc_now()
-            })
+            result =
+              Ash.update!(pac_home, :_deploy_agent_internal, %{
+                agent_registry: updated_registry,
+                current_usage: updated_usage,
+                last_activity: DateTime.utc_now()
+              })
 
             # Deploy agent to PAC environment
             deploy_agent_to_pac(result, agent_config)
@@ -477,10 +377,11 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
             Phoenix.PubSub.broadcast(
               Thunderline.PubSub,
               "thunderblock:pac_homes:#{result.id}",
-              {:agent_deployed, %{
-                pac_home_id: result.id,
-                agent_config: agent_config
-              }}
+              {:agent_deployed,
+               %{
+                 pac_home_id: result.id,
+                 agent_config: agent_config
+               }}
             )
 
             {:ok, result}
@@ -508,21 +409,25 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
       run fn input, _context ->
         case Ash.get!(Thunderblock.Resources.PACHome, input.arguments.id) do
-          nil -> {:error, "PAC home not found"}
+          nil ->
+            {:error, "PAC home not found"}
+
           pac_home ->
             current_registry = pac_home.agent_registry || %{}
             current_usage = pac_home.current_usage || %{}
             updated_registry = Map.delete(current_registry, input.arguments.agent_id)
             updated_usage = Map.put(current_usage, "agent_count", map_size(updated_registry))
 
-            result = Ash.update!(pac_home, :_terminate_agent_internal, %{
-              agent_registry: updated_registry,
-              current_usage: updated_usage,
-              last_activity: DateTime.utc_now()
-            })
+            result =
+              Ash.update!(pac_home, :_terminate_agent_internal, %{
+                agent_registry: updated_registry,
+                current_usage: updated_usage,
+                last_activity: DateTime.utc_now()
+              })
 
             # Perform environment termination and broadcast
             terminate_agent_in_pac(result, input.arguments.agent_id)
+
             Phoenix.PubSub.broadcast(
               Thunderline.PubSub,
               "thunderblock:pac_homes:#{result.id}",
@@ -553,12 +458,15 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
       run fn input, _context ->
         case Ash.get!(Thunderblock.Resources.PACHome, input.arguments.id) do
-          nil -> {:error, "PAC home not found"}
+          nil ->
+            {:error, "PAC home not found"}
+
           pac_home ->
-            updates = %{}
-            |> maybe_put(:current_usage, input.arguments.current_usage)
-            |> maybe_put(:health_metrics, input.arguments.health_metrics)
-            |> maybe_put(:last_activity, input.arguments.last_activity)
+            updates =
+              %{}
+              |> maybe_put(:current_usage, input.arguments.current_usage)
+              |> maybe_put(:health_metrics, input.arguments.health_metrics)
+              |> maybe_put(:last_activity, input.arguments.last_activity)
 
             result = Ash.update!(pac_home, :_update_usage_internal, updates)
 
@@ -587,7 +495,7 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
     action :health_check, :struct do
       description "Perform comprehensive health check"
-      constraints [instance_of: Thunderblock.Resources.PACHome]
+      constraints instance_of: Thunderblock.Resources.PACHome
 
       run fn input, _context ->
         # Basic health check logic - return the PAC home with updated health status
@@ -597,7 +505,7 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
     action :backup_now, :struct do
       description "Trigger immediate backup"
-      constraints [instance_of: Thunderblock.Resources.PACHome]
+      constraints instance_of: Thunderblock.Resources.PACHome
 
       run fn input, _context ->
         # Basic backup logic - return the PAC home with backup triggered
@@ -656,7 +564,7 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
         threshold = context.arguments.threshold_percent / 100.0
         # Custom logic for resource usage filtering would go here
         query
-        |> Ash.Query.sort([last_activity: :desc])
+        |> Ash.Query.sort(last_activity: :desc)
       end
     end
 
@@ -699,7 +607,7 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
     # Cleanup actions
     action :cleanup_terminated, {:array, :struct} do
       description "Remove terminated PAC homes"
-      constraints [instance_of: Thunderblock.Resources.PACHome]
+      constraints instance_of: Thunderblock.Resources.PACHome
 
       run fn _input, _context ->
         # Find terminated PAC homes older than 7 days
@@ -711,7 +619,7 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
     # Auto-unsuspend expired suspensions
     action :auto_unsuspend, {:array, :struct} do
       description "Auto-unsuspend expired suspensions"
-      constraints [instance_of: Thunderblock.Resources.PACHome]
+      constraints instance_of: Thunderblock.Resources.PACHome
 
       run fn _input, _context ->
         # Find and unsuspend expired suspended PAC homes
@@ -720,100 +628,260 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
     end
   end
 
-  # ===== POLICIES =====
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-  #
-  #   policy always() do
-  #     authorize_if always()
-  #   end
-  # end
-
-  # ===== CODE INTERFACE =====
-  code_interface do
-    define :create
-    define :update
-    define :suspend, args: [:id, :reason, :duration_hours]
-    define :unsuspend, args: [:id]
-    define :deploy_agent, args: [:id, :agent_config]
-  define :terminate_agent, args: [:id, :agent_id], action: :terminate_agent
-    define :update_usage, args: [:id, :current_usage, :health_metrics, :last_activity]
-    define :health_check, args: []
-    define :backup_now, args: []
-    define :by_owner, args: [:owner_id]
-    define :by_community, args: [:community_id]
-    define :by_status, args: [:status]
-    define :active_homes, action: :active_homes
-    define :resource_usage, args: [:threshold_percent]
-    define :suspended_homes, action: :suspended_homes
-    define :health_issues, action: :health_issues
-    define :backup_needed, action: :backup_needed
-    define :cleanup_terminated, action: :cleanup_terminated
-    define :auto_unsuspend, action: :auto_unsuspend
+  # ===== PREPARATIONS =====
+  preparations do
+    prepare build(load: [:community, :zone_container, :system_events])
   end
 
-  # ===== POSTGRES CONFIGURATION =====
-  postgres do
-    table "thunderblock_pac_homes"
-    repo Thunderline.Repo
-
-    references do
-      reference :community, on_delete: :delete, on_update: :update
-      reference :zone_container, on_delete: :delete, on_update: :update
-      reference :system_events, on_delete: :delete, on_update: :update
-    end
-
-    custom_indexes do
-      index [:home_slug, :community_id], unique: true, name: "pac_homes_slug_community_idx"
-      index [:owner_id, :status], name: "pac_homes_owner_idx"
-      index [:community_id, :status], name: "pac_homes_community_idx"
-      index [:status, :last_activity], name: "pac_homes_activity_idx"
-      index [:suspended_until], name: "pac_homes_suspension_idx"
-      index [:last_health_check], name: "pac_homes_health_idx"
-      index "USING GIN (agent_registry)", name: "pac_homes_agents_idx"
-      index "USING GIN (current_usage)", name: "pac_homes_usage_idx"
-      index "USING GIN (health_metrics)", name: "pac_homes_health_metrics_idx"
-      index "USING GIN (tags)", name: "pac_homes_tags_idx"
-    end
-
-    check_constraints do
-      check_constraint :valid_resource_limits, "jsonb_typeof(resource_limits) = 'object'"
-      check_constraint :valid_current_usage, "jsonb_typeof(current_usage) = 'object'"
-      check_constraint :suspension_logic, "(status = 'suspended') = (suspended_until IS NOT NULL)"
-    end
+  # ===== VALIDATIONS =====
+  validations do
+    validate present([:home_name, :home_slug, :owner_id, :community_id])
+    # TODO: Fix validation syntax for Ash 3.x
+    # validate {Thunderblock.Validations, :valid_pac_home_slug}, on: [:create, :update]
+    # TODO: Fix validation syntax for Ash 3.x
+    # validate {Thunderblock.Validations, :resource_limits_structure}, on: [:create, :update]
+    # validate {Thunderblock.Validations, :pac_config_structure}, on: [:create, :update]
   end
 
-  # ===== JSON API CONFIGURATION =====
-  json_api do
-    type "pac_home"
+  # ===== ATTRIBUTES =====
+  attributes do
+    uuid_primary_key :id
 
-    routes do
-      base "/pac_homes"
-      get :read
-      index :read
-      post :create
-      patch :update
-      delete :destroy
-
-      # PAC home management endpoints
-      route :post, "/:id/suspend", :suspend
-      route :post, "/:id/unsuspend", :unsuspend
-      route :post, "/:id/deploy_agent", :deploy_agent
-      route :post, "/:id/terminate_agent", :terminate_agent
-      route :patch, "/:id/update_usage", :update_usage
-      route :post, "/:id/health_check", :health_check
-      route :post, "/:id/backup", :backup_now
-
-      # Query endpoints removed - use regular index with query parameters instead
-      # Example: GET /pac_homes?filter[owner_id]=123
-      # Example: GET /pac_homes?filter[status]=active
-
-      # Maintenance endpoints
-      route :delete, "/cleanup_terminated", :cleanup_terminated
-      route :patch, "/auto_unsuspend", :auto_unsuspend
+    attribute :home_name, :string do
+      allow_nil? false
+      description "Human-readable PAC home name"
+      constraints min_length: 1, max_length: 100
     end
+
+    attribute :home_slug, :string do
+      allow_nil? false
+      description "URL-safe PAC home identifier"
+      constraints min_length: 1, max_length: 50, match: ~r/^[a-z0-9\-_]+$/
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      description "Current PAC home operational status"
+      default :provisioning
+      constraints one_of: [:provisioning, :active, :suspended, :maintenance, :terminated, :failed]
+    end
+
+    attribute :owner_id, :uuid do
+      allow_nil? false
+      description "ID of the PAC home owner/user"
+    end
+
+    attribute :pac_config, :map do
+      allow_nil? false
+      description "PAC-specific configuration and preferences"
+
+      default %{
+        "auto_start_agents" => true,
+        "agent_restart_policy" => "on_failure",
+        "enable_scheduling" => true,
+        "enable_networking" => true,
+        "enable_persistence" => true,
+        "privacy_mode" => "community_visible"
+      }
+    end
+
+    attribute :resource_limits, :map do
+      allow_nil? false
+      description "Resource allocation limits for this PAC home"
+
+      default %{
+        "max_agents" => 10,
+        "max_memory_mb" => 256,
+        "max_cpu_percent" => 50,
+        "max_storage_mb" => 1024,
+        "max_network_connections" => 20,
+        "max_scheduled_tasks" => 50
+      }
+    end
+
+    attribute :current_usage, :map do
+      allow_nil? false
+      description "Current resource usage metrics"
+
+      default %{
+        "agent_count" => 0,
+        "memory_mb" => 0,
+        "cpu_percent" => 0,
+        "storage_mb" => 0,
+        "network_connections" => 0,
+        "scheduled_tasks" => 0
+      }
+    end
+
+    attribute :agent_registry, :map do
+      allow_nil? false
+      description "Registry of deployed agents and their status"
+      default %{}
+      # Format: %{agent_id => %{name, status, type, last_seen, config}}
+    end
+
+    attribute :networking_config, :map do
+      allow_nil? false
+      description "Network configuration and connectivity settings"
+
+      default %{
+        "internal_ip" => nil,
+        "exposed_ports" => [],
+        "allowed_domains" => [],
+        "blocked_domains" => [],
+        "proxy_enabled" => false,
+        "ssl_enabled" => true
+      }
+    end
+
+    attribute :storage_config, :map do
+      allow_nil? false
+      description "Storage and persistence configuration"
+
+      default %{
+        "vault_mount_id" => nil,
+        "backup_enabled" => true,
+        "backup_frequency" => "daily",
+        "retention_days" => 30,
+        "encryption_enabled" => true
+      }
+    end
+
+    attribute :community_integration, :map do
+      allow_nil? false
+      description "Community-specific integration settings"
+
+      default %{
+        "shared_channels" => [],
+        "shared_resources" => [],
+        "community_roles" => [],
+        "federation_level" => "basic",
+        "cross_community_access" => false
+      }
+    end
+
+    attribute :agent_permissions, :map do
+      allow_nil? false
+      description "Permissions for agents within this PAC home"
+
+      default %{
+        "can_send_messages" => true,
+        "can_create_channels" => false,
+        "can_invite_users" => false,
+        "can_access_community_data" => false,
+        "can_execute_commands" => true,
+        "can_schedule_tasks" => true,
+        "can_access_external_apis" => false
+      }
+    end
+
+    attribute :automation_config, :map do
+      allow_nil? false
+      description "Personal automation and workflow configuration"
+
+      default %{
+        "workflows_enabled" => true,
+        "triggers_enabled" => true,
+        "max_concurrent_workflows" => 5,
+        "workflow_timeout_minutes" => 30,
+        "enable_ai_assistance" => true
+      }
+    end
+
+    attribute :health_metrics, :map do
+      allow_nil? false
+      description "PAC home health and performance metrics"
+
+      default %{
+        "uptime_percent" => 100.0,
+        "avg_response_time_ms" => 0,
+        "error_rate" => 0.0,
+        "agent_success_rate" => 100.0,
+        "resource_efficiency" => 1.0
+      }
+    end
+
+    attribute :last_activity, :utc_datetime do
+      allow_nil? true
+      description "Timestamp of last user or agent activity"
+    end
+
+    attribute :last_health_check, :utc_datetime do
+      allow_nil? true
+      description "Timestamp of last health check"
+    end
+
+    attribute :provisioned_at, :utc_datetime do
+      allow_nil? true
+      description "Timestamp when PAC home was fully provisioned"
+    end
+
+    attribute :suspended_until, :utc_datetime do
+      allow_nil? true
+      description "Timestamp until which PAC home is suspended"
+    end
+
+    attribute :suspension_reason, :string do
+      allow_nil? true
+      description "Reason for PAC home suspension"
+      constraints max_length: 500
+    end
+
+    attribute :backup_schedule, :map do
+      allow_nil? false
+      description "Backup scheduling and retention configuration"
+
+      default %{
+        "enabled" => true,
+        "frequency" => "daily",
+        "retention_count" => 7,
+        "last_backup" => nil,
+        "next_backup" => nil
+      }
+    end
+
+    attribute :tags, {:array, :string} do
+      allow_nil? false
+      description "PAC home categorization tags"
+      default []
+    end
+
+    attribute :metadata, :map do
+      allow_nil? false
+      description "Additional PAC home metadata"
+      default %{}
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  # ===== RELATIONSHIPS =====
+  relationships do
+    belongs_to :community, Thunderline.Thunderlink.Resources.Community do
+      attribute_writable? true
+      source_attribute :community_id
+      destination_attribute :id
+    end
+
+    belongs_to :zone_container, Thunderblock.Resources.ZoneContainer do
+      source_attribute :zone_container_id
+      destination_attribute :id
+    end
+
+    has_many :system_events, Thunderblock.Resources.SystemEvent do
+      destination_attribute :target_resource_id
+      filter expr(target_resource_type == :pac_home)
+    end
+
+    # Note: In full implementation, would relate to actual agent resources
+    # has_many :agents, Thunderbit.Resources.Agent do
+    #   destination_attribute :pac_home_id
+    # end
+
+    # has_many :scheduled_tasks, Thunderbit.Resources.ScheduledTask do
+    #   destination_attribute :pac_home_id
+    # end
   end
 
   # ===== OBAN CONFIGURATION =====
@@ -829,21 +897,6 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
   identities do
     identity :unique_home_in_community, [:home_slug, :community_id]
     identity :unique_owner_home_name, [:owner_id, :home_name]
-  end
-
-  # ===== VALIDATIONS =====
-  validations do
-    validate present([:home_name, :home_slug, :owner_id, :community_id])
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :valid_pac_home_slug}, on: [:create, :update]
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :resource_limits_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :pac_config_structure}, on: [:create, :update]
-  end
-
-  # ===== PREPARATIONS =====
-  preparations do
-    prepare build(load: [:community, :zone_container, :system_events])
   end
 
   # ===== PRIVATE FUNCTIONS =====
@@ -902,10 +955,14 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
     # Update health metrics
     updated_metrics = %{
-      "uptime_percent" => 100.0,  # Would be calculated from actual uptime
-      "avg_response_time_ms" => 0,  # Would be calculated from performance data
-      "error_rate" => 0.0,  # Would be calculated from error logs
-      "agent_success_rate" => 100.0,  # Would be calculated from agent statistics
+      # Would be calculated from actual uptime
+      "uptime_percent" => 100.0,
+      # Would be calculated from performance data
+      "avg_response_time_ms" => 0,
+      # Would be calculated from error logs
+      "error_rate" => 0.0,
+      # Would be calculated from agent statistics
+      "agent_success_rate" => 100.0,
       "resource_efficiency" => efficiency
     }
 
@@ -930,9 +987,9 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
     efficiency_factors
     |> Enum.reject(&is_nil/1)
     |> case do
-         [] -> 1.0
-         factors -> Enum.sum(factors) / length(factors)
-       end
+      [] -> 1.0
+      factors -> Enum.sum(factors) / length(factors)
+    end
   end
 
   defp usage_efficiency(key, usage, limits) do
@@ -943,10 +1000,14 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
       utilization = current / max_limit
       # Optimal efficiency around 70% utilization
       cond do
-        utilization < 0.3 -> 0.7  # Under-utilized
-        utilization < 0.7 -> 1.0  # Optimal range
-        utilization < 0.9 -> 0.8  # High utilization
-        true -> 0.5              # Over-utilized
+        # Under-utilized
+        utilization < 0.3 -> 0.7
+        # Optimal range
+        utilization < 0.7 -> 1.0
+        # High utilization
+        utilization < 0.9 -> 0.8
+        # Over-utilized
+        true -> 0.5
       end
     else
       1.0

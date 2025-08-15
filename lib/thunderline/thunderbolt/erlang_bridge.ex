@@ -57,7 +57,11 @@ defmodule Thunderline.ErlangBridge do
 
   @doc "Inject neural patterns into ThunderBolt using their pattern injection API"
   def inject_neural_pattern(bolt_id, pattern_type, coords, pattern_data) do
-    GenServer.call(__MODULE__, {:inject_pattern, bolt_id, pattern_type, coords, pattern_data}, 5000)
+    GenServer.call(
+      __MODULE__,
+      {:inject_pattern, bolt_id, pattern_type, coords, pattern_data},
+      5000
+    )
   end
 
   @doc "Connect to Cerebros neural architecture (for neural integration)"
@@ -146,12 +150,20 @@ defmodule Thunderline.ErlangBridge do
 
   @doc "Create connection between neural levels"
   def create_neural_connection(source_level, target_level, config) do
-    GenServer.call(__MODULE__, {:create_neural_connection, source_level, target_level, config}, 5000)
+    GenServer.call(
+      __MODULE__,
+      {:create_neural_connection, source_level, target_level, config},
+      5000
+    )
   end
 
   @doc "Create skip connection (bypass layers) - Cerebros feature"
   def create_skip_connection(source_level, target_level, skip_depth, config) do
-    GenServer.call(__MODULE__, {:create_skip_connection, source_level, target_level, skip_depth, config}, 5000)
+    GenServer.call(
+      __MODULE__,
+      {:create_skip_connection, source_level, target_level, skip_depth, config},
+      5000
+    )
   end
 
   @doc "Propagate neural signal through the network"
@@ -185,7 +197,11 @@ defmodule Thunderline.ErlangBridge do
 
   @doc "Connect two neurons with a synapse"
   def connect_neurons(source_neuron, target_neuron, synapse_config) do
-    GenServer.call(__MODULE__, {:connect_neurons, source_neuron, target_neuron, synapse_config}, 5000)
+    GenServer.call(
+      __MODULE__,
+      {:connect_neurons, source_neuron, target_neuron, synapse_config},
+      5000
+    )
   end
 
   @doc "Fire a neuron (generate action potential)"
@@ -283,6 +299,7 @@ defmodule Thunderline.ErlangBridge do
     case get_erlang_system_state() do
       {:ok, system_state} ->
         {:reply, {:ok, system_state}, %{state | last_state: system_state}}
+
       {:error, reason} ->
         Logger.warning("Failed to get Erlang system state: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -294,6 +311,7 @@ defmodule Thunderline.ErlangBridge do
       {:ok, thunderbolts} ->
         formatted_bolts = format_thunderbolts(thunderbolts)
         {:reply, {:ok, formatted_bolts}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -304,6 +322,7 @@ defmodule Thunderline.ErlangBridge do
       {:ok, bit_data} ->
         formatted_data = format_thunderbit_data(bit_data)
         {:reply, {:ok, formatted_data}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -313,6 +332,7 @@ defmodule Thunderline.ErlangBridge do
     case get_thundercell_node_status() do
       {:ok, node_status} ->
         {:reply, {:ok, node_status}, state}
+
       {:error, reason} ->
         Logger.warning("Failed to get node status: #{inspect(reason)}")
         {:reply, {:error, :node_status_unavailable}, state}
@@ -323,6 +343,7 @@ defmodule Thunderline.ErlangBridge do
     case get_thundercell_aggregated_metrics() do
       {:ok, metrics} ->
         {:reply, {:ok, metrics}, state}
+
       {:error, reason} ->
         Logger.warning("Failed to get aggregated metrics: #{inspect(reason)}")
         {:reply, {:error, :metrics_unavailable}, state}
@@ -333,6 +354,7 @@ defmodule Thunderline.ErlangBridge do
     case call_erlang_safe(:thundercell_deployer, :deploy_ruleset, [ruleset]) do
       {:ok, deployment_result} ->
         {:reply, {:ok, deployment_result}, state}
+
       {:error, reason} ->
         Logger.warning("Failed to deploy ruleset: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -343,6 +365,7 @@ defmodule Thunderline.ErlangBridge do
     case start_thundercell_cluster(cluster_config) do
       {:ok, cluster_result} ->
         {:reply, {:ok, cluster_result}, state}
+
       {:error, reason} ->
         Logger.warning("Failed to start cluster: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -372,16 +395,17 @@ defmodule Thunderline.ErlangBridge do
   def handle_call({:create_thunderbolt, bolt_config}, _from, state) do
     # Use Erlang team's thunderbolt_registry:create_thunderbolt/2
     case :rpc.call(state.erlang_node, :thunderbolt_registry, :create_thunderbolt, [
-      bolt_config.bolt_id,
-      %{
-        dimensions: bolt_config.dimensions || {32, 32, 32},
-        rules: bolt_config.rules || :conway,
-        initial_pattern: bolt_config.initial_pattern || :random
-      }
-    ]) do
+           bolt_config.bolt_id,
+           %{
+             dimensions: bolt_config.dimensions || {32, 32, 32},
+             rules: bolt_config.rules || :conway,
+             initial_pattern: bolt_config.initial_pattern || :random
+           }
+         ]) do
       {:ok, bolt_pid} ->
         Logger.info("✅ Created ThunderBolt #{bolt_config.bolt_id}")
         {:reply, {:ok, %{bolt_id: bolt_config.bolt_id, pid: bolt_pid}}, state}
+
       {:error, reason} ->
         Logger.error("❌ Failed to create ThunderBolt: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -394,6 +418,7 @@ defmodule Thunderline.ErlangBridge do
       snapshot when is_map(snapshot) ->
         Logger.debug("📸 Got ThunderBolt snapshot for #{bolt_id}")
         {:reply, {:ok, snapshot}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -406,11 +431,14 @@ defmodule Thunderline.ErlangBridge do
         # Also set evolution speed if provided
         if Map.has_key?(evolution_config, :generations_per_second) do
           :rpc.call(state.erlang_node, :thunderbolt_evolution, :set_evolution_speed, [
-            bolt_id, evolution_config.generations_per_second
+            bolt_id,
+            evolution_config.generations_per_second
           ])
         end
+
         Logger.info("🚀 Started evolution for ThunderBolt #{bolt_id}")
         {:reply, :ok, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -426,11 +454,13 @@ defmodule Thunderline.ErlangBridge do
     }
 
     case :rpc.call(state.erlang_node, :thunderbolt_stream, :create_stream_subscription, [
-      bolt_id, erlang_stream_config
-    ]) do
+           bolt_id,
+           erlang_stream_config
+         ]) do
       {:ok, stream_id} ->
         Logger.info("📡 Created stream #{stream_id} for ThunderBolt #{bolt_id}")
         {:reply, {:ok, %{stream_id: stream_id, bolt_id: bolt_id}}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -439,11 +469,15 @@ defmodule Thunderline.ErlangBridge do
   def handle_call({:inject_pattern, bolt_id, pattern_type, coords, pattern_data}, _from, state) do
     # Use Erlang team's thunderbolt_evolution:inject_pattern/4
     case :rpc.call(state.erlang_node, :thunderbolt_evolution, :inject_pattern, [
-      bolt_id, pattern_type, coords, pattern_data
-    ]) do
+           bolt_id,
+           pattern_type,
+           coords,
+           pattern_data
+         ]) do
       :ok ->
         Logger.info("🧬 Injected #{pattern_type} pattern into ThunderBolt #{bolt_id}")
         {:reply, :ok, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -472,20 +506,28 @@ defmodule Thunderline.ErlangBridge do
     # Convert neural connections to CA patterns
     patterns = convert_neural_connections_to_patterns(connections)
 
-    results = for pattern <- patterns do
-      :rpc.call(state.erlang_node, :thunderbolt_evolution, :inject_pattern, [
-        bolt_id, :neural_connection, pattern.coords, pattern.data
-      ])
-    end
+    results =
+      for pattern <- patterns do
+        :rpc.call(state.erlang_node, :thunderbolt_evolution, :inject_pattern, [
+          bolt_id,
+          :neural_connection,
+          pattern.coords,
+          pattern.data
+        ])
+      end
 
     case Enum.all?(results, &(&1 == :ok)) do
       true ->
         Logger.info("🔗 Applied #{length(patterns)} neural connections to ThunderBolt #{bolt_id}")
         {:reply, :ok, state}
+
       false ->
         failed_patterns = Enum.count(results, &(&1 != :ok))
         Logger.warning("⚠️ Failed to apply #{failed_patterns} neural connections")
-        {:reply, {:partial_success, %{applied: length(patterns) - failed_patterns, failed: failed_patterns}}, state}
+
+        {:reply,
+         {:partial_success,
+          %{applied: length(patterns) - failed_patterns, failed: failed_patterns}}, state}
     end
   end
 
@@ -515,6 +557,7 @@ defmodule Thunderline.ErlangBridge do
       :ok ->
         Logger.info("Paused lane processing on node #{node} for dimension #{lane_dimension}")
         {:reply, :ok, state}
+
       {:error, reason} ->
         Logger.warning("Failed to pause lane processing: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -530,36 +573,60 @@ defmodule Thunderline.ErlangBridge do
       {:ok, level_id} ->
         Logger.info("🧠 Created neural architecture for bolt #{bolt_id}")
         {:reply, {:ok, level_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:create_neural_level, bolt_id, level_number, config}, _from, state) do
-    case call_erlang_safe(:thunderbolt_neural, :create_neural_level, [bolt_id, level_number, config]) do
+    case call_erlang_safe(:thunderbolt_neural, :create_neural_level, [
+           bolt_id,
+           level_number,
+           config
+         ]) do
       {:ok, level_id} ->
         Logger.info("🧠 Created neural level #{level_number} for bolt #{bolt_id}")
         {:reply, {:ok, level_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:create_neural_connection, source_level, target_level, config}, _from, state) do
-    case call_erlang_safe(:thunderbolt_neural, :create_neural_connection, [source_level, target_level, config]) do
+    case call_erlang_safe(:thunderbolt_neural, :create_neural_connection, [
+           source_level,
+           target_level,
+           config
+         ]) do
       {:ok, connection_id} ->
         Logger.info("🔗 Created neural connection #{source_level} -> #{target_level}")
         {:reply, {:ok, connection_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
-  def handle_call({:create_skip_connection, source_level, target_level, skip_depth, config}, _from, state) do
-    case call_erlang_safe(:thunderbolt_neural, :create_skip_connection, [source_level, target_level, skip_depth, config]) do
+  def handle_call(
+        {:create_skip_connection, source_level, target_level, skip_depth, config},
+        _from,
+        state
+      ) do
+    case call_erlang_safe(:thunderbolt_neural, :create_skip_connection, [
+           source_level,
+           target_level,
+           skip_depth,
+           config
+         ]) do
       {:ok, connection_id} ->
-        Logger.info("🔗 Created skip connection #{source_level} -> #{target_level} (depth: #{skip_depth})")
+        Logger.info(
+          "🔗 Created skip connection #{source_level} -> #{target_level} (depth: #{skip_depth})"
+        )
+
         {:reply, {:ok, connection_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -569,6 +636,7 @@ defmodule Thunderline.ErlangBridge do
     case call_erlang_safe(:thunderbolt_neural, :get_neural_topology, []) do
       {:ok, topology} ->
         {:reply, {:ok, topology}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -579,16 +647,21 @@ defmodule Thunderline.ErlangBridge do
       :ok ->
         Logger.info("🧠 Optimized neural connectivity using strategy: #{strategy}")
         {:reply, :ok, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:evolve_architecture, generations, fitness_function}, _from, state) do
-    case call_erlang_safe(:thunderbolt_neural, :evolve_architecture, [generations, fitness_function]) do
+    case call_erlang_safe(:thunderbolt_neural, :evolve_architecture, [
+           generations,
+           fitness_function
+         ]) do
       {:ok, best_architecture} ->
         Logger.info("🧬 Evolved neural architecture over #{generations} generations")
         {:reply, {:ok, best_architecture}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -601,16 +674,22 @@ defmodule Thunderline.ErlangBridge do
       {:ok, neuron_id} ->
         Logger.info("🧠 Created neuron #{neuron_id} at #{inspect(coordinates)}")
         {:reply, {:ok, neuron_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:connect_neurons, source_neuron, target_neuron, synapse_config}, _from, state) do
-    case call_erlang_safe(:thunderbit_neuron, :connect_neurons, [source_neuron, target_neuron, synapse_config]) do
+    case call_erlang_safe(:thunderbit_neuron, :connect_neurons, [
+           source_neuron,
+           target_neuron,
+           synapse_config
+         ]) do
       {:ok, synapse_id} ->
         Logger.info("🔗 Connected neurons #{source_neuron} -> #{target_neuron}")
         {:reply, {:ok, synapse_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -620,6 +699,7 @@ defmodule Thunderline.ErlangBridge do
     case call_erlang_safe(:thunderbit_neuron, :get_neuron_state, [neuron_id]) do
       {:ok, neuron_state} ->
         {:reply, {:ok, neuron_state}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -630,6 +710,7 @@ defmodule Thunderline.ErlangBridge do
       :ok ->
         Logger.info("🧠 Enabled STDP for neuron #{neuron_id}")
         {:reply, :ok, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -639,6 +720,7 @@ defmodule Thunderline.ErlangBridge do
     case call_erlang_safe(:thunderbit_neuron, :get_neuron_network, [bolt_id]) do
       {:ok, network} ->
         {:reply, {:ok, network}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -651,34 +733,48 @@ defmodule Thunderline.ErlangBridge do
       {:ok, hierarchy_id} ->
         Logger.info("🏗️ Created scale hierarchy #{hierarchy_id} for bolt #{bolt_id}")
         {:reply, {:ok, hierarchy_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:process_across_scales, hierarchy_id, input_data}, _from, state) do
-    case call_erlang_safe(:thunderbolt_multiscale, :process_across_scales, [hierarchy_id, input_data]) do
+    case call_erlang_safe(:thunderbolt_multiscale, :process_across_scales, [
+           hierarchy_id,
+           input_data
+         ]) do
       {:ok, processed_data} ->
         {:reply, {:ok, processed_data}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:get_scale_representation, hierarchy_id, scale_level}, _from, state) do
-    case call_erlang_safe(:thunderbolt_multiscale, :get_scale_representation, [hierarchy_id, scale_level]) do
+    case call_erlang_safe(:thunderbolt_multiscale, :get_scale_representation, [
+           hierarchy_id,
+           scale_level
+         ]) do
       {:ok, representation} ->
         {:reply, {:ok, representation}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:add_scale_level, hierarchy_id, scale_factor, config}, _from, state) do
-    case call_erlang_safe(:thunderbolt_multiscale, :add_scale_level, [hierarchy_id, scale_factor, config]) do
+    case call_erlang_safe(:thunderbolt_multiscale, :add_scale_level, [
+           hierarchy_id,
+           scale_factor,
+           config
+         ]) do
       {:ok, level_id} ->
         Logger.info("🏗️ Added scale level #{scale_factor} to hierarchy #{hierarchy_id}")
         {:reply, {:ok, level_id}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -688,6 +784,7 @@ defmodule Thunderline.ErlangBridge do
     case call_erlang_safe(:thunderbolt_multiscale, :get_hierarchy_info, [hierarchy_id]) do
       {:ok, info} ->
         {:reply, {:ok, info}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -698,6 +795,7 @@ defmodule Thunderline.ErlangBridge do
       :ok ->
         Logger.info("🏗️ Enabled cross-scale learning for hierarchy #{hierarchy_id}")
         {:reply, :ok, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -709,12 +807,18 @@ defmodule Thunderline.ErlangBridge do
 
   @impl true
   def handle_cast({:propagate_neural_signal, source_level, signal, timestamp}, state) do
-    case call_erlang_safe(:thunderbolt_neural, :propagate_neural_signal, [source_level, signal, timestamp]) do
+    case call_erlang_safe(:thunderbolt_neural, :propagate_neural_signal, [
+           source_level,
+           signal,
+           timestamp
+         ]) do
       :ok ->
         Logger.debug("🔄 Propagated neural signal from level #{source_level}")
+
       {:error, reason} ->
         Logger.warning("Failed to propagate neural signal: #{inspect(reason)}")
     end
+
     {:noreply, state}
   end
 
@@ -722,9 +826,11 @@ defmodule Thunderline.ErlangBridge do
     case call_erlang_safe(:thunderbit_neuron, :fire_neuron, [neuron_id, intensity]) do
       :ok ->
         Logger.debug("⚡ Fired neuron #{neuron_id} with intensity #{intensity}")
+
       {:error, reason} ->
         Logger.warning("Failed to fire neuron: #{inspect(reason)}")
     end
+
     {:noreply, state}
   end
 
@@ -732,29 +838,43 @@ defmodule Thunderline.ErlangBridge do
     case call_erlang_safe(:thunderbit_neuron, :simulate_neural_step, [bolt_id]) do
       :ok ->
         Logger.debug("🧠 Simulated neural step for bolt #{bolt_id}")
+
       {:error, reason} ->
         Logger.warning("Failed to simulate neural step: #{inspect(reason)}")
     end
+
     {:noreply, state}
   end
 
   def handle_cast({:propagate_upward, hierarchy_id, source_scale, data}, state) do
-    case call_erlang_safe(:thunderbolt_multiscale, :propagate_upward, [hierarchy_id, source_scale, data]) do
+    case call_erlang_safe(:thunderbolt_multiscale, :propagate_upward, [
+           hierarchy_id,
+           source_scale,
+           data
+         ]) do
       :ok ->
         Logger.debug("🔼 Propagated upward from scale #{source_scale}")
+
       {:error, reason} ->
         Logger.warning("Failed upward propagation: #{inspect(reason)}")
     end
+
     {:noreply, state}
   end
 
   def handle_cast({:propagate_downward, hierarchy_id, source_scale, data}, state) do
-    case call_erlang_safe(:thunderbolt_multiscale, :propagate_downward, [hierarchy_id, source_scale, data]) do
+    case call_erlang_safe(:thunderbolt_multiscale, :propagate_downward, [
+           hierarchy_id,
+           source_scale,
+           data
+         ]) do
       :ok ->
         Logger.debug("🔽 Propagated downward from scale #{source_scale}")
+
       {:error, reason} ->
         Logger.warning("Failed downward propagation: #{inspect(reason)}")
     end
+
     {:noreply, state}
   end
 
@@ -764,11 +884,14 @@ defmodule Thunderline.ErlangBridge do
       :ok ->
         Logger.info("Successfully connected to Erlang CA system")
         {:noreply, %{state | erlang_connected: true}}
+
       {:error, :erlang_modules_unavailable} ->
         # Erlang modules not available - expected in development, retry less frequently
         Logger.debug("Erlang CA modules not available - using fallback metrics")
-        Process.send_after(self(), :connect_erlang, 30_000) # Try again in 30 seconds
+        # Try again in 30 seconds
+        Process.send_after(self(), :connect_erlang, 30_000)
         {:noreply, state}
+
       {:error, reason} ->
         Logger.warning("Failed to connect to Erlang: #{inspect(reason)}")
         # Retry connection in 5 seconds for other errors
@@ -868,6 +991,7 @@ defmodule Thunderline.ErlangBridge do
   defp format_thunderbolts(thunderbolts) when is_list(thunderbolts) do
     Enum.map(thunderbolts, &format_thunderbolt/1)
   end
+
   defp format_thunderbolts(data), do: data
 
   defp format_thunderbolt({bolt_id, bolt_state}) do
@@ -889,6 +1013,7 @@ defmodule Thunderline.ErlangBridge do
       last_scan: DateTime.utc_now()
     }
   end
+
   defp format_thunderbit_data(data), do: data
 
   defp execute_erlang_command(:start_evolution, [bolt_id]) do
@@ -956,7 +1081,7 @@ defmodule Thunderline.ErlangBridge do
     z = div(index, 1024)
 
     # Add some randomness based on connection strength
-    strength_offset = trunc((Map.get(connection, :strength, 0.5) * 10))
+    strength_offset = trunc(Map.get(connection, :strength, 0.5) * 10)
 
     {x + strength_offset, y, z}
   end
@@ -1019,13 +1144,14 @@ defmodule Thunderline.ErlangBridge do
   defp get_thundercell_node_status do
     try do
       cluster_count = Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor.get_cluster_count()
-      
-      {:ok, %{
-        node: Node.self(),
-        cluster_count: cluster_count,
-        status: :active,
-        timestamp: DateTime.utc_now()
-      }}
+
+      {:ok,
+       %{
+         node: Node.self(),
+         cluster_count: cluster_count,
+         status: :active,
+         timestamp: DateTime.utc_now()
+       }}
     rescue
       error -> {:error, error}
     end
@@ -1051,7 +1177,7 @@ defmodule Thunderline.ErlangBridge do
         ca_rules: Map.get(cluster_config, :ca_rules, default_ca_rules()),
         evolution_interval: Map.get(cluster_config, :evolution_interval, 100)
       }
-      
+
       case Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor.start_cluster(thundercell_config) do
         {:ok, pid} -> {:ok, %{cluster_id: thundercell_config.cluster_id, pid: pid}}
         error -> error
@@ -1066,16 +1192,18 @@ defmodule Thunderline.ErlangBridge do
       # For now, pause all clusters on this node
       # In a full implementation, this would pause specific lane dimensions
       clusters = Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor.list_clusters()
-      
-      results = for cluster <- clusters do
-        cluster_id = Map.get(cluster, :cluster_id)
-        if cluster_id do
-          Thunderline.Thunderbolt.ThunderCell.Cluster.pause_evolution(cluster_id)
-        else
-          :ok
+
+      results =
+        for cluster <- clusters do
+          cluster_id = Map.get(cluster, :cluster_id)
+
+          if cluster_id do
+            Thunderline.Thunderbolt.ThunderCell.Cluster.pause_evolution(cluster_id)
+          else
+            :ok
+          end
         end
-      end
-      
+
       case Enum.all?(results, &(&1 == :ok)) do
         true -> :ok
         false -> {:error, :partial_pause}
@@ -1088,9 +1216,12 @@ defmodule Thunderline.ErlangBridge do
   defp default_ca_rules do
     %{
       name: "Conway's Game of Life 3D",
-      birth_neighbors: [5, 6, 7],     # Neighbors needed for birth
-      survival_neighbors: [4, 5, 6],  # Neighbors needed for survival
-      neighbor_type: :moore_3d         # 26-neighbor Moore neighborhood
+      # Neighbors needed for birth
+      birth_neighbors: [5, 6, 7],
+      # Neighbors needed for survival
+      survival_neighbors: [4, 5, 6],
+      # 26-neighbor Moore neighborhood
+      neighbor_type: :moore_3d
     }
   end
 end

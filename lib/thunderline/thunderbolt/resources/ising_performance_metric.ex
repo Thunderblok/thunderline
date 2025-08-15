@@ -14,6 +14,93 @@ defmodule Thunderline.Thunderbolt.Resources.IsingPerformanceMetric do
     repo Thunderline.Repo
   end
 
+  code_interface do
+    define :create
+    define :record_benchmark
+    define :read
+    define :by_benchmark_name
+    define :performance_trends
+  end
+
+  actions do
+    defaults [:create, :read, :update, :destroy]
+
+    create :record_benchmark do
+      description "Record a new benchmark result"
+
+      argument :benchmark_result, :map, allow_nil?: false
+
+      change fn changeset, _context ->
+        result = Ash.Changeset.get_argument(changeset, :benchmark_result)
+
+        changeset
+        |> Ash.Changeset.change_attribute(
+          :benchmark_name,
+          Map.get(result, :benchmark_name, "unknown")
+        )
+        |> Ash.Changeset.change_attribute(:system_info, Map.get(result, :system_info, %{}))
+        |> Ash.Changeset.change_attribute(:problem_size, Map.get(result, :problem_size, %{}))
+        |> Ash.Changeset.change_attribute(
+          :algorithm_config,
+          Map.get(result, :algorithm_config, %{})
+        )
+        |> Ash.Changeset.change_attribute(:spins_per_second, Map.get(result, :spins_per_second))
+        |> Ash.Changeset.change_attribute(
+          :energy_evaluations_per_second,
+          Map.get(result, :energy_evaluations_per_second)
+        )
+        |> Ash.Changeset.change_attribute(:memory_usage_mb, Map.get(result, :memory_usage_mb))
+        |> Ash.Changeset.change_attribute(
+          :compilation_time_ms,
+          Map.get(result, :compilation_time_ms)
+        )
+        |> Ash.Changeset.change_attribute(:execution_time_ms, Map.get(result, :execution_time_ms))
+        |> Ash.Changeset.change_attribute(:total_time_ms, Map.get(result, :total_time_ms))
+        |> Ash.Changeset.change_attribute(:backend_info, Map.get(result, :backend_info, %{}))
+        |> Ash.Changeset.change_attribute(
+          :quality_metrics,
+          Map.get(result, :quality_metrics, %{})
+        )
+        |> Ash.Changeset.change_attribute(
+          :environment_tags,
+          Map.get(result, :environment_tags, [])
+        )
+      end
+    end
+
+    read :by_benchmark_name do
+      description "Get metrics for a specific benchmark"
+
+      argument :benchmark_name, :string, allow_nil?: false
+
+      filter expr(benchmark_name == ^arg(:benchmark_name))
+      prepare build(sort: [created_at: :desc])
+    end
+
+    read :list do
+      primary? true
+      prepare build(sort: [created_at: :desc])
+    end
+
+    read :performance_trends do
+      description "Get performance trends over time"
+
+      argument :benchmark_name, :string
+      argument :days_back, :integer, default: 30
+
+      filter expr(
+               if not is_nil(^arg(:benchmark_name)) do
+                 benchmark_name == ^arg(:benchmark_name)
+               else
+                 true
+               end and
+                 created_at >= ago(^arg(:days_back), :day)
+             )
+
+      prepare build(sort: [created_at: :asc])
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -83,104 +170,39 @@ defmodule Thunderline.Thunderbolt.Resources.IsingPerformanceMetric do
     end
   end
 
-  actions do
-    defaults [:create, :read, :update, :destroy]
-
-    create :record_benchmark do
-      description "Record a new benchmark result"
-
-      argument :benchmark_result, :map, allow_nil?: false
-
-      change fn changeset, _context ->
-        result = Ash.Changeset.get_argument(changeset, :benchmark_result)
-
-        changeset
-        |> Ash.Changeset.change_attribute(:benchmark_name, Map.get(result, :benchmark_name, "unknown"))
-        |> Ash.Changeset.change_attribute(:system_info, Map.get(result, :system_info, %{}))
-        |> Ash.Changeset.change_attribute(:problem_size, Map.get(result, :problem_size, %{}))
-        |> Ash.Changeset.change_attribute(:algorithm_config, Map.get(result, :algorithm_config, %{}))
-        |> Ash.Changeset.change_attribute(:spins_per_second, Map.get(result, :spins_per_second))
-        |> Ash.Changeset.change_attribute(:energy_evaluations_per_second, Map.get(result, :energy_evaluations_per_second))
-        |> Ash.Changeset.change_attribute(:memory_usage_mb, Map.get(result, :memory_usage_mb))
-        |> Ash.Changeset.change_attribute(:compilation_time_ms, Map.get(result, :compilation_time_ms))
-        |> Ash.Changeset.change_attribute(:execution_time_ms, Map.get(result, :execution_time_ms))
-        |> Ash.Changeset.change_attribute(:total_time_ms, Map.get(result, :total_time_ms))
-        |> Ash.Changeset.change_attribute(:backend_info, Map.get(result, :backend_info, %{}))
-        |> Ash.Changeset.change_attribute(:quality_metrics, Map.get(result, :quality_metrics, %{}))
-        |> Ash.Changeset.change_attribute(:environment_tags, Map.get(result, :environment_tags, []))
-      end
+  calculations do
+    calculate :performance_score,
+              :float,
+              expr(
+                spins_per_second / (memory_usage_mb + 1.0) *
+                  1000.0 / (execution_time_ms + 1.0)
+              ) do
+      description "Composite performance score"
     end
 
-    read :by_benchmark_name do
-      description "Get metrics for a specific benchmark"
-
-      argument :benchmark_name, :string, allow_nil?: false
-
-      filter expr(benchmark_name == ^arg(:benchmark_name))
-      prepare build(sort: [created_at: :desc])
-    end
-
-    read :list do
-      primary? true
-      prepare build(sort: [created_at: :desc])
-    end
-
-    read :performance_trends do
-      description "Get performance trends over time"
-
-      argument :benchmark_name, :string
-      argument :days_back, :integer, default: 30
-
-      filter expr(
-        if not is_nil(^arg(:benchmark_name)) do
-          benchmark_name == ^arg(:benchmark_name)
-        else
-          true
-        end and
-        created_at >= ago(^arg(:days_back), :day)
-      )
-
-      prepare build(sort: [created_at: :asc])
+    calculate :efficiency_rating,
+              :string,
+              expr(
+                cond do
+                  spins_per_second > 1_000_000 -> "excellent"
+                  spins_per_second > 500_000 -> "good"
+                  spins_per_second > 100_000 -> "fair"
+                  true -> "poor"
+                end
+              ) do
+      description "Human-readable efficiency rating"
     end
   end
 
   aggregates do
     # TODO: Add aggregates after confirming proper syntax
     # average :avg_spins_per_second, :spins_per_second, :average
-    max :max_spins_per_second, :spins_per_second
-    min :min_spins_per_second, :spins_per_second
+    max(:max_spins_per_second, :spins_per_second)
+    min(:min_spins_per_second, :spins_per_second)
 
     # TODO: Add aggregates after confirming proper syntax
     # avg :avg_memory_usage, :memory_usage_mb
     # avg :avg_execution_time, :execution_time_ms
-  end
-
-  calculations do
-    calculate :performance_score, :float, expr(
-      spins_per_second / (memory_usage_mb + 1.0) *
-      1000.0 / (execution_time_ms + 1.0)
-    ) do
-      description "Composite performance score"
-    end
-
-    calculate :efficiency_rating, :string, expr(
-      cond do
-        spins_per_second > 1_000_000 -> "excellent"
-        spins_per_second > 500_000 -> "good"
-        spins_per_second > 100_000 -> "fair"
-        true -> "poor"
-      end
-    ) do
-      description "Human-readable efficiency rating"
-    end
-  end
-
-  code_interface do
-    define :create
-    define :record_benchmark
-    define :read
-    define :by_benchmark_name
-    define :performance_trends
   end
 
   def analyze_performance_regression(metrics) when is_list(metrics) do
@@ -195,13 +217,23 @@ defmodule Thunderline.Thunderbolt.Resources.IsingPerformanceMetric do
       recent_metrics = Enum.take(sorted_metrics, -recent_count)
       baseline_metrics = Enum.take(sorted_metrics, recent_count)
 
-      recent_avg = recent_metrics |> Enum.map(& &1.spins_per_second) |> Enum.sum() |> Kernel./(length(recent_metrics))
-      baseline_avg = baseline_metrics |> Enum.map(& &1.spins_per_second) |> Enum.sum() |> Kernel./(length(baseline_metrics))
+      recent_avg =
+        recent_metrics
+        |> Enum.map(& &1.spins_per_second)
+        |> Enum.sum()
+        |> Kernel./(length(recent_metrics))
 
-      regression_threshold = 0.1  # 10% degradation
+      baseline_avg =
+        baseline_metrics
+        |> Enum.map(& &1.spins_per_second)
+        |> Enum.sum()
+        |> Kernel./(length(baseline_metrics))
+
+      # 10% degradation
+      regression_threshold = 0.1
       performance_ratio = recent_avg / baseline_avg
 
-      if performance_ratio < (1 - regression_threshold) do
+      if performance_ratio < 1 - regression_threshold do
         %{
           regression_detected: true,
           performance_degradation: (1 - performance_ratio) * 100,

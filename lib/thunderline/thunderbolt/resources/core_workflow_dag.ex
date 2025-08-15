@@ -10,51 +10,9 @@ defmodule Thunderline.Thunderbolt.Resources.CoreWorkflowDAG do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "thundercore_workflow_dags"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-
-    attribute :name, :string do
-      description "Workflow DAG identifier"
-      allow_nil? false
-    end
-
-    attribute :description, :string do
-      description "Human-readable workflow description"
-    end
-
-    attribute :status, :atom do
-      description "Current DAG execution status"
-      default :pending
-    end
-
-    attribute :priority, :integer do
-      description "Execution priority (0-9)"
-      default 5
-    end
-
-    attribute :metadata, :map do
-      description "Workflow metadata and configuration"
-      default %{}
-    end
-
-    attribute :started_at, :utc_datetime_usec do
-      description "When workflow execution began"
-    end
-
-    attribute :completed_at, :utc_datetime_usec do
-      description "When workflow execution finished"
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
   end
 
   actions do
@@ -96,6 +54,45 @@ defmodule Thunderline.Thunderbolt.Resources.CoreWorkflowDAG do
       description "Get all pending workflows ordered by priority"
       filter expr(status == :pending)
     end
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      description "Workflow DAG identifier"
+      allow_nil? false
+    end
+
+    attribute :description, :string do
+      description "Human-readable workflow description"
+    end
+
+    attribute :status, :atom do
+      description "Current DAG execution status"
+      default :pending
+    end
+
+    attribute :priority, :integer do
+      description "Execution priority (0-9)"
+      default 5
+    end
+
+    attribute :metadata, :map do
+      description "Workflow metadata and configuration"
+      default %{}
+    end
+
+    attribute :started_at, :utc_datetime_usec do
+      description "When workflow execution began"
+    end
+
+    attribute :completed_at, :utc_datetime_usec do
+      description "When workflow execution finished"
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 
   relationships do

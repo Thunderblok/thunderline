@@ -19,6 +19,15 @@ defmodule Thunderline.Thunderbolt.Domain do
     validate_config_inclusion?: false,
     extensions: [AshOban.Domain, AshJsonApi.Domain, AshGraphql.Domain]
 
+  json_api do
+    prefix "/api/thunderbolt"
+    log_errors?(true)
+  end
+
+  graphql do
+    authorize? false
+  end
+
   resources do
     # ThunderCore → ThunderBolt (core processing)
     resource Thunderline.Thunderbolt.Resources.CoreAgent
@@ -48,14 +57,5 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.Resources.MagMacroCommand
     resource Thunderline.Thunderbolt.Resources.MagTaskAssignment
     resource Thunderline.Thunderbolt.Resources.MagTaskExecution
-  end
-
-  json_api do
-    prefix "/api/thunderbolt"
-    log_errors? true
-  end
-
-  graphql do
-    authorize? false
   end
 end

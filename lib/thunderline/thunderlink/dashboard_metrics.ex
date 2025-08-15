@@ -17,7 +17,8 @@ defmodule Thunderline.DashboardMetrics do
   alias Phoenix.PubSub
 
   @pubsub_topic "dashboard:metrics"
-  @metrics_update_interval 5_000  # 5 seconds
+  # 5 seconds
+  @metrics_update_interval 5_000
 
   ## Public API
 
@@ -62,24 +63,35 @@ defmodule Thunderline.DashboardMetrics do
   def thundercore_metrics do
     # System monitoring not yet implemented
     %{
-      cpu_usage: "OFFLINE",  # TODO: Implement CPU monitoring
-      memory_usage: "OFFLINE",  # TODO: Implement memory monitoring
-      active_processes: "OFFLINE",  # TODO: Implement process counting
-      uptime: System.monotonic_time(:second),  # This works - system uptime
-      uptime_percent: "99.5%"  # TODO: Implement real uptime percentage tracking
+      # TODO: Implement CPU monitoring
+      cpu_usage: "OFFLINE",
+      # TODO: Implement memory monitoring
+      memory_usage: "OFFLINE",
+      # TODO: Implement process counting
+      active_processes: "OFFLINE",
+      # This works - system uptime
+      uptime: System.monotonic_time(:second),
+      # TODO: Implement real uptime percentage tracking
+      uptime_percent: "99.5%"
     }
   end
 
-    @doc "Get ThunderBit metrics"
+  @doc "Get ThunderBit metrics"
   def thunderbit_metrics do
     # AI Agent performance not yet implemented
     %{
-      total_agents: "OFFLINE",  # TODO: Implement agent counting
-      active_agents: "OFFLINE",  # TODO: Implement active agent tracking
-      neural_networks: "OFFLINE",  # TODO: Implement NN status
-      inference_rate: "OFFLINE",  # TODO: Implement inference tracking
-      model_accuracy: "OFFLINE",  # TODO: Implement accuracy monitoring
-      memory_usage_mb: "OFFLINE"  # TODO: Implement memory tracking
+      # TODO: Implement agent counting
+      total_agents: "OFFLINE",
+      # TODO: Implement active agent tracking
+      active_agents: "OFFLINE",
+      # TODO: Implement NN status
+      neural_networks: "OFFLINE",
+      # TODO: Implement inference tracking
+      inference_rate: "OFFLINE",
+      # TODO: Implement accuracy monitoring
+      model_accuracy: "OFFLINE",
+      # TODO: Implement memory tracking
+      memory_usage_mb: "OFFLINE"
     }
   end
 
@@ -90,15 +102,22 @@ defmodule Thunderline.DashboardMetrics do
 
     %{
       total_nodes: length(mnesia_status.nodes),
-      current_ops_per_sec: "OFFLINE",  # TODO: Implement real ops/sec tracking
+      # TODO: Implement real ops/sec tracking
+      current_ops_per_sec: "OFFLINE",
       uptime: get_system_uptime_percentage(),
-      cache_hit_rate: "OFFLINE",  # TODO: Implement cache metrics
+      # TODO: Implement cache metrics
+      cache_hit_rate: "OFFLINE",
       memory_usage: get_memory_usage_percentage(),
-      cpu_usage: "OFFLINE",  # TODO: Implement CPU monitoring
-      network_latency: "OFFLINE",  # TODO: Implement network monitoring
-      active_connections: "OFFLINE",  # TODO: Implement connection tracking
-      data_transfer_rate: "OFFLINE",  # TODO: Implement transfer rate monitoring
-      error_rate: "OFFLINE"  # TODO: Implement error rate calculation
+      # TODO: Implement CPU monitoring
+      cpu_usage: "OFFLINE",
+      # TODO: Implement network monitoring
+      network_latency: "OFFLINE",
+      # TODO: Implement connection tracking
+      active_connections: "OFFLINE",
+      # TODO: Implement transfer rate monitoring
+      data_transfer_rate: "OFFLINE",
+      # TODO: Implement error rate calculation
+      error_rate: "OFFLINE"
     }
   end
 
@@ -106,10 +125,14 @@ defmodule Thunderline.DashboardMetrics do
   def thunderbolt_metrics do
     # ThunderBolt metrics not yet implemented
     %{
-      chunks_processed: "OFFLINE",  # TODO: Implement chunk processing tracking
-      scaling_operations: "OFFLINE",  # TODO: Implement scaling tracking
-      resource_efficiency: "OFFLINE",  # TODO: Implement efficiency tracking
-      load_balancer_health: :offline  # TODO: Implement load balancer monitoring
+      # TODO: Implement chunk processing tracking
+      chunks_processed: "OFFLINE",
+      # TODO: Implement scaling tracking
+      scaling_operations: "OFFLINE",
+      # TODO: Implement efficiency tracking
+      resource_efficiency: "OFFLINE",
+      # TODO: Implement load balancer monitoring
+      load_balancer_health: :offline
     }
   end
 
@@ -133,35 +156,52 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Get ThunderGrid metrics"
   def thundergrid_metrics do
     %{
-      active_zones: "OFFLINE",      # TODO: Implement zone tracking
-      spatial_queries: "OFFLINE",   # TODO: Implement query monitoring
-      boundary_crossings: "OFFLINE", # TODO: Implement boundary tracking
-      grid_efficiency: "OFFLINE",   # TODO: Implement efficiency calculation
-      total_nodes: "OFFLINE",       # TODO: Implement grid node counting
-      active_nodes: "OFFLINE",      # TODO: Implement active node tracking
-      current_load: "OFFLINE",      # TODO: Implement load monitoring
-      performance_ops: "OFFLINE",   # TODO: Implement performance operations tracking
-      data_stream_rate: "OFFLINE",  # TODO: Implement data stream rate monitoring
-      storage_rate: "OFFLINE"       # TODO: Implement storage rate monitoring
+      # TODO: Implement zone tracking
+      active_zones: "OFFLINE",
+      # TODO: Implement query monitoring
+      spatial_queries: "OFFLINE",
+      # TODO: Implement boundary tracking
+      boundary_crossings: "OFFLINE",
+      # TODO: Implement efficiency calculation
+      grid_efficiency: "OFFLINE",
+      # TODO: Implement grid node counting
+      total_nodes: "OFFLINE",
+      # TODO: Implement active node tracking
+      active_nodes: "OFFLINE",
+      # TODO: Implement load monitoring
+      current_load: "OFFLINE",
+      # TODO: Implement performance operations tracking
+      performance_ops: "OFFLINE",
+      # TODO: Implement data stream rate monitoring
+      data_stream_rate: "OFFLINE",
+      # TODO: Implement storage rate monitoring
+      storage_rate: "OFFLINE"
     }
   end
 
   @doc "Get ThunderVault metrics"
   def thundervault_metrics do
     %{
-      decisions_made: "OFFLINE",      # TODO: Implement decision tracking
-      policy_evaluations: "OFFLINE",  # TODO: Implement policy monitoring
-      access_requests: "OFFLINE",     # TODO: Implement access tracking
-      security_score: "OFFLINE"      # TODO: Implement security scoring
+      # TODO: Implement decision tracking
+      decisions_made: "OFFLINE",
+      # TODO: Implement policy monitoring
+      policy_evaluations: "OFFLINE",
+      # TODO: Implement access tracking
+      access_requests: "OFFLINE",
+      # TODO: Implement security scoring
+      security_score: "OFFLINE"
     }
   end
 
   @doc "Get ThunderCom metrics"
   def thundercom_metrics do
     %{
-      active_communities: "OFFLINE",     # TODO: Implement community tracking
-      messages_processed: "OFFLINE",    # TODO: Implement message monitoring
-      federation_connections: "OFFLINE", # TODO: Implement federation tracking
+      # TODO: Implement community tracking
+      active_communities: "OFFLINE",
+      # TODO: Implement message monitoring
+      messages_processed: "OFFLINE",
+      # TODO: Implement federation tracking
+      federation_connections: "OFFLINE",
       communication_health: :offline
     }
   end
@@ -169,14 +209,18 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Get ThunderEye metrics"
   def thundereye_metrics do
     %{
-      traces_collected: "OFFLINE",     # TODO: Implement trace collection
-      performance_metrics: "OFFLINE",  # TODO: Implement perf monitoring
-      anomaly_detections: "OFFLINE",   # TODO: Implement anomaly detection
-      monitoring_coverage: "OFFLINE"   # TODO: Implement coverage tracking
+      # TODO: Implement trace collection
+      traces_collected: "OFFLINE",
+      # TODO: Implement perf monitoring
+      performance_metrics: "OFFLINE",
+      # TODO: Implement anomaly detection
+      anomaly_detections: "OFFLINE",
+      # TODO: Implement coverage tracking
+      monitoring_coverage: "OFFLINE"
     }
   end
 
-    @doc "Get ThunderChief metrics"
+  @doc "Get ThunderChief metrics"
   def thunderchief_metrics do
     # Get real Oban metrics
     oban_stats = get_oban_stats()
@@ -209,7 +253,8 @@ defmodule Thunderline.DashboardMetrics do
           completed_recent: default_stats.completed + cross_domain_stats.completed,
           failed_recent: default_stats.failed + cross_domain_stats.failed,
           cross_domain_jobs: cross_domain_stats.queued + cross_domain_stats.executing,
-          avg_completion_time: "OFFLINE"  # TODO: calculate real average completion time
+          # TODO: calculate real average completion time
+          avg_completion_time: "OFFLINE"
         }
       else
         Logger.info("Oban is not running, using default stats")
@@ -228,11 +273,13 @@ defmodule Thunderline.DashboardMetrics do
       case Oban.drain_queue(queue: queue_name, with_safety: false) do
         %{success: success, failure: failure} ->
           %{
-            queued: 0,  # drain_queue empties the queue
+            # drain_queue empties the queue
+            queued: 0,
             executing: 0,
             completed: success,
             failed: failure
           }
+
         _ ->
           # Fallback: try direct queue inspection
           inspect_queue_directly(queue_name)
@@ -261,32 +308,42 @@ defmodule Thunderline.DashboardMetrics do
 
   defp count_jobs_by_state(_queue_name, _state) do
     # Job tracking not yet implemented
-    0  # Return 0 instead of random data
+    # Return 0 instead of random data
+    0
   end
 
   defp get_supervision_tree_stats do
     try do
       # Use the supervision tree mapper to get real stats
       tree = Thunderline.Thundercrown.Introspection.SupervisionTreeMapper.map_supervision_tree()
-      analysis = Thunderline.Thundercrown.Introspection.SupervisionTreeMapper.analyze_supervision_tree(tree)
+
+      analysis =
+        Thunderline.Thundercrown.Introspection.SupervisionTreeMapper.analyze_supervision_tree(
+          tree
+        )
 
       %{
         total_supervisors: analysis.supervisors,
         total_processes: analysis.total_processes,
         health_checks_passed: analysis.running,
-        restarts_recent: max(0, analysis.not_running),  # Assume not_running = recent restarts
-        stability_score: if analysis.total_processes > 0 do
-          analysis.running / analysis.total_processes
-        else
-          1.0
-        end
+        # Assume not_running = recent restarts
+        restarts_recent: max(0, analysis.not_running),
+        stability_score:
+          if analysis.total_processes > 0 do
+            analysis.running / analysis.total_processes
+          else
+            1.0
+          end
       }
     rescue
       error ->
         Logger.debug("Failed to get supervision stats: #{inspect(error)}")
+
         %{
-          total_supervisors: 0,  # Unable to fetch real data
-          total_processes: 0,    # Unable to fetch real data
+          # Unable to fetch real data
+          total_supervisors: 0,
+          # Unable to fetch real data
+          total_processes: 0,
           health_checks_passed: 0,
           restarts_recent: 0,
           stability_score: 0.0
@@ -297,6 +354,7 @@ defmodule Thunderline.DashboardMetrics do
   defp get_memory_stats do
     try do
       memory_info = :erlang.memory()
+
       %{
         total: memory_info[:total] || 0,
         processes: memory_info[:processes] || 0,
@@ -304,7 +362,8 @@ defmodule Thunderline.DashboardMetrics do
       }
     rescue
       _ ->
-        %{total: 0, processes: 0, system: 0}  # Unable to fetch memory data
+        # Unable to fetch memory data
+        %{total: 0, processes: 0, system: 0}
     end
   end
 
@@ -317,20 +376,23 @@ defmodule Thunderline.DashboardMetrics do
           total_agents = length(agents)
 
           # Calculate neural model count (estimate based on agent types)
-          neural_models = Enum.count(agents, fn agent ->
-            agent_type = Map.get(agent, :agent_type, :simple)
-            agent_type in [:neural, :ml, :ai, :learning]
-          end)
+          neural_models =
+            Enum.count(agents, fn agent ->
+              agent_type = Map.get(agent, :agent_type, :simple)
+              agent_type in [:neural, :ml, :ai, :learning]
+            end)
 
           # Estimate memory usage
-          memory_per_agent = 5  # MB estimate per agent
+          # MB estimate per agent
+          memory_per_agent = 5
           memory_usage = total_agents * memory_per_agent
 
           %{
             active_count: active_agents,
             total_count: total_agents,
             neural_models: neural_models,
-            inferences_per_second: active_agents * 10,  # Estimate 10 inferences per active agent per second
+            # Estimate 10 inferences per active agent per second
+            inferences_per_second: active_agents * 10,
             average_accuracy: calculate_average_agent_accuracy(agents),
             memory_usage_mb: memory_usage
           }
@@ -358,20 +420,28 @@ defmodule Thunderline.DashboardMetrics do
   defp calculate_average_agent_accuracy(agents) do
     if length(agents) > 0 do
       # Simple accuracy calculation based on agent performance
-      total_performance = Enum.reduce(agents, 0, fn agent, acc ->
-        # Use update frequency as a proxy for performance
-        performance = case DateTime.diff(DateTime.utc_now(), agent.updated_at, :second) do
-          diff when diff < 60 -> 0.9   # Very recent activity = high performance
-          diff when diff < 300 -> 0.8  # Recent activity = good performance
-          diff when diff < 3600 -> 0.6 # Moderate activity = moderate performance
-          _ -> 0.4                     # Old activity = low performance
-        end
-        acc + performance
-      end)
+      total_performance =
+        Enum.reduce(agents, 0, fn agent, acc ->
+          # Use update frequency as a proxy for performance
+          performance =
+            case DateTime.diff(DateTime.utc_now(), agent.updated_at, :second) do
+              # Very recent activity = high performance
+              diff when diff < 60 -> 0.9
+              # Recent activity = good performance
+              diff when diff < 300 -> 0.8
+              # Moderate activity = moderate performance
+              diff when diff < 3600 -> 0.6
+              # Old activity = low performance
+              _ -> 0.4
+            end
+
+          acc + performance
+        end)
 
       total_performance / length(agents)
     else
-      0.5  # Default when no agents
+      # Default when no agents
+      0.5
     end
   end
 
@@ -390,8 +460,10 @@ defmodule Thunderline.DashboardMetrics do
     try do
       # Workflow tracking not yet implemented
       %{
-        active_workflows: 0,  # Real tracking not implemented yet
-        failed_workflows: 0   # Real tracking not implemented yet
+        # Real tracking not implemented yet
+        active_workflows: 0,
+        # Real tracking not implemented yet
+        failed_workflows: 0
       }
     rescue
       _ ->
@@ -403,7 +475,7 @@ defmodule Thunderline.DashboardMetrics do
     total = oban_stats.completed_recent + oban_stats.failed_recent
 
     if total > 0 do
-      round((oban_stats.completed_recent / total) * 100)
+      round(oban_stats.completed_recent / total * 100)
     else
       100
     end
@@ -421,19 +493,26 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Get ThunderFlow metrics"
   def thunderflow_metrics do
     %{
-      events_processed: "OFFLINE",    # TODO: Implement event processing tracking
-      pipelines_active: "OFFLINE",   # TODO: Implement pipeline monitoring
-      flow_rate: "OFFLINE",          # TODO: Implement flow rate calculation
-      consciousness_level: "OFFLINE" # TODO: Implement consciousness metrics
+      # TODO: Implement event processing tracking
+      events_processed: "OFFLINE",
+      # TODO: Implement pipeline monitoring
+      pipelines_active: "OFFLINE",
+      # TODO: Implement flow rate calculation
+      flow_rate: "OFFLINE",
+      # TODO: Implement consciousness metrics
+      consciousness_level: "OFFLINE"
     }
   end
 
   @doc "Get ThunderStone metrics"
   def thunderstone_metrics do
     %{
-      storage_operations: "OFFLINE",  # TODO: Implement storage operation tracking
-      data_integrity: "OFFLINE",     # TODO: Implement integrity monitoring
-      compression_ratio: "OFFLINE",  # TODO: Implement compression tracking
+      # TODO: Implement storage operation tracking
+      storage_operations: "OFFLINE",
+      # TODO: Implement integrity monitoring
+      data_integrity: "OFFLINE",
+      # TODO: Implement compression tracking
+      compression_ratio: "OFFLINE",
       storage_health: :offline
     }
   end
@@ -441,19 +520,26 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Get ThunderLink metrics"
   def thunderlink_metrics do
     %{
-      connections_active: "OFFLINE",  # TODO: Implement connection tracking
-      data_throughput: "OFFLINE",    # TODO: Implement throughput monitoring
-      latency_avg: "OFFLINE",        # TODO: Implement latency measurement
-      network_stability: "OFFLINE"   # TODO: Implement stability scoring
+      # TODO: Implement connection tracking
+      connections_active: "OFFLINE",
+      # TODO: Implement throughput monitoring
+      data_throughput: "OFFLINE",
+      # TODO: Implement latency measurement
+      latency_avg: "OFFLINE",
+      # TODO: Implement stability scoring
+      network_stability: "OFFLINE"
     }
   end
 
   @doc "Get ThunderCrown metrics"
   def thundercrown_metrics do
     %{
-      governance_actions: "OFFLINE",  # TODO: Implement governance tracking
-      policy_updates: "OFFLINE",     # TODO: Implement policy monitoring
-      compliance_score: "OFFLINE",   # TODO: Implement compliance scoring
+      # TODO: Implement governance tracking
+      governance_actions: "OFFLINE",
+      # TODO: Implement policy monitoring
+      policy_updates: "OFFLINE",
+      # TODO: Implement compliance scoring
+      compliance_score: "OFFLINE",
       authority_level: :offline
     }
   end
@@ -599,7 +685,9 @@ defmodule Thunderline.DashboardMetrics do
     try do
       # First try to get stats from ThunderCell Elixir bridge
       case get_thundercell_elixir_stats() do
-        {:ok, stats} -> stats
+        {:ok, stats} ->
+          stats
+
         {:error, _} ->
           # Fallback to direct cluster call
           case get_direct_thundercell_stats() do
@@ -619,40 +707,46 @@ defmodule Thunderline.DashboardMetrics do
       cluster_count = length(clusters)
 
       # Aggregate stats from all clusters
-      total_stats = Enum.reduce(clusters, %{
-        total_generations: 0,
-        total_cells: 0,
-        alive_cells: 0,
-        active_rules: []
-      }, fn cluster, acc ->
-        generation = Map.get(cluster, :generation, 0)
-        cell_count = Map.get(cluster, :cell_count, 0)
-        # Assume 10% of cells are alive on average
-        alive_count = round(cell_count * 0.1)
+      total_stats =
+        Enum.reduce(
+          clusters,
+          %{
+            total_generations: 0,
+            total_cells: 0,
+            alive_cells: 0,
+            active_rules: []
+          },
+          fn cluster, acc ->
+            generation = Map.get(cluster, :generation, 0)
+            cell_count = Map.get(cluster, :cell_count, 0)
+            # Assume 10% of cells are alive on average
+            alive_count = round(cell_count * 0.1)
 
-        %{
-          total_generations: acc.total_generations + generation,
-          total_cells: acc.total_cells + cell_count,
-          alive_cells: acc.alive_cells + alive_count,
-          active_rules: acc.active_rules ++ extract_cluster_rules(cluster)
-        }
-      end)
+            %{
+              total_generations: acc.total_generations + generation,
+              total_cells: acc.total_cells + cell_count,
+              alive_cells: acc.alive_cells + alive_count,
+              active_rules: acc.active_rules ++ extract_cluster_rules(cluster)
+            }
+          end
+        )
 
-      {:ok, %{
-        active_rules: Enum.uniq(total_stats.active_rules),
-        total_generations: total_stats.total_generations,
-        cluster_count: cluster_count,
-        total_cells: total_stats.total_cells,
-        alive_cells: total_stats.alive_cells,
-        neural_learning_rate: 0.001,
-        neural_convergence: 0.5,
-        adaptation_cycles: 0,
-        emergence_patterns: 0,
-        quantum_entanglement: 0.0,
-        superposition_count: 0,
-        decoherence_ms: 0,
-        quantum_speedup: 1.0
-      }}
+      {:ok,
+       %{
+         active_rules: Enum.uniq(total_stats.active_rules),
+         total_generations: total_stats.total_generations,
+         cluster_count: cluster_count,
+         total_cells: total_stats.total_cells,
+         alive_cells: total_stats.alive_cells,
+         neural_learning_rate: 0.001,
+         neural_convergence: 0.5,
+         adaptation_cycles: 0,
+         emergence_patterns: 0,
+         quantum_entanglement: 0.0,
+         superposition_count: 0,
+         decoherence_ms: 0,
+         quantum_speedup: 1.0
+       }}
     rescue
       error -> {:error, error}
     end
@@ -664,22 +758,28 @@ defmodule Thunderline.DashboardMetrics do
       case Thunderline.Thunderbolt.ThunderCell.Telemetry.get_performance_report() do
         {:ok, report} ->
           summary = Map.get(report, :summary, %{})
-          {:ok, %{
-            active_rules: [:conway_3d],  # Default rule
-            total_generations: Map.get(summary, :total_generations, 0),
-            cluster_count: Map.get(summary, :total_clusters, 0),
-            total_cells: 0,  # Calculate from cluster data if needed
-            alive_cells: 0,
-            neural_learning_rate: 0.001,
-            neural_convergence: 0.5,
-            adaptation_cycles: 0,
-            emergence_patterns: 0,
-            quantum_entanglement: 0.0,
-            superposition_count: 0,
-            decoherence_ms: 0,
-            quantum_speedup: 1.0
-          }}
-        error -> error
+
+          {:ok,
+           %{
+             # Default rule
+             active_rules: [:conway_3d],
+             total_generations: Map.get(summary, :total_generations, 0),
+             cluster_count: Map.get(summary, :total_clusters, 0),
+             # Calculate from cluster data if needed
+             total_cells: 0,
+             alive_cells: 0,
+             neural_learning_rate: 0.001,
+             neural_convergence: 0.5,
+             adaptation_cycles: 0,
+             emergence_patterns: 0,
+             quantum_entanglement: 0.0,
+             superposition_count: 0,
+             decoherence_ms: 0,
+             quantum_speedup: 1.0
+           }}
+
+        error ->
+          error
       end
     rescue
       error -> {:error, error}
@@ -750,20 +850,21 @@ defmodule Thunderline.DashboardMetrics do
       if automata_processes do
         # If AutomataLive is running, get its state
         %{
-          active_rules: [:rule_30, :rule_90, :rule_110],  # Current rules in use
-          generations: get_current_generation(),
+          # Current rules in use
+          active_rules: [:rule_30, :rule_90, :rule_110],
+          generations: get_current_generation()
         }
       else
         %{
           active_rules: [],
-          generations: 0,
+          generations: 0
         }
       end
     rescue
       _ ->
         %{
           active_rules: [],
-          generations: 0,
+          generations: 0
         }
     end
   end
@@ -776,7 +877,8 @@ defmodule Thunderline.DashboardMetrics do
       # Check if there are any AutomataLive processes running
       case Phoenix.LiveView.get_by_topic(Thunderline.PubSub, "automata:updates") do
         [] -> 0
-        processes -> length(processes)  # Count actual LiveView processes
+        # Count actual LiveView processes
+        processes -> length(processes)
       end
     rescue
       _ -> 0
@@ -825,7 +927,9 @@ defmodule Thunderline.DashboardMetrics do
   defp extract_active_rules(stats) do
     # Extract active CA rules from cluster stats
     case Map.get(stats, :ca_rules) do
-      nil -> []
+      nil ->
+        []
+
       rules when is_map(rules) ->
         # Convert CA rules format to list of atoms
         birth_rules = Map.get(rules, :birth_neighbors, [])
@@ -836,7 +940,9 @@ defmodule Thunderline.DashboardMetrics do
           birth_rules == [5, 6, 7] and survival_rules == [4, 5, 6] -> [:conway_3d]
           true -> [:custom_ca_rule]
         end
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -869,12 +975,13 @@ defmodule Thunderline.DashboardMetrics do
   end
 
   defp collect_all_metrics(state) do
-    %{state |
-      system_metrics: collect_system_metrics(),
-      event_metrics: collect_event_metrics(),
-      agent_metrics: collect_agent_metrics(),
-      thunderlane: collect_thunderlane_metrics(),
-      last_update: DateTime.utc_now()
+    %{
+      state
+      | system_metrics: collect_system_metrics(),
+        event_metrics: collect_event_metrics(),
+        agent_metrics: collect_agent_metrics(),
+        thunderlane: collect_thunderlane_metrics(),
+        last_update: DateTime.utc_now()
     }
   end
 
@@ -956,15 +1063,22 @@ defmodule Thunderline.DashboardMetrics do
 
     %{
       total_nodes: length(mnesia_status.nodes),
-      current_ops_per_sec: "OFFLINE",  # TODO: Implement real ops/sec tracking
+      # TODO: Implement real ops/sec tracking
+      current_ops_per_sec: "OFFLINE",
       uptime: get_system_uptime_percentage(),
-      cache_hit_rate: "OFFLINE",  # TODO: Implement cache metrics
+      # TODO: Implement cache metrics
+      cache_hit_rate: "OFFLINE",
       memory_usage: get_memory_usage_percentage(),
-      cpu_usage: "OFFLINE",  # TODO: Implement CPU monitoring
-      network_latency: "OFFLINE",  # TODO: Implement network monitoring
-      active_connections: "OFFLINE",  # TODO: Implement connection tracking
-      data_transfer_rate: "OFFLINE",  # TODO: Implement transfer rate monitoring
-      error_rate: "OFFLINE"  # TODO: Implement error rate calculation
+      # TODO: Implement CPU monitoring
+      cpu_usage: "OFFLINE",
+      # TODO: Implement network monitoring
+      network_latency: "OFFLINE",
+      # TODO: Implement connection tracking
+      active_connections: "OFFLINE",
+      # TODO: Implement transfer rate monitoring
+      data_transfer_rate: "OFFLINE",
+      # TODO: Implement error rate calculation
+      error_rate: "OFFLINE"
     }
   end
 
@@ -979,7 +1093,8 @@ defmodule Thunderline.DashboardMetrics do
       memory_info = :erlang.memory()
       total = memory_info[:total]
       # Get system memory limit (this is an approximation)
-      system_limit = memory_info[:system] * 10  # Rough estimate
+      # Rough estimate
+      system_limit = memory_info[:system] * 10
       percentage = (total / system_limit * 100) |> Float.round(1)
       "#{percentage}%"
     rescue
@@ -1005,7 +1120,8 @@ defmodule Thunderline.DashboardMetrics do
           end
         end)
 
-      _ -> [0.0, 0.0, 0.0]
+      _ ->
+        [0.0, 0.0, 0.0]
     end
   end
 
@@ -1044,7 +1160,8 @@ defmodule Thunderline.DashboardMetrics do
       status: :running,
       processed_count: get_telemetry_counter([:broadway, pipeline_name, :processed]) || 0,
       error_count: get_telemetry_counter([:broadway, pipeline_name, :failed]) || 0,
-      current_load: "OFFLINE" # TODO: Implement real load measurement
+      # TODO: Implement real load measurement
+      current_load: "OFFLINE"
     }
   end
 
@@ -1061,26 +1178,31 @@ defmodule Thunderline.DashboardMetrics do
   defp get_telemetry_counter(_event_path) do
     # TODO: Implement telemetry integration
     # In real implementation, this would query telemetry metrics
-    0  # Return 0 instead of random data
+    # Return 0 instead of random data
+    0
   end
 
   defp get_telemetry_rate(_event_path) do
     # TODO: Implement rate calculation from telemetry
-    0.0  # Return 0 instead of random data
+    # Return 0 instead of random data
+    0.0
   end
 
   defp get_telemetry_average(_event_path) do
     # TODO: Implement average calculation from telemetry
-    0.0  # Return 0 instead of random data
+    # Return 0 instead of random data
+    0.0
   end
 
   defp calculate_average_performance(agents) do
     if length(agents) > 0 do
       # Simple performance metric based on update frequency
-      total_performance = Enum.reduce(agents, 0, fn agent, acc ->
-        performance = DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)
-        acc + max(0, 100 - performance)  # Higher is better, recent updates = better performance
-      end)
+      total_performance =
+        Enum.reduce(agents, 0, fn agent, acc ->
+          performance = DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)
+          # Higher is better, recent updates = better performance
+          acc + max(0, 100 - performance)
+        end)
 
       total_performance / length(agents)
     else
@@ -1098,14 +1220,16 @@ defmodule Thunderline.DashboardMetrics do
     |> Enum.map(fn agent ->
       %{
         id: agent.id,
-        performance_score: max(0, 100 - DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)),
+        performance_score:
+          max(0, 100 - DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)),
         last_activity: agent.updated_at
       }
     end)
   end
 
   defp get_recent_spawns(agents) do
-    cutoff = DateTime.add(DateTime.utc_now(), -3600, :second)  # Last hour
+    # Last hour
+    cutoff = DateTime.add(DateTime.utc_now(), -3600, :second)
 
     agents
     |> Enum.filter(&(DateTime.compare(&1.created_at, cutoff) == :gt))
@@ -1184,9 +1308,12 @@ defmodule Thunderline.DashboardMetrics do
   defp extract_cluster_rules(cluster) do
     # Extract CA rules from cluster stats
     case Map.get(cluster, :ca_rules) do
-      nil -> []
+      nil ->
+        []
+
       rules when is_map(rules) ->
         name = Map.get(rules, :name, "Unknown")
+
         case name do
           "Conway's Game of Life 3D" -> [:conway_3d]
           "Highlife 3D" -> [:highlife_3d]
@@ -1194,7 +1321,9 @@ defmodule Thunderline.DashboardMetrics do
           "Maze 3D" -> [:maze_3d]
           _ -> [:custom_ca]
         end
-      _ -> []
+
+      _ ->
+        []
     end
   end
 end

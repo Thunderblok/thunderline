@@ -10,69 +10,11 @@ defmodule Thunderblock.Resources.SystemEvent do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "thunderblock_system_events"
     repo Thunderline.Repo
-  end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :event_type, :string do
-      description "Type of system event"
-      allow_nil? false
-    end
-
-    attribute :source_domain, :string do
-      description "Domain that generated the event"
-      allow_nil? false
-    end
-
-    attribute :target_domain, :string do
-      description "Intended recipient domain (null for broadcast)"
-    end
-
-    attribute :event_data, :map do
-      description "Event payload and context"
-      default %{}
-    end
-
-    attribute :status, :atom do
-      description "Event processing status"
-      constraints [one_of: [:pending, :processing, :completed, :failed, :expired]]
-      default :pending
-    end
-
-    attribute :priority, :integer do
-      description "Event processing priority (0-9)"
-      default 5
-    end
-
-    attribute :correlation_id, :string do
-      description "For tracking related events"
-    end
-
-    attribute :processed_at, :utc_datetime_usec do
-      description "When event was processed"
-    end
-
-    attribute :expires_at, :utc_datetime_usec do
-      description "Event expiration timestamp"
-    end
-
-    attribute :target_resource_id, :uuid do
-      description "ID of target resource (if event is resource-specific)"
-    end
-
-    attribute :target_resource_type, :atom do
-      description "Type of target resource (if event is resource-specific)"
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
+    identity_wheres_to_sql unique_correlation_event: "correlation_id IS NOT NULL"
   end
 
   actions do
@@ -81,7 +23,16 @@ defmodule Thunderblock.Resources.SystemEvent do
     create :emit do
       description "Emit a new system event"
       primary? true
-      accept [:event_type, :source_domain, :target_domain, :event_data, :priority, :correlation_id, :expires_at]
+
+      accept [
+        :event_type,
+        :source_domain,
+        :target_domain,
+        :event_data,
+        :priority,
+        :correlation_id,
+        :expires_at
+      ]
     end
 
     update :mark_processing do
@@ -123,7 +74,65 @@ defmodule Thunderblock.Resources.SystemEvent do
     end
   end
 
+  attributes do
+    uuid_primary_key :id
+
+    attribute :event_type, :string do
+      description "Type of system event"
+      allow_nil? false
+    end
+
+    attribute :source_domain, :string do
+      description "Domain that generated the event"
+      allow_nil? false
+    end
+
+    attribute :target_domain, :string do
+      description "Intended recipient domain (null for broadcast)"
+    end
+
+    attribute :event_data, :map do
+      description "Event payload and context"
+      default %{}
+    end
+
+    attribute :status, :atom do
+      description "Event processing status"
+      constraints one_of: [:pending, :processing, :completed, :failed, :expired]
+      default :pending
+    end
+
+    attribute :priority, :integer do
+      description "Event processing priority (0-9)"
+      default 5
+    end
+
+    attribute :correlation_id, :string do
+      description "For tracking related events"
+    end
+
+    attribute :processed_at, :utc_datetime_usec do
+      description "When event was processed"
+    end
+
+    attribute :expires_at, :utc_datetime_usec do
+      description "Event expiration timestamp"
+    end
+
+    attribute :target_resource_id, :uuid do
+      description "ID of target resource (if event is resource-specific)"
+    end
+
+    attribute :target_resource_type, :atom do
+      description "Type of target resource (if event is resource-specific)"
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
   identities do
-    identity :unique_correlation_event, [:correlation_id, :event_type], where: expr(not is_nil(correlation_id))
+    identity :unique_correlation_event, [:correlation_id, :event_type],
+      where: expr(not is_nil(correlation_id))
   end
 end

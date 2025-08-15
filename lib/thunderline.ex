@@ -19,11 +19,14 @@ defmodule Thunderline do
   - Real-time data pipelines
   - Cellular automata and simulations
 
-  ### ⚡🌐 THUNDERGATE - GATEWAY & EXTERNAL INTEGRATION 🌐⚡
-  **Boundary**: "External world interface" - APIs, webhooks, integrations
+  ### ⚡🌐 THUNDERGATE - SECURITY, GATEWAY & EXTERNAL INTEGRATION 🌐⚡
+  **Boundary**: "External world interface"and Security perimeter - APIs, webhooks, integrations, Auth, permissions, compliance
   - External API integrations
   - Webhook processing and routing
   - Network security and gateway services
+  - Authentication and authorization
+  - Access control and permissions
+  - Security monitoring and compliance
 
   ### ⚡🧱 THUNDERBLOCK - STORAGE & PERSISTENCE MASTERY 🧱⚡
   **Boundary**: "Storage and memory" - Persistence, caching, retrieval
@@ -44,10 +47,7 @@ defmodule Thunderline do
   - Workflow orchestration and MCP tools integration
 
   ### ⚡⚔️ THUNDERGUARD - SECURITY & ACCESS CONTROL FORTRESS ⚔️⚡
-  **Boundary**: "Security perimeter" - Auth, permissions, compliance
-  - Authentication and authorization
-  - Access control and permissions
-  - Security monitoring and compliance
+
 
   ### ⚡🟦 THUNDERGRID - SPATIAL COORDINATE & MESH MANAGEMENT 🟦⚡
   **Boundary**: "Spatial intelligence" - Coordinate systems, zoning, grid management
@@ -68,12 +68,16 @@ defmodule Thunderline do
   @doc """
   Quick access to Ising machine optimization.
   """
-  defdelegate ising_solve(height, width, opts \\ []), to: Thunderline.Thunderbolt.IsingMachine, as: :quick_solve
+  defdelegate ising_solve(height, width, opts \\ []),
+    to: Thunderline.Thunderbolt.IsingMachine,
+    as: :quick_solve
 
   @doc """
   Quick access to Max-Cut optimization.
   """
-  defdelegate max_cut(edges, num_vertices, opts \\ []), to: Thunderline.Thunderbolt.IsingMachine, as: :solve_max_cut
+  defdelegate max_cut(edges, num_vertices, opts \\ []),
+    to: Thunderline.Thunderbolt.IsingMachine,
+    as: :solve_max_cut
 
   @doc """
   System health check and performance validation.
@@ -99,24 +103,25 @@ defmodule Thunderline do
   def domains do
     [
       Thunderline.Thunderbolt.Domain,
-      Thunderflow.Domain,
-      Thundergate.Domain,
-      Thunderblock.Domain,
-      Thunderlink.Domain,
-      Thundercrown.Domain,
+      Thunderline.Thunderflow.Domain,
+      Thunderline.Thundergate.Domain,
+      Thunderline.Thunderblock.Domain,
+      Thunderline.Thunderlink.Domain,
+      Thunderline.Thundercrown.Domain,
       Thunderline.Thundergrid.Domain
     ]
   end
 
   defp check_domain_health() do
     Enum.reduce(domains(), %{}, fn domain, acc ->
-      status = try do
-        # Basic domain functionality check
-        resources = Ash.Domain.Info.resources(domain)
-        %{status: :healthy, resource_count: length(resources)}
-      rescue
-        error -> %{status: :error, error: inspect(error)}
-      end
+      status =
+        try do
+          # Basic domain functionality check
+          resources = Ash.Domain.Info.resources(domain)
+          %{status: :healthy, resource_count: length(resources)}
+        rescue
+          error -> %{status: :error, error: inspect(error)}
+        end
 
       Map.put(acc, domain, status)
     end)

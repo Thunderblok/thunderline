@@ -143,20 +143,25 @@ defmodule Thunderline.Thunderbolt.IsingMachine do
   def compute_energy(spins, lattice, field \\ 0.0) do
     case lattice.topology do
       :grid_2d ->
-        field_tensor = if is_number(field) do
-          Nx.broadcast(field, Nx.shape(spins))
-        else
-          field
-        end
+        field_tensor =
+          if is_number(field) do
+            Nx.broadcast(field, Nx.shape(spins))
+          else
+            field
+          end
+
         Kernel.total_energy_grid(spins, lattice.coupling_matrix, field_tensor)
 
       :graph ->
         {rows, cols, weights} = lattice.edges
-        field_tensor = if is_number(field) do
-          Nx.broadcast(field, Nx.shape(spins))
-        else
-          field
-        end
+
+        field_tensor =
+          if is_number(field) do
+            Nx.broadcast(field, Nx.shape(spins))
+          else
+            field
+          end
+
         # Would need to implement graph energy computation
         Nx.tensor(0.0)
     end
@@ -218,19 +223,19 @@ defmodule Thunderline.Thunderbolt.IsingMachine do
 
       # Test kernel compilation if EXLA is available
       if exla_available do
-        compiled_test = try do
-          compiled_fn = Nx.Defn.compile(&Nx.add(&1, 1), [test_tensor])
-          compiled_result = compiled_fn.(test_tensor)
-          Nx.equal(compiled_result, result) |> Nx.all() |> Nx.to_number() == 1
-        rescue
-          _ -> false
-        end
+        compiled_test =
+          try do
+            compiled_fn = Nx.Defn.compile(&Nx.add(&1, 1), [test_tensor])
+            compiled_result = compiled_fn.(test_tensor)
+            Nx.equal(compiled_result, result) |> Nx.all() |> Nx.to_number() == 1
+          rescue
+            _ -> false
+          end
 
         Map.put(backend_info, :kernel_compilation, compiled_test)
       else
         backend_info
       end
-
     rescue
       error ->
         %{error: inspect(error), basic_ops_working: false}
@@ -256,7 +261,7 @@ defmodule Thunderline.Thunderbolt.IsingMachine do
 
     case result do
       {:ok, optimization_result} ->
-        spins_per_second = (size * size * optimization_result.steps) / (runtime_us / 1_000_000)
+        spins_per_second = size * size * optimization_result.steps / (runtime_us / 1_000_000)
 
         %{
           grid_size: {size, size},

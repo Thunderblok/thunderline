@@ -203,12 +203,13 @@ defmodule Thunderline.ThunderMemory do
 
   @impl true
   def handle_call({:get_agent, agent_id}, _from, state) do
-    result = Memento.transaction!(fn ->
-      case Memento.Query.read(AgentTable, agent_id) do
-        nil -> {:error, :not_found}
-        agent -> {:ok, agent}
-      end
-    end)
+    result =
+      Memento.transaction!(fn ->
+        case Memento.Query.read(AgentTable, agent_id) do
+          nil -> {:error, :not_found}
+          agent -> {:ok, agent}
+        end
+      end)
 
     {:reply, result, state}
   end
@@ -227,61 +228,70 @@ defmodule Thunderline.ThunderMemory do
       metadata: %{}
     }
 
-    result = Memento.transaction!(fn ->
-      case Memento.Query.write(agent) do
-        :ok ->
-          publish_event(:agent_spawned, %{agent_id: agent_id, data: agent_data})
-          {:ok, agent_id}
-        error -> error
-      end
-    end)
+    result =
+      Memento.transaction!(fn ->
+        case Memento.Query.write(agent) do
+          :ok ->
+            publish_event(:agent_spawned, %{agent_id: agent_id, data: agent_data})
+            {:ok, agent_id}
+
+          error ->
+            error
+        end
+      end)
 
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:update_agent, agent_id, updates}, _from, state) do
-    result = Memento.transaction!(fn ->
-      case Memento.Query.read(AgentTable, agent_id) do
-        nil ->
-          {:error, :not_found}
+    result =
+      Memento.transaction!(fn ->
+        case Memento.Query.read(AgentTable, agent_id) do
+          nil ->
+            {:error, :not_found}
 
-        agent ->
-          updated_agent = %{agent |
-            data: Map.merge(agent.data, updates),
-            updated_at: DateTime.utc_now()
-          }
+          agent ->
+            updated_agent = %{
+              agent
+              | data: Map.merge(agent.data, updates),
+                updated_at: DateTime.utc_now()
+            }
 
-          case Memento.Query.write(updated_agent) do
-            :ok ->
-              publish_event(:agent_updated, %{agent_id: agent_id, updates: updates})
-              {:ok, updated_agent}
-            error -> error
-          end
-      end
-    end)
+            case Memento.Query.write(updated_agent) do
+              :ok ->
+                publish_event(:agent_updated, %{agent_id: agent_id, updates: updates})
+                {:ok, updated_agent}
+
+              error ->
+                error
+            end
+        end
+      end)
 
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:list_agents, filters}, _from, state) do
-    result = Memento.transaction!(fn ->
-      agents = Memento.Query.all(AgentTable)
-      filtered_agents = apply_filters(agents, filters)
-      {:ok, filtered_agents}
-    end)
+    result =
+      Memento.transaction!(fn ->
+        agents = Memento.Query.all(AgentTable)
+        filtered_agents = apply_filters(agents, filters)
+        {:ok, filtered_agents}
+      end)
 
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:get_chunks, filters}, _from, state) do
-    result = Memento.transaction!(fn ->
-      chunks = Memento.Query.all(ChunkTable)
-      filtered_chunks = apply_filters(chunks, filters)
-      {:ok, filtered_chunks}
-    end)
+    result =
+      Memento.transaction!(fn ->
+        chunks = Memento.Query.all(ChunkTable)
+        filtered_chunks = apply_filters(chunks, filters)
+        {:ok, filtered_chunks}
+      end)
 
     {:reply, result, state}
   end
@@ -301,32 +311,39 @@ defmodule Thunderline.ThunderMemory do
       metadata: chunk_data[:metadata] || %{}
     }
 
-    result = Memento.transaction!(fn ->
-      case Memento.Query.write(chunk) do
-        :ok ->
-          publish_event(:chunk_created, %{chunk_id: chunk_id, type: chunk.type})
-          {:ok, chunk_id}
-        error -> error
-      end
-    end)
+    result =
+      Memento.transaction!(fn ->
+        case Memento.Query.write(chunk) do
+          :ok ->
+            publish_event(:chunk_created, %{chunk_id: chunk_id, type: chunk.type})
+            {:ok, chunk_id}
+
+          error ->
+            error
+        end
+      end)
 
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:get_metrics, metric_name, aggregation_level}, _from, state) do
-    result = Memento.transaction!(fn ->
-      # Simple query for now - can be optimized with time-based aggregation
-      metrics = Memento.Query.select(MetricTable,
-        {:==, :metric_name, metric_name}
-      )
-      {:ok, metrics}
-    end)
+    result =
+      Memento.transaction!(fn ->
+        # Simple query for now - can be optimized with time-based aggregation
+        metrics =
+          Memento.Query.select(
+            MetricTable,
+            {:==, :metric_name, metric_name}
+          )
+
+        {:ok, metrics}
+      end)
 
     {:reply, result, state}
   end
 
-    @impl true
+  @impl true
   def handle_cast({:record_metric, metric_name, value, metadata}, state) do
     metric_id = generate_metric_id()
     timestamp = DateTime.utc_now()
@@ -349,12 +366,14 @@ defmodule Thunderline.ThunderMemory do
 
   @impl true
   def handle_call({:get_key, key}, _from, state) do
-    result = Memento.transaction!(fn ->
-      case Memento.Query.read(KeyValueTable, key) do
-        nil -> {:error, :not_found}
-        %{value: value} -> {:ok, value}
-      end
-    end)
+    result =
+      Memento.transaction!(fn ->
+        case Memento.Query.read(KeyValueTable, key) do
+          nil -> {:error, :not_found}
+          %{value: value} -> {:ok, value}
+        end
+      end)
+
     {:reply, result, state}
   end
 
@@ -362,31 +381,35 @@ defmodule Thunderline.ThunderMemory do
   def handle_call({:store_key, key, value}, _from, state) do
     timestamp = DateTime.utc_now()
 
-    result = Memento.transaction!(fn ->
-      record = %KeyValueTable{
-        key: key,
-        value: value,
-        created_at: timestamp,
-        updated_at: timestamp
-      }
-      Memento.Query.write(record)
-      :ok
-    end)
+    result =
+      Memento.transaction!(fn ->
+        record = %KeyValueTable{
+          key: key,
+          value: value,
+          created_at: timestamp,
+          updated_at: timestamp
+        }
+
+        Memento.Query.write(record)
+        :ok
+      end)
 
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:get_thunderbit_blackboard, thunderbit_id}, _from, state) do
-    result = Memento.transaction!(fn ->
-      case Memento.Query.select(ThunderbitTable, [
-        {:==, :thunderbit_id, thunderbit_id},
-        {:==, :data_type, :blackboard}
-      ]) do
-        [] -> {:error, :not_found}
-        [%{data: data} | _] -> {:ok, data}
-      end
-    end)
+    result =
+      Memento.transaction!(fn ->
+        case Memento.Query.select(ThunderbitTable, [
+               {:==, :thunderbit_id, thunderbit_id},
+               {:==, :data_type, :blackboard}
+             ]) do
+          [] -> {:error, :not_found}
+          [%{data: data} | _] -> {:ok, data}
+        end
+      end)
+
     {:reply, result, state}
   end
 
@@ -395,18 +418,20 @@ defmodule Thunderline.ThunderMemory do
     timestamp = DateTime.utc_now()
     id = generate_thunderbit_data_id()
 
-    result = Memento.transaction!(fn ->
-      record = %ThunderbitTable{
-        id: id,
-        thunderbit_id: thunderbit_id,
-        data_type: :blackboard,
-        data: blackboard,
-        created_at: timestamp,
-        updated_at: timestamp
-      }
-      Memento.Query.write(record)
-      :ok
-    end)
+    result =
+      Memento.transaction!(fn ->
+        record = %ThunderbitTable{
+          id: id,
+          thunderbit_id: thunderbit_id,
+          data_type: :blackboard,
+          data: blackboard,
+          created_at: timestamp,
+          updated_at: timestamp
+        }
+
+        Memento.Query.write(record)
+        :ok
+      end)
 
     {:reply, result, state}
   end
@@ -416,54 +441,60 @@ defmodule Thunderline.ThunderMemory do
     timestamp = DateTime.utc_now()
     id = generate_thunderbit_data_id()
 
-    result = Memento.transaction!(fn ->
-      record = %ThunderbitTable{
-        id: id,
-        thunderbit_id: thunderbit_id,
-        data_type: :state,
-        data: state_data,
-        created_at: timestamp,
-        updated_at: timestamp
-      }
-      Memento.Query.write(record)
-      :ok
-    end)
+    result =
+      Memento.transaction!(fn ->
+        record = %ThunderbitTable{
+          id: id,
+          thunderbit_id: thunderbit_id,
+          data_type: :state,
+          data: state_data,
+          created_at: timestamp,
+          updated_at: timestamp
+        }
+
+        Memento.Query.write(record)
+        :ok
+      end)
 
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:delete_thunderbit_state, thunderbit_id}, _from, state) do
-    result = Memento.transaction!(fn ->
-      records = Memento.Query.select(ThunderbitTable, [
-        {:==, :thunderbit_id, thunderbit_id},
-        {:==, :data_type, :state}
-      ])
+    result =
+      Memento.transaction!(fn ->
+        records =
+          Memento.Query.select(ThunderbitTable, [
+            {:==, :thunderbit_id, thunderbit_id},
+            {:==, :data_type, :state}
+          ])
 
-      Enum.each(records, fn record ->
-        Memento.Query.delete(ThunderbitTable, record.id)
+        Enum.each(records, fn record ->
+          Memento.Query.delete(ThunderbitTable, record.id)
+        end)
+
+        :ok
       end)
-
-      :ok
-    end)
 
     {:reply, result, state}
   end
 
   @impl true
   def handle_call({:delete_thunderbit_blackboard, thunderbit_id}, _from, state) do
-    result = Memento.transaction!(fn ->
-      records = Memento.Query.select(ThunderbitTable, [
-        {:==, :thunderbit_id, thunderbit_id},
-        {:==, :data_type, :blackboard}
-      ])
+    result =
+      Memento.transaction!(fn ->
+        records =
+          Memento.Query.select(ThunderbitTable, [
+            {:==, :thunderbit_id, thunderbit_id},
+            {:==, :data_type, :blackboard}
+          ])
 
-      Enum.each(records, fn record ->
-        Memento.Query.delete(ThunderbitTable, record.id)
+        Enum.each(records, fn record ->
+          Memento.Query.delete(ThunderbitTable, record.id)
+        end)
+
+        :ok
       end)
-
-      :ok
-    end)
 
     {:reply, result, state}
   end
@@ -479,11 +510,13 @@ defmodule Thunderline.ThunderMemory do
       Enum.each(tables, fn table ->
         case Memento.Table.create(table) do
           {:atomic, :ok} -> :ok
-          :ok -> :ok  # Handle direct :ok return
+          # Handle direct :ok return
+          :ok -> :ok
           {:aborted, {:already_exists, _}} -> :ok
           {:aborted, reason} -> throw({:table_error, table, reason})
         end
       end)
+
       :ok
     catch
       {:table_error, table, reason} ->
@@ -508,6 +541,7 @@ defmodule Thunderline.ThunderMemory do
   end
 
   defp apply_filters(items, filters) when map_size(filters) == 0, do: items
+
   defp apply_filters(items, filters) do
     Enum.filter(items, fn item ->
       Enum.all?(filters, fn {key, value} ->

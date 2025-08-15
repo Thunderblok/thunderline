@@ -14,53 +14,33 @@ defmodule Thunderline.Thundergate.Resources.AlertRule do
 
   import Ash.Resource.Change.Builtins
 
-
-
   postgres do
     table "alert_rules"
     repo Thunderline.Repo
-  end
-
-#   notifiers do
-#     module Thunderline.PubSub
-#     prefix "thundereye:alerts"
-#     
-#     publish :create, ["alert:rule_created", :name]
-#     publish :update, ["alert:rule_updated", :name]
-#     publish :destroy, "alert:rule_deleted"
-#   end
-
-  attributes do
-    uuid_primary_key :id
-    attribute :name, :string, allow_nil?: false
-    attribute :description, :string
-    attribute :domain, :string
-    attribute :component, :string
-    attribute :metric_name, :string
-    attribute :condition, :atom, constraints: [one_of: [:greater_than, :less_than, :equals, :not_equals, :contains, :missing]]
-    attribute :threshold_value, :decimal
-    attribute :threshold_count, :integer, default: 1
-    attribute :time_window_minutes, :integer, default: 5
-    attribute :severity, :atom, constraints: [one_of: [:info, :warning, :error, :critical]]
-    attribute :notification_channels, {:array, :string}, default: []
-    attribute :escalation_minutes, :integer, default: 60
-    attribute :suppression_minutes, :integer, default: 15
-    attribute :enabled, :boolean, default: true
-    attribute :expression, :string # For complex conditions
-    attribute :tags, :map, default: %{}
-    attribute :metadata, :map, default: %{}
-    create_timestamp :created_at
-    update_timestamp :updated_at
   end
 
   actions do
     defaults [:read, :update, :destroy]
 
     create :create_rule do
-      accept [:name, :description, :domain, :component, :metric_name, :condition,
-              :threshold_value, :threshold_count, :time_window_minutes, :severity,
-              :notification_channels, :escalation_minutes, :suppression_minutes,
-              :expression, :tags, :metadata]
+      accept [
+        :name,
+        :description,
+        :domain,
+        :component,
+        :metric_name,
+        :condition,
+        :threshold_value,
+        :threshold_count,
+        :time_window_minutes,
+        :severity,
+        :notification_channels,
+        :escalation_minutes,
+        :suppression_minutes,
+        :expression,
+        :tags,
+        :metadata
+      ]
     end
 
     update :enable do
@@ -76,20 +56,21 @@ defmodule Thunderline.Thundergate.Resources.AlertRule do
     action :trigger_alert, :map do
       argument :current_value, :decimal, allow_nil?: false
       argument :context, :map, default: %{}
-      
+
       run fn input, _context ->
         rule = input.resource
         current_value = Ash.Changeset.get_argument(input, :current_value)
         alert_context = Ash.Changeset.get_argument(input, :context)
 
         # Evaluate if rule should trigger
-        should_trigger = case rule.condition do
-          :greater_than -> current_value > rule.threshold_value
-          :less_than -> current_value < rule.threshold_value
-          :equals -> current_value == rule.threshold_value
-          :not_equals -> current_value != rule.threshold_value
-          _ -> false
-        end
+        should_trigger =
+          case rule.condition do
+            :greater_than -> current_value > rule.threshold_value
+            :less_than -> current_value < rule.threshold_value
+            :equals -> current_value == rule.threshold_value
+            :not_equals -> current_value != rule.threshold_value
+            _ -> false
+          end
 
         if should_trigger and rule.enabled do
           alert_data = %{
@@ -138,32 +119,71 @@ defmodule Thunderline.Thundergate.Resources.AlertRule do
     end
   end
 
+  preparations do
+    prepare build(sort: [severity: :desc, created_at: :desc])
+  end
+
+  #   notifiers do
+  #     module Thunderline.PubSub
+  #     prefix "thundereye:alerts"
+  #     
+  #     publish :create, ["alert:rule_created", :name]
+  #     publish :update, ["alert:rule_updated", :name]
+  #     publish :destroy, "alert:rule_deleted"
+  #   end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :name, :string, allow_nil?: false
+    attribute :description, :string
+    attribute :domain, :string
+    attribute :component, :string
+    attribute :metric_name, :string
+
+    attribute :condition, :atom,
+      constraints: [
+        one_of: [:greater_than, :less_than, :equals, :not_equals, :contains, :missing]
+      ]
+
+    attribute :threshold_value, :decimal
+    attribute :threshold_count, :integer, default: 1
+    attribute :time_window_minutes, :integer, default: 5
+    attribute :severity, :atom, constraints: [one_of: [:info, :warning, :error, :critical]]
+    attribute :notification_channels, {:array, :string}, default: []
+    attribute :escalation_minutes, :integer, default: 60
+    attribute :suppression_minutes, :integer, default: 15
+    attribute :enabled, :boolean, default: true
+
+    # For complex conditions
+    attribute :expression, :string
+    attribute :tags, :map, default: %{}
+    attribute :metadata, :map, default: %{}
+    create_timestamp :created_at
+    update_timestamp :updated_at
+  end
+
   calculations do
-    calculate :is_complex, :boolean, expr(
-      not is_nil(expression)
-    )
+    calculate :is_complex, :boolean, expr(not is_nil(expression))
 
-    calculate :effectiveness_score, :integer, expr(
-      # Placeholder calculation - would be based on alert history
-      cond do
-        severity == :critical -> 95
-        severity == :error -> 85
-        severity == :warning -> 75
-        true -> 65
-      end
-    )
+    calculate :effectiveness_score,
+              :integer,
+              expr(
+                # Placeholder calculation - would be based on alert history
+                cond do
+                  severity == :critical -> 95
+                  severity == :error -> 85
+                  severity == :warning -> 75
+                  true -> 65
+                end
+              )
 
-    calculate :next_evaluation, :utc_datetime, expr(
-      fragment("? + INTERVAL '? minutes'", updated_at, time_window_minutes)
-    )
+    calculate :next_evaluation,
+              :utc_datetime,
+              expr(fragment("? + INTERVAL '? minutes'", updated_at, time_window_minutes))
   end
 
   identities do
     identity :unique_rule_name, [:name]
     identity :unique_metric_rule, [:domain, :component, :metric_name, :condition]
-  end
-
-  preparations do
-    prepare build(sort: [severity: :desc, created_at: :desc])
   end
 end

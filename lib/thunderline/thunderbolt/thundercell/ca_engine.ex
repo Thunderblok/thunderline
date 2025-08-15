@@ -7,12 +7,10 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
   use GenServer
   require Logger
 
-  defstruct [
-    algorithms: [],
-    optimization_cache: %{},
-    benchmark_history: [],
-    engine_stats: %{}
-  ]
+  defstruct algorithms: [],
+            optimization_cache: %{},
+            benchmark_history: [],
+            engine_stats: %{}
 
   # ====================================================================
   # API functions
@@ -50,6 +48,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
       benchmark_history: [],
       engine_stats: initialize_engine_stats()
     }
+
     {:ok, state}
   end
 
@@ -62,6 +61,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
     case optimize_ca_rules(ca_rules, performance_targets, state) do
       {:ok, optimized_rules, new_state} ->
         {:reply, {:ok, optimized_rules}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -71,6 +71,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
     case run_benchmark(cluster_config, state) do
       {:ok, benchmark_results, new_state} ->
         {:reply, {:ok, benchmark_results}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -83,6 +84,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
       benchmark_runs: length(state.benchmark_history),
       engine_stats: state.engine_stats
     }
+
     {:reply, {:ok, status}, state}
   end
 
@@ -167,6 +169,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
   defp optimize_ca_rules(ca_rules, performance_targets, state) do
     # Check optimization cache first
     cache_key = {ca_rules, performance_targets}
+
     case Map.get(state.optimization_cache, cache_key) do
       nil ->
         # Perform new optimization
@@ -175,14 +178,13 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
             # Cache the result
             new_cache = Map.put(state.optimization_cache, cache_key, optimized_rules)
             new_stats = update_optimization_stats(state.engine_stats)
-            new_state = %{state |
-              optimization_cache: new_cache,
-              engine_stats: new_stats
-            }
+            new_state = %{state | optimization_cache: new_cache, engine_stats: new_stats}
             {:ok, optimized_rules, new_state}
+
           error ->
             error
         end
+
       cached_result ->
         # Return cached optimization
         {:ok, cached_result, state}
@@ -195,18 +197,22 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
     _target_concurrency = Map.get(performance_targets, :min_concurrency, 1000)
 
     # Simple optimization: adjust neighbor requirements based on targets
-    optimized_rules = case target_generation_time < 50 do
-      true ->
-        # Aggressive optimization for speed
-        Map.merge(ca_rules, %{
-          birth_neighbors: [6, 7],      # Fewer birth conditions
-          survival_neighbors: [5, 6],   # Fewer survival conditions
-          optimization_level: :high
-        })
-      false ->
-        # Balanced optimization
-        Map.put(ca_rules, :optimization_level, :medium)
-    end
+    optimized_rules =
+      case target_generation_time < 50 do
+        true ->
+          # Aggressive optimization for speed
+          Map.merge(ca_rules, %{
+            # Fewer birth conditions
+            birth_neighbors: [6, 7],
+            # Fewer survival conditions
+            survival_neighbors: [5, 6],
+            optimization_level: :high
+          })
+
+        false ->
+          # Balanced optimization
+          Map.put(ca_rules, :optimization_level, :medium)
+      end
 
     {:ok, optimized_rules}
   end
@@ -226,15 +232,14 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
 
         # Update benchmark history
         new_history = [benchmark_results | state.benchmark_history]
-        trimmed_history = Enum.take(new_history, 50)  # Keep last 50 benchmarks
+        # Keep last 50 benchmarks
+        trimmed_history = Enum.take(new_history, 50)
 
         new_stats = update_benchmark_stats(state.engine_stats)
-        new_state = %{state |
-          benchmark_history: trimmed_history,
-          engine_stats: new_stats
-        }
+        new_state = %{state | benchmark_history: trimmed_history, engine_stats: new_stats}
 
         {:ok, benchmark_results, new_state}
+
       error ->
         error
     end
@@ -260,18 +265,23 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
     start_time = System.monotonic_time(:millisecond)
 
     # Run 10 generations and measure performance
-    generation_times = for _ <- 1..10 do
-      gen_start = System.monotonic_time(:millisecond)
-      {:ok, generation} = Thunderline.Thunderbolt.ThunderCell.Cluster.evolve_generation(benchmark_id)
-      gen_end = System.monotonic_time(:millisecond)
-      gen_time = gen_end - gen_start
-      {generation, gen_time}
-    end
+    generation_times =
+      for _ <- 1..10 do
+        gen_start = System.monotonic_time(:millisecond)
+
+        {:ok, generation} =
+          Thunderline.Thunderbolt.ThunderCell.Cluster.evolve_generation(benchmark_id)
+
+        gen_end = System.monotonic_time(:millisecond)
+        gen_time = gen_end - gen_start
+        {generation, gen_time}
+      end
 
     end_time = System.monotonic_time(:millisecond)
     total_time = end_time - start_time
 
-    {:ok, cluster_stats} = Thunderline.Thunderbolt.ThunderCell.Cluster.get_cluster_stats(benchmark_id)
+    {:ok, cluster_stats} =
+      Thunderline.Thunderbolt.ThunderCell.Cluster.get_cluster_stats(benchmark_id)
 
     %{
       benchmark_id: benchmark_id,

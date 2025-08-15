@@ -13,11 +13,127 @@ defmodule Thunderline.Thunderblock.Resources.VaultExperience do
 
   import Ash.Resource.Change.Builtins
 
-
-
   postgres do
     table "experiences"
     repo Thunderline.Repo
+  end
+
+  actions do
+    defaults [:read, :create, :update, :destroy]
+
+    create :record_experience do
+      description "Record a new experience for an agent"
+
+      accept [
+        :experience_type,
+        :situation_context,
+        :action_taken,
+        :outcome,
+        :lesson_learned,
+        :impact_score,
+        :surprise_factor,
+        :difficulty_level,
+        :emotions_felt,
+        :skills_used,
+        :environmental_factors
+      ]
+
+      argument :agent_id, :uuid do
+        allow_nil? false
+        description "ID of the agent having the experience"
+      end
+
+      argument :decision_id, :uuid do
+        description "ID of the associated decision, if any"
+      end
+
+      argument :action_id, :uuid do
+        description "ID of the associated action, if any"
+      end
+
+      change manage_relationship(:agent_id, :agent, type: :append_and_remove)
+
+      change manage_relationship(:decision_id, :decision,
+               type: :append_and_remove,
+               on_no_match: :ignore
+             )
+
+      change manage_relationship(:action_id, :action,
+               type: :append_and_remove,
+               on_no_match: :ignore
+             )
+
+      change fn changeset, _context ->
+        # Auto-calculate impact score based on surprise factor and outcome sentiment
+        if Ash.Changeset.get_attribute(changeset, :impact_score) == 0.5 do
+          surprise = Ash.Changeset.get_attribute(changeset, :surprise_factor) || 0.0
+          # Simple heuristic - higher surprise generally means higher impact
+          calculated_impact = min(1.0, 0.3 + surprise * 0.7)
+          Ash.Changeset.change_attribute(changeset, :impact_score, calculated_impact)
+        else
+          changeset
+        end
+      end
+    end
+
+    update :reference_experience do
+      description "Increment reference counter when experience is recalled"
+
+      change fn changeset, _context ->
+        current_count = Ash.Changeset.get_attribute(changeset, :times_referenced) || 0
+        Ash.Changeset.change_attribute(changeset, :times_referenced, current_count + 1)
+      end
+
+      change fn changeset, _context ->
+        # Strengthen learning based on repeated reference
+        current_strength = Ash.Changeset.get_attribute(changeset, :learning_strength) || 1.0
+
+        # 10% boost, capped at 1.0
+        new_strength = min(1.0, current_strength * 1.1)
+        Ash.Changeset.change_attribute(changeset, :learning_strength, new_strength)
+      end
+
+      require_atomic? false
+    end
+
+    update :reinforce_learning do
+      description "Manually adjust learning strength based on outcomes"
+      accept [:learning_strength, :lesson_learned]
+
+      argument :reinforcement_factor, :float do
+        description "Factor to adjust learning strength by (e.g., 1.2 for positive, 0.8 for negative)"
+        constraints min: 0.1, max: 2.0
+      end
+
+      change fn changeset, _context ->
+        factor = Ash.Changeset.get_argument(changeset, :reinforcement_factor) || 1.0
+        current_strength = Ash.Changeset.get_attribute(changeset, :learning_strength) || 1.0
+        new_strength = min(1.0, max(0.1, current_strength * factor))
+        Ash.Changeset.change_attribute(changeset, :learning_strength, new_strength)
+      end
+
+      require_atomic? false
+    end
+  end
+
+  policies do
+    policy always() do
+      authorize_if always()
+    end
+  end
+
+  validations do
+    validate match(:situation_context, ~r/.{10,}/) do
+      message "Situation context must be at least 10 characters"
+    end
+
+    validate match(:action_taken, ~r/.{5,}/) do
+      message "Action taken must be at least 5 characters"
+    end
+
+    validate match(:outcome, ~r/.{5,}/) do
+      message "Outcome must be at least 5 characters"
+    end
   end
 
   attributes do
@@ -25,7 +141,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultExperience do
 
     attribute :experience_type, :atom do
       allow_nil? false
-      constraints [one_of: [:success, :failure, :discovery, :interaction, :learning, :adaptation]]
+      constraints one_of: [:success, :failure, :discovery, :interaction, :learning, :adaptation]
       description "Type of experience recorded"
     end
 
@@ -61,7 +177,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultExperience do
 
     attribute :difficulty_level, :integer do
       default 5
-      constraints [min: 1, max: 10]
+      constraints min: 1, max: 10
       description "Difficulty level 1-10"
     end
 
@@ -114,89 +230,17 @@ defmodule Thunderline.Thunderblock.Resources.VaultExperience do
     end
   end
 
-  actions do
-    defaults [:read, :create, :update, :destroy]
-
-    create :record_experience do
-      description "Record a new experience for an agent"
-      accept [:experience_type, :situation_context, :action_taken, :outcome,
-              :lesson_learned, :impact_score, :surprise_factor, :difficulty_level,
-              :emotions_felt, :skills_used, :environmental_factors]
-
-      argument :agent_id, :uuid do
-        allow_nil? false
-        description "ID of the agent having the experience"
-      end
-
-      argument :decision_id, :uuid do
-        description "ID of the associated decision, if any"
-      end
-
-      argument :action_id, :uuid do
-        description "ID of the associated action, if any"
-      end
-
-      change manage_relationship(:agent_id, :agent, type: :append_and_remove)
-      change manage_relationship(:decision_id, :decision, type: :append_and_remove, on_no_match: :ignore)
-      change manage_relationship(:action_id, :action, type: :append_and_remove, on_no_match: :ignore)
-
-      change fn changeset, _context ->
-        # Auto-calculate impact score based on surprise factor and outcome sentiment
-        if Ash.Changeset.get_attribute(changeset, :impact_score) == 0.5 do
-          surprise = Ash.Changeset.get_attribute(changeset, :surprise_factor) || 0.0
-          # Simple heuristic - higher surprise generally means higher impact
-          calculated_impact = min(1.0, 0.3 + surprise * 0.7)
-          Ash.Changeset.change_attribute(changeset, :impact_score, calculated_impact)
-        else
-          changeset
-        end
-      end
-    end
-
-    update :reference_experience do
-      description "Increment reference counter when experience is recalled"
-
-      change fn changeset, _context ->
-        current_count = Ash.Changeset.get_attribute(changeset, :times_referenced) || 0
-        Ash.Changeset.change_attribute(changeset, :times_referenced, current_count + 1)
-      end
-
-      change fn changeset, _context ->
-        # Strengthen learning based on repeated reference
-        current_strength = Ash.Changeset.get_attribute(changeset, :learning_strength) || 1.0
-        new_strength = min(1.0, current_strength * 1.1) # 10% boost, capped at 1.0
-        Ash.Changeset.change_attribute(changeset, :learning_strength, new_strength)
-      end
-
-      require_atomic? false
-    end
-
-    update :reinforce_learning do
-      description "Manually adjust learning strength based on outcomes"
-      accept [:learning_strength, :lesson_learned]
-
-      argument :reinforcement_factor, :float do
-        description "Factor to adjust learning strength by (e.g., 1.2 for positive, 0.8 for negative)"
-        constraints [min: 0.1, max: 2.0]
-      end
-
-      change fn changeset, _context ->
-        factor = Ash.Changeset.get_argument(changeset, :reinforcement_factor) || 1.0
-        current_strength = Ash.Changeset.get_attribute(changeset, :learning_strength) || 1.0
-        new_strength = min(1.0, max(0.1, current_strength * factor))
-        Ash.Changeset.change_attribute(changeset, :learning_strength, new_strength)
-      end
-
-      require_atomic? false
-    end
-  end
-
   calculations do
     calculate :learning_score, :float, expr(impact_score * learning_strength) do
       description "Combined learning score considering impact and strength"
     end
 
-    calculate :recall_frequency, :float, expr(times_referenced / (fragment("EXTRACT(EPOCH FROM (NOW() - inserted_at)) / 86400") + 1)) do
+    calculate :recall_frequency,
+              :float,
+              expr(
+                times_referenced /
+                  (fragment("EXTRACT(EPOCH FROM (NOW() - inserted_at)) / 86400") + 1)
+              ) do
       description "How frequently this experience is recalled (references per day)"
     end
   end
@@ -207,29 +251,14 @@ defmodule Thunderline.Thunderblock.Resources.VaultExperience do
     end
   end
 
-  policies do
-    policy always() do
-      authorize_if always()
-    end
-  end
-
   identities do
-    identity :unique_experience_per_context, [:agent_id, :situation_context, :action_taken, :inserted_at] do
+    identity :unique_experience_per_context, [
+      :agent_id,
+      :situation_context,
+      :action_taken,
+      :inserted_at
+    ] do
       description "Prevent duplicate experiences with same context and action within the same timestamp"
-    end
-  end
-
-  validations do
-    validate match(:situation_context, ~r/.{10,}/) do
-      message "Situation context must be at least 10 characters"
-    end
-
-    validate match(:action_taken, ~r/.{5,}/) do
-      message "Action taken must be at least 5 characters"
-    end
-
-    validate match(:outcome, ~r/.{5,}/) do
-      message "Outcome must be at least 5 characters"
     end
   end
 end

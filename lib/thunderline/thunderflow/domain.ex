@@ -52,8 +52,12 @@ defmodule Thunderline.Thunderflow.Domain do
     # but can be started manually for testing
     Enum.each(children, fn child ->
       case child.start_link([]) do
-        {:ok, _pid} -> :ok
-        {:error, {:already_started, _pid}} -> :ok
+        {:ok, _pid} ->
+          :ok
+
+        {:error, {:already_started, _pid}} ->
+          :ok
+
         error ->
           require Logger
           Logger.error("Failed to start #{inspect(child)}: #{inspect(error)}")
@@ -77,13 +81,22 @@ defmodule Thunderline.Thunderflow.Domain do
 
     case broadway_event["pipeline_hint"] do
       "realtime" ->
-        GenStage.call(Thunderline.Thunderflow.Pipelines.RealTimePipeline, {:send_event, broadway_event})
+        GenStage.call(
+          Thunderline.Thunderflow.Pipelines.RealTimePipeline,
+          {:send_event, broadway_event}
+        )
 
       "cross_domain" ->
-        GenStage.call(Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, {:send_event, broadway_event})
+        GenStage.call(
+          Thunderline.Thunderflow.Pipelines.CrossDomainPipeline,
+          {:send_event, broadway_event}
+        )
 
       _ ->
-        GenStage.call(Thunderline.Thunderflow.Pipelines.EventPipeline, {:send_event, broadway_event})
+        GenStage.call(
+          Thunderline.Thunderflow.Pipelines.EventPipeline,
+          {:send_event, broadway_event}
+        )
     end
   end
 
@@ -94,5 +107,6 @@ defmodule Thunderline.Thunderflow.Domain do
       true -> "event"
     end
   end
+
   defp determine_pipeline(pipeline, _event_type), do: to_string(pipeline)
 end

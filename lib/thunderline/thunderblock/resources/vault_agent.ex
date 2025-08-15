@@ -13,17 +13,98 @@ defmodule Thunderline.Thunderblock.Resources.VaultAgent do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "agents"
     repo Thunderline.Repo
   end
 
   events do
-    event_log Thunderline.Thunderflow.Events.Event
-    current_action_versions create: 1, update: 1, destroy: 1
+    event_log(Thunderline.Thunderflow.Events.Event)
+    current_action_versions(create: 1, update: 1, destroy: 1)
+  end
+
+  actions do
+    defaults [:create, :read, :update, :destroy]
+
+    create :spawn_agent do
+      accept [:name, :type, :zone_id, :capabilities, :configuration, :created_by_user_id]
+
+      change set_attribute(:status, :idle)
+      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
+    end
+
+    update :activate do
+      accept []
+      change set_attribute(:status, :active)
+      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
+    end
+
+    update :suspend do
+      accept []
+      change set_attribute(:status, :suspended)
+      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
+    end
+
+    update :terminate do
+      accept []
+      change set_attribute(:status, :terminated)
+      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
+    end
+
+    update :record_action do
+      accept [:state_data]
+
+      change increment(:total_actions)
+      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
+    end
+
+    update :update_success_rate do
+      argument :success, :boolean, allow_nil?: false
+      require_atomic? false
+
+      change fn changeset, context ->
+        current_rate = Ash.Changeset.get_attribute(changeset, :success_rate) || Decimal.new("0.0")
+        total_actions = Ash.Changeset.get_attribute(changeset, :total_actions) || 0
+
+        if total_actions > 0 do
+          success_value = if context.arguments.success, do: 1, else: 0
+
+          new_rate =
+            Decimal.div(
+              Decimal.add(Decimal.mult(current_rate, total_actions), success_value),
+              total_actions + 1
+            )
+
+          Ash.Changeset.change_attribute(changeset, :success_rate, new_rate)
+        else
+          changeset
+        end
+      end
+    end
+
+    read :by_zone do
+      argument :zone_id, :string, allow_nil?: false
+      filter expr(zone_id == ^arg(:zone_id))
+    end
+
+    read :by_type do
+      argument :type, :atom, allow_nil?: false
+      filter expr(type == ^arg(:type))
+    end
+
+    read :active_agents do
+      filter expr(status in [:active, :thinking, :acting])
+    end
+  end
+
+  preparations do
+    prepare build(sort: [priority: :desc, inserted_at: :desc])
+  end
+
+  validations do
+    validate present([:name, :type])
+    validate string_length(:name, min: 1, max: 100)
+    validate numericality(:priority, greater_than: 0, less_than_or_equal_to: 1000)
   end
 
   attributes do
@@ -114,87 +195,6 @@ defmodule Thunderline.Thunderblock.Resources.VaultAgent do
     has_many :memory_records, Thunderline.Thunderblock.Resources.VaultMemoryRecord do
       destination_attribute :agent_id
     end
-  end
-
-  actions do
-    defaults [:create, :read, :update, :destroy]
-
-    create :spawn_agent do
-      accept [:name, :type, :zone_id, :capabilities, :configuration, :created_by_user_id]
-
-      change set_attribute(:status, :idle)
-      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
-    end
-
-    update :activate do
-      accept []
-      change set_attribute(:status, :active)
-      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
-    end
-
-    update :suspend do
-      accept []
-      change set_attribute(:status, :suspended)
-      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
-    end
-
-    update :terminate do
-      accept []
-      change set_attribute(:status, :terminated)
-      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
-    end
-
-    update :record_action do
-      accept [:state_data]
-
-      change increment(:total_actions)
-      change set_attribute(:last_activity_at, &DateTime.utc_now/0)
-    end
-
-    update :update_success_rate do
-      argument :success, :boolean, allow_nil?: false
-      require_atomic? false
-
-      change fn changeset, context ->
-        current_rate = Ash.Changeset.get_attribute(changeset, :success_rate) || Decimal.new("0.0")
-        total_actions = Ash.Changeset.get_attribute(changeset, :total_actions) || 0
-
-        if total_actions > 0 do
-          success_value = if context.arguments.success, do: 1, else: 0
-          new_rate = Decimal.div(
-            Decimal.add(Decimal.mult(current_rate, total_actions), success_value),
-            total_actions + 1
-          )
-          Ash.Changeset.change_attribute(changeset, :success_rate, new_rate)
-        else
-          changeset
-        end
-      end
-    end
-
-    read :by_zone do
-      argument :zone_id, :string, allow_nil?: false
-      filter expr(zone_id == ^arg(:zone_id))
-    end
-
-    read :by_type do
-      argument :type, :atom, allow_nil?: false
-      filter expr(type == ^arg(:type))
-    end
-
-    read :active_agents do
-      filter expr(status in [:active, :thinking, :acting])
-    end
-  end
-
-  preparations do
-    prepare build(sort: [priority: :desc, inserted_at: :desc])
-  end
-
-  validations do
-    validate present([:name, :type])
-    validate string_length(:name, min: 1, max: 100)
-    validate numericality(:priority, greater_than: 0, less_than_or_equal_to: 1000)
   end
 
   # TODO: Re-enable policies once AshAuthentication is properly configured

@@ -25,10 +25,11 @@ defmodule Thunderline.BroadwayMonitoring do
   def health_check do
     pipeline_statuses = Enum.map(@pipelines, &check_pipeline_health/1)
 
-    overall_status = case Enum.all?(pipeline_statuses, & &1.status == :healthy) do
-      true -> :healthy
-      false -> :degraded
-    end
+    overall_status =
+      case Enum.all?(pipeline_statuses, &(&1.status == :healthy)) do
+        true -> :healthy
+        false -> :degraded
+      end
 
     %{
       overall_status: overall_status,
@@ -57,11 +58,12 @@ defmodule Thunderline.BroadwayMonitoring do
     baseline_metrics = collect_pipeline_metrics()
 
     # Start load generation
-    load_test_tasks = Enum.map(test_types, fn test_type ->
-      Task.async(fn ->
-        generate_load(test_type, events_per_second, duration_seconds)
+    load_test_tasks =
+      Enum.map(test_types, fn test_type ->
+        Task.async(fn ->
+          generate_load(test_type, events_per_second, duration_seconds)
+        end)
       end)
-    end)
 
     # Wait for load test completion
     Enum.each(load_test_tasks, &Task.await(&1, :timer.seconds(duration_seconds + 30)))
@@ -103,7 +105,7 @@ defmodule Thunderline.BroadwayMonitoring do
 
   defp evaluate_test_success(performance_delta) do
     performance_delta.throughput_improvement > 0 and
-    performance_delta.error_rate_change < 0.01
+      performance_delta.error_rate_change < 0.01
   end
 
   defp generate_performance_recommendations(performance_delta) do
@@ -155,7 +157,7 @@ defmodule Thunderline.BroadwayMonitoring do
     Logger.info("Starting #{duration_minutes}-minute pipeline monitoring session")
 
     start_time = System.monotonic_time(:millisecond)
-    end_time = start_time + (duration_minutes * 60 * 1000)
+    end_time = start_time + duration_minutes * 60 * 1000
 
     metrics_history = collect_metrics_over_time(start_time, end_time)
 
@@ -179,20 +181,24 @@ defmodule Thunderline.BroadwayMonitoring do
       # Check if pipeline is running
       pid = GenServer.whereis(pipeline_module)
 
-      status = case pid do
-        nil -> :stopped
-        pid when is_pid(pid) ->
-          case Process.alive?(pid) do
-            true -> :healthy
-            false -> :crashed
-          end
-      end
+      status =
+        case pid do
+          nil ->
+            :stopped
+
+          pid when is_pid(pid) ->
+            case Process.alive?(pid) do
+              true -> :healthy
+              false -> :crashed
+            end
+        end
 
       # Get pipeline metrics if available
-      metrics = case status do
-        :healthy -> get_pipeline_metrics(pipeline_module)
-        _ -> %{}
-      end
+      metrics =
+        case status do
+          :healthy -> get_pipeline_metrics(pipeline_module)
+          _ -> %{}
+        end
 
       %{
         pipeline: pipeline_module,
@@ -200,7 +206,6 @@ defmodule Thunderline.BroadwayMonitoring do
         pid: pid,
         metrics: metrics
       }
-
     rescue
       error ->
         Logger.error("Error checking pipeline health", %{
@@ -218,7 +223,9 @@ defmodule Thunderline.BroadwayMonitoring do
 
   defp check_event_producer_health do
     case GenServer.whereis(Thunderline.Thunderflow.EventProducer) do
-      nil -> %{status: :stopped}
+      nil ->
+        %{status: :stopped}
+
       pid when is_pid(pid) ->
         case Process.alive?(pid) do
           true -> %{status: :healthy, pid: pid}
@@ -229,7 +236,9 @@ defmodule Thunderline.BroadwayMonitoring do
 
   defp check_pubsub_health do
     case GenServer.whereis(Thunderline.PubSub) do
-      nil -> %{status: :stopped}
+      nil ->
+        %{status: :stopped}
+
       pid when is_pid(pid) ->
         case Process.alive?(pid) do
           true -> %{status: :healthy, pid: pid}
@@ -369,7 +378,8 @@ defmodule Thunderline.BroadwayMonitoring do
         system: collect_system_metrics()
       }
 
-      Process.sleep(5000) # Collect metrics every 5 seconds
+      # Collect metrics every 5 seconds
+      Process.sleep(5000)
       collect_metrics_loop(start_time, end_time, [metrics | acc])
     end
   end
@@ -401,13 +411,14 @@ defmodule Thunderline.BroadwayMonitoring do
     |> Enum.map(fn pipeline ->
       pipeline_metrics = extract_pipeline_metrics(metrics_history, pipeline)
 
-      {pipeline, %{
-        avg_processing_time: calculate_average(pipeline_metrics, :avg_processing_time),
-        max_processing_time: calculate_maximum(pipeline_metrics, :avg_processing_time),
-        avg_error_rate: calculate_average(pipeline_metrics, :error_rate),
-        avg_queue_depth: calculate_average(pipeline_metrics, :queue_depth),
-        total_processed: calculate_sum(pipeline_metrics, :processed_events)
-      }}
+      {pipeline,
+       %{
+         avg_processing_time: calculate_average(pipeline_metrics, :avg_processing_time),
+         max_processing_time: calculate_maximum(pipeline_metrics, :avg_processing_time),
+         avg_error_rate: calculate_average(pipeline_metrics, :error_rate),
+         avg_queue_depth: calculate_average(pipeline_metrics, :queue_depth),
+         total_processed: calculate_sum(pipeline_metrics, :processed_events)
+       }}
     end)
     |> Map.new()
   end
@@ -427,31 +438,35 @@ defmodule Thunderline.BroadwayMonitoring do
     bottlenecks = []
 
     # Check for high error rates
-    bottlenecks = Enum.reduce(pipeline_analysis, bottlenecks, fn {pipeline, metrics}, acc ->
-      if metrics.avg_error_rate > 0.01 do
-        [%{type: :high_error_rate, pipeline: pipeline, rate: metrics.avg_error_rate} | acc]
-      else
-        acc
-      end
-    end)
+    bottlenecks =
+      Enum.reduce(pipeline_analysis, bottlenecks, fn {pipeline, metrics}, acc ->
+        if metrics.avg_error_rate > 0.01 do
+          [%{type: :high_error_rate, pipeline: pipeline, rate: metrics.avg_error_rate} | acc]
+        else
+          acc
+        end
+      end)
 
     # Check for high processing times
-    bottlenecks = Enum.reduce(pipeline_analysis, bottlenecks, fn {pipeline, metrics}, acc ->
-      if metrics.avg_processing_time > 1000 do # > 1 second
-        [%{type: :slow_processing, pipeline: pipeline, time: metrics.avg_processing_time} | acc]
-      else
-        acc
-      end
-    end)
+    bottlenecks =
+      Enum.reduce(pipeline_analysis, bottlenecks, fn {pipeline, metrics}, acc ->
+        # > 1 second
+        if metrics.avg_processing_time > 1000 do
+          [%{type: :slow_processing, pipeline: pipeline, time: metrics.avg_processing_time} | acc]
+        else
+          acc
+        end
+      end)
 
     # Check for high queue depths
-    bottlenecks = Enum.reduce(pipeline_analysis, bottlenecks, fn {pipeline, metrics}, acc ->
-      if metrics.avg_queue_depth > 100 do
-        [%{type: :queue_backup, pipeline: pipeline, depth: metrics.avg_queue_depth} | acc]
-      else
-        acc
-      end
-    end)
+    bottlenecks =
+      Enum.reduce(pipeline_analysis, bottlenecks, fn {pipeline, metrics}, acc ->
+        if metrics.avg_queue_depth > 100 do
+          [%{type: :queue_backup, pipeline: pipeline, depth: metrics.avg_queue_depth} | acc]
+        else
+          acc
+        end
+      end)
 
     bottlenecks
   end
@@ -460,30 +475,40 @@ defmodule Thunderline.BroadwayMonitoring do
     recommendations = []
 
     # Add recommendations based on bottlenecks
-    recommendations = Enum.reduce(analysis.bottlenecks, recommendations, fn bottleneck, acc ->
-      case bottleneck.type do
-        :high_error_rate ->
-          [%{
-            priority: :high,
-            action: "Investigate error handling in #{bottleneck.pipeline}",
-            details: "Error rate: #{Float.round(bottleneck.rate * 100, 2)}%"
-          } | acc]
+    recommendations =
+      Enum.reduce(analysis.bottlenecks, recommendations, fn bottleneck, acc ->
+        case bottleneck.type do
+          :high_error_rate ->
+            [
+              %{
+                priority: :high,
+                action: "Investigate error handling in #{bottleneck.pipeline}",
+                details: "Error rate: #{Float.round(bottleneck.rate * 100, 2)}%"
+              }
+              | acc
+            ]
 
-        :slow_processing ->
-          [%{
-            priority: :medium,
-            action: "Increase concurrency for #{bottleneck.pipeline}",
-            details: "Avg processing time: #{bottleneck.time}ms"
-          } | acc]
+          :slow_processing ->
+            [
+              %{
+                priority: :medium,
+                action: "Increase concurrency for #{bottleneck.pipeline}",
+                details: "Avg processing time: #{bottleneck.time}ms"
+              }
+              | acc
+            ]
 
-        :queue_backup ->
-          [%{
-            priority: :high,
-            action: "Increase batch size or processors for #{bottleneck.pipeline}",
-            details: "Avg queue depth: #{bottleneck.depth}"
-          } | acc]
-      end
-    end)
+          :queue_backup ->
+            [
+              %{
+                priority: :high,
+                action: "Increase batch size or processors for #{bottleneck.pipeline}",
+                details: "Avg queue depth: #{bottleneck.depth}"
+              }
+              | acc
+            ]
+        end
+      end)
 
     recommendations
   end
@@ -499,7 +524,8 @@ defmodule Thunderline.BroadwayMonitoring do
           priority: :critical,
           action: "Fix failed migration tests",
           details: "Failed tests: #{inspect(Enum.map(failed_tests, &elem(&1, 0)))}"
-        } | recommendations
+        }
+        | recommendations
       ]
     end
 
@@ -509,7 +535,8 @@ defmodule Thunderline.BroadwayMonitoring do
           priority: :low,
           action: "Remove legacy compatibility layer after migration is complete",
           details: "Legacy broadcasts are working but should be phased out"
-        } | recommendations
+        }
+        | recommendations
       ]
     end
 
@@ -533,6 +560,7 @@ defmodule Thunderline.BroadwayMonitoring do
 
   defp calculate_average(metrics_list, key) do
     values = Enum.map(metrics_list, &Map.get(&1, key, 0))
+
     case length(values) do
       0 -> 0
       count -> Enum.sum(values) / count
@@ -541,6 +569,7 @@ defmodule Thunderline.BroadwayMonitoring do
 
   defp calculate_maximum(metrics_list, key) do
     values = Enum.map(metrics_list, &Map.get(&1, key, 0))
+
     case values do
       [] -> 0
       values -> Enum.max(values)

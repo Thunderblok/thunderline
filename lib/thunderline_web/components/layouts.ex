@@ -120,19 +120,20 @@ defmodule ThunderlineWeb.Layouts do
     ~H"""
     <!DOCTYPE html>
     <html lang="en" class="h-full">
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta name="csrf-token" content={get_csrf_token()} />
-      <.live_title default="Thunderprism Command Center">
-        {assigns[:page_title]}
-      </.live_title>
-      <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-      <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
-    </head>
-    <body class="h-full bg-black">
-      {@inner_content}
-    </body>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="csrf-token" content={get_csrf_token()} />
+        <.live_title default="Thunderprism Command Center">
+          {assigns[:page_title]}
+        </.live_title>
+        <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+        <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+        </script>
+      </head>
+      <body class="h-full bg-black">
+        {@inner_content}
+      </body>
     </html>
     """
   end

@@ -12,13 +12,126 @@ defmodule Thunderline.Thunderbolt.Resources.PerformanceMetric do
     extensions: [AshJsonApi.Resource],
     authorizers: [Ash.Policy.Authorizer]
 
+  postgres do
+    table "thunderlane_performance_metrics"
+    repo Thunderline.Repo
+  end
+
   json_api do
     type "performance_metrics"
   end
 
-  postgres do
-    table "thunderlane_performance_metrics"
-    repo Thunderline.Repo
+  code_interface do
+    define :create
+    define :read
+    define :record_micro_metric
+    define :record_meso_metric
+    define :record_macro_metric
+    define :record_system_metric
+  end
+
+  actions do
+    defaults [:read]
+
+    create :create do
+      accept [
+        :coordinator_id,
+        :metric_type,
+        :step_number,
+        :micro_latency_us,
+        :meso_latency_us,
+        :macro_latency_us,
+        :total_latency_us,
+        :patches_processed,
+        :consensus_bursts,
+        :fusion_operations,
+        :system_energy,
+        :energy_drift,
+        :stability_score,
+        :convergence_rate,
+        :lane_x_energy,
+        :lane_y_energy,
+        :lane_z_energy,
+        :alpha_xy,
+        :alpha_xz,
+        :alpha_yz,
+        :oracle_batch_size,
+        :oracle_success_rate,
+        :oracle_latency_us,
+        :cpu_usage_percent,
+        :memory_usage_mb,
+        :gpu_usage_percent,
+        :lane_configuration_id,
+        :rule_oracle_id,
+        :metadata
+      ]
+    end
+
+    create :record_micro_metric do
+      accept [
+        :coordinator_id,
+        :step_number,
+        :micro_latency_us,
+        :patches_processed,
+        :lane_configuration_id,
+        :metadata
+      ]
+
+      change set_attribute(:metric_type, "micro")
+    end
+
+    create :record_meso_metric do
+      accept [
+        :coordinator_id,
+        :step_number,
+        :meso_latency_us,
+        :consensus_bursts,
+        :system_energy,
+        :stability_score,
+        :rule_oracle_id,
+        :metadata
+      ]
+
+      change set_attribute(:metric_type, "meso")
+    end
+
+    create :record_macro_metric do
+      accept [
+        :coordinator_id,
+        :step_number,
+        :macro_latency_us,
+        :fusion_operations,
+        :lane_x_energy,
+        :lane_y_energy,
+        :lane_z_energy,
+        :alpha_xy,
+        :alpha_xz,
+        :alpha_yz,
+        :metadata
+      ]
+
+      change set_attribute(:metric_type, "macro")
+    end
+
+    create :record_system_metric do
+      accept [
+        :coordinator_id,
+        :step_number,
+        :total_latency_us,
+        :cpu_usage_percent,
+        :memory_usage_mb,
+        :gpu_usage_percent,
+        :metadata
+      ]
+
+      change set_attribute(:metric_type, "system")
+    end
+  end
+
+  policies do
+    policy always() do
+      authorize_if always()
+    end
   end
 
   attributes do
@@ -31,13 +144,13 @@ defmodule Thunderline.Thunderbolt.Resources.PerformanceMetric do
     attribute :metric_type, :atom do
       description "Type of metric (micro, meso, macro, fusion)"
       allow_nil? false
-      constraints [one_of: [:micro, :meso, :macro, :fusion, :system]]
+      constraints one_of: [:micro, :meso, :macro, :fusion, :system]
     end
 
     attribute :step_number, :integer do
       description "Processing step number"
       allow_nil? false
-      constraints [min: 0]
+      constraints min: 0
     end
 
     # Timing metrics (all in microseconds)
@@ -84,7 +197,7 @@ defmodule Thunderline.Thunderbolt.Resources.PerformanceMetric do
 
     attribute :stability_score, :float do
       description "System stability score (0.0 to 1.0)"
-      constraints [min: 0.0, max: 1.0]
+      constraints min: 0.0, max: 1.0
     end
 
     attribute :convergence_rate, :float do
@@ -123,7 +236,7 @@ defmodule Thunderline.Thunderbolt.Resources.PerformanceMetric do
 
     attribute :oracle_success_rate, :float do
       description "Oracle inference success rate"
-      constraints [min: 0.0, max: 1.0]
+      constraints min: 0.0, max: 1.0
     end
 
     attribute :oracle_latency_us, :integer do
@@ -133,7 +246,7 @@ defmodule Thunderline.Thunderbolt.Resources.PerformanceMetric do
     # Resource utilization
     attribute :cpu_usage_percent, :float do
       description "CPU utilization percentage"
-      constraints [min: 0.0, max: 100.0]
+      constraints min: 0.0, max: 100.0
     end
 
     attribute :memory_usage_mb, :integer do
@@ -142,7 +255,7 @@ defmodule Thunderline.Thunderbolt.Resources.PerformanceMetric do
 
     attribute :gpu_usage_percent, :float do
       description "GPU utilization percentage"
-      constraints [min: 0.0, max: 100.0]
+      constraints min: 0.0, max: 100.0
     end
 
     # Metadata
@@ -182,89 +295,51 @@ defmodule Thunderline.Thunderbolt.Resources.PerformanceMetric do
   end
 
   calculations do
-    calculate :efficiency_score, :float, expr(
-      fragment("""
-        CASE
-          WHEN ? > 0 AND ? > 0 THEN
-            (? + ? + ?)::float / (3.0 * ?)
-          ELSE 0.0
-        END
-      """, patches_processed, total_latency_us,
-           patches_processed, consensus_bursts, fusion_operations,
-           total_latency_us)
-    ) do
+    calculate :efficiency_score,
+              :float,
+              expr(
+                fragment(
+                  """
+                    CASE
+                      WHEN ? > 0 AND ? > 0 THEN
+                        (? + ? + ?)::float / (3.0 * ?)
+                      ELSE 0.0
+                    END
+                  """,
+                  patches_processed,
+                  total_latency_us,
+                  patches_processed,
+                  consensus_bursts,
+                  fusion_operations,
+                  total_latency_us
+                )
+              ) do
       description "Overall efficiency score combining throughput and latency"
     end
 
-    calculate :lane_balance_score, :float, expr(
-      fragment("""
-        CASE
-          WHEN ? IS NOT NULL AND ? IS NOT NULL AND ? IS NOT NULL THEN
-            1.0 - (ABS(? - ?) + ABS(? - ?) + ABS(? - ?)) / 3.0
-          ELSE 0.0
-        END
-      """, lane_x_energy, lane_y_energy, lane_z_energy,
-           lane_x_energy, lane_y_energy,
-           lane_y_energy, lane_z_energy,
-           lane_x_energy, lane_z_energy)
-    ) do
+    calculate :lane_balance_score,
+              :float,
+              expr(
+                fragment(
+                  """
+                    CASE
+                      WHEN ? IS NOT NULL AND ? IS NOT NULL AND ? IS NOT NULL THEN
+                        1.0 - (ABS(? - ?) + ABS(? - ?) + ABS(? - ?)) / 3.0
+                      ELSE 0.0
+                    END
+                  """,
+                  lane_x_energy,
+                  lane_y_energy,
+                  lane_z_energy,
+                  lane_x_energy,
+                  lane_y_energy,
+                  lane_y_energy,
+                  lane_z_energy,
+                  lane_x_energy,
+                  lane_z_energy
+                )
+              ) do
       description "How balanced the energy is across X/Y/Z lanes"
     end
-  end
-
-  actions do
-    defaults [:read]
-
-    create :create do
-      accept [:coordinator_id, :metric_type, :step_number, :micro_latency_us,
-              :meso_latency_us, :macro_latency_us, :total_latency_us,
-              :patches_processed, :consensus_bursts, :fusion_operations,
-              :system_energy, :energy_drift, :stability_score, :convergence_rate,
-              :lane_x_energy, :lane_y_energy, :lane_z_energy,
-              :alpha_xy, :alpha_xz, :alpha_yz,
-              :oracle_batch_size, :oracle_success_rate, :oracle_latency_us,
-              :cpu_usage_percent, :memory_usage_mb, :gpu_usage_percent,
-              :lane_configuration_id, :rule_oracle_id, :metadata]
-    end
-
-    create :record_micro_metric do
-      accept [:coordinator_id, :step_number, :micro_latency_us, :patches_processed,
-              :lane_configuration_id, :metadata]
-      change set_attribute(:metric_type, "micro")
-    end
-
-    create :record_meso_metric do
-      accept [:coordinator_id, :step_number, :meso_latency_us, :consensus_bursts,
-              :system_energy, :stability_score, :rule_oracle_id, :metadata]
-      change set_attribute(:metric_type, "meso")
-    end
-
-    create :record_macro_metric do
-      accept [:coordinator_id, :step_number, :macro_latency_us, :fusion_operations,
-              :lane_x_energy, :lane_y_energy, :lane_z_energy,
-              :alpha_xy, :alpha_xz, :alpha_yz, :metadata]
-      change set_attribute(:metric_type, "macro")
-    end
-
-    create :record_system_metric do
-      accept [:coordinator_id, :step_number, :total_latency_us, :cpu_usage_percent,
-              :memory_usage_mb, :gpu_usage_percent, :metadata]
-      change set_attribute(:metric_type, "system")
-    end
-  end
-
-  policies do
-    policy always() do
-      authorize_if always()
-    end
-  end
-
-  code_interface do
-    define :create
-    define :read
-    define :record_micro_metric
-    define :record_meso_metric
-    define :record_macro_metric
-    define :record_system_metric
   end
 end

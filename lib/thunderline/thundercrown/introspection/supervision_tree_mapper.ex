@@ -91,23 +91,25 @@ defmodule Thunderline.Thundercrown.Introspection.SupervisionTreeMapper do
       case Supervisor.which_children(supervisor_pid) do
         children when is_list(children) ->
           # Try to get the supervisor's registered name
-          name = case Process.info(supervisor_pid, :registered_name) do
-            {:registered_name, []} -> :unnamed_supervisor
-            {:registered_name, [registered_name]} -> registered_name
-            _ -> :unnamed_supervisor
-          end
+          name =
+            case Process.info(supervisor_pid, :registered_name) do
+              {:registered_name, []} -> :unnamed_supervisor
+              {:registered_name, [registered_name]} -> registered_name
+              _ -> :unnamed_supervisor
+            end
 
           # Get basic supervisor strategy info safely
-          strategy = try do
-            # Check if this looks like a DynamicSupervisor by examining the state
-            case :sys.get_state(supervisor_pid) do
-              %DynamicSupervisor{strategy: strategy} -> strategy
-              {state, _} when is_map(state) -> Map.get(state, :strategy, :one_for_one)
-              _ -> :one_for_one
+          strategy =
+            try do
+              # Check if this looks like a DynamicSupervisor by examining the state
+              case :sys.get_state(supervisor_pid) do
+                %DynamicSupervisor{strategy: strategy} -> strategy
+                {state, _} when is_map(state) -> Map.get(state, :strategy, :one_for_one)
+                _ -> :one_for_one
+              end
+            rescue
+              _ -> :basic_supervisor
             end
-          rescue
-            _ -> :basic_supervisor
-          end
 
           {name, strategy, children}
 
@@ -126,15 +128,16 @@ defmodule Thunderline.Thundercrown.Introspection.SupervisionTreeMapper do
   @spec get_process_info(pid()) :: map()
   def get_process_info(pid) when is_pid(pid) do
     try do
-      info = Process.info(pid, [
-        :registered_name,
-        :current_function,
-        :initial_call,
-        :message_queue_len,
-        :status,
-        :memory,
-        :reductions
-      ])
+      info =
+        Process.info(pid, [
+          :registered_name,
+          :current_function,
+          :initial_call,
+          :message_queue_len,
+          :status,
+          :memory,
+          :reductions
+        ])
 
       case info do
         nil ->
@@ -238,20 +241,28 @@ defmodule Thunderline.Thundercrown.Introspection.SupervisionTreeMapper do
           cond do
             String.contains?(name_str, "thunderbolt") ->
               Map.update!(acc, :thunderbolt, &[process_tree | &1])
+
             String.contains?(name_str, "thunderflow") ->
               Map.update!(acc, :thunderflow, &[process_tree | &1])
+
             String.contains?(name_str, "thundergate") ->
               Map.update!(acc, :thundergate, &[process_tree | &1])
+
             String.contains?(name_str, "thunderblock") ->
               Map.update!(acc, :thunderblock, &[process_tree | &1])
+
             String.contains?(name_str, "thunderlink") ->
               Map.update!(acc, :thunderlink, &[process_tree | &1])
+
             String.contains?(name_str, "thundercrown") ->
               Map.update!(acc, :thundercrown, &[process_tree | &1])
+
             String.contains?(name_str, "thunderguard") ->
               Map.update!(acc, :thunderguard, &[process_tree | &1])
+
             String.contains?(name_str, "thundergrid") ->
               Map.update!(acc, :thundergrid, &[process_tree | &1])
+
             true ->
               acc
           end
@@ -265,27 +276,28 @@ defmodule Thunderline.Thundercrown.Introspection.SupervisionTreeMapper do
   # Private helper functions
 
   defp traverse_and_count(tree, stats) do
-    updated_stats = case ExRoseTree.get_term(tree) do
-      {_name, :supervisor, _} ->
-        stats
-        |> Map.update!(:total_processes, &(&1 + 1))
-        |> Map.update!(:supervisors, &(&1 + 1))
+    updated_stats =
+      case ExRoseTree.get_term(tree) do
+        {_name, :supervisor, _} ->
+          stats
+          |> Map.update!(:total_processes, &(&1 + 1))
+          |> Map.update!(:supervisors, &(&1 + 1))
 
-      {_name, _, {:not_running, _}} ->
-        stats
-        |> Map.update!(:total_processes, &(&1 + 1))
-        |> Map.update!(:workers, &(&1 + 1))
-        |> Map.update!(:not_running, &(&1 + 1))
+        {_name, _, {:not_running, _}} ->
+          stats
+          |> Map.update!(:total_processes, &(&1 + 1))
+          |> Map.update!(:workers, &(&1 + 1))
+          |> Map.update!(:not_running, &(&1 + 1))
 
-      {_name, _, _} ->
-        stats
-        |> Map.update!(:total_processes, &(&1 + 1))
-        |> Map.update!(:workers, &(&1 + 1))
-        |> Map.update!(:running, &(&1 + 1))
+        {_name, _, _} ->
+          stats
+          |> Map.update!(:total_processes, &(&1 + 1))
+          |> Map.update!(:workers, &(&1 + 1))
+          |> Map.update!(:running, &(&1 + 1))
 
-      _ ->
-        stats
-    end
+        _ ->
+          stats
+      end
 
     tree
     |> ExRoseTree.get_children()

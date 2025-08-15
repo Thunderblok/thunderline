@@ -21,6 +21,7 @@ defmodule Thunderline.Application do
       # Phoenix Foundation
       ThunderlineWeb.Telemetry,
       {Phoenix.PubSub, name: Thunderline.PubSub},
+      Thunderline.Repo,
 
       # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
       Thunderline.ThunderMemory,
@@ -34,6 +35,9 @@ defmodule Thunderline.Application do
       Thunderline.Thunderbolt.ThunderCell.Supervisor,
       Thunderline.ErlangBridge,
       Thunderline.NeuralBridge,
+
+      # ⚡👑 THUNDERCROWN - Orchestration Services
+      {Oban, AshOban.config(Application.fetch_env!(:thunderline, :ash_domains), Application.fetch_env!(:thunderline, Oban))},
 
       # ⚡🌐 THUNDERGATE - Gateway Services
       Thundergate.ThunderBridge,
@@ -50,7 +54,8 @@ defmodule Thunderline.Application do
       # (Authentication and authorization services will be added here)
 
       # Phoenix Web Server (last to start)
-      ThunderlineWeb.Endpoint
+      ThunderlineWeb.Endpoint,
+      {AshAuthentication.Supervisor, [otp_app: :thunderline]}
     ]
 
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]

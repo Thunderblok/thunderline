@@ -30,6 +30,8 @@ config :spark,
     remove_parens?: true,
     "Ash.Resource": [
       section_order: [
+        :authentication,
+        :tokens,
         :postgres,
         :admin,
         :graphql,
@@ -63,17 +65,25 @@ config :spark,
   ]
 
 config :thunderline,
-  ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [
+    Thunderline.Accounts,
+    Thunderline.Support,  # Simple test domain following Ash guide
     # 7-Domain Federation Architecture
-    Thunderline.Thunderbolt.Domain,   # ⚡🔥 Compute & Acceleration
-    Thunderline.Thunderflow.Domain,   # ⚡💧 Event Streams & Data Rivers
-    Thunderline.Thundergate.Domain,   # ⚡🌐 Gateway & External Integration
-    Thunderline.Thunderblock.Domain,  # ⚡🧱 Storage & Persistence
-    Thunderline.Thunderlink.Domain,   # ⚡🔗 Connection & Communication
-    Thunderline.Thundercrown.Domain,  # ⚡👑 Governance & Orchestration
-    Thunderline.Thundergrid.Domain    # ⚡🌐 Spatial Coordinates & Reality Grid
+    # ⚡🔥 Compute & Acceleration
+    Thunderline.Thunderbolt.Domain,
+    # ⚡💧 Event Streams & Data Rivers
+    Thunderline.Thunderflow.Domain,
+    # ⚡🌐 Gateway & External Integration
+    Thunderline.Thundergate.Domain,
+    # ⚡🧱 Storage & Persistence
+    Thunderline.Thunderblock.Domain,
+    # ⚡🔗 Connection & Communication
+    Thunderline.Thunderlink.Domain,
+    # ⚡👑 Governance & Orchestration
+    Thunderline.Thundercrown.Domain,
+    # ⚡🌐 Spatial Coordinates & Reality Grid
+    Thunderline.Thundergrid.Domain
   ]
 
 # Configures the endpoint
@@ -103,7 +113,10 @@ config :esbuild,
     args:
       ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => Path.join([Path.expand("../deps", __DIR__), Path.expand("../_build/dev", __DIR__)], ":")}
+    env: %{
+      "NODE_PATH" =>
+        Path.join([Path.expand("../deps", __DIR__), Path.expand("../_build/dev", __DIR__)], ":")
+    }
   ]
 
 # Configure tailwind (the version is required)
@@ -132,7 +145,8 @@ config :ash, :compatible_foreign_key_types, [
 
 # Configure Mnesia database location
 config :mnesia,
-  dir: ~c".mnesia/#{Mix.env}/#{node()}"        # Using ~c for charlist
+  # Using ~c for charlist
+  dir: ~c".mnesia/#{Mix.env()}/#{node()}"
 
 # Configure git_ops for semantic versioning and changelog automation
 config :git_ops,
@@ -142,6 +156,17 @@ config :git_ops,
   manage_mix_version?: true,
   manage_readme_version: "README.md",
   version_tag_prefix: "v"
+
+# Configure Oban for background job processing with AshOban integration
+config :thunderline, Oban,
+  repo: Thunderline.Repo,
+  plugins: [Oban.Plugins.Pruner],
+  queues: [
+    default: 10,
+    cross_domain: 5,
+    scheduled_workflows: 3,
+    heavy_compute: 2
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

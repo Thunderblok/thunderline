@@ -51,7 +51,7 @@ defmodule ThunderlineWeb.Telemetry do
       last_value("thunderline.agents.active"),
       last_value("thunderline.chunks.total"),
       last_value("thunderline.memory.usage"),
-      counter("thunderline.events.processed"),
+      counter("thunderline.events.processed")
     ]
   end
 
@@ -88,7 +88,8 @@ defmodule ThunderlineWeb.Telemetry do
   def dispatch_agent_metrics do
     # Estimate active agents based on process count and system load
     process_count = :erlang.system_info(:process_count)
-    estimated_agents = max(0, process_count - 100)  # Rough estimation
+    # Rough estimation
+    estimated_agents = max(0, process_count - 100)
 
     :telemetry.execute([:thunderline, :agents], %{
       active: estimated_agents

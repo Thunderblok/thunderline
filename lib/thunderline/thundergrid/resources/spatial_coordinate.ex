@@ -11,132 +11,101 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
     domain: Thunderline.Thundergrid.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource]
+
   import Ash.Resource.Change.Builtins
   import Ash.Resource.Change.Builtins
 
+  postgres do
+    table "thundergrid_spatial_coordinates"
+    repo Thunderline.Repo
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :hex_q, :integer do
-      allow_nil? false
-      description "Hex coordinate Q (column)"
+    custom_indexes do
+      index [:hex_q, :hex_r], unique: false
+      index [:hex_q, :hex_r, :hex_s], unique: false
+      index [:zone_id]
+      index [:occupant_id]
+      index [:occupancy_status]
+      index [:coordinate_type]
+      index [:last_accessed]
+      index "USING GIN (properties)", name: "spatial_coordinates_properties_idx"
     end
 
-    attribute :hex_r, :integer do
-      allow_nil? false
-      description "Hex coordinate R (row)"
+    check_constraints do
+      check_constraint :valid_hex_sum, "hex_q + hex_r + hex_s = 0"
+      check_constraint :valid_sub_hex_x, "sub_hex_x >= -0.5 AND sub_hex_x <= 0.5"
+      check_constraint :valid_sub_hex_y, "sub_hex_y >= -0.5 AND sub_hex_y <= 0.5"
     end
-
-    attribute :hex_s, :integer do
-      allow_nil? false
-      description "Hex coordinate S (depth) - computed as -(q+r)"
-    end
-
-    attribute :sub_hex_x, :decimal do
-      allow_nil? false
-      description "Sub-hex X offset (-0.5 to 0.5)"
-      default Decimal.new("0.0")
-      constraints precision: 10, scale: 6
-    end
-
-    attribute :sub_hex_y, :decimal do
-      allow_nil? false
-      description "Sub-hex Y offset (-0.5 to 0.5)"
-      default Decimal.new("0.0")
-      constraints precision: 10, scale: 6
-    end
-
-    attribute :elevation, :decimal do
-      allow_nil? false
-      description "Z-axis elevation"
-      default Decimal.new("0.0")
-      constraints precision: 10, scale: 3
-    end
-
-    attribute :coordinate_type, :atom do
-      allow_nil? false
-      description "Type of coordinate point"
-      default :position
-      constraints one_of: [:position, :waypoint, :landmark, :boundary, :spawn_point, :resource_node]
-    end
-
-    attribute :occupancy_status, :atom do
-      allow_nil? false
-      description "Current occupancy status"
-      default :vacant
-      constraints one_of: [:vacant, :occupied, :reserved, :blocked, :unstable]
-    end
-
-    attribute :occupant_id, :uuid do
-      allow_nil? true
-      description "ID of current occupant (agent/resource/structure)"
-    end
-
-    attribute :occupant_type, :atom do
-      allow_nil? true
-      description "Type of current occupant"
-      constraints one_of: [:thunderbit, :thunderbolt, :pac_home, :resource, :structure, :marker]
-    end
-
-    attribute :properties, :map do
-      allow_nil? false
-      description "Coordinate-specific properties"
-      default %{
-        "movement_cost" => 1.0,
-        "visibility_modifier" => 1.0,
-        "energy_level" => 1.0,
-        "stability" => 1.0
-      }
-    end
-
-    attribute :navigation_data, :map do
-      allow_nil? false
-      description "Navigation and pathfinding data"
-      default %{
-        "accessible" => true,
-        "connections" => [],
-        "pathfinding_weight" => 1.0,
-        "special_movement_rules" => []
-      }
-    end
-
-    attribute :last_accessed, :utc_datetime do
-      allow_nil? true
-      description "Timestamp of last access/interaction"
-    end
-
-    attribute :zone_id, :uuid do
-      allow_nil? true
-      description "ID of the zone this coordinate belongs to"
-    end
-
-    attribute :metadata, :map do
-      allow_nil? false
-      description "Additional coordinate metadata"
-      default %{}
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
   end
 
-  relationships do
-    belongs_to :zone, Thunderline.Thundergrid.Resources.GridZone do
-      source_attribute :zone_id
-      destination_attribute :id
-    end
+  json_api do
+    type "spatial_coordinate"
 
-    # Cross-domain relationships removed - invalid destination
-    # TODO: Consider if direct Agent relationship is needed instead
+    routes do
+      base("/spatial_coordinates")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:update)
+      delete(:destroy)
+
+      # TODO: Convert to Ash 3.x route syntax after MCP consolidation complete
+      # post "/:id/occupy", :occupy
+      # post "/:id/vacate", :vacate
+      # post "/:id/reserve", :reserve
+      # post "/:id/move_to", :move_to
+      # get "/hex/:hex_q/:hex_r", :at_hex
+      # TODO: Convert to Ash 3.x route syntax - currently causing compilation issues
+      # get "/zone/:zone_id", :in_zone, []
+      # get "/occupant/:occupant_id", :by_occupant, []
+      # get "/vacant", :vacant_coordinates, []
+      # get "/range/:center_q/:center_r/:range", :within_range, []
+      # get "/type/:coordinate_type", :by_type, []
+      # get "/recent_activity", :recent_activity, []
+    end
+  end
+
+  # policies do
+  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+  #     authorize_if always()
+  #   end
+
+  #   policy always() do
+  #     authorize_if always()
+  #   end
+  # end
+
+  code_interface do
+    define :create
+    define :update
+    define :occupy, args: [:occupant_id, :occupant_type]
+    define :vacate, args: []
+    define :reserve, args: [:reserving_agent_id]
+    define :move_to, args: [:hex_q, :hex_r, :sub_hex_x, :sub_hex_y, :elevation]
+    define :at_hex, args: [:hex_q, :hex_r]
+    define :in_zone, args: [:zone_id]
+    define :by_occupant, args: [:occupant_id]
+    define :vacant_coordinates, action: :vacant_coordinates
+    define :within_range, args: [:center_q, :center_r, :range]
+    define :by_type, args: [:coordinate_type]
+    define :recent_activity, action: :recent_activity
   end
 
   actions do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:hex_q, :hex_r, :sub_hex_x, :sub_hex_y, :elevation,
-              :coordinate_type, :properties, :navigation_data, :zone_id, :metadata]
+      accept [
+        :hex_q,
+        :hex_r,
+        :sub_hex_x,
+        :sub_hex_y,
+        :elevation,
+        :coordinate_type,
+        :properties,
+        :navigation_data,
+        :zone_id,
+        :metadata
+      ]
 
       change fn changeset, _context ->
         # Calculate hex_s coordinate (q + r + s = 0)
@@ -148,25 +117,33 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
       end
 
       change after_action(fn _changeset, coordinate, _context ->
-        # Update spatial index
-        update_spatial_index(coordinate)
+               # Update spatial index
+               update_spatial_index(coordinate)
 
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thundergrid:coordinates",
-          {:coordinate_created, %{
-            id: coordinate.id,
-            hex_coordinates: {coordinate.hex_q, coordinate.hex_r, coordinate.hex_s}
-          }}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thundergrid:coordinates",
+                 {:coordinate_created,
+                  %{
+                    id: coordinate.id,
+                    hex_coordinates: {coordinate.hex_q, coordinate.hex_r, coordinate.hex_s}
+                  }}
+               )
 
-        {:ok, coordinate}
-      end)
+               {:ok, coordinate}
+             end)
     end
 
     update :update do
-      accept [:sub_hex_x, :sub_hex_y, :elevation, :coordinate_type,
-              :properties, :navigation_data, :metadata]
+      accept [
+        :sub_hex_x,
+        :sub_hex_y,
+        :elevation,
+        :coordinate_type,
+        :properties,
+        :navigation_data,
+        :metadata
+      ]
     end
 
     update :occupy do
@@ -185,23 +162,24 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
       end
 
       change after_action(fn _changeset, coordinate, _context ->
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thundergrid:coordinates:#{coordinate.id}",
-          {:coordinate_occupied, %{
-            coordinate_id: coordinate.id,
-            occupant_id: coordinate.occupant_id,
-            occupant_type: coordinate.occupant_type
-          }}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thundergrid:coordinates:#{coordinate.id}",
+                 {:coordinate_occupied,
+                  %{
+                    coordinate_id: coordinate.id,
+                    occupant_id: coordinate.occupant_id,
+                    occupant_type: coordinate.occupant_type
+                  }}
+               )
 
-        {:ok, coordinate}
-      end)
+               {:ok, coordinate}
+             end)
     end
 
     update :vacate do
       require_atomic? false
-      
+
       change fn changeset, _context ->
         changeset
         |> Ash.Changeset.change_attribute(:occupancy_status, :vacant)
@@ -211,19 +189,19 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
       end
 
       change after_action(fn _changeset, coordinate, _context ->
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thundergrid:coordinates:#{coordinate.id}",
-          {:coordinate_vacated, %{coordinate_id: coordinate.id}}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thundergrid:coordinates:#{coordinate.id}",
+                 {:coordinate_vacated, %{coordinate_id: coordinate.id}}
+               )
 
-        {:ok, coordinate}
-      end)
+               {:ok, coordinate}
+             end)
     end
 
     update :reserve do
       require_atomic? false
-      
+
       argument :reserving_agent_id, :uuid, allow_nil?: false
 
       change fn changeset, context ->
@@ -294,83 +272,8 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
     end
   end
 
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-
-  #   policy always() do
-  #     authorize_if always()
-  #   end
-  # end
-
-  code_interface do
-    define :create
-    define :update
-    define :occupy, args: [:occupant_id, :occupant_type]
-    define :vacate, args: []
-    define :reserve, args: [:reserving_agent_id]
-    define :move_to, args: [:hex_q, :hex_r, :sub_hex_x, :sub_hex_y, :elevation]
-    define :at_hex, args: [:hex_q, :hex_r]
-    define :in_zone, args: [:zone_id]
-    define :by_occupant, args: [:occupant_id]
-    define :vacant_coordinates, action: :vacant_coordinates
-    define :within_range, args: [:center_q, :center_r, :range]
-    define :by_type, args: [:coordinate_type]
-    define :recent_activity, action: :recent_activity
-  end
-
-  postgres do
-    table "thundergrid_spatial_coordinates"
-    repo Thunderline.Repo
-
-    custom_indexes do
-      index [:hex_q, :hex_r], unique: false
-      index [:hex_q, :hex_r, :hex_s], unique: false
-      index [:zone_id]
-      index [:occupant_id]
-      index [:occupancy_status]
-      index [:coordinate_type]
-      index [:last_accessed]
-      index "USING GIN (properties)", name: "spatial_coordinates_properties_idx"
-    end
-
-    check_constraints do
-      check_constraint :valid_hex_sum, "hex_q + hex_r + hex_s = 0"
-      check_constraint :valid_sub_hex_x, "sub_hex_x >= -0.5 AND sub_hex_x <= 0.5"
-      check_constraint :valid_sub_hex_y, "sub_hex_y >= -0.5 AND sub_hex_y <= 0.5"
-    end
-  end
-
-  json_api do
-    type "spatial_coordinate"
-
-    routes do
-      base "/spatial_coordinates"
-      get :read
-      index :read
-      post :create
-      patch :update
-      delete :destroy
-
-      # TODO: Convert to Ash 3.x route syntax after MCP consolidation complete
-      # post "/:id/occupy", :occupy
-      # post "/:id/vacate", :vacate
-      # post "/:id/reserve", :reserve
-      # post "/:id/move_to", :move_to
-      # get "/hex/:hex_q/:hex_r", :at_hex
-      # TODO: Convert to Ash 3.x route syntax - currently causing compilation issues
-      # get "/zone/:zone_id", :in_zone, []
-      # get "/occupant/:occupant_id", :by_occupant, []
-      # get "/vacant", :vacant_coordinates, []
-      # get "/range/:center_q/:center_r/:range", :within_range, []
-      # get "/type/:coordinate_type", :by_type, []
-      # get "/recent_activity", :recent_activity, []
-    end
-  end
-
-  identities do
-    identity :unique_hex_position, [:hex_q, :hex_r, :sub_hex_x, :sub_hex_y, :elevation]
+  preparations do
+    prepare build(load: [:zone])
   end
 
   validations do
@@ -380,8 +283,134 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
     # validate {Thundergrid.Validations, :valid_sub_hex_range}, on: [:create, :update]
   end
 
-  preparations do
-    prepare build(load: [:zone])
+  attributes do
+    uuid_primary_key :id
+
+    attribute :hex_q, :integer do
+      allow_nil? false
+      description "Hex coordinate Q (column)"
+    end
+
+    attribute :hex_r, :integer do
+      allow_nil? false
+      description "Hex coordinate R (row)"
+    end
+
+    attribute :hex_s, :integer do
+      allow_nil? false
+      description "Hex coordinate S (depth) - computed as -(q+r)"
+    end
+
+    attribute :sub_hex_x, :decimal do
+      allow_nil? false
+      description "Sub-hex X offset (-0.5 to 0.5)"
+      default Decimal.new("0.0")
+      constraints precision: 10, scale: 6
+    end
+
+    attribute :sub_hex_y, :decimal do
+      allow_nil? false
+      description "Sub-hex Y offset (-0.5 to 0.5)"
+      default Decimal.new("0.0")
+      constraints precision: 10, scale: 6
+    end
+
+    attribute :elevation, :decimal do
+      allow_nil? false
+      description "Z-axis elevation"
+      default Decimal.new("0.0")
+      constraints precision: 10, scale: 3
+    end
+
+    attribute :coordinate_type, :atom do
+      allow_nil? false
+      description "Type of coordinate point"
+      default :position
+
+      constraints one_of: [
+                    :position,
+                    :waypoint,
+                    :landmark,
+                    :boundary,
+                    :spawn_point,
+                    :resource_node
+                  ]
+    end
+
+    attribute :occupancy_status, :atom do
+      allow_nil? false
+      description "Current occupancy status"
+      default :vacant
+      constraints one_of: [:vacant, :occupied, :reserved, :blocked, :unstable]
+    end
+
+    attribute :occupant_id, :uuid do
+      allow_nil? true
+      description "ID of current occupant (agent/resource/structure)"
+    end
+
+    attribute :occupant_type, :atom do
+      allow_nil? true
+      description "Type of current occupant"
+      constraints one_of: [:thunderbit, :thunderbolt, :pac_home, :resource, :structure, :marker]
+    end
+
+    attribute :properties, :map do
+      allow_nil? false
+      description "Coordinate-specific properties"
+
+      default %{
+        "movement_cost" => 1.0,
+        "visibility_modifier" => 1.0,
+        "energy_level" => 1.0,
+        "stability" => 1.0
+      }
+    end
+
+    attribute :navigation_data, :map do
+      allow_nil? false
+      description "Navigation and pathfinding data"
+
+      default %{
+        "accessible" => true,
+        "connections" => [],
+        "pathfinding_weight" => 1.0,
+        "special_movement_rules" => []
+      }
+    end
+
+    attribute :last_accessed, :utc_datetime do
+      allow_nil? true
+      description "Timestamp of last access/interaction"
+    end
+
+    attribute :zone_id, :uuid do
+      allow_nil? true
+      description "ID of the zone this coordinate belongs to"
+    end
+
+    attribute :metadata, :map do
+      allow_nil? false
+      description "Additional coordinate metadata"
+      default %{}
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  relationships do
+    belongs_to :zone, Thunderline.Thundergrid.Resources.GridZone do
+      source_attribute :zone_id
+      destination_attribute :id
+    end
+
+    # Cross-domain relationships removed - invalid destination
+    # TODO: Consider if direct Agent relationship is needed instead
+  end
+
+  identities do
+    identity :unique_hex_position, [:hex_q, :hex_r, :sub_hex_x, :sub_hex_y, :elevation]
   end
 
   # Calculation helpers

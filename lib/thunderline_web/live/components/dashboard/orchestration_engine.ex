@@ -19,26 +19,26 @@ defmodule ThunderlineWeb.DashboardComponents.OrchestrationEngine do
               "px-2 py-1 text-xs rounded-full animate-pulse",
               engine_status_class(@orchestration_data.engine_status)
             ]}>
-              <%= String.upcase(@orchestration_data.engine_status) %>
+              {String.upcase(@orchestration_data.engine_status)}
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-2">
             <div class="text-center">
               <div class="text-lg font-bold text-blue-300">
-                <%= @orchestration_data.active_workflows %>
+                {@orchestration_data.active_workflows}
               </div>
               <div class="text-xs text-gray-400">Workflows</div>
             </div>
             <div class="text-center">
               <div class="text-lg font-bold text-purple-300">
-                <%= @orchestration_data.queued_tasks %>
+                {@orchestration_data.queued_tasks}
               </div>
               <div class="text-xs text-gray-400">Queued</div>
             </div>
             <div class="text-center">
               <div class="text-lg font-bold text-green-300">
-                <%= @orchestration_data.completion_rate %>%
+                {@orchestration_data.completion_rate}%
               </div>
               <div class="text-xs text-gray-400">Success</div>
             </div>
@@ -54,16 +54,17 @@ defmodule ThunderlineWeb.DashboardComponents.OrchestrationEngine do
                   <div class={[
                     "w-2 h-2 rounded-full",
                     process_status_class(process.status)
-                  ]}></div>
-                  <span class="text-xs text-gray-300 truncate"><%= process.name %></span>
+                  ]}>
+                  </div>
+                  <span class="text-xs text-gray-300 truncate">{process.name}</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <span class="text-xs text-gray-400"><%= process.progress %>%</span>
+                  <span class="text-xs text-gray-400">{process.progress}%</span>
                   <span class={[
                     "text-xs px-1 py-0.5 rounded text-xs",
                     priority_class(process.priority)
                   ]}>
-                    <%= process.priority %>
+                    {process.priority}
                   </span>
                 </div>
               </div>
@@ -76,15 +77,17 @@ defmodule ThunderlineWeb.DashboardComponents.OrchestrationEngine do
           <div class="space-y-2">
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">CPU Cores</span>
-              <span class="text-cyan-300"><%= @orchestration_data.allocated_cores %> / <%= @orchestration_data.total_cores %></span>
+              <span class="text-cyan-300">
+                {@orchestration_data.allocated_cores} / {@orchestration_data.total_cores}
+              </span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">Memory</span>
-              <span class="text-purple-300"><%= @orchestration_data.memory_usage %>%</span>
+              <span class="text-purple-300">{@orchestration_data.memory_usage}%</span>
             </div>
             <div class="flex justify-between text-xs">
               <span class="text-gray-400">Network I/O</span>
-              <span class="text-yellow-300"><%= @orchestration_data.network_throughput %> Mbps</span>
+              <span class="text-yellow-300">{@orchestration_data.network_throughput} Mbps</span>
             </div>
           </div>
         </div>
@@ -93,9 +96,15 @@ defmodule ThunderlineWeb.DashboardComponents.OrchestrationEngine do
     """
   end
 
-  defp engine_status_class("running"), do: "bg-green-500/20 text-green-300 border border-green-500/30"
-  defp engine_status_class("scaling"), do: "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-  defp engine_status_class("maintenance"), do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+  defp engine_status_class("running"),
+    do: "bg-green-500/20 text-green-300 border border-green-500/30"
+
+  defp engine_status_class("scaling"),
+    do: "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+
+  defp engine_status_class("maintenance"),
+    do: "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+
   defp engine_status_class("error"), do: "bg-red-500/20 text-red-300 border border-red-500/30"
   defp engine_status_class(_), do: "bg-gray-500/20 text-gray-300 border border-gray-500/30"
 

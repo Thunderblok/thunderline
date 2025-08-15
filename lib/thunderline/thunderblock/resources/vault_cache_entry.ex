@@ -14,46 +14,33 @@ defmodule Thunderline.Thunderblock.Resources.VaultCacheEntry do
 
   import Ash.Resource.Change.Builtins
 
-  attributes do
-    uuid_primary_key :id
+  postgres do
+    table "thunderblock_cache_entries"
+    repo Thunderline.Repo
 
-    attribute :cache_key, :string do
-      allow_nil? false
-      description "Unique cache key"
-      constraints max_length: 500
+    custom_indexes do
+      index [:cache_key], unique: true, name: "cache_entries_key_idx"
+      index [:expires_at], name: "cache_entries_expires_idx"
+      index "USING GIN (cache_tags)", name: "cache_entries_tags_idx"
     end
+  end
 
-    attribute :cache_value, :map do
-      allow_nil? false
-      description "Cached data"
-      default %{}
-    end
+  # policies do
+  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+  #     authorize_if always()
+  #   end
+  #
+  #   policy always() do
+  #     authorize_if always()
+  #   end
+  # end
 
-    attribute :expires_at, :utc_datetime do
-      allow_nil? true
-      description "Cache expiration timestamp"
-    end
-
-    attribute :hit_count, :integer do
-      allow_nil? false
-      description "Number of cache hits"
-      default 0
-      constraints min: 0
-    end
-
-    attribute :last_hit_at, :utc_datetime do
-      allow_nil? true
-      description "Last cache hit timestamp"
-    end
-
-    attribute :cache_tags, {:array, :string} do
-      allow_nil? false
-      description "Tags for bulk cache invalidation"
-      default []
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
+  code_interface do
+    define :set
+    define :get, args: [:key]
+    define :hit
+    define :clear_expired, action: :clear_expired
+    define :clear_by_tags, args: [:tags]
   end
 
   actions do
@@ -103,36 +90,49 @@ defmodule Thunderline.Thunderblock.Resources.VaultCacheEntry do
     end
   end
 
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-  #
-  #   policy always() do
-  #     authorize_if always()
-  #   end
-  # end
+  attributes do
+    uuid_primary_key :id
 
-  code_interface do
-    define :set
-    define :get, args: [:key]
-    define :hit
-    define :clear_expired, action: :clear_expired
-    define :clear_by_tags, args: [:tags]
+    attribute :cache_key, :string do
+      allow_nil? false
+      description "Unique cache key"
+      constraints max_length: 500
+    end
+
+    attribute :cache_value, :map do
+      allow_nil? false
+      description "Cached data"
+      default %{}
+    end
+
+    attribute :expires_at, :utc_datetime do
+      allow_nil? true
+      description "Cache expiration timestamp"
+    end
+
+    attribute :hit_count, :integer do
+      allow_nil? false
+      description "Number of cache hits"
+      default 0
+      constraints min: 0
+    end
+
+    attribute :last_hit_at, :utc_datetime do
+      allow_nil? true
+      description "Last cache hit timestamp"
+    end
+
+    attribute :cache_tags, {:array, :string} do
+      allow_nil? false
+      description "Tags for bulk cache invalidation"
+      default []
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 
   identities do
     identity :unique_cache_key, [:cache_key]
-  end
-
-  postgres do
-    table "thunderblock_cache_entries"
-    repo Thunderline.Repo
-
-    custom_indexes do
-      index [:cache_key], unique: true, name: "cache_entries_key_idx"
-      index [:expires_at], name: "cache_entries_expires_idx"
-      index "USING GIN (cache_tags)", name: "cache_entries_tags_idx"
-    end
   end
 end

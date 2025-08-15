@@ -84,6 +84,7 @@ defmodule Thunderlink.ThunderWebsocketClient do
     case ThunderBridge.get_system_state() do
       system_state when is_map(system_state) ->
         {:reply, {:ok, system_state}, state}
+
       error ->
         {:reply, {:error, error}, state}
     end
@@ -93,6 +94,7 @@ defmodule Thunderlink.ThunderWebsocketClient do
     case ThunderBridge.get_agents_json() do
       agents when is_list(agents) ->
         {:reply, {:ok, agents}, state}
+
       error ->
         {:reply, {:error, error}, state}
     end
@@ -102,6 +104,7 @@ defmodule Thunderlink.ThunderWebsocketClient do
     case ThunderBridge.get_chunks_json() do
       chunks when is_list(chunks) ->
         {:reply, {:ok, chunks}, state}
+
       error ->
         {:reply, {:error, error}, state}
     end

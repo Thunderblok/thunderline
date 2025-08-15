@@ -11,27 +11,22 @@ defmodule Thunderline.Thunderflow.Events.Event do
     extensions: [AshEvents.EventLog],
     data_layer: AshPostgres.DataLayer
 
-  postgres do
-    table "thunderline_events"
-    repo Thunderline.Repo
-  end
-
   event_log do
     # Module that implements clear_records! callback for event replay
-    clear_records_for_replay Thunderline.Thunderflow.Events.ClearAllRecords
+    clear_records_for_replay(Thunderline.Thunderflow.Events.ClearAllRecords)
 
     # Use UUIDv7 for better ordering and performance
-    primary_key_type Ash.Type.UUIDv7
+    primary_key_type(Ash.Type.UUIDv7)
 
     # Store UUIDs for record references
-    record_id_type :uuid
+    record_id_type(:uuid)
 
     # Track different types of actors in the system
-    persist_actor_primary_key :user_id, Thunderline.Thunderblock.Resources.VaultUser
-    persist_actor_primary_key :agent_id, Thunderline.Thunderbolt.Resources.CoreAgent
+    persist_actor_primary_key(:user_id, Thunderline.Thunderblock.Resources.VaultUser)
+    persist_actor_primary_key(:agent_id, Thunderline.Thunderbolt.Resources.CoreAgent)
 
     # Advisory lock configuration for concurrency control
-    advisory_lock_key_default 2_147_483_647
+    advisory_lock_key_default(2_147_483_647)
   end
 
   # Optional: Configure replay overrides for version handling
@@ -42,6 +37,40 @@ defmodule Thunderline.Thunderflow.Events.Event do
     #   versions [1]
     #   route_to Thunderline.Thundervault.User, :create_v1
     # end
+  end
+
+  postgres do
+    table "thunderline_events"
+    repo Thunderline.Repo
+  end
+
+  actions do
+    # Default actions are provided by the event_log extension
+    defaults [:read]
+
+    # Custom read actions for Thunderline-specific queries
+    read :by_domain do
+      argument :domain, :string, allow_nil?: false
+      filter expr(domain == ^arg(:domain))
+    end
+
+    read :by_criticality do
+      argument :criticality, :string, allow_nil?: false
+      filter expr(criticality == ^arg(:criticality))
+    end
+
+    read :replay_required do
+      filter expr(replay_required == true)
+    end
+
+    read :by_correlation_id do
+      argument :correlation_id, :string, allow_nil?: false
+      filter expr(correlation_id == ^arg(:correlation_id))
+    end
+  end
+
+  preparations do
+    # Add domain-specific preparations if needed
   end
 
   attributes do
@@ -76,31 +105,6 @@ defmodule Thunderline.Thunderflow.Events.Event do
     end
   end
 
-  actions do
-    # Default actions are provided by the event_log extension
-    defaults [:read]
-
-    # Custom read actions for Thunderline-specific queries
-    read :by_domain do
-      argument :domain, :string, allow_nil?: false
-      filter expr(domain == ^arg(:domain))
-    end
-
-    read :by_criticality do
-      argument :criticality, :string, allow_nil?: false
-      filter expr(criticality == ^arg(:criticality))
-    end
-
-    read :replay_required do
-      filter expr(replay_required == true)
-    end
-
-    read :by_correlation_id do
-      argument :correlation_id, :string, allow_nil?: false
-      filter expr(correlation_id == ^arg(:correlation_id))
-    end
-  end
-
   relationships do
     # These will be added as we implement actor resources
     # belongs_to :user, Thunderline.Thundervault.User do
@@ -114,15 +118,6 @@ defmodule Thunderline.Thunderflow.Events.Event do
     # end
   end
 
-  identities do
-    # Ensure efficient querying
-    identity :correlation_events, [:correlation_id]
-  end
-
-  preparations do
-    # Add domain-specific preparations if needed
-  end
-
   calculations do
     # Add calculated fields for common queries
     calculate :is_critical, :boolean, expr(criticality in ["critical", "high"])
@@ -130,10 +125,16 @@ defmodule Thunderline.Thunderflow.Events.Event do
     calculate :age_in_hours, :integer do
       calculation fn records, _context ->
         now = DateTime.utc_now()
+
         Enum.map(records, fn record ->
           DateTime.diff(now, record.occurred_at, :hour)
         end)
       end
     end
+  end
+
+  identities do
+    # Ensure efficient querying
+    identity :correlation_events, [:correlation_id]
   end
 end

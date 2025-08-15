@@ -140,15 +140,18 @@ defmodule Thunderflow.MnesiaProducer do
     # Mark any in-flight events as failed so they can be retried
     Transaction.execute(fn ->
       # Use dynamic pattern matching based on table structure
-      match_pattern = case state.table do
-        Thunderflow.CrossDomainEvents ->
-          {{state.table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [:"$_"]}
-        Thunderflow.RealTimeEvents ->
-          {{state.table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [:"$_"]}
-        _ ->
-          # Default 7-attribute pattern for basic MnesiaProducer table
-          {{state.table, :_, :_, :_, :processing, :_, :_, :_}, [], [:"$_"]}
-      end
+      match_pattern =
+        case state.table do
+          Thunderflow.CrossDomainEvents ->
+            {{state.table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [:"$_"]}
+
+          Thunderflow.RealTimeEvents ->
+            {{state.table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [:"$_"]}
+
+          _ ->
+            # Default 7-attribute pattern for basic MnesiaProducer table
+            {{state.table, :_, :_, :_, :processing, :_, :_, :_}, [], [:"$_"]}
+        end
 
       Memento.Query.select(state.table, [match_pattern])
       |> Enum.each(fn event ->
@@ -183,6 +186,7 @@ defmodule Thunderflow.MnesiaProducer do
       {:ok, _} ->
         Logger.debug("MnesiaProducer: Enqueued event #{event.id}")
         :ok
+
       {:error, reason} ->
         Logger.error("MnesiaProducer: Failed to enqueue event: #{inspect(reason)}")
         {:error, reason}
@@ -196,24 +200,26 @@ defmodule Thunderflow.MnesiaProducer do
     pipeline_type = Keyword.get(opts, :pipeline_type, :general)
     priority = Keyword.get(opts, :priority, :normal)
 
-    mnesia_events = Enum.map(events, fn data ->
-      %__MODULE__{
-        id: generate_event_id(),
-        data: data,
-        created_at: DateTime.utc_now(),
-        status: :pending,
-        attempts: 0,
-        pipeline_type: pipeline_type,
-        priority: priority
-      }
-    end)
+    mnesia_events =
+      Enum.map(events, fn data ->
+        %__MODULE__{
+          id: generate_event_id(),
+          data: data,
+          created_at: DateTime.utc_now(),
+          status: :pending,
+          attempts: 0,
+          pipeline_type: pipeline_type,
+          priority: priority
+        }
+      end)
 
     case Transaction.execute(fn ->
-      Enum.each(mnesia_events, &Memento.Query.write/1)
-    end) do
+           Enum.each(mnesia_events, &Memento.Query.write/1)
+         end) do
       {:ok, _} ->
         Logger.debug("MnesiaProducer: Enqueued #{length(events)} events")
         :ok
+
       {:error, reason} ->
         Logger.error("MnesiaProducer: Failed to enqueue events: #{inspect(reason)}")
         {:error, reason}
@@ -225,40 +231,43 @@ defmodule Thunderflow.MnesiaProducer do
   """
   def queue_stats(table \\ __MODULE__) do
     case Transaction.execute(fn ->
-      # Use dynamic pattern matching based on table structure
-      {pending_pattern, processing_pattern, failed_pattern} = case table do
-        Thunderflow.CrossDomainEvents ->
-          {
-            {{table, :_, :_, :_, :pending, :_, :_, :_, :_}, [], [true]},
-            {{table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [true]},
-            {{table, :_, :_, :_, :failed, :_, :_, :_, :_}, [], [true]}
-          }
-        Thunderflow.RealTimeEvents ->
-          {
-            {{table, :_, :_, :_, :pending, :_, :_, :_, :_}, [], [true]},
-            {{table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [true]},
-            {{table, :_, :_, :_, :failed, :_, :_, :_, :_}, [], [true]}
-          }
-        _ ->
-          # Default 7-attribute patterns for basic MnesiaProducer table
-          {
-            {{table, :_, :_, :_, :pending, :_, :_, :_}, [], [true]},
-            {{table, :_, :_, :_, :processing, :_, :_, :_}, [], [true]},
-            {{table, :_, :_, :_, :failed, :_, :_, :_}, [], [true]}
-          }
-      end
+           # Use dynamic pattern matching based on table structure
+           {pending_pattern, processing_pattern, failed_pattern} =
+             case table do
+               Thunderflow.CrossDomainEvents ->
+                 {
+                   {{table, :_, :_, :_, :pending, :_, :_, :_, :_}, [], [true]},
+                   {{table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [true]},
+                   {{table, :_, :_, :_, :failed, :_, :_, :_, :_}, [], [true]}
+                 }
 
-      pending = Memento.Query.select(table, [pending_pattern]) |> length()
-      processing = Memento.Query.select(table, [processing_pattern]) |> length()
-      failed = Memento.Query.select(table, [failed_pattern]) |> length()
+               Thunderflow.RealTimeEvents ->
+                 {
+                   {{table, :_, :_, :_, :pending, :_, :_, :_, :_}, [], [true]},
+                   {{table, :_, :_, :_, :processing, :_, :_, :_, :_}, [], [true]},
+                   {{table, :_, :_, :_, :failed, :_, :_, :_, :_}, [], [true]}
+                 }
 
-      %{
-        pending: pending,
-        processing: processing,
-        failed: failed,
-        total: pending + processing + failed
-      }
-    end) do
+               _ ->
+                 # Default 7-attribute patterns for basic MnesiaProducer table
+                 {
+                   {{table, :_, :_, :_, :pending, :_, :_, :_}, [], [true]},
+                   {{table, :_, :_, :_, :processing, :_, :_, :_}, [], [true]},
+                   {{table, :_, :_, :_, :failed, :_, :_, :_}, [], [true]}
+                 }
+             end
+
+           pending = Memento.Query.select(table, [pending_pattern]) |> length()
+           processing = Memento.Query.select(table, [processing_pattern]) |> length()
+           failed = Memento.Query.select(table, [failed_pattern]) |> length()
+
+           %{
+             pending: pending,
+             processing: processing,
+             failed: failed,
+             total: pending + processing + failed
+           }
+         end) do
       {:ok, stats} -> stats
       {:error, _} -> %{pending: 0, processing: 0, failed: 0, total: 0}
     end
@@ -271,8 +280,10 @@ defmodule Thunderflow.MnesiaProducer do
       :ok ->
         Logger.info("MnesiaProducer: Created table #{table}")
         :ok
+
       {:error, {:already_exists, _}} ->
         :ok
+
       {:error, reason} ->
         Logger.error("MnesiaProducer: Failed to create table #{table}: #{inspect(reason)}")
         {:error, reason}
@@ -289,21 +300,24 @@ defmodule Thunderflow.MnesiaProducer do
       # {Pattern, Guards, Result}
       query = [
         {{table_name, :"$1", :"$2", :"$3", :"$4", :"$5", :"$6", :"$7", :"$8", :"$9"},
-         [{:"==", :"$4", :pending}],
-         [:"$_"]}
+         [{:==, :"$4", :pending}], [:"$_"]}
       ]
 
       case :mnesia.transaction(fn ->
-        :mnesia.select(table_name, query, limit, :read)
-      end) do
+             :mnesia.select(table_name, query, limit, :read)
+           end) do
         {:atomic, {events, _continuation}} when is_list(events) ->
           {:ok, events}
+
         {:atomic, :"$end_of_table"} ->
           {:ok, []}
+
         {:atomic, events} when is_list(events) ->
           {:ok, events}
+
         {:aborted, reason} ->
           {:error, reason}
+
         {:error, reason} ->
           {:error, reason}
       end
@@ -355,12 +369,14 @@ defmodule Thunderflow.MnesiaProducer do
 
   defp delete_event(event_id) do
     case Transaction.execute(fn ->
-      case Memento.Query.read(__MODULE__, event_id) do
-        nil -> :ok
-        event -> Memento.Query.delete_record(event)
-      end
-    end) do
-      {:ok, _} -> :ok
+           case Memento.Query.read(__MODULE__, event_id) do
+             nil -> :ok
+             event -> Memento.Query.delete_record(event)
+           end
+         end) do
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
         Logger.error("MnesiaProducer: Failed to delete event #{event_id}: #{inspect(reason)}")
         :error
@@ -369,28 +385,34 @@ defmodule Thunderflow.MnesiaProducer do
 
   defp handle_failed_event(event_id, status) do
     case Transaction.execute(fn ->
-      case Memento.Query.read(__MODULE__, event_id) do
-        nil ->
-          :ok
-        event ->
-          new_attempts = event.attempts + 1
+           case Memento.Query.read(__MODULE__, event_id) do
+             nil ->
+               :ok
 
-          cond do
-            new_attempts >= 3 ->
-              # Move to dead letter queue
-              %{event | status: :dead_letter, attempts: new_attempts}
-              |> Memento.Query.write()
+             event ->
+               new_attempts = event.attempts + 1
 
-            true ->
-              # Retry later
-              %{event | status: :failed, attempts: new_attempts}
-              |> Memento.Query.write()
-          end
-      end
-    end) do
-      {:ok, _} -> :ok
+               cond do
+                 new_attempts >= 3 ->
+                   # Move to dead letter queue
+                   %{event | status: :dead_letter, attempts: new_attempts}
+                   |> Memento.Query.write()
+
+                 true ->
+                   # Retry later
+                   %{event | status: :failed, attempts: new_attempts}
+                   |> Memento.Query.write()
+               end
+           end
+         end) do
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
-        Logger.error("MnesiaProducer: Failed to handle failed event #{event_id}: #{inspect(reason)}")
+        Logger.error(
+          "MnesiaProducer: Failed to handle failed event #{event_id}: #{inspect(reason)}"
+        )
+
         :error
     end
   end

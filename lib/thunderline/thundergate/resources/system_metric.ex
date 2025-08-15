@@ -12,23 +12,9 @@ defmodule Thunderline.Thundergate.Resources.SystemMetric do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "system_metrics"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-    attribute :domain, :string, allow_nil?: false
-    attribute :metric_name, :string, allow_nil?: false
-    attribute :value, :decimal, allow_nil?: false
-    attribute :unit, :string
-    attribute :tags, :map, default: %{}
-    attribute :node_name, :string
-    create_timestamp :collected_at
   end
 
   actions do
@@ -43,7 +29,8 @@ defmodule Thunderline.Thundergate.Resources.SystemMetric do
     end
 
     read :recent do
-      argument :time_window, :integer, default: 300 # 5 minutes
+      # 5 minutes
+      argument :time_window, :integer, default: 300
       filter expr(collected_at > ago(^arg(:time_window), :second))
     end
 
@@ -53,11 +40,22 @@ defmodule Thunderline.Thundergate.Resources.SystemMetric do
     end
   end
 
-  identities do
-    identity :unique_metric_point, [:domain, :metric_name, :collected_at, :node_name]
-  end
-
   preparations do
     prepare build(sort: [collected_at: :desc])
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :domain, :string, allow_nil?: false
+    attribute :metric_name, :string, allow_nil?: false
+    attribute :value, :decimal, allow_nil?: false
+    attribute :unit, :string
+    attribute :tags, :map, default: %{}
+    attribute :node_name, :string
+    create_timestamp :collected_at
+  end
+
+  identities do
+    identity :unique_metric_point, [:domain, :metric_name, :collected_at, :node_name]
   end
 end

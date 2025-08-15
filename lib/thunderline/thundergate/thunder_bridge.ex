@@ -89,10 +89,13 @@ defmodule Thundergate.ThunderBridge do
     case event do
       %{type: event_type, payload: payload} ->
         Thunderline.EventBus.emit_realtime(event_type, payload)
+
       %{event: event_type, data: payload} ->
         Thunderline.EventBus.emit_realtime(event_type, payload)
+
       %{topic: topic, event: event_data} ->
         Thunderline.EventBus.broadcast_via_eventbus(topic, :bridge_event, event_data)
+
       _ ->
         # Fallback: treat entire event as payload
         Thunderline.EventBus.emit_realtime(:generic_event, event)
@@ -221,15 +224,17 @@ defmodule Thundergate.ThunderBridge do
   def handle_call(:get_agents_json, _from, state) do
     case Thunderline.ThunderMemory.list_agents() do
       {:ok, agents} ->
-        json_agents = Enum.map(agents, fn agent ->
-          %{
-            id: agent.id,
-            name: agent.name,
-            state: agent.state,
-            capabilities: agent.capabilities,
-            last_seen: agent.last_seen
-          }
-        end)
+        json_agents =
+          Enum.map(agents, fn agent ->
+            %{
+              id: agent.id,
+              name: agent.name,
+              state: agent.state,
+              capabilities: agent.capabilities,
+              last_seen: agent.last_seen
+            }
+          end)
+
         {:reply, json_agents, state}
 
       _ ->
@@ -240,14 +245,17 @@ defmodule Thundergate.ThunderBridge do
   def handle_call(:get_chunks_json, _from, state) do
     case Thunderline.ThunderMemory.get_chunks() do
       {:ok, chunks} ->
-        json_chunks = Enum.map(chunks, fn chunk ->
-          %{
-            id: chunk.id,
-            content: String.slice(chunk.content, 0, 100), # Truncate for JSON
-            agent_id: chunk.agent_id,
-            timestamp: chunk.timestamp
-          }
-        end)
+        json_chunks =
+          Enum.map(chunks, fn chunk ->
+            %{
+              id: chunk.id,
+              # Truncate for JSON
+              content: String.slice(chunk.content, 0, 100),
+              agent_id: chunk.agent_id,
+              timestamp: chunk.timestamp
+            }
+          end)
+
         {:reply, json_chunks, state}
 
       _ ->
@@ -270,16 +278,17 @@ defmodule Thundergate.ThunderBridge do
     connected_nodes = Node.list(:connected)
 
     # Broadcast heartbeat
-    broadcast_event_internal("system_events", {:heartbeat, %{
-      node: Node.self(),
-      timestamp: timestamp,
-      connected_nodes: connected_nodes
-    }})
+    broadcast_event_internal(
+      "system_events",
+      {:heartbeat,
+       %{
+         node: Node.self(),
+         timestamp: timestamp,
+         connected_nodes: connected_nodes
+       }}
+    )
 
-    new_state = %{state |
-      last_heartbeat: timestamp,
-      connected_nodes: connected_nodes
-    }
+    new_state = %{state | last_heartbeat: timestamp, connected_nodes: connected_nodes}
 
     {:noreply, new_state}
   end
@@ -297,10 +306,11 @@ defmodule Thundergate.ThunderBridge do
       response_time: calculate_avg_response_time()
     }
 
-    new_state = %{state |
-      active_agents: length(agents),
-      total_chunks: length(chunks),
-      performance_metrics: performance_metrics
+    new_state = %{
+      state
+      | active_agents: length(agents),
+        total_chunks: length(chunks),
+        performance_metrics: performance_metrics
     }
 
     {:noreply, new_state}

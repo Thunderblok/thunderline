@@ -17,12 +17,164 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
   end
 
   # ============================================================================
+  # JSON API
+  # ============================================================================
+
+  json_api do
+    type "lane_coordinator"
+
+    routes do
+      base("/coordinators")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:update)
+      patch(:coordinate, route: "/:id/coordinate")
+      patch(:sync_status, route: "/:id/sync")
+      patch(:heartbeat, route: "/:id/heartbeat")
+      patch(:pause, route: "/:id/pause")
+      patch(:resume, route: "/:id/resume")
+      patch(:shutdown, route: "/:id/shutdown")
+    end
+  end
+
+  # ============================================================================
+  # GRAPHQL
+  # ============================================================================
+
+  graphql do
+    type :lane_coordinator
+
+    queries do
+      get :get_coordinator, :read
+      list :list_coordinators, :read
+      list :active_coordinators, :active_coordinators
+    end
+
+    mutations do
+      create :create_coordinator, :create
+      update :update_coordinator, :update
+      update :coordinate_lane, :coordinate
+      update :sync_coordinator_status, :sync_status
+      update :pause_coordinator, :pause
+      update :resume_coordinator, :resume
+      update :shutdown_coordinator, :shutdown
+    end
+  end
+
+  # ============================================================================
   # EVENTS
   # ============================================================================
 
   events do
-    event_log Thunderline.Thunderflow.Events.Event
-    current_action_versions create: 1, update: 1, destroy: 1
+    event_log(Thunderline.Thunderflow.Events.Event)
+    current_action_versions(create: 1, update: 1, destroy: 1)
+  end
+
+  # ============================================================================
+  # ACTIONS
+  # ============================================================================
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [
+        :lane_dimension,
+        :name,
+        :description,
+        :topology_shape,
+        :target_ups,
+        :max_coordination_latency_ms,
+        :max_queue_size,
+        :config,
+        :metadata
+      ]
+
+      change fn changeset, _ ->
+        changeset
+        |> Ash.Changeset.change_attribute(:status, :initializing)
+        |> Ash.Changeset.change_attribute(:coordinator_node, to_string(Node.self()))
+      end
+
+      change after_action(&start_coordinator_process/2)
+    end
+
+    update :update do
+      accept [
+        :name,
+        :description,
+        :topology_shape,
+        :target_ups,
+        :max_coordination_latency_ms,
+        :max_queue_size,
+        :config,
+        :metadata
+      ]
+    end
+
+    update :coordinate do
+      accept [:active_ruleset_id, :active_ruleset_version]
+
+      change before_action(&validate_ruleset/1)
+      change after_action(&deploy_ruleset_to_lane/2)
+    end
+
+    update :sync_status do
+      accept [
+        :status,
+        :cells_managed,
+        :updates_per_second,
+        :coordination_latency_ms,
+        :event_queue_size,
+        :events_processed,
+        :events_dropped,
+        :coupling_buffers,
+        :coupling_backpressure,
+        :error_count,
+        :last_error,
+        :last_error_at
+      ]
+
+      change set_attribute(:last_sync_at, &DateTime.utc_now/0)
+    end
+
+    update :heartbeat do
+      accept []
+      change set_attribute(:last_heartbeat_at, &DateTime.utc_now/0)
+    end
+
+    update :pause do
+      accept []
+      change set_attribute(:status, :paused)
+      change after_action(&pause_coordinator_process/2)
+    end
+
+    update :resume do
+      accept []
+      change set_attribute(:status, :active)
+      change after_action(&resume_coordinator_process/2)
+    end
+
+    update :shutdown do
+      accept []
+      change set_attribute(:status, :shutdown)
+      change after_action(&shutdown_coordinator_process/2)
+    end
+
+    read :active_coordinators do
+      filter expr(status == :active)
+    end
+
+    read :by_dimension do
+      argument :dimension, :atom, allow_nil?: false
+      filter expr(lane_dimension == ^arg(:dimension))
+    end
+
+    read :with_ruleset do
+      argument :ruleset_id, :uuid, allow_nil?: false
+      filter expr(active_ruleset_id == ^arg(:ruleset_id))
+    end
   end
 
   # ============================================================================
@@ -33,8 +185,11 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
     uuid_primary_key :id
 
     # Core Identity
-    attribute :lane_dimension, :atom, allow_nil?: false, public?: true,
+    attribute :lane_dimension, :atom,
+      allow_nil?: false,
+      public?: true,
       constraints: [one_of: [:x, :y, :z]]
+
     attribute :name, :string, allow_nil?: false, public?: true
     attribute :description, :string, public?: true
 
@@ -43,15 +198,21 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
     attribute :active_ruleset_version, :integer, public?: true
 
     # Coordination State
-    attribute :status, :atom, allow_nil?: false, public?: true, default: :initializing,
+    attribute :status, :atom,
+      allow_nil?: false,
+      public?: true,
+      default: :initializing,
       constraints: [one_of: [:initializing, :active, :paused, :error, :shutdown]]
 
     # Topology Configuration
-    attribute :topology_shape, :map, allow_nil?: false, public?: true, default: %{
-      width: 128,
-      height: 128,
-      depth: 64
-    }
+    attribute :topology_shape, :map,
+      allow_nil?: false,
+      public?: true,
+      default: %{
+        width: 128,
+        height: 128,
+        depth: 64
+      }
 
     # Runtime Metrics
     attribute :cells_managed, :integer, public?: true, default: 0
@@ -113,138 +274,6 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
   end
 
   # ============================================================================
-  # ACTIONS
-  # ============================================================================
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      accept [
-        :lane_dimension, :name, :description, :topology_shape,
-        :target_ups, :max_coordination_latency_ms, :max_queue_size,
-        :config, :metadata
-      ]
-
-      change fn changeset, _ ->
-        changeset
-        |> Ash.Changeset.change_attribute(:status, :initializing)
-        |> Ash.Changeset.change_attribute(:coordinator_node, to_string(Node.self()))
-      end
-
-      change after_action(&start_coordinator_process/2)
-    end
-
-    update :update do
-      accept [
-        :name, :description, :topology_shape, :target_ups,
-        :max_coordination_latency_ms, :max_queue_size, :config, :metadata
-      ]
-    end
-
-    update :coordinate do
-      accept [:active_ruleset_id, :active_ruleset_version]
-
-      change before_action(&validate_ruleset/1)
-      change after_action(&deploy_ruleset_to_lane/2)
-    end
-
-    update :sync_status do
-      accept [
-        :status, :cells_managed, :updates_per_second, :coordination_latency_ms,
-        :event_queue_size, :events_processed, :events_dropped,
-        :coupling_buffers, :coupling_backpressure, :error_count,
-        :last_error, :last_error_at
-      ]
-
-      change set_attribute(:last_sync_at, &DateTime.utc_now/0)
-    end
-
-    update :heartbeat do
-      accept []
-      change set_attribute(:last_heartbeat_at, &DateTime.utc_now/0)
-    end
-
-    update :pause do
-      accept []
-      change set_attribute(:status, :paused)
-      change after_action(&pause_coordinator_process/2)
-    end
-
-    update :resume do
-      accept []
-      change set_attribute(:status, :active)
-      change after_action(&resume_coordinator_process/2)
-    end
-
-    update :shutdown do
-      accept []
-      change set_attribute(:status, :shutdown)
-      change after_action(&shutdown_coordinator_process/2)
-    end
-
-    read :active_coordinators do
-      filter expr(status == :active)
-    end
-
-    read :by_dimension do
-      argument :dimension, :atom, allow_nil?: false
-      filter expr(lane_dimension == ^arg(:dimension))
-    end
-
-    read :with_ruleset do
-      argument :ruleset_id, :uuid, allow_nil?: false
-      filter expr(active_ruleset_id == ^arg(:ruleset_id))
-    end
-  end
-
-  # ============================================================================
-  # JSON API
-  # ============================================================================
-
-  json_api do
-    type "lane_coordinator"
-
-    routes do
-      base "/coordinators"
-      get :read
-      index :read
-      post :create
-      patch :update
-      patch :coordinate, route: "/:id/coordinate"
-      patch :sync_status, route: "/:id/sync"
-      patch :heartbeat, route: "/:id/heartbeat"
-      patch :pause, route: "/:id/pause"
-      patch :resume, route: "/:id/resume"
-      patch :shutdown, route: "/:id/shutdown"
-    end
-  end
-
-  # ============================================================================
-  # GRAPHQL
-  # ============================================================================
-
-  graphql do
-    type :lane_coordinator
-
-    queries do
-      get :get_coordinator, :read
-      list :list_coordinators, :read
-      list :active_coordinators, :active_coordinators
-    end
-
-    mutations do
-      create :create_coordinator, :create
-      update :update_coordinator, :update
-      update :coordinate_lane, :coordinate
-      update :sync_coordinator_status, :sync_status
-      update :pause_coordinator, :pause
-      update :resume_coordinator, :resume
-      update :shutdown_coordinator, :shutdown
-    end
-  end
-
-  # ============================================================================
   # PRIVATE FUNCTIONS
   # ============================================================================
 
@@ -272,16 +301,25 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
 
   defp validate_ruleset(changeset) do
     case Ash.Changeset.get_attribute(changeset, :active_ruleset_id) do
-      nil -> changeset
+      nil ->
+        changeset
+
       ruleset_id ->
         case Ash.get(Thunderline.Thunderbolt.Resources.RuleSet, ruleset_id) do
-          {:ok, %{status: :active}} -> changeset
+          {:ok, %{status: :active}} ->
+            changeset
+
           {:ok, _} ->
-            Ash.Changeset.add_error(changeset, field: :active_ruleset_id,
-              message: "RuleSet must be in active status")
+            Ash.Changeset.add_error(changeset,
+              field: :active_ruleset_id,
+              message: "RuleSet must be in active status"
+            )
+
           {:error, _} ->
-            Ash.Changeset.add_error(changeset, field: :active_ruleset_id,
-              message: "RuleSet not found")
+            Ash.Changeset.add_error(changeset,
+              field: :active_ruleset_id,
+              message: "RuleSet not found"
+            )
         end
     end
   end
@@ -289,11 +327,18 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
   defp deploy_ruleset_to_lane(_changeset, coordinator) do
     # Signal the coordinator GenServer to deploy the new ruleset
     case coordinator.coordinator_pid do
-      nil -> {:ok, coordinator}
+      nil ->
+        {:ok, coordinator}
+
       pid_string ->
         try do
           pid = pid_string |> String.to_atom() |> :erlang.list_to_pid()
-          Thunderline.Thunderbolt.LaneCoordinator.GenServer.deploy_ruleset(pid, coordinator.active_ruleset_id)
+
+          Thunderline.Thunderbolt.LaneCoordinator.GenServer.deploy_ruleset(
+            pid,
+            coordinator.active_ruleset_id
+          )
+
           {:ok, coordinator}
         rescue
           _ -> {:ok, coordinator}
@@ -318,7 +363,9 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
 
   defp signal_coordinator(coordinator, signal) do
     case coordinator.coordinator_pid do
-      nil -> :ok
+      nil ->
+        :ok
+
       pid_string ->
         try do
           pid = pid_string |> String.to_atom() |> :erlang.list_to_pid()

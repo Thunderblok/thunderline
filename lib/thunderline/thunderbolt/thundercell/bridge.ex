@@ -13,8 +13,10 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
   alias Thunderline.ThunderMemory
   alias Phoenix.PubSub
 
-  @heartbeat_interval 30_000  # 30 seconds
-  @metrics_interval 10_000    # 10 seconds
+  # 30 seconds
+  @heartbeat_interval 30_000
+  # 10 seconds
+  @metrics_interval 10_000
 
   defstruct [
     :thunderlane_node,
@@ -75,16 +77,21 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
           :pong ->
             heartbeat_timer = Process.send_after(self(), :heartbeat, @heartbeat_interval)
             metrics_timer = Process.send_after(self(), :send_metrics, @metrics_interval)
-            new_state = %{state |
-              thunderlane_node: node,
-              connection_status: :connected,
-              heartbeat_timer: heartbeat_timer,
-              metrics_timer: metrics_timer
+
+            new_state = %{
+              state
+              | thunderlane_node: node,
+                connection_status: :connected,
+                heartbeat_timer: heartbeat_timer,
+                metrics_timer: metrics_timer
             }
+
             {:reply, :ok, new_state}
+
           :pang ->
             {:reply, {:error, :connection_failed}, state}
         end
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -95,6 +102,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
     case :rpc.call(node, Thunderline.ErlangBridge, :register_compute_node, [Node.self()]) do
       {:ok, :registered} ->
         {:reply, :ok, state}
+
       error ->
         {:reply, {:error, error}, state}
     end
@@ -107,7 +115,9 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
   def handle_call(:disconnect, _from, state) do
     # Clean disconnect from Thunderlane
     case state.thunderlane_node do
-      nil -> :ok
+      nil ->
+        :ok
+
       node ->
         :rpc.call(node, Thunderline.ErlangBridge, :unregister_compute_node, [Node.self()])
     end
@@ -116,12 +126,14 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
     cancel_timer(state.heartbeat_timer)
     cancel_timer(state.metrics_timer)
 
-    new_state = %{state |
-      thunderlane_node: nil,
-      connection_status: :disconnected,
-      heartbeat_timer: nil,
-      metrics_timer: nil
+    new_state = %{
+      state
+      | thunderlane_node: nil,
+        connection_status: :disconnected,
+        heartbeat_timer: nil,
+        metrics_timer: nil
     }
+
     {:reply, :ok, new_state}
   end
 
@@ -130,6 +142,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
     case :rpc.call(node, Thunderline.Thunderbolt.Resources.LaneRuleSet, :get_active_rules, []) do
       {:ok, rules} ->
         {:reply, {:ok, rules}, state}
+
       error ->
         {:reply, {:error, error}, state}
     end
@@ -147,16 +160,24 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
   def handle_cast({:send_metrics, metrics}, %{thunderlane_node: node} = state) when node != nil do
     # Send performance metrics to Thunderlane
     Task.start(fn ->
-      :rpc.cast(node, Thunderline.ThunderLink.DashboardMetrics, :receive_thundercell_metrics, [metrics])
+      :rpc.cast(node, Thunderline.ThunderLink.DashboardMetrics, :receive_thundercell_metrics, [
+        metrics
+      ])
     end)
+
     {:noreply, state}
   end
 
-  def handle_cast({:cluster_status, cluster_id, status}, %{thunderlane_node: node} = state) when node != nil do
+  def handle_cast({:cluster_status, cluster_id, status}, %{thunderlane_node: node} = state)
+      when node != nil do
     # Notify Thunderlane of cluster status changes
     Task.start(fn ->
-      :rpc.cast(node, Thunderline.ThunderLink.DashboardMetrics, :receive_cluster_status, [cluster_id, status])
+      :rpc.cast(node, Thunderline.ThunderLink.DashboardMetrics, :receive_cluster_status, [
+        cluster_id,
+        status
+      ])
     end)
+
     {:noreply, state}
   end
 
@@ -171,6 +192,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
       :pong ->
         heartbeat_timer = Process.send_after(self(), :heartbeat, @heartbeat_interval)
         {:noreply, %{state | heartbeat_timer: heartbeat_timer}}
+
       :pang ->
         # Connection lost, attempt reconnection
         {:noreply, %{state | connection_status: :disconnected}}
@@ -212,6 +234,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
       nil ->
         # Try default naming convention
         try_default_thunderlane_nodes()
+
       node_str ->
         node = String.to_atom(node_str)
         {:ok, node}
@@ -221,7 +244,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
   defp try_default_thunderlane_nodes do
     # Try common Thunderlane node names
     possible_nodes = [
-      :"thunderlane@localhost",
+      :thunderlane@localhost,
       :"thunderlane@127.0.0.1",
       String.to_atom("thunderlane@#{:net_adm.localhost()}")
     ]

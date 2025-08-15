@@ -62,12 +62,13 @@ defmodule Thunderline.Thunderblock.Jobs.DomainSyncProcessor do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "domain_sync_completions",
-      {:domain_synced, %{
-        workflow_id: workflow_id,
-        domain: domain,
-        result: result,
-        completed_at: DateTime.utc_now()
-      }}
+      {:domain_synced,
+       %{
+         workflow_id: workflow_id,
+         domain: domain,
+         result: result,
+         completed_at: DateTime.utc_now()
+       }}
     )
 
     :ok

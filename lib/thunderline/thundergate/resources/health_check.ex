@@ -14,44 +14,29 @@ defmodule Thunderline.Thundergate.Resources.HealthCheck do
 
   import Ash.Resource.Change.Builtins
 
-
-
   postgres do
     table "health_checks"
     repo Thunderline.Repo
-  end
-
-#   notifiers do
-#     module Thunderline.PubSub
-#     prefix "thundereye:health"
-#
-#     publish :create, ["health:checked", :component]
-#     publish :update, ["health:status_changed", :component, :status]
-#   end
-
-  attributes do
-    uuid_primary_key :id
-    attribute :component, :string, allow_nil?: false
-    attribute :domain, :string, allow_nil?: false
-    attribute :status, :atom, constraints: [one_of: [:healthy, :degraded, :unhealthy, :unknown]]
-    attribute :response_time_ms, :integer
-    attribute :message, :string
-    attribute :details, :map, default: %{}
-    attribute :node_name, :string
-    attribute :endpoint_url, :string
-    attribute :check_type, :atom, constraints: [one_of: [:heartbeat, :deep, :dependency, :resource]]
-    attribute :timeout_ms, :integer, default: 30_000
-    attribute :expected_status_code, :integer
-    attribute :metadata, :map, default: %{}
-    create_timestamp :checked_at
   end
 
   actions do
     defaults [:read]
 
     create :perform_check do
-      accept [:component, :domain, :status, :response_time_ms, :message, :details,
-              :node_name, :endpoint_url, :check_type, :timeout_ms, :expected_status_code, :metadata]
+      accept [
+        :component,
+        :domain,
+        :status,
+        :response_time_ms,
+        :message,
+        :details,
+        :node_name,
+        :endpoint_url,
+        :check_type,
+        :timeout_ms,
+        :expected_status_code,
+        :metadata
+      ]
 
       change set_attribute(:checked_at, &DateTime.utc_now/0)
     end
@@ -64,7 +49,9 @@ defmodule Thunderline.Thundergate.Resources.HealthCheck do
 
     read :current_status do
       # Get the most recent health check for each component
-      filter expr(checked_at > ago(300, :second)) # 5 minutes
+
+      # 5 minutes
+      filter expr(checked_at > ago(300, :second))
     end
 
     read :by_domain do
@@ -93,40 +80,83 @@ defmodule Thunderline.Thundergate.Resources.HealthCheck do
     end
   end
 
+  preparations do
+    prepare build(sort: [checked_at: :desc])
+  end
+
+  #   notifiers do
+  #     module Thunderline.PubSub
+  #     prefix "thundereye:health"
+  #
+  #     publish :create, ["health:checked", :component]
+  #     publish :update, ["health:status_changed", :component, :status]
+  #   end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :component, :string, allow_nil?: false
+    attribute :domain, :string, allow_nil?: false
+    attribute :status, :atom, constraints: [one_of: [:healthy, :degraded, :unhealthy, :unknown]]
+    attribute :response_time_ms, :integer
+    attribute :message, :string
+    attribute :details, :map, default: %{}
+    attribute :node_name, :string
+    attribute :endpoint_url, :string
+
+    attribute :check_type, :atom,
+      constraints: [one_of: [:heartbeat, :deep, :dependency, :resource]]
+
+    attribute :timeout_ms, :integer, default: 30_000
+    attribute :expected_status_code, :integer
+    attribute :metadata, :map, default: %{}
+    create_timestamp :checked_at
+  end
+
   calculations do
-    calculate :is_recent, :boolean, expr(
-      checked_at > ago(300, :second)
-    )
+    calculate :is_recent, :boolean, expr(checked_at > ago(300, :second))
 
-    calculate :health_score, :integer, expr(
-      cond do
-        status == :healthy and response_time_ms < 500 -> 100
-        status == :healthy and response_time_ms < 1000 -> 90
-        status == :healthy -> 80
-        status == :degraded -> 60
-        status == :unhealthy -> 20
-        true -> 0
-      end
-    )
+    calculate :health_score,
+              :integer,
+              expr(
+                cond do
+                  status == :healthy and response_time_ms < 500 -> 100
+                  status == :healthy and response_time_ms < 1000 -> 90
+                  status == :healthy -> 80
+                  status == :degraded -> 60
+                  status == :unhealthy -> 20
+                  true -> 0
+                end
+              )
 
-    calculate :availability_24h, :decimal, expr(
-      fragment("""
-      (SELECT COALESCE(
-        (COUNT(CASE WHEN status = 'healthy' THEN 1 END) * 100.0) /
-        NULLIF(COUNT(*), 0), 0
-      ) FROM health_checks hc2
-      WHERE hc2.component = ?
-      AND hc2.checked_at > ?)
-      """, component, ago(24, :hour))
-    )
+    calculate :availability_24h,
+              :decimal,
+              expr(
+                fragment(
+                  """
+                  (SELECT COALESCE(
+                    (COUNT(CASE WHEN status = 'healthy' THEN 1 END) * 100.0) /
+                    NULLIF(COUNT(*), 0), 0
+                  ) FROM health_checks hc2
+                  WHERE hc2.component = ?
+                  AND hc2.checked_at > ?)
+                  """,
+                  component,
+                  ago(24, :hour)
+                )
+              )
 
-    calculate :last_healthy, :utc_datetime, expr(
-      fragment("""
-      (SELECT MAX(checked_at) FROM health_checks hc2
-       WHERE hc2.component = ?
-       AND hc2.status = 'healthy')
-      """, component)
-    )
+    calculate :last_healthy,
+              :utc_datetime,
+              expr(
+                fragment(
+                  """
+                  (SELECT MAX(checked_at) FROM health_checks hc2
+                   WHERE hc2.component = ?
+                   AND hc2.status = 'healthy')
+                  """,
+                  component
+                )
+              )
   end
 
   aggregates do
@@ -143,9 +173,5 @@ defmodule Thunderline.Thundergate.Resources.HealthCheck do
 
   identities do
     identity :unique_check, [:component, :domain, :checked_at]
-  end
-
-  preparations do
-    prepare build(sort: [checked_at: :desc])
   end
 end

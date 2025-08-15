@@ -7,49 +7,12 @@ defmodule Thunderblock.Resources.DistributedState do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer
+
   import Ash.Resource.Change.Builtins
-
-
-
 
   postgres do
     table "thunderblock_distributed_state"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-
-    attribute :state_key, :string do
-      description "Unique state identifier"
-      allow_nil? false
-    end
-
-    attribute :state_scope, :string do
-      description "Scope/namespace for the state"
-      default "global"
-    end
-
-    attribute :state_value, :map do
-      description "State data payload"
-      allow_nil? false
-    end
-
-    attribute :version, :integer do
-      description "State version for conflict resolution"
-      default 1
-    end
-
-    attribute :last_updated_by, :string do
-      description "Node that last updated this state"
-    end
-
-    attribute :ttl_expires_at, :utc_datetime_usec do
-      description "TTL expiration timestamp"
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
   end
 
   actions do
@@ -87,13 +50,48 @@ defmodule Thunderblock.Resources.DistributedState do
     end
   end
 
-  identities do
-    identity :unique_state_key_scope, [:state_key, :state_scope]
+  attributes do
+    uuid_primary_key :id
+
+    attribute :state_key, :string do
+      description "Unique state identifier"
+      allow_nil? false
+    end
+
+    attribute :state_scope, :string do
+      description "Scope/namespace for the state"
+      default "global"
+    end
+
+    attribute :state_value, :map do
+      description "State data payload"
+      allow_nil? false
+    end
+
+    attribute :version, :integer do
+      description "State version for conflict resolution"
+      default 1
+    end
+
+    attribute :last_updated_by, :string do
+      description "Node that last updated this state"
+    end
+
+    attribute :ttl_expires_at, :utc_datetime_usec do
+      description "TTL expiration timestamp"
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 
   calculations do
-    calculate :is_expired, :boolean, expr(
-      not is_nil(ttl_expires_at) and ttl_expires_at < ^DateTime.utc_now()
-    )
+    calculate :is_expired,
+              :boolean,
+              expr(not is_nil(ttl_expires_at) and ttl_expires_at < ^DateTime.utc_now())
+  end
+
+  identities do
+    identity :unique_state_key_scope, [:state_key, :state_scope]
   end
 end

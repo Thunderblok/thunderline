@@ -15,41 +15,26 @@ defmodule Thunderblock.Resources.TaskOrchestrator do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "task_orchestrators"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-    attribute :workflow_name, :string, allow_nil?: false
-    attribute :workflow_version, :string, default: "1.0.0"
-    attribute :tasks, {:array, :map}, allow_nil?: false
-    attribute :dependencies, :map, default: %{}
-    attribute :status, :atom, constraints: [one_of: [:pending, :running, :paused, :completed, :failed, :cancelled]]
-    attribute :execution_strategy, :atom, constraints: [one_of: [:sequential, :parallel, :dag, :priority_queue]]
-    attribute :retry_policy, :map, default: %{max_attempts: 3, backoff_ms: 1000}
-    attribute :timeout_ms, :integer, default: 300_000  # 5 minutes default
-    attribute :execution_log, {:array, :map}, default: []
-    attribute :current_step, :integer, default: 0
-    attribute :total_steps, :integer
-    attribute :progress_percentage, :decimal, default: Decimal.new("0.0")
-    attribute :assigned_containers, {:array, :string}, default: []
-    attribute :metadata, :map, default: %{}
-    attribute :started_at, :utc_datetime
-    attribute :completed_at, :utc_datetime
-    create_timestamp :created_at
-    update_timestamp :updated_at
   end
 
   actions do
     defaults [:read, :create, :update, :destroy]
 
     create :create_workflow do
-      accept [:workflow_name, :workflow_version, :tasks, :dependencies, :execution_strategy, :retry_policy, :timeout_ms, :metadata]
+      accept [
+        :workflow_name,
+        :workflow_version,
+        :tasks,
+        :dependencies,
+        :execution_strategy,
+        :retry_policy,
+        :timeout_ms,
+        :metadata
+      ]
+
       change fn changeset, _context ->
         tasks = Ash.Changeset.get_attribute(changeset, :tasks) || []
         total_steps = length(tasks)
@@ -103,9 +88,9 @@ defmodule Thunderblock.Resources.TaskOrchestrator do
 
     read :long_running do
       filter expr(
-        status == :running and not is_nil(started_at) and
-        datetime_diff(now(), started_at, :minute) > 30
-      )
+               status == :running and not is_nil(started_at) and
+                 datetime_diff(now(), started_at, :minute) > 30
+             )
     end
 
     # ThunderChief Cross-Domain Orchestration Actions
@@ -131,16 +116,17 @@ defmodule Thunderblock.Resources.TaskOrchestrator do
         end)
 
         # Enqueue jobs for each target domain
-        jobs = Enum.map(input.arguments.target_domains, fn domain ->
-          Thunderline.Thunderblock.Jobs.CrossDomainProcessor.new(%{
-            "workflow_id" => workflow_id,
-            "source_domain" => input.arguments.source_domain,
-            "target_domain" => domain,
-            "operation_type" => input.arguments.operation_type,
-            "config" => input.arguments.workflow_config
-          })
-          |> Oban.insert()
-        end)
+        jobs =
+          Enum.map(input.arguments.target_domains, fn domain ->
+            Thunderline.Thunderblock.Jobs.CrossDomainProcessor.new(%{
+              "workflow_id" => workflow_id,
+              "source_domain" => input.arguments.source_domain,
+              "target_domain" => domain,
+              "operation_type" => input.arguments.operation_type,
+              "config" => input.arguments.workflow_config
+            })
+            |> Oban.insert()
+          end)
 
         {:ok, %{workflow_id: workflow_id, jobs_created: length(jobs)}}
       end
@@ -165,15 +151,16 @@ defmodule Thunderblock.Resources.TaskOrchestrator do
         })
 
         # Trigger sync jobs for each domain
-        jobs = Enum.map(domains, fn domain ->
-          Thunderline.Thunderblock.Jobs.DomainSyncProcessor.new(%{
-            "workflow_id" => workflow_id,
-            "domain" => domain,
-            "sync_type" => input.arguments.sync_type,
-            "priority" => input.arguments.priority
-          })
-          |> Oban.insert()
-        end)
+        jobs =
+          Enum.map(domains, fn domain ->
+            Thunderline.Thunderblock.Jobs.DomainSyncProcessor.new(%{
+              "workflow_id" => workflow_id,
+              "domain" => domain,
+              "sync_type" => input.arguments.sync_type,
+              "priority" => input.arguments.priority
+            })
+            |> Oban.insert()
+          end)
 
         {:ok, %{workflow_id: workflow_id, domains_syncing: domains}}
       end
@@ -187,10 +174,13 @@ defmodule Thunderblock.Resources.TaskOrchestrator do
 
       run fn input, _context ->
         # Schedule using AshOban
-        Thunderline.Thunderblock.Jobs.ScheduledWorkflowProcessor.new(%{
-          "workflow_id" => input.arguments.workflow_id,
-          "config" => input.arguments.workflow_config
-        }, scheduled_at: input.arguments.scheduled_at)
+        Thunderline.Thunderblock.Jobs.ScheduledWorkflowProcessor.new(
+          %{
+            "workflow_id" => input.arguments.workflow_id,
+            "config" => input.arguments.workflow_config
+          },
+          scheduled_at: input.arguments.scheduled_at
+        )
         |> Oban.insert()
 
         {:ok, %{scheduled: true, workflow_id: input.arguments.workflow_id}}
@@ -198,42 +188,87 @@ defmodule Thunderblock.Resources.TaskOrchestrator do
     end
   end
 
+  preparations do
+    prepare build(sort: [created_at: :desc])
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :workflow_name, :string, allow_nil?: false
+    attribute :workflow_version, :string, default: "1.0.0"
+    attribute :tasks, {:array, :map}, allow_nil?: false
+    attribute :dependencies, :map, default: %{}
+
+    attribute :status, :atom,
+      constraints: [one_of: [:pending, :running, :paused, :completed, :failed, :cancelled]]
+
+    attribute :execution_strategy, :atom,
+      constraints: [one_of: [:sequential, :parallel, :dag, :priority_queue]]
+
+    attribute :retry_policy, :map, default: %{max_attempts: 3, backoff_ms: 1000}
+
+    # 5 minutes default
+    attribute :timeout_ms, :integer, default: 300_000
+    attribute :execution_log, {:array, :map}, default: []
+    attribute :current_step, :integer, default: 0
+    attribute :total_steps, :integer
+    attribute :progress_percentage, :decimal, default: Decimal.new("0.0")
+    attribute :assigned_containers, {:array, :string}, default: []
+    attribute :metadata, :map, default: %{}
+    attribute :started_at, :utc_datetime
+    attribute :completed_at, :utc_datetime
+    create_timestamp :created_at
+    update_timestamp :updated_at
+  end
+
   calculations do
-    calculate :execution_duration_ms, :integer, expr(
-      cond do
-        not is_nil(completed_at) and not is_nil(started_at) ->
-          datetime_diff(completed_at, started_at, :millisecond)
-        not is_nil(started_at) ->
-          datetime_diff(now(), started_at, :millisecond)
-        true -> 0
-      end
-    )
+    calculate :execution_duration_ms,
+              :integer,
+              expr(
+                cond do
+                  not is_nil(completed_at) and not is_nil(started_at) ->
+                    datetime_diff(completed_at, started_at, :millisecond)
 
-    calculate :is_stalled, :boolean, expr(
-      status == :running and not is_nil(started_at) and
-      datetime_diff(now(), updated_at, :minute) > 5
-    )
+                  not is_nil(started_at) ->
+                    datetime_diff(now(), started_at, :millisecond)
 
-    calculate :completion_estimate, :utc_datetime, expr(
-      cond do
-        status in [:completed, :failed, :cancelled] -> completed_at
-        progress_percentage > 0 and not is_nil(started_at) ->
-          datetime_add(
-            started_at,
-            round(datetime_diff(now(), started_at, :millisecond) * (100 / progress_percentage)),
-            :millisecond
-          )
-        true -> nil
-      end
-    )
+                  true ->
+                    0
+                end
+              )
+
+    calculate :is_stalled,
+              :boolean,
+              expr(
+                status == :running and not is_nil(started_at) and
+                  datetime_diff(now(), updated_at, :minute) > 5
+              )
+
+    calculate :completion_estimate,
+              :utc_datetime,
+              expr(
+                cond do
+                  status in [:completed, :failed, :cancelled] ->
+                    completed_at
+
+                  progress_percentage > 0 and not is_nil(started_at) ->
+                    datetime_add(
+                      started_at,
+                      round(
+                        datetime_diff(now(), started_at, :millisecond) *
+                          (100 / progress_percentage)
+                      ),
+                      :millisecond
+                    )
+
+                  true ->
+                    nil
+                end
+              )
   end
 
   identities do
     identity :unique_workflow, [:workflow_name, :workflow_version]
-  end
-
-  preparations do
-    prepare build(sort: [created_at: :desc])
   end
 
   # AshOban triggers for orchestration automation

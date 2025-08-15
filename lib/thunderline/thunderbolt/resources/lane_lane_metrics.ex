@@ -17,136 +17,55 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
   end
 
   # ============================================================================
+  # JSON API
+  # ============================================================================
+
+  json_api do
+    type "lane_metrics"
+
+    routes do
+      base("/metrics")
+      get(:read)
+      index :read
+      post(:create)
+      post(:capture_performance, route: "/capture/performance")
+      post(:capture_coupling, route: "/capture/coupling")
+      post(:capture_health, route: "/capture/health")
+      post(:capture_optimization, route: "/capture/optimization")
+    end
+  end
+
+  # ============================================================================
+  # GRAPHQL
+  # ============================================================================
+
+  graphql do
+    type :lane_metrics
+
+    queries do
+      get :get_metrics, :read
+      list :list_metrics, :read
+      list :recent_metrics, :recent_metrics
+      list :performance_alerts, :performance_alerts
+      list :trending_metrics, :trending_metrics
+    end
+
+    mutations do
+      create :create_metrics, :create
+      create :capture_performance_metrics, :capture_performance
+      create :capture_coupling_metrics, :capture_coupling
+      create :capture_health_metrics, :capture_health
+      create :capture_optimization_metrics, :capture_optimization
+    end
+  end
+
+  # ============================================================================
   # EVENTS
   # ============================================================================
 
   events do
-    event_log Thunderline.Thunderflow.Events.Event
-    current_action_versions create: 1, update: 1, destroy: 1
-  end
-
-  # ============================================================================
-  # ATTRIBUTES
-  # ============================================================================
-
-  attributes do
-    uuid_primary_key :id
-
-    # Core Identity
-    attribute :metric_type, :atom, allow_nil?: false, public?: true,
-      constraints: [one_of: [:lane_performance, :coupling_performance, :topology_health,
-                             :rule_effectiveness, :system_health, :optimization_result]]
-    attribute :source_type, :atom, allow_nil?: false, public?: true,
-      constraints: [one_of: [:coordinator, :coupling, :topology, :ruleset, :system]]
-    attribute :source_id, :uuid, public?: true
-
-    # Foreign Keys for Relationships
-    attribute :lane_coordinator_id, :uuid, public?: true
-    attribute :cross_lane_coupling_id, :uuid, public?: true
-    attribute :rule_set_id, :uuid, public?: true
-    attribute :cell_topology_id, :uuid, public?: true
-
-    # Temporal Information
-    attribute :timestamp, :utc_datetime_usec, allow_nil?: false, public?: true
-    attribute :measurement_window_ms, :integer, public?: true
-    attribute :sequence_number, :integer, public?: true
-
-    # Lane-Specific Metrics
-    attribute :lane_dimension, :atom, public?: true,
-      constraints: [one_of: [:x, :y, :z, :all]]
-    attribute :updates_per_second, :float, public?: true
-    attribute :coordination_latency_ms, :float, public?: true
-    attribute :cells_processed, :integer, public?: true
-    attribute :events_processed, :integer, public?: true
-    attribute :queue_depth, :integer, public?: true
-
-    # Coupling Metrics
-    attribute :coupling_strength, :float, public?: true
-    attribute :coupling_latency_ms, :float, public?: true
-    attribute :mutual_information, :float, public?: true
-    attribute :phase_coherence, :float, public?: true
-    attribute :energy_transfer, :float, public?: true
-    attribute :alpha_effectiveness, :float, public?: true
-
-    # Performance Metrics
-    attribute :throughput, :float, public?: true
-    attribute :latency_p50_ms, :float, public?: true
-    attribute :latency_p95_ms, :float, public?: true
-    attribute :latency_p99_ms, :float, public?: true
-    attribute :error_rate, :float, public?: true
-    attribute :success_rate, :float, public?: true
-
-    # Resource Utilization
-    attribute :cpu_usage_percent, :float, public?: true
-    attribute :memory_usage_mb, :float, public?: true
-    attribute :memory_usage_percent, :float, public?: true
-    attribute :network_io_mbps, :float, public?: true
-    attribute :disk_io_mbps, :float, public?: true
-
-    # Health and Stability
-    attribute :stability_score, :float, public?: true, default: 1.0,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :health_score, :float, public?: true, default: 1.0,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :anomaly_score, :float, public?: true, default: 0.0,
-      constraints: [min: 0.0, max: 1.0]
-
-    # Optimization Metrics
-    attribute :optimization_target, :string, public?: true
-    attribute :optimization_score, :float, public?: true
-    attribute :improvement_factor, :float, public?: true
-    attribute :convergence_rate, :float, public?: true
-
-    # Business/Application Metrics
-    attribute :pathflow_accuracy, :float, public?: true
-    attribute :pattern_recognition_rate, :float, public?: true
-    attribute :emergence_detection_count, :integer, public?: true
-    attribute :computation_efficiency, :float, public?: true
-
-    # Raw Metric Data
-    attribute :raw_metrics, :map, public?: true, default: %{}
-    attribute :aggregated_metrics, :map, public?: true, default: %{}
-    attribute :trend_indicators, :map, public?: true, default: %{}
-
-    # Metadata
-    attribute :tags, :map, public?: true, default: %{}
-    attribute :metadata, :map, public?: true, default: %{}
-
-    # Quality and Confidence
-    attribute :measurement_confidence, :float, public?: true, default: 1.0,
-      constraints: [min: 0.0, max: 1.0]
-    attribute :data_quality_score, :float, public?: true, default: 1.0,
-      constraints: [min: 0.0, max: 1.0]
-
-    # Timestamps
-    create_timestamp :created_at
-    update_timestamp :updated_at
-  end
-
-  # ============================================================================
-  # RELATIONSHIPS
-  # ============================================================================
-
-  relationships do
-    belongs_to :coordinator, Thunderline.Thunderbolt.Resources.LaneCoordinator do
-      attribute_writable? true
-      public? true
-    end
-
-    belongs_to :coupling, Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
-      attribute_writable? true
-      public? true
-    end
-
-    belongs_to :topology, Thunderline.Thunderbolt.Resources.CellTopology do
-      attribute_writable? true
-      public? true
-    end
-
-    belongs_to :ruleset, Thunderline.Thunderbolt.Resources.RuleSet do
-      attribute_writable? true
-      public? true
-    end
+    event_log(Thunderline.Thunderflow.Events.Event)
+    current_action_versions(create: 1, update: 1, destroy: 1)
   end
 
   # ============================================================================
@@ -158,19 +77,57 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
 
     create :create do
       accept [
-        :metric_type, :source_type, :source_id, :timestamp, :measurement_window_ms,
-        :sequence_number, :lane_dimension, :updates_per_second, :coordination_latency_ms,
-        :cells_processed, :events_processed, :queue_depth, :coupling_strength,
-        :coupling_latency_ms, :mutual_information, :phase_coherence, :energy_transfer,
-        :alpha_effectiveness, :throughput, :latency_p50_ms, :latency_p95_ms,
-        :latency_p99_ms, :error_rate, :success_rate, :cpu_usage_percent,
-        :memory_usage_mb, :memory_usage_percent, :network_io_mbps, :disk_io_mbps,
-        :stability_score, :health_score, :anomaly_score, :optimization_target,
-        :optimization_score, :improvement_factor, :convergence_rate,
-        :pathflow_accuracy, :pattern_recognition_rate, :emergence_detection_count,
-        :computation_efficiency, :raw_metrics, :aggregated_metrics, :trend_indicators,
-        :tags, :metadata, :measurement_confidence, :data_quality_score,
-        :coordinator_id, :coupling_id, :topology_id, :ruleset_id
+        :metric_type,
+        :source_type,
+        :source_id,
+        :timestamp,
+        :measurement_window_ms,
+        :sequence_number,
+        :lane_dimension,
+        :updates_per_second,
+        :coordination_latency_ms,
+        :cells_processed,
+        :events_processed,
+        :queue_depth,
+        :coupling_strength,
+        :coupling_latency_ms,
+        :mutual_information,
+        :phase_coherence,
+        :energy_transfer,
+        :alpha_effectiveness,
+        :throughput,
+        :latency_p50_ms,
+        :latency_p95_ms,
+        :latency_p99_ms,
+        :error_rate,
+        :success_rate,
+        :cpu_usage_percent,
+        :memory_usage_mb,
+        :memory_usage_percent,
+        :network_io_mbps,
+        :disk_io_mbps,
+        :stability_score,
+        :health_score,
+        :anomaly_score,
+        :optimization_target,
+        :optimization_score,
+        :improvement_factor,
+        :convergence_rate,
+        :pathflow_accuracy,
+        :pattern_recognition_rate,
+        :emergence_detection_count,
+        :computation_efficiency,
+        :raw_metrics,
+        :aggregated_metrics,
+        :trend_indicators,
+        :tags,
+        :metadata,
+        :measurement_confidence,
+        :data_quality_score,
+        :coordinator_id,
+        :coupling_id,
+        :topology_id,
+        :ruleset_id
       ]
 
       change fn changeset, _ ->
@@ -183,28 +140,75 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
 
     update :update do
       accept [
-        :measurement_window_ms, :sequence_number, :updates_per_second,
-        :coordination_latency_ms, :cells_processed, :events_processed, :queue_depth,
-        :coupling_strength, :coupling_latency_ms, :mutual_information, :phase_coherence,
-        :energy_transfer, :alpha_effectiveness, :throughput, :latency_p50_ms,
-        :latency_p95_ms, :latency_p99_ms, :error_rate, :success_rate,
-        :cpu_usage_percent, :memory_usage_mb, :memory_usage_percent,
-        :network_io_mbps, :disk_io_mbps, :stability_score, :health_score,
-        :anomaly_score, :optimization_score, :improvement_factor, :convergence_rate,
-        :pathflow_accuracy, :pattern_recognition_rate, :emergence_detection_count,
-        :computation_efficiency, :raw_metrics, :aggregated_metrics, :trend_indicators,
-        :tags, :metadata, :measurement_confidence, :data_quality_score
+        :measurement_window_ms,
+        :sequence_number,
+        :updates_per_second,
+        :coordination_latency_ms,
+        :cells_processed,
+        :events_processed,
+        :queue_depth,
+        :coupling_strength,
+        :coupling_latency_ms,
+        :mutual_information,
+        :phase_coherence,
+        :energy_transfer,
+        :alpha_effectiveness,
+        :throughput,
+        :latency_p50_ms,
+        :latency_p95_ms,
+        :latency_p99_ms,
+        :error_rate,
+        :success_rate,
+        :cpu_usage_percent,
+        :memory_usage_mb,
+        :memory_usage_percent,
+        :network_io_mbps,
+        :disk_io_mbps,
+        :stability_score,
+        :health_score,
+        :anomaly_score,
+        :optimization_score,
+        :improvement_factor,
+        :convergence_rate,
+        :pathflow_accuracy,
+        :pattern_recognition_rate,
+        :emergence_detection_count,
+        :computation_efficiency,
+        :raw_metrics,
+        :aggregated_metrics,
+        :trend_indicators,
+        :tags,
+        :metadata,
+        :measurement_confidence,
+        :data_quality_score
       ]
     end
 
     create :capture_performance do
       accept [
-        :source_type, :source_id, :lane_dimension, :updates_per_second,
-        :coordination_latency_ms, :cells_processed, :events_processed, :queue_depth,
-        :throughput, :latency_p50_ms, :latency_p95_ms, :latency_p99_ms,
-        :error_rate, :success_rate, :cpu_usage_percent, :memory_usage_mb,
-        :memory_usage_percent, :raw_metrics, :tags, :coordinator_id, :coupling_id,
-        :topology_id, :ruleset_id
+        :source_type,
+        :source_id,
+        :lane_dimension,
+        :updates_per_second,
+        :coordination_latency_ms,
+        :cells_processed,
+        :events_processed,
+        :queue_depth,
+        :throughput,
+        :latency_p50_ms,
+        :latency_p95_ms,
+        :latency_p99_ms,
+        :error_rate,
+        :success_rate,
+        :cpu_usage_percent,
+        :memory_usage_mb,
+        :memory_usage_percent,
+        :raw_metrics,
+        :tags,
+        :coordinator_id,
+        :coupling_id,
+        :topology_id,
+        :ruleset_id
       ]
 
       change fn changeset, _ ->
@@ -216,9 +220,17 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
 
     create :capture_coupling do
       accept [
-        :source_id, :lane_dimension, :coupling_strength, :coupling_latency_ms,
-        :mutual_information, :phase_coherence, :energy_transfer, :alpha_effectiveness,
-        :raw_metrics, :tags, :coupling_id
+        :source_id,
+        :lane_dimension,
+        :coupling_strength,
+        :coupling_latency_ms,
+        :mutual_information,
+        :phase_coherence,
+        :energy_transfer,
+        :alpha_effectiveness,
+        :raw_metrics,
+        :tags,
+        :coupling_id
       ]
 
       change fn changeset, _ ->
@@ -231,9 +243,19 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
 
     create :capture_health do
       accept [
-        :source_type, :source_id, :stability_score, :health_score, :anomaly_score,
-        :error_rate, :success_rate, :raw_metrics, :tags, :coordinator_id,
-        :coupling_id, :topology_id, :ruleset_id
+        :source_type,
+        :source_id,
+        :stability_score,
+        :health_score,
+        :anomaly_score,
+        :error_rate,
+        :success_rate,
+        :raw_metrics,
+        :tags,
+        :coordinator_id,
+        :coupling_id,
+        :topology_id,
+        :ruleset_id
       ]
 
       change fn changeset, _ ->
@@ -245,9 +267,18 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
 
     create :capture_optimization do
       accept [
-        :source_type, :source_id, :optimization_target, :optimization_score,
-        :improvement_factor, :convergence_rate, :raw_metrics, :tags,
-        :coordinator_id, :coupling_id, :topology_id, :ruleset_id
+        :source_type,
+        :source_id,
+        :optimization_target,
+        :optimization_score,
+        :improvement_factor,
+        :convergence_rate,
+        :raw_metrics,
+        :tags,
+        :coordinator_id,
+        :coupling_id,
+        :topology_id,
+        :ruleset_id
       ]
 
       change fn changeset, _ ->
@@ -294,51 +325,161 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
 
         query
         |> Ash.Query.filter(expr(timestamp >= ^cutoff))
-        |> Ash.Query.sort([timestamp: :desc])
+        |> Ash.Query.sort(timestamp: :desc)
       end
     end
   end
 
   # ============================================================================
-  # JSON API
+  # ATTRIBUTES
   # ============================================================================
 
-  json_api do
-    type "lane_metrics"
+  attributes do
+    uuid_primary_key :id
 
-    routes do
-      base "/metrics"
-      get :read
-      index :read
-      post :create
-      post :capture_performance, route: "/capture/performance"
-      post :capture_coupling, route: "/capture/coupling"
-      post :capture_health, route: "/capture/health"
-      post :capture_optimization, route: "/capture/optimization"
-    end
+    # Core Identity
+    attribute :metric_type, :atom,
+      allow_nil?: false,
+      public?: true,
+      constraints: [
+        one_of: [
+          :lane_performance,
+          :coupling_performance,
+          :topology_health,
+          :rule_effectiveness,
+          :system_health,
+          :optimization_result
+        ]
+      ]
+
+    attribute :source_type, :atom,
+      allow_nil?: false,
+      public?: true,
+      constraints: [one_of: [:coordinator, :coupling, :topology, :ruleset, :system]]
+
+    attribute :source_id, :uuid, public?: true
+
+    # Foreign Keys for Relationships
+    attribute :lane_coordinator_id, :uuid, public?: true
+    attribute :cross_lane_coupling_id, :uuid, public?: true
+    attribute :rule_set_id, :uuid, public?: true
+    attribute :cell_topology_id, :uuid, public?: true
+
+    # Temporal Information
+    attribute :timestamp, :utc_datetime_usec, allow_nil?: false, public?: true
+    attribute :measurement_window_ms, :integer, public?: true
+    attribute :sequence_number, :integer, public?: true
+
+    # Lane-Specific Metrics
+    attribute :lane_dimension, :atom,
+      public?: true,
+      constraints: [one_of: [:x, :y, :z, :all]]
+
+    attribute :updates_per_second, :float, public?: true
+    attribute :coordination_latency_ms, :float, public?: true
+    attribute :cells_processed, :integer, public?: true
+    attribute :events_processed, :integer, public?: true
+    attribute :queue_depth, :integer, public?: true
+
+    # Coupling Metrics
+    attribute :coupling_strength, :float, public?: true
+    attribute :coupling_latency_ms, :float, public?: true
+    attribute :mutual_information, :float, public?: true
+    attribute :phase_coherence, :float, public?: true
+    attribute :energy_transfer, :float, public?: true
+    attribute :alpha_effectiveness, :float, public?: true
+
+    # Performance Metrics
+    attribute :throughput, :float, public?: true
+    attribute :latency_p50_ms, :float, public?: true
+    attribute :latency_p95_ms, :float, public?: true
+    attribute :latency_p99_ms, :float, public?: true
+    attribute :error_rate, :float, public?: true
+    attribute :success_rate, :float, public?: true
+
+    # Resource Utilization
+    attribute :cpu_usage_percent, :float, public?: true
+    attribute :memory_usage_mb, :float, public?: true
+    attribute :memory_usage_percent, :float, public?: true
+    attribute :network_io_mbps, :float, public?: true
+    attribute :disk_io_mbps, :float, public?: true
+
+    # Health and Stability
+    attribute :stability_score, :float,
+      public?: true,
+      default: 1.0,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :health_score, :float,
+      public?: true,
+      default: 1.0,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :anomaly_score, :float,
+      public?: true,
+      default: 0.0,
+      constraints: [min: 0.0, max: 1.0]
+
+    # Optimization Metrics
+    attribute :optimization_target, :string, public?: true
+    attribute :optimization_score, :float, public?: true
+    attribute :improvement_factor, :float, public?: true
+    attribute :convergence_rate, :float, public?: true
+
+    # Business/Application Metrics
+    attribute :pathflow_accuracy, :float, public?: true
+    attribute :pattern_recognition_rate, :float, public?: true
+    attribute :emergence_detection_count, :integer, public?: true
+    attribute :computation_efficiency, :float, public?: true
+
+    # Raw Metric Data
+    attribute :raw_metrics, :map, public?: true, default: %{}
+    attribute :aggregated_metrics, :map, public?: true, default: %{}
+    attribute :trend_indicators, :map, public?: true, default: %{}
+
+    # Metadata
+    attribute :tags, :map, public?: true, default: %{}
+    attribute :metadata, :map, public?: true, default: %{}
+
+    # Quality and Confidence
+    attribute :measurement_confidence, :float,
+      public?: true,
+      default: 1.0,
+      constraints: [min: 0.0, max: 1.0]
+
+    attribute :data_quality_score, :float,
+      public?: true,
+      default: 1.0,
+      constraints: [min: 0.0, max: 1.0]
+
+    # Timestamps
+    create_timestamp :created_at
+    update_timestamp :updated_at
   end
 
   # ============================================================================
-  # GRAPHQL
+  # RELATIONSHIPS
   # ============================================================================
 
-  graphql do
-    type :lane_metrics
-
-    queries do
-      get :get_metrics, :read
-      list :list_metrics, :read
-      list :recent_metrics, :recent_metrics
-      list :performance_alerts, :performance_alerts
-      list :trending_metrics, :trending_metrics
+  relationships do
+    belongs_to :coordinator, Thunderline.Thunderbolt.Resources.LaneCoordinator do
+      attribute_writable? true
+      public? true
     end
 
-    mutations do
-      create :create_metrics, :create
-      create :capture_performance_metrics, :capture_performance
-      create :capture_coupling_metrics, :capture_coupling
-      create :capture_health_metrics, :capture_health
-      create :capture_optimization_metrics, :capture_optimization
+    belongs_to :coupling, Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
+      attribute_writable? true
+      public? true
+    end
+
+    belongs_to :topology, Thunderline.Thunderbolt.Resources.CellTopology do
+      attribute_writable? true
+      public? true
+    end
+
+    belongs_to :ruleset, Thunderline.Thunderbolt.Resources.RuleSet do
+      attribute_writable? true
+      public? true
     end
   end
 
@@ -378,29 +519,33 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
   defp check_and_emit_alerts(metrics) do
     alerts = []
 
-    alerts = if metrics.health_score && metrics.health_score < 0.7 do
-      [%{type: :health_degraded, value: metrics.health_score, threshold: 0.7} | alerts]
-    else
-      alerts
-    end
+    alerts =
+      if metrics.health_score && metrics.health_score < 0.7 do
+        [%{type: :health_degraded, value: metrics.health_score, threshold: 0.7} | alerts]
+      else
+        alerts
+      end
 
-    alerts = if metrics.anomaly_score && metrics.anomaly_score > 0.3 do
-      [%{type: :anomaly_detected, value: metrics.anomaly_score, threshold: 0.3} | alerts]
-    else
-      alerts
-    end
+    alerts =
+      if metrics.anomaly_score && metrics.anomaly_score > 0.3 do
+        [%{type: :anomaly_detected, value: metrics.anomaly_score, threshold: 0.3} | alerts]
+      else
+        alerts
+      end
 
-    alerts = if metrics.error_rate && metrics.error_rate > 0.1 do
-      [%{type: :high_error_rate, value: metrics.error_rate, threshold: 0.1} | alerts]
-    else
-      alerts
-    end
+    alerts =
+      if metrics.error_rate && metrics.error_rate > 0.1 do
+        [%{type: :high_error_rate, value: metrics.error_rate, threshold: 0.1} | alerts]
+      else
+        alerts
+      end
 
-    alerts = if metrics.latency_p95_ms && metrics.latency_p95_ms > 100.0 do
-      [%{type: :high_latency, value: metrics.latency_p95_ms, threshold: 100.0} | alerts]
-    else
-      alerts
-    end
+    alerts =
+      if metrics.latency_p95_ms && metrics.latency_p95_ms > 100.0 do
+        [%{type: :high_latency, value: metrics.latency_p95_ms, threshold: 100.0} | alerts]
+      else
+        alerts
+      end
 
     if not Enum.empty?(alerts) do
       Thunderline.EventBus.emit_realtime(:metrics_alerts, %{

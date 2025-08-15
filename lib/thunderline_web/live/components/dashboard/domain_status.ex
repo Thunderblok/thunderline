@@ -21,7 +21,7 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
           <h3 class="text-lg font-bold text-white">Domain Status</h3>
         </div>
         <div class="text-xs text-purple-300 font-mono">
-          <%= healthy_count(@domains) %>/<%= total_count(@domains) %> Healthy
+          {healthy_count(@domains)}/{total_count(@domains)} Healthy
         </div>
       </div>
 
@@ -29,14 +29,19 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
       <div class="mb-4 bg-black/20 rounded-lg p-3">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-gray-400">System Health</span>
-          <span class="text-xs font-mono text-purple-300"><%= overall_health_percentage(@domains) %>%</span>
+          <span class="text-xs font-mono text-purple-300">
+            {overall_health_percentage(@domains)}%
+          </span>
         </div>
         <div class="w-full bg-gray-700 rounded-full h-2">
-          <div class={[
-            "h-2 rounded-full transition-all duration-1000",
-            overall_health_color(@domains)
-          ]}
-          style={"width: #{overall_health_percentage(@domains)}%"}></div>
+          <div
+            class={[
+              "h-2 rounded-full transition-all duration-1000",
+              overall_health_color(@domains)
+            ]}
+            style={"width: #{overall_health_percentage(@domains)}%"}
+          >
+          </div>
         </div>
       </div>
 
@@ -53,32 +58,34 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
                 <div class="flex items-center space-x-2">
                   <.status_dot status={metrics[:status]} />
                   <span class="text-sm font-medium text-white">
-                    <%= domain_display_name(domain) %>
+                    {domain_display_name(domain)}
                   </span>
                 </div>
-                <span class="text-xs text-gray-400"><%= domain_icon(domain) %></span>
+                <span class="text-xs text-gray-400">{domain_icon(domain)}</span>
               </div>
 
               <%!-- Metrics Grid --%>
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <span class="text-gray-400">Events/s:</span>
-                  <span class="text-cyan-300 font-mono ml-1"><%= metrics[:events_per_sec] || 0 %></span>
+                  <span class="text-cyan-300 font-mono ml-1">{metrics[:events_per_sec] || 0}</span>
                 </div>
                 <div>
                   <span class="text-gray-400">Memory:</span>
-                  <span class="text-blue-300 font-mono ml-1"><%= metrics[:memory_mb] || 0 %>MB</span>
+                  <span class="text-blue-300 font-mono ml-1">{metrics[:memory_mb] || 0}MB</span>
                 </div>
                 <div>
                   <span class="text-gray-400">Errors:</span>
                   <span class={[
                     "font-mono ml-1",
                     if(metrics[:errors] > 5, do: "text-red-300", else: "text-green-300")
-                  ]}><%= metrics[:errors] || 0 %></span>
+                  ]}>
+                    {metrics[:errors] || 0}
+                  </span>
                 </div>
                 <div>
                   <span class="text-gray-400">CPU:</span>
-                  <span class="text-purple-300 font-mono ml-1"><%= metrics[:cpu_percent] || 0 %>%</span>
+                  <span class="text-purple-300 font-mono ml-1">{metrics[:cpu_percent] || 0}%</span>
                 </div>
               </div>
             </div>
@@ -91,14 +98,16 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
         <div class="grid grid-cols-2 gap-3 text-xs">
           <div>
             <span class="text-gray-400">Total Events/s:</span>
-            <span class="text-cyan-300 font-mono ml-1"><%= total_events_per_sec(@domains) %></span>
+            <span class="text-cyan-300 font-mono ml-1">{total_events_per_sec(@domains)}</span>
           </div>
           <div>
             <span class="text-gray-400">Total Errors:</span>
             <span class={[
               "font-mono ml-1",
               if(total_errors(@domains) > 10, do: "text-red-300", else: "text-green-300")
-            ]}><%= total_errors(@domains) %></span>
+            ]}>
+              {total_errors(@domains)}
+            </span>
           </div>
         </div>
       </div>
@@ -115,7 +124,8 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
     <div class={[
       "w-2 h-2 rounded-full",
       status_dot_class(@status)
-    ]}></div>
+    ]}>
+    </div>
     """
   end
 
@@ -166,15 +176,18 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
 
   defp overall_health_percentage(domains) do
     case total_count(domains) do
-      0 -> 0
+      0 ->
+        0
+
       total ->
         healthy = healthy_count(domains)
-        Float.round((healthy / total) * 100, 0) |> trunc()
+        Float.round(healthy / total * 100, 0) |> trunc()
     end
   end
 
   defp overall_health_color(domains) do
     percentage = overall_health_percentage(domains)
+
     cond do
       percentage >= 90 -> "bg-green-400"
       percentage >= 70 -> "bg-yellow-400"
@@ -203,5 +216,6 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
       true -> to_string(num)
     end
   end
+
   defp format_number(num), do: to_string(num)
 end

@@ -8,13 +8,20 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CACell do
   require Logger
 
   defstruct [
-    :coordinate,          # {X, Y, Z} position in 3D grid
-    :current_state,       # :alive or :dead
-    :next_state,          # Prepared state for next generation
-    :ca_rules,            # CA rules for evolution
-    :neighbor_states,     # Last received neighbor states
-    :generation,          # Current generation number
-    :state_history        # Recent state history
+    # {X, Y, Z} position in 3D grid
+    :coordinate,
+    # :alive or :dead
+    :current_state,
+    # Prepared state for next generation
+    :next_state,
+    # CA rules for evolution
+    :ca_rules,
+    # Last received neighbor states
+    :neighbor_states,
+    # Current generation number
+    :generation,
+    # Recent state history
+    :state_history
   ]
 
   @max_history_size 10
@@ -77,6 +84,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CACell do
       generation: state.generation,
       ca_rules: state.ca_rules
     }
+
     {:reply, {:ok, cell_state}, state}
   end
 
@@ -92,10 +100,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CACell do
   def handle_cast({:prepare_evolution, neighbor_states}, state) do
     # Calculate next state based on CA rules and neighbor states
     next_state = calculate_next_state(state.current_state, neighbor_states, state.ca_rules)
-    updated_state = %{state |
-      neighbor_states: neighbor_states,
-      next_state: next_state
-    }
+    updated_state = %{state | neighbor_states: neighbor_states, next_state: next_state}
     {:noreply, updated_state}
   end
 
@@ -104,11 +109,13 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CACell do
     new_generation = state.generation + 1
     new_history = update_state_history(state.state_history, state.next_state)
 
-    updated_state = %{state |
-      current_state: state.next_state,
-      generation: new_generation,
-      state_history: new_history
+    updated_state = %{
+      state
+      | current_state: state.next_state,
+        generation: new_generation,
+        state_history: new_history
     }
+
     {:noreply, updated_state}
   end
 

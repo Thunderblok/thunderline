@@ -16,12 +16,14 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {Thunderflow.MnesiaProducer, [
-          table: Thunderflow.MnesiaProducer,
-          poll_interval: 1000,
-          max_batch_size: 50,
-          broadway_name: __MODULE__
-        ]}
+        module:
+          {Thunderflow.MnesiaProducer,
+           [
+             table: Thunderflow.MnesiaProducer,
+             poll_interval: 1000,
+             max_batch_size: 50,
+             broadway_name: __MODULE__
+           ]}
       ],
       processors: [
         default: [
@@ -80,6 +82,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
           "thunderflow:batch_completed",
           {:domain_events_processed, length(events)}
         )
+
         messages
 
       {:error, failed_events} ->
@@ -103,6 +106,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
           "thunderflow:critical_processed",
           {:critical_events_processed, length(events), DateTime.utc_now()}
         )
+
         messages
 
       {:error, reason} ->
@@ -138,9 +142,12 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   defp normalize_timestamps(event) do
     case Map.get(event, "timestamp") do
-      nil -> Map.put(event, "timestamp", DateTime.utc_now())
+      nil ->
+        Map.put(event, "timestamp", DateTime.utc_now())
+
       timestamp when is_binary(timestamp) ->
         Map.put(event, "timestamp", DateTime.from_iso8601(timestamp))
+
       timestamp ->
         Map.put(event, "timestamp", timestamp)
     end
@@ -151,9 +158,11 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     event
   end
 
-  defp tag_with_priority(%{"severity" => severity} = event) when severity in ["critical", "error"] do
+  defp tag_with_priority(%{"severity" => severity} = event)
+       when severity in ["critical", "error"] do
     Map.put(event, "priority", "high")
   end
+
   defp tag_with_priority(event), do: Map.put(event, "priority", "normal")
 
   defp determine_batcher(%{"priority" => "high"}), do: :critical_events
@@ -212,6 +221,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "thunderline:system:emergency",
       {:system_failure, event}
     )
+
     :ok
   end
 
@@ -222,6 +232,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "thunderline:security:alert",
       {:security_breach, event}
     )
+
     :ok
   end
 

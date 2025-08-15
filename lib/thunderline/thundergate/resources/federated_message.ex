@@ -10,8 +10,50 @@ defmodule Thunderline.Thundergate.Resources.FederatedMessage do
     domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
+
   import Ash.Resource.Change.Builtins
 
+  postgres do
+    table "thundercom_federated_messages"
+    repo Thunderline.Repo
+
+    custom_indexes do
+      index [:source_realm_id]
+      index [:target_realm_id]
+      index [:delivery_status]
+      index [:message_type]
+      index [:inserted_at]
+    end
+  end
+
+  actions do
+    defaults [:read]
+
+    create :federate_message do
+      accept [:source_realm_id, :target_realm_id, :message_type, :message_content, :signature]
+    end
+
+    update :mark_delivered do
+      accept [:delivery_status, :delivered_at]
+
+      change fn changeset, _context ->
+        changeset
+        |> Ash.Changeset.change_attribute(:delivery_status, :delivered)
+        |> Ash.Changeset.change_attribute(:delivered_at, DateTime.utc_now())
+      end
+    end
+
+    update :increment_attempts do
+      change fn changeset, _context ->
+        current_attempts = Ash.Changeset.get_attribute(changeset, :delivery_attempts) || 0
+        Ash.Changeset.change_attribute(changeset, :delivery_attempts, current_attempts + 1)
+      end
+    end
+
+    destroy :cleanup_old_messages do
+      filter expr(inserted_at < ago(7, :day) and delivery_status == :delivered)
+    end
+  end
 
   attributes do
     uuid_primary_key :id
@@ -28,6 +70,7 @@ defmodule Thunderline.Thundergate.Resources.FederatedMessage do
 
     attribute :message_type, :string do
       allow_nil? false
+
       description "Type of federated message: activity, follow, unfollow, like, share, announce, delete"
     end
 
@@ -66,35 +109,6 @@ defmodule Thunderline.Thundergate.Resources.FederatedMessage do
     update_timestamp :updated_at
   end
 
-  actions do
-    defaults [:read]
-
-    create :federate_message do
-      accept [:source_realm_id, :target_realm_id, :message_type, :message_content, :signature]
-    end
-
-    update :mark_delivered do
-      accept [:delivery_status, :delivered_at]
-
-      change fn changeset, _context ->
-        changeset
-        |> Ash.Changeset.change_attribute(:delivery_status, :delivered)
-        |> Ash.Changeset.change_attribute(:delivered_at, DateTime.utc_now())
-      end
-    end
-
-    update :increment_attempts do
-      change fn changeset, _context ->
-        current_attempts = Ash.Changeset.get_attribute(changeset, :delivery_attempts) || 0
-        Ash.Changeset.change_attribute(changeset, :delivery_attempts, current_attempts + 1)
-      end
-    end
-
-    destroy :cleanup_old_messages do
-      filter expr(inserted_at < ago(7, :day) and delivery_status == :delivered)
-    end
-  end
-
   relationships do
     belongs_to :source_realm, Thunderline.Thundergate.Resources.FederatedRealm do
       source_attribute :source_realm_id
@@ -104,19 +118,6 @@ defmodule Thunderline.Thundergate.Resources.FederatedMessage do
     belongs_to :target_realm, Thunderline.Thundergate.Resources.FederatedRealm do
       source_attribute :target_realm_id
       destination_attribute :id
-    end
-  end
-
-  postgres do
-    table "thundercom_federated_messages"
-    repo Thundercom.Repo
-
-    custom_indexes do
-      index [:source_realm_id]
-      index [:target_realm_id]
-      index [:delivery_status]
-      index [:message_type]
-      index [:inserted_at]
     end
   end
 end

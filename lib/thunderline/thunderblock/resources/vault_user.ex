@@ -12,17 +12,60 @@ defmodule Thunderline.Thunderblock.Resources.VaultUser do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "users"
     repo Thunderline.Repo
   end
 
   events do
-    event_log Thunderline.Thunderflow.Events.Event
-    current_action_versions create: 1, update: 1, destroy: 1
+    event_log(Thunderline.Thunderflow.Events.Event)
+    current_action_versions(create: 1, update: 1, destroy: 1)
+  end
+
+  actions do
+    defaults [:read, :update, :destroy]
+
+    create :create do
+      accept [:email, :hashed_password, :first_name, :last_name, :avatar_url, :role]
+    end
+
+    create :register do
+      accept [:email, :hashed_password, :first_name, :last_name]
+
+      change fn changeset, _context ->
+        case changeset.arguments[:password] do
+          password when is_binary(password) ->
+            hashed = Bcrypt.hash_pwd_salt(password)
+            Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
+
+          _ ->
+            changeset
+        end
+      end
+    end
+
+    update :confirm_email do
+      accept []
+      change set_attribute(:confirmed_at, &DateTime.utc_now/0)
+    end
+
+    update :record_login do
+      accept []
+      change set_attribute(:last_login_at, &DateTime.utc_now/0)
+      change increment(:login_count)
+    end
+  end
+
+  validations do
+    validate match(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
+
+    validate string_length(:first_name, min: 1) do
+      where present(:first_name)
+    end
+
+    validate string_length(:last_name, min: 1) do
+      where present(:last_name)
+    end
   end
 
   attributes do
@@ -82,57 +125,14 @@ defmodule Thunderline.Thunderblock.Resources.VaultUser do
     timestamps()
   end
 
-  identities do
-    identity :unique_email, [:email]
-  end
-
-  actions do
-    defaults [:read, :update, :destroy]
-
-    create :create do
-      accept [:email, :hashed_password, :first_name, :last_name, :avatar_url, :role]
-    end
-
-    create :register do
-      accept [:email, :hashed_password, :first_name, :last_name]
-
-      change fn changeset, _context ->
-        case changeset.arguments[:password] do
-          password when is_binary(password) ->
-            hashed = Bcrypt.hash_pwd_salt(password)
-            Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
-          _ ->
-            changeset
-        end
-      end
-    end
-
-    update :confirm_email do
-      accept []
-      change set_attribute(:confirmed_at, &DateTime.utc_now/0)
-    end
-
-    update :record_login do
-      accept []
-      change set_attribute(:last_login_at, &DateTime.utc_now/0)
-      change increment(:login_count)
-    end
-  end
-
   relationships do
     has_many :user_tokens, Thunderline.Thunderblock.Resources.VaultUserToken do
       destination_attribute :user_id
     end
   end
 
-  validations do
-    validate match(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
-    validate string_length(:first_name, min: 1) do
-      where present(:first_name)
-    end
-    validate string_length(:last_name, min: 1) do
-      where present(:last_name)
-    end
+  identities do
+    identity :unique_email, [:email]
   end
 
   # TODO: Re-enable policies once AshAuthentication is properly configured

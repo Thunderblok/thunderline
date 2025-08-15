@@ -9,62 +9,9 @@ defmodule Thunderline.Thunderbolt.Resources.MagTaskAssignment do
 
   import Ash.Resource.Change.Builtins
 
-
-
-
   postgres do
     table "thundermag_task_assignments"
     repo Thunderline.Repo
-  end
-
-  attributes do
-    uuid_primary_key :id
-
-    attribute :task_execution_id, :uuid do
-      allow_nil? false
-    end
-
-    attribute :task_id, :uuid do
-      allow_nil? false
-    end
-
-    attribute :thunderbit_id, :uuid
-    attribute :zone_id, :string
-
-    attribute :task_type, :atom do
-      allow_nil? false
-    end
-
-    attribute :task_value, :string
-    attribute :sequence, :integer
-
-    attribute :status, :atom do
-      allow_nil? false
-      default :assigned
-    end
-
-    attribute :priority, :atom do
-      default :normal
-    end
-
-    attribute :estimated_execution_time_ms, :integer
-    attribute :actual_execution_time_ms, :integer
-
-    attribute :retry_count, :integer, default: 0
-    attribute :max_retries, :integer, default: 3
-
-    attribute :result, :map
-    attribute :error, :map
-
-    attribute :assigned_at, :utc_datetime
-    attribute :started_at, :utc_datetime
-    attribute :completed_at, :utc_datetime
-
-    timestamps()
-  end
-
-  relationships do
-    belongs_to :task_execution, Thunderline.Thunderbolt.Resources.MagTaskExecution
   end
 
   actions do
@@ -130,19 +77,71 @@ defmodule Thunderline.Thunderbolt.Resources.MagTaskAssignment do
     end
   end
 
+  preparations do
+    prepare build(load: [:can_retry, :execution_duration_ms])
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :task_execution_id, :uuid do
+      allow_nil? false
+    end
+
+    attribute :task_id, :uuid do
+      allow_nil? false
+    end
+
+    attribute :thunderbit_id, :uuid
+    attribute :zone_id, :string
+
+    attribute :task_type, :atom do
+      allow_nil? false
+    end
+
+    attribute :task_value, :string
+    attribute :sequence, :integer
+
+    attribute :status, :atom do
+      allow_nil? false
+      default :assigned
+    end
+
+    attribute :priority, :atom do
+      default :normal
+    end
+
+    attribute :estimated_execution_time_ms, :integer
+    attribute :actual_execution_time_ms, :integer
+
+    attribute :retry_count, :integer, default: 0
+    attribute :max_retries, :integer, default: 3
+
+    attribute :result, :map
+    attribute :error, :map
+
+    attribute :assigned_at, :utc_datetime
+    attribute :started_at, :utc_datetime
+    attribute :completed_at, :utc_datetime
+
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :task_execution, Thunderline.Thunderbolt.Resources.MagTaskExecution
+  end
+
   calculations do
     calculate :can_retry, :boolean, expr(retry_count < max_retries and status == :failed)
 
-    calculate :execution_duration_ms, :integer, expr(
-      if not is_nil(started_at) and not is_nil(completed_at) do
-        datetime_diff(completed_at, started_at, :millisecond)
-      else
-        nil
-      end
-    )
-  end
-
-  preparations do
-    prepare build(load: [:can_retry, :execution_duration_ms])
+    calculate :execution_duration_ms,
+              :integer,
+              expr(
+                if not is_nil(started_at) and not is_nil(completed_at) do
+                  datetime_diff(completed_at, started_at, :millisecond)
+                else
+                  nil
+                end
+              )
   end
 end

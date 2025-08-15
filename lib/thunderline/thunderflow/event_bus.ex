@@ -72,6 +72,7 @@ defmodule Thunderline.EventBus do
 
     # Enqueue to Mnesia instead of PubSub
     priority = Map.get(payload, :priority, :normal)
+
     Thunderflow.MnesiaProducer.enqueue_event(
       Thunderflow.MnesiaProducer,
       event,
@@ -89,7 +90,6 @@ defmodule Thunderline.EventBus do
   @spec emit_cross_domain(atom(), map()) :: :ok | {:error, term()}
   def emit_cross_domain(event_type, %{from_domain: from_domain, to_domain: to_domain} = payload)
       when is_atom(event_type) and is_binary(from_domain) and is_binary(to_domain) do
-
     event = %{
       type: event_type,
       payload: payload,
@@ -102,6 +102,7 @@ defmodule Thunderline.EventBus do
 
     # Enqueue to Mnesia cross-domain table
     priority = Map.get(payload, :priority, :normal)
+
     Thunderflow.MnesiaProducer.enqueue_event(
       Thunderflow.CrossDomainEvents,
       event,
@@ -146,25 +147,26 @@ defmodule Thunderline.EventBus do
   @spec emit_batch([{atom(), map()}], atom()) :: :ok | {:error, term()}
   def emit_batch(events, pipeline_type \\ :general)
       when is_list(events) and pipeline_type in [:general, :cross_domain, :realtime] do
-
     correlation_id = generate_correlation_id()
     timestamp = DateTime.utc_now()
 
-    event_list = Enum.map(events, fn {event_type, payload} ->
-      %{
-        type: event_type,
-        payload: payload,
-        timestamp: timestamp,
-        correlation_id: correlation_id
-      }
-    end)
+    event_list =
+      Enum.map(events, fn {event_type, payload} ->
+        %{
+          type: event_type,
+          payload: payload,
+          timestamp: timestamp,
+          correlation_id: correlation_id
+        }
+      end)
 
     # Enqueue events in batch to appropriate Mnesia table
-    {table, priority} = case pipeline_type do
-      :general -> {Thunderflow.MnesiaProducer, :normal}
-      :cross_domain -> {Thunderflow.CrossDomainEvents, :normal}
-      :realtime -> {Thunderflow.RealTimeEvents, :high}
-    end
+    {table, priority} =
+      case pipeline_type do
+        :general -> {Thunderflow.MnesiaProducer, :normal}
+        :cross_domain -> {Thunderflow.CrossDomainEvents, :normal}
+        :realtime -> {Thunderflow.RealTimeEvents, :high}
+      end
 
     Thunderflow.MnesiaProducer.enqueue_events(
       table,
@@ -187,18 +189,25 @@ defmodule Thunderline.EventBus do
     pipeline_type = determine_pipeline_from_topic(topic)
 
     case pipeline_type do
-      :realtime -> emit_realtime(event_type, payload)
+      :realtime ->
+        emit_realtime(event_type, payload)
+
       :cross_domain ->
         # Extract domain info from topic for cross-domain routing
         case extract_domains_from_topic(topic) do
           {from_domain, to_domain} ->
-            emit_cross_domain(event_type, Map.merge(payload, %{
-              from_domain: from_domain,
-              to_domain: to_domain
-            }))
+            emit_cross_domain(
+              event_type,
+              Map.merge(payload, %{
+                from_domain: from_domain,
+                to_domain: to_domain
+              })
+            )
+
           _ ->
             emit(event_type, payload)
         end
+
       _ ->
         emit(event_type, payload)
     end
@@ -214,11 +223,12 @@ defmodule Thunderline.EventBus do
     # Route to appropriate Broadway pipeline via Mnesia
     event_type = :legacy_event
 
-    pipeline_result = case determine_pipeline_from_topic(topic) do
-      :realtime -> emit_realtime(event_type, Map.put(payload, :topic, topic))
-      :cross_domain -> emit(event_type, Map.put(payload, :topic, topic))
-      _ -> emit(event_type, Map.put(payload, :topic, topic))
-    end
+    pipeline_result =
+      case determine_pipeline_from_topic(topic) do
+        :realtime -> emit_realtime(event_type, Map.put(payload, :topic, topic))
+        :cross_domain -> emit(event_type, Map.put(payload, :topic, topic))
+        _ -> emit(event_type, Map.put(payload, :topic, topic))
+      end
 
     # For transition period, also broadcast to legacy PubSub
     pubsub_result = PubSub.broadcast(@pubsub, topic, payload)
@@ -245,10 +255,13 @@ defmodule Thunderline.EventBus do
 
   defp determine_pipeline_from_topic(topic) do
     cond do
-      String.contains?(topic, "agent") or String.contains?(topic, "dashboard") or String.contains?(topic, "live") ->
+      String.contains?(topic, "agent") or String.contains?(topic, "dashboard") or
+          String.contains?(topic, "live") ->
         :realtime
+
       String.contains?(topic, "domain") or String.contains?(topic, "orchestration") ->
         :cross_domain
+
       true ->
         :general
     end
@@ -340,28 +353,36 @@ defmodule Thunderline.EventBus do
     source = Map.get(event, :source, :unknown)
 
     # For ThunderMemory events, use realtime pipeline for agent updates
-    pipeline_type = case {event_type, source} do
-      {:agent_spawned, :thunder_memory} -> :realtime
-      {:agent_updated, :thunder_memory} -> :realtime
-      {:chunk_created, :thunder_memory} -> :general
-      {_, :thunder_memory} -> :general
-      _ -> :general
-    end
+    pipeline_type =
+      case {event_type, source} do
+        {:agent_spawned, :thunder_memory} -> :realtime
+        {:agent_updated, :thunder_memory} -> :realtime
+        {:chunk_created, :thunder_memory} -> :general
+        {_, :thunder_memory} -> :general
+        _ -> :general
+      end
 
     # Route to appropriate emit function
     case pipeline_type do
       :realtime ->
-        emit_realtime(event_type, Map.merge(data, %{
-          source: source,
-          priority: priority,
-          original_timestamp: Map.get(event, :timestamp)
-        }))
+        emit_realtime(
+          event_type,
+          Map.merge(data, %{
+            source: source,
+            priority: priority,
+            original_timestamp: Map.get(event, :timestamp)
+          })
+        )
+
       _ ->
-        emit(event_type, Map.merge(data, %{
-          source: source,
-          priority: priority,
-          original_timestamp: Map.get(event, :timestamp)
-        }))
+        emit(
+          event_type,
+          Map.merge(data, %{
+            source: source,
+            priority: priority,
+            original_timestamp: Map.get(event, :timestamp)
+          })
+        )
     end
   end
 
