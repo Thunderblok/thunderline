@@ -1,0 +1,121 @@
+defmodule Thunderline.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :thunderline,
+      version: "2.0.0",
+      elixir: "~> 1.15",
+      elixirc_paths: elixirc_paths(Mix.env()),
+      compilers: [:elixir, :app],
+      start_permanent: Mix.env() == :prod,
+      aliases: aliases(),
+      deps: deps()
+    ]
+  end
+
+  def application do
+    [
+      mod: {Thunderline.Application, []},
+      extra_applications: [:logger, :runtime_tools]
+    ]
+  end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  defp deps do
+    [
+      # Phoenix
+      {:phoenix, "~> 1.8.0"},
+      {:phoenix_ecto, "~> 4.4"},
+      {:ecto_sql, "~> 3.6"},
+      {:phoenix_html, "~> 4.0"},
+      {:live_ex_webrtc, "~> 0.8.0"},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:phoenix_live_view, "~> 1.0"},
+      {:floki, ">= 0.30.0", only: :test},
+      {:phoenix_live_dashboard, "~> 0.8.0"},
+      {:esbuild, "~> 0.5", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
+      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_poller, "~> 1.0"},
+      {:gettext, "~> 0.20"},
+      {:jason, "~> 1.2"},
+      {:plug_cowboy, "~> 2.5"},
+      {:swoosh, "~> 1.16"},
+
+      # Ash Framework
+      {:ash, "~> 3.0"},
+      {:ash_phoenix, "~> 2.0"},
+      {:ash_postgres, "~> 2.0"},
+      {:ash_graphql, "~> 1.0"},
+      {:ash_json_api, "~> 1.0"},
+      {:ash_oban, "~> 0.2"},
+      {:ash_events, "~> 0.4.3"},
+      {:opentelemetry_ash, "~> 0.1.3"},
+      {:ash_state_machine, "~> 0.2.12"},
+      {:ash_admin, "~> 0.11"},
+
+      # Database
+      {:postgrex, ">= 0.0.0"},
+
+      # Additional deps
+      {:uuid, "~> 1.1"},
+      {:broadway, "~> 1.0"},
+      {:picosat_elixir, "~> 0.2"},
+      {:sourceror, "~> 1.10"},
+      {:iterex, "~> 0.1.2"},
+      {:off_broadway_memory, "~> 1.1"},
+      {:off_broadway_amqp10, "~> 0.1"},
+      {:flow, "~> 1.0"},
+      {:hackney, "~> 1.18"},
+      {:httpoison, "~> 2.0"},
+      {:timex, "~> 3.7"},
+      {:ex_webrtc, "~> 0.13.0"},
+      {:ex_sctp, "~> 0.1.2"},
+      {:eagl, "~> 0.9.0"},
+      {:simple_sat, "~> 0.1.3"},
+      {:stb_image, "~> 0.6"},  # Required for eagl image loading
+      {:ex_rose_tree, "~> 0.1.3"},  # For supervision tree visualization
+
+
+      # Memory and Security
+
+      {:memento, "~> 0.5.0"},
+      {:cloak, "~> 1.1"},
+
+      # ECS and GraphQL
+      {:ecsx, "~> 0.5"},
+      {:absinthe, "~> 1.7"},
+      {:absinthe_phoenix, "~> 2.0"},
+      {:absinthe_plug, "~> 1.5"},
+
+      # 3D Visualization
+      # {:hologram, "~> 0.2", only: [:dev, :test]},  # Temporarily disabled for Team Bruce integration
+
+      # Neural Computing & Machine Learning 🧠⚡
+      {:nx, "~> 0.9"},
+      {:axon, "~> 0.7"},
+      {:exla, "~> 0.9"},
+      {:torchx, "~> 0.9"},
+      {:bumblebee, "~> 0.6"},
+      {:polaris, "~> 0.1"},
+
+      # Code Quality & Development Tools
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp aliases do
+    [
+      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
+      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
+      "assets.build": ["tailwind default", "esbuild default"],
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
+    ]
+  end
+end

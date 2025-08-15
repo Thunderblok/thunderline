@@ -1,0 +1,710 @@
+<!-- Thunderblock Dashboard -->
+<div class="min-h-screen bg-black relative overflow-hidden">
+  <!-- Animated Background -->
+  <div class="absolute inset-0 opacity-20">
+    <div class="absolute top-10 left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+    <div class="absolute top-10 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+    <div class="absolute bottom-10 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav class="relative z-50 glass-nav backdrop-blur-md bg-black/30 border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo -->
+        <div class="flex items-center">
+          <img src="/images/thunderline-logo.svg" 
+               alt="Thunderline Logo" 
+               class="w-12 h-12 mr-3 drop-shadow-lg" />
+          <div class="text-xl font-bold text-white">
+            Thunderblock
+          </div>
+        </div>
+        
+        <!-- Domain Icons Navigation -->
+        <div class="flex space-x-4">
+          <div class="domain-icon" title="Thundercore" data-domain="thundercore">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white text-sm font-bold">
+              TC
+            </div>
+          </div>
+          <div class="domain-icon" title="Thunderbit" data-domain="thunderbit">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
+              TB
+            </div>
+          </div>
+          <div class="domain-icon" title="Thunderbolt" data-domain="thunderbolt">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white text-sm font-bold">
+              TL
+            </div>
+          </div>
+          <div class="domain-icon" title="Thunderblock" data-domain="thunderblock">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+              TK
+            </div>
+          </div>
+          <div class="domain-icon" title="Thundergrid" data-domain="thundergrid">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white text-sm font-bold">
+              TG
+            </div>
+          </div>
+          <div class="domain-icon" title="Thundervault" data-domain="thundervault">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
+              TV
+            </div>
+          </div>
+          <div class="domain-icon" title="Thunderchief" data-domain="thunderchief">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white text-sm font-bold">
+              TH
+            </div>
+          </div>
+          <div class="domain-icon" title="Thundercom" data-domain="thundercom">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-green-500 flex items-center justify-center text-white text-sm font-bold">
+              TC
+            </div>
+          </div>
+          <div class="domain-icon" title="Thundercrown" data-domain="thundercrown">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+            TN
+            </div>
+          </div>
+          <div class="domain-icon" title="Thundereye" data-domain="thundereye">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+              TE
+            </div>
+          </div>
+          <div class="domain-icon" title="Thunderflow" data-domain="thunderflow">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
+              TF
+            </div>
+          </div>
+          <div class="domain-icon" title="Thunderstone" data-domain="thunderstone">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-stone-500 to-gray-500 flex items-center justify-center text-white text-sm font-bold">
+              TS
+            </div>
+          </div>
+          <div class="domain-icon" title="Thunderlink" data-domain="thunderlink">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
+              TL
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <Layouts.theme_toggle />
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard Grid -->
+  <div class="relative z-10 container mx-auto px-4 py-8">
+    <div class="grid grid-cols-4 gap-6 h-[calc(100vh-8rem)]">
+      <!-- Top Row - 4 Domain Panels -->
+      <div class="glass-panel domain-panel" data-domain="thundercore">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-red-500 to-orange-500"></div>
+          <h3 class="font-semibold text-white">Thundercore</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Agents</span>
+            <span class="stat-value">127</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Tasks</span>
+            <span class="stat-value">89</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel domain-panel" data-domain="thunderbit">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-cyan-500"></div>
+          <h3 class="font-semibold text-white">Thunderbit</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Active</span>
+            <span class="stat-value">2,847</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Dormant</span>
+            <span class="stat-value">54,203</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel domain-panel" data-domain="thunderbolt">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-yellow-500 to-orange-500"></div>
+          <h3 class="font-semibold text-white">Thunderbolt</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Chunks</span>
+            <span class="stat-value">144</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Health</span>
+            <span class="stat-value">98%</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel domain-panel" data-domain="thunderblock">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-purple-500 to-pink-500"></div>
+          <h3 class="font-semibold text-white">Thunderblock</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Communities</span>
+            <span class="stat-value">12</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Members</span>
+            <span class="stat-value">1,284</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <!-- Middle Left Panel -->
+      <div class="glass-panel domain-panel" data-domain="thundervault">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-indigo-500 to-blue-500"></div>
+          <h3 class="font-semibold text-white">Thundervault</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Records</span>
+            <span class="stat-value">892K</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Memory</span>
+            <span class="stat-value">2.1GB</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <!-- CENTER - 3D Thundergrid Visualization -->
+      <div class="col-span-2 row-span-2 glass-panel central-panel">
+        <div class="panel-header">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+            <span class="text-white font-bold text-sm">⚡</span>
+          </div>
+          <h2 class="text-xl font-bold text-white">Thundergrid 3D</h2>
+          <div class="flex space-x-2 ml-auto">
+            <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            <span class="text-green-400 text-sm">Live</span>
+          </div>
+        </div>
+        
+        <!-- 3D Grid Container -->
+        <div class="flex-1 relative overflow-hidden rounded-lg bg-black/40">
+          <div id="thundergrid-3d" class="w-full h-full relative">
+            <!-- CSS 3D Hex Grid -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="hex-grid-3d">
+                <!-- Layer 1 -->
+                <div class="hex-layer" style="transform: translateZ(0px)">
+                  <div class="hex-ring">
+                    <div class="hex hex-center active" data-coord="0,0,0">
+                      <div class="hex-glow"></div>
+                    </div>
+                  </div>
+                  <div class="hex-ring">
+                    <div class="hex" data-coord="1,0,-1"></div>
+                    <div class="hex" data-coord="0,1,-1"></div>
+                    <div class="hex" data-coord="-1,1,0"></div>
+                    <div class="hex" data-coord="-1,0,1"></div>
+                    <div class="hex" data-coord="0,-1,1"></div>
+                    <div class="hex" data-coord="1,-1,0"></div>
+                  </div>
+                </div>
+                
+                <!-- Layer 2 (elevated) -->
+                <div class="hex-layer" style="transform: translateZ(20px)">
+                  <div class="hex-ring">
+                    <div class="hex active" data-coord="2,0,-2">
+                      <div class="hex-glow"></div>
+                    </div>
+                    <div class="hex" data-coord="1,1,-2"></div>
+                    <div class="hex" data-coord="0,2,-2"></div>
+                    <div class="hex active" data-coord="-1,2,-1">
+                      <div class="hex-glow"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Layer 3 (highest) -->
+                <div class="hex-layer" style="transform: translateZ(40px)">
+                  <div class="hex-ring">
+                    <div class="hex active" data-coord="0,0,2">
+                      <div class="hex-glow"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Grid Stats Overlay -->
+            <div class="absolute top-4 right-4 glass-mini-panel">
+              <div class="text-xs text-white/80">
+                <div class="flex justify-between">
+                  <span>Active Zones:</span>
+                  <span class="text-green-400">4</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Total Hexes:</span>
+                  <span class="text-blue-400">144</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Energy Level:</span>
+                  <span class="text-yellow-400">87%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle Right Panel -->
+      <div class="glass-panel domain-panel" data-domain="thundercom">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-teal-500 to-green-500"></div>
+          <h3 class="font-semibold text-white">Thundercom</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Messages</span>
+            <span class="stat-value">47K</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Realms</span>
+            <span class="stat-value">8</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Left Panel -->
+      <div class="glass-panel domain-panel" data-domain="thundereye">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-violet-500 to-purple-500"></div>
+          <h3 class="font-semibold text-white">Thundereye</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Alerts</span>
+            <span class="stat-value">3</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Uptime</span>
+            <span class="stat-value">99.8%</span>
+          </div>
+          <div class="pulse-dot warning"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Row - 4 Domain Panels -->
+      <div class="glass-panel domain-panel" data-domain="thunderchief">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-amber-500 to-yellow-500"></div>
+          <h3 class="font-semibold text-white">Thunderchief</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">UI Panels</span>
+            <span class="stat-value">12</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Controls</span>
+            <span class="stat-value">89</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel domain-panel" data-domain="thunderflow">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-cyan-500 to-blue-500"></div>
+          <h3 class="font-semibold text-white">Thunderflow</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Events</span>
+            <span class="stat-value">1,247</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Flowing</span>
+            <span class="stat-value">89</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel domain-panel" data-domain="thunderstone">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-stone-500 to-gray-500"></div>
+          <h3 class="font-semibold text-white">Thunderstone</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Policies</span>
+            <span class="stat-value">67</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Rules</span>
+            <span class="stat-value">203</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <div class="glass-panel domain-panel" data-domain="thunderlink">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-emerald-500 to-teal-500"></div>
+          <h3 class="font-semibold text-white">Thunderlink</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Links</span>
+            <span class="stat-value">342</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Active</span>
+            <span class="stat-value">156</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Right Panel - Thundercrown -->
+      <div class="glass-panel domain-panel" data-domain="thundercrown">
+        <div class="panel-header">
+          <div class="w-6 h-6 rounded bg-gradient-to-br from-rose-500 to-pink-500"></div>
+          <h3 class="font-semibold text-white">Thundercrown</h3>
+        </div>
+        <div class="panel-content">
+          <div class="stat-item">
+            <span class="stat-label">Instances</span>
+            <span class="stat-value">4</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Load</span>
+            <span class="stat-value">23%</span>
+          </div>
+          <div class="pulse-dot active"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(180deg); }
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .glass-nav {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-panel {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .glass-panel:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  }
+
+  .glass-mini-panel {
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .central-panel {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .central-panel:hover {
+    border-color: rgba(34, 197, 94, 0.5);
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.2);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .panel-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.875rem;
+  }
+
+  .stat-value {
+    color: white;
+    font-weight: 600;
+    font-size: 1.125rem;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: auto;
+    align-self: flex-end;
+  }
+
+  .pulse-dot.active {
+    background: #10b981;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .pulse-dot.warning {
+    background: #f59e0b;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .domain-icon {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .domain-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+  }
+
+  /* 3D Hex Grid Styles */
+  .hex-grid-3d {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .hex-layer {
+    position: absolute;
+    transform-style: preserve-3d;
+  }
+
+  .hex-ring {
+    position: relative;
+    transform-style: preserve-3d;
+  }
+
+  .hex {
+    position: absolute;
+    width: 30px;
+    height: 26px;
+    background: rgba(59, 130, 246, 0.3);
+    border: 2px solid rgba(59, 130, 246, 0.6);
+    transform-style: preserve-3d;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .hex:before {
+    content: '';
+    position: absolute;
+    top: -9px;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 9px solid rgba(59, 130, 246, 0.6);
+  }
+
+  .hex:after {
+    content: '';
+    position: absolute;
+    bottom: -9px;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 9px solid rgba(59, 130, 246, 0.6);
+  }
+
+  .hex.active {
+    background: rgba(34, 197, 94, 0.4);
+    border-color: rgba(34, 197, 94, 0.8);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+  }
+
+  .hex.active:before {
+    border-bottom-color: rgba(34, 197, 94, 0.8);
+  }
+
+  .hex.active:after {
+    border-top-color: rgba(34, 197, 94, 0.8);
+  }
+
+  .hex-glow {
+    position: absolute;
+    inset: -4px;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.3) 0%, transparent 70%);
+    animation: pulse 3s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Hex positioning for proper hexagonal grid */
+  .hex[data-coord="0,0,0"] { transform: translate(0px, 0px); }
+  .hex[data-coord="1,0,-1"] { transform: translate(45px, 0px); }
+  .hex[data-coord="0,1,-1"] { transform: translate(22px, -38px); }
+  .hex[data-coord="-1,1,0"] { transform: translate(-22px, -38px); }
+  .hex[data-coord="-1,0,1"] { transform: translate(-45px, 0px); }
+  .hex[data-coord="0,-1,1"] { transform: translate(-22px, 38px); }
+  .hex[data-coord="1,-1,0"] { transform: translate(22px, 38px); }
+
+  .hex[data-coord="2,0,-2"] { transform: translate(90px, 0px); }
+  .hex[data-coord="1,1,-2"] { transform: translate(67px, -38px); }
+  .hex[data-coord="0,2,-2"] { transform: translate(45px, -76px); }
+  .hex[data-coord="-1,2,-1"] { transform: translate(-45px, -76px); }
+
+  .hex[data-coord="0,0,2"] { transform: translate(0px, 0px); }
+
+  .hex:hover {
+    transform: translateZ(10px) scale(1.1);
+    background: rgba(168, 85, 247, 0.4);
+    border-color: rgba(168, 85, 247, 0.8);
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.5);
+  }
+</style>
+
+<!-- JavaScript for interactivity -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Domain icon hover effects
+    document.querySelectorAll('.domain-icon').forEach(icon => {
+      icon.addEventListener('click', function() {
+        const domain = this.dataset.domain;
+        const panel = document.querySelector(`[data-domain="${domain}"]`);
+        if (panel) {
+          panel.style.transform = 'scale(1.02)';
+          panel.style.boxShadow = '0 25px 50px rgba(0, 0, 0, 0.4)';
+          setTimeout(() => {
+            panel.style.transform = '';
+            panel.style.boxShadow = '';
+          }, 200);
+        }
+      });
+    });
+
+    // Hex click effects
+    document.querySelectorAll('.hex').forEach(hex => {
+      hex.addEventListener('click', function() {
+        // Toggle active state
+        this.classList.toggle('active');
+        
+        // Add ripple effect
+        const ripple = document.createElement('div');
+        ripple.style.cssText = `
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(34, 197, 94, 0.4) 0%, transparent 70%);
+          pointer-events: none;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) scale(0);
+          animation: ripple 0.6s ease-out;
+        `;
+        
+        this.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+      });
+    });
+
+    // Add ripple animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes ripple {
+        to {
+          transform: translate(-50%, -50%) scale(2);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  });
+</script>

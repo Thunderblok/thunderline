@@ -1,0 +1,1200 @@
+defmodule Thunderline.DashboardMetrics do
+  @moduledoc """
+  DashboardMetrics - Real-time metrics collection and dashboard data provider
+
+  Provides structured metrics data for the LiveView dashboard including:
+  - System health metrics
+  - Event processing statistics
+  - Agent performance data
+  - Resource utilization
+  - Real-time updates via PubSub
+  """
+
+  use GenServer
+  require Logger
+
+  alias Thunderline.ThunderMemory
+  alias Phoenix.PubSub
+
+  @pubsub_topic "dashboard:metrics"
+  @metrics_update_interval 5_000  # 5 seconds
+
+  ## Public API
+
+  @doc "Start the DashboardMetrics system"
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @doc "Get current system metrics"
+  def get_system_metrics do
+    GenServer.call(__MODULE__, :get_system_metrics)
+  end
+
+  @doc "Get event processing metrics"
+  def get_event_metrics do
+    GenServer.call(__MODULE__, :get_event_metrics)
+  end
+
+  @doc "Get agent performance metrics"
+  def get_agent_metrics do
+    GenServer.call(__MODULE__, :get_agent_metrics)
+  end
+
+  @doc "Get real-time dashboard data"
+  def get_dashboard_data do
+    GenServer.call(__MODULE__, :get_dashboard_data)
+  end
+
+  @doc "Subscribe to real-time metrics updates"
+  def subscribe do
+    PubSub.subscribe(Thunderline.PubSub, @pubsub_topic)
+  end
+
+  @doc "Unsubscribe from metrics updates"
+  def unsubscribe do
+    PubSub.unsubscribe(Thunderline.PubSub, @pubsub_topic)
+  end
+
+  ## Domain-specific metrics functions for DashboardLive
+
+  @doc "Get ThunderCore metrics"
+  def thundercore_metrics do
+    # System monitoring not yet implemented
+    %{
+      cpu_usage: "OFFLINE",  # TODO: Implement CPU monitoring
+      memory_usage: "OFFLINE",  # TODO: Implement memory monitoring
+      active_processes: "OFFLINE",  # TODO: Implement process counting
+      uptime: System.monotonic_time(:second),  # This works - system uptime
+      uptime_percent: "99.5%"  # TODO: Implement real uptime percentage tracking
+    }
+  end
+
+    @doc "Get ThunderBit metrics"
+  def thunderbit_metrics do
+    # AI Agent performance not yet implemented
+    %{
+      total_agents: "OFFLINE",  # TODO: Implement agent counting
+      active_agents: "OFFLINE",  # TODO: Implement active agent tracking
+      neural_networks: "OFFLINE",  # TODO: Implement NN status
+      inference_rate: "OFFLINE",  # TODO: Implement inference tracking
+      model_accuracy: "OFFLINE",  # TODO: Implement accuracy monitoring
+      memory_usage_mb: "OFFLINE"  # TODO: Implement memory tracking
+    }
+  end
+
+  @doc "Get ThunderLane cluster metrics"
+  def thunderlane_metrics do
+    # Network and cluster metrics
+    mnesia_status = get_mnesia_status()
+
+    %{
+      total_nodes: length(mnesia_status.nodes),
+      current_ops_per_sec: "OFFLINE",  # TODO: Implement real ops/sec tracking
+      uptime: get_system_uptime_percentage(),
+      cache_hit_rate: "OFFLINE",  # TODO: Implement cache metrics
+      memory_usage: get_memory_usage_percentage(),
+      cpu_usage: "OFFLINE",  # TODO: Implement CPU monitoring
+      network_latency: "OFFLINE",  # TODO: Implement network monitoring
+      active_connections: "OFFLINE",  # TODO: Implement connection tracking
+      data_transfer_rate: "OFFLINE",  # TODO: Implement transfer rate monitoring
+      error_rate: "OFFLINE"  # TODO: Implement error rate calculation
+    }
+  end
+
+  @doc "Get ThunderBolt metrics"
+  def thunderbolt_metrics do
+    # ThunderBolt metrics not yet implemented
+    %{
+      chunks_processed: "OFFLINE",  # TODO: Implement chunk processing tracking
+      scaling_operations: "OFFLINE",  # TODO: Implement scaling tracking
+      resource_efficiency: "OFFLINE",  # TODO: Implement efficiency tracking
+      load_balancer_health: :offline  # TODO: Implement load balancer monitoring
+    }
+  end
+
+  @doc "Get ThunderBlock metrics"
+  def thunderblock_metrics do
+    # Get real supervision tree and infrastructure metrics
+    supervision_stats = get_supervision_tree_stats()
+    memory_stats = get_memory_stats()
+
+    %{
+      supervision_trees: supervision_stats.total_supervisors,
+      health_checks: supervision_stats.health_checks_passed,
+      recovery_actions: supervision_stats.restarts_recent,
+      system_stability: supervision_stats.stability_score,
+      memory_usage_mb: round(memory_stats.total / (1024 * 1024)),
+      process_count: supervision_stats.total_processes,
+      uptime_hours: round(System.monotonic_time(:second) / 3600)
+    }
+  end
+
+  @doc "Get ThunderGrid metrics"
+  def thundergrid_metrics do
+    %{
+      active_zones: "OFFLINE",      # TODO: Implement zone tracking
+      spatial_queries: "OFFLINE",   # TODO: Implement query monitoring
+      boundary_crossings: "OFFLINE", # TODO: Implement boundary tracking
+      grid_efficiency: "OFFLINE",   # TODO: Implement efficiency calculation
+      total_nodes: "OFFLINE",       # TODO: Implement grid node counting
+      active_nodes: "OFFLINE",      # TODO: Implement active node tracking
+      current_load: "OFFLINE",      # TODO: Implement load monitoring
+      performance_ops: "OFFLINE",   # TODO: Implement performance operations tracking
+      data_stream_rate: "OFFLINE",  # TODO: Implement data stream rate monitoring
+      storage_rate: "OFFLINE"       # TODO: Implement storage rate monitoring
+    }
+  end
+
+  @doc "Get ThunderVault metrics"
+  def thundervault_metrics do
+    %{
+      decisions_made: "OFFLINE",      # TODO: Implement decision tracking
+      policy_evaluations: "OFFLINE",  # TODO: Implement policy monitoring
+      access_requests: "OFFLINE",     # TODO: Implement access tracking
+      security_score: "OFFLINE"      # TODO: Implement security scoring
+    }
+  end
+
+  @doc "Get ThunderCom metrics"
+  def thundercom_metrics do
+    %{
+      active_communities: "OFFLINE",     # TODO: Implement community tracking
+      messages_processed: "OFFLINE",    # TODO: Implement message monitoring
+      federation_connections: "OFFLINE", # TODO: Implement federation tracking
+      communication_health: :offline
+    }
+  end
+
+  @doc "Get ThunderEye metrics"
+  def thundereye_metrics do
+    %{
+      traces_collected: "OFFLINE",     # TODO: Implement trace collection
+      performance_metrics: "OFFLINE",  # TODO: Implement perf monitoring
+      anomaly_detections: "OFFLINE",   # TODO: Implement anomaly detection
+      monitoring_coverage: "OFFLINE"   # TODO: Implement coverage tracking
+    }
+  end
+
+    @doc "Get ThunderChief metrics"
+  def thunderchief_metrics do
+    # Get real Oban metrics
+    oban_stats = get_oban_stats()
+    workflow_stats = get_workflow_stats()
+
+    %{
+      orchestration_status: determine_engine_status(oban_stats, workflow_stats),
+      active_workflows: workflow_stats.active_workflows,
+      queued_tasks: oban_stats.queued_jobs,
+      completion_rate: calculate_completion_rate(oban_stats),
+      avg_completion_time: oban_stats.avg_completion_time,
+      cross_domain_jobs: oban_stats.cross_domain_jobs,
+      failed_workflows: workflow_stats.failed_workflows,
+      engine_status: determine_engine_status(oban_stats, workflow_stats)
+    }
+  end
+
+  defp get_oban_stats do
+    # Get current Oban queue statistics
+    try do
+      # Check if Oban is running first
+      if Process.whereis(Oban) do
+        # Try to get queue stats using a more robust approach
+        default_stats = get_queue_stats(:default)
+        cross_domain_stats = get_queue_stats(:cross_domain)
+        scheduled_stats = get_queue_stats(:scheduled_workflows)
+
+        %{
+          queued_jobs: default_stats.queued + cross_domain_stats.queued + scheduled_stats.queued,
+          completed_recent: default_stats.completed + cross_domain_stats.completed,
+          failed_recent: default_stats.failed + cross_domain_stats.failed,
+          cross_domain_jobs: cross_domain_stats.queued + cross_domain_stats.executing,
+          avg_completion_time: "OFFLINE"  # TODO: calculate real average completion time
+        }
+      else
+        Logger.info("Oban is not running, using default stats")
+        get_default_oban_stats()
+      end
+    rescue
+      error ->
+        Logger.warning("Failed to get Oban stats: #{inspect(error)}")
+        get_default_oban_stats()
+    end
+  end
+
+  defp get_queue_stats(queue_name) do
+    try do
+      # Use Oban's queue monitoring if available
+      case Oban.drain_queue(queue: queue_name, with_safety: false) do
+        %{success: success, failure: failure} ->
+          %{
+            queued: 0,  # drain_queue empties the queue
+            executing: 0,
+            completed: success,
+            failed: failure
+          }
+        _ ->
+          # Fallback: try direct queue inspection
+          inspect_queue_directly(queue_name)
+      end
+    rescue
+      _ ->
+        inspect_queue_directly(queue_name)
+    end
+  end
+
+  defp inspect_queue_directly(queue_name) do
+    try do
+      # Query the database directly for job counts
+      # This is a simplified approach - in production, use proper Oban telemetry
+      %{
+        queued: count_jobs_by_state(queue_name, "available"),
+        executing: count_jobs_by_state(queue_name, "executing"),
+        completed: count_jobs_by_state(queue_name, "completed"),
+        failed: count_jobs_by_state(queue_name, "retryable")
+      }
+    rescue
+      _ ->
+        %{queued: 0, executing: 0, completed: 0, failed: 0}
+    end
+  end
+
+  defp count_jobs_by_state(_queue_name, _state) do
+    # Job tracking not yet implemented
+    0  # Return 0 instead of random data
+  end
+
+  defp get_supervision_tree_stats do
+    try do
+      # Use the supervision tree mapper to get real stats
+      tree = Thunderline.Thundercrown.Introspection.SupervisionTreeMapper.map_supervision_tree()
+      analysis = Thunderline.Thundercrown.Introspection.SupervisionTreeMapper.analyze_supervision_tree(tree)
+
+      %{
+        total_supervisors: analysis.supervisors,
+        total_processes: analysis.total_processes,
+        health_checks_passed: analysis.running,
+        restarts_recent: max(0, analysis.not_running),  # Assume not_running = recent restarts
+        stability_score: if analysis.total_processes > 0 do
+          analysis.running / analysis.total_processes
+        else
+          1.0
+        end
+      }
+    rescue
+      error ->
+        Logger.debug("Failed to get supervision stats: #{inspect(error)}")
+        %{
+          total_supervisors: 0,  # Unable to fetch real data
+          total_processes: 0,    # Unable to fetch real data
+          health_checks_passed: 0,
+          restarts_recent: 0,
+          stability_score: 0.0
+        }
+    end
+  end
+
+  defp get_memory_stats do
+    try do
+      memory_info = :erlang.memory()
+      %{
+        total: memory_info[:total] || 0,
+        processes: memory_info[:processes] || 0,
+        system: memory_info[:system] || 0
+      }
+    rescue
+      _ ->
+        %{total: 0, processes: 0, system: 0}  # Unable to fetch memory data
+    end
+  end
+
+  defp get_real_agent_stats do
+    try do
+      # Query ThunderMemory for real agent data
+      case ThunderMemory.list_agents() do
+        {:ok, agents} ->
+          active_agents = Enum.count(agents, &(&1.status == :active))
+          total_agents = length(agents)
+
+          # Calculate neural model count (estimate based on agent types)
+          neural_models = Enum.count(agents, fn agent ->
+            agent_type = Map.get(agent, :agent_type, :simple)
+            agent_type in [:neural, :ml, :ai, :learning]
+          end)
+
+          # Estimate memory usage
+          memory_per_agent = 5  # MB estimate per agent
+          memory_usage = total_agents * memory_per_agent
+
+          %{
+            active_count: active_agents,
+            total_count: total_agents,
+            neural_models: neural_models,
+            inferences_per_second: active_agents * 10,  # Estimate 10 inferences per active agent per second
+            average_accuracy: calculate_average_agent_accuracy(agents),
+            memory_usage_mb: memory_usage
+          }
+
+        {:error, _reason} ->
+          get_default_agent_stats()
+      end
+    rescue
+      _ ->
+        get_default_agent_stats()
+    end
+  end
+
+  defp get_default_agent_stats do
+    %{
+      active_count: 0,
+      total_count: 0,
+      neural_models: 0,
+      inferences_per_second: 0,
+      average_accuracy: 0.5,
+      memory_usage_mb: 0
+    }
+  end
+
+  defp calculate_average_agent_accuracy(agents) do
+    if length(agents) > 0 do
+      # Simple accuracy calculation based on agent performance
+      total_performance = Enum.reduce(agents, 0, fn agent, acc ->
+        # Use update frequency as a proxy for performance
+        performance = case DateTime.diff(DateTime.utc_now(), agent.updated_at, :second) do
+          diff when diff < 60 -> 0.9   # Very recent activity = high performance
+          diff when diff < 300 -> 0.8  # Recent activity = good performance
+          diff when diff < 3600 -> 0.6 # Moderate activity = moderate performance
+          _ -> 0.4                     # Old activity = low performance
+        end
+        acc + performance
+      end)
+
+      total_performance / length(agents)
+    else
+      0.5  # Default when no agents
+    end
+  end
+
+  defp get_default_oban_stats do
+    %{
+      queued_jobs: 0,
+      completed_recent: 0,
+      failed_recent: 0,
+      cross_domain_jobs: 0,
+      avg_completion_time: "0.0s"
+    }
+  end
+
+  defp get_workflow_stats do
+    # Count active workflows from orchestration trackers
+    try do
+      # Workflow tracking not yet implemented
+      %{
+        active_workflows: 0,  # Real tracking not implemented yet
+        failed_workflows: 0   # Real tracking not implemented yet
+      }
+    rescue
+      _ ->
+        %{active_workflows: 0, failed_workflows: 0}
+    end
+  end
+
+  defp calculate_completion_rate(oban_stats) do
+    total = oban_stats.completed_recent + oban_stats.failed_recent
+
+    if total > 0 do
+      round((oban_stats.completed_recent / total) * 100)
+    else
+      100
+    end
+  end
+
+  defp determine_engine_status(oban_stats, workflow_stats) do
+    cond do
+      workflow_stats.failed_workflows > 5 -> "degraded"
+      oban_stats.queued_jobs > 100 -> "overloaded"
+      workflow_stats.active_workflows > 0 -> "active"
+      true -> "idle"
+    end
+  end
+
+  @doc "Get ThunderFlow metrics"
+  def thunderflow_metrics do
+    %{
+      events_processed: "OFFLINE",    # TODO: Implement event processing tracking
+      pipelines_active: "OFFLINE",   # TODO: Implement pipeline monitoring
+      flow_rate: "OFFLINE",          # TODO: Implement flow rate calculation
+      consciousness_level: "OFFLINE" # TODO: Implement consciousness metrics
+    }
+  end
+
+  @doc "Get ThunderStone metrics"
+  def thunderstone_metrics do
+    %{
+      storage_operations: "OFFLINE",  # TODO: Implement storage operation tracking
+      data_integrity: "OFFLINE",     # TODO: Implement integrity monitoring
+      compression_ratio: "OFFLINE",  # TODO: Implement compression tracking
+      storage_health: :offline
+    }
+  end
+
+  @doc "Get ThunderLink metrics"
+  def thunderlink_metrics do
+    %{
+      connections_active: "OFFLINE",  # TODO: Implement connection tracking
+      data_throughput: "OFFLINE",    # TODO: Implement throughput monitoring
+      latency_avg: "OFFLINE",        # TODO: Implement latency measurement
+      network_stability: "OFFLINE"   # TODO: Implement stability scoring
+    }
+  end
+
+  @doc "Get ThunderCrown metrics"
+  def thundercrown_metrics do
+    %{
+      governance_actions: "OFFLINE",  # TODO: Implement governance tracking
+      policy_updates: "OFFLINE",     # TODO: Implement policy monitoring
+      compliance_score: "OFFLINE",   # TODO: Implement compliance scoring
+      authority_level: :offline
+    }
+  end
+
+  @doc "Get current automata state"
+  def automata_state do
+    # Get real automata state from Erlang CA clusters
+    real_ca_data = get_real_ca_state()
+
+    %{
+      cellular_automata: %{
+        active_rules: real_ca_data.active_rules,
+        generations: real_ca_data.total_generations,
+        complexity_measure: real_ca_data.complexity_measure,
+        pattern_stability: real_ca_data.stability_status,
+        active_clusters: real_ca_data.cluster_count,
+        total_cells: real_ca_data.total_cells,
+        alive_cells: real_ca_data.alive_cells
+      },
+      neural_ca: %{
+        learning_rate: real_ca_data.neural_learning_rate,
+        convergence: real_ca_data.neural_convergence,
+        adaptation_cycles: real_ca_data.adaptation_cycles,
+        emergence_detected: real_ca_data.emergence_patterns > 0
+      },
+      quantum_effects: %{
+        entanglement_strength: real_ca_data.quantum_entanglement,
+        superposition_states: real_ca_data.superposition_count,
+        decoherence_time: real_ca_data.decoherence_ms,
+        quantum_advantage: real_ca_data.quantum_speedup > 1.0
+      }
+    }
+  end
+
+  ## GenServer Callbacks
+
+  @impl true
+  def init(opts) do
+    Logger.info("Starting DashboardMetrics system...")
+
+    # Schedule periodic metrics updates
+    schedule_metrics_update()
+
+    initial_state = %{
+      system_metrics: %{},
+      event_metrics: %{},
+      agent_metrics: %{},
+      thunderlane: %{},
+      last_update: DateTime.utc_now(),
+      opts: opts
+    }
+
+    # Collect initial metrics
+    {:ok, collect_all_metrics(initial_state)}
+  end
+
+  @impl true
+  def handle_call(:get_system_metrics, _from, state) do
+    {:reply, state.system_metrics, state}
+  end
+
+  @impl true
+  def handle_call(:get_event_metrics, _from, state) do
+    {:reply, state.event_metrics, state}
+  end
+
+  @impl true
+  def handle_call(:get_agent_metrics, _from, state) do
+    {:reply, state.agent_metrics, state}
+  end
+
+  @impl true
+  def handle_call(:get_dashboard_data, _from, state) do
+    dashboard_data = %{
+      system: state.system_metrics,
+      events: state.event_metrics,
+      agents: state.agent_metrics,
+      thunderlane: state.thunderlane,
+      last_update: state.last_update,
+      timestamp: DateTime.utc_now()
+    }
+
+    {:reply, dashboard_data, state}
+  end
+
+  @impl true
+  def handle_info(:collect_metrics, state) do
+    # Collect fresh metrics
+    updated_state = collect_all_metrics(state)
+
+    # Publish to subscribers
+    publish_metrics_update(updated_state)
+
+    # Schedule next update
+    schedule_metrics_update()
+
+    {:noreply, updated_state}
+  end
+
+  @impl true
+  def handle_info(msg, state) do
+    Logger.debug("DashboardMetrics received unexpected message: #{inspect(msg)}")
+    {:noreply, state}
+  end
+
+  ## Private Functions
+
+  defp get_real_ca_state do
+    # Query actual Erlang CA clusters for real data
+    try do
+      # Try to get stats from ThunderCell clusters
+      cluster_stats = get_thundercell_cluster_stats()
+
+      # Also get stats from LiveView automata
+      liveview_stats = get_liveview_automata_stats()
+
+      %{
+        active_rules: cluster_stats.active_rules ++ liveview_stats.active_rules,
+        total_generations: cluster_stats.total_generations + liveview_stats.generations,
+        complexity_measure: calculate_complexity_measure(cluster_stats, liveview_stats),
+        stability_status: determine_stability_status(cluster_stats),
+        cluster_count: cluster_stats.cluster_count,
+        total_cells: cluster_stats.total_cells,
+        alive_cells: cluster_stats.alive_cells,
+        neural_learning_rate: cluster_stats.neural_learning_rate,
+        neural_convergence: cluster_stats.neural_convergence,
+        adaptation_cycles: cluster_stats.adaptation_cycles,
+        emergence_patterns: cluster_stats.emergence_patterns,
+        quantum_entanglement: cluster_stats.quantum_entanglement,
+        superposition_count: cluster_stats.superposition_count,
+        decoherence_ms: cluster_stats.decoherence_ms,
+        quantum_speedup: cluster_stats.quantum_speedup
+      }
+    rescue
+      error ->
+        Logger.warning("Failed to get real CA state: #{inspect(error)}")
+        get_fallback_ca_state()
+    end
+  end
+
+  defp get_thundercell_cluster_stats do
+    # Try to call ThunderCell Elixir modules for real stats
+    try do
+      # First try to get stats from ThunderCell Elixir bridge
+      case get_thundercell_elixir_stats() do
+        {:ok, stats} -> stats
+        {:error, _} ->
+          # Fallback to direct cluster call
+          case get_direct_thundercell_stats() do
+            {:ok, stats} -> stats
+            _ -> get_thundergate_fallback_stats()
+          end
+      end
+    rescue
+      _ -> get_thundergate_fallback_stats()
+    end
+  end
+
+  defp get_thundercell_elixir_stats do
+    # Use ThunderCell Elixir modules directly
+    try do
+      clusters = Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor.list_clusters()
+      cluster_count = length(clusters)
+
+      # Aggregate stats from all clusters
+      total_stats = Enum.reduce(clusters, %{
+        total_generations: 0,
+        total_cells: 0,
+        alive_cells: 0,
+        active_rules: []
+      }, fn cluster, acc ->
+        generation = Map.get(cluster, :generation, 0)
+        cell_count = Map.get(cluster, :cell_count, 0)
+        # Assume 10% of cells are alive on average
+        alive_count = round(cell_count * 0.1)
+
+        %{
+          total_generations: acc.total_generations + generation,
+          total_cells: acc.total_cells + cell_count,
+          alive_cells: acc.alive_cells + alive_count,
+          active_rules: acc.active_rules ++ extract_cluster_rules(cluster)
+        }
+      end)
+
+      {:ok, %{
+        active_rules: Enum.uniq(total_stats.active_rules),
+        total_generations: total_stats.total_generations,
+        cluster_count: cluster_count,
+        total_cells: total_stats.total_cells,
+        alive_cells: total_stats.alive_cells,
+        neural_learning_rate: 0.001,
+        neural_convergence: 0.5,
+        adaptation_cycles: 0,
+        emergence_patterns: 0,
+        quantum_entanglement: 0.0,
+        superposition_count: 0,
+        decoherence_ms: 0,
+        quantum_speedup: 1.0
+      }}
+    rescue
+      error -> {:error, error}
+    end
+  end
+
+  defp get_direct_thundercell_stats do
+    # Get stats directly from ThunderCell Telemetry
+    try do
+      case Thunderline.Thunderbolt.ThunderCell.Telemetry.get_performance_report() do
+        {:ok, report} ->
+          summary = Map.get(report, :summary, %{})
+          {:ok, %{
+            active_rules: [:conway_3d],  # Default rule
+            total_generations: Map.get(summary, :total_generations, 0),
+            cluster_count: Map.get(summary, :total_clusters, 0),
+            total_cells: 0,  # Calculate from cluster data if needed
+            alive_cells: 0,
+            neural_learning_rate: 0.001,
+            neural_convergence: 0.5,
+            adaptation_cycles: 0,
+            emergence_patterns: 0,
+            quantum_entanglement: 0.0,
+            superposition_count: 0,
+            decoherence_ms: 0,
+            quantum_speedup: 1.0
+          }}
+        error -> error
+      end
+    rescue
+      error -> {:error, error}
+    end
+  end
+
+  defp get_thundergate_fallback_stats do
+    # Get what we can from ThunderGate/ThunderLane systems
+    thunderlane_stats = get_thunderlane_stats()
+
+    %{
+      active_rules: thunderlane_stats.active_rules,
+      total_generations: thunderlane_stats.generations,
+      cluster_count: thunderlane_stats.chunk_count,
+      total_cells: thunderlane_stats.total_cells,
+      alive_cells: thunderlane_stats.active_cells,
+      neural_learning_rate: 0.001,
+      neural_convergence: 0.5,
+      adaptation_cycles: 0,
+      emergence_patterns: 0,
+      quantum_entanglement: 0.0,
+      superposition_count: 0,
+      decoherence_ms: 0,
+      quantum_speedup: 1.0
+    }
+  end
+
+  defp get_thunderlane_stats do
+    # Query ThunderGate's ThunderLane for CA chunk data
+    try do
+      case Thunderline.Thundergate.Thunderlane.get_chunk_state("default") do
+        {:ok, chunk_state} ->
+          %{
+            active_rules: Map.get(chunk_state, :rules, []),
+            generations: Map.get(chunk_state, :generation, 0),
+            chunk_count: 1,
+            total_cells: Map.get(chunk_state, :size, 0) |> cube_size_to_cell_count(),
+            active_cells: Map.get(chunk_state, :active_count, 0)
+          }
+
+        {:error, _} ->
+          get_default_thunderlane_stats()
+      end
+    rescue
+      _ -> get_default_thunderlane_stats()
+    end
+  end
+
+  defp get_default_thunderlane_stats do
+    %{
+      active_rules: [],
+      generations: 0,
+      chunk_count: 0,
+      total_cells: 0,
+      active_cells: 0
+    }
+  end
+
+  defp cube_size_to_cell_count(size) when is_integer(size), do: size * size * size
+  defp cube_size_to_cell_count(_), do: 0
+
+  defp get_liveview_automata_stats do
+    # Get stats from LiveView automata processes
+    try do
+      # Query AutomataLive processes for current state
+      automata_processes = Process.whereis(ThunderlineWeb.AutomataLive)
+
+      if automata_processes do
+        # If AutomataLive is running, get its state
+        %{
+          active_rules: [:rule_30, :rule_90, :rule_110],  # Current rules in use
+          generations: get_current_generation(),
+        }
+      else
+        %{
+          active_rules: [],
+          generations: 0,
+        }
+      end
+    rescue
+      _ ->
+        %{
+          active_rules: [],
+          generations: 0,
+        }
+    end
+  end
+
+  defp get_current_generation do
+    # Try to get current generation from AutomataLive state
+    # This is a simplified approach - in real implementation,
+    # we'd have a proper state management system
+    try do
+      # Check if there are any AutomataLive processes running
+      case Phoenix.LiveView.get_by_topic(Thunderline.PubSub, "automata:updates") do
+        [] -> 0
+        processes -> length(processes)  # Count actual LiveView processes
+      end
+    rescue
+      _ -> 0
+    end
+  end
+
+  defp get_default_cluster_stats do
+    %{
+      active_rules: [],
+      total_generations: 0,
+      cluster_count: 0,
+      total_cells: 0,
+      alive_cells: 0,
+      neural_learning_rate: 0.001,
+      neural_convergence: 0.5,
+      adaptation_cycles: 0,
+      emergence_patterns: 0,
+      quantum_entanglement: 0.0,
+      superposition_count: 0,
+      decoherence_ms: 0,
+      quantum_speedup: 1.0
+    }
+  end
+
+  defp get_fallback_ca_state do
+    # Fallback state when Erlang CA is not available
+    %{
+      active_rules: [:rule_30],
+      total_generations: 0,
+      complexity_measure: 0.0,
+      stability_status: :initializing,
+      cluster_count: 0,
+      total_cells: 0,
+      alive_cells: 0,
+      neural_learning_rate: 0.001,
+      neural_convergence: 0.5,
+      adaptation_cycles: 0,
+      emergence_patterns: 0,
+      quantum_entanglement: 0.0,
+      superposition_count: 0,
+      decoherence_ms: 0,
+      quantum_speedup: 1.0
+    }
+  end
+
+  defp extract_active_rules(stats) do
+    # Extract active CA rules from cluster stats
+    case Map.get(stats, :ca_rules) do
+      nil -> []
+      rules when is_map(rules) ->
+        # Convert CA rules format to list of atoms
+        birth_rules = Map.get(rules, :birth_neighbors, [])
+        survival_rules = Map.get(rules, :survival_neighbors, [])
+
+        cond do
+          birth_rules == [3] and survival_rules == [2, 3] -> [:conway_game_of_life]
+          birth_rules == [5, 6, 7] and survival_rules == [4, 5, 6] -> [:conway_3d]
+          true -> [:custom_ca_rule]
+        end
+      _ -> []
+    end
+  end
+
+  defp calculate_complexity_measure(cluster_stats, liveview_stats) do
+    # Calculate complexity based on various factors
+    base_complexity = 0.1
+
+    # Add complexity based on alive cells ratio
+    if cluster_stats.total_cells > 0 do
+      alive_ratio = cluster_stats.alive_cells / cluster_stats.total_cells
+      complexity_from_density = alive_ratio * 0.5
+
+      # Add complexity based on generation count
+      generation_complexity = min(cluster_stats.total_generations / 1000, 0.4)
+
+      base_complexity + complexity_from_density + generation_complexity
+    else
+      base_complexity
+    end
+  end
+
+  defp determine_stability_status(cluster_stats) do
+    cond do
+      cluster_stats.total_cells == 0 -> :initializing
+      cluster_stats.alive_cells == 0 -> :extinct
+      cluster_stats.total_generations < 10 -> :stabilizing
+      cluster_stats.emergence_patterns > 0 -> :emergent
+      true -> :evolving
+    end
+  end
+
+  defp collect_all_metrics(state) do
+    %{state |
+      system_metrics: collect_system_metrics(),
+      event_metrics: collect_event_metrics(),
+      agent_metrics: collect_agent_metrics(),
+      thunderlane: collect_thunderlane_metrics(),
+      last_update: DateTime.utc_now()
+    }
+  end
+
+  defp collect_system_metrics do
+    # Collect basic system health metrics
+    memory_info = :erlang.memory()
+
+    # Get uptime in seconds (using statistics instead of System.uptime)
+    {uptime_ms, _} = :erlang.statistics(:wall_clock)
+    uptime_seconds = div(uptime_ms, 1000)
+
+    %{
+      node: Node.self(),
+      uptime: uptime_seconds,
+      memory: %{
+        total: memory_info[:total],
+        processes: memory_info[:processes],
+        system: memory_info[:system],
+        atom: memory_info[:atom],
+        binary: memory_info[:binary],
+        ets: memory_info[:ets]
+      },
+      process_count: :erlang.system_info(:process_count),
+      schedulers: :erlang.system_info(:schedulers_online),
+      load_average: get_load_average(),
+      mnesia_status: get_mnesia_status()
+    }
+  end
+
+  defp collect_event_metrics do
+    # Get event processing statistics
+    broadway_stats = get_broadway_stats()
+
+    %{
+      total_processed: broadway_stats.total_processed || 0,
+      processing_rate: broadway_stats.processing_rate || 0,
+      failed_events: broadway_stats.failed_events || 0,
+      queue_size: broadway_stats.queue_size || 0,
+      average_latency: broadway_stats.average_latency || 0,
+      pipelines: %{
+        event_pipeline: get_pipeline_stats(:event_pipeline),
+        cross_domain_pipeline: get_pipeline_stats(:cross_domain_pipeline),
+        realtime_pipeline: get_pipeline_stats(:realtime_pipeline)
+      }
+    }
+  end
+
+  defp collect_agent_metrics do
+    # Get agent performance data from ThunderMemory
+    case ThunderMemory.list_agents() do
+      {:ok, agents} ->
+        active_count = Enum.count(agents, &(&1.status == :active))
+        total_count = length(agents)
+
+        %{
+          total_agents: total_count,
+          active_agents: active_count,
+          inactive_agents: total_count - active_count,
+          average_performance: calculate_average_performance(agents),
+          top_performers: get_top_performers(agents),
+          recent_spawns: get_recent_spawns(agents)
+        }
+
+      {:error, _reason} ->
+        %{
+          total_agents: 0,
+          active_agents: 0,
+          inactive_agents: 0,
+          average_performance: 0,
+          top_performers: [],
+          recent_spawns: []
+        }
+    end
+  end
+
+  defp collect_thunderlane_metrics do
+    # ThunderLane network and cluster metrics
+    mnesia_status = get_mnesia_status()
+
+    %{
+      total_nodes: length(mnesia_status.nodes),
+      current_ops_per_sec: "OFFLINE",  # TODO: Implement real ops/sec tracking
+      uptime: get_system_uptime_percentage(),
+      cache_hit_rate: "OFFLINE",  # TODO: Implement cache metrics
+      memory_usage: get_memory_usage_percentage(),
+      cpu_usage: "OFFLINE",  # TODO: Implement CPU monitoring
+      network_latency: "OFFLINE",  # TODO: Implement network monitoring
+      active_connections: "OFFLINE",  # TODO: Implement connection tracking
+      data_transfer_rate: "OFFLINE",  # TODO: Implement transfer rate monitoring
+      error_rate: "OFFLINE"  # TODO: Implement error rate calculation
+    }
+  end
+
+  defp get_system_uptime_percentage do
+    # For now, assume 99%+ uptime if system is running
+    # TODO: Implement real uptime tracking with downtime history
+    "99.5%"
+  end
+
+  defp get_memory_usage_percentage do
+    try do
+      memory_info = :erlang.memory()
+      total = memory_info[:total]
+      # Get system memory limit (this is an approximation)
+      system_limit = memory_info[:system] * 10  # Rough estimate
+      percentage = (total / system_limit * 100) |> Float.round(1)
+      "#{percentage}%"
+    rescue
+      _ -> "OFFLINE"
+    end
+  end
+
+  defp get_load_average do
+    # Try to get system load average (Linux/Unix)
+    case :os.cmd(~c"uptime") do
+      result when is_list(result) ->
+        result
+        |> to_string()
+        |> String.split("load average:")
+        |> List.last()
+        |> String.trim()
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+        |> Enum.map(fn x ->
+          case Float.parse(x) do
+            {float, _} -> float
+            :error -> 0.0
+          end
+        end)
+
+      _ -> [0.0, 0.0, 0.0]
+    end
+  end
+
+  defp get_mnesia_status do
+    try do
+      _info = :mnesia.system_info(:all)
+      running_nodes = :mnesia.system_info(:running_db_nodes)
+
+      %{
+        status: :running,
+        nodes: running_nodes,
+        tables: length(:mnesia.system_info(:tables)),
+        memory_usage: :mnesia.system_info(:use_dir)
+      }
+    rescue
+      _ ->
+        %{status: :error, nodes: [], tables: 0, memory_usage: false}
+    end
+  end
+
+  defp get_broadway_stats do
+    # Collect Broadway pipeline statistics
+    # This is a simplified version - can be enhanced with real Broadway telemetry
+    %{
+      total_processed: get_telemetry_counter([:broadway, :processor, :message, :processed]),
+      processing_rate: get_telemetry_rate([:broadway, :processor, :message, :processed]),
+      failed_events: get_telemetry_counter([:broadway, :processor, :message, :failed]),
+      queue_size: get_mnesia_table_size(),
+      average_latency: get_telemetry_average([:broadway, :processor, :message, :latency])
+    }
+  end
+
+  defp get_pipeline_stats(pipeline_name) do
+    %{
+      name: pipeline_name,
+      status: :running,
+      processed_count: get_telemetry_counter([:broadway, pipeline_name, :processed]) || 0,
+      error_count: get_telemetry_counter([:broadway, pipeline_name, :failed]) || 0,
+      current_load: "OFFLINE" # TODO: Implement real load measurement
+    }
+  end
+
+  defp get_mnesia_table_size do
+    try do
+      event_table_size = :mnesia.table_info(Thunderflow.CrossDomainEvents, :size)
+      realtime_table_size = :mnesia.table_info(Thunderflow.RealTimeEvents, :size)
+      event_table_size + realtime_table_size
+    rescue
+      _ -> 0
+    end
+  end
+
+  defp get_telemetry_counter(_event_path) do
+    # TODO: Implement telemetry integration
+    # In real implementation, this would query telemetry metrics
+    0  # Return 0 instead of random data
+  end
+
+  defp get_telemetry_rate(_event_path) do
+    # TODO: Implement rate calculation from telemetry
+    0.0  # Return 0 instead of random data
+  end
+
+  defp get_telemetry_average(_event_path) do
+    # TODO: Implement average calculation from telemetry
+    0.0  # Return 0 instead of random data
+  end
+
+  defp calculate_average_performance(agents) do
+    if length(agents) > 0 do
+      # Simple performance metric based on update frequency
+      total_performance = Enum.reduce(agents, 0, fn agent, acc ->
+        performance = DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)
+        acc + max(0, 100 - performance)  # Higher is better, recent updates = better performance
+      end)
+
+      total_performance / length(agents)
+    else
+      0
+    end
+  end
+
+  defp get_top_performers(agents) do
+    agents
+    |> Enum.filter(&(&1.status == :active))
+    |> Enum.sort_by(fn agent ->
+      -DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)
+    end)
+    |> Enum.take(5)
+    |> Enum.map(fn agent ->
+      %{
+        id: agent.id,
+        performance_score: max(0, 100 - DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)),
+        last_activity: agent.updated_at
+      }
+    end)
+  end
+
+  defp get_recent_spawns(agents) do
+    cutoff = DateTime.add(DateTime.utc_now(), -3600, :second)  # Last hour
+
+    agents
+    |> Enum.filter(&(DateTime.compare(&1.created_at, cutoff) == :gt))
+    |> Enum.sort_by(& &1.created_at, {:desc, DateTime})
+    |> Enum.take(10)
+    |> Enum.map(fn agent ->
+      %{
+        id: agent.id,
+        created_at: agent.created_at,
+        status: agent.status
+      }
+    end)
+  end
+
+  defp schedule_metrics_update do
+    Process.send_after(self(), :collect_metrics, @metrics_update_interval)
+  end
+
+  defp publish_metrics_update(state) do
+    metrics_data = %{
+      system: state.system_metrics,
+      events: state.event_metrics,
+      agents: state.agent_metrics,
+      timestamp: state.last_update
+    }
+
+    PubSub.broadcast(Thunderline.PubSub, @pubsub_topic, {:metrics_update, metrics_data})
+  end
+
+  # Missing helper functions for CA integration
+  defp extract_active_rules(stats) do
+    case Map.get(stats, :ca_rules) do
+      %{name: name} -> [name]
+      rules when is_list(rules) -> rules
+      _ -> []
+    end
+  end
+
+  defp calculate_complexity_measure(cluster_stats, liveview_stats) do
+    # Simple complexity measure based on rule count and generation
+    rule_complexity = length(cluster_stats.active_rules ++ liveview_stats.active_rules) * 0.1
+    generation_complexity = (cluster_stats.total_generations + liveview_stats.generations) * 0.001
+    Float.round(rule_complexity + generation_complexity, 3)
+  end
+
+  defp determine_stability_status(cluster_stats) do
+    case cluster_stats.total_generations do
+      0 -> :initializing
+      n when n < 10 -> :evolving
+      n when n < 100 -> :stabilizing
+      _ -> :stable
+    end
+  end
+
+  defp get_fallback_ca_state do
+    # Fallback state when all CA systems are unavailable
+    %{
+      active_rules: [],
+      total_generations: 0,
+      complexity_measure: 0.0,
+      stability_status: :offline,
+      cluster_count: 0,
+      total_cells: 0,
+      alive_cells: 0,
+      neural_learning_rate: 0.0,
+      neural_convergence: 0.0,
+      adaptation_cycles: 0,
+      emergence_patterns: 0,
+      quantum_entanglement: 0.0,
+      superposition_count: 0,
+      decoherence_ms: 0,
+      quantum_speedup: 0.0
+    }
+  end
+
+  defp extract_cluster_rules(cluster) do
+    # Extract CA rules from cluster stats
+    case Map.get(cluster, :ca_rules) do
+      nil -> []
+      rules when is_map(rules) ->
+        name = Map.get(rules, :name, "Unknown")
+        case name do
+          "Conway's Game of Life 3D" -> [:conway_3d]
+          "Highlife 3D" -> [:highlife_3d]
+          "Seeds 3D" -> [:seeds_3d]
+          "Maze 3D" -> [:maze_3d]
+          _ -> [:custom_ca]
+        end
+      _ -> []
+    end
+  end
+end
