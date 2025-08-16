@@ -77,6 +77,7 @@ defmodule Thunderline.MixProject do
       {:timex, "~> 3.7"},
       {:ex_webrtc, "~> 0.13.0"},
       {:ex_sctp, "~> 0.1.2"},
+      {:reactor, "~> 0.15.6"},
       {:eagl, "~> 0.9.0"},
       {:simple_sat, "~> 0.1.3"},
       # Required for eagl image loading

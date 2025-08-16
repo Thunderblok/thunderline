@@ -149,6 +149,144 @@
 
 **Thunderline** is a distributed Personal Autonomous Construct (PAC) platform that enables AI-driven automation through 3D cellular automata, federated communication, and intelligent resource orchestration. Think of it as "Kubernetes for AI agents" with real-time 3D visualization and distributed decision-making capabilities.
 
+---
+
+## 🌿 **SYSTEMS THEORY & DOMAIN ECOLOGY**
+
+We treat the 7 domains as an ecological system, not a pile of folders. Each domain is a biome with:
+- **Niche (Purpose)** – Explicit, narrow responsibility surface.
+- **Energy Flows (Events)** – Ingress/egress event types it produces/consumes.
+- **Symbiosis (Dependencies)** – Allowed collaboration paths (documented in the Domain Interaction Matrix).
+- **Homeostasis Signals (Metrics)** – Health indicators we monitor to avoid pathological growth.
+
+Ecological Anti‑Patterns:
+- **Domain Predation**: One domain starts implementing logic belonging to another → triggers a governance review.
+- **Unchecked Biomass**: Rapid resource proliferation (>5 new resources in a sprint) without pruning legacy.
+- **Mutation Drift**: Silent changes to core invariants (naming, state machine transitions, event shapes) without catalog update.
+- **Trophic Collapse**: Removal/refactor in a foundational domain (ThunderBlock/ThunderFlow) without impact simulation.
+
+Mitigation Principles:
+1. **Constrain before you add** – Prefer refining existing resource capabilities or adding calculations/actions over new resources.
+2. **One Event Shape per Flow** – Normalize before fan‑out (Reactor enforced) to prevent combinatorial variant explosion.
+3. **Compensate, then Retry** – Sagas (Reactors) encode systemic resilience; no ad-hoc retry loops.
+4. **Metric Before Feature** – New persistent process must expose at least one health metric & one telemetry event.
+
+---
+
+## 🛡️ **DOMAIN INTEGRITY PROTOCOL (DIP)**
+
+| Step | Gate | Description | Artifact |
+|------|------|-------------|----------|
+| 1 | Intent | Describe why existing resources insufficient | DIP Issue (GitHub) |
+| 2 | Mapping | Show domain alignment & rejection of others | Domain matrix delta |
+| 3 | Invariants | List new/modified invariants | Invariants section PR diff |
+| 4 | Impact | Affected event types, backpressure risk | Event impact table |
+| 5 | Observability | Metrics + telemetry events planned | Metrics spec snippet |
+| 6 | Reactor Plan | Orchestration model (if multi-step) | Reactor graph (Mermaid) |
+| 7 | Review | Two maintainers + domain steward sign-off | PR approvals |
+| 8 | Catalog Update | Update Domain Catalog & Playbook | Synced docs PR |
+
+Failure to pass all gates → change rejected or quarantined under `/experimental` (time-boxed).
+
+Forbidden without Steering Council approval:
+- Creation of an 8th domain.
+- Cross-domain DB table joins (use events or actions).
+- Introducing new global process registries (coordinate via existing patterns).
+
+---
+
+## 🧪 **RESOURCE ADDITION CHECKLIST**
+
+Before merging a new Ash resource:
+1. Domain confirmed (NO cross-cutting leakage).
+2. `use Ash.Resource` uses correct `data_layer`.
+3. Table + index strategy documented (if Postgres).
+4. Authorization / visibility defined (or explicitly deferred with comment).
+5. At least one action returns consistent shape (struct/map) + spec.
+6. Telemetry: `[:thunderline, :resource, :<domain>, :action, :stop]` emitted or planned.
+7. Event emission path (if any) uses normalized `%Thunderline.Event{}` or documented variant.
+8. Tests: happy path + one failure path (or stub with TODO + ticket).
+9. Domain Catalog updated (resource line added under correct heading).
+10. No duplicate or overlapping semantic with existing resource (search pass). 
+
+Gate phrase in PR description: `DIP-CHECKLIST: 10/10`.
+
+---
+
+## 🔄 **REACTOR / SAGA GOVERNANCE**
+
+Reactor adoption must *reduce* orchestration entropy.
+
+Use a Reactor when ALL apply:
+- ≥3 dependent steps OR ≥2 parallelizable branches.
+- At least one external side-effect (DB, network, event emit) plus a rollback obligation.
+- Need for targeted retry policies (transient vs fatal).
+
+DO NOT use a Reactor for simple single-step CRUD or pure transforms—keep it inline.
+
+Standard Step Classification:
+| Prefix | Semantics | Side Effect | Undo Required |
+|--------|-----------|-------------|---------------|
+| `load_` | Fetch / hydrate | No | No |
+| `compute_` | Pure derivation | No | No |
+| `persist_` | DB mutation | Yes | Yes |
+| `emit_` | Event/pubsub | Yes | Optional (idempotent emit preferred) |
+| `call_` | External API / bridge | Yes | Usually (compensate or classify transient) |
+| `finalize_` | Terminal commit / ack | Yes | Yes (undo cascades) |
+
+Retry Policy Canonical Outcomes:
+`{:error, %{error: atom(), transient?: boolean, reason: term()}}`
+
+Compensate contract returns: `:retry | :continue | {:retry, backoff_ms}`
+
+Mermaid Diagram Requirement: All reactors must produce a `priv/diagrams/<reactor>.mmd` artifact in PR.
+
+Recursive Reactors MUST include: `exit_condition`, `max_iterations`, iteration metric, and idempotent state accumulation.
+
+---
+
+## ⚖️ **BALANCE & HOMEOSTASIS METRICS**
+
+We track systemic balance via scheduled health snapshot → persisted metrics (ThunderFlow):
+
+| Metric | Source | Balance Signal | Threshold Alert |
+|--------|--------|----------------|-----------------|
+| `domain.resource.count` | Catalog diff | Sudden resource spikes | > +5 / sprint |
+| `event.queue.depth` | MnesiaProducer | Backpressure risk | P95 depth > 5x baseline |
+| `reactor.retry.rate` | Reactor telemetry | Transient instability | > 15% steps retried |
+| `reactor.undo.invocations` | Saga logs | Compensation load | > 5 undos / hr per reactor |
+| `ca.cell.churn.rate` | ThunderCell telemetry | Unstable automata gating | > 2x 24h moving avg |
+| `cross.domain.emit.fanout` | EventBus | Excess coupling emerging | > 6 target domains/event |
+| `warning.count` | Compilation heuristic | Code hygiene decay | > 250 sustained |
+
+Dashboard panels MUST visualize at least: queue depth, retry rate, fanout distribution.
+
+Alert Playbook (runbook entries in `/Docs/runbooks/`):
+1. Spike in retry rate → inspect last 10 failing step payloads; classify transient root cause.
+2. High fanout → evaluate if normalization or domain-specific aggregator missing.
+3. Resource spike → enforce consolidation or convert to calculations/actions.
+
+---
+
+## 🧭 **CHANGE CONTROL FLOW (SUMMARY)**
+
+```
+Idea → DIP Issue → Design (Reactor + Metrics + Catalog delta) → PR (Checklist + Mermaid) → Review (Steward + Peer) → Merge → Catalog Sync → Post-merge Health Snapshot
+```
+
+Stewards (initial assignment):
+- ThunderBlock: Infrastructure Lead
+- ThunderBolt: Orchestration Lead
+- ThunderCrown: AI Governance Lead
+- ThunderFlow: Observability Lead
+- ThunderGate: Security Lead
+- ThunderGrid: Spatial Lead
+- ThunderLink: Interface/Comms Lead
+
+Steward sign-off required for domain modifications & resource deletions.
+
+---
+
 ### **🔑 Core Value Proposition**
 - **Personal AI Automation**: Deploy and manage autonomous AI constructs that handle complex workflows
 - **3D Cellular Automata**: Visual, interactive representation of distributed processes and decisions
@@ -164,7 +302,7 @@ Thunderline follows a **domain-driven, event-sourced architecture** built on Eli
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   ThunderCrown  │    │   ThunderLink   │    │   ThunderGate   │
-│  AI Governance  │◄──►│  Communication  │◄──►│   Federation    │
+│ GOVERNANCE      │◄──►│  Communication  │◄──►│   SECURITY      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          ▲                       ▲                       ▲
          │                       │                       │
@@ -177,8 +315,8 @@ Thunderline follows a **domain-driven, event-sourced architecture** built on Eli
                                │
                                ▼
                     ┌─────────────────┐
-                    │   ThunderGuard  │
-                    │    Security     │
+                    │   ThunderGRID   │
+                    │    GRAPHQL      │
                     └─────────────────┘
 ```
 

@@ -1,5 +1,7 @@
 # 🌩️ THUNDERLINE DOMAIN & RESOURCE CATALOG
 
+> **SYSTEMS THEORY AUGMENT (2025)** – Domain ecology & governance layers integrated. See added sections: Interaction Matrix, Event Taxonomy, Anti-Corruption, Stewardship.
+
 > **UNIFIED ARCHITECTURE** - Last Updated: December 2024  
 > **Status**: 🔥 **7-DOMAIN ARCHITECTURE OPERATIONAL**  
 > **Compilation**: ✅ **CLEAN BUILD SUCCESSFUL**  
@@ -8,6 +10,70 @@
 ---
 
 ## ⚡ **ARCHITECTURE OVERVIEW: 7 UNIFIED DOMAINS**
+
+### 🧬 Domain Interaction Matrix (Allowed Directions)
+
+Legend:
+- ✔ Allowed (direct call or action)
+- △ Indirect via normalized events / Ash action boundary (no raw struct coupling)
+- ✖ Forbidden (introduce Bridge/Reactor or re-evaluate responsibility)
+
+| From \ To | Block | Bolt | Crown | Flow | Gate | Grid | Link |
+|-----------|-------|------|-------|------|------|------|------|
+| Block | — | ✔ infra scheduling | △ model provisioning | ✔ metrics infra | ✔ auth bootstrap | ✔ spatial persistence | △ UI boot events |
+| Bolt | ✔ infra requests | — | ✔ model lifecycle | ✔ pipeline control | △ auth queries | ✔ spatial job deploy | ✔ user interaction triggers |
+| Crown | △ image pulls | ✔ orchestrated runs | — | ✔ governance metrics | △ policy auth | △ simulation context | ✔ oversight dashboards |
+| Flow | ✔ instrumentation reg | ✔ ingest signals | ✔ model output metrics | — | △ auth telemetry | △ spatial heatmaps | ✔ live dashboards |
+| Gate | △ cluster keys | △ job signing | △ key policy feed | △ metrics guard rails | — | △ location auth | △ secure channels |
+| Grid | ✔ provisioning | ✔ scheduling | △ AI placement hints | ✔ spatial metrics | △ actor gating | — | ✔ spatial UI streams |
+| Link | △ infra status | ✔ orchestrator control | ✔ AI oversight UI | ✔ observability UI | ✔ auth flows | ✔ spatial viewer | — |
+
+Guidelines:
+1. Any new edge requires DIP Issue + justification.
+2. △ edges must not introduce compile-time struct dependencies (use events or defined public actions).
+3. Escalate to Reactor if chatter on a △ edge exceeds 5 events/min sustained.
+
+---
+
+### 📦 Event Taxonomy (Canonical Event Shape)
+
+All cross-domain events MUST conform:
+```
+%Thunderline.Event{
+    id: UUID.t(),
+    domain: atom(),
+    type: atom(),
+    version: 1..n,
+    occurred_at: DateTime.t(),
+    causation_id: UUID.t() | nil,
+    correlation_id: UUID.t() | nil,
+    source: String.t(),
+    payload: map(),
+    meta: map()
+}
+```
+Reserved type prefixes: `reactor.`, `system.`, `audit.`, `ui.` (see Handbook for semantics). Version increments mandatory on breaking payload changes.
+
+---
+
+### 🛡 Anti-Corruption & Bridges
+
+External protocol ingestion MUST isolate via `bridge/` modules inside the receiving domain. Responsibilities:
+1. Normalize provider payload → canonical event/action attrs.
+2. Emit `bridge.success` / `bridge.failure` events.
+3. Provide contract tests (`test/<domain>/bridge/`).
+4. Enforce provider struct quarantine (no leakage beyond bridge boundary).
+
+---
+
+### 🧭 Stewardship & Invariants
+
+Each domain has a Steward role responsible for invariant evolution & deletion approvals. Resource catalog entries SHOULD grow invariant annotations incrementally:
+`Invariants: ["status lifecycle", "idempotent emit", ...]`
+
+Missing invariants MUST be tracked with an issue tag `invariant:pending`.
+
+---
 
 After the **Great Domain Consolidation of December 2024**, Thunderline now operates with a clean, efficient 7-domain architecture that eliminates redundancy and creates clear boundaries:
 
@@ -320,6 +386,15 @@ ThunderLink (User Input)
 ```
 
 ### **Cross-Domain Dependencies**
+
+Change Governance:
+1. Additions require updating Interaction Matrix table above.
+2. If a dependency shifts from △ to ✔ justify reason (latency, consistency, transactional need).
+3. Quarterly review: prune obsolete edges & flag high-fanout hotspots.
+
+Validation (future automation): `mix thunderline.catalog.validate` will parse code references to ensure declared edges match actual usage.
+
+---
 - **ThunderBlock** ← All domains (infrastructure and memory foundation)
 - **ThunderFlow** ← All domains (event processing and monitoring)
 - **ThunderCrown** ↔ All domains (orchestration and AI governance)

@@ -5,6 +5,30 @@
 
 ---
 
+## 🌿 SYSTEMS THEORY OPERATING FRAME (PLAYBOOK AUGMENT)
+
+This Playbook is now bound by the ecological governance rules (see OKO Handbook & Domain Catalog augmentations). Each phase must prove *systemic balance* not just feature completeness.
+
+Phase Acceptance Criteria now includes:
+1. Domain Impact Matrix delta reviewed (no predation / mutation drift)
+2. Event Taxonomy adherence (no ad-hoc event shape divergence)
+3. Balance Metrics trend acceptable (no > threshold excursions newly introduced)
+4. Steward sign-offs captured in PR references
+5. Catalog synchronization executed (resource + relationship updates) 
+
+Balance Review Gate (BRG) is inserted at end of every major sprint; failing BRG triggers a `stability_sprint` (hardening, no net new features).
+
+BRG Checklist (automatable future task):
+- [ ] `warning.count` below threshold or trending downward
+- [ ] No unauthorized Interaction Matrix edges
+- [ ] Reactor retry & undo rates within SLO
+- [ ] Event fanout distribution healthy (no new heavy tail outliers)
+- [ ] Resource growth per domain within expected sprint envelope
+
+---
+
+---
+
 ## **🔄 THE COMPLETE FLOW ARCHITECTURE**
 
 ### **Phase 1: User Onboarding (ThunderBlock Provisioning)**
@@ -91,6 +115,14 @@ User says "Send an email to John about the project update" → Email gets sent a
 - Contact management system
 ```
 
+Additions (Systems Governance Requirements):
+```
+# 4. Governance Hooks
+- Add metrics: event.queue.depth (baseline), reactor.retry.rate (initial null), fanout distribution snapshot
+- Register Email flow events under `ui.command.email.*` → normalized `%Thunderline.Event{}`
+- DIP Issue for any new resources (Contact, EmailTask if created)
+```
+
 #### **Sprint 2: Intelligence (Week 2)**
 **Goal**: Make the PAC understand and execute email tasks
 
@@ -111,6 +143,18 @@ User says "Send an email to John about the project update" → Email gets sent a
 - Improve future suggestions
 ```
 
+Additions:
+```
+# 4. Reactor Adoption (if multi-step email composition)
+- Reactor diagram committed (Mermaid)
+- Undo path for failed external send (mark draft, not sent)
+- Retry policy with transient classification (SMTP 4xx vs 5xx)
+
+# 5. Telemetry & Balance
+- Emit reactor.retry.rate sample series
+- Ensure fanout <= necessary domains (Gate, Flow, Link only)
+```
+
 #### **Sprint 3: Automation (Week 3)**
 **Goal**: Seamless end-to-end automation
 
@@ -129,6 +173,14 @@ User says "Send an email to John about the project update" → Email gets sent a
 - User preference learning
 - Email style adaptation
 - Contact relationship mapping
+```
+
+Additions:
+```
+# 4. Homeostasis Checks
+- Verify added context sources didn't introduce unauthorized edges
+- Catalog update with any new context resources
+- Run BRG pre-merge (stability gate)
 ```
 
 ---
@@ -373,6 +425,26 @@ User says "Send an email to John about the project update" → Email gets sent a
 The foundation is **SOLID** - we've got the engine running clean, state machines working, and the core optimization algorithms ready. Now we need to build the experience layer that makes it all accessible to users.
 
 **First milestone: Send an email** is PERFECT. It touches every part of the system without being overwhelming, and it's something users immediately understand and value.
+
+---
+
+## ♻ CONTINUOUS BALANCE OPERATIONS (CBO)
+
+Recurring weekly tasks:
+1. Catalog Diff Scan → detect resource churn anomalies.
+2. Event Schema Drift Audit → confirm version bumps recorded.
+3. Reactor Failure Cohort Analysis → top 3 transient causes & mitigation PRs.
+4. Queue Depth Trend Review → adjust concurrency/partitioning if P95 rising.
+5. Steward Sync → 15m standup: edges added, invariants changed, upcoming DIP proposals.
+
+Quarterly resilience game day:
+- Simulate domain outage (Flow or Gate) → measure recovery time & compensation.
+- Inject elevated retry errors → verify backpressure and no cascading fanout.
+- Randomly quarantine a Reactor → ensure degraded mode still meets SLO subset.
+
+Artifacts to archive after each game day: metrics diff, incident timeline, remediation backlog.
+
+---
 
 Ready to start building the dashboard and get this bad boy talking to the frontend? 🚀
 
