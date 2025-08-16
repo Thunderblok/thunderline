@@ -1,0 +1,101 @@
+# ecto_ulid_next v1.0.2
+
+> An Ecto.Type implementation of ULID.
+
+## Docs
+
+### Ecto.ULID (module)
+
+An Ecto type for ULID strings.
+
+### Ecto.ULID.bingenerate/1 (function)
+
+Generates a binary ULID.
+
+Optionally takes a Unix timestamp with millisecond precision as an argument.
+If no argument is passed, the current time is used as a base for the ULID.
+
+### Examples - Ecto.ULID.bingenerate/1 (function)
+
+iex> Ecto.ULID.bingenerate()
+    <<1, 127, 29, 107, 117, 125, 183, 154, 147, 224, 191, 135, 161, 183, 2, 52>>
+
+    iex> Ecto.ULID.bingenerate(1402899630000)
+    <<1, 70, 163, 85, 135, 176, 12, 219, 112, 32, 157, 209, 98, 152, 55, 37>>
+
+### Ecto.ULID.cast/1 (function)
+
+Casts a string to ULID.
+
+### Example - Ecto.ULID.cast/1 (function)
+
+iex> Ecto.ULID.cast("018THNB1XG1KDQ084XT5H9GDS5")
+    {:ok, "018THNB1XG1KDQ084XT5H9GDS5"}
+
+    iex> Ecto.ULID.cast("abc")
+    :error
+
+### Ecto.ULID.cast!/1 (function)
+
+Same as `cast/1`, but raises `Ecto.CastError` on invalid arguments.
+
+### Example - Ecto.ULID.cast!/1 (function)
+
+iex> Ecto.ULID.cast!("018THNB1XG1KDQ084XT5H9GDS5")
+    "018THNB1XG1KDQ084XT5H9GDS5"
+
+    iex> Ecto.ULID.cast!("abc")
+    ** (Ecto.CastError) cannot cast "abc" to Ecto.ULID
+
+### Ecto.ULID.dump/1 (function)
+
+Converts a Crockford Base32 encoded ULID into a binary.
+
+### Example - Ecto.ULID.dump/1 (function)
+
+iex> Ecto.ULID.dump("018THNB1XG1KDQ084XT5H9GDS5")
+    {:ok, <<1, 70, 163, 85, 135, 176, 12, 219, 112, 32, 157, 209, 98, 152, 55, 37>>}
+
+### Ecto.ULID.embed_as/1 (function)
+
+
+
+### Ecto.ULID.equal?/2 (function)
+
+
+
+### Ecto.ULID.generate/1 (function)
+
+Generates a Crockford Base32 encoded ULID.
+
+Optionally takes a Unix timestamp with millisecond precision as an argument.
+If no argument is passed, the current time is used as a base for the ULID.
+
+### Examples - Ecto.ULID.generate/1 (function)
+
+iex> Ecto.ULID.generate()
+    "01FWEPCVGGMQQ0YTKS7BYFQH46"
+
+    iex> Ecto.ULID.generate(1402899630000)
+    "018THNB1XGQZ7T929PD126SM3Z"
+
+### Ecto.ULID.load/1 (function)
+
+Converts a binary ULID into a Crockford Base32 encoded string.
+
+### Example - Ecto.ULID.load/1 (function)
+
+iex> Ecto.ULID.load(<<1, 70, 163, 85, 135, 176, 12, 219, 112, 32, 157, 209, 98, 152, 55, 37>>)
+    {:ok, "018THNB1XG1KDQ084XT5H9GDS5"}
+
+### Ecto.ULID.type/0 (function)
+
+The underlying schema type (`:uuid`).
+
+### Ecto.ULID.t/0 (type)
+
+A hex-encoded ULID string.
+
+## Links
+
+- [Online documentation](https://hexdocs.pm/ecto_ulid_next)

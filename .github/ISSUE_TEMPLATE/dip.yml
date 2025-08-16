@@ -1,0 +1,131 @@
+name: Domain Integrity Protocol (DIP) Request
+description: Request changes that affect domain boundaries or cross-domain interactions
+title: "[DIP] "
+labels: ["domain-integrity", "dip", "architecture"]
+assignees:
+  - thunderline-wardens
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Domain Integrity Protocol (DIP)
+        
+        This template is for changes that affect domain boundaries, cross-domain interactions, or resource sovereignty. 
+        All DIP requests require architecture review to prevent domain predation and mutation drift.
+        
+        **Please read**: [OKO Handbook - Domain Integrity Protocol](docs/oko-handbook.md#domain-integrity-protocol)
+
+  - type: input
+    id: affected-domains
+    attributes:
+      label: Affected Domains
+      description: List all domains that will be modified or interact differently
+      placeholder: "ThunderFlow, ThunderGate, ThunderLink"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-changes
+    attributes:
+      label: Proposed Changes
+      description: Describe the specific changes to resources, actions, or interactions
+      placeholder: |
+        - Add Contact resource to ThunderLink
+        - Create email_provider bridge in ThunderGate
+        - Add cross-domain event emission from ThunderFlow to ThunderGate
+    validations:
+      required: true
+
+  - type: textarea
+    id: domain-invariants
+    attributes:
+      label: Domain Invariants
+      description: List the invariants that will be preserved or need updating
+      placeholder: |
+        - ThunderGate remains the sole gateway for external integrations
+        - ThunderLink maintains ownership of communication resources
+        - No direct database access between domains
+    validations:
+      required: true
+
+  - type: textarea
+    id: interaction-matrix
+    attributes:
+      label: Interaction Matrix Changes
+      description: Document new or modified domain-to-domain interactions
+      placeholder: |
+        ThunderFlow -> ThunderGate: email_send_event (new)
+        ThunderGate -> ThunderLink: contact_verification_event (modified)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dip-complexity
+    attributes:
+      label: DIP Complexity
+      description: Assess the complexity of domain boundary changes
+      options:
+        - Simple (single domain, internal changes)
+        - Moderate (two domains, new interaction pattern)
+        - Complex (multiple domains, new resource types)
+        - Critical (fundamental architecture change)
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback-plan
+    attributes:
+      label: Rollback Plan
+      description: How can these changes be safely reverted if issues arise?
+      placeholder: |
+        1. Remove new bridge resource
+        2. Revert event emission routes
+        3. Clean up any cross-domain data
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: dip-checklist
+    attributes:
+      label: DIP Checklist
+      description: Verify compliance with domain integrity principles
+      options:
+        - label: No domain predation (one domain consuming another's responsibilities)
+          required: true
+        - label: No resource sovereignty violation (direct cross-domain resource access)
+          required: true
+        - label: Event-driven communication only (no direct function calls between domains)
+          required: true
+        - label: Clear ownership boundaries (each resource belongs to exactly one domain)
+          required: true
+        - label: Backward compatibility maintained (existing interfaces preserved)
+          required: true
+        - label: Documentation updated (interaction matrix, domain catalog)
+          required: true
+        - label: Tests cover cross-domain interactions
+          required: true
+        - label: Rollback plan tested
+          required: true
+
+  - type: textarea
+    id: implementation-notes
+    attributes:
+      label: Implementation Notes
+      description: Additional context, dependencies, or special considerations
+      placeholder: |
+        - Depends on email provider configuration
+        - Requires new environment variables
+        - Consider rate limiting for email sends
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Business priority for this DIP
+      options:
+        - P0 - Critical (blocks milestone)
+        - P1 - High (affects stability)
+        - P2 - Normal (planned feature)
+        - P3 - Low (enhancement/tech debt)
+    validations:
+      required: true

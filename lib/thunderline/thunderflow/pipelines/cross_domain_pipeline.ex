@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   alias Broadway.Message
   alias Phoenix.PubSub
+  alias Thunderline.Event
   require Logger
 
   def start_link(_opts) do
@@ -33,16 +34,6 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
         ]
       ],
       batchers: [
-        thundercore_events: [
-          concurrency: 3,
-          batch_size: 20,
-          batch_timeout: 1500
-        ],
-        thundervault_events: [
-          concurrency: 3,
-          batch_size: 20,
-          batch_timeout: 1500
-        ],
         thunderbolt_events: [
           concurrency: 2,
           batch_size: 15,
@@ -52,6 +43,11 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
           concurrency: 4,
           batch_size: 25,
           batch_timeout: 2000
+        ],
+        thundercrown_events: [
+          concurrency: 3,
+          batch_size: 20,
+          batch_timeout: 1500
         ],
         broadcast_events: [
           concurrency: 2,
@@ -64,47 +60,25 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   @impl Broadway
   def handle_message(processor, %Message{} = message, _context) do
-    event_data =
-      case message.data do
-        bin when is_binary(bin) -> Jason.decode!(bin)
-        %{:type => type, :payload => payload, :from_domain => from, :to_domain => to} = map ->
-          %{
-            "action" => to_string(type),
-            "data" => payload,
-            "source_domain" => from || Map.get(map, :from),
-            "target_domain" => to || Map.get(map, :to),
-            "timestamp" => Map.get(map, :timestamp, DateTime.utc_now())
-          }
-        %{:type => type, :payload => payload} = map ->
-            %{
-              "action" => to_string(type),
-              "data" => payload,
-              "source_domain" => Map.get(map, :from_domain) || Map.get(map, :from),
-              "target_domain" => Map.get(map, :to_domain) || Map.get(map, :to),
-              "timestamp" => Map.get(map, :timestamp, DateTime.utc_now())
-            }
-        %{"type" => type, "payload" => payload} = map ->
-          %{
-            "action" => to_string(type),
-            "data" => payload,
-            "source_domain" => Map.get(map, "from_domain") || Map.get(map, "from"),
-            "target_domain" => Map.get(map, "to_domain") || Map.get(map, "to"),
-            "timestamp" => Map.get(map, "timestamp", DateTime.utc_now())
-          }
-        map when is_map(map) ->
-          cond do
-            Map.has_key?(map, "source_domain") and Map.has_key?(map, "target_domain") -> map
-            true -> %{"action" => "unknown", "data" => map, "timestamp" => DateTime.utc_now()}
-          end
-        other -> %{"action" => "unknown", "data" => other, "timestamp" => DateTime.utc_now()}
-      end
-
     try do
+      # Normalize to canonical event struct
+      canonical_event = 
+        case message.data do
+          bin when is_binary(bin) -> 
+            bin |> Jason.decode!() |> Event.normalize!()
+          data when is_map(data) -> 
+            Event.normalize!(data)
+          other -> 
+            Event.normalize!(%{"type" => "unknown", "payload" => other})
+        end
+
+      # Apply transformations to canonical event
       processed_event =
-        event_data
-        |> validate_cross_domain_event()
-        |> enrich_with_routing_metadata()
+        canonical_event
         |> apply_transformation_rules()
+        |> Event.increment_hop_count()
+        |> Event.put_metadata("processing_node", Node.self())
+        |> Event.put_metadata("processed_at", DateTime.utc_now())
 
       # Determine target domain batcher
       batcher = determine_target_batcher(processed_event)
@@ -116,50 +90,52 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
       error ->
         Logger.error("Cross-domain event processing failed: #{inspect(error)}")
 
-        # Send to dead letter queue
-        send_to_dead_letter_queue(event_data, error)
+        # Send to dead letter queue  
+        send_to_dead_letter_queue(message.data, error)
 
         Message.failed(message, error)
     end
   end
 
   @impl Broadway
-  def handle_batch(:thundercore_events, messages, _batch_info, _context) do
-    Logger.info("Processing #{length(messages)} Thundercore events")
+  def handle_batch(:thundercrown_events, messages, _batch_info, _context) do
+    Logger.info("Processing #{length(messages)} ThunderCrown events")
 
     events = Enum.map(messages, & &1.data)
 
-    case route_to_thundercore_batch(events) do
+    # Emit fanout telemetry for single-domain routing
+    Enum.each(events, fn event ->
+      :telemetry.execute(
+        [:thunderline, :cross_domain, :fanout],
+        %{target_count: 1},
+        %{event_type: to_string(event.type), source_domain: event.source_domain}
+      )
+    end)
+
+    case route_to_thundercrown_batch(events) do
       :ok ->
-        notify_domain_processing_complete("thundercore", length(events))
+        notify_domain_processing_complete("thundercrown", length(events))
         messages
 
       {:error, failed_events} ->
-        handle_routing_failures("thundercore", messages, failed_events)
-    end
-  end
-
-  @impl Broadway
-  def handle_batch(:thundervault_events, messages, _batch_info, _context) do
-    Logger.info("Processing #{length(messages)} Thundervault events")
-
-    events = Enum.map(messages, & &1.data)
-
-    case route_to_thundervault_batch(events) do
-      :ok ->
-        notify_domain_processing_complete("thunderblock", length(events))
-        messages
-
-      {:error, failed_events} ->
-        handle_routing_failures("thunderblock", messages, failed_events)
+        handle_routing_failures("thundercrown", messages, failed_events)
     end
   end
 
   @impl Broadway
   def handle_batch(:thunderbolt_events, messages, _batch_info, _context) do
-    Logger.info("Processing #{length(messages)} Thunderbolt events")
+    Logger.info("Processing #{length(messages)} ThunderBolt events")
 
     events = Enum.map(messages, & &1.data)
+
+    # Emit fanout telemetry for single-domain routing
+    Enum.each(events, fn event ->
+      :telemetry.execute(
+        [:thunderline, :cross_domain, :fanout],
+        %{target_count: 1},
+        %{event_type: to_string(event.type), source_domain: event.source_domain}
+      )
+    end)
 
     case route_to_thunderbolt_batch(events) do
       :ok ->
@@ -173,9 +149,18 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   @impl Broadway
   def handle_batch(:thunderblock_events, messages, _batch_info, _context) do
-    Logger.info("Processing #{length(messages)} Thunderblock events")
+    Logger.info("Processing #{length(messages)} ThunderBlock events")
 
     events = Enum.map(messages, & &1.data)
+
+    # Emit fanout telemetry for single-domain routing
+    Enum.each(events, fn event ->
+      :telemetry.execute(
+        [:thunderline, :cross_domain, :fanout],
+        %{target_count: 1},
+        %{event_type: to_string(event.type), source_domain: event.source_domain}
+      )
+    end)
 
     case route_to_thunderblock_batch(events) do
       :ok ->
@@ -192,6 +177,15 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     Logger.info("Processing #{length(messages)} broadcast events")
 
     events = Enum.map(messages, & &1.data)
+
+    # Emit fanout telemetry for broadcast events (high fanout)
+    Enum.each(events, fn event ->
+      :telemetry.execute(
+        [:thunderline, :cross_domain, :fanout],
+        %{target_count: 3},  # broadcast_targets length
+        %{event_type: to_string(event.type), source_domain: event.source_domain}
+      )
+    end)
 
     # These events go to multiple domains
     case handle_broadcast_events_batch(events) do
@@ -210,109 +204,90 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     end
   end
 
-  # Event validation and transformation
-  defp validate_cross_domain_event(event) do
-  # Soft validation: populate missing keys rather than raising to keep flow moving
-  event
-  |> Map.put_new("source_domain", Map.get(event, "from_domain", "unknown"))
-  |> Map.put_new("target_domain", Map.get(event, "to_domain", "unknown"))
-  |> Map.put_new("action", "unknown")
-  |> Map.put_new("data", %{})
-  end
-
-  defp enrich_with_routing_metadata(event) do
-    Map.merge(event, %{
-      "routing_timestamp" => DateTime.utc_now(),
-      "processing_node" => Node.self(),
-      "correlation_id" => generate_correlation_id(),
-      "hop_count" => Map.get(event, "hop_count", 0) + 1
-    })
-  end
-
-  defp apply_transformation_rules(%{"transformation_rules" => rules} = event)
+  defp apply_transformation_rules(%Event{metadata: %{"transformation_rules" => rules}} = event)
        when is_list(rules) do
     Enum.reduce(rules, event, &apply_transformation_rule/2)
   end
 
-  defp apply_transformation_rules(event), do: event
+  defp apply_transformation_rules(%Event{} = event), do: event
 
-  defp apply_transformation_rule(%{"type" => "field_mapping", "mappings" => mappings}, event) do
-    # Apply field mappings for cross-domain compatibility
-    Enum.reduce(mappings, event, fn {old_field, new_field}, acc ->
-      case Map.pop(acc, old_field) do
-        {nil, acc} -> acc
-        {value, acc} -> Map.put(acc, new_field, value)
-      end
-    end)
+  defp apply_transformation_rule(%{"type" => "field_mapping", "mappings" => mappings}, %Event{} = event) do
+    # Apply field mappings for cross-domain compatibility in payload
+    updated_payload = 
+      Enum.reduce(mappings, event.payload, fn {old_field, new_field}, acc ->
+        case Map.pop(acc, old_field) do
+          {nil, acc} -> acc
+          {value, acc} -> Map.put(acc, new_field, value)
+        end
+      end)
+    
+    %{event | payload: updated_payload}
   end
 
-  defp apply_transformation_rule(%{"type" => "data_enrichment", "source" => source}, event) do
+  defp apply_transformation_rule(%{"type" => "data_enrichment", "source" => source}, %Event{} = event) do
     # Enrich event data from external sources
     enrichment_data = fetch_enrichment_data(source, event)
-    Map.put(event, "enrichment", enrichment_data)
+    Event.put_metadata(event, "enrichment", enrichment_data)
   end
 
-  defp apply_transformation_rule(_rule, event), do: event
+  defp apply_transformation_rule(_rule, %Event{} = event), do: event
 
-  defp determine_target_batcher(%{"target_domain" => "thundercore"}), do: :thundercore_events
-  defp determine_target_batcher(%{"target_domain" => "thundervault"}), do: :thundervault_events
-  defp determine_target_batcher(%{"target_domain" => "thunderbolt"}), do: :thunderbolt_events
-  defp determine_target_batcher(%{"target_domain" => "thunderblock"}), do: :thunderblock_events
-  defp determine_target_batcher(%{"target_domain" => "broadcast"}), do: :broadcast_events
-  defp determine_target_batcher(_), do: :broadcast_events
+  defp determine_target_batcher(%Event{target_domain: "thunderbolt"}), do: :thunderbolt_events
+  defp determine_target_batcher(%Event{target_domain: "thunderblock"}), do: :thunderblock_events
+  defp determine_target_batcher(%Event{target_domain: "thundercrown"}), do: :thundercrown_events
+  defp determine_target_batcher(%Event{target_domain: "broadcast"}), do: :broadcast_events
+  defp determine_target_batcher(%Event{}), do: :broadcast_events
 
-  # Domain-specific routing implementations
-  defp route_to_thundercore_batch(events) do
+  # Domain-specific routing implementations  
+  defp route_to_thundercrown_batch(events) do
+    # Convert canonical events to maps for job serialization
+    event_maps = Enum.map(events, &Event.to_map/1)
+    
     job_params = %{
-      "events" => events,
-      "target_domain" => "thundercore",
+      "events" => event_maps,
+      "target_domain" => "thundercrown",
       "batch_size" => length(events),
-      "processing_timestamp" => DateTime.utc_now()
+      "processing_timestamp" => DateTime.utc_now(),
+      "operation" => "process_domain_event"
     }
 
-    case Thunderchief.Jobs.ThundercoreProcessor.new(job_params) |> Oban.insert() do
-      {:ok, _job} -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp route_to_thundervault_batch(events) do
-    job_params = %{
-      "events" => events,
-      "target_domain" => "thunderblock",
-      "batch_size" => length(events),
-      "processing_timestamp" => DateTime.utc_now()
-    }
-
-    case Thunderchief.Jobs.ThundervaultProcessor.new(job_params) |> Oban.insert() do
+    case Thunderline.Thunderflow.Jobs.ThunderCrownProcessor.new(job_params) |> Oban.insert() do
       {:ok, _job} -> :ok
       {:error, reason} -> {:error, reason}
     end
   end
 
   defp route_to_thunderbolt_batch(events) do
+    # Convert canonical events to maps for job serialization
+    event_maps = Enum.map(events, &Event.to_map/1)
+    
     job_params = %{
-      "events" => events,
+      "events" => event_maps,
       "target_domain" => "thunderbolt",
       "batch_size" => length(events),
-      "processing_timestamp" => DateTime.utc_now()
+      "processing_timestamp" => DateTime.utc_now(),
+      "operation" => "compute_task"
     }
 
-    case Thunderchief.Jobs.ThunderboltProcessor.new(job_params) |> Oban.insert() do
+    case Thunderline.Thunderflow.Jobs.ThunderBoltProcessor.new(job_params) |> Oban.insert() do
       {:ok, _job} -> :ok
       {:error, reason} -> {:error, reason}
     end
   end
 
   defp route_to_thunderblock_batch(events) do
+    # Convert canonical events to maps for job serialization
+    event_maps = Enum.map(events, &Event.to_map/1)
+    
     job_params = %{
-      "events" => events,
+      "events" => event_maps,
       "target_domain" => "thunderblock",
       "batch_size" => length(events),
-      "processing_timestamp" => DateTime.utc_now()
+      "processing_timestamp" => DateTime.utc_now(),
+      "operation" => "vault_sync"
     }
 
-    case Thunderchief.Jobs.ThunderblockProcessor.new(job_params) |> Oban.insert() do
+    case Thunderline.Thunderflow.Jobs.ThunderBlockProcessor.new(job_params) |> Oban.insert() do
       {:ok, _job} -> :ok
       {:error, reason} -> {:error, reason}
     end
@@ -320,7 +295,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   defp handle_broadcast_events_batch(events) do
     # Process events that need to go to multiple domains
-    broadcast_targets = ["thundercore", "thunderblock", "thunderbolt", "thunderblock"]
+    broadcast_targets = ["thundercrown", "thunderblock", "thunderbolt"]
 
     Enum.reduce_while(broadcast_targets, :ok, fn target, _acc ->
       job_params = %{
@@ -338,19 +313,17 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     end)
   end
 
-  defp create_domain_job("thundercore", params),
-    do: Thunderchief.Jobs.ThundercoreProcessor.new(params) |> Oban.insert()
-
-  defp create_domain_job("thunderblock", params),
-    do: Thunderchief.Jobs.ThundervaultProcessor.new(params) |> Oban.insert()
-
-  defp create_domain_job("thunderbolt", params),
-    do: Thunderchief.Jobs.ThunderboltProcessor.new(params) |> Oban.insert()
-
-  defp create_domain_job("thunderblock", params),
-    do: Thunderchief.Jobs.ThunderblockProcessor.new(params) |> Oban.insert()
-
-  defp create_domain_job(_, _), do: {:error, :unknown_domain}
+  defp create_domain_job(domain, params) do
+    # Protect domain job creation with circuit breaker
+    Thunderline.Support.CircuitBreaker.call({:domain, domain}, fn ->
+      case domain do
+        "thunderbolt" -> Thunderline.Thunderflow.Jobs.ThunderBoltProcessor.new(params) |> Oban.insert()
+        "thunderblock" -> Thunderline.Thunderflow.Jobs.ThunderBlockProcessor.new(params) |> Oban.insert()
+        "thundercrown" -> Thunderline.Thunderflow.Jobs.ThunderCrownProcessor.new(params) |> Oban.insert()
+        _ -> {:error, :unknown_domain}
+      end
+    end)
+  end
 
   defp notify_domain_processing_complete(domain, event_count) do
     PubSub.broadcast(
@@ -401,16 +374,12 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
     # Schedule retry via Oban
     %{"retry_event" => retry_event}
-    |> Thunderchief.Jobs.RetryProcessor.new(scheduled_at: retry_event["retry_at"])
+    |> Thunderline.Thunderflow.Jobs.RetryProcessor.new(scheduled_at: retry_event["retry_at"])
     |> Oban.insert()
   end
 
   defp fetch_enrichment_data(_source, _event) do
     # Placeholder for data enrichment
     %{"enriched_at" => DateTime.utc_now()}
-  end
-
-  defp generate_correlation_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
   end
 end

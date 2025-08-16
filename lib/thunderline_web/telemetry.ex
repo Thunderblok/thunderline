@@ -52,7 +52,7 @@ defmodule ThunderlineWeb.Telemetry do
       last_value("thunderline.chunks.total"),
       last_value("thunderline.memory.usage"),
       counter("thunderline.events.processed")
-    ]
+    ] ++ Thunderline.Thunderflow.Telemetry.Jobs.metrics()
   end
 
   defp periodic_measurements do

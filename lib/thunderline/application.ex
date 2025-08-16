@@ -28,6 +28,10 @@ defmodule Thunderline.Application do
       Thunderline.ThunderMemory,
 
       # ⚡💧 THUNDERFLOW - Event Stream Processing
+      Thunderline.Support.CircuitBreaker,
+      Thunderline.Thunderflow.Observability.FanoutAggregator,
+      Thunderline.Thunderflow.Observability.FanoutGuard,
+      Thunderline.Thunderflow.Observability.QueueDepthCollector,
       {Thunderline.Thunderflow.Pipelines.EventPipeline, []},
       {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []},
       {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []},
@@ -61,6 +65,10 @@ defmodule Thunderline.Application do
     ]
 
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
+    
+    # Attach observability telemetry handlers
+    Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
+    
     Supervisor.start_link(children, opts)
   end
 

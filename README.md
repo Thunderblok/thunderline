@@ -14,17 +14,15 @@ The system employs a unique hybrid architecture that seamlessly integrates Entit
 
 ### Domain-Driven Excellence
 
-Thunderline is architected around fifteen specialized domains, each handling distinct aspects of the intelligent system:
+Thunderline is architected around seven specialized domains, each handling distinct aspects of the intelligent system:
 
-- **Thundervault**: Secure data persistence and identity management
-- **Thunderchief**: Orchestration and coordination hub
-- **Thundercrown**: AI governance and decision architecture
-- **Thundercom**: Federation protocols and inter-system communication
-- **Thunderbit**: Atomic agent processing and behavior management
-- **Thunderflow**: Event streaming and data pipeline coordination
-- **Thundergrid**: Spatial management and coordinate systems
-- **Thundereye**: Comprehensive monitoring and observability
-- **Thundergate**: External system integrations and adapters
+- **ThunderBlock**: Secure data persistence and infrastructure management
+- **ThunderBolt**: High-performance compute and processing acceleration
+- **ThunderCrown**: AI governance, orchestration and decision architecture
+- **ThunderFlow**: Event streaming and data pipeline coordination
+- **ThunderGate**: External system integrations, security and gateway services
+- **ThunderGrid**: Spatial management and coordinate systems
+- **ThunderLink**: Federation protocols and inter-system communication
 
 ### Event-Driven Foundation
 
@@ -94,6 +92,92 @@ Built-in monitoring and observability tools provide deep insights into system be
 
 ### Scalable Architecture
 The domain-driven design allows for selective scaling of individual system components based on load patterns and operational requirements.
+
+## Event Processing Pipeline
+
+### Gated Architecture (Phase-0 Operational Improvements)
+
+Thunderline uses a **gated event processing architecture** that provides both simplicity and power:
+
+**Default Path (TL_ENABLE_REACTOR=false)**:
+- Simple, direct event processing via `Thunderline.EventProcessor`
+- Optimized for high-throughput with minimal overhead
+- Exponential backoff with jitter for resilient retries
+- Circuit breaker protection for external services
+- Comprehensive telemetry and error classification
+
+**Advanced Path (TL_ENABLE_REACTOR=true)**:
+- Reactor-based saga orchestration (available when needed)
+- Complex compensation and undo logic
+- Recursive workflows and advanced DAG patterns
+
+### Operational Features
+
+**Smart Retry Strategy:**
+```elixir
+# Exponential backoff: 1s → 2s → 4s → 8s → 16s (capped at 5min)
+# With ±20% jitter to prevent thundering herd
+```
+
+**Circuit Breaker Protection:**
+```elixir
+# Protects against failing domains:
+# 5 failures → open for 30s → half-open test → closed
+```
+
+**Error Classification:**
+- `:transient` - Network/timeout errors (retry)
+- `:permanent` - Validation/constraint errors (discard)
+- `:unknown` - Unclassified errors (retry with caution)
+
+**Key Telemetry Metrics:**
+- `thunderline.jobs.retries` - Retry attempts by queue/worker
+- `thunderline.jobs.failures` - Failures by error type
+- `thunderline.cross_domain.latency` - Cross-domain operation timing
+- `thunderline.circuit_breaker.calls` - Circuit breaker activity
+
+### Usage
+
+**Simple Event Processing:**
+```elixir
+# Canonical interface - routes to simple processor by default
+Ash.run!(Thunderline.Integrations.EventOps, :process_event, %{
+  event: %{
+    "type" => "agent_created", 
+    "payload" => %{"agent_id" => "123", "status" => "active"},
+    "source_domain" => "thundercrown",
+    "target_domain" => "thunderlink"
+  }
+})
+```
+
+**Job Queue Integration:**
+```elixir
+# For background processing
+%{"event" => %{
+  "type" => "cross_domain_sync",
+  "payload" => sync_data,
+  "source_domain" => "thunderblock"
+}}
+|> Thunderline.Thunderflow.Jobs.ProcessEvent.new()
+|> Oban.insert()
+```
+
+**Canonical Event Structure:**
+```elixir
+# All events normalized to this shape
+%Thunderline.Event{
+  type: :agent_created,
+  payload: %{"agent_id" => "123"},
+  source_domain: "thundercrown",
+  target_domain: "thunderlink",
+  timestamp: ~U[2025-08-16 10:30:00Z],
+  correlation_id: "abc123...",
+  hop_count: 0,
+  priority: :normal,
+  metadata: %{}
+}
+```
 
 ## Development Philosophy
 
