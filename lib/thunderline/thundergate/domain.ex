@@ -25,6 +25,10 @@ defmodule Thunderline.Thundergate.Domain do
   use Ash.Domain
 
   resources do
+    # Accounts → ThunderGate (authentication/security)
+    resource Thunderline.Thundergate.Resources.User
+    resource Thunderline.Thundergate.Resources.Token
+
     # Original ThunderGate resources
     resource Thunderline.Thundergate.Resources.ExternalService
     resource Thunderline.Thundergate.Resources.DataAdapter

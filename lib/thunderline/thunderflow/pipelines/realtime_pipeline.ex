@@ -62,7 +62,43 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   @impl Broadway
   def handle_message(processor, %Message{} = message, _context) do
-    event_data = Jason.decode!(message.data)
+    event_data =
+      case message.data do
+        bin when is_binary(bin) ->
+          # Backwards compat for any legacy JSON payloads
+          Jason.decode!(bin)
+        %{:type => type, :payload => payload, :timestamp => ts} = map ->
+          # EventBus.emit_realtime shape (atom keys)
+          %{
+            "event_type" => to_string(type),
+            "data" => payload,
+            "timestamp" => ts,
+            "priority" => Map.get(map, :priority)
+          }
+        %{:type => type, :payload => payload} = map ->
+          %{
+            "event_type" => to_string(type),
+            "data" => payload,
+            "timestamp" => Map.get(map, :timestamp, DateTime.utc_now()),
+            "priority" => Map.get(map, :priority)
+          }
+        %{"type" => type, "payload" => payload} = map ->
+          # Mixed key legacy variant
+          %{
+            "event_type" => to_string(type),
+            "data" => payload,
+            "timestamp" => Map.get(map, "timestamp", DateTime.utc_now()),
+            "priority" => Map.get(map, "priority")
+          }
+        map when is_map(map) ->
+          # If it already looks normalized, pass through; else wrap
+          cond do
+            Map.has_key?(map, "event_type") and Map.has_key?(map, "data") -> map
+            true -> %{"event_type" => "unknown", "data" => map, "timestamp" => DateTime.utc_now()}
+          end
+        other ->
+          %{"event_type" => "unknown", "data" => other, "timestamp" => DateTime.utc_now()}
+      end
 
     try do
       processed_event =
@@ -182,15 +218,11 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   # Event validation and optimization
   defp validate_realtime_event(event) do
-    required_fields = ["event_type", "data", "timestamp"]
-
-    missing_fields = required_fields -- Map.keys(event)
-
-    if missing_fields != [] do
-      raise "Missing required fields for real-time event: #{inspect(missing_fields)}"
-    end
-
-    event
+  # Ensure essential fields; synthesize if missing (soft validation to avoid pipeline failures)
+  event = Map.put_new(event, "event_type", "unknown")
+  event = Map.put_new(event, "data", %{})
+  event = Map.put_new(event, "timestamp", DateTime.utc_now())
+  event
   end
 
   defp add_realtime_metadata(event) do

@@ -124,6 +124,25 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
   end
 
   # Event transformation pipeline
+  # New unified event shape from EventBus: %{type: atom(), payload: map(), domain: "...", timestamp: DateTime.t}
+  defp transform_event(%{type: type, payload: payload} = event) when is_atom(type) do
+    domain = Map.get(event, :domain) || infer_domain_from_payload(payload)
+    base = %{
+      "domain" => domain,
+      "action" => to_string(type),
+      "payload" => payload,
+      "timestamp" => Map.get(event, :timestamp, DateTime.utc_now()),
+      "severity" => Map.get(event, :severity, "normal")
+    }
+
+    base
+    |> enrich_with_metadata()
+    |> normalize_timestamps()
+    |> validate_event_schema()
+    |> tag_with_priority()
+  end
+
+  # Legacy already-normalized map with string keys domain/action
   defp transform_event(%{"domain" => _domain, "action" => _action} = event) do
     event
     |> enrich_with_metadata()
@@ -131,6 +150,23 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     |> validate_event_schema()
     |> tag_with_priority()
   end
+
+  # Fallback: wrap arbitrary map
+  defp transform_event(other) when is_map(other) do
+    %{
+      type: Map.get(other, :type, :unknown_event),
+      payload: other,
+      timestamp: DateTime.utc_now()
+    }
+    |> transform_event()
+  end
+
+  defp infer_domain_from_payload(%{domain: d}) when is_binary(d), do: d
+  defp infer_domain_from_payload(%{"domain" => d}) when is_binary(d), do: d
+  defp infer_domain_from_payload(%{agent_id: _}), do: "thunderchief"
+  defp infer_domain_from_payload(%{"agent_id" => _}), do: "thunderchief"
+  defp infer_domain_from_payload(%{message_id: _}), do: "thunderblock"
+  defp infer_domain_from_payload(_), do: "unknown"
 
   defp enrich_with_metadata(event) do
     Map.merge(event, %{

@@ -1,7 +1,7 @@
-defmodule Thunderline.Accounts.User do
+defmodule Thunderline.Thundergate.Resources.User do
   use Ash.Resource,
     otp_app: :thunderline,
-    domain: Thunderline.Accounts,
+    domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
     extensions: [AshAuthentication]
@@ -15,7 +15,7 @@ defmodule Thunderline.Accounts.User do
 
     tokens do
       enabled? true
-      token_resource Thunderline.Accounts.Token
+      token_resource Thunderline.Thundergate.Resources.Token
       signing_secret Thunderline.Secrets
       store_all_tokens? true
       require_token_presence_for_authentication? true

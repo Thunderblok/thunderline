@@ -17,9 +17,12 @@ defmodule Thunderline.Thunderlink.Domain do
   - P2P communication protocols
   """
 
-  use Ash.Domain
+  use Ash.Domain, extensions: [AshOban.Domain, AshGraphql.Domain]
 
   resources do
+    # Support → ThunderLink (social/community features)
+    resource Thunderline.Thunderlink.Resources.Ticket
+
     # ThunderCom → ThunderLink (communication)
     resource Thunderline.Thunderlink.Resources.Channel
     resource Thunderline.Thunderlink.Resources.Community
@@ -35,5 +38,34 @@ defmodule Thunderline.Thunderlink.Domain do
     # resource Thunderlink.Resources.CallSession
     # resource Thunderlink.Resources.MediaDevice
     # resource Thunderlink.Resources.StreamRecording
+  end
+
+  authorization do
+    # Enable authorization by default
+    authorize :by_default
+  end
+
+  graphql do
+    queries do
+      # Create a field called `get_ticket` that uses the `read` action to fetch a single ticket
+      get Thunderline.Thunderlink.Resources.Ticket, :get_ticket, :read
+
+      # Create a field called `list_tickets` that uses the `read` action to fetch a list of tickets
+      list Thunderline.Thunderlink.Resources.Ticket, :list_tickets, :read
+    end
+
+    mutations do
+      # Create a new ticket
+      create Thunderline.Thunderlink.Resources.Ticket, :create_ticket, :open
+
+      # Close an existing ticket
+      update Thunderline.Thunderlink.Resources.Ticket, :close_ticket, :close
+
+      # Process a ticket (manual trigger)
+      update Thunderline.Thunderlink.Resources.Ticket, :process_ticket, :process
+
+      # Escalate a ticket (manual trigger)
+      update Thunderline.Thunderlink.Resources.Ticket, :escalate_ticket, :escalate
+    end
   end
 end

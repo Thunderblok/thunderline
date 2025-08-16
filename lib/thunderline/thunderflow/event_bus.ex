@@ -369,27 +369,12 @@ defmodule Thunderline.EventBus do
         _ -> :general
       end
 
-    # Route to appropriate emit function
+  # Route to appropriate emit function
     case pipeline_type do
       :realtime ->
-        emit_realtime(
-          event_type,
-          Map.merge(data, %{
-            source: source,
-            priority: priority,
-            original_timestamp: Map.get(event, :timestamp)
-          })
-        )
-
+    emit_realtime(event_type, Map.merge(data, %{source: source, priority: priority, original_timestamp: Map.get(event, :timestamp)}))
       _ ->
-        emit(
-          event_type,
-          Map.merge(data, %{
-            source: source,
-            priority: priority,
-            original_timestamp: Map.get(event, :timestamp)
-          })
-        )
+    emit(event_type, Map.merge(data, %{source: source, priority: priority, original_timestamp: Map.get(event, :timestamp)}))
     end
   end
 

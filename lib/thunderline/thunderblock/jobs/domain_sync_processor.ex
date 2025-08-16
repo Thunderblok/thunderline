@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderblock.Jobs.DomainSyncProcessor do
   require Logger
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args} = job) do
+  def perform(%Oban.Job{args: args} = _job) do
     Logger.info("Processing domain sync: #{inspect(args)}")
 
     case args do
@@ -23,7 +23,7 @@ defmodule Thunderline.Thunderblock.Jobs.DomainSyncProcessor do
     end
   end
 
-  defp process_domain_sync(workflow_id, domain, sync_type, args) do
+  defp process_domain_sync(workflow_id, domain, sync_type, _args) do
     Logger.info("Syncing domain #{domain} (type: #{sync_type})")
 
     case {domain, sync_type} do

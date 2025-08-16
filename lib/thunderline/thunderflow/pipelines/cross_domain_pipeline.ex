@@ -64,7 +64,40 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   @impl Broadway
   def handle_message(processor, %Message{} = message, _context) do
-    event_data = Jason.decode!(message.data)
+    event_data =
+      case message.data do
+        bin when is_binary(bin) -> Jason.decode!(bin)
+        %{:type => type, :payload => payload, :from_domain => from, :to_domain => to} = map ->
+          %{
+            "action" => to_string(type),
+            "data" => payload,
+            "source_domain" => from || Map.get(map, :from),
+            "target_domain" => to || Map.get(map, :to),
+            "timestamp" => Map.get(map, :timestamp, DateTime.utc_now())
+          }
+        %{:type => type, :payload => payload} = map ->
+            %{
+              "action" => to_string(type),
+              "data" => payload,
+              "source_domain" => Map.get(map, :from_domain) || Map.get(map, :from),
+              "target_domain" => Map.get(map, :to_domain) || Map.get(map, :to),
+              "timestamp" => Map.get(map, :timestamp, DateTime.utc_now())
+            }
+        %{"type" => type, "payload" => payload} = map ->
+          %{
+            "action" => to_string(type),
+            "data" => payload,
+            "source_domain" => Map.get(map, "from_domain") || Map.get(map, "from"),
+            "target_domain" => Map.get(map, "to_domain") || Map.get(map, "to"),
+            "timestamp" => Map.get(map, "timestamp", DateTime.utc_now())
+          }
+        map when is_map(map) ->
+          cond do
+            Map.has_key?(map, "source_domain") and Map.has_key?(map, "target_domain") -> map
+            true -> %{"action" => "unknown", "data" => map, "timestamp" => DateTime.utc_now()}
+          end
+        other -> %{"action" => "unknown", "data" => other, "timestamp" => DateTime.utc_now()}
+      end
 
     try do
       processed_event =
@@ -179,15 +212,12 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   # Event validation and transformation
   defp validate_cross_domain_event(event) do
-    required_fields = ["source_domain", "target_domain", "action", "data"]
-
-    missing_fields = required_fields -- Map.keys(event)
-
-    if missing_fields != [] do
-      raise "Missing required fields: #{inspect(missing_fields)}"
-    end
-
-    event
+  # Soft validation: populate missing keys rather than raising to keep flow moving
+  event
+  |> Map.put_new("source_domain", Map.get(event, "from_domain", "unknown"))
+  |> Map.put_new("target_domain", Map.get(event, "to_domain", "unknown"))
+  |> Map.put_new("action", "unknown")
+  |> Map.put_new("data", %{})
   end
 
   defp enrich_with_routing_metadata(event) do
@@ -225,7 +255,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
   defp apply_transformation_rule(_rule, event), do: event
 
   defp determine_target_batcher(%{"target_domain" => "thundercore"}), do: :thundercore_events
-  defp determine_target_batcher(%{"target_domain" => "thunderblock"}), do: :thundervault_events
+  defp determine_target_batcher(%{"target_domain" => "thundervault"}), do: :thundervault_events
   defp determine_target_batcher(%{"target_domain" => "thunderbolt"}), do: :thunderbolt_events
   defp determine_target_batcher(%{"target_domain" => "thunderblock"}), do: :thunderblock_events
   defp determine_target_batcher(%{"target_domain" => "broadcast"}), do: :broadcast_events

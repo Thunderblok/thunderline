@@ -11,7 +11,6 @@ defmodule Thunderline.Thunderflow.Resources.ConsciousnessFlow do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
 
-  import Ash.Resource.Change.Builtins
 
   import Ash.Expr
 

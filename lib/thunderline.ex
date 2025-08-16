@@ -1,88 +1,169 @@
 defmodule Thunderline do
   @moduledoc """
-  Thunderline - Federated Event-Driven Architecture
+  Thunderline Root Convenience & Health Module
 
-  A next-generation federated system with clear domain boundaries, event-driven
-  coordination, and AI-powered orchestration.
+  Aggregates cross-domain runtime & health data over the 7-domain federation:
+  Thunderbolt, Thunderflow, Thundergate, Thunderblock, Thunderlink, Thundercrown, Thundergrid.
 
-  ## 7-Domain Architecture
+  Responsibilities:
+  - Surface consolidated system & queue metrics (system_health/0)
+  - Provide simplified health_check/0 used by endpoints & readiness probes
+  - Lightweight delegations to core compute helpers (Ising solver shortcuts)
+  - Domain enumeration & status probing (for ops visibility)
 
-  ### ⚡🔥 THUNDERBOLT - POWERHOUSE COMPUTE & ACCELERATION 🔥⚡
-  **Boundary**: "Raw compute muscle" - Heavy lifting, acceleration, algorithms
-  - High-performance computation (Nx/EXLA)
-  - GPU/TPU acceleration and optimization
-  - Ising machine solving and ML workloads
-
-  ### ⚡💧 THUNDERFLOW - EVENT STREAMS & DATA RIVERS 💧⚡
-  **Boundary**: "Data flows and event streams" - Real-time processing
-  - Event sourcing and stream processing
-  - Real-time data pipelines
-  - Cellular automata and simulations
-
-  ### ⚡🌐 THUNDERGATE - SECURITY, GATEWAY & EXTERNAL INTEGRATION 🌐⚡
-  **Boundary**: "External world interface"and Security perimeter - APIs, webhooks, integrations, Auth, permissions, compliance
-  - External API integrations
-  - Webhook processing and routing
-  - Network security and gateway services
-  - Authentication and authorization
-  - Access control and permissions
-  - Security monitoring and compliance
-
-  ### ⚡🧱 THUNDERBLOCK - STORAGE & PERSISTENCE MASTERY 🧱⚡
-  **Boundary**: "Storage and memory" - Persistence, caching, retrieval
-  - Database operations and persistence
-  - File storage and media management
-  - Caching and memory management
-
-  ### ⚡🔗 THUNDERLINK - CONNECTION & COMMUNICATION HUB 🔗⚡
-  **Boundary**: "Internal connectivity" - WebRTC, comms, UI state
-  - WebRTC connections and real-time communication
-  - Phoenix LiveView state management
-  - Internal messaging and coordination
-
-  ### ⚡👑 THUNDERCROWN - GOVERNANCE & ORCHESTRATION SUPREMACY 👑⚡
-  **Boundary**: "Crown decides" - When/why, scheduling, governance, coordination
-  - Temporal orchestration and scheduling
-  - AI governance and multi-agent coordination
-  - Workflow orchestration and MCP tools integration
-
-  ### ⚡⚔️ THUNDERGUARD - SECURITY & ACCESS CONTROL FORTRESS ⚔️⚡
-
-
-  ### ⚡🟦 THUNDERGRID - SPATIAL COORDINATE & MESH MANAGEMENT 🟦⚡
-  **Boundary**: "Spatial intelligence" - Coordinate systems, zoning, grid management
-  - Spatial coordinate systems (hexagonal grids)
-  - Zone boundary definitions and management
-  - Grid resource allocation and optimization
-  - Spatial event tracking and analysis
-
-  ## Key Features
-
-  - **Domain-Driven Design**: Clear boundaries with single responsibility
-  - **Event-Driven Architecture**: Reactive coordination between domains
-  - **AI-Powered Orchestration**: LLM-driven workflows and decision-making
-  - **High Performance**: Nx/EXLA acceleration with distributed computation
-  - **Fault Tolerance**: BEAM supervision trees with process isolation
+  NOTE: No business logic lives here; keep it an ops-facing façade only.
   """
+
+  require Logger
 
   @doc """
-  Quick access to Ising machine optimization.
+  Return a snapshot map of current system health & key runtime indicators.
+
+  Fields (may evolve – treat as observational, not strict API):
+  * :timestamp – UTC timestamp
+  * :version – application version
+  * :node / :connected_nodes – current BEAM distribution info
+  * :memory – subset of :erlang.memory/0 data
+  * :process_count – total process count
+  * :event_queues – aggregated event queue stats (pending/processing/failed/etc.)
+  * :agents / :chunks – ThunderMemory derived counts
+  * :oban – configured queues + peer table presence flag
+  * :domains_loaded – count of Ash domains configured
+  * :repo – repo connectivity check & migration status heuristics
+  * :warnings_pending – (lazy) approximate count of compilation warnings if available
   """
+  def system_health do
+    %{
+      timestamp: DateTime.utc_now(),
+      version: app_version(),
+      node: node(),
+      connected_nodes: Node.list(),
+      memory: memory_snapshot(),
+      process_count: :erlang.system_info(:process_count),
+      event_queues: queue_stats_safe(),
+      agents: safe_metric(&Thunderline.Thunderflow.MetricSources.active_agents/0),
+      chunks: safe_metric(&Thunderline.Thunderflow.MetricSources.chunk_total/0),
+      oban: oban_status(),
+      domains_loaded: domains_loaded_count(),
+      repo: repo_status(),
+      warnings_pending: compilation_warning_estimate()
+    }
+  end
+
+  @doc "Return only event queue statistics (shorthand for system_health().event_queues)."
+  def event_queue_stats, do: queue_stats_safe()
+
+  # ----- Internal helpers -----
+
+  defp app_version do
+    case Application.spec(:thunderline, :vsn) do
+      nil -> :unknown
+      vsn -> List.to_string(vsn)
+    end
+  end
+
+  defp memory_snapshot do
+    mem = :erlang.memory()
+    %{
+      total: mem[:total],
+      processes: mem[:processes],
+      processes_used: mem[:processes_used],
+      system: mem[:system],
+      atom: mem[:atom],
+      binary: mem[:binary],
+      code: mem[:code],
+      ets: mem[:ets]
+    }
+  end
+
+  defp queue_stats_safe do
+    safe_metric(&Thunderline.Thunderflow.MetricSources.queue_depths/0)
+  end
+
+  defp safe_metric(fun) when is_function(fun, 0) do
+    try do
+      fun.()
+    rescue
+      _ -> :unavailable
+    catch
+      _ -> :unavailable
+    end
+  end
+
+  defp domains_loaded_count do
+    case Application.get_env(:thunderline, :ash_domains) do
+      list when is_list(list) -> length(list)
+      _ -> 0
+    end
+  end
+
+  defp repo_status do
+    repo = Thunderline.Repo
+
+    connectivity =
+      try do
+        case repo.__adapter__().checked_out?() do
+          _ -> :ok
+        end
+        # lightweight query
+        case Ecto.Adapters.SQL.query(repo, "SELECT 1", []) do
+          {:ok, _} -> :ok
+          {:error, err} -> {:error, err}
+        end
+      rescue
+        e -> {:error, e}
+      end
+
+    %{
+      connectivity: connectivity,
+      oban_peers_present: oban_peers_table?()
+    }
+  end
+
+  defp oban_status do
+    config = Application.get_env(:thunderline, Oban, [])
+    queues = Keyword.get(config, :queues, []) |> Enum.map(fn {q, _c} -> q end)
+
+    %{
+      queues: queues,
+      peers_table?: oban_peers_table?()
+    }
+  end
+
+  defp oban_peers_table? do
+    try do
+      case Ecto.Adapters.SQL.query(Thunderline.Repo, "SELECT to_regclass('public.oban_peers')", []) do
+        {:ok, %{rows: [[nil]]}} -> false
+        {:ok, %{rows: [[_]]}} -> true
+        _ -> false
+      end
+    rescue
+      _ -> false
+    end
+  end
+
+  # Best-effort heuristic – we cannot easily pull compile warnings at runtime without tools.
+  defp compilation_warning_estimate do
+    # If a previous run stored something in persistent_term, we reuse it; else :unknown
+    case :persistent_term.get({__MODULE__, :warning_count}, :unknown) do
+      :unknown -> :unknown
+      count -> count
+    end
+  end
+  # -------- Delegated compute helpers (thin shortcuts) --------
+  @doc "Quick access to Ising machine optimization."
   defdelegate ising_solve(height, width, opts \\ []),
     to: Thunderline.Thunderbolt.IsingMachine,
     as: :quick_solve
 
-  @doc """
-  Quick access to Max-Cut optimization.
-  """
+  @doc "Quick access to Max-Cut optimization."
   defdelegate max_cut(edges, num_vertices, opts \\ []),
     to: Thunderline.Thunderbolt.IsingMachine,
     as: :solve_max_cut
 
-  @doc """
-  System health check and performance validation.
-  """
-  def health_check() do
+  # -------- High-level health check (subset of system_health) --------
+  @doc "Lightweight readiness/liveness style health summary."
+  def health_check do
     %{
       beam_vm: check_beam_health(),
       compute_acceleration: Thunderline.Thunderbolt.IsingMachine.check_acceleration(),
@@ -91,7 +172,7 @@ defmodule Thunderline do
     }
   end
 
-  defp check_beam_health() do
+  defp check_beam_health do
     %{
       schedulers: :erlang.system_info(:schedulers),
       processes: :erlang.system_info(:process_count),
@@ -100,6 +181,7 @@ defmodule Thunderline do
     }
   end
 
+  @doc "Enumerated Ash domain modules (ops visibility)."
   def domains do
     [
       Thunderline.Thunderbolt.Domain,
@@ -112,11 +194,10 @@ defmodule Thunderline do
     ]
   end
 
-  defp check_domain_health() do
+  defp check_domain_health do
     Enum.reduce(domains(), %{}, fn domain, acc ->
       status =
         try do
-          # Basic domain functionality check
           resources = Ash.Domain.Info.resources(domain)
           %{status: :healthy, resource_count: length(resources)}
         rescue

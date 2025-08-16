@@ -81,7 +81,7 @@ defmodule Thunderline.Thunderbolt.IsingMachine do
   defdelegate solve_with_parallel_tempering(lattice_or_opts, opts \\ []), to: __MODULE__.API
   defdelegate solve_distributed(lattice, opts \\ []), to: __MODULE__.API
 
-  alias __MODULE__.{Lattice, Kernel, Anneal, Temper, Scheduler, API}
+  alias __MODULE__.{Lattice, Kernel, Anneal, Temper, Scheduler}
 
   @doc """
   Creates a 2D grid lattice for Ising optimization.
@@ -153,9 +153,8 @@ defmodule Thunderline.Thunderbolt.IsingMachine do
         Kernel.total_energy_grid(spins, lattice.coupling_matrix, field_tensor)
 
       :graph ->
-        {rows, cols, weights} = lattice.edges
-
-        field_tensor =
+        {_rows, _cols, _weights} = lattice.edges
+        _field_tensor =
           if is_number(field) do
             Nx.broadcast(field, Nx.shape(spins))
           else

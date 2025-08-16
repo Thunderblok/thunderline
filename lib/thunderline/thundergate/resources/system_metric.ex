@@ -10,7 +10,6 @@ defmodule Thunderline.Thundergate.Resources.SystemMetric do
     domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer
 
-  import Ash.Resource.Change.Builtins
 
   postgres do
     table "system_metrics"

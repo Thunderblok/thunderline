@@ -854,17 +854,17 @@ defmodule Thunderline.Thunderlink.Resources.Role do
     :ok
   end
 
-  defp apply_role_permissions(role, user_id) do
+  defp apply_role_permissions(_role, _user_id) do
     # Apply role permissions to user's effective permissions
     :ok
   end
 
-  defp remove_role_permissions(role, user_id) do
+  defp remove_role_permissions(_role, _user_id) do
     # Remove role permissions from user's effective permissions
     :ok
   end
 
-  defp create_permission_change_event(role, updated_by) do
+  defp create_permission_change_event(_role, _updated_by) do
     # Log permission changes for audit trail
     :ok
   end
@@ -876,7 +876,7 @@ defmodule Thunderline.Thunderlink.Resources.Role do
     end
   end
 
-  defp apply_timeout_to_members(role, timeout_until, reason) do
+  defp apply_timeout_to_members(_role, _timeout_until, _reason) do
     # Apply timeout restrictions to all role members
     :ok
   end

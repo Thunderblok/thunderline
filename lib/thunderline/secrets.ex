@@ -3,7 +3,7 @@ defmodule Thunderline.Secrets do
 
   def secret_for(
         [:authentication, :tokens, :signing_secret],
-        Thunderline.Accounts.User,
+        Thunderline.Thundergate.Resources.User,
         _opts,
         _context
       ) do

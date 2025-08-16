@@ -907,33 +907,34 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
   end
 
   # ===== PRIVATE FUNCTIONS =====
-  defp initialize_federation_connection(socket) do
-    # Initialize federation connection based on protocol
+  # NOTE: Parameters are currently unused in stubs; underscore-prefixed to silence warnings
+  defp initialize_federation_connection(_socket) do
+    # Initialize federation connection based on protocol (stub)
     :ok
   end
 
-  defp register_socket_with_community(socket) do
-    # Register socket with community federation registry
+  defp register_socket_with_community(_socket) do
+    # Register socket with community federation registry (stub)
     :ok
   end
 
-  defp establish_federation_connection(socket) do
-    # Establish active federation connection
+  defp establish_federation_connection(_socket) do
+    # Establish active federation connection (stub)
     :ok
   end
 
-  defp pause_federation_connection(socket) do
-    # Pause federation traffic
+  defp pause_federation_connection(_socket) do
+    # Pause federation traffic (stub)
     :ok
   end
 
-  defp process_outbound_message(socket, message_data, priority) do
-    # Process and send outbound federation message
+  defp process_outbound_message(_socket, _message_data, _priority) do
+    # Process and send outbound federation message (stub)
     :ok
   end
 
-  defp process_inbound_message(socket, message_data, source_realm) do
-    # Process received federation message
+  defp process_inbound_message(_socket, _message_data, _source_realm) do
+    # Process received federation message (stub)
     # Validate, filter, and route to appropriate channels
     :ok
   end
@@ -967,10 +968,10 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
   end
 
   # Helper functions
-  defp attempt_reconnection(socket), do: :ok
-  defp rotate_credentials(socket), do: :ok
-  defp adjust_rate_limits(socket), do: :ok
-  defp send_queued_message(socket, message), do: :ok
+  defp attempt_reconnection(_socket), do: :ok
+  defp rotate_credentials(_socket), do: :ok
+  defp adjust_rate_limits(_socket), do: :ok
+  defp send_queued_message(_socket, _message), do: :ok
   defp generate_keypair(), do: "generated_keypair"
   defp generate_certificate(), do: "generated_certificate"
   defp generate_token(), do: "generated_token"

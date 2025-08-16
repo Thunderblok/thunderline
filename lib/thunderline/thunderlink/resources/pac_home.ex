@@ -900,47 +900,47 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
   end
 
   # ===== PRIVATE FUNCTIONS =====
-  defp provision_pac_environment(pac_home) do
+  defp provision_pac_environment(_pac_home) do
     # Provision execution environment for PAC home
     :ok
   end
 
-  defp initialize_default_agents(pac_home) do
+  defp initialize_default_agents(_pac_home) do
     # Initialize default agents based on configuration
     :ok
   end
 
-  defp setup_backup_schedule(pac_home) do
+  defp setup_backup_schedule(_pac_home) do
     # Configure backup scheduling
     :ok
   end
 
-  defp register_with_community(pac_home) do
+  defp register_with_community(_pac_home) do
     # Register PAC home with community
     :ok
   end
 
-  defp start_pac_services(pac_home) do
+  defp start_pac_services(_pac_home) do
     # Start PAC services and agents
     :ok
   end
 
-  defp suspend_pac_services(pac_home) do
+  defp suspend_pac_services(_pac_home) do
     # Suspend PAC operations
     :ok
   end
 
-  defp resume_pac_services(pac_home) do
+  defp resume_pac_services(_pac_home) do
     # Resume PAC operations
     :ok
   end
 
-  defp deploy_agent_to_pac(pac_home, agent_config) do
+  defp deploy_agent_to_pac(_pac_home, _agent_config) do
     # Deploy agent to PAC environment
     :ok
   end
 
-  defp terminate_agent_in_pac(pac_home, agent_id) do
+  defp terminate_agent_in_pac(_pac_home, _agent_id) do
     # Terminate specific agent
     :ok
   end
@@ -1014,22 +1014,22 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
     end
   end
 
-  defp check_resource_limits(pac_home) do
+  defp check_resource_limits(_pac_home) do
     # Check for resource limit violations
     :ok
   end
 
-  defp report_health_to_zone(pac_home) do
+  defp report_health_to_zone(_pac_home) do
     # Report PAC home health to zone container
     :ok
   end
 
-  defp trigger_pac_backup(pac_home) do
+  defp trigger_pac_backup(_pac_home) do
     # Trigger backup process for PAC home
     :ok
   end
 
-  defp cleanup_pac_resources(pac_home) do
+  defp cleanup_pac_resources(_pac_home) do
     # Cleanup resources for terminated PAC home
     :ok
   end

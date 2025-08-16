@@ -68,9 +68,6 @@ config :thunderline,
   ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [
-    Thunderline.Accounts,
-    # Simple test domain following Ash guide
-    Thunderline.Support,
     # 7-Domain Federation Architecture
     # ⚡🔥 Compute & Acceleration
     Thunderline.Thunderbolt.Domain,

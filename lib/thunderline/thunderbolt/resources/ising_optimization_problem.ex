@@ -160,7 +160,7 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
 
         coupling_opts =
           case problem.coupling_matrix do
-            %{type: :uniform, strength: s} ->
+            %{type: :uniform, strength: _s} ->
               [coupling: :uniform]
 
             %{type: :anisotropic, horizontal: h, vertical: v} ->

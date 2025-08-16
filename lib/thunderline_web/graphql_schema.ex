@@ -2,7 +2,7 @@ defmodule ThunderlineWeb.GraphqlSchema do
   use Absinthe.Schema
 
   use AshGraphql,
-    domains: [Thunderline.Support]
+    domains: [Thunderline.Thunderlink.Domain]
 
   import_types Absinthe.Plug.Types
 

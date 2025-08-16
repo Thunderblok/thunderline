@@ -483,7 +483,7 @@ defmodule Thunderline.ErlangBridge do
     end
   end
 
-  def handle_call({:connect_cerebros, config}, _from, state) do
+  def handle_call({:connect_cerebros, _config}, _from, state) do
     # For now, return success with mock Cerebros topology
     # In the future, this would connect to actual Cerebros neural architecture
     mock_topology = %{
@@ -1087,12 +1087,6 @@ defmodule Thunderline.ErlangBridge do
   end
 
   # Add new function to get real-time ThunderBolt metrics
-  defp get_thunderbolt_system_state() do
-    case call_erlang_safe(:thunderbolt_monitor, :get_system_state, []) do
-      {:ok, state} -> state
-      {:error, _} -> %{status: :unavailable, thunderbolts: [], metrics: %{}}
-    end
-  end
 
   # ====================================================================
   # ThunderCell Elixir Integration Functions
@@ -1187,7 +1181,7 @@ defmodule Thunderline.ErlangBridge do
     end
   end
 
-  defp pause_thundercell_lane(node, lane_dimension) do
+  defp pause_thundercell_lane(_node, _lane_dimension) do
     try do
       # For now, pause all clusters on this node
       # In a full implementation, this would pause specific lane dimensions

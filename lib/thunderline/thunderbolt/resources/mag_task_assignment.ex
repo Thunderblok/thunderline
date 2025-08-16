@@ -7,7 +7,6 @@ defmodule Thunderline.Thunderbolt.Resources.MagTaskAssignment do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer
 
-  import Ash.Resource.Change.Builtins
 
   postgres do
     table "thundermag_task_assignments"

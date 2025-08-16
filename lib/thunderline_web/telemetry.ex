@@ -86,20 +86,28 @@ defmodule ThunderlineWeb.Telemetry do
   end
 
   def dispatch_agent_metrics do
-    # Estimate active agents based on process count and system load
-    process_count = :erlang.system_info(:process_count)
-    # Rough estimation
-    estimated_agents = max(0, process_count - 100)
+    mock? = Application.get_env(:thunderline, :mock_metrics, false)
 
-    :telemetry.execute([:thunderline, :agents], %{
-      active: estimated_agents
+    agents = if mock?, do: estimate_agents(), else: Thunderline.Thunderflow.MetricSources.active_agents()
+    chunks = if mock?, do: mock_chunk_total(), else: Thunderline.Thunderflow.MetricSources.chunk_total()
+
+    :telemetry.execute([:thunderline, :agents], %{active: agents})
+    :telemetry.execute([:thunderline, :chunks], %{total: chunks})
+
+    qstats = Thunderline.Thunderflow.MetricSources.queue_depths()
+    :telemetry.execute([:thunderline, :events], %{
+      pending: qstats.pending,
+      processing: qstats.processing,
+      failed: qstats.failed,
+      dead_letter: qstats.dead_letter,
+      total: qstats.total
     })
-
-    # Mock some chunk processing
-    :telemetry.execute([:thunderline, :chunks], %{
-      total: :rand.uniform(1000)
-    })
-
-    :telemetry.execute([:thunderline, :events], %{}, %{count: 1})
   end
+
+  defp estimate_agents do
+    process_count = :erlang.system_info(:process_count)
+    max(0, process_count - 100)
+  end
+
+  defp mock_chunk_total, do: :rand.uniform(1000)
 end

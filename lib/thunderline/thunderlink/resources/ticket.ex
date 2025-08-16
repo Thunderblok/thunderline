@@ -1,4 +1,4 @@
-defmodule Thunderline.Support.Ticket do
+defmodule Thunderline.Thunderlink.Resources.Ticket do
   @moduledoc """
   Simple ticket resource following the Ash getting started guide.
 
@@ -7,7 +7,7 @@ defmodule Thunderline.Support.Ticket do
 
   # This turns this module into a resource using Postgres data layer for AshOban triggers
   use Ash.Resource,
-    domain: Thunderline.Support,
+    domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshOban, AshGraphql.Resource],
     authorizers: [Ash.Policy.Authorizer]

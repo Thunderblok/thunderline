@@ -31,7 +31,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
   import Ash.Resource.Change.Builtins
 
   import Ash.Expr
-  import Ash.Resource.Change
+  # import Ash.Resource.Change  # unused currently
 
   # ===== POSTGRES CONFIGURATION =====
   postgres do
@@ -703,7 +703,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
   end
 
   # ===== PRIVATE FUNCTIONS =====
-  defp update_community_channel_count(community_id, increment) do
+  defp update_community_channel_count(_community_id, _increment) do
     # Update the community's channel count
     # This would be implemented to update the community resource
     :ok
@@ -719,12 +719,12 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
     end
   end
 
-  defp create_default_channel_permissions(channel) do
+  defp create_default_channel_permissions(_channel) do
     # Create default permission set for channel based on visibility
     :ok
   end
 
-  defp create_channel_message(channel, message_args) do
+  defp create_channel_message(_channel, _message_args) do
     # Create message record in the messages table
     # This would interface with the Message resource
     :ok
@@ -745,7 +745,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
     )
   end
 
-  defp track_channel_participation(channel, user_id, action) do
+  defp track_channel_participation(_channel, _user_id, _action) do
     # Track user participation for analytics
     :ok
   end
@@ -775,7 +775,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
   end
 
   # Channel service initialization helpers
-  defp initialize_voice_channel(channel), do: :ok
-  defp initialize_ai_integration(channel), do: :ok
-  defp initialize_pac_bridge(channel), do: :ok
+  defp initialize_voice_channel(_channel), do: :ok
+  defp initialize_ai_integration(_channel), do: :ok
+  defp initialize_pac_bridge(_channel), do: :ok
 end

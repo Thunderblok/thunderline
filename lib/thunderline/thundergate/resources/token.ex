@@ -1,7 +1,7 @@
-defmodule Thunderline.Accounts.Token do
+defmodule Thunderline.Thundergate.Resources.Token do
   use Ash.Resource,
     otp_app: :thunderline,
-    domain: Thunderline.Accounts,
+    domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
     extensions: [AshAuthentication.TokenResource]

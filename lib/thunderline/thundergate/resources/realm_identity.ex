@@ -11,7 +11,6 @@ defmodule Thunderline.Thundergate.Resources.RealmIdentity do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource]
 
-  import Ash.Resource.Change.Builtins
 
   postgres do
     table "thundercom_realm_identities"
