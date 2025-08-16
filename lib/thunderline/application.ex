@@ -21,7 +21,8 @@ defmodule Thunderline.Application do
     children = [
       # Phoenix Foundation
       ThunderlineWeb.Telemetry,
-      {Phoenix.PubSub, name: Thunderline.PubSub},
+  {Phoenix.PubSub, name: Thunderline.PubSub},
+  ThunderlineWeb.Presence,
       Thunderline.Repo,
 
       # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
@@ -65,10 +66,10 @@ defmodule Thunderline.Application do
     ]
 
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
-    
+
     # Attach observability telemetry handlers
     Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
-    
+
     Supervisor.start_link(children, opts)
   end
 
@@ -85,7 +86,7 @@ defmodule Thunderline.Application do
     try do
       ash_domains = Application.fetch_env!(:thunderline, :ash_domains)
       oban_config = Application.fetch_env!(:thunderline, Oban)
-      
+
       AshOban.config(ash_domains, oban_config)
     rescue
       error ->

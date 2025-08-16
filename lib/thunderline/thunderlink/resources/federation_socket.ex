@@ -160,7 +160,7 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
 
                Phoenix.PubSub.broadcast(
                  Thunderline.PubSub,
-                 "thunderblock:communities:#{socket.community_id}",
+                 Thunderline.Thunderlink.Topics.community_channels(socket.community_id),
                  {:federation_socket_created,
                   %{
                     socket_id: socket.id,

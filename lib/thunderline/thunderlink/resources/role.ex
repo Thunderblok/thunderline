@@ -181,7 +181,7 @@ defmodule Thunderline.Thunderlink.Resources.Role do
 
                Phoenix.PubSub.broadcast(
                  Thunderline.PubSub,
-                 "thunderblock:communities:#{role.community_id}",
+                 Thunderline.Thunderlink.Topics.community_channels(role.community_id),
                  {:role_created,
                   %{
                     role_id: role.id,
@@ -260,7 +260,7 @@ defmodule Thunderline.Thunderlink.Resources.Role do
 
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
-          "thunderblock:communities:#{updated_role.community_id}",
+          Thunderline.Thunderlink.Topics.community_channels(updated_role.community_id),
           {:role_assigned,
            %{
              role_id: updated_role.id,
@@ -309,7 +309,7 @@ defmodule Thunderline.Thunderlink.Resources.Role do
 
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
-          "thunderblock:communities:#{updated_role.community_id}",
+          Thunderline.Thunderlink.Topics.community_channels(updated_role.community_id),
           {:role_removed,
            %{
              role_id: updated_role.id,
@@ -352,7 +352,7 @@ defmodule Thunderline.Thunderlink.Resources.Role do
 
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
-          "thunderblock:communities:#{updated_role.community_id}",
+          Thunderline.Thunderlink.Topics.community_channels(updated_role.community_id),
           {:role_permissions_updated,
            %{
              role_id: updated_role.id,
@@ -558,7 +558,7 @@ defmodule Thunderline.Thunderlink.Resources.Role do
                for role <- roles do
                  Phoenix.PubSub.broadcast(
                    Thunderline.PubSub,
-                   "thunderblock:communities:#{role.community_id}",
+                   Thunderline.Thunderlink.Topics.community_channels(role.community_id),
                    {:role_expired, %{role_id: role.id, role_name: role.role_name}}
                  )
                end

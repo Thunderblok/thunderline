@@ -163,7 +163,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
 
                Phoenix.PubSub.broadcast(
                  Thunderline.PubSub,
-                 "thunderblock:communities:#{channel.community_id}",
+                 Thunderline.Thunderlink.Topics.community_channels(channel.community_id),
                  {:channel_created,
                   %{
                     channel_id: channel.id,
@@ -299,7 +299,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
 
             Phoenix.PubSub.broadcast(
               Thunderline.PubSub,
-              "thunderblock:channels:#{channel.id}",
+              Thunderline.Thunderlink.Topics.channel_base(channel.id),
               {:user_left, %{user_id: user_id, channel_id: channel.id}}
             )
 
@@ -349,7 +349,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
           {:ok, channel} ->
             Phoenix.PubSub.broadcast(
               Thunderline.PubSub,
-              "thunderblock:communities:#{channel.community_id}",
+              Thunderline.Thunderlink.Topics.community_channels(channel.community_id),
               {:channel_archived, %{channel_id: channel.id, channel_name: channel.channel_name}}
             )
 
@@ -733,7 +733,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
   defp broadcast_channel_message(channel, message_args) do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
-      "thunderblock:channels:#{channel.id}:messages",
+      Thunderline.Thunderlink.Topics.channel_messages(channel.id),
       {:new_message,
        %{
          channel_id: channel.id,

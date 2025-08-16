@@ -166,7 +166,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
                # Broadcast community creation
                Phoenix.PubSub.broadcast(
                  Thunderline.PubSub,
-                 "thunderblock:communities",
+                 Thunderline.Thunderlink.Topics.community_channels(community.id),
                  {:community_created,
                   %{
                     community_id: community.id,
@@ -212,7 +212,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
 
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
-          "thunderblock:communities",
+          Thunderline.Thunderlink.Topics.community_channels(community.id),
           {:community_activated,
            %{community_id: community.id, community_slug: community.community_slug}}
         )
@@ -262,7 +262,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
 
             Phoenix.PubSub.broadcast(
               Thunderline.PubSub,
-              "thunderblock:communities:#{community.id}",
+              Thunderline.Thunderlink.Topics.community_channels(community.id),
               {:member_added, %{user_id: input.arguments.user_id, community_id: community.id}}
             )
 
@@ -343,7 +343,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
 
             Phoenix.PubSub.broadcast(
               Thunderline.PubSub,
-              "thunderblock:communities:#{community.id}",
+              Thunderline.Thunderlink.Topics.community_channels(community.id),
               {:member_removed, %{user_id: input.arguments.user_id, community_id: community.id}}
             )
 
@@ -440,7 +440,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
 
             Phoenix.PubSub.broadcast(
               Thunderline.PubSub,
-              "thunderblock:communities",
+              Thunderline.Thunderlink.Topics.community_channels(updated_community.id),
               {:community_suspended,
                %{
                  community_id: updated_community.id,

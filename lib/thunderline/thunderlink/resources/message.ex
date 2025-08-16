@@ -421,8 +421,9 @@ defmodule Thunderline.Thunderlink.Resources.Message do
       end
 
       change after_action(fn _changeset, message, _context ->
-               # Add to channel's pinned messages
-               Thunderblock.Resources.Channel.pin_message(message.channel_id, message.id)
+               # Load channel and invoke pin action via correct resource module
+               channel = Ash.get!(Thunderline.Thunderlink.Resources.Channel, message.channel_id)
+               Thunderline.Thunderlink.Resources.Channel.pin_message(channel, message.id)
                {:ok, message}
              end)
     end
@@ -852,24 +853,27 @@ defmodule Thunderline.Thunderlink.Resources.Message do
   end
 
   defp broadcast_new_message(message) do
+    alias Thunderline.Thunderlink.Topics
+
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
-      "thunderblock:channels:#{message.channel_id}:messages",
+      Topics.channel_messages(message.channel_id),
       {:new_message, message}
     )
 
-    # Also broadcast to community topic
-    Phoenix.PubSub.broadcast(
-      Thunderline.PubSub,
-      "thunderblock:communities:#{message.community_id}:messages",
-      {:new_message, message}
-    )
+    if message.community_id do
+      Phoenix.PubSub.broadcast(
+        Thunderline.PubSub,
+        Topics.community_messages(message.community_id),
+        {:new_message, message}
+      )
+    end
   end
 
   defp broadcast_message_edit(message) do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
-      "thunderblock:channels:#{message.channel_id}:messages",
+      Thunderline.Thunderlink.Topics.channel_messages(message.channel_id),
       {:message_edited, message}
     )
   end
@@ -877,7 +881,7 @@ defmodule Thunderline.Thunderlink.Resources.Message do
   defp broadcast_reaction_update(message, emoji, user_id, action) do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
-      "thunderblock:channels:#{message.channel_id}:reactions",
+      Thunderline.Thunderlink.Topics.channel_reactions(message.channel_id),
       {:reaction_update,
        %{
          message_id: message.id,
@@ -891,7 +895,7 @@ defmodule Thunderline.Thunderlink.Resources.Message do
   defp broadcast_message_deletion(message) do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
-      "thunderblock:channels:#{message.channel_id}:messages",
+      Thunderline.Thunderlink.Topics.channel_messages(message.channel_id),
       {:message_deleted, %{message_id: message.id}}
     )
   end

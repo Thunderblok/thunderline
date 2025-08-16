@@ -1,4 +1,4 @@
-defmodule Thunderline.Thunderlink.Resources.PACHome do
+defmodule Thunderline.Thunderblock.Resources.PACHome do
   @moduledoc """
   PACHome Resource - Personal Autonomous Construct Management
 
@@ -24,7 +24,7 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
   """
 
   use Ash.Resource,
-    domain: Thunderline.Thunderlink.Domain,
+    domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
 
@@ -172,7 +172,7 @@ defmodule Thunderline.Thunderlink.Resources.PACHome do
 
                Phoenix.PubSub.broadcast(
                  Thunderline.PubSub,
-                 "thunderblock:communities:#{pac_home.community_id}",
+                 Thunderline.Thunderlink.Topics.community_channels(pac_home.community_id),
                  {:pac_home_created,
                   %{
                     pac_home_id: pac_home.id,

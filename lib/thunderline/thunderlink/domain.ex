@@ -28,7 +28,6 @@ defmodule Thunderline.Thunderlink.Domain do
     resource Thunderline.Thunderlink.Resources.Community
     resource Thunderline.Thunderlink.Resources.FederationSocket
     resource Thunderline.Thunderlink.Resources.Message
-    resource Thunderline.Thunderlink.Resources.PACHome
     resource Thunderline.Thunderlink.Resources.Role
 
     # Commented out until WebRTC implementation is available
