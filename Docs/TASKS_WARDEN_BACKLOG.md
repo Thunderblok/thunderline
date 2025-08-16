@@ -18,16 +18,16 @@ Priority Scale:
 ## 🔑 CRITICAL PATH (P0, UPDATED AFTER PHASE-0) — ACTIVE REMAINING
 | ID | Title | Domain | Type | Owner Role | Dependencies | DoD | Status |
 |----|-------|--------|------|------------|--------------|-----|--------|
-| CP-04 | README + Docs: Event Processing canonical snippet | Root | Docs | Steward Council | CP-01, CP-02 | Section added (Ash.run!/3 + gating), links to DIP; passes review | OPEN |
-| CP-05 | Remove legacy domain list (15 domains) & align to 7 | Root | Docs | Catalog Steward | CP-04 | README & docs free of obsolete domains | PARTIAL (README still old) |
-| CP-07 | BRG Checklist Script (stub mix task) | Root | Tooling | Flow + Catalog | CP-06 | `mix thunderline.brg.check` prints current metrics placeholders | OPEN |
-| CP-08 | DIP Issue Template | Root | Governance | Security (Gate) | None | `.github/ISSUE_TEMPLATE/dip.yml` added & rendered correctly | OPEN |
-| CP-09 | Catalog Edge Validation (static stub) | Root | Tooling | Catalog Steward | Interaction Matrix final | `mix thunderline.catalog.validate` exits 0 & warns for unknown edges | OPEN |
-| CP-N1 | Domain Name Alignment (replace legacy Thunderchief/Thundercore/Thundervault in code) | Root | Refactor | Catalog Steward | None | All modules & pipelines use 7-domain names; tests updated | NEW |
-| CP-N2 | CrossDomainPipeline normalization to canonical `%Thunderline.Event{}` | ThunderFlow | Refactor | Flow Steward | CP-N1 | Pipeline emits normalized struct; property test for shape | NEW |
-| CP-N3 | Job Module Namespace Refactor (`Thunderchief.Jobs.*` → domain-scoped) | ThunderFlow | Hygiene | Flow Steward | CP-N1 | New modules created, old removed, references updated | NEW |
-| CP-N4 | Circuit Breaker Test Suite | ThunderFlow | Quality | Flow Steward | Existing breaker | Tests: state transitions, half-open recovery, telemetry assertions | NEW |
-| CP-N5 | Event Fanout Metric Aggregator | ThunderFlow | Observability | Flow Steward | CP-06 | Aggregates distribution & exposes P95 fanout | NEW |
+| CP-04 | README + Docs: Event Processing canonical snippet | Root | Docs | Steward Council | CP-01, CP-02 | Section added (Ash.run!/3 + gating), links to DIP; passes review | DONE |
+| CP-05 | Remove legacy domain list (15 domains) & align to 7 | Root | Docs | Catalog Steward | CP-04 | README & docs free of obsolete domains | DONE |
+| CP-07 | BRG Checklist Script (stub mix task) | Root | Tooling | Flow + Catalog | CP-06 | `mix thunderline.brg.check` prints current metrics w/ fanout + queue stats | DONE |
+| CP-08 | DIP Issue Template | Root | Governance | Security (Gate) | None | `.github/ISSUE_TEMPLATE/dip.yml` added & rendered correctly | DONE |
+| CP-09 | Catalog Edge Validation (static stub) | Root | Tooling | Catalog Steward | Interaction Matrix final | `mix thunderline.catalog.validate` exits 0 & warns for unknown edges | DONE |
+| CP-N1 | Domain Name Alignment (replace legacy Thunderchief/Thundercore/Thundervault in code) | Root | Refactor | Catalog Steward | None | All modules & pipelines use 7-domain names; tests updated | DONE |
+| CP-N2 | CrossDomainPipeline normalization to canonical `%Thunderline.Event{}` | ThunderFlow | Refactor | Flow Steward | CP-N1 | Pipeline emits normalized struct; property test for shape | DONE (tests pending P1-13) |
+| CP-N3 | Job Module Namespace Refactor (`Thunderchief.Jobs.*` → domain-scoped) | ThunderFlow | Hygiene | Flow Steward | CP-N1 | New modules created, old removed, references updated | DONE |
+| CP-N4 | Circuit Breaker Test Suite | ThunderFlow | Quality | Flow Steward | Existing breaker | Tests: state transitions, half-open recovery, telemetry assertions | IN PROGRESS (Sprint 2 Day 3) |
+| CP-N5 | Event Fanout Metric Aggregator | ThunderFlow | Observability | Flow Steward | CP-06 | Aggregates distribution & exposes P95 fanout | DONE |
 
 ### Completed (Phase-0 Delivered)
 | ID | Delivered Artifact | Notes |
@@ -48,14 +48,15 @@ Priority Scale:
 |----|-------|--------|------|-------|-------------|-----|
 | P1-11 | Implement Email Flow DIP (Sprint 1) | ThunderLink / Gate | DIP | Gate Steward | CP-08 | DIP issue approved; invariants listed; resources scoped |
 | P1-12 | Contact Resource (if needed) | ThunderLink | Resource | Link Steward | P1-11 | Ash resource w/ tests; added to Catalog |
-| P1-13 | Event Normalization Helper (`Event.normalize/1`) | ThunderFlow | Lib | Flow Steward | CP-03 | Function added w/ spec; property test for idempotence |
-| P1-14 | Fanout Analyzer (Telemetry handler) | ThunderFlow | Observability | Flow Steward | CP-N5 | Aggregates per-event target count; exposed via metrics |
+| P1-13 | Event Normalization Helper (`Event.normalize/1`) | ThunderFlow | Lib | Flow Steward | CP-03 | Function added w/ spec; property test for idempotence | PARTIAL (helper shipped; property test pending) |
+| P1-14 | Fanout Analyzer (Telemetry handler) | ThunderFlow | Observability | Flow Steward | CP-N5 | Aggregates per-event target count; exposed via metrics | DONE |
 | P1-15 | Reactor Mermaid Generation CI Step | Root | CI | Ops | CP-03 | GitHub Action fails if reactor PR lacks diagram |
 | P1-16 | Invariants Annotation Pass (Top 20 resources) | All | Hygiene | Stewards | None | 20 resources updated; issues opened where TBD |
 | P1-17 | Bridge Pattern Skeleton (provider_email) | ThunderGate | Bridge | Gate Steward | P1-11 | `bridge/provider_email_bridge.ex` + tests |
-| P1-18 | Warning Budget Gate (compile task) | Root | Tooling | Flow Steward | CP-07 | CI fails if warnings > threshold (configurable) |
+| P1-18 | Warning Budget Gate (compile task) | Root | Tooling | Flow Steward | CP-07 | CI fails if warnings > threshold (configurable) | TODO (Sprint 2 Day 4 target) |
 | P1-19 | Retry Policy DSL for Reactor Steps | ThunderFlow | Enhancement | Flow Steward | CP-03 | DSL macro & 2 example steps using it |
 | P1-20 | Resource Churn Diff Tool | Root | Tooling | Catalog | CP-09 | Output: new/removed per domain since last tag |
+| P1-21 | Queue Depth Derivative Collector | ThunderFlow | Observability | Flow Steward | CP-06 | Sliding window, P95, saturation & trend telemetry integrated into BRG | DONE |
 
 ---
 ## 🧪 MEDIUM (P2)
@@ -130,10 +131,12 @@ Exit Criteria Sprint 1: Legacy names removed; pipeline emits canonical events; d
 ## 📊 BALANCE METRICS MAPPING
 | Metric | Related Tasks | Drift Risk Mitigated |
 |--------|---------------|----------------------|
-| queue.depth | CP-06, P2-21 | Backpressure blindness |
+| queue.depth.p95 | CP-06, P1-21, P2-21 | Backpressure blindness |
+| queue.depth.delta | P1-21 | Emerging congestion |
 | reactor.retry.rate | CP-10, P1-19, P2-22 | Hidden instability |
-| event.fanout | CP-06, P1-14 | Coupling explosion |
-| warning.count | CP-18 | Hygiene decay |
+| event.fanout.p95 | CP-06, P1-14 | Coupling explosion |
+| event.coupling.score | P1-14 | Structural entanglement |
+| warning.count | P1-18 | Hygiene decay |
 | cross.domain.emit.fanout | P1-14, CP-09 | Dependency sprawl |
 | resource.churn | P1-20 | Unbounded resource growth |
 
@@ -141,10 +144,11 @@ Exit Criteria Sprint 1: Legacy names removed; pipeline emits canonical events; d
 ## 🛠 MIX TASKS (PLANNED STUBS)
 | Task | Purpose |
 |------|---------|
-| `mix thunderline.brg.check` | Outputs current balance readiness & TODOs |
+| `mix thunderline.brg.check` | Outputs current balance readiness & metrics (fanout, queue trends) |
 | `mix thunderline.catalog.validate` | Validates Interaction Matrix edges |
 | `mix thunderline.events.replay` | Replays events for recovery/testing |
 | `mix thunderline.reactors.diagram.verify` | Ensures diagrams exist |
+| `mix thunderline.warning.gate` | (Planned) Enforces compile warning threshold |
 
 ---
 ## 👥 STEWARD ROLE MAP (REFERENCE)

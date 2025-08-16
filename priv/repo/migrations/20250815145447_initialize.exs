@@ -8,6 +8,10 @@ defmodule Thunderline.Repo.Migrations.Initialize do
   use Ecto.Migration
 
   def up do
+    # Ensure pgcrypto extension exists for gen_random_uuid()
+    execute "CREATE EXTENSION IF NOT EXISTS pgcrypto"
+    execute "CREATE EXTENSION IF NOT EXISTS citext"
+
     create table(:task_orchestrators, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_name, :text, null: false
@@ -64,7 +68,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
     create unique_index(:users, [:email], name: "users_unique_email_index")
 
     create table(:memories, primary_key: false) do
-      add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
+      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :summary, :text, null: false
       add :full_content, :text, null: false
       add :memory_type, :text, null: false
@@ -203,7 +207,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
     end
 
     create table(:embedding_vectors, primary_key: false) do
-      add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
+      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :vector, {:array, :float}, null: false
       add :vector_model, :text, null: false
       add :dimension, :bigint, null: false
@@ -312,31 +316,31 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_knowledge_nodes, ["USING GIN (embedding_vector_ids)"],
-             name: "knowledge_nodes_embeddings_idx"
+    create index(:thunderblock_knowledge_nodes, [embedding_vector_ids],
+             using: :gin, name: "knowledge_nodes_embeddings_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, ["USING GIN (memory_record_ids)"],
+    create index(:thunderblock_knowledge_nodes, [memory_record_ids],
              name: "knowledge_nodes_memories_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, ["USING GIN (taxonomy_path)"],
+    create index(:thunderblock_knowledge_nodes, [taxonomy_path],
              name: "knowledge_nodes_taxonomy_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, ["USING GIN (relationship_data)"],
+    create index(:thunderblock_knowledge_nodes, [relationship_data],
              name: "knowledge_nodes_relationships_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, ["USING GIN (source_domains)"],
+    create index(:thunderblock_knowledge_nodes, [source_domains],
              name: "knowledge_nodes_sources_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, ["USING GIN (semantic_tags)"],
+    create index(:thunderblock_knowledge_nodes, [semantic_tags],
              name: "knowledge_nodes_tags_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, ["USING GIN (aliases)"],
+    create index(:thunderblock_knowledge_nodes, [aliases],
              name: "knowledge_nodes_aliases_idx"
            )
 
@@ -423,17 +427,17 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_roles, ["USING GIN (tags)"], name: "roles_tags_idx")
+    create index(:thunderblock_roles, [tags], using: :gin, name: "roles_tags_idx")
 
-    create index(:thunderblock_roles, ["USING GIN (role_flags)"], name: "roles_flags_idx")
+    create index(:thunderblock_roles, [role_flags], using: :gin, name: "roles_flags_idx")
 
-    create index(:thunderblock_roles, ["USING GIN (channel_overrides)"],
+    create index(:thunderblock_roles, [channel_overrides],
              name: "roles_overrides_idx"
            )
 
-    create index(:thunderblock_roles, ["USING GIN (permissions)"], name: "roles_permissions_idx")
+    create index(:thunderblock_roles, [permissions], using: :gin, name: "roles_permissions_idx")
 
-    create index(:thunderblock_roles, ["USING GIN (member_ids)"], name: "roles_members_idx")
+    create index(:thunderblock_roles, [member_ids], using: :gin, name: "roles_members_idx")
 
     create index(:thunderblock_roles, [:mentionable], name: "roles_mentionable_idx")
 
@@ -532,23 +536,23 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (tags)"],
+    create index(:thunderblock_federation_sockets, [tags],
              name: "federation_sockets_tags_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (error_log)"],
+    create index(:thunderblock_federation_sockets, [error_log],
              name: "federation_sockets_errors_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (federation_metrics)"],
+    create index(:thunderblock_federation_sockets, [federation_metrics],
              name: "federation_sockets_metrics_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (quarantine_queue)"],
+    create index(:thunderblock_federation_sockets, [quarantine_queue],
              name: "federation_sockets_quarantine_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (message_queue)"],
+    create index(:thunderblock_federation_sockets, [message_queue],
              name: "federation_sockets_queue_idx"
            )
 
@@ -837,19 +841,19 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_messages, ["USING GIN (reactions)"],
+    create index(:thunderblock_messages, [reactions],
              name: "messages_reactions_idx"
            )
 
-    create index(:thunderblock_messages, ["USING GIN (tags)"], name: "messages_tags_idx")
+    create index(:thunderblock_messages, [tags], using: :gin, name: "messages_tags_idx")
 
-    create index(:thunderblock_messages, ["USING GIN (message_flags)"],
+    create index(:thunderblock_messages, [message_flags],
              name: "messages_flags_idx"
            )
 
-    create index(:thunderblock_messages, ["USING GIN (mentions)"], name: "messages_mentions_idx")
+    create index(:thunderblock_messages, [mentions], using: :gin, name: "messages_mentions_idx")
 
-    create index(:thunderblock_messages, ["USING GIN (search_vector)"],
+    create index(:thunderblock_messages, [search_vector],
              name: "messages_search_idx"
            )
 
@@ -1031,15 +1035,15 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :cluster_node_id, :uuid
     end
 
-    create index(:thunderblock_zone_containers, ["USING GIN (coordinates)"],
+    create index(:thunderblock_zone_containers, [coordinates],
              name: "zone_containers_coords_idx"
            )
 
-    create index(:thunderblock_zone_containers, ["USING GIN (tags)"],
+    create index(:thunderblock_zone_containers, [tags],
              name: "zone_containers_tags_idx"
            )
 
-    create index(:thunderblock_zone_containers, ["USING GIN (neighbor_zones)"],
+    create index(:thunderblock_zone_containers, [neighbor_zones],
              name: "zone_containers_neighbors_idx"
            )
 
@@ -1323,11 +1327,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderflow_consciousness_flows, ["USING GIN (memory_anchors)"],
+    create index(:thunderflow_consciousness_flows, [memory_anchors],
              name: "consciousness_flow_memory_anchors_gin_idx"
            )
 
-    create index(:thunderflow_consciousness_flows, ["USING GIN (active_goals)"],
+    create index(:thunderflow_consciousness_flows, [active_goals],
              name: "consciousness_flow_active_goals_gin_idx"
            )
 
@@ -1561,7 +1565,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :criticality, :text, default: "medium"
       add :replay_required, :boolean, null: false, default: false
       add :correlation_id, :text
-      add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
+      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :record_id, :uuid, null: false
       add :version, :bigint, null: false, default: 1
       add :metadata, :map, null: false, default: %{}
@@ -1723,13 +1727,13 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_channels, ["USING GIN (channel_metrics)"],
+    create index(:thunderblock_channels, [channel_metrics],
              name: "channels_metrics_idx"
            )
 
-    create index(:thunderblock_channels, ["USING GIN (tags)"], name: "channels_tags_idx")
+    create index(:thunderblock_channels, [tags], using: :gin, name: "channels_tags_idx")
 
-    create index(:thunderblock_channels, ["USING GIN (pinned_message_ids)"],
+    create index(:thunderblock_channels, [pinned_message_ids],
              name: "channels_pinned_messages_idx"
            )
 
@@ -1889,11 +1893,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :zone_container_id, :uuid
     end
 
-    create index(:thunderblock_supervision_trees, ["USING GIN (tags)"],
+    create index(:thunderblock_supervision_trees, [tags],
              name: "supervision_trees_tags_idx"
            )
 
-    create index(:thunderblock_supervision_trees, ["USING GIN (running_children)"],
+    create index(:thunderblock_supervision_trees, [running_children],
              name: "supervision_trees_children_idx"
            )
 
@@ -1959,17 +1963,17 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :zone_container_id, :uuid
     end
 
-    create index(:thunderblock_pac_homes, ["USING GIN (tags)"], name: "pac_homes_tags_idx")
+    create index(:thunderblock_pac_homes, [tags], using: :gin, name: "pac_homes_tags_idx")
 
-    create index(:thunderblock_pac_homes, ["USING GIN (health_metrics)"],
+    create index(:thunderblock_pac_homes, [health_metrics],
              name: "pac_homes_health_metrics_idx"
            )
 
-    create index(:thunderblock_pac_homes, ["USING GIN (current_usage)"],
+    create index(:thunderblock_pac_homes, [current_usage],
              name: "pac_homes_usage_idx"
            )
 
-    create index(:thunderblock_pac_homes, ["USING GIN (agent_registry)"],
+    create index(:thunderblock_pac_homes, [agent_registry],
              name: "pac_homes_agents_idx"
            )
 
@@ -2020,11 +2024,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundergrid_zone_boundaries, ["USING GIN (crossing_history)"],
+    create index(:thundergrid_zone_boundaries, [crossing_history],
              name: "zone_boundaries_history_idx"
            )
 
-    create index(:thundergrid_zone_boundaries, ["USING GIN (boundary_points)"],
+    create index(:thundergrid_zone_boundaries, [boundary_points],
              name: "zone_boundaries_points_idx"
            )
 
@@ -2342,21 +2346,21 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :cluster_node_id, :uuid
     end
 
-    create index(:thunderblock_communities, ["USING GIN (community_metrics)"],
+    create index(:thunderblock_communities, [community_metrics],
              name: "communities_metrics_idx"
            )
 
-    create index(:thunderblock_communities, ["USING GIN (federation_config)"],
+    create index(:thunderblock_communities, [federation_config],
              name: "communities_federation_idx"
            )
 
-    create index(:thunderblock_communities, ["USING GIN (tags)"], name: "communities_tags_idx")
+    create index(:thunderblock_communities, [tags], using: :gin, name: "communities_tags_idx")
 
-    create index(:thunderblock_communities, ["USING GIN (moderator_ids)"],
+    create index(:thunderblock_communities, [moderator_ids],
              name: "communities_moderators_idx"
            )
 
-    create index(:thunderblock_communities, ["USING GIN (member_ids)"],
+    create index(:thunderblock_communities, [member_ids],
              name: "communities_members_idx"
            )
 
@@ -2397,7 +2401,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_query_optimizations, ["USING GIN (optimization_suggestions)"],
+    create index(:thunderblock_query_optimizations, [optimization_suggestions],
              name: "query_optimizations_suggestions_idx"
            )
 
@@ -2674,7 +2678,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
            )
 
     create table(:experiences, primary_key: false) do
-      add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
+      add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
     alter table(:embedding_vectors) do
@@ -2980,7 +2984,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundergrid_spatial_coordinates, ["USING GIN (properties)"],
+    create index(:thundergrid_spatial_coordinates, [properties],
              name: "spatial_coordinates_properties_idx"
            )
 
@@ -3047,7 +3051,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_cache_entries, ["USING GIN (cache_tags)"],
+    create index(:thunderblock_cache_entries, [cache_tags],
              name: "cache_entries_tags_idx"
            )
 
@@ -3276,7 +3280,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "cache_entries_expires_idx"
                    )
 
-    drop_if_exists index(:thunderblock_cache_entries, ["USING GIN (cache_tags)"],
+    drop_if_exists index(:thunderblock_cache_entries, [cache_tags],
                      name: "cache_entries_tags_idx"
                    )
 
@@ -3304,7 +3308,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
 
     drop_if_exists index(:thundergrid_spatial_coordinates, [:last_accessed])
 
-    drop_if_exists index(:thundergrid_spatial_coordinates, ["USING GIN (properties)"],
+    drop_if_exists index(:thundergrid_spatial_coordinates, [properties],
                      name: "spatial_coordinates_properties_idx"
                    )
 
@@ -3581,7 +3585,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
 
     drop_if_exists index(
                      :thunderblock_query_optimizations,
-                     ["USING GIN (optimization_suggestions)"],
+                     [optimization_suggestions],
                      name: "query_optimizations_suggestions_idx"
                    )
 
@@ -3605,23 +3609,23 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "communities_type_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (member_ids)"],
+    drop_if_exists index(:thunderblock_communities, [member_ids],
                      name: "communities_members_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (moderator_ids)"],
+    drop_if_exists index(:thunderblock_communities, [moderator_ids],
                      name: "communities_moderators_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_communities, [tags],
                      name: "communities_tags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (federation_config)"],
+    drop_if_exists index(:thunderblock_communities, [federation_config],
                      name: "communities_federation_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (community_metrics)"],
+    drop_if_exists index(:thunderblock_communities, [community_metrics],
                      name: "communities_metrics_idx"
                    )
 
@@ -3810,11 +3814,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
 
     drop_if_exists index(:thundergrid_zone_boundaries, [:maintenance_status])
 
-    drop_if_exists index(:thundergrid_zone_boundaries, ["USING GIN (boundary_points)"],
+    drop_if_exists index(:thundergrid_zone_boundaries, [boundary_points],
                      name: "zone_boundaries_points_idx"
                    )
 
-    drop_if_exists index(:thundergrid_zone_boundaries, ["USING GIN (crossing_history)"],
+    drop_if_exists index(:thundergrid_zone_boundaries, [crossing_history],
                      name: "zone_boundaries_history_idx"
                    )
 
@@ -3844,19 +3848,19 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "pac_homes_health_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (agent_registry)"],
+    drop_if_exists index(:thunderblock_pac_homes, [agent_registry],
                      name: "pac_homes_agents_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (current_usage)"],
+    drop_if_exists index(:thunderblock_pac_homes, [current_usage],
                      name: "pac_homes_usage_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (health_metrics)"],
+    drop_if_exists index(:thunderblock_pac_homes, [health_metrics],
                      name: "pac_homes_health_metrics_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_pac_homes, [tags],
                      name: "pac_homes_tags_idx"
                    )
 
@@ -3891,11 +3895,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "supervision_trees_hierarchy_idx"
                    )
 
-    drop_if_exists index(:thunderblock_supervision_trees, ["USING GIN (running_children)"],
+    drop_if_exists index(:thunderblock_supervision_trees, [running_children],
                      name: "supervision_trees_children_idx"
                    )
 
-    drop_if_exists index(:thunderblock_supervision_trees, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_supervision_trees, [tags],
                      name: "supervision_trees_tags_idx"
                    )
 
@@ -3976,13 +3980,13 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "channels_visibility_idx"
                    )
 
-    drop_if_exists index(:thunderblock_channels, ["USING GIN (pinned_message_ids)"],
+    drop_if_exists index(:thunderblock_channels, [pinned_message_ids],
                      name: "channels_pinned_messages_idx"
                    )
 
-    drop_if_exists index(:thunderblock_channels, ["USING GIN (tags)"], name: "channels_tags_idx")
+    drop_if_exists index(:thunderblock_channels, [tags], name: "channels_tags_idx")
 
-    drop_if_exists index(:thunderblock_channels, ["USING GIN (channel_metrics)"],
+    drop_if_exists index(:thunderblock_channels, [channel_metrics],
                      name: "channels_metrics_idx"
                    )
 
@@ -4135,11 +4139,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
 
     drop_if_exists index(:thunderflow_consciousness_flows, [:inserted_at])
 
-    drop_if_exists index(:thunderflow_consciousness_flows, ["USING GIN (active_goals)"],
+    drop_if_exists index(:thunderflow_consciousness_flows, [active_goals],
                      name: "consciousness_flow_active_goals_gin_idx"
                    )
 
-    drop_if_exists index(:thunderflow_consciousness_flows, ["USING GIN (memory_anchors)"],
+    drop_if_exists index(:thunderflow_consciousness_flows, [memory_anchors],
                      name: "consciousness_flow_memory_anchors_gin_idx"
                    )
 
@@ -4258,15 +4262,15 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "zone_containers_phase_idx"
                    )
 
-    drop_if_exists index(:thunderblock_zone_containers, ["USING GIN (neighbor_zones)"],
+    drop_if_exists index(:thunderblock_zone_containers, [neighbor_zones],
                      name: "zone_containers_neighbors_idx"
                    )
 
-    drop_if_exists index(:thunderblock_zone_containers, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_zone_containers, [tags],
                      name: "zone_containers_tags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_zone_containers, ["USING GIN (coordinates)"],
+    drop_if_exists index(:thunderblock_zone_containers, [coordinates],
                      name: "zone_containers_coords_idx"
                    )
 
@@ -4316,21 +4320,21 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "messages_ephemeral_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (search_vector)"],
+    drop_if_exists index(:thunderblock_messages, [search_vector],
                      name: "messages_search_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (mentions)"],
+    drop_if_exists index(:thunderblock_messages, [mentions],
                      name: "messages_mentions_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (message_flags)"],
+    drop_if_exists index(:thunderblock_messages, [message_flags],
                      name: "messages_flags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (tags)"], name: "messages_tags_idx")
+    drop_if_exists index(:thunderblock_messages, [tags], name: "messages_tags_idx")
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (reactions)"],
+    drop_if_exists index(:thunderblock_messages, [reactions],
                      name: "messages_reactions_idx"
                    )
 
@@ -4416,23 +4420,23 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "federation_sockets_target_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (message_queue)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [message_queue],
                      name: "federation_sockets_queue_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (quarantine_queue)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [quarantine_queue],
                      name: "federation_sockets_quarantine_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (federation_metrics)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [federation_metrics],
                      name: "federation_sockets_metrics_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (error_log)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [error_log],
                      name: "federation_sockets_errors_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [tags],
                      name: "federation_sockets_tags_idx"
                    )
 
@@ -4470,21 +4474,21 @@ defmodule Thunderline.Repo.Migrations.Initialize do
 
     drop_if_exists index(:thunderblock_roles, [:mentionable], name: "roles_mentionable_idx")
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (member_ids)"],
+    drop_if_exists index(:thunderblock_roles, [member_ids],
                      name: "roles_members_idx"
                    )
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (permissions)"],
+    drop_if_exists index(:thunderblock_roles, [permissions],
                      name: "roles_permissions_idx"
                    )
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (channel_overrides)"],
+    drop_if_exists index(:thunderblock_roles, [channel_overrides],
                      name: "roles_overrides_idx"
                    )
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (role_flags)"], name: "roles_flags_idx")
+    drop_if_exists index(:thunderblock_roles, [role_flags], name: "roles_flags_idx")
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (tags)"], name: "roles_tags_idx")
+    drop_if_exists index(:thunderblock_roles, [tags], name: "roles_tags_idx")
 
     drop table(:thunderblock_roles)
 
@@ -4514,31 +4518,31 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "knowledge_nodes_indexing_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, ["USING GIN (aliases)"],
+    drop_if_exists index(:thunderblock_knowledge_nodes, [aliases],
                      name: "knowledge_nodes_aliases_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, ["USING GIN (semantic_tags)"],
+    drop_if_exists index(:thunderblock_knowledge_nodes, [semantic_tags],
                      name: "knowledge_nodes_tags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, ["USING GIN (source_domains)"],
+    drop_if_exists index(:thunderblock_knowledge_nodes, [source_domains],
                      name: "knowledge_nodes_sources_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, ["USING GIN (relationship_data)"],
+    drop_if_exists index(:thunderblock_knowledge_nodes, [relationship_data],
                      name: "knowledge_nodes_relationships_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, ["USING GIN (taxonomy_path)"],
+    drop_if_exists index(:thunderblock_knowledge_nodes, [taxonomy_path],
                      name: "knowledge_nodes_taxonomy_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, ["USING GIN (memory_record_ids)"],
+    drop_if_exists index(:thunderblock_knowledge_nodes, [memory_record_ids],
                      name: "knowledge_nodes_memories_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, ["USING GIN (embedding_vector_ids)"],
+    drop_if_exists index(:thunderblock_knowledge_nodes, [embedding_vector_ids],
                      name: "knowledge_nodes_embeddings_idx"
                    )
 
