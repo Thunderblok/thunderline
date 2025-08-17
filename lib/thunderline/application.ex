@@ -18,12 +18,26 @@ defmodule Thunderline.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      # Phoenix Foundation
+    skip_db? = System.get_env("SKIP_ASH_SETUP") in ["1", "true"]
+
+    phoenix_foundation = [
       ThunderlineWeb.Telemetry,
-  {Phoenix.PubSub, name: Thunderline.PubSub},
-  ThunderlineWeb.Presence,
-      Thunderline.Repo,
+      {Phoenix.PubSub, name: Thunderline.PubSub},
+      ThunderlineWeb.Presence
+    ]
+
+    db_children = if skip_db? do
+      []
+    else
+      [
+        Thunderline.Repo,
+        # Oban with AshOban integration - must start after repo
+        {Oban, oban_config()},
+        {AshAuthentication.Supervisor, [otp_app: :thunderline]}
+      ]
+    end
+
+    children = phoenix_foundation ++ [
 
       # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
       Thunderline.ThunderMemory,
@@ -37,14 +51,12 @@ defmodule Thunderline.Application do
       {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []},
       {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []},
 
-      # ⚡🔥 THUNDERBOLT - Compute Acceleration Services
+  # ⚡🔥 THUNDERBOLT - Compute Acceleration Services
       Thunderline.Thunderbolt.ThunderCell.Supervisor,
       Thunderline.ErlangBridge,
       Thunderline.NeuralBridge,
 
-      # ⚡👑 THUNDERCROWN - Orchestration Services
-      # Oban with AshOban integration - must start after repo
-      {Oban, oban_config()},
+  # (Conditional DB/Ash/Oban children appended below)
 
       # ⚡🌐 THUNDERGATE - Gateway Services
       Thundergate.ThunderBridge,
@@ -62,15 +74,15 @@ defmodule Thunderline.Application do
       # ⚡⚔️ THUNDERGUARD - Security Services
       # (Authentication and authorization services will be added here)
 
-      # Phoenix Web Server (last to start)
-      ThunderlineWeb.Endpoint,
-      {AshAuthentication.Supervisor, [otp_app: :thunderline]}
-    ]
+      # Phoenix Web Server (last to start before optional DB children)
+      ThunderlineWeb.Endpoint
+    ] ++ db_children
 
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 
     # Attach observability telemetry handlers
-    Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
+  Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
+  if skip_db?, do: Logger.warning("[Thunderline.Application] Starting with SKIP_ASH_SETUP - DB/Oban/AshAuth supervision children disabled for lightweight tests")
 
     Supervisor.start_link(children, opts)
   end

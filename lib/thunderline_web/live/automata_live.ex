@@ -33,6 +33,7 @@ defmodule ThunderlineWeb.AutomataLive do
      |> assign(:generation, 0)
      |> assign(:pattern_buffer, [])
      |> assign(:running, false)
+  |> assign(:blackboard_data, initial_blackboard_snapshot())
      # milliseconds between generations
      |> assign(:speed, 100)}
   end
@@ -56,9 +57,10 @@ defmodule ThunderlineWeb.AutomataLive do
   # Ignore/optionally react to blackboard updates for now.
   @impl true
   def handle_info({:blackboard_update, %{key: {:automata, _k}} = update}, socket) do
-    # For future: we could merge derived stats. For now, no state change to keep deterministic test.
-    _ = update
-    {:noreply, socket}
+  # Merge only automata related entries into blackboard_data assign for live display
+  %{key: key, value: value} = update
+  new_data = Map.put(socket.assigns.blackboard_data, key, value)
+  {:noreply, assign(socket, :blackboard_data, new_data)}
   end
 
   @impl true
@@ -215,6 +217,21 @@ defmodule ThunderlineWeb.AutomataLive do
 
     <!-- Stats and Info -->
         <div class="space-y-6">
+          <!-- Blackboard Snapshot -->
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Blackboard Snapshot</h3>
+            <div class="space-y-2 text-sm">
+              <%= for {k, v} <- Enum.sort(@blackboard_data) do %>
+                <div class="flex justify-between">
+                  <span class="text-gray-600 font-mono">{format_bb_key(k)}</span>
+                  <span class="font-mono text-gray-900">{inspect(v)}</span>
+                </div>
+              <% end %>
+              <%= if map_size(@blackboard_data) == 0 do %>
+                <div class="text-gray-400 italic">No automata entries yet</div>
+              <% end %>
+            </div>
+          </div>
           <!-- Current State -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Current State</h3>
@@ -434,4 +451,18 @@ defmodule ThunderlineWeb.AutomataLive do
       alive_cells / total_cells
     end
   end
+
+  defp initial_blackboard_snapshot do
+    # Pull only automata-related keys from snapshot to reduce noise
+    case Blackboard.snapshot() do
+      snapshot when is_map(snapshot) ->
+        snapshot
+        |> Enum.filter(fn {k, _v} -> match?({:automata, _}, k) end)
+        |> Map.new()
+      _ -> %{}
+    end
+  end
+
+  defp format_bb_key({:automata, sub}), do: to_string(sub)
+  defp format_bb_key(other), do: inspect(other)
 end
