@@ -21,16 +21,15 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
   end
 
   state_machine do
-    initial_states [:initialized]
-    default_initial_state :initialized
-
-    states [:initialized, :running, :succeeded, :failed, :cancelled]
+    # Allowed starting states, with a default
+    initial_states([:initialized])
+    default_initial_state(:initialized)
 
     transitions do
-      transition :initialized, :running
-      transition :running, :succeeded
-      transition :running, :failed
-      transition :running, :cancelled
+  transition(:start, from: [:initialized], to: [:running])
+  transition(:complete, from: [:running], to: [:succeeded])
+  transition(:fail, from: [:running], to: [:failed])
+  transition(:cancel, from: [:running], to: [:cancelled])
     end
   end
 
@@ -47,30 +46,30 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
 
     create :create do
       accept [:search_space_version, :max_params, :requested_trials, :metadata]
-      change set_attribute(:status, :initialized)
+      change set_attribute(:state, :initialized)
     end
 
     update :start do
       accept []
-      change AshStateMachine.Transition.transition(:running)
+      change transition_state(:running)
       change set_attribute(:started_at, &DateTime.utc_now/0)
     end
 
     update :complete do
       accept [:best_metric, :completed_trials]
-      change AshStateMachine.Transition.transition(:succeeded)
+      change transition_state(:succeeded)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
     end
 
     update :fail do
       accept [:error_message]
-      change AshStateMachine.Transition.transition(:failed)
+      change transition_state(:failed)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
     end
 
     update :cancel do
       accept []
-      change AshStateMachine.Transition.transition(:cancelled)
+      change transition_state(:cancelled)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
     end
   end
@@ -84,9 +83,11 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
   attributes do
     uuid_primary_key :id
 
-    attribute :status, :atom do
-      description "Current lifecycle status"
+    # State attribute managed by AshStateMachine transitions.
+    attribute :state, :atom do
+      description "Current lifecycle state"
       allow_nil? false
+      default :initialized
       constraints one_of: [:initialized, :running, :succeeded, :failed, :cancelled]
     end
 
@@ -129,7 +130,8 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
 
   relationships do
     has_many :artifacts, Thunderline.Thunderbolt.Resources.ModelArtifact do
-      destination_field :model_run_id
+      # Point to the foreign key defined by the belongs_to in ModelArtifact
+      destination_attribute :model_run_id
     end
   end
 end
