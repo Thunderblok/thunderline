@@ -3,7 +3,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultAgent do
   Agent Resource - Migrated from lib/thunderline/pac/resources/agent
 
   Thunderbit agents in the PAC (Perception-Action-Cognition) system.
-  Consolidated into Thundervault for persistence and federation coordination.
+  ThunderBlock Vault agent (persistence & federation coordination; legacy Thundervault consolidation).
   """
 
   use Ash.Resource,

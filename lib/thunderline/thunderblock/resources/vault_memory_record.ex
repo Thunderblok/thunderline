@@ -3,7 +3,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultMemoryRecord do
   MemoryRecord Resource - Consolidated from Thunderline.Memory.Record
 
   Individual memory records with full context and metadata.
-  Moved to Thundervault for unified memory and knowledge management.
+  ThunderBlock Vault memory record (unified memory & knowledge management; migrated from legacy Thundervault naming).
   """
 
   use Ash.Resource,

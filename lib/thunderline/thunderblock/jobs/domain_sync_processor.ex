@@ -42,7 +42,7 @@ defmodule Thunderline.Thunderblock.Jobs.DomainSyncProcessor do
         Process.sleep(800)
         publish_sync_completion(workflow_id, domain, %{federations_synced: 3})
 
-      {:thundervault, :data_consistency} ->
+  {:thunderblock_vault, :data_consistency} ->
         # Sync data consistency
         Process.sleep(1500)
         publish_sync_completion(workflow_id, domain, %{records_synced: 1024})

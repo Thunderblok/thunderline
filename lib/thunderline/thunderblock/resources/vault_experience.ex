@@ -3,7 +3,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultExperience do
   Experience Resource - Consolidated from Thunderline.Memory.Experience
 
   Experience records - learning from agent actions and outcomes.
-  Moved to Thundervault for unified memory and knowledge management.
+  ThunderBlock Vault experience metrics (unified memory & knowledge management; formerly in legacy Thundervault).
   """
 
   use Ash.Resource,

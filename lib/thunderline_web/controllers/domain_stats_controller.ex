@@ -40,9 +40,9 @@ defmodule ThunderlineWeb.DomainStatsController do
       "thundercore" -> {:ok, get_thundercore_stats()}
       "thunderbit" -> {:ok, get_thunderbit_stats()}
       "thunderbolt" -> {:ok, get_thunderbolt_stats()}
-      "thunderblock" -> {:ok, get_thunderblock_stats()}
-      "thundergrid" -> {:ok, get_thundergrid_stats()}
-      "thunderblock" -> {:ok, get_thundervault_stats()}
+  "thunderblock" -> {:ok, get_thunderblock_stats()}
+  "thundergrid" -> {:ok, get_thundergrid_stats()}
+  "thunderblock_vault" -> {:ok, get_thunderblock_vault_stats()}
       "thundercom" -> {:ok, get_thundercom_stats()}
       "thundereye" -> {:ok, get_thundereye_stats()}
       "thunderchief" -> {:ok, get_thunderchief_stats()}
@@ -139,12 +139,12 @@ defmodule ThunderlineWeb.DomainStatsController do
     })
   end
 
-  defp get_thundervault_stats do
-    base_metrics = DashboardMetrics.thundervault_metrics()
+  defp get_thunderblock_vault_stats do
+    base_metrics = DashboardMetrics.thunderblock_vault_metrics()
 
     Map.merge(base_metrics, %{
-      domain: "thunderblock",
-      description: "Security and access control management",
+  domain: "thunderblock_vault",
+  description: "ThunderBlock Vault (persistence, security, access control)",
       capabilities: [
         "Policy enforcement",
         "Access control",

@@ -120,7 +120,7 @@ defmodule ThunderlineWeb.MetricsController do
       :thunderbolt,
       :thunderblock,
       :thundergrid,
-      :thundervault,
+  :thunderblock_vault,
       :thundercom,
       :thundereye
     ]

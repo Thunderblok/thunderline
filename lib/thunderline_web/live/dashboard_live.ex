@@ -651,13 +651,13 @@ defmodule ThunderlineWeb.DashboardLive do
     system_metrics = get_real_system_metrics()
 
     # Get domain-specific metrics
-    domain_metrics = %{
+      domain_metrics = %{
       thundercore: DashboardMetrics.thundercore_metrics(),
       thunderbit: get_thunderbit_metrics(),
       thunderbolt: get_thunderbolt_metrics(),
       thunderblock: DashboardMetrics.thunderblock_metrics(),
       thundergrid: DashboardMetrics.thundergrid_metrics(),
-      thundervault: DashboardMetrics.thundervault_metrics(),
+        thunderblock_vault: DashboardMetrics.thunderblock_vault_metrics(),
       thundercom: DashboardMetrics.thundercom_metrics(),
       thundereye: DashboardMetrics.thundereye_metrics(),
       thunderchief: DashboardMetrics.thunderchief_metrics(),
@@ -932,7 +932,7 @@ defmodule ThunderlineWeb.DashboardLive do
       {:thunderbolt, "⚡"},
       {:thunderblock, "🏗️"},
       {:thundergrid, "🔷"},
-      {:thundervault, "🗄️"},
+  {:thunderblock_vault, "🗄️"},
       {:thundercom, "📡"},
       {:thundereye, "👁️"},
       {:thunderchief, "👑"},

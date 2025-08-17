@@ -81,7 +81,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.DomainPanel do
               value={format_percentage(@metrics[:zone_health])}
               color="green"
             />
-          <% :thundervault -> %>
+          <% :thunderblock_vault -> %>
             <.metric_row label="Records" value={format_number(@metrics[:records])} color="cyan" />
             <.metric_row
               label="Knowledge"
@@ -204,7 +204,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.DomainPanel do
   defp domain_icon(:thunderbolt), do: "⚡"
   defp domain_icon(:thunderblock), do: "🏗️"
   defp domain_icon(:thundergrid), do: "🔷"
-  defp domain_icon(:thundervault), do: "🗄️"
+  defp domain_icon(:thunderblock_vault), do: "🗄️"
   defp domain_icon(:thundercom), do: "📡"
   defp domain_icon(:thundereye), do: "👁️"
   defp domain_icon(:thunderchief), do: "👑"

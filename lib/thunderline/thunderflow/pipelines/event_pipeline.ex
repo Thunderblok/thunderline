@@ -233,8 +233,8 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
   end
 
   defp process_domain_specific_events("thunderblock", events) do
-    # Handle Thundervault events
-    Enum.each(events, &route_to_thundervault/1)
+    # Handle ThunderBlock & Vault (formerly Thundervault) events
+    Enum.each(events, &route_to_thunderblock_vault/1)
     :ok
   end
 
@@ -287,8 +287,8 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     |> Oban.insert()
   end
 
-  defp route_to_thundervault(event) do
-    # Route to Thundervault domain
+  defp route_to_thunderblock_vault(event) do
+    # Route to ThunderBlock vault (formerly Thundervault)
     %{
       "event" => event,
       "domain" => "thunderblock"

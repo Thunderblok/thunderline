@@ -4,7 +4,7 @@ defmodule Thunderline.Thunderblock.Domain do
 
   **Boundary**: Exposes stateful capabilities, not business workflows
 
-  Consolidated from: ThunderVault (storage, Postgres, Memento/Mnesia)
+  Consolidated from: legacy "Thundervault" (storage, Postgres, Memento/Mnesia) -> now ThunderBlock Vault namespace (:thunderblock_vault)
 
   **Vision**: The foundational runtime providing execution environment and
   storage infrastructure with infinite configurability.
@@ -44,7 +44,7 @@ defmodule Thunderline.Thunderblock.Domain do
     # ThunderChief Orchestration (integrated into ThunderBlock)
     resource Thunderline.Thunderblock.Resources.WorkflowTracker
 
-    # ThunderVault → ThunderBlock (storage & memory)
+  # Legacy rename: ThunderVault → ThunderBlock (storage & memory) -> metrics & resources exposed as :thunderblock and :thunderblock_vault
     resource Thunderline.Thunderblock.Resources.VaultAction
     resource Thunderline.Thunderblock.Resources.VaultAgent
     resource Thunderline.Thunderblock.Resources.VaultCacheEntry

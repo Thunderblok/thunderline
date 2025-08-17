@@ -1,30 +1,37 @@
 # 🌩️ OKO HANDBOOK: The Thunderline Technical Bible
 
-> **LIVING DOCUMENT** - Last Updated: August 15, 2025  
+> **LIVING DOCUMENT** - Last Updated: August 17, 2025  
 > **Status**: � **ATLAS HANDOVER COMPLETE - PRODUCTION READY DOCUMENTATION**  
 > **Purpose**: Comprehensive guide to Thunderline's Personal Autonomous Construct (PAC) platform & distributed AI orchestration system
 
 ---
 
-## ⚡ **TEAM STATUS UPDATES** - August 14, 2025
+## ⚡ **TEAM STATUS UPDATES** - August 17, 2025
 
 ### **🚨 CURRENT BLOCKERS & ACTIVE WORK**
-**Erlang → Elixir Conversion**: 🟡 **ASSIGNED TO WARDEN TEAM** - Converting ThunderCell Erlang modules to native Elixir GenServers  
-**External Review Prep**: 🔴 **ACTIVE** - Documentation overhaul for external stakeholders and potential contributors  
-**Dashboard Integration**: 🟡 **IN PROGRESS** - Real automata metrics integration, replacing fake data with live CA state  
-**Compilation Status**: ✅ **CLEAN BUILD** - Zero critical errors, ~200 minor warnings to clean up  
+**Erlang → Elixir Conversion**: 🟡 **ASSIGNED TO WARDEN TEAM** - Remaining ThunderCell Erlang modules being ported (5 → 0 target)  
+**External Review Prep**: � **ACTIVE** - Refining architecture & domain docs for multi‑team consumption  
+**Dashboard Integration**: 🟡 **IN PROGRESS** - Wiring real CA & Blackboard metrics (mock data being phased out)  
+**Blackboard Integration**: ✅ **CORE COMPLETE** - GenServer + ETS + PubSub broadcasting; expanding metrics & persistence strategy  
+**Automata Feature Parity Checklist**: 🟡 **DRAFTING** - Mapping against upstream wiki; gap remediation plan in progress  
+**Cerebros/NAS Integration (ThunderBolt)**: 🟡 **DESIGN** - ML search + dataset behaviors relocating under ThunderBolt with DIP governance  
+**Compilation Status**: ✅ **CLEAN BUILD** - Zero critical errors, ~200 minor warnings scheduled for phased cleanup (target <50 by Aug 24)  
 
 ### **🎯 IMMEDIATE PRIORITIES (Next 48 Hours)**
-1. **Complete Erlang Conversion** - Warden team converting 5 ThunderCell modules to Elixir GenServers
-2. **Dashboard Metrics** - Integrate real cellular automata state data from ThunderCell cluster
-3. **External Documentation** - Clear project overview, architecture explanation, and contribution guide
-4. **Demo Preparation** - Working 3D cellular automata visualization for external demonstration
+1. **Finalize Automata Feature Parity Audit** - Document DONE / GAP items & open DIP issues for gaps
+2. **Complete Remaining Erlang → Elixir Ports** - Achieve 100% native ThunderCell processes
+3. **Replace Mock Dashboard Data** - Source all metrics from live Blackboard/ThunderFlow events
+4. **Relocate Interim ML (Cerebros) Code** - Ensure all ML modules live under `Thunderline.ThunderBolt` namespace (no new domain)
+5. **Warning Reduction Sprint** - Remove low‑hanging unused imports/variables (target: -60 warnings)
 
 ### **✅ RECENT WINS**
 - **Domain Consolidation**: 21 domains → 7 efficient, well-bounded domains (67% complexity reduction)
+- **Blackboard System**: Central shared-state layer implemented (ETS + PubSub) & surfaced in UI
+- **Automata LiveView**: Real-time CA visualization test coverage confirmed (stability baseline)
 - **Event Architecture**: Broadway + Mnesia event processing fully operational
 - **State Machines**: AshStateMachine 0.2.12 integration complete with proper syntax
 - **Clean Repository**: Minimal root structure, integrated components, production-ready state
+- **Erlang Bridge Noise Reduction**: Legacy delegate warnings mitigated via compatibility wrappers
 - **Conversion Planning**: Detailed brief created for Erlang → Elixir migration
 
 ### **⚠️ TECHNICAL DEBT & WARNINGS**
@@ -35,12 +42,170 @@
 
 ---
 
+## 🧩 Automata Feature Parity Status (Snapshot: Aug 17 2025)
+Reference: upstream `upstarter/automata` wiki feature list.
+
+Legend: ✅ Implemented | 🟡 Partial / In Progress | 🔴 Not Yet | 💤 Deferred (intentional)
+
+| Feature Category | Item | Status | Notes / Next Action |
+|------------------|------|--------|----------------------|
+| Core Evolution | Step/advance API | ✅ | Deterministic evolution cycle implemented |
+| Core Evolution | Rule swapping at runtime | 🟡 | Basic rule module injection; add validation & telemetry gap |
+| Neighborhoods | Moore / Von Neumann | ✅ | Configurable; verify 3D radius >1 variants |
+| State Management | Multi-layer grids | 🔴 | Not yet; design doc needed (possible ThunderBolt extension) |
+| State Management | Blackboard shared context | ✅ | GenServer + ETS + PubSub complete (extend metrics set) |
+| Persistence | Snapshot / restore | 🔴 | Plan: Ash resource for snapshots (ThunderBolt) |
+| Metrics | Cell churn rate | 🟡 | Calculated transiently; persist periodic aggregate via ThunderFlow |
+| Metrics | Rule application counts | 🔴 | Add instrumentation hooks around evolution loop |
+| UI | Live 3D lattice | 🟡 | LiveView test baseline; voxels integration pending Three.js fix |
+| UI | Blackboard panel | ✅ | Rendering current key/value entries |
+| Distribution | Multi-node CA partitioning | 🔴 | Requires post-Erlang conversion strategy (DIP to draft) |
+| Distribution | Backpressure signaling | 🟡 | Event queue depth metric present; tie into evolution pacing |
+| Safety | Rule sandboxing | 🔴 | Potential WASM/Elixir boundary; security review needed |
+| Extensibility | Plugin rule modules | 🟡 | Manual injection supported; need registry & DIP constraints |
+| API | External control actions | 🟡 | Internal calls exist; expose controlled Ash actions |
+
+Gap Remediation Workflow:
+1. Open DIP Issue per 🔴 gap (Intent + Mapping + Observability).
+2. Attach parity table row link in issue description.
+3. Implement smallest viable slice + telemetry.
+4. Update this table (commit referencing issue ID).
+
+Primary Focus Gaps (next): Snapshot/restore, rule application counts, voxel UI completion.
+
+---
+
+## 🧠 ThunderBolt ML (Cerebros) Integration Plan
+All ML / NAS functionality is governed by ThunderBolt domain (NO new domain). Any proposal to diverge requires DIP approval & steward sign‑off.
+
+Phase 0 (Now):
+- Relocate interim modules (`param_count`, dataset behaviours, search API) under `Thunderline.ThunderBolt.ML.*` namespace.
+- Wrap experimental APIs with `@moduledoc :experimental` & guard usage behind feature flag (`:thunderline, :features, :ml_nas`).
+
+Phase 1 (Foundational Resources):
+- Ash Resources: `ModelRun`, `Trial`, `Artifact`, `DatasetSpec`.
+- Actions: `start_run`, `record_trial_result`, `finalize_run`.
+- Telemetry: `[:thunderline, :ml, :run, :start|:stop|:exception]` etc. standardized.
+
+Phase 2 (Search & Scheduling):
+- Strategy modules (random, grid, evolutionary) implementing `@behaviour Thunderline.ThunderBolt.ML.SearchStrategy`.
+- Reactor orchestrating multi-trial life cycle (compensation on failed allocation).
+
+Phase 3 (Optimization & Distribution):
+- Distributed trial execution across CA cells (leveraging Blackboard for shared hyperparameter constraints).
+- Persistence of best artifact lineage & reproducibility metadata.
+
+Governance & Observability:
+- Every new resource passes DIP checklist (10/10) & adds at least 1 metric + 1 telemetry event.
+- No cross-domain direct DB joins; event emission via ThunderFlow when other domains must react.
+
+Out-of-Scope (Deferred): Advanced NAS meta-learning, multi-tenant dataset marketplaces, GPU scheduler.
+
+---
+
+## 🛠️ Handbook Continuous Update SOP
+Purpose: Keep this handbook an operationally trusted artifact across teams.
+
+Trigger Events Requiring Update (commit should reference section changed):
+1. New Ash resource merged (add to appropriate domain subsection + parity / metrics tables if relevant).
+2. Domain invariant change (update DIP references + highlight in STATUS section for 7 days).
+3. New telemetry namespace introduced (append to Observability or relevant domain plan).
+4. Feature parity table row status change (update row + date suffix if major shift).
+5. Completion of a previously listed blocker (move to Recent Wins within 24h).
+
+Update Workflow:
+1. Author prepares patch modifying ONLY relevant sections (minimize churn).
+2. Include `HANDBOOK-UPDATE:` prefix in commit message.
+3. Steward of impacted domain reviews for accuracy (async approval acceptable).
+4. CI lint ensures date stamp updated if STATUS section changed.
+
+Quality Bar:
+- No stale status entries older than 7 days in Current Blockers.
+- Parity tables reflect reality of main branch ≤24h old.
+- All TODO / GAP items link to an open issue (or marked `planned` if within 48h of issue creation).
+
+Audit Cadence:
+- Weekly automated script (planned) flags missing issue links & stale dates.
+- Monthly steward review rotates across domains.
+
+Failure Handling:
+- Missing update → create retro issue tagging responsible team.
+- Repeated misses (>2 in a month) escalate to Steering Council for process adjustment.
+
+---
+
+---
+
 ## 🏛️ **AGENT ATLAS TENURE REPORT** - August 15, 2025
 
 > **CODENAME**: ATLAS  
 > **OPERATIONAL PERIOD**: August 2025  
 > **MISSION**: Strategic codebase stabilization, domain consolidation, and handover preparation  
 > **STATUS**: MISSION COMPLETE - HANDOVER READY
+
+---
+
+## 🏛️ **AGENT BIG CHIEF TENURE REPORT** - Active (Aug 17, 2025 → Present)
+
+> **CODENAME**: BIG CHIEF  
+> **OPERATIONAL PERIOD**: August 2025 (Post-Atlas Handover)  
+> **MISSION**: Continuous domain guardianship, automata parity completion, ML (Cerebros) integration under ThunderBolt, handbook real-time accuracy, and noise (warnings) reduction  
+> **STATUS**: IN PROGRESS - OPERATIONAL STABILITY MAINTAINED
+
+### 🎯 Operational Focus
+- Preserve 7-domain ecological balance (no domain sprawl)
+- Finish Automata feature parity (snapshot/restore, rule metrics, voxel UI)
+- Migrate remaining Erlang ThunderCell modules to Elixir
+- Relocate & formalize ML/NAS components inside ThunderBolt with Ash resources
+- Reduce compilation warnings (<50 near-term, <25 stretch)
+- Elevate Blackboard from shared scratchpad to measurable system substrate (metrics + persistence plan)
+
+### ✅ Early Contributions
+- Handbook modernization cadence established (Continuous Update SOP embedded)
+- Automata parity matrix drafted with remediation workflow
+- Blackboard GenServer synthesized & surfaced in LiveView (UI observability of shared state)
+- ErlangBridge noise reduction (delegate & pattern match harmonization)
+- ThunderGrid domain clarification & documentation corrections (GraphQL/interface scope)
+
+### 🧭 Invariants Being Guarded
+| Invariant | Rationale | Guard Mechanism |
+|-----------|-----------|-----------------|
+| No new domains | Prevent complexity explosion | DIP Gate + Steward review |
+| ML stays in ThunderBolt | Avoid shadow AI domain drift | Namespace audit in CI (planned) |
+| Every new persistent process emits telemetry | Ensures observability-first | SOP + checklist enforcement |
+| Parity table ≤24h stale | Keeps execution aligned with vision | Weekly script (planned) + manual spot checks |
+
+### 📈 Near-term Metrics Targets (T+14d)
+- `warning.count`: < 50 (from ~200)
+- `ca.cell.churn.rate` variance: < 1.5x daily baseline
+- Parity gaps (🔴): reduce by 3 (focus: snapshot/restore, rule counts, voxel UI)
+- Telemetry coverage: +5 new events across ML & automata evolution
+
+### 🧪 Upcoming DIP Issues (Queue)
+1. DIP-AUTO-SNAPSHOT: CA snapshot & restore resource + persistence format
+2. DIP-AUTO-RULE-METRICS: Instrumentation for rule application counting
+3. DIP-AUTO-VOXEL-VIS: Three.js integration & performance budget definition
+4. DIP-ML-FOUNDATION: ModelRun/Trial/Artifact resource introduction
+5. DIP-BLACKBOARD-PERSIST: Strategy for durable Blackboard snapshots
+
+### 🚨 Risks & Mitigations
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Parity drift | Feature confusion, regressions | Weekly parity sync; enforce issue links |
+| Warning debt ignored | Hidden defects & onboarding friction | Dedicated cleanup sprint allocation |
+| ML sprawl | Domain boundary erosion | Namespace scanner + steward review |
+| Blackboard overcoupling | Tight coupling to multiple domains | Keep API minimal; emit neutral events only |
+
+### 🪙 Success Criteria (Exit Conditions)
+- All 🔴 automata gaps closed or reclassified with scheduled DIP
+- Warnings < 25 sustained for 7 days
+- ML foundational Ash resources merged & emitting telemetry
+- Blackboard persistence blueprint approved (DIP accepted)
+- Handbook parity & status sections stable with <24h drift for 30 consecutive days
+
+> "Big Chief maintains the living heartbeat post-Atlas—protecting clarity, finishing the parity journey, and hardening the substrate for scale."  
+
+---
 
 ### **🎯 STRATEGIC ACCOMPLISHMENTS**
 
@@ -86,7 +251,7 @@
 
 **Strategic Initiatives (Next 30 Days)**
 1. **Dashboard real data integration**: Replace mock metrics with live CA state
-2. **Security domain implementation**: ThunderGuard domain is architecturally ready but empty
+2. **GraphQL Interface Hardening**: ThunderGrid (GraphQL interface & spatial grid resources) stabilization & schema hygiene
 3. **Federation protocol**: ActivityPub implementation for multi-instance coordination
 4. **Performance baseline**: Establish benchmarks before adding new features
 
@@ -207,7 +372,8 @@ Before merging a new Ash resource:
 7. Event emission path (if any) uses normalized `%Thunderline.Event{}` or documented variant.
 8. Tests: happy path + one failure path (or stub with TODO + ticket).
 9. Domain Catalog updated (resource line added under correct heading).
-10. No duplicate or overlapping semantic with existing resource (search pass). 
+10. No duplicate or overlapping semantic with existing resource (search pass).
+11. Lifecycle evaluated: if constrained, uses `state_machine` (or PR documents exception rationale).
 
 Gate phrase in PR description: `DIP-CHECKLIST: 10/10`.
 
@@ -233,6 +399,104 @@ Standard Step Classification:
 | `emit_` | Event/pubsub | Yes | Optional (idempotent emit preferred) |
 | `call_` | External API / bridge | Yes | Usually (compensate or classify transient) |
 | `finalize_` | Terminal commit / ack | Yes | Yes (undo cascades) |
+
+---
+
+## 🧷 **FINITE STATE MACHINES (Ash StateMachine) – LIFECYCLE MODELING STANDARD**
+
+Explicit state machines are FIRST-CLASS lifecycle boundaries. They prevent impossible states, centralize transition logic, and enable policy & UI coupling. Inspired by Christian's traffic light → ecommerce order transcript: enumerate valid states, restrict transitions, expose them as code + diagrams.
+
+### When to Use
+Adopt `ash_state_machine` when:
+1. Bounded set of semantic lifecycle states (≤ ~15).
+2. At least one transition has validation/side-effect.
+3. Illegal states would create data ambiguity or policy bugs.
+4. UI or authorization changes per lifecycle phase.
+
+Do NOT use for: derived/calculated states, unbounded enums, trivial booleans.
+
+### Example (Proposed `ModelRun` Resource)
+```elixir
+defmodule Thunderline.ThunderBolt.ML.ModelRun do
+  use Ash.Resource,
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshStateMachine]
+
+  postgres do
+    table "ml_model_runs"
+    repo Thunderline.Repo
+  end
+
+  state_machine do
+    initial_states [:pending]
+    default_initial_state :pending
+    transition :start_run,     from: [:pending],  to: [:running, :failed]
+    transition :record_trial,  from: [:running],  to: [:running]
+    transition :finalize,      from: [:running],  to: [:completed, :failed]
+    transition :archive,       from: [:completed], to: [:archived]
+    transition :retry,         from: [:failed],   to: [:pending, :running]
+  end
+
+  actions do
+    defaults [:read]
+    action :start_run do
+      change transition_state(:running, fallback: :failed)
+    end
+    action :finalize do
+      change transition_state(:completed)
+    end
+  end
+
+  policies do
+    policy action(:archive) do
+      authorize_if relates_to_actor_via(:owner)
+      forbid_unless can_transition_to_state(:archived)
+    end
+  end
+end
+```
+
+### Telemetry
+Emit:
+- `[:thunderline, :state_machine, :transition, :start|:stop]`
+- `[:thunderline, :<domain>, :<resource>, :transition, :<from>, :<to>]`
+
+Metadata: `actor_id`, `resource_id`, `transition`, `from`, `to`, `result`, duration (µs).
+
+### Candidate Conversions
+| Domain | Implicit Lifecycle | Proposed States | Benefit |
+|--------|--------------------|-----------------|---------|
+| ThunderBolt.ML (Cerebros) | Run status | `:pending → :running → :completed | :failed → :archived` | Retry & UI gating |
+| ThunderFlow | Event batch | `:queued → :processing → :acked | :failed | :dead_letter` | Backpressure clarity |
+| ThunderBlock Vault Ingestion | Memory indexing | `:received → :parsing → :indexed | :error` | Reprocessing strategy |
+| Automata Snapshot (planned) | Snapshot lifecycle | `:scheduled → :capturing → :persisted | :expired` | Retention policy |
+| Financial Refund (future) | Refund workflow | `:requested → :approved → :executing → :settled | :rejected` | Audit integrity |
+
+### Reactor vs State Machine
+| Need | State Machine | Reactor | Both |
+|------|---------------|---------|------|
+| Enforce allowed target states | ✅ | ✗ | ✅ |
+| Multi-step orchestration | ✗ | ✅ | ✅ |
+| Visual diagram generation | ✅ | ✗ | ✅ |
+| UI enable/disable logic | ✅ | ✗ | ✅ |
+| Compensating rollback | ✗ | ✅ | ✅ |
+
+### Adoption Steps
+1. Inventory attributes named `:state` / `:status` / `:phase`.
+2. Open DIP referencing this section (batch similar trivial conversions).
+3. Implement state_machine + telemetry + policy guards.
+4. Remove scattered manual state mutations.
+5. Generate flowcharts (`mix ash_state_machine.generate_flowcharts`).
+
+### Anti-Patterns
+- Modeling ephemeral UI view states as machine states.
+- Side-effects AFTER transition without compensation path.
+- Direct DB updates bypassing action transition.
+
+### Quality Gate
+PR must justify absence of a state machine if lifecycle semantics exist.
+
+---
 
 Retry Policy Canonical Outcomes:
 `{:error, %{error: atom(), transient?: boolean, reason: term()}}`
@@ -279,9 +543,9 @@ Stewards (initial assignment):
 - ThunderBolt: Orchestration Lead
 - ThunderCrown: AI Governance Lead
 - ThunderFlow: Observability Lead
-- ThunderGate: Security Lead
-- ThunderGrid: Spatial Lead
-- ThunderLink: Interface/Comms Lead
+- ThunderGate: External Integrations/Federation Lead
+- ThunderGrid: GraphQL & Spatial/Grid Lead
+- ThunderLink: Realtime Interface/Comms Lead
 
 Steward sign-off required for domain modifications & resource deletions.
 
@@ -316,7 +580,7 @@ Thunderline follows a **domain-driven, event-sourced architecture** built on Eli
                                ▼
                     ┌─────────────────┐
                     │   ThunderGRID   │
-                    │    GRAPHQL      │
+                    │  GRAPHQL / GRID │
                     └─────────────────┘
 ```
 
@@ -352,10 +616,11 @@ Thunderline follows a **domain-driven, event-sourced architecture** built on Eli
 - Dashboard metrics and user interface coordination
 - Social features and collaboration tools
 
-**🛡️ ThunderGuard** (0 resources) - **Security & Authorization**
-- Authentication and authorization systems (domain ready)
-- Data protection and privacy controls
-- Audit logging and compliance monitoring
+**🧭 ThunderGrid** (TBD resource count) - **GraphQL Interface & Spatial Grid**
+- Central GraphQL schema & boundary enforcement
+- Spatial grid & zone resource modeling (coordinates, zones, boundaries)
+- Aggregation & projection layer for cross-domain read models
+
 
 ## 🤖 **WHAT MAKES THUNDERLINE UNIQUE?**
 
@@ -427,7 +692,8 @@ Multiple Thunderline instances can federate through ActivityPub protocol:
 ├── thunderflow/               # Event processing & metrics
 ├── thundergate/               # External integrations & federation
 ├── thunderlink/               # Communication & dashboard
-└── thunderguard/              # Security (not yet implemented)
+├── thundergrid/               # GraphQL interface & spatial grid resources
+└── (security pending)         # Security domain deferred (placeholder removed)
 
 /lib/thunderline_web/
 ├── live/                      # Phoenix LiveView modules

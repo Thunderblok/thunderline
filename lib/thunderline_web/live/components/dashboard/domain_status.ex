@@ -155,7 +155,7 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
   defp domain_icon(:thunderbolt), do: "⚡"
   defp domain_icon(:thunderblock), do: "🏗️"
   defp domain_icon(:thundergrid), do: "🔷"
-  defp domain_icon(:thundervault), do: "🗄️"
+  defp domain_icon(:thunderblock_vault), do: "🗄️"
   defp domain_icon(:thundercom), do: "📡"
   defp domain_icon(:thundereye), do: "👁️"
   defp domain_icon(:thunderchief), do: "👑"

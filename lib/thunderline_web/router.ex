@@ -44,7 +44,7 @@ defmodule ThunderlineWeb.Router do
     live "/thunderbolt", DashboardLive, :thunderbolt
     live "/thunderblock", DashboardLive, :thunderblock
     live "/thundergrid", DashboardLive, :thundergrid
-    live "/thundervault", DashboardLive, :thundervault
+  # Removed legacy /thundervault route (vault now part of thunderblock domain metrics)
     live "/thundercom", DashboardLive, :thundercom
     live "/thundereye", DashboardLive, :thundereye
     live "/thunderchief", DashboardLive, :thunderchief

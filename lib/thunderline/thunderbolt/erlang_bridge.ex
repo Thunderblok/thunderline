@@ -35,6 +35,37 @@ defmodule Thunderline.ErlangBridge do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  # ---------------------------------------------------------------------------
+  # Backward Compatibility Layer (Legacy Test & API Expectations)
+  # These wrappers map old function names (still referenced in tests/docs)
+  # to the new, explicit API. Marked @deprecated so callers can migrate.
+  # ---------------------------------------------------------------------------
+
+  @deprecated "Use get_system_state/0 or get_node_status/0 instead"
+  def get_status do
+    with {:ok, state} <- get_system_state() do
+      state
+    end
+  end
+
+  @deprecated "Use create_thunderbolt_stream/2 instead"
+  def start_thunderbolt_streaming(bolt_id), do: create_thunderbolt_stream(bolt_id, %{})
+
+  @deprecated "Use start_thunderbolt_evolution/2 instead"
+  def evolve_thunderbolt(bolt_id, evolution_params \\ %{}),
+    do: start_thunderbolt_evolution(bolt_id, evolution_params)
+
+  @deprecated "Use execute_command(:destroy_thunderbolt, [bolt_id]) or direct registry call"
+  def destroy_thunderbolt(bolt_id) do
+    case execute_command(:destroy_thunderbolt, [bolt_id]) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @deprecated "Use apply_neural_connections/2 instead"
+  def inject_neural_patterns(bolt_id, connections), do: apply_neural_connections(bolt_id, connections)
+
   @doc "Create a new ThunderBolt cube using Erlang team's API"
   def create_thunderbolt(bolt_config) do
     GenServer.call(__MODULE__, {:create_thunderbolt, bolt_config}, 5000)
@@ -644,7 +675,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_call({:optimize_connectivity, strategy}, _from, state) do
     case call_erlang_safe(:thunderbolt_neural, :optimize_connectivity, [strategy]) do
-      :ok ->
+  {:ok, _} ->
         Logger.info("🧠 Optimized neural connectivity using strategy: #{strategy}")
         {:reply, :ok, state}
 
@@ -707,7 +738,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_call({:enable_stdp, neuron_id}, _from, state) do
     case call_erlang_safe(:thunderbit_neuron, :enable_spike_timing_plasticity, [neuron_id]) do
-      :ok ->
+  {:ok, _} ->
         Logger.info("🧠 Enabled STDP for neuron #{neuron_id}")
         {:reply, :ok, state}
 
@@ -792,7 +823,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_call({:enable_cross_scale_learning, hierarchy_id}, _from, state) do
     case call_erlang_safe(:thunderbolt_multiscale, :enable_cross_scale_learning, [hierarchy_id]) do
-      :ok ->
+  {:ok, _} ->
         Logger.info("🏗️ Enabled cross-scale learning for hierarchy #{hierarchy_id}")
         {:reply, :ok, state}
 
@@ -812,7 +843,7 @@ defmodule Thunderline.ErlangBridge do
            signal,
            timestamp
          ]) do
-      :ok ->
+  {:ok, _} ->
         Logger.debug("🔄 Propagated neural signal from level #{source_level}")
 
       {:error, reason} ->
@@ -824,7 +855,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_cast({:fire_neuron, neuron_id, intensity}, state) do
     case call_erlang_safe(:thunderbit_neuron, :fire_neuron, [neuron_id, intensity]) do
-      :ok ->
+  {:ok, _} ->
         Logger.debug("⚡ Fired neuron #{neuron_id} with intensity #{intensity}")
 
       {:error, reason} ->
@@ -836,7 +867,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_cast({:simulate_neural_step, bolt_id}, state) do
     case call_erlang_safe(:thunderbit_neuron, :simulate_neural_step, [bolt_id]) do
-      :ok ->
+  {:ok, _} ->
         Logger.debug("🧠 Simulated neural step for bolt #{bolt_id}")
 
       {:error, reason} ->
@@ -852,7 +883,7 @@ defmodule Thunderline.ErlangBridge do
            source_scale,
            data
          ]) do
-      :ok ->
+  {:ok, _} ->
         Logger.debug("🔼 Propagated upward from scale #{source_scale}")
 
       {:error, reason} ->
@@ -868,7 +899,7 @@ defmodule Thunderline.ErlangBridge do
            source_scale,
            data
          ]) do
-      :ok ->
+  {:ok, _} ->
         Logger.debug("🔽 Propagated downward from scale #{source_scale}")
 
       {:error, reason} ->

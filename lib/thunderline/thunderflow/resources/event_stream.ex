@@ -115,7 +115,7 @@ defmodule Thunderline.Thunderflow.Resources.EventStream do
 
       constraints one_of: [
                     :thundercore,
-                    :thundervault,
+                    :thunderblock_vault,
                     :thundercom,
                     :thunderbit,
                     :thunderflow,

@@ -2,7 +2,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultUser do
   @moduledoc """
   User Resource - Migrated from lib/thunderline/accounts/resources/user
 
-  Core user accounts and authentication in the Thundervault persistence layer.
+  Core user accounts and authentication (historical: consolidated from legacy Thundervault -> ThunderBlock Vault).
   """
 
   use Ash.Resource,

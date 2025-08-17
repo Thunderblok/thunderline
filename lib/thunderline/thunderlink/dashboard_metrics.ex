@@ -44,7 +44,8 @@ defmodule Thunderline.DashboardMetrics do
 
   @doc "Get real-time dashboard data"
   def get_dashboard_data do
-    GenServer.call(__MODULE__, :get_dashboard_data)
+  data = GenServer.call(__MODULE__, :get_dashboard_data)
+  normalize_domain_keys(data)
   end
 
   @doc "Subscribe to real-time metrics updates"
@@ -179,8 +180,8 @@ defmodule Thunderline.DashboardMetrics do
     }
   end
 
-  @doc "Get ThunderVault metrics"
-  def thundervault_metrics do
+  @doc "Get ThunderBlock Vault (formerly ThunderVault) metrics"
+  def thunderblock_vault_metrics do
     %{
       # TODO: Implement decision tracking
       decisions_made: "OFFLINE",
@@ -192,6 +193,27 @@ defmodule Thunderline.DashboardMetrics do
       security_score: "OFFLINE"
     }
   end
+
+  @deprecated "Use thunderblock_vault_metrics/0. The thundervault_* naming is being removed; will be deleted after deprecation window."
+  @doc "(DEPRECATED) Get ThunderVault metrics – use thunderblock_vault_metrics/0"
+  def thundervault_metrics do
+    Logger.warning("DEPRECATED call to thundervault_metrics/0 – use thunderblock_vault_metrics/0")
+    thunderblock_vault_metrics()
+  end
+
+  # --- Normalization Helpers -------------------------------------------------
+  defp normalize_domain_keys(%{} = data) do
+    data
+    |> rename_key(:thundervault, :thunderblock_vault)
+  end
+
+  defp rename_key(map, old, new) when is_map(map) do
+    case Map.pop(map, old) do
+      {nil, _map} -> map
+      {val, rest} -> Map.put(rest, new, val)
+    end
+  end
+  defp rename_key(other, _o, _n), do: other
 
   @doc "Get ThunderCom metrics"
   def thundercom_metrics do

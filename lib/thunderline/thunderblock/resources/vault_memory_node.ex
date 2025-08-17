@@ -3,7 +3,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultMemoryNode do
   MemoryNode Resource - Migrated from lib/thunderline/memory/resources/memory_node
 
   Networked storage for agent memories with vector search capabilities.
-  Consolidated into Thundervault for persistence and federation coordination.
+  ThunderBlock Vault memory node (persistence & federation coordination; legacy Thundervault lineage).
   """
 
   use Ash.Resource,

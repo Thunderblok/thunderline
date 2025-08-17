@@ -666,8 +666,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   # ===== VALIDATIONS =====
   validations do
     validate present([:node_type, :title, :knowledge_domain])
-    # validate {Thundervault.Validations, :valid_relationship_structure}, on: [:create, :update]
-    # validate {Thundervault.Validations, :valid_taxonomy_path}, on: [:create, :update]
+    # (Legacy validation hooks retained for reference - original Thundervault module names commented out)
+    # validate {ThunderblockVault.Validations, :valid_relationship_structure}, on: [:create, :update]
+    # validate {ThunderblockVault.Validations, :valid_taxonomy_path}, on: [:create, :update]
   end
 
   # ===== ATTRIBUTES =====

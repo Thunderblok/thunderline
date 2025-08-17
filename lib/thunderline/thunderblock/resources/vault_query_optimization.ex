@@ -3,7 +3,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultQueryOptimization do
   QueryOptimization Resource - Database Performance Analytics
 
   Tracks query performance, identifies bottlenecks, and provides optimization
-  recommendations for the Thundervault persistence layer.
+  recommendations for the ThunderBlock Vault persistence layer (legacy Thundervault lineage).
   """
 
   use Ash.Resource,

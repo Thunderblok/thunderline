@@ -40,7 +40,7 @@ defmodule Thunderline.Thundercrown.Jobs.CrossDomainProcessor do
 
     # Simulate domain-specific processing
     case {source_domain, target_domain, operation_type} do
-      {_, :thundervault, :sync_data} ->
+  {_, :thunderblock_vault, :sync_data} ->
         # Simulate data sync
         Process.sleep(1000)
         publish_completion(workflow_id, :sync_data, %{synced_records: 42})
