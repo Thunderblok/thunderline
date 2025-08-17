@@ -78,6 +78,15 @@ Primary Focus Gaps (next): Snapshot/restore, rule application counts, voxel UI c
 ## 🧠 ThunderBolt ML (Cerebros) Integration Plan
 All ML / NAS functionality is governed by ThunderBolt domain (NO new domain). Any proposal to diverge requires DIP approval & steward sign‑off.
 
+### Migration Log (Cerebros → Thunderbolt)
+| Date (UTC) | Change | Details | Removal Target |
+|-----------|--------|---------|----------------|
+| 2025-08-17 | Relocated Cerebros modules | Moved `Thunderline.ML.Cerebros.*` → `Thunderline.Thunderbolt.Cerebros.*` with deprecation aliases | v0.7.0 |
+| 2025-08-17 | Added Ash resources | `ModelRun`, `ModelArtifact` + migration `20250817164740` | N/A |
+| 2025-08-17 | Added telemetry & seeding to SimpleSearch | Namespaced under `[:thunderline,:thunderbolt,:cerebros,...]` | N/A |
+
+Deprecation Policy: Alias modules will be removed after tag `v0.7.0` or 30 days (whichever later). CI task (planned) will fail builds if legacy namespace persists beyond window.
+
 Phase 0 (Now):
 - Relocate interim modules (`param_count`, dataset behaviours, search API) under `Thunderline.ThunderBolt.ML.*` namespace.
 - Wrap experimental APIs with `@moduledoc :experimental` & guard usage behind feature flag (`:thunderline, :features, :ml_nas`).
