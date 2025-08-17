@@ -84,6 +84,8 @@ All ML / NAS functionality is governed by ThunderBolt domain (NO new domain). An
 | 2025-08-17 | Relocated Cerebros modules | Moved `Thunderline.ML.Cerebros.*` → `Thunderline.Thunderbolt.Cerebros.*` with deprecation aliases | v0.7.0 |
 | 2025-08-17 | Added Ash resources | `ModelRun`, `ModelArtifact` + migration `20250817164740` | N/A |
 | 2025-08-17 | Added telemetry & seeding to SimpleSearch | Namespaced under `[:thunderline,:thunderbolt,:cerebros,...]` | N/A |
+| 2025-08-17 | Removed deprecated Cerebros & Automata aliases | Deleted all `Thunderline.ML.Cerebros.*` & `Thunderline.Automata.Blackboard` alias modules after migration | N/A |
+| 2025-08-17 | Purged legacy apps/thundervault folder | Removed root-owned infra artifacts (pgbouncer.ini, init.sql) after ThunderBlock consolidation | N/A |
 
 Deprecation Policy: Alias modules will be removed after tag `v0.7.0` or 30 days (whichever later). CI task (planned) will fail builds if legacy namespace persists beyond window.
 
