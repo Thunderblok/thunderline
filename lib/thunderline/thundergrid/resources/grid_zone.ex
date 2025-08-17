@@ -335,7 +335,7 @@ defmodule Thunderline.Thundergrid.Resources.GridZone do
 
     # Cross-domain relationships removed - invalid destination
     # TODO: Consider if direct GridZone->Agent relationship is needed
-    # PACHomes are currently managed via ZoneContainer relationships
+  # PAC Homes managed via ZoneContainer relationships (resource moved to Thunderblock domain)
   end
 
   # oban do

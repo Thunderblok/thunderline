@@ -62,13 +62,13 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
   def handle_message(processor, %Message{} = message, _context) do
     try do
       # Normalize to canonical event struct
-      canonical_event = 
+      canonical_event =
         case message.data do
-          bin when is_binary(bin) -> 
+          bin when is_binary(bin) ->
             bin |> Jason.decode!() |> Event.normalize!()
-          data when is_map(data) -> 
+          data when is_map(data) ->
             Event.normalize!(data)
-          other -> 
+          other ->
             Event.normalize!(%{"type" => "unknown", "payload" => other})
         end
 
@@ -90,7 +90,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
       error ->
         Logger.error("Cross-domain event processing failed: #{inspect(error)}")
 
-        # Send to dead letter queue  
+        # Send to dead letter queue
         send_to_dead_letter_queue(message.data, error)
 
         Message.failed(message, error)
@@ -213,14 +213,14 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   defp apply_transformation_rule(%{"type" => "field_mapping", "mappings" => mappings}, %Event{} = event) do
     # Apply field mappings for cross-domain compatibility in payload
-    updated_payload = 
+    updated_payload =
       Enum.reduce(mappings, event.payload, fn {old_field, new_field}, acc ->
         case Map.pop(acc, old_field) do
           {nil, acc} -> acc
           {value, acc} -> Map.put(acc, new_field, value)
         end
       end)
-    
+
     %{event | payload: updated_payload}
   end
 
@@ -238,11 +238,11 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
   defp determine_target_batcher(%Event{target_domain: "broadcast"}), do: :broadcast_events
   defp determine_target_batcher(%Event{}), do: :broadcast_events
 
-  # Domain-specific routing implementations  
+  # Domain-specific routing implementations
   defp route_to_thundercrown_batch(events) do
     # Convert canonical events to maps for job serialization
     event_maps = Enum.map(events, &Event.to_map/1)
-    
+
     job_params = %{
       "events" => event_maps,
       "target_domain" => "thundercrown",
@@ -260,7 +260,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
   defp route_to_thunderbolt_batch(events) do
     # Convert canonical events to maps for job serialization
     event_maps = Enum.map(events, &Event.to_map/1)
-    
+
     job_params = %{
       "events" => event_maps,
       "target_domain" => "thunderbolt",
@@ -278,7 +278,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
   defp route_to_thunderblock_batch(events) do
     # Convert canonical events to maps for job serialization
     event_maps = Enum.map(events, &Event.to_map/1)
-    
+
     job_params = %{
       "events" => event_maps,
       "target_domain" => "thunderblock",
@@ -315,7 +315,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   defp create_domain_job(domain, params) do
     # Protect domain job creation with circuit breaker
-    Thunderline.Support.CircuitBreaker.call({:domain, domain}, fn ->
+  Thunderline.Thunderflow.Support.CircuitBreaker.call({:domain, domain}, fn ->
       case domain do
         "thunderbolt" -> Thunderline.Thunderflow.Jobs.ThunderBoltProcessor.new(params) |> Oban.insert()
         "thunderblock" -> Thunderline.Thunderflow.Jobs.ThunderBlockProcessor.new(params) |> Oban.insert()

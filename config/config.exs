@@ -68,21 +68,22 @@ config :thunderline,
   ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [
-    # 7-Domain Federation Architecture
-    # ⚡🔥 Compute & Acceleration
-    Thunderline.Thunderbolt.Domain,
-    # ⚡💧 Event Streams & Data Rivers
-    Thunderline.Thunderflow.Domain,
-    # ⚡🌐 Gateway & External Integration
-    Thunderline.Thundergate.Domain,
-    # ⚡🧱 Storage & Persistence
-    Thunderline.Thunderblock.Domain,
-    # ⚡🔗 Connection & Communication
-    Thunderline.Thunderlink.Domain,
-    # ⚡👑 Governance & Orchestration
-    Thunderline.Thundercrown.Domain,
-    # ⚡🌐 Spatial Coordinates & Reality Grid
-    Thunderline.Thundergrid.Domain
+  # === SLIM MODE ACTIVE ===
+  # For the current milestone we only need the core runtime needed to ship
+  # fast on comms + events + storage. Extra domains are commented out to
+  # reduce compile surface, migration noise, Oban scan time, and cognitive load.
+  # Re‑enable by uncommenting when you actually implement features there.
+
+  # CORE (keep):
+  Thunderline.Thunderblock.Domain,   # Storage / memory / vault
+  Thunderline.Thunderflow.Domain,    # Event streams / pipelines
+  Thunderline.Thunderlink.Domain     # Realtime messaging / channels
+
+  # OPTIONAL (disabled right now):
+  # Thunderline.Thundergate.Domain,  # Auth / security / policies
+  # Thunderline.Thunderbolt.Domain,  # Heavy compute / CA engine / optimization
+  # Thunderline.Thundercrown.Domain, # Governance / orchestration / AI routing
+  # Thunderline.Thundergrid.Domain   # Spatial grid / zone topology
   ]
 
 # Configures the endpoint

@@ -362,11 +362,87 @@ defmodule ThunderlineWeb.DashboardLive do
     {:noreply, socket}
   end
 
+  # Accept raw ThunderCell aggregate state maps forwarded via PubSub or bridge
+  def handle_info(%{thundercell_cluster: _cluster, thundercell_telemetry: _telemetry} = state_map, socket) do
+    now = System.monotonic_time(:millisecond)
+    last_ts = socket.assigns[:last_thundercell_update_ts] || 0
+    min_interval = 1_000 # ms throttle window
+
+    cond do
+      now - last_ts < min_interval ->
+        # Coalesce: stash most recent state, schedule flush if not already
+        if socket.assigns[:thundercell_coalesce_timer] do
+          {:noreply, assign(socket, :pending_thundercell_state, state_map)}
+        else
+          timer = Process.send_after(self(), :flush_thundercell_state, min_interval - (now - last_ts))
+          {:noreply,
+           socket
+           |> assign(:pending_thundercell_state, state_map)
+           |> assign(:thundercell_coalesce_timer, timer)}
+        end
+      true ->
+        # Apply immediately
+        socket =
+          socket
+          |> assign(:thundercell_state, state_map)
+          |> assign(:last_thundercell_update_ts, now)
+          |> update(:system_metrics, fn metrics ->
+            Map.merge(metrics || %{}, Map.take(state_map, [:thundercell_cluster, :thundercell_telemetry]))
+          end)
+
+        {:noreply, socket}
+    end
+  end
+
+  # Flush coalesced ThunderCell state (rate limited)
+  def handle_info(:flush_thundercell_state, socket) do
+    case socket.assigns do
+      %{pending_thundercell_state: state_map} ->
+        now = System.monotonic_time(:millisecond)
+        socket =
+          socket
+          |> assign(:thundercell_state, state_map)
+          |> assign(:last_thundercell_update_ts, now)
+          |> assign(:pending_thundercell_state, nil)
+          |> assign(:thundercell_coalesce_timer, nil)
+          |> update(:system_metrics, fn metrics ->
+            Map.merge(metrics || %{}, Map.take(state_map, [:thundercell_cluster, :thundercell_telemetry]))
+          end)
+        {:noreply, socket}
+      _ ->
+        {:noreply, assign(socket, :thundercell_coalesce_timer, nil)}
+    end
+  end
+
   def handle_info(msg, socket) do
-    # Log unknown messages for debugging
-    require Logger
-    Logger.debug("Unknown message in DashboardLive: #{inspect(msg)}")
-    {:noreply, socket}
+    # Throttle unknown message logging: at most 1 per 5s, keep a counter
+    now = System.monotonic_time(:millisecond)
+    last_log = socket.assigns[:unknown_msg_last_log_ts] || 0
+    count = socket.assigns[:unknown_msg_count] || 0
+    window = 5_000
+
+    cond do
+      now - last_log >= window ->
+        if count > 0 do
+          Logger.debug("Suppressed #{count} unknown messages in last window")
+        end
+        Logger.debug("Unknown message in DashboardLive: #{inspect(limit_msg(msg))}")
+        {:noreply,
+         socket
+         |> assign(:unknown_msg_last_log_ts, now)
+         |> assign(:unknown_msg_count, 0)}
+      true ->
+        {:noreply, assign(socket, :unknown_msg_count, count + 1)}
+    end
+  end
+
+  defp limit_msg(msg) do
+    rendered = inspect(msg)
+    if byte_size(rendered) > 500 do
+      String.slice(rendered, 0, 500) <> "…(truncated)"
+    else
+      rendered
+    end
   end
 
   @impl true

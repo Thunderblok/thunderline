@@ -152,6 +152,21 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
     {:reply, {:error, :not_connected}, state}
   end
 
+  # Provide a status query used by ErlangBridge aggregation
+  def handle_call(:get_status, _from, state) do
+    uptime_ms = System.monotonic_time(:millisecond)
+
+    status = %{
+      node: Node.self(),
+      connection_status: state.connection_status,
+      thunderlane_node: state.thunderlane_node,
+      uptime_ms: uptime_ms,
+      metrics_supported?: true
+    }
+
+    {:reply, {:ok, status}, state}
+  end
+
   def handle_call(_request, _from, state) do
     {:reply, {:error, :unknown_request}, state}
   end

@@ -57,5 +57,8 @@ defmodule Thunderline.Thunderblock.Domain do
     resource Thunderline.Thunderblock.Resources.VaultQueryOptimization
     resource Thunderline.Thunderblock.Resources.VaultUser
     resource Thunderline.Thunderblock.Resources.VaultUserToken
+
+  # PAC user personal construct home (moved from Thunderlink)
+  resource Thunderline.Thunderblock.Resources.PACHome
   end
 end

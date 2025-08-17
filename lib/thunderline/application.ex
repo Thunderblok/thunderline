@@ -29,7 +29,7 @@ defmodule Thunderline.Application do
       Thunderline.ThunderMemory,
 
       # ⚡💧 THUNDERFLOW - Event Stream Processing
-      Thunderline.Support.CircuitBreaker,
+  Thunderline.Thunderflow.Support.CircuitBreaker,
       Thunderline.Thunderflow.Observability.FanoutAggregator,
       Thunderline.Thunderflow.Observability.FanoutGuard,
       Thunderline.Thunderflow.Observability.QueueDepthCollector,

@@ -4,13 +4,13 @@ defmodule Thunderline.Thunderflow.Jobs.ThunderBoltProcessor do
   """
 
   use Oban.Worker, queue: :heavy_compute, max_attempts: 3
-  
+
   alias Thunderline.Thunderflow.Telemetry.Jobs, as: JobTelemetry
 
   @impl Oban.Worker
   def backoff(%Oban.Job{attempt: attempt}) do
     JobTelemetry.emit_job_retry(:heavy_compute, __MODULE__, attempt)
-    Thunderline.Support.Backoff.exp(attempt)
+  Thunderline.Thunderflow.Support.Backoff.exp(attempt)
   end
 
   @impl Oban.Worker
@@ -39,13 +39,13 @@ defmodule Thunderline.Thunderflow.Jobs.ThunderBlockProcessor do
   """
 
   use Oban.Worker, queue: :default, max_attempts: 3
-  
+
   alias Thunderline.Thunderflow.Telemetry.Jobs, as: JobTelemetry
 
   @impl Oban.Worker
   def backoff(%Oban.Job{attempt: attempt}) do
     JobTelemetry.emit_job_retry(:default, __MODULE__, attempt)
-    Thunderline.Support.Backoff.exp(attempt)
+  Thunderline.Thunderflow.Support.Backoff.exp(attempt)
   end
 
   @impl Oban.Worker
@@ -68,7 +68,7 @@ defmodule Thunderline.Thunderflow.Jobs.ThunderBlockProcessor do
   defp data_migration(params) do
     {:ok, %{migrated: params}}
   end
-  
+
   defp block_operation(params) do
     {:ok, %{block_processed: params}}
   end
@@ -84,13 +84,13 @@ defmodule Thunderline.Thunderflow.Jobs.ThunderCrownProcessor do
   """
 
   use Oban.Worker, queue: :cross_domain, max_attempts: 3
-  
+
   alias Thunderline.Thunderflow.Telemetry.Jobs, as: JobTelemetry
 
   @impl Oban.Worker
   def backoff(%Oban.Job{attempt: attempt}) do
     JobTelemetry.emit_job_retry(:cross_domain, __MODULE__, attempt)
-    Thunderline.Support.Backoff.exp(attempt)
+  Thunderline.Thunderflow.Support.Backoff.exp(attempt)
   end
 
   @impl Oban.Worker
@@ -121,7 +121,7 @@ defmodule Thunderline.Thunderflow.Jobs.RetryProcessor do
   """
 
   use Oban.Worker, queue: :default, max_attempts: 1
-  
+
   alias Thunderline.Thunderflow.Telemetry.Jobs, as: JobTelemetry
 
   @impl Oban.Worker
