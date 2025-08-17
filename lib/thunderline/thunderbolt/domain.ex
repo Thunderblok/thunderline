@@ -57,5 +57,9 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.Resources.MagMacroCommand
     resource Thunderline.Thunderbolt.Resources.MagTaskAssignment
     resource Thunderline.Thunderbolt.Resources.MagTaskExecution
+
+  # Cerebros (ML search & training)
+  resource Thunderline.Thunderbolt.Resources.ModelRun
+  resource Thunderline.Thunderbolt.Resources.ModelArtifact
   end
 end
