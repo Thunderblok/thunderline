@@ -12,6 +12,7 @@ defmodule ThunderlineWeb.AutomataLive do
   use ThunderlineWeb, :live_view
 
   alias Thunderline.DashboardMetrics
+  alias Thunderline.Automata.Blackboard
   alias Phoenix.PubSub
 
   @impl true
@@ -20,6 +21,8 @@ defmodule ThunderlineWeb.AutomataLive do
       DashboardMetrics.subscribe()
       # Subscribe to automata-specific updates
       PubSub.subscribe(Thunderline.PubSub, "automata:updates")
+      # Subscribe to blackboard updates (future reactive panels)
+      Blackboard.subscribe()
     end
 
     {:ok,
@@ -48,6 +51,14 @@ defmodule ThunderlineWeb.AutomataLive do
      |> assign(:generation, data.generation)
      |> assign(:pattern_buffer, data.pattern)
      |> assign(:automata_state, Map.merge(socket.assigns.automata_state, data))}
+  end
+
+  # Ignore/optionally react to blackboard updates for now.
+  @impl true
+  def handle_info({:blackboard_update, %{key: {:automata, _k}} = update}, socket) do
+    # For future: we could merge derived stats. For now, no state change to keep deterministic test.
+    _ = update
+    {:noreply, socket}
   end
 
   @impl true
@@ -101,7 +112,13 @@ defmodule ThunderlineWeb.AutomataLive do
       {:noreply,
        socket
        |> assign(:generation, new_generation)
-       |> assign(:pattern_buffer, new_pattern)}
+       |> assign(:pattern_buffer, new_pattern)
+       |> tap(fn _ ->
+         # Update shared blackboard state for other processes / dashboards
+         Blackboard.put({:automata, :latest_generation}, new_generation)
+         Blackboard.put({:automata, :active_rule}, socket.assigns.active_rule)
+         Blackboard.put({:automata, :density}, calculate_density(new_pattern))
+       end)}
     else
       {:noreply, socket}
     end
@@ -130,7 +147,7 @@ defmodule ThunderlineWeb.AutomataLive do
                 <option value="rule_184" selected={@active_rule == :rule_184}>Rule 184</option>
               </select>
             </div>
-            
+
     <!-- Speed Control -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Speed (ms)</label>
@@ -145,13 +162,13 @@ defmodule ThunderlineWeb.AutomataLive do
               />
               <span class="text-sm text-gray-500">{@speed}ms</span>
             </div>
-            
+
     <!-- Generation Counter -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Generation</label>
               <div class="text-2xl font-mono text-blue-600">{@generation}</div>
             </div>
-            
+
     <!-- Control Buttons -->
             <div class="flex space-x-2">
               <button
@@ -195,7 +212,7 @@ defmodule ThunderlineWeb.AutomataLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Stats and Info -->
         <div class="space-y-6">
           <!-- Current State -->
@@ -218,7 +235,7 @@ defmodule ThunderlineWeb.AutomataLive do
               </div>
             </div>
           </div>
-          
+
     <!-- Automata Metrics -->
           <%= if @automata_state != %{} do %>
             <div class="bg-white rounded-lg shadow p-6">
@@ -257,7 +274,7 @@ defmodule ThunderlineWeb.AutomataLive do
               </div>
             </div>
           <% end %>
-          
+
     <!-- Pattern Analysis -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Pattern Analysis</h3>

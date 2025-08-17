@@ -31,6 +31,7 @@ defmodule Thunderline.ThunderBridge do
   require Logger
 
   alias Thunderline.{ErlangBridge, EventBus}
+  alias Thunderline.Thunderbolt.ThunderCell.Aggregator, as: ThunderCellAggregator
 
   # Public API
 
@@ -315,34 +316,86 @@ defmodule Thunderline.ThunderBridge do
   # Private Functions
 
   defp build_dashboard_system_state do
-    try do
-      case ErlangBridge.get_system_state() do
-        {:ok, erlang_state} ->
-          # Build comprehensive dashboard state
-          dashboard_state = %{
-            timestamp: DateTime.utc_now(),
-            uptime: calculate_uptime(erlang_state),
-            active_thunderbolts: count_active_thunderbolts(erlang_state),
-            total_chunks: get_total_chunks(erlang_state),
-            connected_nodes: get_connected_nodes(erlang_state),
-            memory_usage: get_memory_usage(erlang_state),
-            performance: calculate_current_performance(erlang_state),
-            health_status: :healthy,
-            connection_status: :connected,
-            ca_activity: get_ca_activity(erlang_state),
-            event_metrics: get_event_metrics(erlang_state)
-          }
-
-          {:ok, dashboard_state}
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-    rescue
-      error ->
-        Logger.error("Error building dashboard system state: #{inspect(error)}")
-        {:error, error}
+    # Phase 1: Prefer pure Elixir ThunderCell aggregator; fallback to Erlang bridge if needed
+    case ThunderCellAggregator.get_system_state() do
+      {:ok, agg} ->
+        {:ok, build_dashboard_state_from_aggregator(agg)}
+      {:error, _reason} ->
+        try do
+          case ErlangBridge.get_system_state() do
+            {:ok, erlang_state} ->
+              dashboard_state = %{
+                timestamp: DateTime.utc_now(),
+                uptime: calculate_uptime(erlang_state),
+                active_thunderbolts: count_active_thunderbolts(erlang_state),
+                total_chunks: get_total_chunks(erlang_state),
+                connected_nodes: get_connected_nodes(erlang_state),
+                memory_usage: get_memory_usage(erlang_state),
+                performance: calculate_current_performance(erlang_state),
+                health_status: :healthy,
+                connection_status: :connected,
+                ca_activity: get_ca_activity(erlang_state),
+                event_metrics: get_event_metrics(erlang_state),
+                legacy_source: true
+              }
+              {:ok, dashboard_state}
+            {:error, reason} -> {:error, reason}
+          end
+        rescue
+          error ->
+            Logger.error("Error building dashboard system state (legacy fallback): #{inspect(error)}")
+            {:error, error}
+        end
     end
+  end
+
+  defp build_dashboard_state_from_aggregator(%{clusters: clusters, telemetry: telemetry, system: system}) do
+    generation_stats = Map.get(telemetry, :generation_stats, %{})
+    avg_gen_time = Map.get(generation_stats, :avg_generation_time, 0.0)
+    performance = %{
+      thunderbolts_per_second: 0.0,
+      chunks_per_second: 0.0,
+      memory_efficiency: 0.0,
+      response_time: avg_gen_time
+    }
+    total_cells = Enum.reduce(clusters, 0, fn c, acc -> acc + (c[:cell_count] || 0) end)
+    %{
+      timestamp: DateTime.utc_now(),
+      uptime: system[:uptime_ms],
+      active_thunderbolts: length(clusters),
+      total_chunks: total_cells,
+      connected_nodes: system[:connected_nodes],
+      memory_usage: system[:memory_usage],
+      performance: performance,
+      health_status: :healthy,
+      connection_status: :connected,
+      ca_activity: build_ca_activity_from_clusters(clusters, generation_stats),
+      event_metrics: build_event_metrics_from_clusters(clusters),
+      source: :aggregator
+    }
+  end
+
+  defp build_ca_activity_from_clusters(clusters, generation_stats) do
+    %{
+      evolution_active: Enum.any?(clusters, &(not &1.paused)),
+      generation_count: Map.get(generation_stats, :total_generations, estimate_generation(clusters)),
+      mutation_rate: 0.0,
+      energy_level: 0.0
+    }
+  end
+
+  defp estimate_generation(clusters) do
+    clusters
+    |> Enum.map(&(&1.generation || 0))
+    |> Enum.max(fn -> 0 end)
+  end
+
+  defp build_event_metrics_from_clusters(_clusters) do
+    %{
+      events_per_second: 0.0,
+      stream_active: false,
+      subscribers: 0
+    }
   end
 
   defp transform_thunderbolt_registry(registry) when is_list(registry) do
@@ -470,37 +523,43 @@ defmodule Thunderline.ThunderBridge do
   end
 
   defp get_ca_evolution_statistics do
-    case ErlangBridge.get_system_state() do
-      {:ok, state} ->
-        # Handle case where thunderbolt_evolution data might be an error tuple
-        evolution_data =
-          case Map.get(state, :thunderbolt_evolution) do
-            %{} = data -> data
-            {:error, _} -> %{}
-            _ -> %{}
-          end
+    # Prefer Elixir aggregator; fallback to legacy Erlang system state
+    case ThunderCellAggregator.get_system_state() do
+      {:ok, agg} ->
+        {:ok, get_evolution_stats_from_aggregator(agg)}
 
-        stats = %{
-          total_generations: Map.get(evolution_data, :total_generations, 0),
-          mutations_count: Map.get(evolution_data, :mutations_count, 0),
-          evolution_rate: Map.get(evolution_data, :evolution_rate, 0.0),
-          active_patterns: Map.get(evolution_data, :active_patterns, []),
-          success_rate: Map.get(evolution_data, :success_rate, 0.0)
-        }
+      {:error, _} ->
+        case ErlangBridge.get_system_state() do
+          {:ok, state} ->
+            evolution_data =
+              case Map.get(state, :thunderbolt_evolution) do
+                %{} = data -> data
+                {:error, _} -> %{}
+                _ -> %{}
+              end
 
-        {:ok, stats}
+            stats = %{
+              total_generations: Map.get(evolution_data, :total_generations, 0),
+              mutations_count: Map.get(evolution_data, :mutations_count, 0),
+              evolution_rate: Map.get(evolution_data, :evolution_rate, 0.0),
+              active_patterns: Map.get(evolution_data, :active_patterns, []),
+              success_rate: Map.get(evolution_data, :success_rate, 0.0),
+              source: :legacy
+            }
 
-      {:error, _reason} ->
-        # Return default stats when system state is unavailable
-        default_stats = %{
-          total_generations: 0,
-          mutations_count: 0,
-          evolution_rate: 0.0,
-          active_patterns: [],
-          success_rate: 0.0
-        }
+            {:ok, stats}
 
-        {:ok, default_stats}
+          {:error, _reason} ->
+            {:ok,
+             %{
+               total_generations: 0,
+               mutations_count: 0,
+               evolution_rate: 0.0,
+               active_patterns: [],
+               success_rate: 0.0,
+               source: :none
+             }}
+        end
     end
   end
 
@@ -539,9 +598,14 @@ defmodule Thunderline.ThunderBridge do
   end
 
   defp check_system_health do
-    case ErlangBridge.get_system_state() do
-      {:ok, _state} -> %{erlang_connected: true, health: :healthy}
-      {:error, _reason} -> %{erlang_connected: false, health: :degraded}
+    # Primary health from aggregator (Elixir ThunderCell path)
+    case ThunderCellAggregator.get_system_state() do
+      {:ok, _agg} -> %{erlang_connected: true, health: :healthy, source: :aggregator}
+      {:error, _} ->
+        case ErlangBridge.get_system_state() do
+          {:ok, _state} -> %{erlang_connected: true, health: :healthy, source: :legacy}
+          {:error, _reason} -> %{erlang_connected: false, health: :degraded, source: :none}
+        end
     end
   end
 
@@ -594,4 +658,27 @@ defmodule Thunderline.ThunderBridge do
       send(subscriber, message)
     end)
   end
+
+  # ------------------------------------------------------------------
+  # Aggregator evolution stats synthesis
+  # ------------------------------------------------------------------
+  defp get_evolution_stats_from_aggregator(%{telemetry: %{generation_stats: gen_stats}}) do
+    %{
+      total_generations: Map.get(gen_stats, :total_generations, 0),
+      mutations_count: 0, # Not yet tracked in Elixir path
+      evolution_rate: Map.get(gen_stats, :avg_generation_time, 0.0),
+      active_patterns: [],
+      success_rate: 0.0,
+      source: :aggregator
+    }
+  end
+
+  defp get_evolution_stats_from_aggregator(_), do: %{
+    total_generations: 0,
+    mutations_count: 0,
+    evolution_rate: 0.0,
+    active_patterns: [],
+    success_rate: 0.0,
+    source: :aggregator
+  }
 end

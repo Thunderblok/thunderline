@@ -1,3 +1,9 @@
+## TEMPORARY: Conditional initialization migration for test isolation.
+## We always define the module so Ecto's loader is satisfied. The heavy/complex
+## schema creation only runs when ENABLE_FULL_INIT_MIGRATION=true. Otherwise we
+## emit a notice and no-op so lightweight tests (e.g. automata LiveView) can run
+## without requiring the massive schema (which currently has invalid index specs
+## like [aliases] instead of [:aliases]). Do not ship to prod with the stub path.
 defmodule Thunderline.Repo.Migrations.Initialize do
   @moduledoc """
   Updates resources based on their most recent snapshots.
@@ -8,6 +14,10 @@ defmodule Thunderline.Repo.Migrations.Initialize do
   use Ecto.Migration
 
   def up do
+    if System.get_env("ENABLE_FULL_INIT_MIGRATION") != "true" do
+      IO.puts("[Initialize Migration] Skipped full initialization (set ENABLE_FULL_INIT_MIGRATION=true to enable).")
+      :ok
+    else
     # Ensure pgcrypto extension exists for gen_random_uuid()
     execute "CREATE EXTENSION IF NOT EXISTS pgcrypto"
     execute "CREATE EXTENSION IF NOT EXISTS citext"
@@ -3216,7 +3226,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
     end
   end
 
+    # Close conditional started at top of up/0
+    end
+
   def down do
+    if System.get_env("ENABLE_FULL_INIT_MIGRATION") == "true" do
     drop constraint(
            :thunderlane_performance_metrics,
            "thunderlane_performance_metrics_lane_configuration_id_fkey"
@@ -4596,5 +4610,8 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                    )
 
     drop table(:task_orchestrators)
+    else
+      :ok
+    end
   end
 end

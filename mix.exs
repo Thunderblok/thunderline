@@ -41,6 +41,7 @@ defmodule Thunderline.MixProject do
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.0"},
       {:floki, ">= 0.30.0", only: :test},
+  {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:esbuild, "~> 0.5", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
@@ -116,10 +117,21 @@ defmodule Thunderline.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "ash.setup", "assets.setup", "assets.build"],
-      test: ["ash.setup --quiet", "test"],
+      # Allow skipping ash.setup in tests to run fast, DB-less component/unit tests
+      test: [&maybe_ash_setup/1, "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind default", "esbuild default"],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
+  end
+
+  # Conditionally run ash.setup for tests. Set SKIP_ASH_SETUP=true to bypass migrations
+  # when running isolated, non-database dependent tests (e.g. LiveView logic, automata CA engine).
+  defp maybe_ash_setup(_args) do
+    if System.get_env("SKIP_ASH_SETUP") == "true" do
+      Mix.shell().info("[test alias] Skipping ash.setup (SKIP_ASH_SETUP=true)")
+    else
+      Mix.Task.run("ash.setup", ["--quiet"])
+    end
   end
 end
