@@ -1,33 +1,40 @@
 # 🌩️ OKO HANDBOOK: The Thunderline Technical Bible
 
-> **LIVING DOCUMENT** - Last Updated: August 17, 2025  
-> **Status**: � **ATLAS HANDOVER COMPLETE - PRODUCTION READY DOCUMENTATION**  
+> **LIVING DOCUMENT** - Last Updated: August 18, 2025  
+> **Status**: ✅ **ATLAS HANDOVER COMPLETE - ACTIVE SLIM MODE / STABILIZATION PASS**  
+> **Mode**: **SLIM DOMAIN MODE ACTIVE** (Temporarily running with a reduced domain set to accelerate parity + GPU enablement)
 > **Purpose**: Comprehensive guide to Thunderline's Personal Autonomous Construct (PAC) platform & distributed AI orchestration system
 
 ---
 
-## ⚡ **TEAM STATUS UPDATES** - August 17, 2025
+## ⚡ **TEAM STATUS UPDATES** - August 18, 2025
 
 ### **🚨 CURRENT BLOCKERS & ACTIVE WORK**
-**Erlang → Elixir Conversion**: 🟡 **ASSIGNED TO WARDEN TEAM** - Remaining ThunderCell Erlang modules being ported (5 → 0 target)  
-**External Review Prep**: � **ACTIVE** - Refining architecture & domain docs for multi‑team consumption  
-**Dashboard Integration**: 🟡 **IN PROGRESS** - Wiring real CA & Blackboard metrics (mock data being phased out)  
-**Blackboard Integration**: ✅ **CORE COMPLETE** - GenServer + ETS + PubSub broadcasting; expanding metrics & persistence strategy  
-**Automata Feature Parity Checklist**: 🟡 **DRAFTING** - Mapping against upstream wiki; gap remediation plan in progress  
-**Cerebros/NAS Integration (ThunderBolt)**: 🟡 **DESIGN** - ML search + dataset behaviors relocating under ThunderBolt with DIP governance  
-**Compilation Status**: ✅ **CLEAN BUILD** - Zero critical errors, ~200 minor warnings scheduled for phased cleanup (target <50 by Aug 24)  
+**EXLA GPU Activation**: 🟡 **PENDING EXTERNAL TEAM** - System libs (CUDA/NCCL) now present; awaiting final linkage + runtime verification.  
+**Erlang → Elixir Conversion**: 🟡 Remaining ThunderCell bridge modules queued; defer heavy refactors until EXLA confirmed stable.  
+**Slim Mode Domain Set**: ✅ Active domains: `Thunderblock`, `Thunderflow`, `Thunderlink`, `Thundercrown`. Dormant (temporarily disabled in config): `Thunderbolt`, `Thundergate`, `Thundergrid` (reactivation gated on parity + GPU smoke).  
+**Dashboard Integration**: 🟡 3D CA hook + Three.js dependency installed; voxel scene initialization pending GPU confirmation & real evolution stream.  
+**Blackboard Expansion**: ✅ Core operational; designing persistence & snapshot dip (DIP-BLACKBOARD-PERSIST).  
+**Automata Feature Parity Table**: 🟡 Draft baseline captured; next focus: snapshot/restore + rule application metrics.  
+**ML (Cerebros) Migration**: 🟡 Namespace consolidation done; Ash resource scaffolding for `ModelRun` blocked behind EXLA smoke success.  
+**Compilation Status**: ✅ Clean compile after asset pipeline fixes; warning reduction sprint still targeted (<50 by Aug 24).  
+**Asset Pipeline Stabilization**: ✅ Tailwind v4 + esbuild alias correction; removed unsupported plugin directives; manual theme variables adopted.  
 
 ### **🎯 IMMEDIATE PRIORITIES (Next 48 Hours)**
-1. **Finalize Automata Feature Parity Audit** - Document DONE / GAP items & open DIP issues for gaps
-2. **Complete Remaining Erlang → Elixir Ports** - Achieve 100% native ThunderCell processes
-3. **Replace Mock Dashboard Data** - Source all metrics from live Blackboard/ThunderFlow events
-4. **Relocate Interim ML (Cerebros) Code** - Ensure all ML modules live under `Thunderline.ThunderBolt` namespace (no new domain)
-5. **Warning Reduction Sprint** - Remove low‑hanging unused imports/variables (target: -60 warnings)
+1. **EXLA Smoke Validation** – Run `mix exla.smoke` + simple tensor ops; set `Nx.default_backend(EXLA.Backend)` on success.  
+2. **Re-enable Thunderbolt Domain (Scoped)** – Turn Thunderbolt back on with ONLY automata + ML scaffolding resources (document delta).  
+3. **Automata Metrics Injection** – Add rule application counters + evolution timing telemetry (DIP-AUTO-RULE-METRICS).  
+4. **Snapshot/Restore MVP** – Design `AutomataSnapshot` Ash resource + persistence path (DIP-AUTO-SNAPSHOT).  
+5. **Dashboard Real Data Pass** – Replace any remaining mock CA metrics with Blackboard + Thunderflow-sourced values.  
+6. **Warning Reduction Sprint (Phase 1)** – Eliminate trivial unused alias/variable warnings (goal: -60).  
+7. **Constants Policy Activation (ADR-001)** – Move region_index, neighborhood offsets, CA rule, Ising params into `Thunderline.Const` w/ telemetry & dashboards.
 
 ### **✅ RECENT WINS**
 - **Domain Consolidation**: 21 domains → 7 efficient, well-bounded domains (67% complexity reduction)
 - **Blackboard System**: Central shared-state layer implemented (ETS + PubSub) & surfaced in UI
+- **Slim Mode Activation**: Temporarily reduced runtime domains to accelerate parity & GPU enablement (clear reactivation gates defined).
 - **Automata LiveView**: Real-time CA visualization test coverage confirmed (stability baseline)
+- **Asset Pipeline Resilience**: Tailwind v4 migration stabilized; removed invalid `@plugin/@source/@custom-variant` directives, migrated DaisyUI theme to raw CSS variables; esbuild alias corrected (now using `thunderline` profile instead of `default`).
 - **Event Architecture**: Broadway + Mnesia event processing fully operational
 - **State Machines**: AshStateMachine 0.2.12 integration complete with proper syntax
 - **Clean Repository**: Minimal root structure, integrated components, production-ready state
@@ -36,7 +43,8 @@
 
 ### **⚠️ TECHNICAL DEBT & WARNINGS**
 - **Erlang Dependencies**: Being eliminated through conversion to pure Elixir solution
-- **Dashboard Fake Data**: Currently using mock automata data, real integration in progress
+- **Dashboard Partial Mocking**: Some CA-derived metrics still partially mocked pending evolution loop streaming; scheduled removal after snapshot + metrics instrumentation.
+- **GPU Path Validation Pending**: Need EXLA backend confirm before committing to heavier ML resource additions.
 - **Minor Warnings**: ~200 compilation warnings (unused variables/imports) - cleanup scheduled
 - **Missing Controllers**: HealthController, DomainStatsController need implementation
 
@@ -78,6 +86,23 @@ Primary Focus Gaps (next): Snapshot/restore, rule application counts, voxel UI c
 ## 🧠 ThunderBolt ML (Cerebros) Integration Plan
 All ML / NAS functionality is governed by ThunderBolt domain (NO new domain). Any proposal to diverge requires DIP approval & steward sign‑off.
 
+### Adapter Delegation & Contract (Current)
+Delegation order: In-process library (if `Cerebros.run_search/1` exported) → CLI (`CEREBROS_CLI`) → internal SimpleSearch fallback.
+
+Returned result (versioned):
+```
+%{
+  run_id: binary(),
+  best_metric: float(),
+  best_trial: map() | nil,
+  trials: pos_integer(),
+  artifact_path: binary() | :noop,
+  metrics_summary: map(),
+  schema_version: integer()
+}
+```
+Schema + spec versioning anchored in `Thunderline.Thunderbolt.Cerebros.{Spec, Result}`. Any new field MUST bump `@schema_version` and maintain backward decode path (planned). Streaming progress (trial-level) will emit telemetry: `[:thunderline,:thunderbolt,:cerebros,:trial,:progress]` with metadata `%{run_id, trial, metric}` before final aggregate result.
+
 ### Migration Log (Cerebros → Thunderbolt)
 | Date (UTC) | Change | Details | Removal Target |
 |-----------|--------|---------|----------------|
@@ -111,6 +136,88 @@ Governance & Observability:
 - No cross-domain direct DB joins; event emission via ThunderFlow when other domains must react.
 
 Out-of-Scope (Deferred): Advanced NAS meta-learning, multi-tenant dataset marketplaces, GPU scheduler.
+
+### ⛰️ Immediate Activation Path After EXLA Success
+Once GPU backend is verified (EXLA client => CUDA), execute the following in order:
+1. `Enable Thunderbolt domain` in `config :thunderline, ash_domains` (uncomment) – commit tagged `HANDBOOK-UPDATE: Reactivate Thunderbolt (phase-gated)`.
+2. `Add ModelRun resource skeleton` with state machine (pending → running → completed|failed → archived) + telemetry events.
+3. `Implement exla smoke tests` extension: extend `mix exla.smoke` to report device list & fail loudly if only host backend detected.
+4. `Wire evolution loop metrics` into Thunderflow (events: `[:thunderline,:automata,:evolution,:tick]`).
+5. `Introduce snapshot resource` (AutomataSnapshot) with size, duration, cell_count attributes.
+6. Update Handbook parity table & DIP issue statuses.
+
+## ThunderHive Closed Loop (Bee → Hive → Policy → Physics → Scheduler)
+
+Mermaid (system flow):
+
+```mermaid
+flowchart TD
+  subgraph EDGE[Edge / Outside Thunderblock]
+    BEES[Bee Fleet<br/>(Unikernel probes)]
+    ERUN[Edge Runner<br/>(Firecracker/QEMU)]
+  end
+  subgraph HIVE[Thunderline (Hive)]
+    INGEST[Ingest<br/>(Outbox → Broadway)]
+    FTAP[FeatureTap (Nx)<br/>vectorize + rewards]
+    PHER[PheromoneField<br/>aggregate & decay]
+    EYE[Thundereye<br/>dashboards]
+  end
+  subgraph BRAIN[Policy + Physics]
+    CERE[Cerebros (Elixir)<br/>bandits/BO/RL]
+    ISING[Ising Engine (Nx/EXLA)<br/>Δh ΔJ energy]
+    APPLY[Policy.Apply<br/>A/B TTL budgets]
+  end
+  subgraph QUEEN[Control / Scheduling]
+    CHIEF[ThunderChief (Queen)]
+    POLICY[Policy.Bee<br/>region logits + wait_curve]
+    DISPATCH[Dispatch (Oban)<br/>spawn unikernels]
+  end
+  BEES -- Tag/Recruit --> ERUN --> INGEST --> FTAP
+  FTAP -- RecruitEvents --> PHER
+  FTAP -- features+rewards --> CERE
+  PHER --> ISING
+  CERE -- proposals --> ISING -- deltas --> APPLY --> CHIEF --> POLICY --> DISPATCH --> ERUN
+  PHER --> EYE
+  APPLY --> EYE
+  CHIEF --> EYE
+```
+
+Sequence (single batch):
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Bee as Unikernel Bee
+  participant Edge as Edge Runner
+  participant Ingest as Ingest
+  participant FT as FeatureTap
+  participant P as Pheromone
+  participant Cere as Cerebros
+  participant Is as Ising
+  participant Apply as Apply
+  participant Chief as Chief
+  participant Pol as Policy.Bee
+  participant Disp as Dispatch
+  Bee->>Edge: Tag/Recr Events
+  Edge->>Ingest: batched events
+  Ingest->>FT: deliver batch
+  FT->>Cere: features + rewards
+  FT->>P: RecruitEvents
+  P->>Is: intensity
+  Cere->>Is: proposals Δh ΔJ wait_curve logits
+  Is->>Apply: clamped deltas + energy
+  Apply->>Chief: applied config (canary)
+  Chief->>Pol: quotas + knobs
+  Pol->>Disp: assignments
+  Disp->>Edge: spawn N unikernels
+  Edge->>Bee: launch
+```
+
+Implementation Status:
+* Constants module + ADR-001 committed (this update)
+* Bench script added (`bench/const_read_write_bench.exs`)
+* Next PR: RecruitEvent/PheromoneField resources + Policy.Bee skeleton
+
 
 ---
 

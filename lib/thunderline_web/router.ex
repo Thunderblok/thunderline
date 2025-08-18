@@ -64,6 +64,9 @@ defmodule ThunderlineWeb.Router do
 
     # Admin and monitoring
     live "/metrics", MetricsLive, :index
+    if Application.compile_env(:thunderline, :dev_routes, false) do
+      live "/dev/logs", LogsLive, :index
+    end
   end
 
   # API routes for external integrations

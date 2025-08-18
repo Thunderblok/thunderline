@@ -9,7 +9,11 @@ defmodule Thunderline.MixProject do
       version: @version,
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:elixir, :app],
+  # Use the standard compiler list so all dependency .app files (e.g. exla) are built.
+  # Previously this was overridden to only [:elixir, :app] which prevented generation
+  # of dependency .app files like exla.app (causing Application.ensure_all_started(:exla)
+  # to fail with { :error, {:exla, {"no such file or directory", 'exla.app'}} }).
+  compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
@@ -30,9 +34,11 @@ defmodule Thunderline.MixProject do
 
   defp deps do
     [
+      {:usage_rules, "~> 0.1"},
+      {:ash_ai, "~> 0.2"},
       {:oban, "~> 2.0"},
       {:ash_authentication, "~> 4.0"},
-      {:igniter, "~> 0.6", only: [:dev, :test]},
+      {:igniter, "~> 0.6"},
 
       # Phoenix
       {:phoenix, "~> 1.8.0"},
@@ -41,7 +47,7 @@ defmodule Thunderline.MixProject do
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.0"},
       {:floki, ">= 0.30.0", only: :test},
-  {:lazy_html, ">= 0.1.0", only: :test},
+      {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:esbuild, "~> 0.5", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
@@ -101,10 +107,11 @@ defmodule Thunderline.MixProject do
       # {:hologram, "~> 0.2", only: [:dev, :test]},  # Temporarily disabled for Team Bruce integration
 
       # Neural Computing & Machine Learning 🧠⚡
-      {:nx, "~> 0.9"},
-      {:axon, "~> 0.7"},
-      {:exla, "~> 0.9"},
-      {:torchx, "~> 0.9"},
+  # Align Nx ecosystem libs to the 0.10 line actually locked (see mix.lock)
+  {:nx, "~> 0.10.0"},
+  {:axon, "~> 0.7"}, # compatible with nx 0.10
+  {:exla, "~> 0.10.0"},
+  {:torchx, "~> 0.10.0"},
       {:bumblebee, "~> 0.6"},
       {:polaris, "~> 0.1"},
 
@@ -120,8 +127,9 @@ defmodule Thunderline.MixProject do
       # Allow skipping ash.setup in tests to run fast, DB-less component/unit tests
       test: [&maybe_ash_setup/1, "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind default", "esbuild default"],
-      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
+  # Use the named profile "thunderline" defined in config/config.exs for both tailwind & esbuild
+  "assets.build": ["tailwind thunderline", "esbuild thunderline"],
+  "assets.deploy": ["tailwind thunderline --minify", "esbuild thunderline --minify", "phx.digest"]
     ]
   end
 

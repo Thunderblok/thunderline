@@ -1,0 +1,14 @@
+{
+  "name": "thunderline-assets",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "esbuild js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.",
+    "watch": "npm run build -- --watch"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  }
+}

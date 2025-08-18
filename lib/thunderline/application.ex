@@ -18,7 +18,9 @@ defmodule Thunderline.Application do
 
   @impl true
   def start(_type, _args) do
-    skip_db? = System.get_env("SKIP_ASH_SETUP") in ["1", "true"]
+  skip_db? = System.get_env("SKIP_ASH_SETUP") in ["1", "true"]
+  optional_db? = System.get_env("OPTIONAL_DB") in ["1", "true"]
+  skip_db? = if !skip_db? and optional_db? and not db_preflight?(), do: true, else: skip_db?
 
     phoenix_foundation = [
       ThunderlineWeb.Telemetry,
@@ -26,7 +28,7 @@ defmodule Thunderline.Application do
       ThunderlineWeb.Presence
     ]
 
-    db_children = if skip_db? do
+  db_children = if skip_db? do
       []
     else
       [
@@ -66,7 +68,8 @@ defmodule Thunderline.Application do
       Thunderline.DashboardMetrics,
       Thunderline.ThunderBridge,
   # ⚡🧠 AUTOMATA - Shared knowledge space
-  Thunderline.Automata.Blackboard,
+  # Updated namespace for Automata Blackboard after refactor to Thunderbolt domain
+  Thunderline.Thunderbolt.Automata.Blackboard,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)
@@ -82,7 +85,10 @@ defmodule Thunderline.Application do
 
     # Attach observability telemetry handlers
   Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
-  if skip_db?, do: Logger.warning("[Thunderline.Application] Starting with SKIP_ASH_SETUP - DB/Oban/AshAuth supervision children disabled for lightweight tests")
+  if skip_db? do
+  reason = Process.get(:thunderline_db_preflight_reason)
+  Logger.warning("[Thunderline.Application] Starting without DB/Oban (skip flag/OPTIONAL_DB) reason=#{inspect(reason)}")
+  end
 
     Supervisor.start_link(children, opts)
   end
@@ -108,5 +114,54 @@ defmodule Thunderline.Application do
         # Fallback to basic Oban config without Ash integration
         Application.fetch_env!(:thunderline, Oban)
     end
+  end
+
+  defp db_preflight? do
+    cfg = Application.get_env(:thunderline, Thunderline.Repo) || []
+    host = cfg[:hostname] || "127.0.0.1"
+    port = cfg[:port] || 5432
+    username = cfg[:username] || System.get_env("PGUSER") || "postgres"
+    password = cfg[:password] || System.get_env("PGPASSWORD") || "postgres"
+    database = cfg[:database] || System.get_env("PGDATABASE") || "postgres"
+
+    # First quick TCP reachability check
+    case :gen_tcp.connect(String.to_charlist(host), port, [:binary, active: false], 400) do
+      {:ok, socket} -> :gen_tcp.close(socket)
+      _ ->
+        return_false("port_unreachable")
+    end
+
+    # Attempt a lightweight direct Postgrex connection to the *target* database so that
+    # OPTIONAL_DB mode can gracefully skip when the database itself is absent (3D000).
+    # We keep timeouts short so it doesn't stall boot.
+    opts = [
+      hostname: host,
+      port: port,
+      username: username,
+      password: password,
+      database: database,
+      connect_timeout: 800,
+      timeout: 800,
+      pool: DBConnection.ConnectionPool
+    ]
+
+    case Postgrex.start_link(opts) do
+      {:ok, pid} ->
+        Process.exit(pid, :normal)
+        true
+      {:error, %Postgrex.Error{postgres: %{code: :invalid_catalog_name}}} ->
+        return_false("db_missing")
+      {:error, %Postgrex.Error{} = err} ->
+        Logger.debug("[db_preflight] Postgrex error: #{inspect(err)} - treating as unreachable for OPTIONAL_DB")
+        return_false("pg_error")
+      {:error, other} ->
+        Logger.debug("[db_preflight] Other error: #{inspect(other)} - treating as unreachable for OPTIONAL_DB")
+        return_false("other_error")
+    end
+  end
+
+  defp return_false(reason) do
+    Process.put(:thunderline_db_preflight_reason, reason)
+    false
   end
 end

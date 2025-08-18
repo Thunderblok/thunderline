@@ -3,11 +3,11 @@ config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure the AshPostgres repo
 config :thunderline, Thunderline.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "127.0.0.1",
-  database: "thunderblock",
-  port: 54840,
+  username: System.get_env("PGUSER") || "postgres",
+  password: System.get_env("PGPASSWORD") || "postgres",
+  hostname: System.get_env("PGHOST") || "127.0.0.1",
+  database: System.get_env("PGDATABASE") || "thunderblock",
+  port: String.to_integer(System.get_env("PGPORT") || "5432"),
   pool_size: 10,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
@@ -73,7 +73,10 @@ config :thunderline, ThunderlineWeb.Endpoint,
 config :thunderline, dev_routes: true, token_signing_secret: "vadctdmv/MrdcKdJvG1Bl3woZoYMGKXL"
 
 # Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+config :logger, :console, format: "[$level] $message\n", metadata: [:request_id, :module, :function]
+
+# Add in‑memory ring buffer backend for quick dev inspection
+config :logger, backends: [:console, Thunderline.LogBuffer]
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
