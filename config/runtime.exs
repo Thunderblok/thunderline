@@ -20,6 +20,12 @@ if System.get_env("PHX_SERVER") do
   config :thunderline, ThunderlineWeb.Endpoint, server: true
 end
 
+# Slim mode: when SKIP_ASH_SETUP is active we remove ecto repos at runtime so
+# no accidental Repo startup occurs via generic code paths (mix tasks, etc.).
+if System.get_env("SKIP_ASH_SETUP") in ["1", "true"] do
+  config :thunderline, :ecto_repos, []
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

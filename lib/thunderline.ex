@@ -98,36 +98,45 @@ defmodule Thunderline do
   end
 
   defp repo_status do
-    repo = Thunderline.Repo
+    if System.get_env("SKIP_ASH_SETUP") in ["1", "true"] do
+      %{connectivity: :skipped, oban_peers_present: false}
+    else
+      repo = Thunderline.Repo
 
-    connectivity =
-      try do
-        case repo.__adapter__().checked_out?() do
-          _ -> :ok
+      connectivity =
+        if Process.whereis(repo) do
+          try do
+            # lightweight query only
+            case Ecto.Adapters.SQL.query(repo, "SELECT 1", []) do
+              {:ok, _} -> :ok
+              {:error, err} -> {:error, err}
+            end
+          rescue
+            e -> {:error, e}
+          end
+        else
+          {:error, :repo_not_started}
         end
-        # lightweight query
-        case Ecto.Adapters.SQL.query(repo, "SELECT 1", []) do
-          {:ok, _} -> :ok
-          {:error, err} -> {:error, err}
-        end
-      rescue
-        e -> {:error, e}
-      end
 
-    %{
-      connectivity: connectivity,
-      oban_peers_present: oban_peers_table?()
-    }
+      %{
+        connectivity: connectivity,
+        oban_peers_present: oban_peers_table?()
+      }
+    end
   end
 
   defp oban_status do
-    config = Application.get_env(:thunderline, Oban, [])
-    queues = Keyword.get(config, :queues, []) |> Enum.map(fn {q, _c} -> q end)
+    if System.get_env("SKIP_ASH_SETUP") in ["1", "true"] do
+      %{queues: [], peers_table?: false, mode: :skipped}
+    else
+      config = Application.get_env(:thunderline, Oban, [])
+      queues = Keyword.get(config, :queues, []) |> Enum.map(fn {q, _c} -> q end)
 
-    %{
-      queues: queues,
-      peers_table?: oban_peers_table?()
-    }
+      %{
+        queues: queues,
+        peers_table?: oban_peers_table?()
+      }
+    end
   end
 
   defp oban_peers_table? do

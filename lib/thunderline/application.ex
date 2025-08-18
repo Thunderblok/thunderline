@@ -65,8 +65,8 @@ defmodule Thunderline.Application do
       Thunderlink.ThunderWebsocketClient,
       Thunderline.DashboardMetrics,
       Thunderline.ThunderBridge,
-  # ⚡🧠 AUTOMATA - Shared knowledge space
-  Thunderline.Automata.Blackboard,
+  # ⚡🧠 AUTOMATA - Shared knowledge space (canonical under Thunderbolt)
+  Thunderline.Thunderbolt.Automata.Blackboard,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)
