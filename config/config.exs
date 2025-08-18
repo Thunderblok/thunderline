@@ -68,22 +68,27 @@ config :thunderline,
   ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [
-  # === SLIM MODE ACTIVE ===
-  # For the current milestone we only need the core runtime needed to ship
-  # fast on comms + events + storage. Extra domains are commented out to
-  # reduce compile surface, migration noise, Oban scan time, and cognitive load.
-  # Re‑enable by uncommenting when you actually implement features there.
+    # === SLIM MODE ACTIVE ===
+    # For the current milestone we only need the core runtime needed to ship
+    # fast on comms + events + storage. Extra domains are commented out to
+    # reduce compile surface, migration noise, Oban scan time, and cognitive load.
+    # Re‑enable by uncommenting when you actually implement features there.
 
-  # CORE (keep):
-  Thunderline.Thunderblock.Domain,   # Storage / memory / vault
-  Thunderline.Thunderflow.Domain,    # Event streams / pipelines
-  Thunderline.Thunderlink.Domain     # Realtime messaging / channels
+    # CORE (keep):
+    # Storage / memory / vault
+    Thunderline.Thunderblock.Domain,
+    # Event streams / pipelines
+    Thunderline.Thunderflow.Domain,
+    # Realtime messaging / channels
+  Thunderline.Thunderlink.Domain,
+  # Re-enabled to host AshAI-powered orchestration & MCP resources
+  Thunderline.Thundercrown.Domain
 
-  # OPTIONAL (disabled right now):
-  # Thunderline.Thundergate.Domain,  # Auth / security / policies
-  # Thunderline.Thunderbolt.Domain,  # Heavy compute / CA engine / optimization
-  # Thunderline.Thundercrown.Domain, # Governance / orchestration / AI routing
-  # Thunderline.Thundergrid.Domain   # Spatial grid / zone topology
+    # OPTIONAL (disabled right now):
+    # Thunderline.Thundergate.Domain,  # Auth / security / policies
+    # Thunderline.Thunderbolt.Domain,  # Heavy compute / CA engine / optimization
+  # Thunderline.Thundercrown.Domain,  # (now enabled above) Governance / orchestration / AI routing
+    # Thunderline.Thundergrid.Domain   # Spatial grid / zone topology
   ]
 
 # Configures the endpoint
