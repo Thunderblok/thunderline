@@ -3,6 +3,17 @@
 ## **🎯 THE VISION: Complete User Journey**
 **Goal**: Personal Autonomous Construct (PAC) that can handle real-world tasks like sending emails, managing files, calendars, and inventory through intelligent automation.
 
+### 🆕 Recent Delta (Aug 2025)
+| Change | Layer | Impact |
+|--------|-------|--------|
+| AshAuthentication integrated (password strategy) | Security (ThunderGate) | Enables session-based login, policy actor context |
+| AuthController success redirect → first community/channel | UX (ThunderLink) | Immediate immersion post-login |
+| LiveView `on_mount ThunderlineWeb.Live.Auth` | Web Layer | Centralized current_user + Ash actor assignment |
+| Discord-style Community/Channel navigation scaffold | UX (ThunderLink) | Establishes chat surface & future presence slots |
+| AI Panel stub inserted into Channel layout | Future AI (ThunderCrown/Link) | Anchor point for AshAI action execution |
+
+Planned Next: Presence & channel membership policies, AshAI action wiring, email automation DIP, governance instrumentation for auth flows.
+
 ---
 
 ## 🌿 SYSTEMS THEORY OPERATING FRAME (PLAYBOOK AUGMENT)
@@ -79,7 +90,7 @@ LLM → ThunderBolt → Sub-Agent Deployment → Task Coordination
 ThunderBolt → ThunderFlow Selection → ThunderLink Targeting → Automation Execution
 ```
 
-**Current Status**: 🟢 **CORE ENGINE READY**
+**Current Status**: 🟢 **CORE ENGINE READY (Auth + Chat Surface Online)**
 - ✅ ThunderFlow event processing working
 - ✅ ThunderLink communication implemented
 - ✅ State machines restored and functional
@@ -205,6 +216,7 @@ Additions:
 - WebSocket connectivity
 - Real-time messaging
 - External integration protocols
+- Discord-style community/channel LiveViews (NEW Aug 2025)
 
 # 4. Data Layer
 - PostgreSQL integration
@@ -238,7 +250,10 @@ Additions:
 - Multi-LLM routing not implemented
 
 # 4. User Experience
-- Backend APIs exist but frontend missing
+- Authenticated login flow working (AshAuthentication)
+- Post-login redirect to first community/channel
+- Sidebar navigation scaffold online
+- AI panel placeholder present
 - Mobile app architecture planned but not built
 - Voice integration not started
 
@@ -269,10 +284,10 @@ Additions:
 - Contact management
 
 # 4. Security & Privacy
-- User authentication
-- Data encryption
-- API key management
-- Privacy controls
+- User authentication (AshAuthentication password strategy) ✅
+- Data encryption (TBD)
+- API key management (TBD)
+- Privacy controls (TBD)
 ```
 
 ---
@@ -291,6 +306,8 @@ Additions:
    - Contact storage in existing DB
 
 3. **MCP Toolkit Integration**
+4. **Presence & Channel Membership Policies**
+5. **AshAI Panel Wiring (replace stub)**
    - Start with OpenAI API
    - Basic prompt templates
    - Simple governance rules
@@ -346,6 +363,8 @@ Additions:
 - Simple server provisioning flow
 
 # 2. Email Service Integration
+   - Add Ash resource(s): contact, outbound_email (if not existing)
+   - Emit normalized events: `ui.command.email.requested` / `system.email.sent`
 - SMTP configuration
 - Basic email sending capability
 - Contact management system
@@ -420,11 +439,13 @@ Additions:
 2. **ThunderCrown** → AI governance & MCP integration 🔄
 3. **ThunderBolt** → Orchestration & sub-agent deployment 🔄
 4. **ThunderFlow** → Intelligent task routing ✅
-5. **ThunderLink** → Communication & automation execution ✅
+5. **ThunderLink** → Communication & automation execution ✅ (Discord-style nav + auth online)
 
 The foundation is **SOLID** - we've got the engine running clean, state machines working, and the core optimization algorithms ready. Now we need to build the experience layer that makes it all accessible to users.
 
 **First milestone: Send an email** is PERFECT. It touches every part of the system without being overwhelming, and it's something users immediately understand and value.
+
+Secondary near-term milestone: **Realtime authenticated presence + AshAI panel activation** to convert static chat surface into intelligent collaborative environment.
 
 ---
 

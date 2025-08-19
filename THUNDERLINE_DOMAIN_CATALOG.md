@@ -2,14 +2,25 @@
 
 > **SYSTEMS THEORY AUGMENT (2025)** – Domain ecology & governance layers integrated. See added sections: Interaction Matrix, Event Taxonomy, Anti-Corruption, Stewardship.
 
-> **UNIFIED ARCHITECTURE** - Last Updated: December 2024  
-> **Status**: 🔥 **7-DOMAIN ARCHITECTURE OPERATIONAL**  
+> **UNIFIED ARCHITECTURE** - Last Updated: August 19 2025  
+> **Status**: 🔥 **7-DOMAIN ARCHITECTURE OPERATIONAL (Auth + Realtime Chat Baseline Added)**  
 > **Compilation**: ✅ **CLEAN BUILD SUCCESSFUL**  
 > **Purpose**: Complete catalog of consolidated domain architecture with all resources
 
 ---
 
 ## ⚡ **ARCHITECTURE OVERVIEW: 7 UNIFIED DOMAINS**
+
+### 🆕 Recent Delta (Aug 2025)
+| Change | Domains | Impact |
+|--------|---------|--------|
+| AshAuthentication (password strategy) integrated with Phoenix | ThunderGate, ThunderLink | Enables session auth, actor context for policies |
+| AuthController + Live on_mount (`ThunderlineWeb.Live.Auth`) | Cross Web Layer | Centralized current_user assignment & Ash actor set |
+| Discord-style Community & Channel LiveViews | ThunderLink | Real-time navigation & messaging surface established |
+| AI Panel & Thread (stub) | ThunderLink / ThunderCrown (future) | Placeholder for AshAI tool execution pipeline |
+| Post-login redirect to first community/channel | ThunderLink | Immediate immersion, reduces friction after sign-in |
+
+Planned Next: Replace AI stub with AshAI actions, authenticated presence, channel policy enforcement, email automation slice DIP.
 
 ### 🧬 Domain Interaction Matrix (Allowed Directions)
 
@@ -250,7 +261,7 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 
 ### 🚪 **ThunderGate** - Security, Authorization, Access Control & External Integration
 **Path**: `lib/thunderline/thundergate/`  
-**Purpose**: Complete security framework, authentication, authorization, external service integration, and federation protocols  
+**Purpose**: Complete security framework, authentication (AshAuthentication), authorization (policy & role), external service integration, and federation protocols  
 **Integration**: External connectivity, policy decision engines, and comprehensive security management (CONSOLIDATED FROM THUNDEREYE & THUNDERGUARD)
 
 #### **Security & Authorization Resources** (18 resources)
@@ -274,7 +285,9 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 - **thunderlane.ex** - Lane management and routing for secure communications
 
 **Key Capabilities**:
+- **AshAuthentication Integration**: Password strategy with session management & secure token signing
 - **Complete Security Framework**: Authentication, authorization, and access control
+- **Centralized Actor Assignment**: `ThunderlineWeb.Live.Auth` on_mount sets Ash actor for LiveViews
 - **Security Monitoring**: Advanced threat detection and incident response (from ThunderEye)
 - **ActivityPub Protocol**: Federation with external systems and communities
 - **External API Integration**: Seamless connectivity to third-party services
@@ -316,8 +329,8 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 
 ### 🔗 **ThunderLink** - Communication & Social Systems
 **Path**: `lib/thunderline/thunderlink/`  
-**Purpose**: Communication channels, social systems, and community management  
-**Integration**: Real-time communication and social coordination
+**Purpose**: Communication channels, social systems, community management & authenticated real-time UX  
+**Integration**: Real-time communication and social coordination (Discord-style navigation established Aug 2025)
 
 #### **Communication Resources** (9 resources)
 - **channel.ex** - Communication channels with real-time messaging capabilities
@@ -331,10 +344,17 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 - **user.ex** - User management and social profiles
 
 **Key Capabilities**:
+- **Discord-Style Navigation**: Community + channel sidebar layout with active context
+- **Post-Auth Redirect Flow**: Users land directly in first community & channel after login
 - **Real-Time Communication**: WebSocket-based messaging with federation support
 - **Community Management**: Hierarchical community organization and governance
 - **Role-Based Access**: Flexible permission systems for community participation
+- **AI Panel Stub**: Placeholder LiveView region for upcoming AshAI tool execution
 - **PAC Coordination**: Personal/collaborative space management
+
+**LiveView Auth Integration**:
+- `on_mount ThunderlineWeb.Live.Auth` ensures `current_user` + Ash actor assignment
+- Layout wiring prepared for presence & channel membership policies (next phase)
 
 **Total**: **9 Resources** - Complete communication and social platform
 
