@@ -36,7 +36,7 @@ defmodule ThunderlineWeb.ChannelLive do
   |> assign(:page_title, "#{channel.channel_name} · #{community.community_name}")
   |> assign(:presence_users, list_channel_presence(channel.id))}
     else
-      _ -> {:ok, push_redirect(socket, to: "/")}
+  _ -> {:ok, push_navigate(socket, to: "/")}
     end
   end
 

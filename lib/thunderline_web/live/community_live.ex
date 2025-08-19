@@ -30,7 +30,7 @@ defmodule ThunderlineWeb.CommunityLive do
 
       {:error, reason} ->
         Logger.warning("Community slug=#{slug} not found: #{inspect(reason)}")
-        {:ok, push_redirect(socket, to: "/")}
+  {:ok, push_navigate(socket, to: "/")}
     end
   end
 
