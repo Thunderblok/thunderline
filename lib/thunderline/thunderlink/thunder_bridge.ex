@@ -207,7 +207,6 @@ defmodule Thunderline.ThunderBridge do
   def handle_call(:get_evolution_stats, _from, state) do
     case get_ca_evolution_statistics() do
       {:ok, stats} -> {:reply, {:ok, stats}, state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
@@ -309,7 +308,8 @@ defmodule Thunderline.ThunderBridge do
   end
 
   def handle_info(msg, state) do
-    Logger.debug("Unknown message in ThunderBridge: #{inspect(msg)}")
+  # Push to noise buffer instead of spamming logs; dashboard can pull
+  Thunderline.Log.RingBuffer.push({:thunder_bridge, msg}, Thunderline.NoiseBuffer)
     {:noreply, state}
   end
 

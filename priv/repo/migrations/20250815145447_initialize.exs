@@ -326,31 +326,31 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_knowledge_nodes, [embedding_vector_ids],
+  create index(:thunderblock_knowledge_nodes, [:embedding_vector_ids],
              using: :gin, name: "knowledge_nodes_embeddings_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [memory_record_ids],
+  create index(:thunderblock_knowledge_nodes, [:memory_record_ids],
              name: "knowledge_nodes_memories_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [taxonomy_path],
+  create index(:thunderblock_knowledge_nodes, [:taxonomy_path],
              name: "knowledge_nodes_taxonomy_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [relationship_data],
+  create index(:thunderblock_knowledge_nodes, [:relationship_data],
              name: "knowledge_nodes_relationships_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [source_domains],
+  create index(:thunderblock_knowledge_nodes, [:source_domains],
              name: "knowledge_nodes_sources_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [semantic_tags],
+  create index(:thunderblock_knowledge_nodes, [:semantic_tags],
              name: "knowledge_nodes_tags_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [aliases],
+  create index(:thunderblock_knowledge_nodes, [:aliases],
              name: "knowledge_nodes_aliases_idx"
            )
 
@@ -437,17 +437,17 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_roles, [tags], using: :gin, name: "roles_tags_idx")
+  create index(:thunderblock_roles, [:tags], using: :gin, name: "roles_tags_idx")
 
-    create index(:thunderblock_roles, [role_flags], using: :gin, name: "roles_flags_idx")
+  create index(:thunderblock_roles, [:role_flags], using: :gin, name: "roles_flags_idx")
 
-    create index(:thunderblock_roles, [channel_overrides],
+  create index(:thunderblock_roles, [:channel_overrides],
              name: "roles_overrides_idx"
            )
 
-    create index(:thunderblock_roles, [permissions], using: :gin, name: "roles_permissions_idx")
+  create index(:thunderblock_roles, [:permissions], using: :gin, name: "roles_permissions_idx")
 
-    create index(:thunderblock_roles, [member_ids], using: :gin, name: "roles_members_idx")
+  create index(:thunderblock_roles, [:member_ids], using: :gin, name: "roles_members_idx")
 
     create index(:thunderblock_roles, [:mentionable], name: "roles_mentionable_idx")
 
@@ -546,23 +546,23 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_federation_sockets, [tags],
+  create index(:thunderblock_federation_sockets, [:tags],
              name: "federation_sockets_tags_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [error_log],
+  create index(:thunderblock_federation_sockets, [:error_log],
              name: "federation_sockets_errors_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [federation_metrics],
+  create index(:thunderblock_federation_sockets, [:federation_metrics],
              name: "federation_sockets_metrics_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [quarantine_queue],
+  create index(:thunderblock_federation_sockets, [:quarantine_queue],
              name: "federation_sockets_quarantine_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [message_queue],
+  create index(:thunderblock_federation_sockets, [:message_queue],
              name: "federation_sockets_queue_idx"
            )
 
@@ -851,19 +851,19 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_messages, [reactions],
+  create index(:thunderblock_messages, [:reactions],
              name: "messages_reactions_idx"
            )
 
-    create index(:thunderblock_messages, [tags], using: :gin, name: "messages_tags_idx")
+  create index(:thunderblock_messages, [:tags], using: :gin, name: "messages_tags_idx")
 
-    create index(:thunderblock_messages, [message_flags],
+  create index(:thunderblock_messages, [:message_flags],
              name: "messages_flags_idx"
            )
 
-    create index(:thunderblock_messages, [mentions], using: :gin, name: "messages_mentions_idx")
+  create index(:thunderblock_messages, [:mentions], using: :gin, name: "messages_mentions_idx")
 
-    create index(:thunderblock_messages, [search_vector],
+  create index(:thunderblock_messages, [:search_vector],
              name: "messages_search_idx"
            )
 
@@ -1045,15 +1045,15 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :cluster_node_id, :uuid
     end
 
-    create index(:thunderblock_zone_containers, [coordinates],
+  create index(:thunderblock_zone_containers, [:coordinates],
              name: "zone_containers_coords_idx"
            )
 
-    create index(:thunderblock_zone_containers, [tags],
+  create index(:thunderblock_zone_containers, [:tags],
              name: "zone_containers_tags_idx"
            )
 
-    create index(:thunderblock_zone_containers, [neighbor_zones],
+  create index(:thunderblock_zone_containers, [:neighbor_zones],
              name: "zone_containers_neighbors_idx"
            )
 
@@ -1337,11 +1337,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderflow_consciousness_flows, [memory_anchors],
+  create index(:thunderflow_consciousness_flows, [:memory_anchors],
              name: "consciousness_flow_memory_anchors_gin_idx"
            )
 
-    create index(:thunderflow_consciousness_flows, [active_goals],
+  create index(:thunderflow_consciousness_flows, [:active_goals],
              name: "consciousness_flow_active_goals_gin_idx"
            )
 
@@ -1737,13 +1737,13 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_channels, [channel_metrics],
+  create index(:thunderblock_channels, [:channel_metrics],
              name: "channels_metrics_idx"
            )
 
-    create index(:thunderblock_channels, [tags], using: :gin, name: "channels_tags_idx")
+  create index(:thunderblock_channels, [:tags], using: :gin, name: "channels_tags_idx")
 
-    create index(:thunderblock_channels, [pinned_message_ids],
+  create index(:thunderblock_channels, [:pinned_message_ids],
              name: "channels_pinned_messages_idx"
            )
 
@@ -1903,11 +1903,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :zone_container_id, :uuid
     end
 
-    create index(:thunderblock_supervision_trees, [tags],
+  create index(:thunderblock_supervision_trees, [:tags],
              name: "supervision_trees_tags_idx"
            )
 
-    create index(:thunderblock_supervision_trees, [running_children],
+  create index(:thunderblock_supervision_trees, [:running_children],
              name: "supervision_trees_children_idx"
            )
 
@@ -1973,17 +1973,17 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :zone_container_id, :uuid
     end
 
-    create index(:thunderblock_pac_homes, [tags], using: :gin, name: "pac_homes_tags_idx")
+  create index(:thunderblock_pac_homes, [:tags], using: :gin, name: "pac_homes_tags_idx")
 
-    create index(:thunderblock_pac_homes, [health_metrics],
+  create index(:thunderblock_pac_homes, [:health_metrics],
              name: "pac_homes_health_metrics_idx"
            )
 
-    create index(:thunderblock_pac_homes, [current_usage],
+  create index(:thunderblock_pac_homes, [:current_usage],
              name: "pac_homes_usage_idx"
            )
 
-    create index(:thunderblock_pac_homes, [agent_registry],
+  create index(:thunderblock_pac_homes, [:agent_registry],
              name: "pac_homes_agents_idx"
            )
 
@@ -2034,11 +2034,11 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundergrid_zone_boundaries, [crossing_history],
+  create index(:thundergrid_zone_boundaries, [:crossing_history],
              name: "zone_boundaries_history_idx"
            )
 
-    create index(:thundergrid_zone_boundaries, [boundary_points],
+  create index(:thundergrid_zone_boundaries, [:boundary_points],
              name: "zone_boundaries_points_idx"
            )
 
@@ -2356,21 +2356,21 @@ defmodule Thunderline.Repo.Migrations.Initialize do
       add :cluster_node_id, :uuid
     end
 
-    create index(:thunderblock_communities, [community_metrics],
+  create index(:thunderblock_communities, [:community_metrics],
              name: "communities_metrics_idx"
            )
 
-    create index(:thunderblock_communities, [federation_config],
+  create index(:thunderblock_communities, [:federation_config],
              name: "communities_federation_idx"
            )
 
-    create index(:thunderblock_communities, [tags], using: :gin, name: "communities_tags_idx")
+  create index(:thunderblock_communities, [:tags], using: :gin, name: "communities_tags_idx")
 
-    create index(:thunderblock_communities, [moderator_ids],
+  create index(:thunderblock_communities, [:moderator_ids],
              name: "communities_moderators_idx"
            )
 
-    create index(:thunderblock_communities, [member_ids],
+  create index(:thunderblock_communities, [:member_ids],
              name: "communities_members_idx"
            )
 
@@ -2411,7 +2411,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_query_optimizations, [optimization_suggestions],
+    create index(:thunderblock_query_optimizations, [:optimization_suggestions],
              name: "query_optimizations_suggestions_idx"
            )
 
@@ -2994,7 +2994,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundergrid_spatial_coordinates, [properties],
+    create index(:thundergrid_spatial_coordinates, [:properties],
              name: "spatial_coordinates_properties_idx"
            )
 
@@ -3061,7 +3061,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_cache_entries, [cache_tags],
+    create index(:thunderblock_cache_entries, [:cache_tags],
              name: "cache_entries_tags_idx"
            )
 
@@ -3294,7 +3294,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "cache_entries_expires_idx"
                    )
 
-    drop_if_exists index(:thunderblock_cache_entries, [cache_tags],
+    drop_if_exists index(:thunderblock_cache_entries, [:cache_tags],
                      name: "cache_entries_tags_idx"
                    )
 
@@ -3322,7 +3322,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
 
     drop_if_exists index(:thundergrid_spatial_coordinates, [:last_accessed])
 
-    drop_if_exists index(:thundergrid_spatial_coordinates, [properties],
+    drop_if_exists index(:thundergrid_spatial_coordinates, [:properties],
                      name: "spatial_coordinates_properties_idx"
                    )
 
@@ -3599,7 +3599,7 @@ defmodule Thunderline.Repo.Migrations.Initialize do
 
     drop_if_exists index(
                      :thunderblock_query_optimizations,
-                     [optimization_suggestions],
+                     [:optimization_suggestions],
                      name: "query_optimizations_suggestions_idx"
                    )
 
@@ -3623,23 +3623,23 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "communities_type_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, [member_ids],
+  drop_if_exists index(:thunderblock_communities, [:member_ids],
                      name: "communities_members_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, [moderator_ids],
+  drop_if_exists index(:thunderblock_communities, [:moderator_ids],
                      name: "communities_moderators_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, [tags],
+  drop_if_exists index(:thunderblock_communities, [:tags],
                      name: "communities_tags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, [federation_config],
+  drop_if_exists index(:thunderblock_communities, [:federation_config],
                      name: "communities_federation_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, [community_metrics],
+  drop_if_exists index(:thunderblock_communities, [:community_metrics],
                      name: "communities_metrics_idx"
                    )
 
@@ -3862,19 +3862,19 @@ defmodule Thunderline.Repo.Migrations.Initialize do
                      name: "pac_homes_health_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, [agent_registry],
+  drop_if_exists index(:thunderblock_pac_homes, [:agent_registry],
                      name: "pac_homes_agents_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, [current_usage],
+  drop_if_exists index(:thunderblock_pac_homes, [:current_usage],
                      name: "pac_homes_usage_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, [health_metrics],
+  drop_if_exists index(:thunderblock_pac_homes, [:health_metrics],
                      name: "pac_homes_health_metrics_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, [tags],
+  drop_if_exists index(:thunderblock_pac_homes, [:tags],
                      name: "pac_homes_tags_idx"
                    )
 

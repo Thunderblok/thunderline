@@ -127,10 +127,7 @@ defmodule Thunderline.Thunderflow.Jobs.RetryProcessor do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"original_job" => job_data, "retry_count" => count}}) do
     case retry_job(job_data, count) do
-      {:ok, result} -> {:ok, result}
-      # retry_job currently always returns {:ok, _}; keep clauses for future change but silence warnings
-      {:error, reason} when count >= 3 -> {:discard, reason}
-      {:error, reason} -> {:error, reason}
+  {:ok, result} -> {:ok, result}
     end
   end
 

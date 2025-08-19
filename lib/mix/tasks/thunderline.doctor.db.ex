@@ -63,7 +63,7 @@ defmodule Mix.Tasks.Thunderline.Doctor.Db do
 
     header("Step 4: Pool Sample")
     try do
-      :poolboy.status(Repo.Pool) |> inspect |> info()
+  info("Poolboy not in use; skipping pool status check")
     rescue
       _ -> info("Pool status not available (poolboy not used?)")
     end

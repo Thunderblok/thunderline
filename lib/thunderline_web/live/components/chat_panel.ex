@@ -6,7 +6,6 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
   """
 
   use Phoenix.Component
-  import ThunderlineWeb.CoreComponents
 
   attr :messages, :list, default: []
   attr :class, :string, default: ""

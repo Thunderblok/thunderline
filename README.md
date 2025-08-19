@@ -75,6 +75,45 @@ mix phx.server
 
 The application will be available at [localhost:4000](http://localhost:4000).
 
+### Docker Development (Optional)
+
+Thunderline includes a minimal `docker-compose.yml` providing a Postgres 16 service and a placeholder app service definition.
+
+Start only Postgres (run Elixir locally):
+```bash
+docker compose up -d postgres
+export DATABASE_URL=ecto://postgres:postgres@localhost:5432/thunderblock
+mix thunderline.dev.init   # create db, codegen, migrate
+mix phx.server
+```
+
+Diagnostics:
+```bash
+docker exec -it thunderline_postgres pg_isready -U postgres
+mix thunderline.doctor.db
+```
+
+Full stack (when a Dockerfile is added):
+```bash
+docker compose up -d
+docker compose logs -f thunderline
+```
+
+Hard reset (DESTROYS data):
+```bash
+docker compose down -v
+docker compose up -d postgres
+mix thunderline.dev.init
+```
+
+Seed a baseline community & channel (needs existing user UUID):
+```bash
+OWNER_USER_ID=<uuid> COMMUNITY_SLUG=general CHANNEL_SLUG=lobby mix thunderline.dev.init
+```
+
+Entrypoint script `scripts/docker/dev_entrypoint.sh` waits for DB readiness and runs migrations idempotently before launching Phoenix.
+
+
 ### Production Deployment
 
 For production environments, Thunderline supports containerized deployment with comprehensive monitoring and distributed coordination capabilities. Consult the deployment documentation for environment-specific configuration guidance.

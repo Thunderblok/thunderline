@@ -31,7 +31,7 @@ defmodule Thunderline.Application do
     else
       [
         Thunderline.Repo,
-        # Oban with AshOban integration - must start after repo
+        Thunderline.MigrationRunner,
         {Oban, oban_config()},
         {AshAuthentication.Supervisor, [otp_app: :thunderline]}
       ]
@@ -41,6 +41,7 @@ defmodule Thunderline.Application do
 
       # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
       Thunderline.ThunderMemory,
+  {Thunderline.Log.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
 
       # ⚡💧 THUNDERFLOW - Event Stream Processing
   Thunderline.Thunderflow.Support.CircuitBreaker,
@@ -82,6 +83,7 @@ defmodule Thunderline.Application do
 
     # Attach observability telemetry handlers
   Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
+    Thunderline.Telemetry.Oban.attach()
   if skip_db?, do: Logger.warning("[Thunderline.Application] Starting with SKIP_ASH_SETUP - DB/Oban/AshAuth supervision children disabled for lightweight tests")
 
     Supervisor.start_link(children, opts)

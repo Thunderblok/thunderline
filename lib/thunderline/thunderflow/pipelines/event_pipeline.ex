@@ -211,7 +211,6 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     |> Enum.reduce_while(:ok, fn {domain, domain_events}, _acc ->
       case process_domain_specific_events(domain, domain_events) do
         :ok -> {:cont, :ok}
-        {:error, _reason} = error -> {:halt, error}
       end
     end)
   end
@@ -221,7 +220,6 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     Enum.reduce_while(events, :ok, fn event, _acc ->
       case handle_critical_event(event) do
         :ok -> {:cont, :ok}
-        {:error, _reason} = error -> {:halt, error}
       end
     end)
   end

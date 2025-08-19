@@ -29,7 +29,7 @@ defmodule Thunderline.Repo do
   @impl true
   # Log (once) when running in slim mode. We avoid overriding child_spec since
   # it's not an overridable callback in AshPostgres.Repo's use macro.
-  def init(type, config) do
+  def init(_type, config) do
     if System.get_env("SKIP_ASH_SETUP") in ["1", "true"] do
       Logger.warning("[Thunderline.Repo] SKIP_ASH_SETUP active - repo would normally start (excluded by supervision tree)")
     end

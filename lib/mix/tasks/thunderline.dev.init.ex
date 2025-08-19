@@ -20,7 +20,6 @@ defmodule Mix.Tasks.Thunderline.Dev.Init do
   """
   use Mix.Task
 
-  alias Thunderline.Repo
 
   @impl true
   def run(_args) do

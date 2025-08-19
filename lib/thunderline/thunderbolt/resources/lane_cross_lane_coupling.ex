@@ -382,7 +382,9 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
 
   defp validate_alpha_bounds(changeset) do
     alpha = Ash.Changeset.get_attribute(changeset, :alpha_gain)
-    bounds = Ash.Changeset.get_data(changeset).adaptation_bounds || %{min: 0.0, max: 1.0}
+  # Use get_data/2 for the full struct; retain backward compatibility expectation
+  data = Ash.Changeset.get_data(changeset, :__struct__)
+  bounds = (data && Map.get(data, :adaptation_bounds)) || %{min: 0.0, max: 1.0}
 
     min_alpha = Map.get(bounds, :min, 0.0)
     max_alpha = Map.get(bounds, :max, 1.0)

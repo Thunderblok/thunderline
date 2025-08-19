@@ -7,7 +7,6 @@ defmodule ThunderlineWeb.DashboardComponents.ThunderboltRegistry do
   """
 
   use Phoenix.Component
-  import ThunderlineWeb.CoreComponents
 
   attr :thunderbolts, :list, required: true
 

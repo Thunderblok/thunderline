@@ -1,0 +1,37 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    container_name: thunderline_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: thunderblock
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+  thunderline:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ecto://postgres:postgres@postgres:5432/thunderblock
+      SECRET_KEY_BASE: dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev
+      TOKEN_SIGNING_SECRET: dev_token_signing_secret
+      PHX_SERVER: "true"
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+    command: ["/app/scripts/docker/dev_entrypoint.sh"]
+volumes:
+  postgres_data:

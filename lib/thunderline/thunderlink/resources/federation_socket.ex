@@ -939,7 +939,7 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
     :ok
   end
 
-  defp handle_federation_error(socket, error_type, error_message) do
+  defp handle_federation_error(socket, error_type, _error_message) do
     # Handle federation errors based on severity
     case error_type do
       "connection_lost" -> attempt_reconnection(socket)
