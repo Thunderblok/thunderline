@@ -13,7 +13,7 @@ defmodule ThunderlineWeb.Live.Components.NoiseConsole do
   end
 
   defp load(limit \\ 50) do
-    entries = Thunderline.Log.RingBuffer.recent(limit, Thunderline.NoiseBuffer)
+    entries = Thunderline.Thunderflow.Observability.RingBuffer.recent(limit, Thunderline.NoiseBuffer)
     %{entries: entries, limit: limit}
   end
 

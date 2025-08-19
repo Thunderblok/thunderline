@@ -1,4 +1,4 @@
-defmodule Thunderline.Telemetry.Oban do
+defmodule Thunderline.Thunderflow.Telemetry.Oban do
   @moduledoc """
   Telemetry handlers for Oban + AshOban metrics.
 
@@ -45,11 +45,32 @@ defmodule Thunderline.Telemetry.Oban do
     _ -> []
   end
 
+  @doc """
+  Return basic aggregated statistics for recent Oban job events currently in the in-memory ETS buffer.
+  """
+  def stats do
+    try do
+      events = recent(200)
+      total = length(events)
+      by_type = Enum.frequencies_by(events, & &1.type)
+      by_queue = Enum.frequencies_by(events, & &1.queue)
+      by_worker = Enum.frequencies_by(events, & &1.worker)
+      %{
+        total: total,
+        by_type: by_type,
+        queues: by_queue,
+        workers: by_worker
+      }
+    rescue
+      _ -> %{total: 0, by_type: %{}, queues: %{}, workers: %{}}
+    end
+  end
+
   defp put(type, meta) do
     ts = System.system_time(:microsecond)
     :ets.insert(@buffer_name, {ts, %{type: type, at: ts, queue: meta.queue, worker: meta.worker, state: meta.state}})
     trim()
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, "telemetry:oban", {:oban_event, type, meta})
+  Phoenix.PubSub.broadcast(Thunderline.PubSub, "telemetry:oban", {:oban_event, type, meta})
   rescue
     _ -> :ok
   end

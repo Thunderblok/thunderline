@@ -2,8 +2,8 @@ defmodule Thunderline.Thunderbolt.Automata.Blackboard do
   @moduledoc """
   Thunderbolt Automata Blackboard - Shared Knowledge Space
 
-  (Moved from `Thunderline.Automata.Blackboard`). This relocation aligns Automata runtime constructs under the Thunderbolt domain.
-  See deprecated alias module `Thunderline.Automata.Blackboard` for migration window.
+  (Moved from legacy `Thunderline.Automata.Blackboard`). This relocation aligns Automata runtime constructs under the Thunderbolt domain.
+  The legacy wrapper module has been removed; use this canonical namespace directly.
   """
   use GenServer
   alias Phoenix.PubSub

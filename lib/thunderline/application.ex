@@ -40,8 +40,7 @@ defmodule Thunderline.Application do
     children = phoenix_foundation ++ [
 
       # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
-      Thunderline.ThunderMemory,
-  {Thunderline.Log.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
+  Thunderline.ThunderMemory,
 
       # ⚡💧 THUNDERFLOW - Event Stream Processing
   Thunderline.Thunderflow.Support.CircuitBreaker,
@@ -66,6 +65,7 @@ defmodule Thunderline.Application do
       Thunderlink.ThunderWebsocketClient,
       Thunderline.DashboardMetrics,
       Thunderline.ThunderBridge,
+  {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
   # ⚡🧠 AUTOMATA - Shared knowledge space (canonical under Thunderbolt)
   Thunderline.Thunderbolt.Automata.Blackboard,
 
@@ -83,7 +83,7 @@ defmodule Thunderline.Application do
 
     # Attach observability telemetry handlers
   Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
-    Thunderline.Telemetry.Oban.attach()
+      Thunderline.Thunderflow.Telemetry.Oban.attach()
   if skip_db?, do: Logger.warning("[Thunderline.Application] Starting with SKIP_ASH_SETUP - DB/Oban/AshAuth supervision children disabled for lightweight tests")
 
     Supervisor.start_link(children, opts)

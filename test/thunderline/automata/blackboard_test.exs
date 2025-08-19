@@ -1,7 +1,7 @@
-defmodule Thunderline.Automata.BlackboardTest do
+defmodule Thunderline.Thunderbolt.Automata.BlackboardTest do
   use ExUnit.Case, async: false
 
-  alias Thunderline.Automata.Blackboard
+  alias Thunderline.Thunderbolt.Automata.Blackboard
 
   @moduletag :automata
 

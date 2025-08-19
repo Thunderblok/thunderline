@@ -91,6 +91,7 @@ Diagnostics:
 ```bash
 docker exec -it thunderline_postgres pg_isready -U postgres
 mix thunderline.doctor.db
+mix thunderline.oban.dash   # live in-terminal Oban telemetry & job stats snapshot
 ```
 
 Full stack (when a Dockerfile is added):
@@ -112,6 +113,12 @@ OWNER_USER_ID=<uuid> COMMUNITY_SLUG=general CHANNEL_SLUG=lobby mix thunderline.d
 ```
 
 Entrypoint script `scripts/docker/dev_entrypoint.sh` waits for DB readiness and runs migrations idempotently before launching Phoenix.
+
+### Observability & Diagnostics Additions
+
+- In-memory noise buffer: `Thunderline.Thunderflow.Observability.RingBuffer` (live surfaced via noise console component) replaces legacy `Thunderline.Log.RingBuffer` path.
+- Oban telemetry capture: `Thunderline.Thunderflow.Telemetry.Oban` stores recent job lifecycle events in ETS and powers `mix thunderline.oban.dash`.
+- Deprecated module `Thunderline.Automata.Blackboard` fully replaced by canonical `Thunderline.Thunderbolt.Automata.Blackboard` (wrapper removed).
 
 
 ### Production Deployment

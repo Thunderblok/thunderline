@@ -309,7 +309,7 @@ defmodule Thunderline.ThunderBridge do
 
   def handle_info(msg, state) do
   # Push to noise buffer instead of spamming logs; dashboard can pull
-  Thunderline.Log.RingBuffer.push({:thunder_bridge, msg}, Thunderline.NoiseBuffer)
+    Thunderline.Thunderflow.Observability.RingBuffer.push({:thunder_bridge, msg}, Thunderline.NoiseBuffer)
     {:noreply, state}
   end
 

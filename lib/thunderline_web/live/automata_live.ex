@@ -12,7 +12,7 @@ defmodule ThunderlineWeb.AutomataLive do
   use ThunderlineWeb, :live_view
 
   alias Thunderline.DashboardMetrics
-  alias Thunderline.Automata.Blackboard
+  alias Thunderline.Thunderbolt.Automata.Blackboard
   alias Phoenix.PubSub
 
   @impl true
