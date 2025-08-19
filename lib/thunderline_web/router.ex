@@ -10,7 +10,13 @@ defmodule ThunderlineWeb.Router do
     plug :put_root_layout, html: {ThunderlineWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-  plug AshAuthentication.Plug, otp_app: :thunderline
+  # NOTE: Removed AshAuthentication.Plug invocation because current
+  # authentication flow relies on live_session on_mount hooks
+  # (AshAuthentication.Phoenix.LiveSession + ThunderlineWeb.Live.Auth)
+  # and the plug module emitted warnings (no init/call). If we later
+  # need per-request user loading for non-LiveView controllers, we can
+  # introduce a custom plug that verifies the session token and assigns
+  # current_user.
   end
 
   pipeline :dashboard do
