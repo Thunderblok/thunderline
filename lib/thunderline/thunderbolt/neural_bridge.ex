@@ -272,8 +272,9 @@ defmodule Thunderline.NeuralBridge do
   defp create_level_model(:micro, _index, _state) do
     # Micro level: Individual ThunderBit neurons
     Axon.input("thunderbit_state", shape: {nil, 64, 64, 1})
-    |> Axon.conv(32, 3, activation: :relu, name: "micro_conv1")
-    |> Axon.conv(64, 3, activation: :relu, name: "micro_conv2")
+  # Axon >= 0.7: conv/3 signature is (input, out_channels, opts) – supply kernel_size via opts
+  |> Axon.conv(32, kernel_size: 3, activation: :relu, name: "micro_conv1")
+  |> Axon.conv(64, kernel_size: 3, activation: :relu, name: "micro_conv2")
     |> Axon.global_avg_pool()
     |> Axon.dense(128, activation: :relu, name: "micro_dense1")
     # [alive, energy]
@@ -283,9 +284,9 @@ defmodule Thunderline.NeuralBridge do
   defp create_level_model(:meso, _index, _state) do
     # Meso level: ThunderBolt region networks
     Axon.input("thunderbolt_region", shape: {nil, 256, 256, 3})
-    |> Axon.conv(64, 5, activation: :relu, name: "meso_conv1")
+  |> Axon.conv(64, kernel_size: 5, activation: :relu, name: "meso_conv1")
     |> Axon.max_pool(2)
-    |> Axon.conv(128, 3, activation: :relu, name: "meso_conv2")
+  |> Axon.conv(128, kernel_size: 3, activation: :relu, name: "meso_conv2")
     |> Axon.max_pool(2)
     |> Axon.flatten()
     |> Axon.dense(256, activation: :relu, name: "meso_dense1")
@@ -296,11 +297,11 @@ defmodule Thunderline.NeuralBridge do
   defp create_level_model(:macro, _index, _state) do
     # Macro level: Multi-ThunderBolt coordination
     Axon.input("multi_bolt_state", shape: {nil, 512, 512, 5})
-    |> Axon.conv(128, 7, activation: :relu, name: "macro_conv1")
+  |> Axon.conv(128, kernel_size: 7, activation: :relu, name: "macro_conv1")
     |> Axon.max_pool(2)
-    |> Axon.conv(256, 5, activation: :relu, name: "macro_conv2")
+  |> Axon.conv(256, kernel_size: 5, activation: :relu, name: "macro_conv2")
     |> Axon.max_pool(2)
-    |> Axon.conv(512, 3, activation: :relu, name: "macro_conv3")
+  |> Axon.conv(512, kernel_size: 3, activation: :relu, name: "macro_conv3")
     |> Axon.global_avg_pool()
     |> Axon.dense(1024, activation: :relu, name: "macro_dense1")
     |> Axon.dense(256, activation: :relu, name: "macro_dense2")
@@ -345,10 +346,11 @@ defmodule Thunderline.NeuralBridge do
 
   defp initialize_ca_tensors(state) do
     %{
-      micro_state: Nx.zeros({64, 64, 1}, backend: state.nx_tensors.backend),
-      meso_state: Nx.zeros({256, 256, 3}, backend: state.nx_tensors.backend),
-      macro_state: Nx.zeros({512, 512, 5}, backend: state.nx_tensors.backend),
-      connection_weights: Nx.random_uniform({100, 100}, backend: state.nx_tensors.backend)
+  # Nx 0.9: zeros/random_uniform are arity-1 convenience constructors; backend already set globally
+  micro_state: Nx.zeros({64, 64, 1}),
+  meso_state: Nx.zeros({256, 256, 3}),
+  macro_state: Nx.zeros({512, 512, 5}),
+  connection_weights: Nx.random_uniform({100, 100})
     }
   end
 
@@ -471,11 +473,14 @@ defmodule Thunderline.NeuralBridge do
   end
 
   defp detect_gpu_backend() do
-    # Detect if GPU/CUDA is available
+    # Heuristic GPU detection: attempt to set EXLA CUDA backend; fall back to host.
     try do
-      EXLA.Backend.get_clients()[:cuda] != nil
+      Nx.default_backend({EXLA.Backend, client: :cuda})
+      true
     rescue
-      _ -> false
+      _ ->
+        Nx.default_backend({EXLA.Backend, client: :host})
+        false
     end
   end
 

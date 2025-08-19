@@ -246,8 +246,12 @@ defmodule ThunderlineWeb.ChannelLive do
 
   defp list_channel_presence(channel_id) do
     topic = Topics.channel_presence(channel_id)
-    Phoenix.PubSub.list_presences(Thunderline.PubSub, topic)
-    |> Enum.map(fn {user_id, _metas} -> user_id end)
+    Presence.list(topic)
+    |> Enum.map(fn {user_id, metas} ->
+      # metas unused currently
+      _ = metas
+      user_id
+    end)
     |> Enum.sort()
   rescue
     _ -> []
