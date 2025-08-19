@@ -350,7 +350,7 @@ defmodule Thunderline.NeuralBridge do
   micro_state: Nx.zeros({64, 64, 1}),
   meso_state: Nx.zeros({256, 256, 3}),
   macro_state: Nx.zeros({512, 512, 5}),
-  connection_weights: Nx.random_uniform({100, 100})
+  connection_weights: Nx.random_uniform({100, 100}, type: :f32)
     }
   end
 
@@ -543,19 +543,19 @@ defmodule Thunderline.NeuralBridge do
       :micro ->
         # Micro level: Individual cell predictions
         Stream.repeatedly(fn ->
-          {Nx.random_uniform({1, 64, 64, 1}), Nx.random_uniform({1, 2})}
+          {Nx.random_uniform({1, 64, 64, 1}, type: :f32), Nx.random_uniform({1, 2}, type: :f32)}
         end)
 
       :meso ->
         # Meso level: Regional pattern predictions
         Stream.repeatedly(fn ->
-          {Nx.random_uniform({1, 256, 256, 3}), Nx.random_uniform({1, 10})}
+          {Nx.random_uniform({1, 256, 256, 3}, type: :f32), Nx.random_uniform({1, 10}, type: :f32)}
         end)
 
       :macro ->
         # Macro level: Global coordination predictions
         Stream.repeatedly(fn ->
-          {Nx.random_uniform({1, 512, 512, 5}), Nx.random_uniform({1, 50})}
+          {Nx.random_uniform({1, 512, 512, 5}, type: :f32), Nx.random_uniform({1, 50}, type: :f32)}
         end)
     end
     # 1000 training samples

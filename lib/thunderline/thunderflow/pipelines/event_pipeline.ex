@@ -244,7 +244,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   defp process_domain_specific_events(domain, events) do
     Logger.info("Processing #{length(events)} events for domain: #{domain}")
-    # Generic domain event processing
+    # Generic domain event processing (stub)
     :ok
   end
 

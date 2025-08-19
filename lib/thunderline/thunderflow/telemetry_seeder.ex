@@ -29,7 +29,8 @@ defmodule Thunderline.TelemetrySeeder do
   end
 
   defp create_snapshot(snapshot_params, {:ok, acc}) do
-    case Thunderlane.Resources.TelemetrySnapshot.create(snapshot_params) |> Ash.create() do
+    # Corrected module name from Thunderlane.Resources.TelemetrySnapshot
+    case Thunderline.Thunderbolt.Resources.TelemetrySnapshot.create(snapshot_params) |> Ash.create() do
       {:ok, snapshot} -> {:ok, [snapshot | acc]}
       {:error, reason} -> {:error, reason}
     end

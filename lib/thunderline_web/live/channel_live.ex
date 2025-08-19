@@ -10,6 +10,7 @@ defmodule ThunderlineWeb.ChannelLive do
   alias ThunderlineWeb.Presence
   require Logger
   import Ash.Expr
+  require Ash.Query
 
   @message_limit 100
 
@@ -85,7 +86,7 @@ defmodule ThunderlineWeb.ChannelLive do
      end)}
   end
 
-  def handle_info({:reaction_update, %{message_id: id}} = msg, socket) do
+  def handle_info({:reaction_update, %{message_id: _id}} = _msg, socket) do
     # For now we ignore updating reaction counts - placeholder
     {:noreply, socket}
   end
@@ -178,22 +179,22 @@ defmodule ThunderlineWeb.ChannelLive do
 
   # Data ops
   defp fetch_community(slug) do
-  Community
-  |> Ash.Query.filter(expr(community_slug == ^slug))
-  |> Ash.read_one(domain: Domain)
+    Community
+    |> Ash.Query.filter(expr(community_slug == ^slug))
+    |> Ash.read_one(domain: Domain)
   end
 
   defp fetch_channel(community_id, slug) do
-  Channel
-  |> Ash.Query.filter(expr(community_id == ^community_id and channel_slug == ^slug))
-  |> Ash.read_one(domain: Domain)
+    Channel
+    |> Ash.Query.filter(expr(community_id == ^community_id and channel_slug == ^slug))
+    |> Ash.read_one(domain: Domain)
   end
 
   defp load_messages(channel_id) do
-  Message
-  |> Ash.Query.filter(expr(channel_id == ^channel_id and status in [:active, :edited]))
-  |> Ash.Query.sort(inserted_at: :asc)
-  |> Ash.read(domain: Domain)
+    Message
+    |> Ash.Query.filter(expr(channel_id == ^channel_id and status in [:active, :edited]))
+    |> Ash.Query.sort(inserted_at: :asc)
+    |> Ash.read(domain: Domain)
   rescue
     _ -> []
   end

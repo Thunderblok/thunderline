@@ -8,8 +8,9 @@ defmodule ThunderlineWeb.CommunityLive do
   use ThunderlineWeb, :live_view
   alias Thunderline.Thunderlink.Resources.{Community, Channel}
   alias Thunderline.Thunderlink.Domain
-  alias Thunderline.Thunderlink.Topics
+  # alias Thunderline.Thunderlink.Topics # unused
   import Ash.Expr
+  require Ash.Query
 
   require Logger
 
@@ -35,7 +36,7 @@ defmodule ThunderlineWeb.CommunityLive do
   end
 
   @impl true
-  def handle_params(%{"community_slug" => slug}, _uri, socket) do
+  def handle_params(%{"community_slug" => _slug}, _uri, socket) do
     # Refresh on param navigation
     {:noreply, socket}
   end
@@ -142,15 +143,15 @@ defmodule ThunderlineWeb.CommunityLive do
 
   # Helpers
   defp fetch_community(slug) do
-  Community
-  |> Ash.Query.filter(expr(community_slug == ^slug))
-  |> Ash.read_one(domain: Domain)
+    Community
+    |> Ash.Query.filter(expr(community_slug == ^slug))
+    |> Ash.read_one(domain: Domain)
   end
 
   defp load_channels(community_id) do
-  Channel
-  |> Ash.Query.filter(expr(community_id == ^community_id and status == :active))
-  |> Ash.read!(domain: Domain)
+    Channel
+    |> Ash.Query.filter(expr(community_id == ^community_id and status == :active))
+    |> Ash.read!(domain: Domain)
   rescue
     _ -> []
   end
