@@ -32,6 +32,9 @@ defmodule Thunderline.MixProject do
     [
       {:oban, "~> 2.0"},
       {:ash_authentication, "~> 4.0"},
+  {:ash_authentication_phoenix, "~> 2.0"},
+  # Password hashing for AshAuthentication password strategy
+  {:bcrypt_elixir, "~> 3.1"},
       {:igniter, "~> 0.6", only: [:dev, :test]},
 
       # Phoenix

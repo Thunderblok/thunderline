@@ -1,5 +1,7 @@
 defmodule ThunderlineWeb.Router do
   use ThunderlineWeb, :router
+  # Bring in AshAuthentication Phoenix router macros (auth_routes, sign_in_route, etc.)
+  use AshAuthentication.Phoenix.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -8,6 +10,7 @@ defmodule ThunderlineWeb.Router do
     plug :put_root_layout, html: {ThunderlineWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+  plug AshAuthentication.Plug, otp_app: :thunderline
   end
 
   pipeline :dashboard do
@@ -35,11 +38,12 @@ defmodule ThunderlineWeb.Router do
     live "/", DashboardLive, :home
   end
 
-  scope "/", ThunderlineWeb do
-    pipe_through :browser
+  live_session :default, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do
+    scope "/", ThunderlineWeb do
+      pipe_through :browser
 
     # Individual domain dashboards
-    live "/thundercore", DashboardLive, :thundercore
+  live "/thundercore", DashboardLive, :thundercore
     live "/thunderbit", DashboardLive, :thunderbit
     live "/thunderbolt", DashboardLive, :thunderbolt
     live "/thunderblock", DashboardLive, :thunderblock
@@ -51,19 +55,43 @@ defmodule ThunderlineWeb.Router do
     live "/thunderflow", DashboardLive, :thunderflow
     live "/thunderstone", DashboardLive, :thunderstone
     live "/thunderlink", DashboardLive, :thunderlink
-    live "/thundercrown", DashboardLive, :thundercrown
+  live "/thundercrown", DashboardLive, :thundercrown
+
+  # Discord-style community & channel navigation
+  # /c/:community_slug -> community overview (channel list, description)
+  # /c/:community_slug/:channel_slug -> specific channel chat view
+  live "/c/:community_slug", CommunityLive, :show
+  live "/c/:community_slug/:channel_slug", ChannelLive, :show
 
     # Thunderlane Specialized Dashboard
-    live "/dashboard/thunderlane", ThunderlineWeb.Live.Components.ThunderlaneDashboard, :index
+  live "/dashboard/thunderlane", ThunderlineWeb.Live.Components.ThunderlaneDashboard, :index
 
     # 3D Cellular Automata View
-    live "/automata", AutomataLive, :index
+  live "/automata", AutomataLive, :index
 
     # Hologram 3D CA Visualization
-    live "/ca-3d", CaVisualizationLive, :index
+  live "/ca-3d", CaVisualizationLive, :index
 
     # Admin and monitoring
-    live "/metrics", MetricsLive, :index
+      live "/metrics", MetricsLive, :index
+    end
+  end
+
+  # Authentication routes & UI (sign in, registration, reset, strategy endpoints)
+  scope "/" do
+    pipe_through :browser
+
+    # White-label sign-in (mounts live_session with AshAuthentication hooks)
+    sign_in_route(path: "/sign-in", auth_routes_prefix: "/auth")
+
+    # Password reset request & reset form
+    reset_route(auth_routes_prefix: "/auth")
+
+    # Strategy/router endpoints for our User resource
+    auth_routes(ThunderlineWeb.AuthController, Thunderline.Thundergate.Resources.User, path: "/auth")
+
+    # Optional sign-out endpoint (controller sign_out action)
+    sign_out_route ThunderlineWeb.AuthController, "/sign-out"
   end
 
   # API routes for external integrations

@@ -7,6 +7,14 @@ defmodule Thunderline.Thundergate.Resources.User do
     extensions: [AshAuthentication]
 
   authentication do
+    strategies do
+      password :password do
+        identity_field :email
+        hashed_password_field :hashed_password
+        password_field :password
+        confirmation_required? true
+      end
+    end
     add_ons do
       log_out_everywhere do
         apply_on_password_change? true
@@ -50,5 +58,39 @@ defmodule Thunderline.Thundergate.Resources.User do
 
   attributes do
     uuid_primary_key :id
+
+    attribute :email, :ci_string do
+      allow_nil? false
+      public? true
+      constraints match: ~r/.+@.+/i
+    end
+
+    # Virtual password field for input only
+    attribute :password, :string do
+      allow_nil? false
+      sensitive? true
+      public? true
+      writable? true
+    end
+
+    # Stored hashed password managed by password strategy
+    attribute :hashed_password, :string do
+      allow_nil? true
+      sensitive? true
+      public? false
+      writable? true
+    end
+
+    attribute :confirmed_at, :utc_datetime do
+      public? true
+      allow_nil? true
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  identities do
+    identity :unique_email, [:email]
   end
 end

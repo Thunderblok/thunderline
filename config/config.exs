@@ -80,9 +80,11 @@ config :thunderline,
     # Event streams / pipelines
     Thunderline.Thunderflow.Domain,
     # Realtime messaging / channels
-  Thunderline.Thunderlink.Domain,
+    Thunderline.Thunderlink.Domain,
   # Re-enabled to host AshAI-powered orchestration & MCP resources
-  Thunderline.Thundercrown.Domain
+  Thunderline.Thundercrown.Domain,
+  # Auth/security domain now enabled for AshAuthentication integration
+  Thunderline.Thundergate.Domain
 
     # OPTIONAL (disabled right now):
     # Thunderline.Thundergate.Domain,  # Auth / security / policies
@@ -179,3 +181,12 @@ config :thunderline, Oban,
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
+
+# AshAuthentication Phoenix integration (basic defaults; can be overridden per env)
+# AshAuthentication Phoenix generated component configuration
+config :ash_authentication, AshAuthenticationPhoenix.Components,
+  otp_app: :thunderline
+
+config :ash_authentication_phoenix,
+  use_get?: true,
+  root_path: "/auth"

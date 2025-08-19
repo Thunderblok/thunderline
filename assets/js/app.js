@@ -8,12 +8,22 @@ import topbar from "../vendor/topbar"
 // Import hooks
 import { CAVisualization } from "./hooks/ca_visualization"
 
+// Simple auto-scroll hook for chat messages
+const AutoScroll = {
+  mounted() { this.scrollToBottom() },
+  updated() { this.scrollToBottom() },
+  scrollToBottom() {
+    try { this.el.scrollTop = this.el.scrollHeight } catch (_) {}
+  }
+}
+
 // Socket and LiveView setup
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 // Configure hooks
 let Hooks = {
-  CAVisualization
+  CAVisualization,
+  AutoScroll
 }
 
 // LiveSocket with hooks
