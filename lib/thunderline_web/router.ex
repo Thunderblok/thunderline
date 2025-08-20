@@ -62,6 +62,10 @@ defmodule ThunderlineWeb.Router do
     live "/thunderstone", DashboardLive, :thunderstone
     live "/thunderlink", DashboardLive, :thunderlink
   live "/thundercrown", DashboardLive, :thundercrown
+  # Cerebros & Raincatcher (drift lab) interface
+  live "/cerebros", CerebrosLive, :index
+  # Interactive neural network playground (inspired by external visualizer)
+  live "/nn", NNPlaygroundLive, :index
 
   # Discord-style community & channel navigation
   # /c/:community_slug -> community overview (channel list, description)
@@ -70,7 +74,7 @@ defmodule ThunderlineWeb.Router do
   live "/c/:community_slug/:channel_slug", ChannelLive, :show
 
     # Thunderlane Specialized Dashboard
-  live "/dashboard/thunderlane", ThunderlineWeb.Live.Components.ThunderlaneDashboard, :index
+  live "/dashboard/thunderlane", ThunderlineWeb.Live.ThunderlaneDashboard, :index
 
     # 3D Cellular Automata View
   live "/automata", AutomataLive, :index

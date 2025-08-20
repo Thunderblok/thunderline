@@ -1,0 +1,19 @@
+{
+  "types": [
+    "feature",
+    "fix",
+    "chore",
+    "docs",
+    "refactor",
+    "test",
+    "perf",
+    "ci"
+  ],
+  "repository_url": "https://github.com/Thunderblok/Thunderline",
+  "manage_mix_version?": true,
+  "manage_readme_version?": true,
+  "changelog_file": "CHANGELOG.md",
+  "readme_file": "README.md",
+  "mix_file": "mix.exs",
+  "version_tag_prefix": "v"
+}
