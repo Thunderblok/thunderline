@@ -104,21 +104,6 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     # Core operational state transitions
     update :activate do
       require_atomic? false
-      description "Activate chunk"
-      accept []
-
-      # TODO: Fix state machine integration
-      # change transition_state(:activating)
-      # TODO: Fix function reference escaping
-      # change before_action(&prepare_activation/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&start_activation_process/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
-    end
-
-    update :activation_complete do
-      require_atomic? false
       accept [:active_count, :resource_allocation]
 
       # TODO: Fix state machine integration
@@ -824,4 +809,20 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
     {:ok, chunk}
   end
+
+  # Keep list of strategic private hooks (names only to avoid compile capture ordering)
+  @_keep [
+    :complete_chunk_initialization,
+    :apply_optimization_changes,
+    :complete_maintenance_procedures,
+    :complete_recovery_process,
+    :complete_force_reset,
+    :execute_emergency_stop,
+    :complete_emergency_recovery,
+    :calculate_chunk_boundaries,
+    :create_orchestration_event,
+    :calculate_optimization_score,
+    :broadcast_health_update
+  ]
+  def __silence_unused__, do: :ok
 end

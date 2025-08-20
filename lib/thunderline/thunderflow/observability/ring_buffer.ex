@@ -35,6 +35,20 @@ defmodule Thunderline.Thunderflow.Observability.RingBuffer do
     {:noreply, %{state | entries: new}}
   end
 
+  # Accept direct telemetry events forwarded as raw casts (e.g. from telemetry handlers)
+  def handle_cast({:telemetry_event, payload}, %{entries: entries, limit: limit} = state) do
+    ts = System.system_time(:millisecond)
+    new = [{ts, {:telemetry, payload}} | entries] |> Enum.take(limit)
+    {:noreply, %{state | entries: new}}
+  end
+
+  # Catch-all so unexpected messages never crash the buffer (acts as a noise sink)
+  def handle_cast(msg, %{entries: entries, limit: limit} = state) do
+    ts = System.system_time(:millisecond)
+    new = [{ts, {:unknown, msg}} | entries] |> Enum.take(limit)
+    {:noreply, %{state | entries: new}}
+  end
+
   @impl true
   def handle_call({:recent, limit}, _from, %{entries: entries} = state) do
     {:reply, Enum.take(entries, limit), state}

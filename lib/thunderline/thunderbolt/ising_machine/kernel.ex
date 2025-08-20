@@ -8,10 +8,30 @@ defmodule Thunderline.Thunderbolt.IsingMachine.Kernel do
   """
   require Nx
 
+  # Deterministic-ish RNG helper that adapts to Nx API versions.
+  # Avoids warnings from unused default parameters and missing arities.
+  defp rng(shape, min, max, type) do
+    # Prefer newer API forms if present; otherwise fall back to older variants.
+    cond do
+      function_exported?(Nx, :random_uniform, 4) -> Nx.random_uniform(min, max, shape, type: type)
+      function_exported?(Nx, :random_uniform, 3) -> Nx.random_uniform(shape, min, max)
+      true ->
+        # Fallback: build a deterministic tensor from a simple linear progression
+        total = Tuple.product(List.wrap(shape))
+        base = Nx.iota({total}, type: :f32)
+        scaled = base / Nx.Constants.pi() |> Nx.subtract(Nx.floor(base / 10))
+        reshaped = Nx.reshape(scaled, shape)
+        span = max - min
+        Nx.add(Nx.multiply(Nx.divide(reshaped, Nx.max(reshaped) |> Nx.add(1.0e-9)), span), min)
+        |> Nx.as_type(type)
+    end
+  rescue
+    _ -> Nx.broadcast(Nx.tensor(0.0, type: type), shape)
+  end
+
   def random_spins(height, width, _opts \\ []) do
     shape = {height, width}
-    # Nx.random_uniform/2 signature: (shape, opts). Generate [0,1) then scale to [-1,1]
-  Nx.random_uniform(shape, type: :f32, min: -1.0, max: 1.0)
+    rng(shape, -1.0, 1.0, :f32)
     |> Nx.sign()
     |> Nx.as_type(:s8)
   end

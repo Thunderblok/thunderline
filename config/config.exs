@@ -21,7 +21,7 @@ config :ash,
   bulk_actions_default_to_errors?: true,
   tracer: [OpentelemetryAsh]
 
-# OpenTelemetry Ash configuration - routed through Thundereye domain for unified observability
+# OpenTelemetry Ash configuration - routed through Thundergate domain for unified observability
 config :opentelemetry_ash,
   trace_types: [:custom, :action, :flow]
 
@@ -177,6 +177,36 @@ config :thunderline, Oban,
     scheduled_workflows: 3,
     heavy_compute: 2
   ]
+
+# --- AshOban Trigger Usage Reference ---------------------------------------
+# Example (from docs) for adding a trigger inside a resource:
+#
+#   defmodule MyApp.Resource do
+#     use Ash.Resource, domain: MyDomain, extensions: [AshOban]
+#
+#     oban do
+#       triggers do
+#         trigger :process do
+#           action :process
+#           where expr(processed != true)
+#           # check every minute
+#           scheduler_cron "* * * * *"
+#           # optionally: queue :resource_process  (defaults to <short_name>_<trigger>)
+#           # on_error :errored   # (example of additional DSL option)
+#         end
+#       end
+#     end
+#   end
+#
+# Queue Naming:
+# * If you DO NOT specify `queue`, AshOban will derive one as <resource_short_name>_<trigger_name>.
+# * If you DO specify `queue`, ensure it is declared above in Oban queues (with a concurrency integer).
+#
+# Current Ticket resource triggers:
+#   :process_tickets  -> explicitly uses queue :default (declared above)
+#   :escalate_tickets -> explicitly uses queue :scheduled_workflows (declared above)
+# Add additional queues here when introducing new triggers with custom queues.
+# ---------------------------------------------------------------------------
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

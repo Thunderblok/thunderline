@@ -19,6 +19,14 @@ defmodule Thunderline.Application do
   @impl true
   def start(_type, _args) do
     skip_db? = System.get_env("SKIP_ASH_SETUP") in ["1", "true"]
+    start_endpoint? = case System.get_env("START_ENDPOINT") do
+      val when val in ["0", "false", "FALSE", "no", "No"] -> false
+      _ -> true
+    end
+    start_compute? = case System.get_env("START_COMPUTE") do
+      val when val in ["0", "false", "FALSE", "no", "No"] -> false
+      _ -> true
+    end
 
     phoenix_foundation = [
       ThunderlineWeb.Telemetry,
@@ -33,8 +41,29 @@ defmodule Thunderline.Application do
         Thunderline.Repo,
         Thunderline.MigrationRunner,
         {Oban, oban_config()},
+        Thunderline.ObanHealth,
+        Thunderline.ObanDiagnostics,
         {AshAuthentication.Supervisor, [otp_app: :thunderline]}
       ]
+    end
+
+    compute_children = if start_compute? do
+      [
+        Thunderline.Thunderbolt.ThunderCell.Supervisor,
+        Thunderline.ErlangBridge,
+        Thunderline.NeuralBridge,
+        Thunderline.ThunderBridge
+      ]
+    else
+      Logger.warning("[Thunderline.Application] START_COMPUTE disabled - skipping ThunderCell/ErlangBridge/NeuralBridge/ThunderBridge")
+      []
+    end
+
+    endpoint_child = if start_endpoint? do
+      [ThunderlineWeb.Endpoint]
+    else
+      Logger.warning("[Thunderline.Application] START_ENDPOINT disabled - skipping Phoenix Endpoint")
+      []
     end
 
     children = phoenix_foundation ++ [
@@ -47,14 +76,12 @@ defmodule Thunderline.Application do
       Thunderline.Thunderflow.Observability.FanoutAggregator,
       Thunderline.Thunderflow.Observability.FanoutGuard,
       Thunderline.Thunderflow.Observability.QueueDepthCollector,
+  Thunderline.Thunderflow.Observability.DriftMetricsProducer,
       {Thunderline.Thunderflow.Pipelines.EventPipeline, []},
       {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []},
       {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []},
 
-  # ⚡🔥 THUNDERBOLT - Compute Acceleration Services
-      Thunderline.Thunderbolt.ThunderCell.Supervisor,
-      Thunderline.ErlangBridge,
-      Thunderline.NeuralBridge,
+  # ⚡🔥 THUNDERBOLT - Compute Acceleration Services (conditionally started)
 
   # (Conditional DB/Ash/Oban children appended below)
 
@@ -62,9 +89,9 @@ defmodule Thunderline.Application do
       Thundergate.ThunderBridge,
 
       # ⚡🔗 THUNDERLINK - Communication Services
-      Thunderlink.ThunderWebsocketClient,
-      Thunderline.DashboardMetrics,
-      Thunderline.ThunderBridge,
+  Thunderlink.ThunderWebsocketClient,
+  Thunderline.DashboardMetrics,
+  # ThunderBridge implementation lives under ThunderLink domain (see thunderlink/thunder_bridge.ex)
   {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
   # ⚡🧠 AUTOMATA - Shared knowledge space (canonical under Thunderbolt)
   Thunderline.Thunderbolt.Automata.Blackboard,
@@ -75,13 +102,12 @@ defmodule Thunderline.Application do
       # ⚡⚔️ THUNDERGUARD - Security Services
       # (Authentication and authorization services will be added here)
 
-      # Phoenix Web Server (last to start before optional DB children)
-      ThunderlineWeb.Endpoint
-    ] ++ db_children
+      # Phoenix Web Server (conditionally started after core observability)
+    ] ++ compute_children ++ endpoint_child ++ db_children
 
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 
-    # Attach observability telemetry handlers
+  # Attach observability telemetry handlers
   Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
       Thunderline.Thunderflow.Telemetry.Oban.attach()
   if skip_db?, do: Logger.warning("[Thunderline.Application] Starting with SKIP_ASH_SETUP - DB/Oban/AshAuth supervision children disabled for lightweight tests")

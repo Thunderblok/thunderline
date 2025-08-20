@@ -346,11 +346,10 @@ defmodule Thunderline.NeuralBridge do
 
   defp initialize_ca_tensors(state) do
     %{
-  # Nx 0.9: zeros/random_uniform are arity-1 convenience constructors; backend already set globally
-  micro_state: Nx.zeros({64, 64, 1}),
-  meso_state: Nx.zeros({256, 256, 3}),
-  macro_state: Nx.zeros({512, 512, 5}),
-  connection_weights: Nx.random_uniform({100, 100}, type: :f32)
+      micro_state: Nx.zeros({64, 64, 1}),
+      meso_state: Nx.zeros({256, 256, 3}),
+      macro_state: Nx.zeros({512, 512, 5}),
+      connection_weights: rng({100, 100}, -1.0, 1.0, :f32)
     }
   end
 
@@ -538,31 +537,30 @@ defmodule Thunderline.NeuralBridge do
   end
 
   defp generate_training_data(level, _state) do
-    # Generate synthetic training data for each level
     case level do
       :micro ->
         # Micro level: Individual cell predictions
-        Stream.repeatedly(fn ->
-          {Nx.random_uniform({1, 64, 64, 1}, type: :f32), Nx.random_uniform({1, 2}, type: :f32)}
-        end)
+        Stream.repeatedly(fn -> {rng({1, 64, 64, 1}), rng({1, 2})} end)
 
       :meso ->
         # Meso level: Regional pattern predictions
-        Stream.repeatedly(fn ->
-          {Nx.random_uniform({1, 256, 256, 3}, type: :f32), Nx.random_uniform({1, 10}, type: :f32)}
-        end)
+        Stream.repeatedly(fn -> {rng({1, 256, 256, 3}), rng({1, 10})} end)
 
       :macro ->
         # Macro level: Global coordination predictions
-        Stream.repeatedly(fn ->
-          {Nx.random_uniform({1, 512, 512, 5}, type: :f32), Nx.random_uniform({1, 50}, type: :f32)}
-        end)
+        Stream.repeatedly(fn -> {rng({1, 512, 512, 5}), rng({1, 50})} end)
     end
-    # 1000 training samples
     |> Stream.take(1000)
   end
 
   defp broadcast_neural_update(neural_data) do
     Phoenix.PubSub.broadcast(Thunderline.PubSub, "neural_updates", {:neural_update, neural_data})
+  end
+
+  defp rng(shape, min \\ 0.0, max \\ 1.0, type \\ :f32) do
+    cond do
+      function_exported?(Nx, :random_uniform, 3) -> Nx.random_uniform(shape, min, max, type: type)
+      true -> Nx.random_uniform(shape, min: min, max: max, type: type)
+    end
   end
 end

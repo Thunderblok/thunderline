@@ -355,26 +355,30 @@ defmodule Thunderline.EventBus do
   """
   @spec publish_event(map()) :: :ok | {:error, term()}
   def publish_event(%{type: event_type, data: data} = event) when is_atom(event_type) do
-    # Extract priority and determine pipeline type
-    priority = Map.get(event, :priority, :normal)
-    source = Map.get(event, :source, :unknown)
+    # Persist-first pathway
+    persisted =
+      event
+      |> Map.put(:payload, data)
+  |> Thunderline.Thunderflow.EventStore.append()
 
-    # For ThunderMemory events, use realtime pipeline for agent updates
-    pipeline_type =
-      case {event_type, source} do
-        {:agent_spawned, :thunder_memory} -> :realtime
-        {:agent_updated, :thunder_memory} -> :realtime
-        {:chunk_created, :thunder_memory} -> :general
-        {_, :thunder_memory} -> :general
-        _ -> :general
-      end
-
-  # Route to appropriate emit function
-    case pipeline_type do
-      :realtime ->
-    emit_realtime(event_type, Map.merge(data, %{source: source, priority: priority, original_timestamp: Map.get(event, :timestamp)}))
-      _ ->
-    emit(event_type, Map.merge(data, %{source: source, priority: priority, original_timestamp: Map.get(event, :timestamp)}))
+    case persisted do
+      :ok ->
+        Phoenix.PubSub.broadcast(@pubsub, "events:all", {:event, Map.put(event, :payload, data)})
+  priority = Map.get(event, :priority, :normal)
+        source = Map.get(event, :source, :unknown)
+        pipeline_type = case {event_type, source} do
+          {:agent_spawned, :thunder_memory} -> :realtime
+          {:agent_updated, :thunder_memory} -> :realtime
+          {:chunk_created, :thunder_memory} -> :general
+          {_, :thunder_memory} -> :general
+          _ -> :general
+        end
+        payload_ext = Map.merge(data, %{source: source, priority: priority, original_timestamp: Map.get(event, :timestamp)})
+        case pipeline_type do
+          :realtime -> emit_realtime(event_type, payload_ext)
+          _ -> emit(event_type, payload_ext)
+        end
+      other -> other
     end
   end
 

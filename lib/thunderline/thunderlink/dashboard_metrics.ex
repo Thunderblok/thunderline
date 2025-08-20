@@ -263,8 +263,9 @@ defmodule Thunderline.DashboardMetrics do
   defp get_oban_stats do
     # Get current Oban queue statistics
     try do
-      # Check if Oban is running first
-      if Process.whereis(Oban) do
+  name = oban_instance_name()
+  pid = Oban.whereis(name)
+  if pid do
         # Try to get queue stats using a more robust approach
         default_stats = get_queue_stats(:default)
         cross_domain_stats = get_queue_stats(:cross_domain)
@@ -279,7 +280,7 @@ defmodule Thunderline.DashboardMetrics do
           avg_completion_time: "OFFLINE"
         }
       else
-        Logger.info("Oban is not running, using default stats")
+        log_once(:oban_not_running, fn -> Logger.info("Oban not detected (name=#{inspect(name)}) yet; using default stats") end)
         get_default_oban_stats()
       end
     rescue
@@ -289,27 +290,26 @@ defmodule Thunderline.DashboardMetrics do
     end
   end
 
-  defp get_queue_stats(queue_name) do
-    try do
-      # Use Oban's queue monitoring if available
-      case Oban.drain_queue(queue: queue_name, with_safety: false) do
-        %{success: success, failure: failure} ->
-          %{
-            # drain_queue empties the queue
-            queued: 0,
-            executing: 0,
-            completed: success,
-            failed: failure
-          }
+  defp oban_instance_name do
+    Application.get_env(:thunderline, Oban, [])
+    |> Keyword.get(:name, Oban)
+  end
 
-        _ ->
-          # Fallback: try direct queue inspection
-          inspect_queue_directly(queue_name)
-      end
-    rescue
-      _ ->
-        inspect_queue_directly(queue_name)
+  # Simple once-only logger keyed by atom using persistent_term
+  defp log_once(key, fun) do
+    marker = {:dashboard_metrics_once, key}
+    case :persistent_term.get(marker, :none) do
+      :none ->
+        fun.()
+        :persistent_term.put(marker, :logged)
+      _ -> :ok
     end
+  end
+
+  defp get_queue_stats(queue_name) do
+  # Never call Oban.drain_queue in metrics collection (it mutates/empties queues).
+  # Prefer Oban.peek/2 style inspection if available, else fall back to DB counts (stub 0 for now).
+  inspect_queue_directly(queue_name)
   end
 
   defp inspect_queue_directly(queue_name) do
@@ -1275,6 +1275,7 @@ defmodule Thunderline.DashboardMetrics do
       system: state.system_metrics,
       events: state.event_metrics,
       agents: state.agent_metrics,
+  thunderlane: state.thunderlane,
       timestamp: state.last_update
     }
 

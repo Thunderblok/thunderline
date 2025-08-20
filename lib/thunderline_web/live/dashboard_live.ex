@@ -51,6 +51,19 @@ defmodule ThunderlineWeb.DashboardLive do
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "domain_events")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "thundergrid:events")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "federation:events")
+      # Subscribe to aggregated dashboard metrics updates
+      try do
+        DashboardMetrics.subscribe()
+      rescue
+        _ -> :ok
+      end
+
+      # Subscribe to Oban health updates if available
+      try do
+        Thunderline.ObanHealth.subscribe()
+      rescue
+        _ -> :ok
+      end
 
       # Set up Ash telemetry handlers for real-time domain monitoring
       setup_ash_telemetry_handlers()
@@ -310,7 +323,30 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   def handle_info({:metrics_update, metrics}, socket) do
-    socket = update(socket, :system_metrics, &Map.merge(&1, metrics))
+    # Metrics payload from DashboardMetrics GenServer
+    system = Map.get(metrics, :system, %{})
+    events = Map.get(metrics, :events, %{})
+    agents = Map.get(metrics, :agents, %{})
+    thunderlane = Map.get(metrics, :thunderlane, %{})
+    # Existing domain metrics kept in :domain_metrics
+    domain_metrics = socket.assigns[:domain_metrics] || %{}
+
+    # Rebuild the :metrics assign used by template combining domain + dynamic thunderlane
+    rebuilt_metrics = Map.put(domain_metrics, :thunderlane, thunderlane)
+
+    socket =
+      socket
+      |> update(:system_metrics, fn existing -> Map.merge(existing || %{}, system) end)
+      |> assign(:event_metrics, events)
+      |> assign(:agent_metrics, agents)
+      |> assign(:metrics, rebuilt_metrics)
+
+    {:noreply, socket}
+  end
+
+  # Oban health status updates
+  def handle_info({:oban_health, status}, socket) do
+    socket = assign(socket, :oban_health, status)
     {:noreply, socket}
   end
 
@@ -446,10 +482,6 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   @impl true
-  def handle_event("select_domain", %{"domain" => domain}, socket) do
-    {:noreply, assign(socket, :active_domain, String.to_atom(domain))}
-  end
-
   def handle_event("select_domain", %{"domain" => domain}, socket) do
     {:noreply, assign(socket, :active_domain, String.to_atom(domain))}
   end
@@ -629,6 +661,13 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:connected, false)
     # Add missing mode assignment
     |> assign(:mode, :production)
+    # Seed performance metrics so template & updates are safe immediately
+    |> assign(:performance_metrics, %{
+      avg_response_time: 0.0,
+      throughput: 0,
+      memory_usage: "OFFLINE",
+      cpu_usage: "OFFLINE"
+    })
     |> assign(:system_metrics, %{})
     |> assign(:domain_metrics, %{})
     |> assign(:automata_state, %{active_zones: 0, total_hexes: 144, energy_level: 0})
@@ -772,6 +811,9 @@ defmodule ThunderlineWeb.DashboardLive do
 
   defp get_thunderbolt_metrics do
     try do
+      if Process.whereis(Thunderline.ThunderBridge) == nil do
+        raise "thunder_bridge_not_running"
+      end
       case ThunderBridge.get_thunderbolt_registry() do
         {:ok, registry} ->
           %{
@@ -794,6 +836,9 @@ defmodule ThunderlineWeb.DashboardLive do
 
   defp get_thunderbit_metrics do
     try do
+      if Process.whereis(Thunderline.ThunderBridge) == nil do
+        raise "thunder_bridge_not_running"
+      end
       case ThunderBridge.get_thunderbit_observer() do
         {:ok, observer} ->
           %{

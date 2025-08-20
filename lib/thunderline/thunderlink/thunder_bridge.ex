@@ -92,19 +92,7 @@ defmodule Thunderline.ThunderBridge do
     Logger.info("Starting ThunderBridge...")
 
     # Subscribe to ErlangBridge events with error handling
-    try do
-      case ErlangBridge.subscribe_events(self()) do
-        :ok ->
-          Logger.info("Subscribed to ErlangBridge events")
-
-        {:error, reason} ->
-          Logger.warning("Failed to subscribe to ErlangBridge: #{inspect(reason)}")
-      end
-    rescue
-      error ->
-        Logger.warning("ErlangBridge not available during init: #{inspect(error)}")
-        # Continue initialization without ErlangBridge
-    end
+  subscribe_erlang_bridge()
 
     # Subscribe to EventBus for internal events
     try do
@@ -254,6 +242,12 @@ defmodule Thunderline.ThunderBridge do
      }}
   end
 
+  def handle_info({:EXIT, _from, reason}, state) do
+    # In case linked processes exit unexpectedly, downgrade impact
+    Logger.warning("Linked process exit observed in ThunderBridge: #{inspect(reason)}")
+    {:noreply, state}
+  end
+
   def handle_info({:event_bus, "system_metrics", metrics}, state) do
     # Forward EventBus metrics to dashboard subscribers
     broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
@@ -311,6 +305,27 @@ defmodule Thunderline.ThunderBridge do
   # Push to noise buffer instead of spamming logs; dashboard can pull
     Thunderline.Thunderflow.Observability.RingBuffer.push({:thunder_bridge, msg}, Thunderline.NoiseBuffer)
     {:noreply, state}
+  end
+
+  # Defensive subscription wrapper so missing ErlangBridge doesn't crash init
+  defp subscribe_erlang_bridge do
+    cond do
+      is_nil(Process.whereis(Thunderline.ErlangBridge)) ->
+        Logger.warning("ErlangBridge not started yet; ThunderBridge will operate in degraded mode")
+        :degraded
+      true ->
+        try do
+          case ErlangBridge.subscribe_events(self()) do
+            :ok -> Logger.info("Subscribed to ErlangBridge events")
+            {:error, reason} -> Logger.warning("Failed to subscribe to ErlangBridge: #{inspect(reason)}")
+          end
+        catch
+          :exit, reason ->
+            Logger.warning("ErlangBridge subscribe exited: #{inspect(reason)}; continuing without it")
+          type, reason ->
+            Logger.warning("Unexpected #{inspect(type)} during ErlangBridge subscribe: #{inspect(reason)}")
+        end
+    end
   end
 
   # Private Functions

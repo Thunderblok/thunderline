@@ -1,47 +1,10 @@
 defmodule Thunderline.ThunderMemory do
   @moduledoc """
-  ThunderMemory - High-performa  @doc "Get metrics for a specific metric name and time period"
-  def get_metrics(metric_name, aggregation_level \\ :minute) do
-    GenServer.call(__MODULE__, {:get_metrics, metric_name, aggregation_level})
-  end
-
-  @doc "Generic key-value storage interface for compatibility"
-  def get(key) do
-    GenServer.call(__MODULE__, {:get_key, key})
-  end
-
-  @doc "Generic key-value storage interface for compatibility"
-  def store(key, value) do
-    GenServer.call(__MODULE__, {:store_key, key, value})
-  end
-
-  @doc "Get Thunderbit blackboard data"
-  def get_thunderbit_blackboard(thunderbit_id) do
-    GenServer.call(__MODULE__, {:get_thunderbit_blackboard, thunderbit_id})
-  end
-
-  @doc "Store Thunderbit blackboard data"
-  def store_thunderbit_blackboard(thunderbit_id, blackboard) do
-    GenServer.call(__MODULE__, {:store_thunderbit_blackboard, thunderbit_id, blackboard})
-  end
-
-  @doc "Store Thunderbit state data"
-  def store_thunderbit_state(thunderbit_id, state) do
-    GenServer.call(__MODULE__, {:store_thunderbit_state, thunderbit_id, state})
-  end
-
-  @doc "Delete Thunderbit state data"
-  def delete_thunderbit_state(thunderbit_id) do
-    GenServer.call(__MODULE__, {:delete_thunderbit_state, thunderbit_id})
-  end
-
-  @doc "Delete Thunderbit blackboard data"
-  def delete_thunderbit_blackboard(thunderbit_id) do
-    GenServer.call(__MODULE__, {:delete_thunderbit_blackboard, thunderbit_id})
-  enddistributed memory management system
+  ThunderMemory – high-performance distributed memory layer.
 
   Provides fast, persistent storage for agents, chunks, and real-time metrics
-  using Mnesia as the backend for durability and replication.
+  using Mnesia for durability & replication. Acts as the blackboard for
+  ThunderBit/PAC processes.
 
   Key Features:
   - Agent lifecycle management (spawn, update, retrieve, list)

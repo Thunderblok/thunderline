@@ -86,7 +86,7 @@ defmodule Thunderline.Thunderlink.Resources.Ticket do
       trigger :process_tickets do
         action :process
         where expr(status == :open and is_nil(processed_at))
-        scheduler_cron "* * * * *"  # Every minute
+  scheduler_cron "* * * * *"  # Every minute
         queue :default
         max_attempts 3
       end
@@ -99,7 +99,7 @@ defmodule Thunderline.Thunderlink.Resources.Ticket do
           not escalated and
           inserted_at < ago(5, :minute)
         )
-        scheduler_cron "*/2 * * * *"  # Every 2 minutes
+  scheduler_cron "*/2 * * * *"  # Every 2 minutes
         queue :scheduled_workflows
         max_attempts 2
       end

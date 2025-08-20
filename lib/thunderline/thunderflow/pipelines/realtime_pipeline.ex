@@ -208,6 +208,10 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     # Ultra-fast WebSocket broadcasting
     case process_websocket_broadcasts_batch(events) do
       :ok ->
+        # Side-channel: forward embedding/time-series events to drift ingestion topic
+        Enum.each(events, fn %{"event_type" => "timeseries_embedding", "data" => data} ->
+          Phoenix.PubSub.broadcast(Thunderline.PubSub, "drift:embedding", {:timeseries_embedding, data})
+        _ -> :ok end)
         messages
 
       {:error, reason} ->
