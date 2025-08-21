@@ -175,7 +175,8 @@ config :thunderline, Oban,
     default: 10,
     cross_domain: 5,
     scheduled_workflows: 3,
-    heavy_compute: 2
+  heavy_compute: 2,
+  probe: 2
   ]
 
 # --- AshOban Trigger Usage Reference ---------------------------------------
