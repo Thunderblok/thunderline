@@ -27,7 +27,7 @@ Planned Next: Replace AI stub with AshAI actions, authenticated presence, channe
 Legend:
 - ✔ Allowed (direct call or action)
 - △ Indirect via normalized events / Ash action boundary (no raw struct coupling)
-- ✖ Forbidden (introduce Bridge/Reactor or re-evaluate responsibility)
+- ✖ Forbidden (introduce Bridge/Reactor or re-evaluate responsibility)ets c
 
 | From \ To | Block | Bolt | Crown | Flow | Gate | Grid | Link |
 |-----------|-------|------|-------|------|------|------|------|

@@ -56,3 +56,9 @@ phoenix.log
 # Ignore temporary output files
 catch_output
 
+# Local cloned/external projects (kept out of main repo)
+Raincatcher/
+cerebros/
+thunder_axon_integration/
+
+
