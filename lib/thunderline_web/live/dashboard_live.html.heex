@@ -4,7 +4,7 @@
   <%!-- Header Section with Logo, Rays, and Navigation --%>
   <header class="relative w-full pb-16 h-40">
     <%!-- Game of Life Logo --%>
-    <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+  <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
       <div class="relative w-16 h-16">
         <%!-- Simple glider pattern from Game of Life --%>
         <div class="absolute inset-0 flex flex-col justify-center items-center space-y-1">
@@ -43,6 +43,17 @@
         </div>
       </div>
     </div>
+    <%!-- Domain Color Legend (compact) --%>
+    <div class="absolute top-4 left-4 hidden md:flex flex-wrap gap-1 max-w-sm text-[10px] font-mono">
+      <span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/30">thunderbolt</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30">thunderblock</span>
+      <span class="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/30">thunderflow</span>
+      <span class="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/30">thundergrid</span>
+      <span class="px-2 py-0.5 rounded-full bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-400/30">thundergate</span>
+      <span class="px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 ring-1 ring-pink-400/30">thunderlink</span>
+      <span class="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 ring-1 ring-teal-400/30">thunderlane</span>
+      <span class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/30">thundercrown</span>
+    </div>
     
     <%!-- System Status - positioned absolute top right --%>
     <div class="absolute top-4 right-8">
@@ -77,12 +88,14 @@
         </div>
 
         <%!-- Top Panel 3 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
+        <div class="glass-panel p-0 overflow-hidden flex flex-col">
+          <div class="flex items-center space-x-2 px-4 pt-3">
             <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
             <h3 class="text-sm font-bold text-white">Activity</h3>
           </div>
-          <div class="text-xs text-gray-300">Live Feed</div>
+          <div class="flex-1 px-2 pb-2 pt-1">
+            <%= Phoenix.Component.live_component(assigns.module, ThunderlineWeb.DashboardComponents.EventFlow, id: "event-flow-panel", events: @event_flow_data) %>
+          </div>
         </div>
 
         <%!-- Top Panel 4 --%>
