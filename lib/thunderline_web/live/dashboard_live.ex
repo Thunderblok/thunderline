@@ -30,10 +30,13 @@ defmodule ThunderlineWeb.DashboardLive do
     only: [orchestration_engine_panel: 1]
 
   import ThunderlineWeb.DashboardComponents.SystemControls, only: [system_controls_panel: 1]
+  import ThunderlineWeb.DashboardComponents.ThunderwatchPanel, only: [thunderwatch_panel: 1]
 
   @impl true
   def mount(params, _session, socket) do
     if connected?(socket) do
+  # Subscribe to centralized dashboard event buffer topic
+  Phoenix.PubSub.subscribe(Thunderline.PubSub, Thunderline.Thunderflow.EventBuffer.topic())
       # Subscribe to ThunderBridge events
       try do
         ThunderBridge.subscribe_dashboard_events(self())
@@ -51,6 +54,7 @@ defmodule ThunderlineWeb.DashboardLive do
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "domain_events")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "thundergrid:events")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "federation:events")
+  Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderwatch:events")
       # Subscribe to aggregated dashboard metrics updates
       try do
         DashboardMetrics.subscribe()
@@ -60,7 +64,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
       # Subscribe to Oban health updates if available
       try do
-        Thunderline.ObanHealth.subscribe()
+  Thunderchief.ObanHealth.subscribe()
       rescue
         _ -> :ok
       end
@@ -116,10 +120,18 @@ defmodule ThunderlineWeb.DashboardLive do
     end
 
     # Load initial metrics
+    # Load initial assigns & metrics
     socket =
       socket
       |> assign_initial_state(params)
       |> load_all_metrics()
+      # Initialize streaming collection before inserting
+      |> stream(:dashboard_events, [], dom_id: &("evt-" <> to_string(&1.id)))
+      |> then(fn s ->
+        events = Thunderline.Thunderflow.EventBuffer.snapshot(50)
+        Enum.reduce(events, s, fn evt, acc -> stream_insert(acc, :dashboard_events, evt, at: 0) end)
+        |> assign(:events, events)
+      end)
 
     {:ok, socket}
   end
@@ -182,6 +194,8 @@ defmodule ThunderlineWeb.DashboardLive do
 
   @impl true
   def handle_info({:ash_telemetry, telemetry_data}, socket) do
+  # Forward to event buffer for normalization & broadcasting
+  Thunderline.Thunderflow.EventBuffer.put({:ash_telemetry, telemetry_data})
     # Update dashboard state with real telemetry data
     updated_socket =
       socket
@@ -385,17 +399,61 @@ defmodule ThunderlineWeb.DashboardLive do
 
   def handle_info({:agent_event, event}, socket) do
     socket = handle_agent_event(socket, event)
+  Thunderline.Thunderflow.EventBuffer.put({:agent_event, event})
     {:noreply, socket}
   end
 
   def handle_info({:chunk_event, event}, socket) do
     socket = handle_chunk_event(socket, event)
+  Thunderline.Thunderflow.EventBuffer.put({:chunk_event, event})
     {:noreply, socket}
   end
 
   def handle_info({:domain_event, domain, event}, socket) do
     socket = handle_domain_event(socket, domain, event)
+  Thunderline.Thunderflow.EventBuffer.put({:domain_event, domain, event})
     {:noreply, socket}
+  end
+
+  # Centralized normalized dashboard event from EventBuffer
+  def handle_info({:dashboard_event, event}, socket) do
+    # Maintain simple events assign (newest first) & LiveView stream
+    socket =
+      socket
+      |> assign(:events, [event | Enum.take(socket.assigns[:events] || [], 49)])
+      |> stream_insert(:dashboard_events, event, at: 0)
+
+    {:noreply, socket}
+  end
+
+  # Raw thunderwatch event -> accumulate metrics
+  def handle_info({:thunderwatch, %{seq: seq, path: path, meta: meta} = evt}, socket) do
+    now = System.system_time(:microsecond)
+    tw = socket.assigns[:thunderwatch_stats] || %{files_indexed: 0, last_seq: 0, events: [], domain_counts: %{}, last_sample_at: now}
+    # Update domain counts using inferred domain in meta
+    domain = meta[:domain] || :system
+    domain_counts = Map.update(tw.domain_counts || %{}, domain, 1, &(&1 + 1))
+    files_indexed = (socket.assigns[:thunderwatch_files] || %{}) |> Map.put(path, true) |> map_size()
+    thunderwatch_files = (socket.assigns[:thunderwatch_files] || %{}) |> Map.put(path, true)
+    # Keep sliding window of last ~200 events
+    events = [{now, evt} | Enum.take(tw.events || [], 199)]
+    events_last_min = count_recent(events, 60_000_000)
+    utilization = min(events_last_min / 200.0 * 100.0, 100.0)
+    stats = %{
+      files_indexed: files_indexed,
+      seq: seq,
+      last_seq: seq,
+      domain_counts: domain_counts,
+      events_last_min: events_last_min,
+      utilization: utilization,
+      events: events
+    }
+    {:noreply, socket |> assign(:thunderwatch_stats, stats) |> assign(:thunderwatch_files, thunderwatch_files)}
+  end
+
+  defp count_recent(events, window_us) do
+    cutoff = System.system_time(:microsecond) - window_us
+    Enum.count(events, fn {ts, _} -> ts >= cutoff end)
   end
 
   # Accept raw ThunderCell aggregate state maps forwarded via PubSub or bridge
@@ -677,12 +735,23 @@ defmodule ThunderlineWeb.DashboardLive do
     # Add the 8 critical dashboard component data
     |> assign(:system_health, %{})
     |> assign(:event_flow_data, [])
+  |> assign(:events, [])
     |> assign(:alerts_data, %{})
     |> assign(:memory_metrics_data, %{})
     |> assign(:federation_data, %{})
     |> assign(:governance_data, %{})
     |> assign(:orchestration_data, %{})
     |> assign(:controls_data, %{})
+  |> assign(:thunderwatch_stats, %{files_indexed: 0, seq: 0, events_last_min: 0, utilization: 0, domain_counts: %{}})
+  end
+
+  # Inject Thunderwatch panel helper (render integration done in HEEx template section below)
+  def render_thunderwatch(assigns) do
+    ~H"""
+    <%= if @thunderwatch_stats do %>
+      <.thunderwatch_panel stats={@thunderwatch_stats} />
+    <% end %>
+    """
   end
 
   defp load_all_metrics(socket) do

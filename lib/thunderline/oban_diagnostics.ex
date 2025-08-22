@@ -1,4 +1,4 @@
-defmodule Thunderline.ObanDiagnostics do
+defmodule Thunderchief.ObanDiagnostics do
   @moduledoc """
   Boot-time & periodic diagnostics for why Oban may not be running.
 

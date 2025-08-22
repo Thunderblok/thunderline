@@ -6,7 +6,7 @@ defmodule Thunderline.Workers.DemoJob do
 
       %{} |> new() |> Oban.insert()
 
-  Or rely on `Thunderline.ObanDiagnostics` which will try to enqueue a probe job if Oban
+  Or rely on `Thunderchief.ObanDiagnostics` which will try to enqueue a probe job if Oban
   isn't yet supervising when diagnostics run.
   """
   use Oban.Worker, queue: :default, max_attempts: 1

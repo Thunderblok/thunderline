@@ -39,3 +39,11 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+# Thunderwatch in test: keep disabled unless explicitly enabled to avoid noisy events.
+config :thunderline, :thunderwatch,
+  enabled: false,
+  roots: ["lib"],
+  ignore: [~r{/\.git/}, ~r{/deps/}],
+  hash?: false,
+  max_events: 500

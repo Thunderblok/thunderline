@@ -8,7 +8,8 @@ import topbar from "../vendor/topbar"
 // Import hooks
 import { CAVisualization } from "./hooks/ca_visualization"
 
-// Simple auto-scroll hook for chat messages
+// Simple auto-scroll hook for chat & event flow streams
+// TODO: Enhance with user scroll lock (pause autoscroll while user hovering / scrolled up)
 const AutoScroll = {
   mounted() { this.scrollToBottom() },
   updated() { this.scrollToBottom() },
@@ -23,7 +24,25 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 // Configure hooks
 let Hooks = {
   CAVisualization,
-  AutoScroll
+  AutoScroll,
+  EventFlowScroll: {
+    mounted() {
+      this.userLocked = false
+      this.handleScroll = () => {
+        // If user scrolls up (not at bottom) lock autoscroll
+        const threshold = 10
+        const atBottom = this.el.scrollHeight - this.el.scrollTop - this.el.clientHeight < threshold
+        this.userLocked = !atBottom
+      }
+      this.el.addEventListener('scroll', this.handleScroll)
+      this.scrollToBottom()
+    },
+    updated() {
+      if(!this.userLocked) this.scrollToBottom()
+    },
+    destroyed() { this.el.removeEventListener('scroll', this.handleScroll) },
+    scrollToBottom() { try { this.el.scrollTop = this.el.scrollHeight } catch(_){} }
+  }
 }
 
 // LiveSocket with hooks

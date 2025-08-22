@@ -41,8 +41,8 @@ defmodule Thunderline.Application do
         Thunderline.Repo,
         Thunderline.MigrationRunner,
         {Oban, oban_config()},
-        Thunderline.ObanHealth,
-        Thunderline.ObanDiagnostics,
+  Thunderchief.ObanHealth,
+  Thunderchief.ObanDiagnostics,
         {AshAuthentication.Supervisor, [otp_app: :thunderline]}
       ]
     end
@@ -95,6 +95,10 @@ defmodule Thunderline.Application do
   {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
   # ⚡🧠 AUTOMATA - Shared knowledge space (canonical under Thunderbolt)
   Thunderline.Thunderbolt.Automata.Blackboard,
+  # Dashboard Event Buffer (ETS ring for streaming events)
+  {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
+  # Internal file observer (Thunderwatch) – optional, privacy-preserving alternative to Watchman
+  Thunderline.Thunderwatch.Supervisor,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)

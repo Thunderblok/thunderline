@@ -12,8 +12,11 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
   """
   use Phoenix.Component
 
-  attr :events, :list, required: true
+  # Accept either a plain list of events (legacy) or use LiveView stream :dashboard_events
+  attr :events, :list, default: []
   attr :max, :integer, default: 50
+  # Allow parent to pass LiveView streams explicitly so we can render stream updates
+  attr :streams, :map, default: %{}
 
   def event_flow_panel(assigns) do
     ~H"""
@@ -24,12 +27,46 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
         <span class="text-[10px] text-gray-500">last {min(length(@events), @max)} events</span>
       </div>
       <div class="flex-1 overflow-hidden">
-        <div id="event-flow" phx-update="prepend" class="space-y-1.5 h-full overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-cyan-600/40 scrollbar-track-transparent">
-          <%= for event <- Enum.take(@events, @max) do %>
-            <div class={[
-                  "group relative rounded-md border px-2 py-1.5 backdrop-blur transition-colors",
-                  domain_card_class(event.domain)
-                ]}>
+        <div id="event-flow" phx-hook="EventFlowScroll" phx-update="stream" class="space-y-1.5 h-full overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-cyan-600/40 scrollbar-track-transparent">
+          <%= if Map.has_key?(assigns, :streams) and Map.has_key?(assigns.streams, :dashboard_events) do %>
+            <%= for {dom_id, event} <- @streams.dashboard_events do %>
+              <div id={dom_id} class={[
+                    "group relative rounded-md border px-2 py-1.5 backdrop-blur transition-colors",
+                    domain_card_class(event.domain)
+                  ]}>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-1.5">
+                    <span class={[
+                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                        domain_pill_class(event.domain)
+                      ]}>
+                      {pretty_domain(event.domain)}
+                    </span>
+                    <span class="text-[11px] text-gray-400/70 font-mono">
+                      {format_timestamp(event.timestamp)}
+                    </span>
+                  </div>
+                  <div class={[
+                      "w-2 h-2 rounded-full shadow-inner",
+                      status_indicator_class(event.status)
+                    ]}></div>
+                </div>
+                <div class="mt-1.5 text-[11px] leading-tight text-gray-200/90 group-hover:text-white truncate">
+                  {event.message}
+                </div>
+                <%= if event[:source] do %>
+                  <div class="mt-1 text-[10px] text-gray-500/70 font-mono truncate">
+                    {event.source}
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          <% else %>
+            <%= for event <- Enum.take(@events, @max) do %>
+              <div class={[
+                    "group relative rounded-md border px-2 py-1.5 backdrop-blur transition-colors",
+                    domain_card_class(event.domain)
+                  ]}>
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-1.5">
                   <span class={[
@@ -56,6 +93,7 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
                 </div>
               <% end %>
             </div>
+            <% end %>
           <% end %>
         </div>
       </div>

@@ -113,6 +113,9 @@ defmodule Thunderline.MixProject do
       {:bumblebee, "~> 0.6"},
       {:polaris, "~> 0.1"},
 
+  # File system watching (used by internal Thunderwatch service). Only in dev & test.
+  {:file_system, "~> 1.0", only: [:dev, :test]},
+
       # Code Quality & Development Tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:git_ops, "~> 2.6.1", only: [:dev]}

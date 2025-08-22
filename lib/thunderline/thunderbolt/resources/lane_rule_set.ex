@@ -332,7 +332,7 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
 
   defp deploy_to_thundercells(_changeset, ruleset) do
     # Broadcast ruleset to all active ThunderCells
-    Thunderline.EventBus.emit_realtime(:ruleset_deployed, %{
+  Thunderline.EventBus.emit_realtime(:ruleset_deployed, %{
       ruleset_id: ruleset.id,
       version: ruleset.version,
       ruleset: serialize_for_deployment(ruleset)
@@ -355,7 +355,7 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
       alpha_zy: ruleset.alpha_zy
     }
 
-    Thunderline.EventBus.emit_realtime(:alpha_gains_updated, %{
+  Thunderline.EventBus.emit_realtime(:alpha_gains_updated, %{
       ruleset_id: ruleset.id,
       version: ruleset.version,
       alpha_deltas: alpha_deltas

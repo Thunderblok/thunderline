@@ -1,4 +1,4 @@
-defmodule Thunderline.ObanHealth do
+defmodule Thunderchief.ObanHealth do
   @moduledoc """
   Lightweight monitor that periodically checks whether the Oban supervisor
   is alive and publishes a status snapshot to PubSub ("oban:health").

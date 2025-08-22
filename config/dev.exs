@@ -24,9 +24,10 @@ config :thunderline, Thunderline.Repo,
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
 config :thunderline, ThunderlineWeb.Endpoint,
-  # Binding to loopback ipv4 address prevents access from other machines.
-  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: 4000],
+  # Bind IP is configurable so you can reach the dev server from outside a container/VM:
+  #   BIND_ALL=1 mix phx.server  -> binds 0.0.0.0
+  # Otherwise defaults to loopback only (127.0.0.1) for safety.
+  http: [ip: (if System.get_env("BIND_ALL") in ["1", "true", "TRUE"], do: {0, 0, 0, 0}, else: {127, 0, 0, 1}), port: 4000],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
@@ -88,3 +89,11 @@ config :phoenix_live_view, :debug_heex_annotations, true
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Thunderwatch (internal file watcher) configuration
+config :thunderline, :thunderwatch,
+  enabled: true,
+  roots: ["lib"],
+  ignore: [~r{/\.git/}, ~r{/deps/}, ~r{/priv/static/}],
+  hash?: false,
+  max_events: 2_000
