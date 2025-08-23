@@ -26,6 +26,13 @@ if System.get_env("SKIP_ASH_SETUP") in ["1", "true"] do
   config :thunderline, :ecto_repos, []
 end
 
+# Optional: route Logger console backend to stderr when LOG_STDERR=1 for diagnosing
+# piping/STDOUT issues (safe no-op in normal operation).
+if System.get_env("LOG_STDERR") == "1" do
+  config :logger, :console, device: :standard_error
+end
+config :logger, level: :debug, backends: [:console]
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

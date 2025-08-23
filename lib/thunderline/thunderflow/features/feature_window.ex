@@ -3,6 +3,9 @@ defmodule Thunderline.Features.FeatureWindow do
   Unified feature window across market & EDGAR sources.
   Partial windows (status :open) may lack labels; fill action finalizes to :filled.
   Superseded windows retained for provenance.
+
+  Domain Placement: Thunderflow (feature assembly stage). Modeling/rescoring & expert
+  orchestration occurs in Thunderbolt (MoE/DecisionTrace downstream).
   """
   use Ash.Resource,
     domain: Thunderline.Thunderflow.Domain,
@@ -68,6 +71,7 @@ defmodule Thunderline.Features.FeatureWindow do
     # Only same-tenant actor may mutate or read
     policy action([:ingest_window, :fill_labels, :supersede, :read]) do
       authorize_if expr(tenant_id == actor(:tenant_id))
+      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
     end
   end
 

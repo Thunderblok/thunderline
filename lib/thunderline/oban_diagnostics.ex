@@ -123,9 +123,9 @@ defmodule Thunderchief.ObanDiagnostics do
   defp attempt_demo_job_insert do
     # Insert a no-op demo job to confirm writes work; uses DemoJob worker
     args = %{"probe" => true, "at" => DateTime.utc_now()}
-    case Code.ensure_loaded?(Thunderline.Workers.DemoJob) do
+    case Code.ensure_loaded?(Thunderchief.Jobs.DemoJob) do
       true ->
-        job = Thunderline.Workers.DemoJob.new(args)
+        job = Thunderchief.Jobs.DemoJob.new(args)
         case Oban.insert(job) do
           {:ok, _job} -> Logger.info("[ObanDiagnostics] Inserted demo job (Oban not yet supervising – will run once supervisor alive)")
           {:error, changeset} -> Logger.error("[ObanDiagnostics] Failed to insert demo job: #{inspect(changeset.errors)}")

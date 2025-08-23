@@ -1,5 +1,10 @@
 defmodule Thunderline.Filings.EDGARDoc do
-  @moduledoc "Raw EDGAR filing (immutable)."
+  @moduledoc """
+  Raw EDGAR filing (immutable).
+
+  Domain Placement: Thunderflow (multi-source event & document ingestion) rather than Gate.
+  Downstream feature windows & decision traces rely on this ingestion boundary.
+  """
   use Ash.Resource,
     domain: Thunderline.Thunderflow.Domain,
     data_layer: AshPostgres.DataLayer,
@@ -40,6 +45,7 @@ defmodule Thunderline.Filings.EDGARDoc do
   policies do
     policy action([:ingest, :read]) do
       authorize_if expr(tenant_id == actor(:tenant_id))
+      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
     end
   end
 

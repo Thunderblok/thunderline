@@ -1,5 +1,10 @@
 defmodule Thunderline.Lineage.Edge do
-  @moduledoc "Directed provenance edge between artifacts (raw→feature→decision→label)."
+  @moduledoc """
+  Directed provenance edge between artifacts (raw→feature→decision→label).
+
+  Domain Placement: Thunderflow (provenance & dataflow graph) providing cross-stage
+  traceability while avoiding orchestration coupling in Thunderbolt.
+  """
   use Ash.Resource,
     domain: Thunderline.Thunderflow.Domain,
     data_layer: AshPostgres.DataLayer,
@@ -37,6 +42,7 @@ defmodule Thunderline.Lineage.Edge do
   policies do
     policy action([:connect, :read]) do
       authorize_if expr(tenant_id == actor(:tenant_id))
+      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
     end
   end
 

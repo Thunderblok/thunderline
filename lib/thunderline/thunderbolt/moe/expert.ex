@@ -1,5 +1,10 @@
 defmodule Thunderline.MoE.Expert do
-  @moduledoc "Model expert metadata for MoE routing & lifecycle."
+  @moduledoc """
+  Model expert metadata for MoE routing & lifecycle.
+
+  Domain Placement: Thunderbolt (compute/orchestration). Experts are selectable compute
+  units used by DecisionTrace routing logic.
+  """
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
@@ -42,6 +47,7 @@ defmodule Thunderline.MoE.Expert do
   policies do
     policy action([:register, :update_metrics, :read]) do
       authorize_if expr(tenant_id == actor(:tenant_id))
+      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
     end
   end
 

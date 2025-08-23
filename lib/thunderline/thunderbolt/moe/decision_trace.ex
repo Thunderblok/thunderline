@@ -1,5 +1,10 @@
 defmodule Thunderline.MoE.DecisionTrace do
-  @moduledoc "Captures routing & action provenance for a single feature window decision."
+  @moduledoc """
+  Captures routing & action provenance for a single feature window decision.
+
+  Domain Placement: Thunderbolt (orchestration, routing, optimization) – this is *after*
+  feature construction (Thunderflow) and before external action execution.
+  """
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
@@ -43,6 +48,7 @@ defmodule Thunderline.MoE.DecisionTrace do
   policies do
     policy action([:record, :read]) do
       authorize_if expr(tenant_id == actor(:tenant_id))
+      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
     end
   end
 

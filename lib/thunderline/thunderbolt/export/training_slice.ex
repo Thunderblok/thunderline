@@ -1,7 +1,12 @@
 defmodule Thunderline.Export.TrainingSlice do
-  @moduledoc "NAS task export job (slice of feature windows + labels)."
+  @moduledoc """
+  NAS task export job (slice of feature windows + labels).
+
+  Domain Placement: Thunderbolt (ML orchestration & dataset materialization). Originally
+  registered under Thundergate, moved for alignment with Playbook (NAS & search pipeline).
+  """
   use Ash.Resource,
-    domain: Thunderline.Thundergate.Domain,
+    domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
@@ -46,6 +51,7 @@ defmodule Thunderline.Export.TrainingSlice do
   policies do
     policy action([:enqueue, :mark_completed, :mark_failed, :read]) do
       authorize_if expr(tenant_id == actor(:tenant_id))
+      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance, :export])
     end
   end
 

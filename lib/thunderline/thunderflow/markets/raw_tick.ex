@@ -1,5 +1,10 @@
 defmodule Thunderline.Markets.RawTick do
-  @moduledoc "Raw normalized market tick (immutable)."
+  @moduledoc """
+  Raw normalized market tick (immutable).
+
+  Domain Placement: Thunderflow (event ingestion & time-series stream layer) per Master Playbook
+  boundary: ingestion + feature preparation lives in Flow, higher-order routing in Thunderbolt.
+  """
   use Ash.Resource,
     domain: Thunderline.Thunderflow.Domain,
     data_layer: AshPostgres.DataLayer,
@@ -36,6 +41,7 @@ defmodule Thunderline.Markets.RawTick do
     # All access requires an actor with matching tenant
     policy action([:ingest, :read]) do
       authorize_if expr(tenant_id == actor(:tenant_id))
+      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
     end
   end
 

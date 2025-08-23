@@ -64,5 +64,7 @@ defmodule Thunderline.Thunderbolt.Domain do
   # Phase 0 MoE + Decision trace resources
   resource Thunderline.MoE.Expert
   resource Thunderline.MoE.DecisionTrace
+  # NAS export job & dataset slicing belongs with orchestration/ML side
+  resource Thunderline.Export.TrainingSlice
   end
 end
