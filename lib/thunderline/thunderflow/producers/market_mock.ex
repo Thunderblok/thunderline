@@ -2,6 +2,7 @@ defmodule Thunderline.Thunderflow.Producers.MarketMock do
   @moduledoc "Mock producer emitting synthetic MarketTick events for Phase 0 testing."
   use GenStage
   require Logger
+  alias Broadway.Message
 
   def start_link(opts), do: GenStage.start_link(__MODULE__, opts, name: __MODULE__)
 
@@ -22,7 +23,8 @@ defmodule Thunderline.Thunderflow.Producers.MarketMock do
     state = %{state | seq: state.seq + 1}
     events =
       if demand > 0 do
-        [%{symbol: state.symbol, ts: System.os_time(:microsecond), vendor_seq: state.seq, bid_px: 100.0, ask_px: 100.1}]
+        raw = %{symbol: state.symbol, ts: System.os_time(:microsecond), vendor_seq: state.seq, bid_px: 100.0, ask_px: 100.1}
+        [Message.new(raw)]
       else
         []
       end

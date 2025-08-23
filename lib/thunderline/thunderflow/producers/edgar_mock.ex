@@ -2,6 +2,7 @@ defmodule Thunderline.Thunderflow.Producers.EDGARMock do
   @moduledoc "Mock producer emitting synthetic EDGAR filings for Phase 0 testing."
   use GenStage
   require Logger
+  alias Broadway.Message
 
   def start_link(opts), do: GenStage.start_link(__MODULE__, opts, name: __MODULE__)
 
@@ -22,7 +23,8 @@ defmodule Thunderline.Thunderflow.Producers.EDGARMock do
     filing_time = DateTime.utc_now()
     events =
       if demand > 0 do
-        [%{cik: state.cik, form: "10-Q", filing_time: filing_time, sections: %{"MDA" => "Sample text"}}]
+        raw = %{cik: state.cik, form: "10-Q", filing_time: filing_time, sections: %{"MDA" => "Sample text"}}
+        [Message.new(raw)]
       else
         []
       end

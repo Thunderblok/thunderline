@@ -47,7 +47,11 @@ defmodule Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor do
       })
     end)
 
-    Ash.update!(run, %{status: :completed, completed_at: DateTime.utc_now()}, action: :update_status)
+  Ash.update!(run, %{status: :completed, completed_at: DateTime.utc_now()}, action: :update_status)
+  # Enqueue attractor summary computation
+  %{run_id: run.id, m: run.attractor_m, tau: run.attractor_tau, min_points: run.attractor_min_points}
+  |> Thunderline.Thunderflow.Probing.Workers.ProbeAttractorSummaryWorker.new()
+  |> Oban.insert()
   rescue
     error ->
       Logger.error("[ProbeRunProcessor] failure run=#{run.id} error=#{Exception.message(error)}")

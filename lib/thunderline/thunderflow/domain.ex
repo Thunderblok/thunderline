@@ -38,6 +38,7 @@ defmodule Thunderline.Thunderflow.Domain do
   # Probe & drift resources (integrated from Raincatcher)
   resource Thunderline.Thunderflow.Resources.ProbeRun
   resource Thunderline.Thunderflow.Resources.ProbeLap
+  resource Thunderline.Thunderflow.Resources.ProbeAttractorSummary
   # Phase 0 Market/EDGAR + Feature/Lineage resources
   resource Thunderline.Markets.RawTick
   resource Thunderline.Filings.EDGARDoc

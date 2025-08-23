@@ -24,7 +24,19 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
     defaults [:read]
 
     create :create do
-      accept [:provider, :model, :prompt_path, :laps, :samples, :embedding_dim, :embedding_ngram, :condition]
+      accept [
+        :provider,
+        :model,
+        :prompt_path,
+        :laps,
+        :samples,
+        :embedding_dim,
+        :embedding_ngram,
+        :condition,
+        :attractor_m,
+        :attractor_tau,
+        :attractor_min_points
+      ]
       change set_attribute(:status, :pending)
       change after_action(fn changeset, result, _ctx ->
         # Enqueue processor job
@@ -88,6 +100,22 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
       allow_nil? true
     end
 
+    # Optional attractor override parameters for summary worker.
+    attribute :attractor_m, :integer do
+      allow_nil? true
+      constraints min: 1, max: 16
+    end
+
+    attribute :attractor_tau, :integer do
+      allow_nil? true
+      constraints min: 1, max: 128
+    end
+
+    attribute :attractor_min_points, :integer do
+      allow_nil? true
+      constraints min: 5, max: 100_000
+    end
+
     attribute :status, :atom do
       allow_nil? false
       constraints one_of: [:pending, :running, :completed, :error]
@@ -110,8 +138,12 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
   end
 
   relationships do
-  # Relationship renamed to avoid collision with numeric :laps attribute
-  has_many :lap_samples, Thunderline.Thunderflow.Resources.ProbeLap do
+    # Relationship renamed to avoid collision with numeric :laps attribute
+    has_many :lap_samples, Thunderline.Thunderflow.Resources.ProbeLap do
+      destination_attribute :run_id
+    end
+
+    has_one :attractor_summary, Thunderline.Thunderflow.Resources.ProbeAttractorSummary do
       destination_attribute :run_id
     end
   end
