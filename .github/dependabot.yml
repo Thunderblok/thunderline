@@ -1,0 +1,44 @@
+version: 2
+updates:
+  - package-ecosystem: "mix"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    allow:
+      - dependency-type: "all"
+    groups:
+      ash:
+        patterns:
+          - "ash*"
+      phoenix:
+        patterns:
+          - "phoenix*"
+      oban:
+        patterns:
+          - "oban"
+      ml-stack:
+        patterns:
+          - "nx"
+          - "axon"
+          - "exla"
+          - "torchx"
+          - "bumblebee"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "ci"
+      - "dependencies"

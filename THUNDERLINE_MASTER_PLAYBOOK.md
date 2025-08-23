@@ -11,6 +11,9 @@
 | LiveView `on_mount ThunderlineWeb.Live.Auth` | Web Layer | Centralized current_user + Ash actor assignment |
 | Discord-style Community/Channel navigation scaffold | UX (ThunderLink) | Establishes chat surface & future presence slots |
 | AI Panel stub inserted into Channel layout | Future AI (ThunderCrown/Link) | Anchor point for AshAI action execution |
+| Probe analytics (ProbeRun/Lap/AttractorSummary + worker) | ThunderFlow | Foundations for stability/chaos metrics & future model eval dashboards |
+| Attractor recompute + canonical Lyapunov logic | ThunderFlow | Parameter tuning & reliability scoring pipeline |
+| Dependabot + CI (compile/test/credo/dialyzer/sobelow) | Platform | Automated upkeep & enforced quality gates |
 
 Planned Next: Presence & channel membership policies, AshAI action wiring, email automation DIP, governance instrumentation for auth flows.
 

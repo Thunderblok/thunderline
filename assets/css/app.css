@@ -2,25 +2,46 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss";
-/* Tailwind v4 requires quoted @source paths; removing the 'none' directive */
-/* TODO: Reintroduce Tailwind v4 @source directives via tailwind.config.js content sources.
-@source "../css";
-@source "../js";
-@source "../../lib/thunderline_web";
-*/
+
+/* Fallback: build chain doesn't yet support Tailwind v4 @plugin at-rules. Using vendor daisyui.js require via (removed) tailwind.config.js no longer works, so we keep CSS variables to approximate theme. */
+:root[data-theme='thunderline'] {
+  --color-base-100: #0f1115;
+  --color-base-200: #161a21;
+  --color-base-300: #1f2430;
+  --color-base-content: #d1d5db;
+  --color-primary: #eab308;
+  --color-primary-content: #1a1400;
+  --color-secondary: #6366f1;
+  --color-secondary-content: #0d1024;
+  --color-accent: #ec4899;
+  --color-accent-content: #16060f;
+  --color-neutral: #1f2937;
+  --color-neutral-content: #e5e7eb;
+  --color-info: #0ea5e9;
+  --color-info-content: #031d26;
+  --color-success: #10b981;
+  --color-success-content: #04130d;
+  --color-warning: #f59e0b;
+  --color-warning-content: #1f1400;
+  --color-error: #f87171;
+  --color-error-content: #2e0505;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Content sources configured via Phoenix Tailwind build args; tailwind.config.js removed */
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 /* @plugin "../vendor/heroicons"; */
 
-/* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
-   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
-   Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
-/* DaisyUI plugin disabled for now. Re-enable by uncommenting @plugin line and removing this block.
-@plugin "../vendor/daisyui" { 
-  themes: false;
-}
-*/
+/* daisyUI plugin: still loaded via vendor file inclusion path from removed tailwind.config.js; consider reintroducing config if needed. */
 
 /* daisyUI theme plugin. You can update this file by fetching the latest version with:
   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
@@ -104,7 +125,10 @@
 /* @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *)); */
 
 /* Make LiveView wrapper divs transparent for layout */
-[data-phx-session], [data-phx-teleported-src] { display: contents }
+[data-phx-session],
+[data-phx-teleported-src] {
+  display: contents
+}
 
 /* Neural Button Styles */
 .neural-btn {
@@ -126,7 +150,7 @@
   border: 1px solid rgba(139, 92, 246, 0.3);
   backdrop-filter: blur(20px);
   border-radius: 16px;
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 0 40px rgba(139, 92, 246, 0.15);
@@ -141,10 +165,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, 
-    rgba(139, 92, 246, 0.05) 0%,
-    rgba(79, 172, 254, 0.05) 50%,
-    rgba(236, 72, 153, 0.05) 100%);
+  background: linear-gradient(45deg,
+      rgba(139, 92, 246, 0.05) 0%,
+      rgba(79, 172, 254, 0.05) 50%,
+      rgba(236, 72, 153, 0.05) 100%);
   pointer-events: none;
 }
 
@@ -169,7 +193,7 @@
 .btn-glass:hover {
   background: rgba(139, 92, 246, 0.2);
   border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 
+  box-shadow:
     0 0 25px rgba(139, 92, 246, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transform: translateY(-2px);
@@ -178,7 +202,7 @@
 .btn-glass.active {
   background: rgba(139, 92, 246, 0.3);
   border-color: rgba(139, 92, 246, 0.8);
-  box-shadow: 
+  box-shadow:
     0 0 35px rgba(139, 92, 246, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
@@ -206,7 +230,7 @@
 
 /* Geometric Patterns */
 .geometric-bg {
-  background-image: 
+  background-image:
     linear-gradient(45deg, rgba(139, 92, 246, 0.1) 25%, transparent 25%),
     linear-gradient(-45deg, rgba(139, 92, 246, 0.1) 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, rgba(79, 172, 254, 0.1) 75%),
@@ -229,10 +253,10 @@
   position: absolute;
   width: 200%;
   height: 2px;
-  background: linear-gradient(90deg, 
-    transparent 0%,
-    rgba(139, 92, 246, 0.8) 50%,
-    transparent 100%);
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(139, 92, 246, 0.8) 50%,
+      transparent 100%);
   animation: slide 4s linear infinite;
 }
 
@@ -247,8 +271,13 @@
 }
 
 @keyframes slide {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Status Indicators */
@@ -271,18 +300,39 @@
 }
 
 @keyframes pulse-green {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 @keyframes pulse-cyan {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 @keyframes pulse-orange {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* Progress Bars with Glow */
@@ -295,10 +345,10 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, 
-    rgba(139, 92, 246, 0.8) 0%,
-    rgba(79, 172, 254, 0.8) 50%,
-    rgba(236, 72, 153, 0.8) 100%);
+  background: linear-gradient(90deg,
+      rgba(139, 92, 246, 0.8) 0%,
+      rgba(79, 172, 254, 0.8) 50%,
+      rgba(236, 72, 153, 0.8) 100%);
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
   transition: width 0.3s ease;
 }
@@ -315,7 +365,7 @@
 
 /* Cyberpunk Grid Background */
 .cyber-grid {
-  background-image: 
+  background-image:
     linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -326,12 +376,58 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, 
-    rgba(139, 92, 246, 0.05) 0%,
-    transparent 70%);
+  background: radial-gradient(circle at 50% 50%,
+      rgba(139, 92, 246, 0.05) 0%,
+      transparent 70%);
 }
 
-/* This file is for your main application CSS */
+/* This file is for your main application CSS (daisyUI v5 integrated). */
+
+/* OKO Dashboard chat helpers (ported from React prototype note) */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.chat-gradient {
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+}
+
+.message-bubble {
+  animation: messageSlide 0.4s ease-out;
+}
+
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(37, 211, 102, 0.5);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(37, 211, 102, 0.7);
+}
+
 
 /* Duplicate glassmorphism styles - commented out to let cyberpunk theme show through
 .nav-glass {
@@ -369,9 +465,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: .5;
   }
@@ -379,7 +478,7 @@
 
 /* Grid pattern overlay */
 .grid-pattern {
-  background-image: 
+  background-image:
     linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;

@@ -66,7 +66,12 @@ defmodule Thunderline.Application do
       []
     end
 
-    children = phoenix_foundation ++ [
+  # IMPORTANT: Start DB + migrations BEFORE any pipelines or processes that might query the DB.
+  # Previously Repo/migrations were appended at the end, causing early connection attempts while
+  # Postgres might still be coming up (especially in containerized/dev environments).
+  core_db = db_children
+
+  children = phoenix_foundation ++ core_db ++ [
 
       # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
   Thunderline.ThunderMemory,
@@ -113,9 +118,9 @@ defmodule Thunderline.Application do
       # (Authentication and authorization services will be added here)
 
       # Phoenix Web Server (conditionally started after core observability)
-    ] ++ compute_children ++ endpoint_child ++ db_children
+  ] ++ compute_children ++ endpoint_child
 
-    opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
+  opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 
   # Attach observability telemetry handlers
   Thunderline.Thunderflow.Observability.FanoutAggregator.attach()

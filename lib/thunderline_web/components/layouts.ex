@@ -41,7 +41,7 @@ defmodule ThunderlineWeb.Layouts do
               setTheme(localStorage.getItem("phx:theme") || "system");
             }
             window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-            
+
             window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
           })();
         </script>
@@ -131,7 +131,7 @@ defmodule ThunderlineWeb.Layouts do
         <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
         </script>
       </head>
-      <body class="h-full bg-black">
+        <body class="h-full bg-black" data-theme="thunderline">
         {@inner_content}
       </body>
     </html>

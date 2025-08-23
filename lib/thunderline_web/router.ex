@@ -40,8 +40,11 @@ defmodule ThunderlineWeb.Router do
   scope "/", ThunderlineWeb do
     pipe_through :dashboard
 
-    # Main Thunderblock Dashboard - Real-time LiveView
-    live "/", DashboardLive, :home
+  # Thunderline Nexus dashboard at root
+  live "/", ThunderlineDashboardLive, :index
+    # Legacy dashboard preserved at /dashboard (previous root)
+    live "/dashboard", DashboardLive, :home
+  # (Removed legacy /oko route after rebrand)
   end
 
   live_session :default, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do

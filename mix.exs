@@ -14,7 +14,8 @@ defmodule Thunderline.MixProject do
       listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
       deps: deps(),
-      consolidate_protocols: Mix.env() != :dev
+      consolidate_protocols: Mix.env() != :dev,
+      dialyzer: dialyzer()
     ]
   end
 
@@ -118,6 +119,7 @@ defmodule Thunderline.MixProject do
 
       # Code Quality & Development Tools
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:git_ops, "~> 2.6.1", only: [:dev]}
     ]
   end
@@ -127,6 +129,8 @@ defmodule Thunderline.MixProject do
       setup: ["deps.get", "ash.setup", "assets.setup", "assets.build"],
       # Allow skipping ash.setup in tests to run fast, DB-less component/unit tests
       test: [&maybe_ash_setup/1, "test"],
+      # One-shot resource -> migration -> migrate convenience
+      "ash.migrate": ["ash_postgres.generate_migrations", "ecto.migrate"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind default", "esbuild default"],
       "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
@@ -141,5 +145,15 @@ defmodule Thunderline.MixProject do
     else
       Mix.Task.run("ash.setup", ["--quiet"])
     end
+  end
+
+  # Dialyzer configuration centralizes PLT location so CI cache & local dev share artifacts
+  defp dialyzer do
+    [
+      plt_core_path: "priv/plts",
+      plt_file: {:no_warn, "priv/plts/project.plt"},
+      ignore_warnings: "dialyzer.ignore-warnings",
+      list_unused_filters: true
+    ]
   end
 end

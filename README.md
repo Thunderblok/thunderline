@@ -79,6 +79,10 @@ The application will be available at [localhost:4000](http://localhost:4000).
 
 Thunderline includes a minimal `docker-compose.yml` providing a Postgres 16 service and a placeholder app service definition.
 
+### Developer Environment Health Check
+
+Run `bash scripts/dev_health.sh` to quickly diagnose common WSL / Linux dev issues (Docker daemon, Postgres availability, inotify limits, port conflicts, Elixir/Erlang versions, ElixirLS cache size). This helps when encountering ElixirLS `EPIPE` crashes or intermittent `connection refused` errors.
+
 Start only Postgres (run Elixir locally):
 ```bash
 docker compose up -d postgres
@@ -237,6 +241,28 @@ Thunderline embodies a commitment to architectural excellence through:
 ## Contributing
 
 Thunderline development follows rigorous engineering standards with comprehensive testing, documentation-driven development, and systematic code review processes. The system maintains living documentation through the OKO Handbook, ensuring continuous knowledge preservation and team alignment.
+
+### Automated Maintenance & Release Workflow
+
+To keep the platform secure and current while minimizing manual toil, Thunderline uses:
+
+* **Dependabot** (`.github/dependabot.yml`) – daily Elixir/Mix dependency checks grouped by stack (Ash, Phoenix, Oban, ML toolchain) and weekly GitHub Actions updates.
+* **Grouped Updates** – related libraries (e.g. Ash extensions) are upgraded together to reduce transitive breakage and ease review.
+* **CI Pipeline** (`.github/workflows/ci.yml`) – runs compile (warnings-as-errors), tests, Credo, Dialyzer, and Sobelow security scanning on every PR and push to `main`.
+* **Auto‑Merge (Optional)** – Dependabot PRs auto-squash when the full CI matrix is green (see `dependency-auto-merge` job). Disable by removing that job if manual review is preferred.
+* **Semantic Versioning & Changelog** – `git_ops` (dev-only) + `.gitops.json` manage `mix.exs` version bumps and CHANGELOG sections based on commit prefixes.
+* **Schema Drift Guard** – CI runs `ash_postgres.generate_migrations --check --dry-run`; PRs fail if resources and DB snapshots diverge. See `CONTRIBUTING.md`.
+
+Developer responsibilities:
+1. Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`, etc.).
+2. Ensure new Ash resources have migrations & tests before merging.
+3. Address Dialyzer warnings intentionally (no blanket ignores).
+4. Keep security scans passing; never suppress Sobelow findings without justification.
+
+Release flow (simplified):
+1. Land changes on `main` with proper commit prefixes.
+2. Run `mix git_ops.release --yes` (dev env) to cut a tagged release (updates version + CHANGELOG + README if configured).
+3. Push the tag; deployment pipeline (future) consumes the tag for artifact builds.
 
 ## License
 

@@ -1,0 +1,7 @@
+{
+    "recommendations": [
+        "JakeBecker.elixir-ls",
+        "ms-azuretools.vscode-docker",
+        "streetsidesoftware.code-spell-checker"
+    ]
+}

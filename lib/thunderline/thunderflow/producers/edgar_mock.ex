@@ -24,12 +24,18 @@ defmodule Thunderline.Thunderflow.Producers.EDGARMock do
     events =
       if demand > 0 do
         raw = %{cik: state.cik, form: "10-Q", filing_time: filing_time, sections: %{"MDA" => "Sample text"}}
-        [Message.new(raw)]
+        [build_message(raw)]
       else
         []
       end
     if demand > 0, do: Logger.debug("[EDGARMock] emitted filing #{filing_time}")
     Process.send_after(self(), :filing, 5_000)
     {:noreply, events, %{state | demand: max(demand - length(events), 0)}}
+  end
+
+  # Broadway 1.2.x does not expose Message.new/1; construct struct manually.
+  defp build_message(data) do
+    # Correct noop acknowledger (ack_ref must be nil to match ack/3 implementation).
+    %Message{data: data, metadata: %{}, acknowledger: Broadway.NoopAcknowledger.init()}
   end
 end

@@ -2,13 +2,14 @@ import Config
 config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure the AshPostgres repo
-config :thunderline, Thunderline.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "127.0.0.1",
-  database: "thunderblock",
-  # Use standard local Postgres port (previously 54840, which was not listening)
-  port: 5432,
+db_url = System.get_env("DATABASE_URL")
+
+dev_repo_defaults = [
+  username: System.get_env("PGUSER", "postgres"),
+  password: System.get_env("PGPASSWORD", "postgres"),
+  hostname: System.get_env("PGHOST", "127.0.0.1"),
+  database: System.get_env("PGDATABASE", "thunderblock"),
+  port: System.get_env("PGPORT", "5432") |> String.to_integer(),
   pool_size: 10,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
@@ -16,6 +17,16 @@ config :thunderline, Thunderline.Repo,
   connect_timeout: 60_000,
   pool_timeout: 60_000,
   ownership_timeout: 60_000
+]
+
+# Allow DATABASE_URL to fully override discrete settings if provided.
+repo_config = if db_url do
+  Keyword.put(dev_repo_defaults, :url, db_url)
+else
+  dev_repo_defaults
+end
+
+config :thunderline, Thunderline.Repo, repo_config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -71,6 +82,10 @@ config :thunderline, ThunderlineWeb.Endpoint,
     ]
   ]
 
+# Market ingest mock logging throttle (adjust MARKET_INGEST_LOG_EVERY env to override)
+config :thunderline, :market_ingest,
+  log_every: 50
+
 # Enable dev routes for dashboard and mailbox
 config :thunderline, dev_routes: true, token_signing_secret: "vadctdmv/MrdcKdJvG1Bl3woZoYMGKXL"
 
@@ -97,3 +112,9 @@ config :thunderline, :thunderwatch,
   ignore: [~r{/\.git/}, ~r{/deps/}, ~r{/priv/static/}],
   hash?: false,
   max_events: 2_000
+
+# Market ingest (mock) logging controls
+config :thunderline, :market_ingest,
+  log_every: String.to_integer(System.get_env("MARKET_INGEST_LOG_EVERY", "50")),
+  log_payload?: System.get_env("MARKET_INGEST_LOG_PAYLOAD", "false") in ["1", "true", "TRUE"],
+  producer_log?: System.get_env("MARKET_INGEST_PRODUCER_LOG", "false") in ["1", "true", "TRUE"]

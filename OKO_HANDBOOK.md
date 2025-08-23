@@ -1,6 +1,6 @@
 # 🌩️ OKO HANDBOOK: The Thunderline Technical Bible
 
-> **LIVING DOCUMENT** - Last Updated: August 18, 2025  
+> **LIVING DOCUMENT** - Last Updated: August 23, 2025  
 > **Status**: � **ATLAS HANDOVER COMPLETE - PRODUCTION READY DOCUMENTATION**  
 > **Purpose**: Comprehensive guide to Thunderline's Personal Autonomous Construct (PAC) platform & distributed AI orchestration system
 
@@ -33,6 +33,10 @@
 - **Clean Repository**: Minimal root structure, integrated components, production-ready state
 - **Erlang Bridge Noise Reduction**: Legacy delegate warnings mitigated via compatibility wrappers
 - **Conversion Planning**: Detailed brief created for Erlang → Elixir migration
+- **Probe Analytics Pipeline**: Added `ProbeRun`, `ProbeLap`, `ProbeAttractorSummary` Ash resources + Oban worker computing attractor (corr dim & Lyapunov incl. Rosenstein) with telemetry emission.
+- **Recompute Action & Canonical Lyapunov**: Service & worker select canonical exponent with reliability heuristics (r² threshold) enabling future model stability dashboards.
+- **Automated Dependency Management**: Dependabot configuration (grouped stacks) + CI workflow (compile, test, Credo, Dialyzer, Sobelow) + optional auto-merge for green dependency PRs.
+- **git_ops Hardening**: Scoped semantic-release tooling to dev environment to prevent prod/test startup issues.
 
 ### **⚠️ TECHNICAL DEBT & WARNINGS**
 - **Erlang Dependencies**: Being eliminated through conversion to pure Elixir solution

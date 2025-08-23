@@ -25,7 +25,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeAttractorSummary do
     update :recompute do
       accept [:m, :tau]
       argument :min_points, :integer, allow_nil?: true
-      description "Recompute attractor summary (simple & Rosenstein) with optional new parameters. Creates new values in-place."
+  description "Recompute attractor summary (simple & Rosenstein) with optional new parameters. Updates canonical Lyapunov selection in-place."
       change fn changeset, _ ->
         # Custom change executed by service layer outside; placeholder to allow action invocation.
         {:ok, changeset}
@@ -72,6 +72,12 @@ defmodule Thunderline.Thunderflow.Resources.ProbeAttractorSummary do
     attribute :lyap, :float do
       allow_nil? false
       default 0.0
+    end
+
+    # Canonical chosen lyapunov exponent (simple vs Rosenstein). Updated by worker/service.
+    attribute :lyap_canonical, :float do
+      allow_nil? true
+      description "Preferred Lyapunov exponent (Rosenstein if r2 >= threshold, else simple)"
     end
 
     # Rosenstein estimator auxiliary outputs

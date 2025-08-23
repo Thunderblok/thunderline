@@ -9,8 +9,8 @@ defmodule Thunderline.Repo.Migrations.CreateProbeAttractorSummaries do
       add :delay_rows, :integer, null: false, default: 0
       add :m, :integer, null: false, default: 3
       add :tau, :integer, null: false, default: 1
-      add :corr_dim, :float, null: false, default: 0.0
-      add :lyap, :float, null: false, default: 0.0
+  add :corr_dim, :float, null: false, default: 0.0
+  add :lyap, :float, null: false, default: 0.0
   add :lyap_r2, :float
   add :lyap_window, :string
       add :reliable, :boolean, null: false, default: false

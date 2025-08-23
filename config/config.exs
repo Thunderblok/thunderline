@@ -156,14 +156,17 @@ config :mnesia,
   # Using ~c for charlist
   dir: ~c".mnesia/#{Mix.env()}/#{node()}"
 
-# Configure git_ops for semantic versioning and changelog automation
-config :git_ops,
-  mix_project: Mix.Project.get!(),
-  changelog_file: "CHANGELOG.md",
-  repository_url: "https://github.com/mo/thunderline",
-  manage_mix_version?: true,
-  manage_readme_version: "README.md",
-  version_tag_prefix: "v"
+# Configure git_ops for semantic versioning and changelog automation.
+# Loaded only in :dev to avoid loading git plumbing in test/prod releases.
+if config_env() == :dev do
+  config :git_ops,
+    mix_project: Mix.Project.get!(),
+    changelog_file: "CHANGELOG.md",
+    repository_url: "https://github.com/Thunderblok/Thunderline",
+    manage_mix_version?: true,
+    manage_readme_version: "README.md",
+    version_tag_prefix: "v"
+end
 
 # Configure Oban for background job processing with AshOban integration
 config :thunderline, Oban,

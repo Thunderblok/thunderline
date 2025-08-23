@@ -2,7 +2,7 @@
 
 > **SYSTEMS THEORY AUGMENT (2025)** – Domain ecology & governance layers integrated. See added sections: Interaction Matrix, Event Taxonomy, Anti-Corruption, Stewardship.
 
-> **UNIFIED ARCHITECTURE** - Last Updated: August 19 2025  
+> **UNIFIED ARCHITECTURE** - Last Updated: August 23 2025  
 > **Status**: 🔥 **7-DOMAIN ARCHITECTURE OPERATIONAL (Auth + Realtime Chat Baseline Added)**  
 > **Compilation**: ✅ **CLEAN BUILD SUCCESSFUL**  
 > **Purpose**: Complete catalog of consolidated domain architecture with all resources
@@ -19,6 +19,9 @@
 | Discord-style Community & Channel LiveViews | ThunderLink | Real-time navigation & messaging surface established |
 | AI Panel & Thread (stub) | ThunderLink / ThunderCrown (future) | Placeholder for AshAI tool execution pipeline |
 | Post-login redirect to first community/channel | ThunderLink | Immediate immersion, reduces friction after sign-in |
+| Probe analytics resources & worker added | ThunderFlow | Added `ProbeRun`, `ProbeLap`, `ProbeAttractorSummary` + Oban processing & telemetry |
+| Attractor recompute + canonical Lyapunov selection | ThunderFlow | Supports parameterized recomputation & stability metrics |
+| Dependabot + CI workflow introduced | Cross | Automated dependency/security drift management & quality gates |
 
 Planned Next: Replace AI stub with AshAI actions, authenticated presence, channel policy enforcement, email automation slice DIP.
 

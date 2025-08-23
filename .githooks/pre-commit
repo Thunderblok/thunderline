@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Pre-commit hook: ensure no schema drift & no historical migration edits.
+# Install with: git config core.hooksPath .githooks
+set -euo pipefail
+
+# 1. Migration history guard
+scripts/check_migration_history.sh
+
+# 2. Schema drift check (dry-run). If drift, block commit so dev adds migration.
+if ! mix ash_postgres.generate_migrations --check --dry-run >/dev/null 2>&1; then
+  echo "[pre-commit] Schema drift detected. Run: mix ash_postgres.generate_migrations" >&2
+  exit 1
+fi
+
+echo "[pre-commit] OK"
