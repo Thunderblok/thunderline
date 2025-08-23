@@ -37,12 +37,15 @@ defmodule Thunderline.Export.TrainingSlice do
     end
   end
 
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
   policies do
-    policy action([:enqueue, :mark_completed, :mark_failed]) do
-      authorize_if expr(not is_nil(actor(:id)))
-    end
-    policy action(:read) do
-      authorize_if expr(not is_nil(actor(:id)))
+    policy action([:enqueue, :mark_completed, :mark_failed, :read]) do
+      authorize_if expr(tenant_id == actor(:tenant_id))
     end
   end
 

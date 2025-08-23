@@ -58,12 +58,16 @@ defmodule Thunderline.Features.FeatureWindow do
     end
   end
 
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
   policies do
-    policy action([:ingest_window, :fill_labels, :supersede]) do
-      authorize_if expr(not is_nil(actor(:id)))
-    end
-    policy action(:read) do
-      authorize_if expr(not is_nil(actor(:id)))
+    # Only same-tenant actor may mutate or read
+    policy action([:ingest_window, :fill_labels, :supersede, :read]) do
+      authorize_if expr(tenant_id == actor(:tenant_id))
     end
   end
 

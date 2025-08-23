@@ -26,9 +26,16 @@ defmodule Thunderline.Markets.RawTick do
     end
   end
 
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
   policies do
+    # All access requires an actor with matching tenant
     policy action([:ingest, :read]) do
-      authorize_if expr(not is_nil(actor(:id)))
+      authorize_if expr(tenant_id == actor(:tenant_id))
     end
   end
 

@@ -12,6 +12,7 @@ defmodule Thunderline.Lineage.Edge do
 
   attributes do
     uuid_primary_key :id
+    attribute :tenant_id, :uuid, allow_nil?: false, description: "Owning tenant for both from/to artifacts"
     attribute :from_id, :uuid, allow_nil?: false
     attribute :to_id, :uuid, allow_nil?: false
     attribute :edge_type, :string, allow_nil?: false
@@ -27,9 +28,15 @@ defmodule Thunderline.Lineage.Edge do
     end
   end
 
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
   policies do
     policy action([:connect, :read]) do
-      authorize_if expr(not is_nil(actor(:id)))
+      authorize_if expr(tenant_id == actor(:tenant_id))
     end
   end
 

@@ -12,6 +12,7 @@ defmodule Thunderline.MoE.Expert do
 
   attributes do
     uuid_primary_key :id
+    attribute :tenant_id, :uuid, allow_nil?: false, description: "Owning tenant for isolation"
     attribute :name, :string, allow_nil?: false
     attribute :version, :string, allow_nil?: false
     attribute :status, :atom, allow_nil?: false, default: :active, constraints: [one_of: [:active, :shadow, :retired, :error]]
@@ -32,12 +33,15 @@ defmodule Thunderline.MoE.Expert do
     end
   end
 
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
   policies do
-    policy action([:register, :update_metrics]) do
-      authorize_if expr(not is_nil(actor(:id)))
-    end
-    policy action(:read) do
-      authorize_if expr(not is_nil(actor(:id)))
+    policy action([:register, :update_metrics, :read]) do
+      authorize_if expr(tenant_id == actor(:tenant_id))
     end
   end
 

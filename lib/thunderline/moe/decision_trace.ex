@@ -34,9 +34,15 @@ defmodule Thunderline.MoE.DecisionTrace do
     end
   end
 
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
   policies do
     policy action([:record, :read]) do
-      authorize_if expr(not is_nil(actor(:id)))
+      authorize_if expr(tenant_id == actor(:tenant_id))
     end
   end
 
