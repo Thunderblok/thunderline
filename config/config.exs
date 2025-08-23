@@ -84,7 +84,8 @@ config :thunderline,
   # Re-enabled to host AshAI-powered orchestration & MCP resources
   Thunderline.Thundercrown.Domain,
   # Auth/security domain now enabled for AshAuthentication integration
-  Thunderline.Thundergate.Domain
+  Thunderline.Thundergate.Domain,
+    Thunderline.Thundercom.Domain
 
     # OPTIONAL (disabled right now):
     # Thunderline.Thundergate.Domain,  # Auth / security / policies

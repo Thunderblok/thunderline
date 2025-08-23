@@ -99,6 +99,9 @@ defmodule Thunderline.Application do
   {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
   # Internal file observer (Thunderwatch) – optional, privacy-preserving alternative to Watchman
   Thunderline.Thunderwatch.Supervisor,
+  # Voice / WebRTC MVP infrastructure (dynamic Membrane pipelines per room)
+  {Registry, keys: :unique, name: Thunderline.Thundercom.Voice.Registry},
+  Thunderline.Thundercom.Voice.Supervisor,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)
