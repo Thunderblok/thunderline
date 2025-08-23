@@ -1,0 +1,47 @@
+defmodule Thunderline.MoE.DecisionTrace do
+  @moduledoc "Captures routing & action provenance for a single feature window decision."
+  use Ash.Resource,
+    domain: Thunderline.Thunderbolt.Domain,
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  postgres do
+    table "decision_traces"
+    repo Thunderline.Repo
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :tenant_id, :uuid, allow_nil?: false
+    attribute :feature_window_id, :uuid, allow_nil?: false
+    attribute :router_version, :string, allow_nil?: false
+    attribute :gate_scores, :map, allow_nil?: false, default: %{}
+    attribute :selected_experts, :map, allow_nil?: false, default: %{}
+    attribute :actions, :map, allow_nil?: false, default: %{}
+    attribute :blended_action, :map
+    attribute :pnl_snapshot, :map
+    attribute :risk_flags, :map, allow_nil?: false, default: %{}
+    attribute :behavior_embedding, :binary
+    attribute :hash, :binary, allow_nil?: false
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  actions do
+    defaults [:read]
+    create :record do
+      accept [:tenant_id, :feature_window_id, :router_version, :gate_scores, :selected_experts, :actions, :blended_action, :pnl_snapshot, :risk_flags, :behavior_embedding, :hash]
+    end
+  end
+
+  policies do
+    policy action([:record, :read]) do
+      authorize_if expr(not is_nil(actor(:id)))
+    end
+  end
+
+  code_interface do
+    define :record
+    define :read
+  end
+end

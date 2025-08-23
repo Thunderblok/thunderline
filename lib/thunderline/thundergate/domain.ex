@@ -51,6 +51,9 @@ defmodule Thunderline.Thundergate.Domain do
     resource Thunderline.Thundergate.Resources.ThunderbitMonitor
     resource Thunderline.Thundergate.Resources.ThunderboltMonitor
 
+  # Phase 0 NAS export job resource
+  resource Thunderline.Export.TrainingSlice
+
     # Commented out until implementation is available
     # resource Thundergate.Resources.WebhookEndpoint
     # resource Thundergate.Resources.SyncJob

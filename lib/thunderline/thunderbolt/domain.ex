@@ -61,5 +61,8 @@ defmodule Thunderline.Thunderbolt.Domain do
   # Cerebros (ML search & training)
   resource Thunderline.Thunderbolt.Resources.ModelRun
   resource Thunderline.Thunderbolt.Resources.ModelArtifact
+  # Phase 0 MoE + Decision trace resources
+  resource Thunderline.MoE.Expert
+  resource Thunderline.MoE.DecisionTrace
   end
 end

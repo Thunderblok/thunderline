@@ -80,6 +80,9 @@ defmodule Thunderline.Application do
       {Thunderline.Thunderflow.Pipelines.EventPipeline, []},
       {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []},
       {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []},
+  # Phase 0 market & EDGAR ingestion skeletons
+  {Thunderline.Thunderflow.Pipelines.MarketIngest, []},
+  {Thunderline.Thunderflow.Pipelines.EDGARIngest, []},
 
   # ⚡🔥 THUNDERBOLT - Compute Acceleration Services (conditionally started)
 
