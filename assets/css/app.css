@@ -383,6 +383,70 @@
 
 /* This file is for your main application CSS (daisyUI v5 integrated). */
 
+/* === Thunderline Dashboard Utilities (parity kit) === */
+@layer utilities {
+  .panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 1rem;
+    /* rounded-2xl */
+  }
+
+  .oko-header {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  .oko-body {
+    background-color: #0B0F14;
+    color: #fff;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  }
+
+  .dot-online {
+    background-color: #22c55e
+  }
+
+  .dot-away {
+    background-color: #f59e0b
+  }
+
+  .dot-busy {
+    background-color: #ef4444
+  }
+
+  .dot-offline {
+    background-color: #64748b
+  }
+}
+
+@layer base {
+  @keyframes dash {
+    to {
+      stroke-dashoffset: -1000;
+    }
+  }
+}
+
+@layer utilities {
+  .flow {
+    stroke-dasharray: 6 10;
+    animation: dash 8s linear infinite;
+  }
+
+  .flow.slow {
+    animation-duration: 12s;
+  }
+
+  .flow.fast {
+    animation-duration: 5s;
+  }
+}
+
 /* OKO Dashboard chat helpers (ported from React prototype note) */
 .glass-effect {
   background: rgba(255, 255, 255, 0.06);

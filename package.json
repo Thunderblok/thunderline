@@ -1,0 +1,15 @@
+{
+    "name": "thunderline",
+    "private": true,
+    "version": "0.0.1",
+    "scripts": {
+        "build:css": "tailwindcss -i ./assets/css/app.css -o ./priv/static/assets/css/app.css --minify",
+        "dev:css": "tailwindcss -i ./assets/css/app.css -o ./priv/static/assets/css/app.css --watch"
+    },
+    "devDependencies": {
+        "tailwindcss": "^3.4.10",
+        "autoprefixer": "^10.4.20",
+        "postcss": "^8.4.41",
+        "daisyui": "^4.12.10"
+    }
+}

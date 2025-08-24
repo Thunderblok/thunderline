@@ -124,7 +124,7 @@ defmodule ThunderlineWeb.Layouts do
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="csrf-token" content={get_csrf_token()} />
-        <.live_title default="Thunderprism Command Center">
+        <.live_title default="Thunderdash">
           {assigns[:page_title]}
         </.live_title>
         <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
