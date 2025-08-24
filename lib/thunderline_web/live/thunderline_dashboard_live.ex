@@ -41,7 +41,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       :timer.send_interval(3_000, self(), :refresh_events)
     end
 
-    initial_events = live_events_snapshot(first_child.id)
+    initial_events = live_events_snapshot(first_child.id) |> Enum.take(5)
     nodes       = graph_nodes()
     edge_counts = compute_edge_counts(initial_events, nodes)
     map_nodes  = domain_map_nodes()
@@ -191,14 +191,14 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
           </div>
           </section>
           <!-- 5. Event Flow (scrollable) -->
-          <section class="panel p-4 flex flex-col h-[420px] overflow-hidden">
+          <section class="panel p-4 flex flex-col panel-420 overflow-hidden">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-2 h-2 rounded-full bg-violet-400" />
               <h3 class="font-semibold">Event Flow</h3>
               <span class="ml-auto text-xs text-white/50">last <%= length(@events) %></span>
               <button class="btn btn-ghost btn-xs" phx-click="select_domain" phx-value-id={@active_domain}>refresh</button>
             </div>
-            <div id="eventFeed" class="mt-1 flex-1 min-h-0 overflow-y-auto thin-scrollbar space-y-2 text-xs pr-1">
+            <div id="eventFeed" class="mt-1 flex-1 feed-scroll thin-scrollbar space-y-2 text-xs pr-1">
               <%= for e <- @events do %>
                 <div class="p-2 rounded-lg bg-white/5 border border-white/10">
                   <div class="flex items-center gap-2 text-[10px] mb-0.5 opacity-80">
@@ -276,7 +276,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
 
   # ---- Assign refresh helpers ---------------------------------------------------
   defp refresh_events_assigns(socket) do
-    events = live_events_snapshot(socket.assigns.active_domain)
+    events = live_events_snapshot(socket.assigns.active_domain) |> Enum.take(5)
     nodes  = graph_nodes()
     edge_counts = compute_edge_counts(events, nodes)
     socket
@@ -486,8 +486,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     do: (if MapSet.member?(set, id), do: MapSet.delete(set, id), else: MapSet.put(set, id))
 
   defp seed_events(domain_id) do
-    now = System.os_time(:second)
-    for i <- 0..14 do
+     now = System.os_time(:second)
+    for i <- 0..4 do
       ts = now - i
       %{
         source: "seed/#{rem(i, 4)}",
@@ -495,7 +495,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
         message: "boot sequence event #{i} for #{domain_id}"
       }
     end
-  end
+   end
 
   defp safe_call(fun, fallback) do
     try do

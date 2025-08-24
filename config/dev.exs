@@ -2,24 +2,7 @@ import Config
 config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure the AshPostgres repo
-# If DATABASE_URL is set but missing credentials (userinfo), ignore it to avoid
-# falling back to ident/peer auth on local Postgres. Also, if the URL host is
-# the docker-compose service name "postgres" and we're not inside a container,
-# rewrite it to 127.0.0.1 so host-dev connects to the forwarded port.
-db_url =
-  case System.get_env("DATABASE_URL") do
-    nil -> nil
-    url ->
-      uri = URI.parse(url)
-      cond do
-        # No userinfo => likely no password; ignore the URL to avoid IDENT auth
-        is_nil(uri.userinfo) -> nil
-        # Using compose hostname on the host; rewrite for host development
-        uri.host == "postgres" and not File.exists?("/.dockerenv") ->
-          %{uri | host: "127.0.0.1"} |> URI.to_string()
-        true -> url
-      end
-  end
+db_url = System.get_env("DATABASE_URL")
 
 dev_repo_defaults = [
   username: System.get_env("PGUSER", "postgres"),
@@ -36,8 +19,12 @@ dev_repo_defaults = [
   ownership_timeout: 60_000
 ]
 
-# Only use :url if it is complete (has credentials) and sanitized above.
-repo_config = if db_url, do: Keyword.put(dev_repo_defaults, :url, db_url), else: dev_repo_defaults
+# Allow DATABASE_URL to fully override discrete settings if provided.
+repo_config = if db_url do
+  Keyword.put(dev_repo_defaults, :url, db_url)
+else
+  dev_repo_defaults
+end
 
 config :thunderline, Thunderline.Repo, repo_config
 

@@ -486,6 +486,11 @@
     opacity: 0.9;
     will-change: transform;
   }
+
+  /* Fixed panel height helper (fallback for arbitrary h-[420px]) */
+  .panel-420 { height: 420px; max-height: 420px; }
+  /* Scrollable content helper inside fixed-height flex column */
+  .feed-scroll { min-height: 0; overflow-y: auto; }
 }
 
 /* OKO Dashboard chat helpers (ported from React prototype note) */
