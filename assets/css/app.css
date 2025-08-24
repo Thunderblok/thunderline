@@ -1,7 +1,9 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-@import "tailwindcss";
+/* Tailwind v4 entrypoint */
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
 
 /* Fallback: build chain doesn't yet support Tailwind v4 @plugin at-rules. Using vendor daisyui.js require via (removed) tailwind.config.js no longer works, so we keep CSS variables to approximate theme. */
 :root[data-theme='thunderline'] {
@@ -386,12 +388,35 @@
 /* === Thunderline Dashboard Utilities (parity kit) === */
 @layer utilities {
   .panel {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 1rem;
-    /* rounded-2xl */
+    background: rgba(17, 24, 39, 0.55);
+    /* neutral-900/55 */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+  }
+
+  /* Thin scrollbar utility for scrollable panels (Event Flow) */
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.4), rgba(100, 116, 139, 0.4));
+    border-radius: 8px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.6), rgba(100, 116, 139, 0.6));
   }
 
   .oko-header {
@@ -422,20 +447,22 @@
   .dot-offline {
     background-color: #64748b
   }
-}
 
-@layer base {
+  /* Flow animation (Bezier wire traffic) */
   @keyframes dash {
     to {
       stroke-dashoffset: -1000;
     }
   }
-}
 
-@layer utilities {
   .flow {
     stroke-dasharray: 6 10;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
     animation: dash 8s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.45));
+    transition: stroke-width 0.3s, opacity 0.3s;
+    will-change: stroke-dashoffset, stroke-width, opacity;
   }
 
   .flow.slow {
@@ -444,6 +471,20 @@
 
   .flow.fast {
     animation-duration: 5s;
+  }
+
+  .flow.hot {
+    opacity: 0.95;
+  }
+
+  .flow-edge:hover {
+    stroke-width: 4 !important;
+  }
+
+  .flow-particle {
+    filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.8));
+    opacity: 0.9;
+    will-change: transform;
   }
 }
 

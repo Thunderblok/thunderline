@@ -20,12 +20,3 @@ defmodule Thunderchief.Jobs.DemoJob do
     :ok
   end
 end
-
-# Backwards compatibility shim (optional). Remove after external callers migrate.
-defmodule Thunderline.Workers.DemoJob do
-  @moduledoc """
-  Deprecated shim. Use `Thunderchief.Jobs.DemoJob` instead.
-  """
-  @deprecated "Use Thunderchief.Jobs.DemoJob"
-  defdelegate new(args \\ %{}), to: Thunderchief.Jobs.DemoJob
-end

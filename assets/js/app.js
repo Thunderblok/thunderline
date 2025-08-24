@@ -14,7 +14,7 @@ const AutoScroll = {
   mounted() { this.scrollToBottom() },
   updated() { this.scrollToBottom() },
   scrollToBottom() {
-    try { this.el.scrollTop = this.el.scrollHeight } catch (_) {}
+    try { this.el.scrollTop = this.el.scrollHeight } catch (_) { }
   }
 }
 
@@ -38,10 +38,10 @@ let Hooks = {
       this.scrollToBottom()
     },
     updated() {
-      if(!this.userLocked) this.scrollToBottom()
+      if (!this.userLocked) this.scrollToBottom()
     },
     destroyed() { this.el.removeEventListener('scroll', this.handleScroll) },
-    scrollToBottom() { try { this.el.scrollTop = this.el.scrollHeight } catch(_){} }
+    scrollToBottom() { try { this.el.scrollTop = this.el.scrollHeight } catch (_) { } }
   }
 }
 
@@ -72,7 +72,7 @@ window.addEventListener("phx:connection-status", (e) => {
   // Connection status change handler
   const status = e.detail.connected ? "connected" : "disconnected"
   console.log("Connection status:", status)
-  
+
   // Update UI indicators
   const indicators = document.querySelectorAll('.connection-indicator')
   indicators.forEach(indicator => {
@@ -82,7 +82,7 @@ window.addEventListener("phx:connection-status", (e) => {
 })
 
 // Dashboard specific functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   // Initialize dashboard-specific features
   initializeDashboardFeatures()
 })
@@ -91,22 +91,22 @@ function initializeDashboardFeatures() {
   // Add glassmorphism hover effects
   const panels = document.querySelectorAll('.dashboard-panel')
   panels.forEach(panel => {
-    panel.addEventListener('mouseenter', function() {
+    panel.addEventListener('mouseenter', function () {
       this.style.backdropFilter = 'blur(20px)'
       this.style.transform = 'translateY(-2px)'
     })
-    
-    panel.addEventListener('mouseleave', function() {
+
+    panel.addEventListener('mouseleave', function () {
       this.style.backdropFilter = 'blur(15px)'
       this.style.transform = 'translateY(0)'
     })
   })
-  
+
   // Add smooth transitions for metrics
   const metrics = document.querySelectorAll('.metric-value')
   metrics.forEach(metric => {
-    const observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
         if (mutation.type === 'childList' || mutation.type === 'characterData') {
           metric.style.animation = 'pulse 0.3s ease-in-out'
           setTimeout(() => {
@@ -115,7 +115,7 @@ function initializeDashboardFeatures() {
         }
       })
     })
-    
+
     observer.observe(metric, {
       childList: true,
       subtree: true,

@@ -49,7 +49,6 @@ defmodule Thunderline.MixProject do
       {:floki, ">= 0.30.0", only: :test},
   {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
-      {:esbuild, "~> 0.5", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
@@ -61,7 +60,7 @@ defmodule Thunderline.MixProject do
       # Ash Framework (includes PostgreSQL support)
       {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.0"},
-      {:ash_postgres, "~> 2.0"},
+  {:ash_postgres, "~> 2.0"},
       {:ash_graphql, "~> 1.0"},
       {:ash_json_api, "~> 1.0"},
       {:ash_oban, "~> 0.4"},
@@ -126,14 +125,20 @@ defmodule Thunderline.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "ash.setup", "assets.setup", "assets.build"],
+      # setup no longer unconditionally runs "deps.get". We only fetch deps if:
+      #  1. SKIP_DEPS_GET env var is NOT set to true, AND
+      #  2. We detect a missing representative dependency folder (phoenix) or lock file.
+      # This prevents surprise re-resolution of deps during iterative dev where you just want
+      # migrations/assets. Force with `mix deps.get` manually when you really intend it.
+      setup: [&maybe_deps_get/1, "ash.setup", "assets.setup", "assets.build"],
       # Allow skipping ash.setup in tests to run fast, DB-less component/unit tests
       test: [&maybe_ash_setup/1, "test"],
       # One-shot resource -> migration -> migrate convenience
       "ash.migrate": ["ash_postgres.generate_migrations", "ecto.migrate"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind default", "esbuild default"],
-      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
+  # Option A (no esbuild/node): only Tailwind profile 'thunderline'
+  "assets.setup": ["tailwind.install --if-missing"],
+  "assets.build": ["tailwind thunderline"],
+  "assets.deploy": ["tailwind thunderline --minify", "phx.digest"]
     ]
   end
 
@@ -144,6 +149,27 @@ defmodule Thunderline.MixProject do
       Mix.shell().info("[test alias] Skipping ash.setup (SKIP_ASH_SETUP=true)")
     else
       Mix.Task.run("ash.setup", ["--quiet"])
+    end
+  end
+
+  # Conditionally run deps.get only when really needed.
+  # Heuristics:
+  #   * If SKIP_DEPS_GET=true -> never run it
+  #   * If deps/phoenix (arbitrary representative dep) is missing OR mix.lock missing -> run it
+  # This avoids unexpected repeated "Resolving Hex dependencies" noise during normal dev cycles.
+  defp maybe_deps_get(_args) do
+    skip? = System.get_env("SKIP_DEPS_GET") == "true"
+    lock_missing? = !File.exists?("mix.lock")
+    phoenix_dep_missing? = !File.dir?("deps/phoenix")
+
+    cond do
+      skip? ->
+        Mix.shell().info("[setup] Skipping deps.get (SKIP_DEPS_GET=true)")
+      lock_missing? or phoenix_dep_missing? ->
+        Mix.shell().info("[setup] Running deps.get (dependencies missing)")
+        Mix.Task.run("deps.get", [])
+      true ->
+        Mix.shell().info("[setup] deps.get skipped (deps already present)")
     end
   end
 

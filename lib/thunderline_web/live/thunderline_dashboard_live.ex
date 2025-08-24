@@ -2,20 +2,18 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   @moduledoc """
   Thunderline Nexus‑Style Dashboard (daisyUI + Tailwind, LiveView)
 
-  - Left: domain explorer (status pills)
-  - Center: KPI + event feed
-  - Right: faux‑3D domain map with animated Bezier links + inspector
-
-  Tailwind must have daisyUI enabled.
+  React mount variant: this LiveView now only hydrates initial assigns into
+  data-* attributes for the React client component.
   """
+
+  # Re-introduce LiveView behaviour & helpers (removed during minimalization).
   use ThunderlineWeb, :live_view
   require Logger
-
   alias Phoenix.PubSub
   alias Thunderline.DashboardMetrics
   alias Thunderline.Thunderflow.EventBuffer
 
-  # ---- Demo domain tree --------------------------------------------------------
+  # Domain tree used by helper functions (was removed earlier; re-added).
   @sample_domains [
     %{
       id: "thunderline",
@@ -30,7 +28,6 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     }
   ]
 
-  # ---- LiveView lifecycle ------------------------------------------------------
   @impl true
   def mount(_params, _session, socket) do
     open = MapSet.new(Enum.map(@sample_domains, & &1.id))
@@ -45,10 +42,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     end
 
     initial_events = live_events_snapshot(first_child.id)
-
     nodes       = graph_nodes()
     edge_counts = compute_edge_counts(initial_events, nodes)
-
     map_nodes  = domain_map_nodes()
     map_edges  = domain_map_edges()
     map_health = domain_map_health()
@@ -78,210 +73,75 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
      |> assign(:active_friend, friends |> hd() |> Map.get(:id))}
   end
 
-  # ---- UI events ---------------------------------------------------------------
-  @impl true
-  def handle_event("toggle_root", %{"id" => id}, socket) do
-    {:noreply, update(socket, :open_domains, &toggle_set(&1, id))}
-  end
-
-  @impl true
-  def handle_event("select_map_node", %{"id" => id}, socket) do
-    {:noreply, assign(socket, :selected_map_node, empty_to_nil(id))}
-  end
-
-  @impl true
-  # Friend selection (purely cosmetic for now)
-  @impl true
-  def handle_event("select_friend", %{"id" => id}, socket) do
-    {:noreply, assign(socket, :active_friend, id)}
-  end
-
-  @impl true
-  def handle_event("select_domain", %{"id" => id}, socket) do
-    {:noreply,
-     socket
-     |> assign(:active_domain, id)
-     |> refresh_events_assigns()}
-  end
-
-  # ---- Timers & PubSub ---------------------------------------------------------
-  @impl true
-  def handle_info(:refresh_kpis, socket) do
-    {:noreply, assign(socket, :kpis, compute_kpis())}
-  end
-
-  @impl true
-  def handle_info(:refresh_events, socket) do
-    {:noreply, refresh_events_assigns(socket)}
-  end
-
-  # EventBuffer.broadcasts {:dashboard_event, evt}
-  @impl true
-  def handle_info({:dashboard_event, _evt}, socket) do
-    # On any inbound event, refresh the feed & edge weights
-    {:noreply, refresh_events_assigns(socket)}
-  end
-
-  # Metrics push from DashboardMetrics (we subscribed in mount)
-  @impl true
-  def handle_info({:metrics_update, payload}, socket) when is_map(payload) do
-    kpis = build_kpis_from_metrics(payload)
-    {:noreply, assign(socket, :kpis, kpis)}
-  rescue
-    _ -> {:noreply, socket}
-  end
-
-  # Ignore any other unexpected messages to avoid crashing the LiveView.
-  @impl true
-  def handle_info(_msg, socket), do: {:noreply, socket}
-
-  # ---- Render ------------------------------------------------------------------
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-[#0B0F14] text-white">
-      <!-- Header bar -->
-      <header class="sticky top-0 z-10 bg-gradient-to-r from-white/5 to-transparent backdrop-blur border-b border-white/10">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-          <div class="text-sm uppercase tracking-widest text-emerald-300">Thunderline Command</div>
-          <div class="text-lg font-semibold">Operations Dashboard</div>
-          <div class="ml-auto flex items-center gap-2 text-sm text-white/70">
-            <span class="hidden sm:inline">Status:</span>
-            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-300/30">Green</span>
-          </div>
-        </div>
+    <div class="max-w-7xl mx-auto px-4 py-6 relative">
+      <header class="flex items-center gap-3 mb-5">
+        <h1 class="text-lg font-semibold tracking-wide">Thunderline Dashboard</h1>
+        <span class="text-[11px] opacity-50">realtime systems view</span>
+        <a href="#" class="ml-auto link text-xs opacity-70 hover:opacity-100">docs</a>
       </header>
-
-      <div class="max-w-7xl mx-auto grid grid-cols-12 gap-4 p-4">
-        <!-- Friends / Peers list -->
-        <aside class="col-span-12 md:col-span-3 xl:col-span-3 panel p-3">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- Column 1: Map + Inspector stacked -->
+        <div class="space-y-6">
+          <!-- 1. Domain Map -->
+          <section class="panel p-4 flex flex-col h-[420px] max-h-[420px] overflow-hidden min-h-0">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2 h-2 rounded-full bg-cyan-400" />
+            <h3 class="font-semibold">Domain Map</h3>
+            <span class="ml-auto text-xs text-white/50">interactive</span>
+          </div>
+          <div class="relative w-full flex-1 rounded-lg overflow-hidden bg-neutral-900/40">
+            <svg viewBox="0 0 760 420" class="w-full h-full select-none" preserveAspectRatio="xMinYMin meet">
+              <defs>
+                <linearGradient id="wire" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9" />
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.9" />
+                </linearGradient>
+                <filter id="blur"><feGaussianBlur stdDeviation="6" /></filter>
+              </defs>
+              <%= for i <- 0..12 do %>
+                <line x1="40" y1={30 + i * 28} x2="720" y2={10 + i * 28} stroke="#1f2937" stroke-width="1" opacity="0.45" />
+              <% end %>
+              <% by_id = Map.new(@domain_map_nodes, &{&1.id, &1}) %>
+              <%= for {e, _idx} <- Enum.with_index(@domain_map_edges) do %>
+                <% a = by_id[e.a]; b = by_id[e.b]; path = cubic_path(a, b) %>
+                <% hot = is_nil(@selected_map_node) or e.a == @selected_map_node or e.b == @selected_map_node %>
+                <% edge_id = "edge-" <> e.a <> "-" <> e.b %>
+                <g class="group">
+                  <path d={path} stroke="#0ea5e9" stroke-opacity={if hot, do: 0.22, else: 0.05} stroke-width={if hot, do: 10, else: 8} fill="none" filter="url(#blur)" />
+                  <path id={edge_id} d={path} stroke="url(#wire)" stroke-width={if hot, do: 3, else: 1.4} fill="none" pathLength="1000" class={"flow flow-edge " <> speed_class(e.traffic) <> (if hot, do: " hot", else: "")}>\n                    <title><%= e.a %> -> <%= e.b %> traffic <%= round(e.traffic * 100) %>%</title>
+                  </path>
+                  <circle r="3" fill="#22d3ee" class="flow-particle">
+                    <animateMotion dur={edge_duration(e.traffic)} repeatCount="indefinite" rotate="auto">
+                      <mpath href={"#" <> edge_id} />
+                    </animateMotion>
+                  </circle>
+                </g>
+              <% end %>
+              <%= for n <- @domain_map_nodes do %>
+                <% selected = n.id == @selected_map_node %>
+                <% connected = Enum.any?(@domain_map_edges, &(&1.a == n.id or &1.b == n.id)) %>
+                <% ring = ring_size(selected, connected) %>
+                <% color = domain_map_status_color(@domain_map_health[n.id][:status]) %>
+                <g phx-click="select_map_node" phx-value-id={n.id} class="cursor-pointer">
+                  <circle cx={n.x} cy={n.y} r={14 + ring} fill="none" stroke={color} stroke-opacity="0.35" stroke-width={ring} />
+                  <circle cx={n.x} cy={n.y} r="14" fill={color} opacity="0.85" />
+                  <text x={n.x + 20} y={n.y + 4} font-size="12" fill="currentColor"><%= n.label %></text>
+                </g>
+              <% end %>
+            </svg>
+    </div>
+    </section>
+    <!-- 2. Inspector -->
+    <section class="panel p-4 flex flex-col h-[420px]">
           <div class="flex items-center gap-2 mb-2">
             <div class="w-2 h-2 rounded-full bg-emerald-400" />
-            <h2 class="font-semibold">Peers</h2>
+            <h3 class="font-semibold">Inspector</h3>
+            <span class="ml-auto text-xs text-white/50"><%= if @selected_map_node, do: @selected_map_node, else: "select a node" %></span>
           </div>
-          <ul class="space-y-1 text-sm">
-            <%= for f <- @friends do %>
-              <li>
-                <button phx-click="select_friend" phx-value-id={f.id}
-                        class={"w-full text-left px-3 py-2 rounded-xl transition border border-white/5 hover:bg-white/5 flex items-center gap-3 " <> (if @active_friend == f.id, do: "bg-white/10", else: "")}>
-                  <span class={"w-2 h-2 rounded-full " <> friend_dot(f.status)}></span>
-                  <span class="truncate flex-1"><%= f.name %></span>
-                  <span class="ml-auto text-xs text-white/50 uppercase"><%= f.status %></span>
-                  <%= if f.latency do %><span class="text-[10px] ml-2 text-primary"><%= f.latency %>ms</span><% end %>
-                </button>
-              </li>
-            <% end %>
-          </ul>
-          <div class="mt-4 grid grid-cols-2 gap-2">
-            <button class="btn btn-sm btn-ghost border border-white/10">New Chat</button>
-            <button class="btn btn-sm btn-ghost border border-white/10">Create Room</button>
-          </div>
-          <p class="mt-4 text-[10px] opacity-40">peer status reflects last heartbeat</p>
-        </aside>
-
-        <!-- Middle column -->
-        <main class="col-span-12 md:col-span-5 xl:col-span-5 space-y-4">
-          <!-- KPI Panel -->
-          <div class="panel p-4">
-            <div class="stats stats-vertical lg:stats-horizontal w-full">
-              <%= for {label, value, delta} <- @kpis do %>
-                <div class="stat">
-                  <div class="stat-title"><%= label %></div>
-                  <div class={"stat-value " <> (if label == "Ops/min", do: "text-emerald-300", else: "")}><%= value %></div>
-                  <%= if delta do %>
-                    <div class={"stat-desc " <> (if String.starts_with?(delta, "+"), do: "text-emerald-400", else: "text-rose-300")}><%= delta %></div>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-
-          <!-- Event Flow -->
-          <div class="panel p-4 h-72 overflow-auto">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-2 h-2 rounded-full bg-violet-400" />
-              <h3 class="font-semibold">Event Flow</h3>
-              <span class="ml-auto text-xs text-white/50">last <%= length(@events) %></span>
-              <button class="btn btn-ghost btn-xs" phx-click="select_domain" phx-value-id={@active_domain}>refresh</button>
-            </div>
-            <div id="eventFeed" class="space-y-2 text-sm">
-              <%= for e <- @events do %>
-                <div class="p-2 rounded-lg bg-white/5 border border-white/10">
-                  <div class="flex items-center gap-2 text-xs mb-0.5">
-                    <span class="badge badge-ghost badge-xs"><%= e.source %></span>
-                    <time class="opacity-40"><%= e.time %></time>
-                  </div>
-                  <div class="text-[11px] leading-snug"><%= e.message %></div>
-                </div>
-              <% end %>
-            </div>
-          </div>
-
-          <!-- Controls -->
-            <div class="panel p-4">
-              <div class="grid grid-cols-2 gap-3">
-                <button class="btn btn-outline">Deploy</button>
-                <button class="btn btn-outline">Restart Node</button>
-                <button class="btn btn-outline">Open Logs</button>
-                <button class="btn btn-outline">Settings</button>
-              </div>
-            </div>
-        </main>
-
-        <!-- Right column -->
-        <section class="col-span-12 md:col-span-4 xl:col-span-4 space-y-4">
-          <!-- Domain Map -->
-          <div class="panel p-4">
-            <div class="flex items-center gap-2 mb-3">
-              <div class="w-2 h-2 rounded-full bg-cyan-400" />
-              <h3 class="font-semibold">Domain Map</h3>
-              <span class="ml-auto text-xs text-white/50">interactive</span>
-            </div>
-            <div class="relative w-full h-[420px]">
-              <svg viewBox="0 0 760 420" class="w-full h-full rounded-xl bg-gradient-to-b from-slate-900/40 to-slate-900/10 select-none" preserveAspectRatio="xMinYMin meet">
-                <defs>
-                  <linearGradient id="wire" x1="0" x2="1">
-                    <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.9" />
-                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.9" />
-                  </linearGradient>
-                  <filter id="blur"><feGaussianBlur stdDeviation="6" /></filter>
-                </defs>
-                <%= for i <- 0..12 do %>
-                  <line x1="40" y1={30 + i * 28} x2="720" y2={10 + i * 28} stroke="#1f2937" stroke-width="1" opacity="0.45" />
-                <% end %>
-                <% by_id = Map.new(@domain_map_nodes, &{&1.id, &1}) %>
-                <%= for e <- @domain_map_edges do %>
-                  <% a = by_id[e.a]; b = by_id[e.b]; path = cubic_path(a, b) %>
-                  <% hot = is_nil(@selected_map_node) or e.a == @selected_map_node or e.b == @selected_map_node %>
-                  <g>
-                    <path d={path} stroke="#0ea5e9" stroke-opacity={if hot, do: 0.18, else: 0.06} stroke-width="8" fill="none" filter="url(#blur)" />
-                    <path d={path} stroke="url(#wire)" stroke-width={if hot, do: 2.5, else: 1.2} fill="none" class={"flow " <> speed_class(e.traffic)}>
-                      <title><%= e.a %> -> <%= e.b %> traffic <%= round(e.traffic * 100) %>%</title>
-                    </path>
-                  </g>
-                <% end %>
-                <%= for n <- @domain_map_nodes do %>
-                  <% selected = n.id == @selected_map_node %>
-                  <% connected = Enum.any?(@domain_map_edges, &(&1.a == n.id or &1.b == n.id)) %>
-                  <% ring = ring_size(selected, connected) %>
-                  <% color = domain_map_status_color(@domain_map_health[n.id][:status]) %>
-                  <g phx-click="select_map_node" phx-value-id={n.id} class="cursor-pointer">
-                    <circle cx={n.x} cy={n.y} r={14 + ring} fill="none" stroke={color} stroke-opacity="0.35" stroke-width={ring} />
-                    <circle cx={n.x} cy={n.y} r="14" fill={color} opacity="0.85" />
-                    <text x={n.x + 20} y={n.y + 4} font-size="12" fill="currentColor"><%= n.label %></text>
-                  </g>
-                <% end %>
-              </svg>
-            </div>
-          </div>
-
-          <!-- Inspector -->
-          <div class="panel p-4">
-            <div class="flex items-center gap-2 mb-2">
-              <div class="w-2 h-2 rounded-full bg-emerald-400" />
-              <h3 class="font-semibold">Inspector</h3>
-              <span class="ml-auto text-xs text-white/50"><%= if @selected_map_node, do: @selected_map_node, else: "select a node" %></span>
-            </div>
+          <div class="flex-1 overflow-y-auto">
             <%= if @selected_map_node do %>
               <% h = @domain_map_health[@selected_map_node] %>
               <div class="space-y-3">
@@ -304,10 +164,111 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
                 <p class="text-[10px] opacity-50">Errors: <%= h.errors %></p>
               </div>
             <% else %>
-              <div class="text-sm text-white/60">Click a node on the map to inspect health, metrics and actions.</div>
+              <div class="text-sm text-white/60">Click a node to inspect health, metrics and actions.</div>
             <% end %>
           </div>
-        </section>
+          </section>
+        </div>
+
+        <!-- Column 2: KPIs + Event Flow + Controls -->
+        <div class="space-y-6">
+          <!-- 3. KPIs -->
+          <section class="panel p-4 flex flex-col">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-400" />
+            <h3 class="font-semibold">KPIs</h3>
+          </div>
+          <div class="stats stats-vertical lg:stats-horizontal w-full">
+            <%= for {label, value, delta} <- @kpis do %>
+              <div class="stat">
+                <div class="stat-title"><%= label %></div>
+                <div class={"stat-value " <> (if label == "Ops/min", do: "text-emerald-300", else: "") }><%= value %></div>
+                <%= if delta do %>
+                  <div class={"stat-desc " <> (if String.starts_with?(delta, "+"), do: "text-emerald-400", else: "text-rose-300") }><%= delta %></div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          </section>
+          <!-- 5. Event Flow (scrollable) -->
+          <section class="panel p-4 flex flex-col h-[420px] overflow-hidden">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-violet-400" />
+              <h3 class="font-semibold">Event Flow</h3>
+              <span class="ml-auto text-xs text-white/50">last <%= length(@events) %></span>
+              <button class="btn btn-ghost btn-xs" phx-click="select_domain" phx-value-id={@active_domain}>refresh</button>
+            </div>
+            <div id="eventFeed" class="mt-1 flex-1 min-h-0 overflow-y-auto thin-scrollbar space-y-2 text-xs pr-1">
+              <%= for e <- @events do %>
+                <div class="p-2 rounded-lg bg-white/5 border border-white/10">
+                  <div class="flex items-center gap-2 text-[10px] mb-0.5 opacity-80">
+                    <span class="badge badge-ghost badge-xs"><%= e.source %></span>
+                    <time class="opacity-40"><%= e.time %></time>
+                  </div>
+                  <div class="text-[11px] leading-snug"><%= e.message %></div>
+                </div>
+              <% end %>
+            </div>
+          </section>
+          <!-- 6. Controls -->
+          <section class="panel p-4 flex flex-col">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-400" />
+            <h3 class="font-semibold">Controls</h3>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <button class="btn btn-outline btn-sm">Deploy</button>
+            <button class="btn btn-outline btn-sm">Restart</button>
+            <button class="btn btn-outline btn-sm">Logs</button>
+            <button class="btn btn-outline btn-sm">Settings</button>
+          </div>
+          <p class="mt-3 text-[10px] opacity-40">actions affect selected node (future)</p>
+          </section>
+        </div>
+
+        <!-- Column 3: Peers + Trends -->
+        <div class="space-y-6">
+          <!-- 4. Peers -->
+          <section class="panel p-4 flex flex-col">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-400" />
+            <h3 class="font-semibold">Peers</h3>
+          </div>
+          <ul class="space-y-1 text-sm flex-1 overflow-auto">
+            <%= for f <- @friends do %>
+              <li>
+                <button phx-click="select_friend" phx-value-id={f.id}
+                        class={"w-full text-left px-3 py-2 rounded-xl transition border border-white/5 hover:bg-white/5 flex items-center gap-3 " <> (if @active_friend == f.id, do: "bg-white/10", else: "") }>
+                  <span class={"w-2 h-2 rounded-full " <> friend_dot(f.status)}></span>
+                  <span class="truncate flex-1"><%= f.name %></span>
+                  <span class="ml-auto text-xs text-white/50 uppercase"><%= f.status %></span>
+                  <%= if f.latency do %><span class="text-[10px] ml-2 text-primary"><%= f.latency %>ms</span><% end %>
+                </button>
+              </li>
+            <% end %>
+          </ul>
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            <button class="btn btn-sm btn-ghost border border-white/10">New Chat</button>
+            <button class="btn btn-sm btn-ghost border border-white/10">Create Room</button>
+          </div>
+          <p class="mt-4 text-[10px] opacity-40">peer status reflects last heartbeat</p>
+          </section>
+          <!-- 7. Trends / Sparkline -->
+          <section class="panel p-4 flex flex-col">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2 h-2 rounded-full bg-cyan-400" />
+            <h3 class="font-semibold">Trends</h3>
+            <span class="ml-auto text-xs opacity-50">preview</span>
+          </div>
+          <div class="flex-1 flex items-center justify-center">
+            <svg viewBox="0 0 200 60" class="w-full h-16">
+              <polyline fill="none" stroke="#22d3ee" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"
+                points={sparkline_points(@kpis)} />
+            </svg>
+          </div>
+          <p class="text-[10px] opacity-40 mt-2">derived sample sparkline of KPI values</p>
+          </section>
+        </div>
       </div>
     </div>
     """
@@ -455,6 +416,17 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   defp speed_class(t) when t < 0.5, do: "slow"
   defp speed_class(_), do: ""
 
+  # Duration for particle travel (inverse-ish to traffic level)
+  defp edge_duration(t) when is_number(t) do
+    cond do
+      t >= 0.8 -> "2.8s"
+      t >= 0.6 -> "3.6s"
+      t >= 0.4 -> "4.5s"
+      true -> "5.2s"
+    end
+  end
+  defp edge_duration(_), do: "4s"
+
   defp friend_dot(:online),     do: "dot-online"
   defp friend_dot(:away),       do: "dot-away"
   defp friend_dot(:busy),       do: "dot-busy animate-pulse"
@@ -538,4 +510,32 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   defp safe_try(fun), do: safe_call(fun, :ok)
   defp empty_to_nil(""), do: nil
   defp empty_to_nil(v),  do: v
+
+  # Build SVG polyline points for mini sparkline from KPI list
+  # Expects list like [{label, value_string, _meta}]. We attempt to parse leading integer.
+  defp sparkline_points(kpis) when is_list(kpis) do
+    kpis
+    |> Enum.with_index()
+    |> Enum.map(fn {{_label, v, _meta}, i} ->
+      int_val =
+        case Integer.parse(to_string(v)) do
+          {num, _rest} -> num
+          :error -> 10
+        end
+      y = 60 - rem(int_val, 50)
+      "#{i*40},#{y}"
+    end)
+    |> Enum.join(" ")
+  end
+  defp sparkline_points(_), do: ""
+
+  # Transform KPI tuples {label, value, delta} into maps for JSON encoding.
+  defp json_kpis(list) when is_list(list) do
+    Enum.map(list, fn
+      {label, value, delta} -> %{label: label, value: value, delta: delta}
+      %{label: _} = m -> m
+      other -> %{label: to_string(inspect(other)), value: nil, delta: nil}
+    end)
+  end
+  defp json_kpis(_), do: []
 end

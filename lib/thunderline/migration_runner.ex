@@ -33,6 +33,8 @@ defmodule Thunderline.MigrationRunner do
       attempts = System.get_env("MIGRATION_MAX_ATTEMPTS", "5") |> String.to_integer()
       base_backoff = System.get_env("MIGRATION_BACKOFF_MS", "1500") |> String.to_integer()
       Logger.info("[MigrationRunner] Running pending migrations (max_attempts=#{attempts}) ...")
+      # Before we even try migrations, ensure the target database actually exists.
+      ensure_database_exists()
       run_migrations(path, attempts, base_backoff, 1)
     end
   rescue
@@ -93,6 +95,76 @@ defmodule Thunderline.MigrationRunner do
             ensure_repo_started(attempts - 1)
         end
       _pid -> :ok
+    end
+  end
+
+  # Creates the configured database if it does NOT already exist. This handles the case
+  # where docker volume was initialized under an old DB name and we switched names, so the
+  # new name simply isn't there yet (and Postgres logs show FATAL database does not exist).
+  defp ensure_database_exists do
+    repo_cfg = Application.get_env(:thunderline, Thunderline.Repo, [])
+    %{db: db, host: host, port: port, user: user, pass: pass} = parse_repo_conn_info(repo_cfg)
+
+    if db do
+      opts = [hostname: host, port: port, username: user, password: pass, database: "postgres", backoff_type: :stop, pool_size: 1]
+      case Postgrex.start_link(opts) do
+        {:ok, conn} ->
+          exists? = case Postgrex.query(conn, "SELECT 1 FROM pg_database WHERE datname = $1", [db]) do
+            {:ok, %{num_rows: n}} when n > 0 -> true
+            _ -> false
+          end
+          unless exists? do
+            case Postgrex.query(conn, "CREATE DATABASE \"#{db}\"", []) do
+              {:ok, _} -> Logger.info("[MigrationRunner] Created missing database #{db}.")
+              {:error, err} -> Logger.error("[MigrationRunner] Failed to create database #{db}: #{Exception.message(err)}")
+            end
+          end
+          :ok = GenServer.stop(conn)
+        {:error, reason} ->
+          Logger.warning("[MigrationRunner] Could not connect to maintenance DB to auto-create #{db}: #{inspect(reason)}")
+      end
+    end
+  catch
+    kind, reason -> Logger.warning("[MigrationRunner] ensure_database_exists crashed: #{inspect({kind, reason})}")
+  end
+
+  defp parse_repo_conn_info(repo_cfg) do
+    # Prefer DATABASE_URL (or :url in repo config) when present to avoid mismatches
+    url = Keyword.get(repo_cfg, :url) || System.get_env("DATABASE_URL")
+
+    if is_binary(url) do
+      uri = URI.parse(url)
+      {user, pass} =
+        case uri.userinfo do
+          nil -> {Keyword.get(repo_cfg, :username, System.get_env("PGUSER", "postgres")), Keyword.get(repo_cfg, :password, System.get_env("PGPASSWORD", "postgres"))}
+          ui ->
+            case String.split(ui, ":", parts: 2) do
+              [u, p] -> {u, p}
+              [u] -> {u, Keyword.get(repo_cfg, :password, System.get_env("PGPASSWORD", "postgres"))}
+              _ -> {nil, nil}
+            end
+        end
+
+      db = (uri.path || "/") |> String.trim_leading("/") |> case do
+        "" -> Keyword.get(repo_cfg, :database)
+        other -> other
+      end
+
+      %{
+        db: db,
+        host: uri.host || Keyword.get(repo_cfg, :hostname, "127.0.0.1"),
+        port: uri.port || Keyword.get(repo_cfg, :port, 5432),
+        user: user || Keyword.get(repo_cfg, :username, System.get_env("PGUSER", "postgres")),
+        pass: pass || Keyword.get(repo_cfg, :password, System.get_env("PGPASSWORD", "postgres"))
+      }
+    else
+      %{
+        db: Keyword.get(repo_cfg, :database),
+        host: Keyword.get(repo_cfg, :hostname, "127.0.0.1"),
+        port: Keyword.get(repo_cfg, :port, 5432),
+        user: Keyword.get(repo_cfg, :username, System.get_env("PGUSER", "postgres")),
+        pass: Keyword.get(repo_cfg, :password, System.get_env("PGPASSWORD", "postgres"))
+      }
     end
   end
 end

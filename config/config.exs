@@ -114,18 +114,7 @@ config :thunderline, ThunderlineWeb.Endpoint,
 # at the `config/runtime.exs`.
 config :thunderline, Thunderline.Mailer, adapter: Swoosh.Adapters.Local
 
-# Configure esbuild (the version is required)
-config :esbuild,
-  version: "0.25.4",
-  thunderline: [
-    args:
-      ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
-    cd: Path.expand("../assets", __DIR__),
-    env: %{
-      "NODE_PATH" =>
-        Path.join([Path.expand("../deps", __DIR__), Path.expand("../_build/dev", __DIR__)], ":")
-    }
-  ]
+## esbuild bundling removed (Option A no-node). If bundling reintroduced later, restore config :esbuild.
 
 # Configure tailwind (the version is required)
 config :tailwind,

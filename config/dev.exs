@@ -2,13 +2,30 @@ import Config
 config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure the AshPostgres repo
-db_url = System.get_env("DATABASE_URL")
+# If DATABASE_URL is set but missing credentials (userinfo), ignore it to avoid
+# falling back to ident/peer auth on local Postgres. Also, if the URL host is
+# the docker-compose service name "postgres" and we're not inside a container,
+# rewrite it to 127.0.0.1 so host-dev connects to the forwarded port.
+db_url =
+  case System.get_env("DATABASE_URL") do
+    nil -> nil
+    url ->
+      uri = URI.parse(url)
+      cond do
+        # No userinfo => likely no password; ignore the URL to avoid IDENT auth
+        is_nil(uri.userinfo) -> nil
+        # Using compose hostname on the host; rewrite for host development
+        uri.host == "postgres" and not File.exists?("/.dockerenv") ->
+          %{uri | host: "127.0.0.1"} |> URI.to_string()
+        true -> url
+      end
+  end
 
 dev_repo_defaults = [
   username: System.get_env("PGUSER", "postgres"),
   password: System.get_env("PGPASSWORD", "postgres"),
   hostname: System.get_env("PGHOST", "127.0.0.1"),
-  database: System.get_env("PGDATABASE", "thunderblock"),
+  database: System.get_env("PGDATABASE", "thunderline"),
   port: System.get_env("PGPORT", "5432") |> String.to_integer(),
   pool_size: 10,
   stacktrace: true,
@@ -19,12 +36,8 @@ dev_repo_defaults = [
   ownership_timeout: 60_000
 ]
 
-# Allow DATABASE_URL to fully override discrete settings if provided.
-repo_config = if db_url do
-  Keyword.put(dev_repo_defaults, :url, db_url)
-else
-  dev_repo_defaults
-end
+# Only use :url if it is complete (has credentials) and sanitized above.
+repo_config = if db_url, do: Keyword.put(dev_repo_defaults, :url, db_url), else: dev_repo_defaults
 
 config :thunderline, Thunderline.Repo, repo_config
 
@@ -38,13 +51,16 @@ config :thunderline, ThunderlineWeb.Endpoint,
   # Bind IP is configurable so you can reach the dev server from outside a container/VM:
   #   BIND_ALL=1 mix phx.server  -> binds 0.0.0.0
   # Otherwise defaults to loopback only (127.0.0.1) for safety.
-  http: [ip: (if System.get_env("BIND_ALL") in ["1", "true", "TRUE"], do: {0, 0, 0, 0}, else: {127, 0, 0, 1}), port: 4000],
+  http: [
+    ip: (if System.get_env("BIND_ALL") in ["1", "true", "TRUE"], do: {0, 0, 0, 0}, else: {127, 0, 0, 1}),
+    port: System.get_env("PORT", "4000") |> String.to_integer()
+  ],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "development_secret_key_base_that_is_at_least_64_bytes_long_for_security",
+  # Esbuild removed (no Node/bundling). Tailwind binary only.
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:thunderline, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:thunderline, ~w(--watch)]}
   ]
 

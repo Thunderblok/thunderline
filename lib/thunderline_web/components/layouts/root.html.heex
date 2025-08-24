@@ -7,9 +7,13 @@
     <.live_title default="Thunderline" suffix=" · Phoenix Framework">
       {assigns[:page_title]}
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
-    </script>
+  <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+  <!-- Phoenix / LiveView from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/phoenix@1.7.14/priv/static/phoenix.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phoenix_html@4.1.0/priv/static/phoenix_html.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phoenix_live_view@0.20.9/priv/static/phoenix_live_view.min.js"></script>
+  <!-- Unbundled app bootstrap -->
+  <script defer phx-track-static src={~p"/js/app.js"}></script>
     <script>
       (() => {
         const setTheme = (theme) => {
@@ -30,7 +34,26 @@
       })();
     </script>
   </head>
-  <body class="oko-body min-h-screen">
-    {@inner_content}
+  <body class="min-h-screen bg-black text-neutral-content relative">
+    <!-- Global background lines layer -->
+    <div class="absolute inset-0 -z-10 pointer-events-none">
+      <svg viewBox="0 0 1600 900" class="w-full h-full">
+        <defs>
+          <linearGradient id="wire-bg" x1="0" x2="1">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.5" />
+            <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.5" />
+            <stop offset="100%" stop-color="#ec4899" stop-opacity="0.5" />
+          </linearGradient>
+        </defs>
+        <g stroke="url(#wire-bg)" stroke-width="2" fill="none" opacity="0.35">
+          <%= for i <- 0..14 do %>
+            <line x1="40" y1={60 + i * 52} x2="1560" y2={40 + i * 52} />
+          <% end %>
+        </g>
+      </svg>
+    </div>
+    <div class="relative z-10">
+      {@inner_content}
+    </div>
   </body>
 </html>

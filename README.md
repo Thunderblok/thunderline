@@ -69,11 +69,23 @@ cd Thunderline
 # Install dependencies and setup database
 mix setup
 
+# (Optional) Skip automatic dependency fetch if deps are already present
+SKIP_DEPS_GET=true mix setup
+
 # Start the development server
 mix phx.server
 ```
 
 The application will be available at [localhost:4000](http://localhost:4000).
+
+#### Dependency Fetch Behavior
+
+`mix setup` no longer always runs `mix deps.get`. It now:
+1. Skips entirely if `SKIP_DEPS_GET=true`
+2. Runs `deps.get` only when `mix.lock` or a representative dep directory (e.g. `deps/phoenix`) is missing
+3. Logs why it ran or skipped (`[setup] Running deps.get (dependencies missing)` / `[setup] deps.get skipped (deps already present)`).
+
+Run `mix deps.get` manually when you intentionally want to resolve/update dependencies.
 
 ### Docker Development (Optional)
 
