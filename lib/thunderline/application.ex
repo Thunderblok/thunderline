@@ -66,13 +66,20 @@ defmodule Thunderline.Application do
       []
     end
 
+    extras = [
+      {Task, fn -> try do Thunderline.Bus.init_tables() rescue _ -> :ok end end},
+      # NDJSON logger and UPS watcher are optional
+      (System.get_env("ENABLE_NDJSON") in ["1","true","TRUE"] && {Thunderline.Log.NDJSON, [path: System.get_env("NDJSON_PATH") || "log/events.ndjson"]}) || nil,
+      (System.get_env("ENABLE_UPS") in ["1","true","TRUE"] && Thunderline.Hardware.UPS) || nil,
+      Thunderline.Persistence.Checkpoint
+    ] |> Enum.filter(& &1)
+
   # IMPORTANT: Start DB + migrations BEFORE any pipelines or processes that might query the DB.
   # Previously Repo/migrations were appended at the end, causing early connection attempts while
   # Postgres might still be coming up (especially in containerized/dev environments).
   core_db = db_children
 
   children = phoenix_foundation ++ core_db ++ [
-
       # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
   Thunderline.ThunderMemory,
 
@@ -118,7 +125,7 @@ defmodule Thunderline.Application do
       # (Authentication and authorization services will be added here)
 
       # Phoenix Web Server (conditionally started after core observability)
-  ] ++ compute_children ++ endpoint_child
+  ] ++ compute_children ++ endpoint_child ++ extras
 
   opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 

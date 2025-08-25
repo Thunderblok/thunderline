@@ -26,8 +26,8 @@ defmodule Thunderline.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib", "BOnus/lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib", "BOnus/lib"]
 
   defp deps do
     [

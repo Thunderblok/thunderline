@@ -12,6 +12,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   alias Phoenix.PubSub
   alias Thunderline.DashboardMetrics
   alias Thunderline.Thunderflow.EventBuffer
+  alias Thunderline.Bus
+  alias Thunderline.Log.NDJSON
+  alias Thunderline.Persistence.Checkpoint
 
   # Domain tree used by helper functions (was removed earlier; re-added).
   @sample_domains [
@@ -36,6 +39,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     if connected?(socket) do
       safe_try(fn -> DashboardMetrics.subscribe() end)
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, EventBuffer.topic()) end)
+      safe_try(fn -> Bus.subscribe_status() end)
 
       :timer.send_interval(5_000, self(), :refresh_kpis)
       :timer.send_interval(3_000, self(), :refresh_events)
@@ -70,7 +74,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
      |> assign(:domain_map_health, map_health)
      |> assign(:selected_map_node, nil)
      |> assign(:friends, friends)
-     |> assign(:active_friend, friends |> hd() |> Map.get(:id))}
+     |> assign(:active_friend, friends |> hd() |> Map.get(:id))
+     |> assign(:ups_status, nil)
+     |> assign(:ndjson, false)}
   end
 
   @impl true
@@ -188,21 +194,32 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
                 <% end %>
               </div>
             <% end %>
+            <%= if @ups_status do %>
+              <div class="stat">
+                <div class="stat-title">UPS</div>
+                <div class={"stat-value text-xs " <> (case @ups_status do "online" -> "text-emerald-300"; "on_battery" -> "text-warning"; "low_battery" -> "text-error"; _ -> "" end)}><%= @ups_status %></div>
+                <div class="stat-desc">power</div>
+              </div>
+            <% end %>
           </div>
           </section>
           <!-- 5. Event Flow (scrollable) -->
-          <section class="panel p-4 flex flex-col panel-420 overflow-hidden">
+          <section class="panel p-4 flex flex-col panel-420 overflow-hidden min-h-0">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-2 h-2 rounded-full bg-violet-400" />
               <h3 class="font-semibold">Event Flow</h3>
-              <span class="ml-auto text-xs text-white/50">last <%= length(@events) %></span>
+              <span class="ml-2 text-xs text-white/50">last <%= length(@events) %></span>
               <button class="btn btn-ghost btn-xs" phx-click="select_domain" phx-value-id={@active_domain}>refresh</button>
+              <button class={"btn btn-ghost btn-xs ml-2 " <> if @ndjson, do: "text-emerald-400", else: "opacity-60"} phx-click="toggle_ndjson">NDJSON</button>
             </div>
             <div id="eventFeed" class="mt-1 flex-1 feed-scroll thin-scrollbar space-y-2 text-xs pr-1">
               <%= for e <- @events do %>
                 <div class="p-2 rounded-lg bg-white/5 border border-white/10">
                   <div class="flex items-center gap-2 text-[10px] mb-0.5 opacity-80">
                     <span class="badge badge-ghost badge-xs"><%= e.source %></span>
+                    <%= if Map.get(e, :anomaly) do %>
+                      <span class="badge badge-error badge-xs">anomaly</span>
+                    <% end %>
                     <time class="opacity-40"><%= e.time %></time>
                   </div>
                   <div class="text-[11px] leading-snug"><%= e.message %></div>
@@ -217,10 +234,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             <h3 class="font-semibold">Controls</h3>
           </div>
           <div class="grid grid-cols-2 gap-3 text-sm">
+            <button class="btn btn-outline btn-sm" phx-click="checkpoint">Checkpoint</button>
+            <button class="btn btn-outline btn-sm" phx-click="restore">Restore</button>
             <button class="btn btn-outline btn-sm">Deploy</button>
             <button class="btn btn-outline btn-sm">Restart</button>
-            <button class="btn btn-outline btn-sm">Logs</button>
-            <button class="btn btn-outline btn-sm">Settings</button>
           </div>
           <p class="mt-3 text-[10px] opacity-40">actions affect selected node (future)</p>
           </section>
@@ -277,6 +294,12 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   # ---- Assign refresh helpers ---------------------------------------------------
   defp refresh_events_assigns(socket) do
     events = live_events_snapshot(socket.assigns.active_domain) |> Enum.take(5)
+    # Optional NDJSON logging
+    if socket.assigns[:ndjson] do
+      Enum.each(events, fn e ->
+        safe_try(fn -> NDJSON.write(%{source: e.source, time: e.time, message: e.message}) end)
+      end)
+    end
     nodes  = graph_nodes()
     edge_counts = compute_edge_counts(events, nodes)
     socket
@@ -330,15 +353,24 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       list ->
         list
         |> Enum.map(fn evt ->
-          %{
+          base = %{
             source: source_from_evt(evt),
             time:   time_hhmmss(System.os_time(:second)),
             message: message_from_evt(evt, domain_id)
           }
+          Map.put(base, :anomaly, anomaly?(base))
         end)
         |> Enum.reject(fn %{message: m} -> is_binary(m) and String.starts_with?(m, "system file changed") end)
         |> then(fn cleaned -> if cleaned == [], do: seed_events(domain_id), else: cleaned end)
     end
+  end
+
+  defp anomaly?(%{message: m} = e) do
+    msg = String.downcase(to_string(m || ""))
+    kw = ["error", "fail", "timeout", "panic", "battery", "overload"]
+    kw_hit = Enum.any?(kw, &String.contains?(msg, &1))
+    entropy = :erlang.phash2({e.source, e.time})
+    kw_hit or rem(entropy, 20) == 0
   end
 
   # Topology (hex-ish row)
@@ -514,20 +546,27 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   # Build SVG polyline points for mini sparkline from KPI list
   # Expects list like [{label, value_string, _meta}]. We attempt to parse leading integer.
   defp sparkline_points(kpis) when is_list(kpis) do
-    kpis
+    vals =
+      kpis
+      |> Enum.map(fn {_label, v, _meta} ->
+        case Integer.parse(to_string(v)) do {n, _} -> n; :error -> 10 end
+      end)
+    smoothed = smooth(vals, 3)
+    smoothed
     |> Enum.with_index()
-    |> Enum.map(fn {{_label, v, _meta}, i} ->
-      int_val =
-        case Integer.parse(to_string(v)) do
-          {num, _rest} -> num
-          :error -> 10
-        end
-      y = 60 - rem(int_val, 50)
+    |> Enum.map(fn {val, i} ->
+      y = 60 - rem(val, 50)
       "#{i*40},#{y}"
     end)
     |> Enum.join(" ")
   end
   defp sparkline_points(_), do: ""
+
+  defp smooth(list, w) when is_list(list) and w > 1 do
+    Enum.chunk_every(list, w, 1, :discard)
+    |> Enum.map(fn chunk -> div(Enum.sum(chunk), length(chunk)) end)
+  end
+  defp smooth(list, _), do: list
 
   # Transform KPI tuples {label, value, delta} into maps for JSON encoding.
   defp json_kpis(list) when is_list(list) do
@@ -538,4 +577,35 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     end)
   end
   defp json_kpis(_), do: []
+
+  @impl true
+  def handle_event("toggle_ndjson", _params, socket) do
+    {:noreply, assign(socket, :ndjson, !socket.assigns.ndjson)}
+  end
+
+  @impl true
+  def handle_event("checkpoint", _params, socket) do
+    data = %{
+      kpis: socket.assigns.kpis,
+      selected_map_node: socket.assigns.selected_map_node,
+      timestamp: DateTime.utc_now()
+    }
+    safe_try(fn -> Checkpoint.write(data) end)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("restore", _params, socket) do
+    case safe_call(fn -> Checkpoint.read() end, :error) do
+      {:ok, map} ->
+        {:noreply, socket |> assign(:kpis, Map.get(map, :kpis, socket.assigns.kpis)) |> assign(:selected_map_node, Map.get(map, :selected_map_node, socket.assigns.selected_map_node))}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:status, %{source: "ups"} = st}, socket) do
+    status = to_string(Map.get(st, :stage, Map.get(st, :status, "unknown")))
+    {:noreply, assign(socket, :ups_status, status)}
+  end
 end
