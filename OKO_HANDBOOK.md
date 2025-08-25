@@ -6,9 +6,49 @@
 
 ---
 
+## 🛰️ AGENT RAZOR SITREP — August 25, 2025
+> Independent sweep across core, ThunderFlow, ThunderBolt (Cerebros), and (former) BOnus modules (now fully migrated). Focus: event bus unification, dashboard wiring, optional features (UPS/NDJSON), and ML persistence.
+
+Summary
+- Event Bus: Canonical bus exists at `Thunderline.EventBus` (ThunderFlow). Legacy `Thunderline.Bus` kept as a compatibility shim and now forwards to the canonical pipelines. Decision: no runtime breakage; prefer EventBus in new code, shim remains until alias migration completes.
+- Dashboard: LiveView is stable and minimal. Uses `EventBuffer.snapshot/1` for feed and listens to Bus status for UPS. Real-time pipeline already broadcasts optimized topics; next step is to subscribe to those for live metrics and reduce reliance on buffer snapshots.
+- NDJSON + Checkpoint: Implemented (now under consolidated `lib/thunderline/` domains), wired to UI and optionally supervised (NDJSON behind `ENABLE_NDJSON`, Checkpoint always).
+- UPS Watcher: Present and gated via `ENABLE_UPS`. Publishes status via Bus; UI badge renders correctly. Graceful when `upsc` missing.
+- Cerebros (ThunderBolt ML): Code integrated (adapter, telemetry, simple_search, neural bridges). Persistence migrations for `ModelRun`/`ModelArtifact` currently parked under `priv/repo/_backup_*/` and not active. Action required to create tables before persisting artifacts/runs. Adapter supports external lib and CLI fallbacks; internal stub present.
+- Pipelines & Storage: Broadway/Mnesia producers and real-time pipeline are in place; queue depth metrics available. Event struct normalization exists.
+
+Risks / Gaps
+- Alias debt: Multiple files still alias `Thunderline.Bus` (shim now forwards, but migration remains). Low risk; medium tech debt.
+- ML persistence: Tables for Cerebros resources not yet migrated (migrations in backup). High risk for persistence features; low risk for demo/telemetry.
+- External binaries: Optional dependencies (`upsc`, `cerebros` CLI) are environment-dependent; handled gracefully but should be documented in ops runbooks.
+- BOnus reliance: (Resolved) All former BOnus code promoted; no special compile path required.
+
+Decisions
+- Bus consolidation: Canonical = `Thunderline.EventBus`. Keep `Thunderline.Bus` as a shim until repo-wide codemod completes. New code: use EventBus directly.
+
+Next 48h (proposed deltas)
+1. Apply ML persistence migrations: move the Cerebros migrations from `priv/repo/_backup_*/` to `priv/repo/migrations/` and run them.
+2. LiveView wiring: subscribe dashboard to ThunderFlow real-time topics (metrics and dashboard batches) and de-emphasize buffer snapshots.
+3. Codemod pass: replace `alias Thunderline.Bus` with `Thunderline.EventBus` where safe; leave shim for legacy tuple consumers.
+4. Clarify feature flags: document `ENABLE_UPS`, `ENABLE_NDJSON`, and default paths in the handbook runbooks.
+5. (Done) BOnus promotion: `Log.NDJSON` and `Persistence.Checkpoint` already live under consolidated domains; flags documented.
+
+Health signals to watch
+- `event.queue.depth` (MnesiaProducer tables) — trending and p95 vs baseline
+- `dashboard_batch_update` throughput and latency in RealTimePipeline
+- `cerebros_*` telemetry volume and error rates post-migration
+
+Codename: AGENT RAZOR
+
+---
+
 ## ⚡ **TEAM STATUS UPDATES** - August 17, 2025
 
 ### **🚨 CURRENT BLOCKERS & ACTIVE WORK**
+
+- Add: Bus consolidation — canonical `Thunderline.EventBus` active; `Thunderline.Bus` retained as shim (no functional change). New code should target EventBus.
+- Add: Cerebros persistence — migrations for `ModelRun`/`ModelArtifact` not yet applied (located under `_backup_`); required to persist runs/artifacts.
+
 **Erlang → Elixir Conversion**: 🟡 **ASSIGNED TO WARDEN TEAM** - Remaining ThunderCell Erlang modules being ported (5 → 0 target)  
 **External Review Prep**: � **ACTIVE** - Refining architecture & domain docs for multi‑team consumption  
 **Dashboard Integration**: 🟡 **IN PROGRESS** - Wiring real CA & Blackboard metrics (mock data being phased out)  
@@ -18,11 +58,14 @@
 **Compilation Status**: ✅ **CLEAN BUILD** - Zero critical errors, ~200 minor warnings scheduled for phased cleanup (target <50 by Aug 24)  
 
 ### **🎯 IMMEDIATE PRIORITIES (Next 48 Hours)**
-1. **Finalize Automata Feature Parity Audit** - Document DONE / GAP items & open DIP issues for gaps
-2. **Complete Remaining Erlang → Elixir Ports** - Achieve 100% native ThunderCell processes
-3. **Replace Mock Dashboard Data** - Source all metrics from live Blackboard/ThunderFlow events
-4. **Relocate Interim ML (Cerebros) Code** - Ensure all ML modules live under `Thunderline.ThunderBolt` namespace (no new domain)
-5. **Warning Reduction Sprint** - Remove low‑hanging unused imports/variables (target: -60 warnings)
+1. Finalize Automata Feature Parity Audit — Document DONE / GAP items & open DIP issues for gaps
+2. Complete Remaining Erlang → Elixir Ports — Achieve 100% native ThunderCell processes
+3. Replace Mock Dashboard Data — Source all metrics from live Blackboard/ThunderFlow events
+4. Relocate Interim ML (Cerebros) Code — Ensure all ML modules live under `Thunderline.ThunderBolt` namespace (no new domain)
+5. Warning Reduction Sprint — Remove low‑hanging unused imports/variables (target: -60 warnings)
+6. Bus codemod (new) — Replace `alias Thunderline.Bus` with `Thunderline.EventBus` where safe; keep shim for legacy tuple consumers
+7. ML migrations (new) — Move and run Cerebros migrations to enable model run/artifact persistence
+8. Dashboard wiring (new) — Subscribe LiveView to RealTimePipeline topics; de-emphasize snapshot feed
 
 ### **✅ RECENT WINS**
 - **Domain Consolidation**: 21 domains → 7 efficient, well-bounded domains (67% complexity reduction)
@@ -37,6 +80,8 @@
 - **Recompute Action & Canonical Lyapunov**: Service & worker select canonical exponent with reliability heuristics (r² threshold) enabling future model stability dashboards.
 - **Automated Dependency Management**: Dependabot configuration (grouped stacks) + CI workflow (compile, test, Credo, Dialyzer, Sobelow) + optional auto-merge for green dependency PRs.
 - **git_ops Hardening**: Scoped semantic-release tooling to dev environment to prevent prod/test startup issues.
+- Event Architecture: Broadway + Mnesia event processing fully operational
+- Bus Unification (new): Canonical EventBus affirmed; legacy Bus turned into a forwarding shim to avoid duplication
 
 ### **⚠️ TECHNICAL DEBT & WARNINGS**
 - **Erlang Dependencies**: Being eliminated through conversion to pure Elixir solution
@@ -502,51 +547,6 @@ Metadata: `actor_id`, `resource_id`, `transition`, `from`, `to`, `result`, durat
 2. Open DIP referencing this section (batch similar trivial conversions).
 3. Implement state_machine + telemetry + policy guards.
 4. Remove scattered manual state mutations.
-5. Generate flowcharts (`mix ash_state_machine.generate_flowcharts`).
-
-### Anti-Patterns
-- Modeling ephemeral UI view states as machine states.
-- Side-effects AFTER transition without compensation path.
-- Direct DB updates bypassing action transition.
-
-### Quality Gate
-PR must justify absence of a state machine if lifecycle semantics exist.
-
----
-
-Retry Policy Canonical Outcomes:
-`{:error, %{error: atom(), transient?: boolean, reason: term()}}`
-
-Compensate contract returns: `:retry | :continue | {:retry, backoff_ms}`
-
-Mermaid Diagram Requirement: All reactors must produce a `priv/diagrams/<reactor>.mmd` artifact in PR.
-
-Recursive Reactors MUST include: `exit_condition`, `max_iterations`, iteration metric, and idempotent state accumulation.
-
----
-
-## ⚖️ **BALANCE & HOMEOSTASIS METRICS**
-
-We track systemic balance via scheduled health snapshot → persisted metrics (ThunderFlow):
-
-| Metric | Source | Balance Signal | Threshold Alert |
-|--------|--------|----------------|-----------------|
-| `domain.resource.count` | Catalog diff | Sudden resource spikes | > +5 / sprint |
-| `event.queue.depth` | MnesiaProducer | Backpressure risk | P95 depth > 5x baseline |
-| `reactor.retry.rate` | Reactor telemetry | Transient instability | > 15% steps retried |
-| `reactor.undo.invocations` | Saga logs | Compensation load | > 5 undos / hr per reactor |
-| `ca.cell.churn.rate` | ThunderCell telemetry | Unstable automata gating | > 2x 24h moving avg |
-| `cross.domain.emit.fanout` | EventBus | Excess coupling emerging | > 6 target domains/event |
-| `warning.count` | Compilation heuristic | Code hygiene decay | > 250 sustained |
-
-Dashboard panels MUST visualize at least: queue depth, retry rate, fanout distribution.
-
-Alert Playbook (runbook entries in `/Docs/runbooks/`):
-1. Spike in retry rate → inspect last 10 failing step payloads; classify transient root cause.
-2. High fanout → evaluate if normalization or domain-specific aggregator missing.
-3. Resource spike → enforce consolidation or convert to calculations/actions.
-
----
 
 ## 🧭 **CHANGE CONTROL FLOW (SUMMARY)**
 

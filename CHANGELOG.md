@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [Unreleased]
+
+### Fixes / Maintenance
+* fix(websocket): correct system state pattern match preventing noisy "Failed to fetch system state: {:ok, %{...}}" debug logs (now matches on `{:ok, map}`)
+* docs: add explicit Feature Flags section (ENABLE_NDJSON, ENABLE_UPS, TL_ENABLE_REACTOR, SKIP_DEPS_GET, SKIP_ASH_SETUP)
+* docs: clarify former BOnus module migration – no separate `BOnus/` compile path required
+* chore: minor credo cleanups (remove semicolons in pattern matches, replace `length(list) > 0` with emptiness check)
+
+
 ## [v2.1.0](https://github.com/mo/thunderline/compare/v2.0.0...v2.1.0) (2025-08-20)
 
 

@@ -39,6 +39,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     if connected?(socket) do
       safe_try(fn -> DashboardMetrics.subscribe() end)
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, EventBuffer.topic()) end)
+      # Subscribe to realtime dashboard updates emitted by RealTimePipeline
+      safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, "thunderline_web:dashboard") end)
       safe_try(fn -> Bus.subscribe_status() end)
 
       :timer.send_interval(5_000, self(), :refresh_kpis)
@@ -549,7 +551,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     vals =
       kpis
       |> Enum.map(fn {_label, v, _meta} ->
-        case Integer.parse(to_string(v)) do {n, _} -> n; :error -> 10 end
+        case Integer.parse(to_string(v)) do
+          {n, _} -> n
+          :error -> 10
+        end
       end)
     smoothed = smooth(vals, 3)
     smoothed
@@ -607,5 +612,96 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   def handle_info({:status, %{source: "ups"} = st}, socket) do
     status = to_string(Map.get(st, :stage, Map.get(st, :status, "unknown")))
     {:noreply, assign(socket, :ups_status, status)}
+  end
+
+  @impl true
+  def handle_info({:dashboard_batch_update, %{"updates" => updates} = payload}, socket) do
+    # Convert realtime pipeline updates to UI-friendly events and append to feed
+    new_events =
+      updates
+      |> Enum.map(&to_ui_event/1)
+      |> Enum.map(&Map.put(&1, :anomaly, anomaly?(&1)))
+
+    events = (new_events ++ (socket.assigns[:events] || [])) |> Enum.take(50)
+
+    # If metrics are included elsewhere, we could refresh KPIs; keep lightweight for now
+    {:noreply, socket |> assign(:events, events)}
+  end
+
+  @impl true
+  def handle_info({:component_update, data}, socket) do
+    # Component-specific updates; emit a succinct line in feed
+    e = %{
+      source: to_string(Map.get(data, "component", "component")),
+      time: time_hhmmss(System.os_time(:second)),
+      message: summarize_component(data)
+    }
+    {:noreply, assign(socket, :events, [e | (socket.assigns.events || [])] |> Enum.take(50))}
+  end
+
+  @impl true
+  def handle_info({:dashboard_event, evt}, socket) do
+    # EventBuffer push path (fallback/compat)
+    e = %{
+      source: source_from_evt(evt),
+      time: time_hhmmss(System.os_time(:second)),
+      message: message_from_evt(evt, socket.assigns.active_domain)
+    }
+    {:noreply, assign(socket, :events, [e | (socket.assigns.events || [])] |> Enum.take(50))}
+  end
+
+  @impl true
+  def handle_info(:refresh_events, socket) do
+    {:noreply, refresh_events_assigns(socket)}
+  end
+
+  @impl true
+  def handle_info(:refresh_kpis, socket) do
+    {:noreply, assign(socket, :kpis, compute_kpis())}
+  end
+
+  @impl true
+  def handle_info({:metrics_update, payload}, socket) when is_map(payload) do
+    # Build KPIs straight from payload to reduce extra metric fetch calls
+    kpis = build_kpis_from_metrics(payload)
+    {:noreply, assign(socket, :kpis, kpis)}
+  end
+
+  # Defensive catch-all so unexpected messages don't crash the LiveView.
+  @impl true
+  def handle_info(_other, socket) do
+    {:noreply, socket}
+  end
+
+  defp to_ui_event(%{"event_type" => type, "data" => data} = ev) do
+    %{
+      source: to_string(type),
+      time: time_hhmmss(System.os_time(:second)),
+      message: summarize_realtime(ev, data)
+    }
+  end
+  defp to_ui_event(other) when is_map(other) do
+    %{
+      source: to_string(Map.get(other, "event_type", Map.get(other, :event_type, "event"))),
+      time: time_hhmmss(System.os_time(:second)),
+      message: inspect(Map.get(other, "data", other))
+    }
+  end
+
+  defp summarize_realtime(ev, data) do
+    comp = get_in(ev, ["data", "component"]) || Map.get(data, "component")
+    case comp do
+      nil ->
+        keys = data |> Map.keys() |> Enum.take(3)
+        "#{Map.get(ev, "event_type")} #{Enum.join(Enum.map(keys, &to_string/1), ",")}"
+      c ->
+        "#{Map.get(ev, "event_type")} -> #{c}"
+    end
+  end
+
+  defp summarize_component(data) do
+    comp = Map.get(data, "component") || Map.get(data, :component)
+    keys = data |> Map.delete("component") |> Map.delete(:component) |> Map.keys() |> Enum.take(3)
+    (comp && to_string(comp) <> ": ") <> Enum.join(Enum.map(keys, &to_string/1), ",")
   end
 end

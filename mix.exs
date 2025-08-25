@@ -26,8 +26,11 @@ defmodule Thunderline.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "BOnus/lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib", "BOnus/lib"]
+  # Compile only core lib/ by default. Experimental former BOnus modules have been
+  # migrated into proper domain folders under lib/thunderline/* so we no longer
+  # need to add a separate BOnus path.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
     [

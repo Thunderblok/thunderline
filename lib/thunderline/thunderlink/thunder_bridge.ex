@@ -579,7 +579,7 @@ defmodule Thunderline.ThunderBridge do
   end
 
   defp calculate_performance_metrics(performance_history) do
-    if length(performance_history) > 0 do
+    if performance_history != [] do
       recent_metrics = Enum.take(performance_history, -10)
 
       %{

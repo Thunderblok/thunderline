@@ -130,6 +130,29 @@ OWNER_USER_ID=<uuid> COMMUNITY_SLUG=general CHANNEL_SLUG=lobby mix thunderline.d
 
 Entrypoint script `scripts/docker/dev_entrypoint.sh` waits for DB readiness and runs migrations idempotently before launching Phoenix.
 
+### Feature Flags & Environment Toggles
+
+These environment variables gate optional subsystems or alter setup heuristics:
+
+| Variable | Values | Purpose | Default |
+|----------|--------|---------|---------|
+| `ENABLE_NDJSON` | `1` | Enable NDJSON structured event logging writer (UI toggle present) | disabled |
+| `ENABLE_UPS` | `1` | Start UPS watcher process (publishes power status to status bus) | disabled |
+| `ENABLE_SIGNAL_STACK` | `1` | Start experimental signal‑processing stack (PLL/Hilbert etc.) | disabled |
+| `TL_ENABLE_REACTOR` | `true/false` | Switch between simple EventProcessor path and Reactor orchestration | false |
+| `SKIP_DEPS_GET` | `true/false` | Skip automatic deps fetch during `mix setup` heuristic | false |
+| `SKIP_ASH_SETUP` | `true/false` | Skip Ash migrations in test alias for DB‑less unit tests | false |
+
+Set in your shell or `.envrc`:
+```bash
+export ENABLE_NDJSON=1
+export ENABLE_UPS=1
+```
+
+### Former BOnus Modules Migration
+
+Previously experimental modules under a `BOnus/` path have been promoted into their appropriate domain namespaces (`lib/thunderline/**`). The build no longer alters `elixirc_paths` to include a BOnus directory; references in historical documentation now refer to migrated code. If you encounter an old note mentioning `BOnus/lib`, treat it as already consolidated.
+
 ### Observability & Diagnostics Additions
 
 - In-memory noise buffer: `Thunderline.Thunderflow.Observability.RingBuffer` (live surfaced via noise console component) replaces legacy `Thunderline.Log.RingBuffer` path.

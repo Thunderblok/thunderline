@@ -71,6 +71,8 @@ defmodule Thunderline.Application do
       # NDJSON logger and UPS watcher are optional
       (System.get_env("ENABLE_NDJSON") in ["1","true","TRUE"] && {Thunderline.Log.NDJSON, [path: System.get_env("NDJSON_PATH") || "log/events.ndjson"]}) || nil,
       (System.get_env("ENABLE_UPS") in ["1","true","TRUE"] && Thunderline.Hardware.UPS) || nil,
+      # Signal-processing stack (BOnus/Current.*) gated behind feature flag
+      (System.get_env("ENABLE_SIGNAL_STACK") in ["1","true","TRUE"] && Thunderline.Current.Sensor) || nil,
       Thunderline.Persistence.Checkpoint
     ] |> Enum.filter(& &1)
 

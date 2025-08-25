@@ -1,2 +1,0 @@
-# Add selective suppressions here (avoid blanket ignores). Example:
-# :0: Unknown function: :erlang.binary_part/3
