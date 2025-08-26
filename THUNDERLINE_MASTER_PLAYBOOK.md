@@ -1,5 +1,51 @@
 # 🚀 THUNDERLINE MASTER PLAYBOOK: From Zero to AI Automation
 
+> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-10). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP.
+
+---
+
+## 🛡 HIGH COMMAND REVIEW: ACTION MATRIX (Aug 25 2025)
+
+| ID | Priority | Theme | Gap / Finding | Action (Decision) | Owner (TBD) | Status |
+|----|----------|-------|---------------|-------------------|-------------|--------|
+| HC-01 | P0 | Event Core | No unified publish helper | Implement `Thunderline.EventBus.publish_event/1` (validation + telemetry span) | Flow Steward | Not Started |
+| HC-02 | P0 | Bus API Consistency | Shim `Thunderline.Bus` still referenced | Codemod to canonical; emit deprecation warning | Flow Steward | Planned |
+| HC-03 | P0 | Observability Docs | Missing Event & Error taxonomy specs | Author `EVENT_TAXONOMY.md` & `ERROR_CLASSES.md` | Observability Lead | Not Started |
+| HC-04 | P0 | ML Persistence | Cerebros migrations parked | Move/run migrations; add lifecycle state machine | Bolt Steward | In Progress |
+| HC-05 | P0 | Email MVP | No email resources/flow | Add `Contact` & `OutboundEmail`, SMTP adapter, events | Gate+Link | Not Started |
+| HC-06 | P0 | Presence Policies | Membership & presence auth gaps | Implement policies + presence events join/leave | Link Steward | Not Started |
+| HC-07 | P0 | Deployment | No prod deploy tooling | Dockerfile, release script, systemd/unit, healthcheck | Platform | Not Started |
+| HC-08 | P0 | CI/CD Depth | Missing release pipeline, PLT cache, audit | Extend GH Actions (release, dialyzer cache, hex.audit) | Platform | Planned |
+| HC-09 | P0 | Error Handling | No classifier & DLQ policy | Central error classifier + Broadway DLQ + metrics | Flow Steward | Not Started |
+| HC-10 | P0 | Feature Flags | Flags undocumented | `FEATURE_FLAGS.md` (ENABLE_UPS, ENABLE_NDJSON, features.ml_nas, etc.) | Platform | Planned |
+| HC-11 | P1 | ThunderBridge | Missing ingest bridge layer | DIP + scaffold `Thunderline.ThunderBridge` | Gate Steward | Not Started |
+| HC-12 | P1 | DomainProcessor | Repeated consumer boilerplate | Introduce behaviour + generators + telemetry | Flow Steward | Not Started |
+| HC-13 | P1 | Voice/WebRTC | Unused media libs | MVP voice → intent pipeline (`voice.intent.detected`) | Link+Crown | Not Started |
+| HC-14 | P1 | Telemetry Dashboards | Sparse dashboards | Grafana JSON / custom LiveDashboard pages | Observability | Not Started |
+| HC-15 | P1 | Security Hardening | API keys, encryption coverage | API key resource + cloak coverage matrix | Gate Steward | Not Started |
+| HC-16 | P1 | Logging Standard | NDJSON schema undefined | Define versioned schema + field `log.schema.version` | Platform | Not Started |
+| HC-17 | P2 | Federation Roadmap | ActivityPub phases vague | Draft phased activation doc | Gate | Not Started |
+| HC-18 | P2 | Performance Baselines | No perf guard in CI | Add benches + regression thresholds | Platform | Not Started |
+| HC-19 | P2 | Mobile Readiness | No offline/mobile doc | Draft sync/offline strategy | Link | Not Started |
+
+Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
+
+### Consolidated P0 Launch Backlog (Definitive Order)
+1. HC-01 Event publish API
+2. HC-02 Bus codemod consolidation
+3. HC-03 Event & Error taxonomy docs
+4. HC-04 ML migrations live
+5. HC-05 Email MVP (resources + flow)
+6. HC-06 Presence & membership policies
+7. HC-07 Deployment scripts & containerization
+8. HC-08 CI/CD enhancements (release, audit, PLT caching)
+9. HC-09 Error classification + DLQ
+10. HC-10 Feature flags documentation
+
+Gate: All above = Milestone `M1-EMAIL-AUTOMATION` ✔
+
+---
+
 ## **🎯 THE VISION: Complete User Journey**
 **Goal**: Personal Autonomous Construct (PAC) that can handle real-world tasks like sending emails, managing files, calendars, and inventory through intelligent automation.
 
@@ -358,6 +404,8 @@ Additions:
 - Plan ThunderFlow routing for email tasks
 ```
 
+High Command Alignment: Map each planned task to HC P0 backlog where applicable (Email Flow ↔ HC-05, dashboard resource audit supports HC-06 presence groundwork). Sprint board cards must reference HC IDs.
+
 ### **Day 3-4: Foundation Building**
 ```bash
 # 1. ThunderBlock Dashboard MVP
@@ -384,6 +432,10 @@ Additions:
 - "Send email" command processing
 - Content generation
 - Actual email delivery
+
+# 3. P0 Backlog Burn-down Alignment
+- Ensure HC-01..HC-05 merged or in active PR review
+- Block non-P0 feature PRs until ≥70% P0 completion
 ```
 
 ---

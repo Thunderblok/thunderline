@@ -1,30 +1,21 @@
-defmodule Thunderline.Current.Hilbert do
-  @moduledoc "Sliding FIR Hilbert transformer for instantaneous analytic phase on a scalar signal."
+defmodule Thunderline.Thunderbolt.Signal.Hilbert do
+  @moduledoc "Sliding FIR Hilbert transformer for instantaneous analytic phase on a scalar signal. (migrated from Thunderline.Current.Hilbert)"
   @type t :: %__MODULE__{taps: tuple(), buf: tuple(), idx: non_neg_integer(), l: pos_integer()}
   defstruct taps: {}, buf: {}, idx: 0, l: 63
-
   @pi :math.pi()
-
   def new(l \\ 63) when is_integer(l) and rem(l, 2) == 1 and l > 3 do
     taps = taps(l)
     buf  = List.duplicate(0.0, l) |> List.to_tuple()
     %__MODULE__{taps: taps, buf: buf, idx: 0, l: l}
   end
-
   def step(%__MODULE__{taps: taps, buf: buf, idx: idx, l: l} = h, x) when is_number(x) do
     buf1 = put_elem(buf, idx, x)
-    acc =
-      0..(l-1)
-      |> Enum.reduce(0.0, fn k, a ->
-        a + elem(taps, k) * elem(buf1, rem(idx - k + l, l))
-      end)
-
+    acc = 0..(l-1) |> Enum.reduce(0.0, fn k, a -> a + elem(taps, k) * elem(buf1, rem(idx - k + l, l)) end)
     phi = :math.atan2(acc, x)
     phi_norm = Float.mod((phi + @pi) / (2.0 * @pi), 1.0)
     idx1 = rem(idx + 1, l)
     {%__MODULE__{h | buf: buf1, idx: idx1}, phi_norm}
   end
-
   defp taps(l) do
     m  = (l - 1) / 2
     0..(l-1)
@@ -39,7 +30,6 @@ defmodule Thunderline.Current.Hilbert do
     |> window_hamming(l)
     |> List.to_tuple()
   end
-
   defp window_hamming(h, l) do
     0..(l-1)
     |> Enum.map(fn k ->

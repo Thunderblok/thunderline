@@ -1,87 +1,11 @@
 defmodule Thunderchief.ObanHealth do
-  @moduledoc """
-  Lightweight monitor that periodically checks whether the Oban supervisor
-  is alive and publishes a status snapshot to PubSub ("oban:health").
-
-  This allows the dashboard to reflect actionable status even if Oban failed
-  during boot, and provides log guidance for remediation.
-  """
-  use GenServer
+  @moduledoc "Deprecated: use Thunderline.Thunderflow.Telemetry.ObanHealth"
+  @deprecated "Use Thunderline.Thunderflow.Telemetry.ObanHealth"
   require Logger
-  alias Phoenix.PubSub
-
-  @interval 5_000
-  @topic "oban:health"
-
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
-  def subscribe, do: PubSub.subscribe(Thunderline.PubSub, @topic)
-
-  @impl true
-  def init(_opts) do
-    schedule()
-    {:ok, %{last_status: nil}}
-  end
-
-  @impl true
-  def handle_info(:tick, state) do
-    status = snapshot()
-  maybe_log_change(state.last_status, status)
-  maybe_log_verbose(status)
-    PubSub.broadcast(Thunderline.PubSub, @topic, {:oban_health, status})
-    schedule()
-    {:noreply, %{state | last_status: status}}
-  end
-
-  defp schedule, do: Process.send_after(self(), :tick, @interval)
-
-  defp snapshot do
-    name = oban_instance_name()
-    pid = Oban.whereis(name)
-    %{
-      running?: is_pid(pid) and Process.alive?(pid),
-      queues: running_queues(pid),
-      node: Node.self(),
-      name: name,
-      ts: DateTime.utc_now()
-    }
-  end
-
-  defp running_queues(nil), do: []
-  defp running_queues(pid) do
-    try do
-      :sys.get_state(pid)
-      |> case do
-        %{conf: %{queues: queues}} -> Enum.map(queues, fn {name, _opts} -> name end)
-        _ -> []
-      end
-    rescue
-      _ -> []
-    end
-  end
-
-  defp maybe_log_change(nil, %{running?: false}) do
-  Logger.warning("[ObanHealth] Oban not running at startup – jobs will be deferred until it comes online (name=#{inspect(oban_instance_name())}).")
-  end
-  defp maybe_log_change(%{running?: prev}, %{running?: now}) when prev != now do
-    level = if now, do: :info, else: :error
-  Logger.log(level, "[ObanHealth] Oban running? changed #{inspect(prev)} -> #{inspect(now)} (name=#{inspect(oban_instance_name())})")
-  end
-  defp maybe_log_change(_, _), do: :ok
-
-  # Always emit a line every tick when verbose mode is enabled
-  defp maybe_log_verbose(%{running?: running?, queues: queues} = status) do
-    if verbose?() do
-      Logger.info("[ObanHealth][tick] running=#{running?} queues=#{inspect(queues)} node=#{status.node} name=#{inspect(status.name)} ts=#{DateTime.to_iso8601(status.ts)}")
-    end
-  end
-
-  defp verbose?, do: System.get_env("OBAN_HEALTH_VERBOSE") in ["1", "true", "TRUE", "yes", "Y"]
-
-  defp oban_instance_name do
-    Application.get_env(:thunderline, Oban, [])
-    |> Keyword.get(:name, Oban)
+  def start_link(opts \\ []) do emit(); Thunderline.Thunderflow.Telemetry.ObanHealth.start_link(opts) end
+  def subscribe, do: (emit(); Thunderline.Thunderflow.Telemetry.ObanHealth.subscribe())
+  defp emit do
+    :telemetry.execute([:thunderline, :deprecated_module, :used], %{count: 1}, %{module: __MODULE__})
+    Logger.warning("Deprecated module #{inspect(__MODULE__)} used; switch to Thunderline.Thunderflow.Telemetry.ObanHealth")
   end
 end

@@ -64,7 +64,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
       # Subscribe to Oban health updates if available
       try do
-  Thunderchief.ObanHealth.subscribe()
+  Thunderline.Thunderflow.Telemetry.ObanHealth.subscribe()
       rescue
         _ -> :ok
       end

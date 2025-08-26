@@ -1,11 +1,15 @@
-defmodule Thunderline.Hardware.UPS do
+defmodule Thunderline.Thundergate.UPS do
   @moduledoc """
-  Watches UPS via NUT or apcupsd and triggers boundary close on battery.
+  UPS watcher (migrated from Thunderline.Hardware.UPS). Polls backend (NUT/APC) and
+  emits status events to the bus. Old module remains as deprecated delegate.
   """
   use GenServer
-  alias Thunderline.Bus
+  alias Thunderline.EventBus, as: Bus
+  alias Thunderline.Thunderbolt.Signal.Sensor
+  @legacy Thunderline.Hardware.UPS
 
-  def start_link(_), do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  def start_link(args), do: GenServer.start_link(__MODULE__, args, name: __MODULE__)
+
   def init(_) do
     state = %{
       backend: System.get_env("UPS_BACKEND", "nut"),
@@ -21,16 +25,25 @@ defmodule Thunderline.Hardware.UPS do
   def handle_info(:poll, s) do
     {status, _raw} = read_status(s.backend, s.name)
     if status in [:on_battery, :low_battery] and s.last != status do
-      Bus.broadcast_status(%{stage: "paused", reason: "#{status}", source: "ups"})
-      try do _ = Thunderline.Current.Sensor.boundary_close(s.close_ms) rescue _ -> :ok end
+      Bus.publish(%{name: "system.power.event", payload: %{stage: "paused", reason: to_string(status), source: "ups"}})
+      safe_boundary_close(s.close_ms)
     end
     if status == :online and s.last in [:on_battery, :low_battery] do
-      Bus.broadcast_status(%{stage: "power_restored", source: "ups"})
+      Bus.publish(%{name: "system.power.event", payload: %{stage: "power_restored", source: "ups"}})
     end
     Process.send_after(self(), :poll, s.poll)
     {:noreply, %{s | last: status}}
   end
 
+  defp safe_boundary_close(ms) do
+    try do
+      Sensor.boundary_close(ms)
+    rescue
+      _ -> :ok
+    end
+  end
+
+  # (Copied from legacy implementation)
   defp read_status("nut", name) do
     case System.find_executable("upsc") do
       nil -> {:unknown, "upsc not found"}

@@ -185,7 +185,7 @@ The domain-driven design allows for selective scaling of individual system compo
 Thunderline uses a **gated event processing architecture** that provides both simplicity and power:
 
 **Default Path (TL_ENABLE_REACTOR=false)**:
-- Simple, direct event processing via `Thunderline.EventProcessor`
+- Simple, direct event processing via `Thunderline.Thunderflow.Processor` (replaces deprecated `Thunderline.EventProcessor`)
 - Optimized for high-throughput with minimal overhead
 - Exponential backoff with jitter for resilient retries
 - Circuit breaker protection for external services

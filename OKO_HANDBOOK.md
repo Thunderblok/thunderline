@@ -9,6 +9,47 @@
 ## 🛰️ AGENT RAZOR SITREP — August 25, 2025
 > Independent sweep across core, ThunderFlow, ThunderBolt (Cerebros), and (former) BOnus modules (now fully migrated). Focus: event bus unification, dashboard wiring, optional features (UPS/NDJSON), and ML persistence.
 
+### 🔭 High Command External Review (Aug 25 2025) — Integrated Summary
+External architectural & readiness audit produced prioritized launch gating backlog (HC-01..HC-10) now codified in Playbook ACTION MATRIX. Handbook records rationale layer; execution tracker lives in Playbook.
+
+Key Accepted Findings (Doc Expansion Applied Aug 25 2025):
+- (HC-01) Event publish helper absent → increases risk of divergent manual dispatch & missing telemetry.
+- (HC-02) Residual shim alias usage creates conceptual double bus.
+- (HC-03) Lack of canonical Event & Error taxonomy docs complicates cross-team alignment & SLO definition (addressed: Expanded `EVENT_TAXONOMY.md` v0.2 & `ERROR_CLASSES.md` v0.2 drafts seeded with governance + schema examples).
+- (HC-04) Cerebros persistence disabled (migrations parked) blocking ML artifact auditability.
+- (HC-05) Email MVP path undefined yet chosen as first user-facing automation goal.
+- (HC-06) Presence & membership authorization incomplete = chat/presence instability risk.
+- (HC-07) Missing production deployment scripts = operational uncertainty.
+- (HC-08) CI lacks release packaging, dialyzer PLT caching, security audit (hex.audit), test partitioning.
+- (HC-09) No centralized error classification / dead-letter governance.
+- (HC-10) Feature flags undocumented; risk of hidden runtime behavior variance (addressed: Expanded `FEATURE_FLAGS.md` v0.2 with governance + override mechanics).
+
+Strategic (P1/P2) Additions (post-launch hardening / scaling): ThunderBridge ingest layer (HC-11), DomainProcessor behaviour (HC-12), Voice/WebRTC (HC-13), richer telemetry dashboards (HC-14), security hardening expansion (HC-15), logging schema versioning (HC-16), federation phased roadmap (HC-17), performance baselines & regression guard (HC-18), mobile/offline strategy (HC-19).
+
+Rationale / Mitigation Notes:
+- Unified publish API will enforce `%Thunderline.Event{}` shape & trace span context → lower integration entropy.
+- Taxonomy docs (`EVENT_TAXONOMY.md`, `ERROR_CLASSES.md`) become basis for SLO (retry rates, DLQ thresholds) & governance gates.
+- ML migrations unblock run lineage, enabling reproducibility & later cost accounting.
+- Deployment scripts codify release reproducibility (container digest, migration automation, healthcheck endpoint).
+- Error classifier centralizes mapping (transient/permanent/user/system) feeding Broadway retry + DLQ metrics.
+- Feature flag registry improves auditability & change risk review.
+
+Cross-References:
+- Playbook section: HIGH COMMAND REVIEW: ACTION MATRIX (authoritative backlog)
+- Docs (HC-03 drafts complete): `EVENT_TAXONOMY.md` (v0.2), `ERROR_CLASSES.md` (v0.2)
+- Docs (HC-10 draft complete): `FEATURE_FLAGS.md` (v0.2)
+- Planned Mix Tasks: `mix thunderline.events.lint`, `mix thunderline.flags.audit` (see doc TODO sections)
+
+Gating Definition: All P0 (HC-01..HC-10) must be GREEN before milestone `M1-EMAIL-AUTOMATION` (public pilot). Non-P0 feature PRs paused once P0 completion <70% until catch-up.
+
+Risk if Deferred:
+- Without HC-01/02 divergence will grow; taxonomy drift harder to reconcile retroactively.
+- Shipping Email MVP without ML migrations (HC-04) limits observability of generated content performance/tuning.
+- Lack of deployment automation (HC-07) increases incident MTTR & onboarding friction.
+
+Tracking: Status values mirrored daily from Playbook into sitrep delta block; handbook retains summary only (no granular status churn to avoid duplication). Governance-affecting doc changes use commit prefix `GOV:`.
+
+
 Summary
 - Event Bus: Canonical bus exists at `Thunderline.EventBus` (ThunderFlow). Legacy `Thunderline.Bus` kept as a compatibility shim and now forwards to the canonical pipelines. Decision: no runtime breakage; prefer EventBus in new code, shim remains until alias migration completes.
 - Dashboard: LiveView is stable and minimal. Uses `EventBuffer.snapshot/1` for feed and listens to Bus status for UPS. Real-time pipeline already broadcasts optimized topics; next step is to subscribe to those for live metrics and reduce reliance on buffer snapshots.
@@ -30,8 +71,9 @@ Next 48h (proposed deltas)
 1. Apply ML persistence migrations: move the Cerebros migrations from `priv/repo/_backup_*/` to `priv/repo/migrations/` and run them.
 2. LiveView wiring: subscribe dashboard to ThunderFlow real-time topics (metrics and dashboard batches) and de-emphasize buffer snapshots.
 3. Codemod pass: replace `alias Thunderline.Bus` with `Thunderline.EventBus` where safe; leave shim for legacy tuple consumers.
-4. Clarify feature flags: document `ENABLE_UPS`, `ENABLE_NDJSON`, and default paths in the handbook runbooks.
+4. (Done) Clarify feature flags: documented `ENABLE_UPS`, `ENABLE_NDJSON`, broader registry now in `FEATURE_FLAGS.md` v0.2.
 5. (Done) BOnus promotion: `Log.NDJSON` and `Persistence.Checkpoint` already live under consolidated domains; flags documented.
+6. Seed stubs (optional): `mix thunderline.events.lint` & `mix thunderline.flags.audit` tasks.
 
 Health signals to watch
 - `event.queue.depth` (MnesiaProducer tables) — trending and p95 vs baseline

@@ -38,11 +38,11 @@ defmodule Thunderline.Application do
       []
     else
       [
-        Thunderline.Repo,
-        Thunderline.MigrationRunner,
-        {Oban, oban_config()},
-  Thunderchief.ObanHealth,
-  Thunderchief.ObanDiagnostics,
+    Thunderline.Repo,
+    Thunderline.MigrationRunner,
+    {Oban, oban_config()},
+    Thunderline.Thunderflow.Telemetry.ObanHealth,
+    Thunderline.Thunderflow.Telemetry.ObanDiagnostics,
         {AshAuthentication.Supervisor, [otp_app: :thunderline]}
       ]
     end
@@ -68,12 +68,12 @@ defmodule Thunderline.Application do
 
     extras = [
       {Task, fn -> try do Thunderline.Bus.init_tables() rescue _ -> :ok end end},
-      # NDJSON logger and UPS watcher are optional
-      (System.get_env("ENABLE_NDJSON") in ["1","true","TRUE"] && {Thunderline.Log.NDJSON, [path: System.get_env("NDJSON_PATH") || "log/events.ndjson"]}) || nil,
-      (System.get_env("ENABLE_UPS") in ["1","true","TRUE"] && Thunderline.Hardware.UPS) || nil,
-      # Signal-processing stack (BOnus/Current.*) gated behind feature flag
-      (System.get_env("ENABLE_SIGNAL_STACK") in ["1","true","TRUE"] && Thunderline.Current.Sensor) || nil,
-      Thunderline.Persistence.Checkpoint
+      # NDJSON logger and UPS watcher now gated by feature helper (HC-10)
+  (Thunderline.Feature.enabled?(:enable_ndjson) && {Thunderline.Thunderflow.Observability.NDJSON, [path: System.get_env("NDJSON_PATH") || "log/events.ndjson"]}) || nil,
+  (Thunderline.Feature.enabled?(:enable_ups) && Thunderline.Thundergate.UPS) || nil,
+      # Signal-processing stack (legacy env flag until migrated to unified registry)
+  (System.get_env("ENABLE_SIGNAL_STACK") in ["1","true","TRUE"] && Thunderline.Thunderbolt.Signal.Sensor) || nil,
+  Thunderline.Thunderblock.Checkpoint
     ] |> Enum.filter(& &1)
 
   # IMPORTANT: Start DB + migrations BEFORE any pipelines or processes that might query the DB.

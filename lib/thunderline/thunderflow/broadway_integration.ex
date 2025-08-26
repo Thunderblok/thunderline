@@ -55,7 +55,7 @@ defmodule Thunderflow.BroadwayIntegration do
   def migration_phase_2_cross_domain do
     %{
       current_cross_domain_patterns: [
-        "Manual Oban job creation in Thunderchief.Domain",
+  "Manual Oban job creation in Thunderflow domain",
         "Direct PubSub broadcasts between domains",
         "No structured event transformation between domains",
         "No batching of cross-domain messages",

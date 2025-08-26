@@ -193,7 +193,7 @@ defmodule Thunderblock.Resources.ZoneContainer do
         Thunderblock.ZoneManager.start_zone(zone.id)
 
         # Report to Thunderchief orchestrator
-        Thunderchief.ClusterStateManager.register_zone(zone.id, %{
+  Thunderline.Thunderflow.ClusterStateManager.register_zone(zone.id, %{
           zone_name: zone.zone_name,
           zone_type: zone.zone_type,
           capacity_config: zone.capacity_config
@@ -398,7 +398,7 @@ defmodule Thunderblock.Resources.ZoneContainer do
         case Ash.update!(changeset) do
           zone ->
             # Report health to Thunderchief orchestrator
-            Thunderchief.ClusterStateManager.report_zone_health(zone.id, %{
+            Thunderline.Thunderflow.ClusterStateManager.report_zone_health(zone.id, %{
               health_score: zone.health_score,
               status: zone.status,
               current_usage: zone.current_usage,

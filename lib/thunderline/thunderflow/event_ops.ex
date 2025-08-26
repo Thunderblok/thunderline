@@ -24,10 +24,10 @@ defmodule Thunderline.Integrations.EventOps do
           if reactor_enabled?() do
             case Code.ensure_loaded(Thunderline.Reactors.RealtimeReactor) do
               {:module, _} -> Reactor.run(Thunderline.Reactors.RealtimeReactor, %{event: event})
-              _ -> Thunderline.EventProcessor.process_event(event)
+              _ -> Thunderline.Thunderflow.Processor.process_event(event)
             end
           else
-            Thunderline.EventProcessor.process_event(event)
+            Thunderline.Thunderflow.Processor.process_event(event)
           end
 
         case result do

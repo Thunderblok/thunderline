@@ -281,7 +281,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "event" => event,
       "domain" => "thundercore"
     }
-    |> Thunderchief.Jobs.DomainProcessor.new()
+  |> Thunderline.Thunderflow.Jobs.DomainProcessor.new()
     |> Oban.insert()
   end
 
@@ -291,7 +291,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "event" => event,
       "domain" => "thunderblock"
     }
-    |> Thunderchief.Jobs.DomainProcessor.new()
+  |> Thunderline.Thunderflow.Jobs.DomainProcessor.new()
     |> Oban.insert()
   end
 
@@ -301,7 +301,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "event" => event,
       "domain" => "thunderbolt"
     }
-    |> Thunderchief.Jobs.DomainProcessor.new()
+  |> Thunderline.Thunderflow.Jobs.DomainProcessor.new()
     |> Oban.insert()
   end
 

@@ -63,7 +63,7 @@ defmodule Mix.Tasks.Thunderline.Oban.Check do
 
     if opts[:sample] do
       IO.puts("\n== 🧪 Enqueue Sample DemoJob ==")
-      {:ok, job} = Oban.insert(Thunderchief.Jobs.DemoJob.new(%{"source" => "mix_check"}))
+  {:ok, job} = Oban.insert(Thunderline.Thunderflow.Jobs.DemoJob.new(%{"source" => "mix_check"}))
       IO.puts("Inserted job id=#{job.id} state=#{job.state}")
     end
 

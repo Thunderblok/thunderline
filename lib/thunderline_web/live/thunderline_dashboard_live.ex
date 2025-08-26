@@ -13,8 +13,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   alias Thunderline.DashboardMetrics
   alias Thunderline.Thunderflow.EventBuffer
   alias Thunderline.Bus
-  alias Thunderline.Log.NDJSON
-  alias Thunderline.Persistence.Checkpoint
+  alias Thunderline.Thunderflow.Observability.NDJSON
+  alias Thunderline.Thunderblock.Checkpoint
 
   # Domain tree used by helper functions (was removed earlier; re-added).
   @sample_domains [

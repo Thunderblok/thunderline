@@ -1,0 +1,223 @@
+# 📚 Event Taxonomy (Draft v0.2)
+
+> Related High Command Item: HC-03 (P0)  
+> Status: Expanded draft — adds governance rules, schema examples, correlation policy, domain matrix. Remaining automation tasks tracked in TODO section.
+
+## 1. Purpose
+Provide a canonical, versioned specification for all events exchanged within Thunderline so that:
+- Producers emit normalized `%Thunderline.Event{}` shapes
+- Consumers rely on stable categories & namespaces
+- Telemetry, logging, and retry/DLQ semantics are consistent
+- Backpressure & fanout analysis has a dependable semantic layer
+
+## 2. Scope
+Covers *domain-level* events (business + orchestration) and *system-level* events (infrastructure, telemetry worthy operational signals). Excludes low-level library telemetry (e.g. `:telemetry` spans) — those map into Observability dashboards but sit outside taxonomy governance.
+
+## 3. Versioning
+| Field | Meaning |
+|-------|---------|
+| `taxonomy_version` | Integer monotonically incremented for breaking semantic changes |
+| `event_version` | Per-event schema version (payload shape change) |
+| `deprecated_at` | Optional ISO8601 for sunset schedule |
+
+Breaking changes require DIP referencing this file & migration notes.
+
+## 4. Namespace Conventions
+```
+<layer>.<domain>.<category>.<action>[.<phase>]
+```
+Examples:
+- `ui.command.email.requested`
+- `system.email.sent`
+- `system.presence.join`
+- `ai.intent.email.compose`
+- `flow.reactor.retry`
+
+Guidelines:
+- Use singular nouns (`email`, not `emails`).
+- Prefer verbs for terminal actions (`sent`, `failed`, `completed`).
+- Reserve `ui.command.*` for direct user-intent capture before orchestration expansion.
+
+## 5. Event Envelope (Normalized)
+```elixir
+%Thunderline.Event{
+  id: UUIDv7,
+  at: DateTime.utc_now(),
+  name: "<namespace>",
+  source: :<atom_domain>,
+  actor: %{id: <binary>|nil, type: :user|:system},
+  correlation_id: <UUID or trace id>,
+  causation_id: <parent event id>|nil,
+  taxonomy_version: 1,
+  event_version: <int>,
+  payload: %{},
+  meta: %{
+    trace: <otel span ctx optional>,
+    flags: [:experimental | :deprecated],
+    reliability: :transient | :persistent
+  }
+}
+```
+
+Envelope Invariants:
+- `id` MUST be UUID v7 (time sortable) — enables ingestion ordering heuristics.
+- `correlation_id` stable across a logical transaction (e.g., full email send flow) — FIRST event's `id` becomes correlation id for subsequent derived events when no upstream correlation exists.
+- `causation_id` ALWAYS points to the direct parent event that triggered the emission (acyclic chain).
+- `taxonomy_version` bump ONLY on breaking semantic categorization shift, not on payload tweaks.
+- `event_version` increments when payload contract (required/optional fields) changes — consumers must handle N and N-1 during rollout.
+- `source` is the originating *domain atom* (see Section 12); NEVER a module name.
+
+## 6. Lifecycle Categories
+| Category | Description | Example Names |
+|----------|-------------|---------------|
+| `ui.command` | Raw user intent | `ui.command.email.requested` |
+| `ai.intent` | Interpreted AI intent or disambiguation | `ai.intent.email.compose` |
+| `system` | Internal system action results | `system.email.sent` |
+| `flow.reactor` | Reactor orchestration steps / retries | `flow.reactor.retry` |
+| `presence` | User or agent presence transitions | `system.presence.join` |
+| `ml.run` | ML lifecycle transitions | `ml.run.completed` |
+
+(Initial table; to be expanded.)
+
+Phases (optional final segment) SHOULD be used when an action has distinguishable, observable internal stages that matter for SLOs (e.g., `system.email.dispatch.started`, `system.email.dispatch.completed`). Avoid over‑fragmentation; prefer a single terminal action plus reactor instrumentation unless external latency attribution benefits.
+
+## 7. Canonical Event Registry (Seed Set)
+| Name | Version | Payload Schema (Summary) | Reliability | Notes |
+|------|---------|--------------------------|-------------|-------|
+| `ui.command.email.requested` | 1 | `%{to: binary, subject: binary|nil, raw_text: binary}` | persistent | Entry point (HC-05) |
+| `ai.intent.email.compose` | 1 | `%{to: list(binary), topic: binary, confidence: float}` | transient | Downstream of UI command |
+| `system.email.sent` | 1 | `%{message_id: binary, to: list(binary), subject: binary}` | persistent | Terminal success |
+| `system.email.failed` | 1 | `%{to: list(binary), reason: binary, code: integer|nil}` | persistent | Terminal failure - classify error |
+| `system.presence.join` | 1 | `%{channel_id: binary, user_id: binary}` | transient | Presence bookkeeping |
+| `system.presence.leave` | 1 | `%{channel_id: binary, user_id: binary}` | transient | Presence bookkeeping |
+| `ml.run.started` | 1 | `%{run_id: binary, model: binary}` | persistent | After state transition -> running |
+| `ml.run.completed` | 1 | `%{run_id: binary, model: binary, duration_ms: integer}` | persistent | State transition completed |
+| `flow.reactor.retry` | 1 | `%{reactor: binary, step: binary, attempt: integer, reason: binary}` | transient | Observability & SLO |
+
+Schema Detail (Selected):
+```elixir
+# ui.command.email.requested v1
+%{
+  to: binary(),                # Raw string as provided by user (pre-parsing)
+  subject: binary() | nil,
+  raw_text: binary()           # Unstructured user text
+}
+
+# ai.intent.email.compose v1
+%{
+  to: [binary()],              # Normalized list of resolved addresses
+  topic: binary(),             # Canonicalized subject/topic extraction
+  confidence: float()          # 0.0..1.0 classifier confidence
+}
+
+# system.email.failed v1
+%{
+  to: [binary()],
+  reason: binary(),            # Human readable
+  code: integer() | nil,       # Transport/provider code
+  class: atom() | nil          # Error classifier result (when available)
+}
+```
+
+JSON Schema (excerpt) for `system.email.sent`:
+```json
+{
+  "$id": "https://schema.thunderline.dev/event/system.email.sent.v1.json",
+  "type": "object",
+  "required": ["message_id", "to", "subject"],
+  "properties": {
+    "message_id": {"type": "string"},
+    "to": {"type": "array", "items": {"type": "string", "format": "email"}},
+    "subject": {"type": ["string", "null"], "maxLength": 512}
+  },
+  "additionalProperties": false
+}
+```
+
+## 8. Reliability Semantics
+| Reliability | Storage Expectation | Retry on Failure | Notes |
+|-------------|---------------------|------------------|-------|
+| `persistent` | Stored/durable (DB or append log) | At-least-once | Business state mutation or audit |
+| `transient` | May be in-memory only | Best-effort | High volume / ephemeral signals |
+
+## 9. Taxonomy Governance Workflow
+1. Propose new event: DIP referencing this file.
+2. Include: purpose, consumers, reliability classification, sample payload.
+3. Assign `event_version = 1` (or increment if existing).
+4. Update table + add tests for shape validation.
+5. PR must receive steward + observability sign-off.
+
+## 10. Deprecation Policy
+- Mark with meta flag `:deprecated` and add `deprecated_at`.
+- Provide replacement event name.
+- Maintain for ≥2 release cycles or 30 days (whichever longer) before removal.
+
+## 11. Open TODOs (for completion of HC-03)
+- [x] Add full domain → event matrix (Section 12 seed)
+- [x] Add JSON Schema examples per event (selected examples added)
+- [x] Document correlation/causation threading rules (Section 5 invariants & Section 13)
+- [ ] Add additional JSON Schema for remaining seed events
+- [ ] Ship automated linter mix task (`mix thunderline.events.lint`) — see Section 14
+- [ ] Generate docs site variant (mdbook or LiveDashboard page) from registry
+- [ ] Add fanout guard metrics spec
+
+## 12. Domain → Event Category Matrix (Seed)
+| Domain (source) | Allowed Top-Level Categories | Notes |
+|-----------------|------------------------------|-------|
+| `:gate` (Auth/Gateway) | `ui.command`, `system`, `presence` | Auth flows, presence join/leave |
+| `:flow` (Pipelines/Reactor) | `flow.reactor`, `system` | Reactor orchestration + internal pipeline completions |
+| `:bolt` (ML / ThunderBolt) | `ml.run`, `system` | ML lifecycle & internal orchestration |
+| `:link` (Comms / Chat / Email) | `ui.command`, `system` | User intents & email outcomes |
+| `:crown` (AI Governance) | `ai.intent`, `system` | AI interpretation & governance decisions |
+| `:block` (Provisioning/Tenancy) | `system` | Provisioning, server lifecycle events |
+| `:bridge` (Future Ingest Layer) | `system`, `ui.command` | External ingest normalization |
+
+Violations (emitting a category not in the domain row) MUST be justified in PR description & typically indicate domain boundary confusion.
+
+## 13. Correlation & Causation Threading Rules
+| Scenario | Correlation Rule | Causation Rule | Example |
+|----------|------------------|----------------|---------|
+| First user command | `correlation_id = id` | `causation_id = nil` | `ui.command.email.requested` |
+| AI intent derived | Inherit from parent | `causation_id = parent.id` | `ai.intent.email.compose` |
+| Reactor step retry | Inherit from original root | `causation_id = previous attempt id` | `flow.reactor.retry` |
+| Terminal success/failure | Inherit | `causation_id = immediate predecessor (intent or reactor)` | `system.email.sent` |
+| Fanout (parallel steps) | Inherit | `causation_id = originating split event` | Multiple parallel reactor steps |
+
+Never re-base a correlation mid-flow. If a *new* logical transaction emerges (e.g., follow-up automation triggered by email success), start a NEW correlation with that event's id.
+
+## 14. Automated Lint / Validation (Planned)
+Proposed Mix Task: `mix thunderline.events.lint`
+Checks:
+1. All event names used in code exist in registry (this file parsed as data section).
+2. No forbidden domain→category pairings (Section 12).
+3. Payload validation: selected events have JSON Schema file present.
+4. Deprecations older than grace window raise warning.
+5. Ensures correlation/causation presence according to category transitions (heuristic ruleset):
+   - `ui.command.*` must have `causation_id == nil`.
+   - Non-root events must have non-nil `causation_id` unless explicitly flagged `:root`.
+6. Emits summary metrics for gating CI.
+
+Implementation Sketch:
+```elixir
+defmodule Mix.Tasks.Thunderline.Events.Lint do
+  use Mix.Task
+  @shortdoc "Validate event taxonomy adherence"
+  def run(_argv) do
+    {:ok, registry} = Thunderline.Events.Registry.load()
+    issues = Thunderline.Events.Linter.run(registry)
+    Thunderline.Events.Linter.print(issues)
+    if Enum.any?(issues, & &1.severity == :error) do
+      Mix.raise("Event taxonomy lint failed")
+    end
+  end
+end
+```
+
+## 15. Future Extensions
+- CloudEvents mapping (add explicit attributes section for external boundary translation).
+- Dynamic registry generation to publish machine-readable artifact (JSON) for tooling.
+- Event replay guidelines & immutability guarantees.
+- Governance metrics: `taxonomy.drift.detected` telemetry when unknown events observed.
+
+---
+Expanded draft complete. Populate remaining schema files & linter code in subsequent PRs.
