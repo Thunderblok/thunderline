@@ -36,22 +36,21 @@ defmodule Thunderline.DeprecatedModulesTelemetryTest do
     Enum.each(@deprecated_modules, fn mod ->
       # Invoke one public function to trigger emit/0. Use best-effort per module.
       invoke_once(mod)
-  assert_receive {:deprecated_fired, %{count: 1}, %{module: ^mod}}, 200,
-                     "Expected telemetry for #{inspect(mod)}"
+      assert_receive {:deprecated_fired, %{count: 1}, %{module: ^mod}}, 200,
+        "Expected telemetry for #{inspect(mod)}"
     end)
   end
 
-  defp invoke_once(Thunderchief.ObanHealth), do: catch_start(fn -> Thunderchief.ObanHealth.start_link([]) end)
-  defp invoke_once(Thunderchief.ObanDiagnostics), do: catch_start(fn -> Thunderchief.ObanDiagnostics.start_link([]) end)
-  defp invoke_once(Thunderline.EventProcessor), do: Thunderline.EventProcessor.process_event(%{type: :test})
-  defp invoke_once(Thunderline.Current.CircStats), do: Thunderline.Current.CircStats.mean_dir([0.0])
-  defp invoke_once(Thunderline.Current.Hilbert), do: Thunderline.Current.Hilbert.new(3)
-  defp invoke_once(Thunderline.Current.Lease), do: Thunderline.Current.Lease.make(:inj, :del, 1)
-  defp invoke_once(Thunderline.Current.PLL), do: safe_call(fn -> Thunderline.Current.PLL.step(%{phi: 0.0, omega: 0.25, eps: 0.1, kappa: 0.05}, true) end)
-  defp invoke_once(Thunderline.Current.PLV), do: Thunderline.Current.PLV.plv([0.0])
-  defp invoke_once(Thunderline.Current.SafeClose), do: Thunderline.Current.SafeClose.start_link(nil)
-
-  defp catch_start(fun), do: safe_call(fun)
+  # Use the explicit test emit helpers to avoid side effects and supervision dependencies.
+  defp invoke_once(Thunderchief.ObanHealth), do: Thunderchief.ObanHealth.__deprecated_test_emit__()
+  defp invoke_once(Thunderchief.ObanDiagnostics), do: Thunderchief.ObanDiagnostics.__deprecated_test_emit__()
+  defp invoke_once(Thunderline.EventProcessor), do: Thunderline.EventProcessor.__deprecated_test_emit__()
+  defp invoke_once(Thunderline.Current.CircStats), do: Thunderline.Current.CircStats.__deprecated_test_emit__()
+  defp invoke_once(Thunderline.Current.Hilbert), do: Thunderline.Current.Hilbert.__deprecated_test_emit__()
+  defp invoke_once(Thunderline.Current.Lease), do: Thunderline.Current.Lease.__deprecated_test_emit__()
+  defp invoke_once(Thunderline.Current.PLL), do: Thunderline.Current.PLL.__deprecated_test_emit__()
+  defp invoke_once(Thunderline.Current.PLV), do: Thunderline.Current.PLV.__deprecated_test_emit__()
+  defp invoke_once(Thunderline.Current.SafeClose), do: Thunderline.Current.SafeClose.__deprecated_test_emit__()
 
   defp safe_call(fun) do
     try do

@@ -24,6 +24,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
     defaults [:read]
 
     create :create do
+      primary? true
       accept [
         :provider,
         :model,
@@ -44,7 +45,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
         %{run_id: id} |> Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor.new() |> Oban.insert()
         {:ok, result, changeset}
       end)
-    end
+  end
 
     update :update_status do
       accept [:status, :started_at, :completed_at, :error_message]

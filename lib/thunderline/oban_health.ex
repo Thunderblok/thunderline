@@ -8,4 +8,6 @@ defmodule Thunderchief.ObanHealth do
     :telemetry.execute([:thunderline, :deprecated_module, :used], %{count: 1}, %{module: __MODULE__})
     Logger.warning("Deprecated module #{inspect(__MODULE__)} used; switch to Thunderline.Thunderflow.Telemetry.ObanHealth")
   end
+  # Test helper to emit deprecation telemetry without starting linked process
+  def __deprecated_test_emit__, do: emit()
 end

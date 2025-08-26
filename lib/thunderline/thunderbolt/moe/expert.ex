@@ -31,7 +31,8 @@ defmodule Thunderline.MoE.Expert do
   actions do
     defaults [:read]
     create :register do
-      accept [:name, :version, :status, :latency_budget_ms, :metrics, :model_artifact_ref]
+      # Include :tenant_id to satisfy allow_nil?: false constraint on tenant-scoped resource
+      accept [:tenant_id, :name, :version, :status, :latency_budget_ms, :metrics, :model_artifact_ref]
     end
     update :update_metrics do
       accept [:metrics, :status]
