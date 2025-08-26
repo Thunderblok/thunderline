@@ -61,7 +61,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   end
 
   @impl Broadway
-  def handle_message(processor, %Message{} = message, _context) do
+  def handle_message(_processor, %Message{} = message, _context) do
     event_data =
       case message.data do
         bin when is_binary(bin) ->
@@ -126,26 +126,18 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
     events = Enum.map(messages, & &1.data)
 
-    # Process agent updates with minimal latency
-    case process_agent_updates_batch(events) do
-      :ok ->
-        # Immediate broadcast to dashboard
-        PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderline:agents:batch_update",
-          {:agent_batch_processed,
-           %{
-             count: length(events),
-             timestamp: DateTime.utc_now()
-           }}
-        )
-
-        messages
-
-      {:error, reason} ->
-        Logger.error("Agent updates batch failed: #{inspect(reason)}")
-        Enum.map(messages, &Message.failed(&1, reason))
-    end
+    # Process agent updates with minimal latency (currently infallible)
+    :ok = process_agent_updates_batch(events)
+    PubSub.broadcast(
+      Thunderline.PubSub,
+      "thunderline:agents:batch_update",
+      {:agent_batch_processed,
+       %{
+         count: length(events),
+         timestamp: DateTime.utc_now()
+       }}
+    )
+    messages
   end
 
   @impl Broadway
@@ -154,23 +146,14 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
     events = Enum.map(messages, & &1.data)
 
-    case process_system_metrics_batch(events) do
-      :ok ->
-        # Aggregate and broadcast metrics
-        aggregated_metrics = aggregate_metrics(events)
-
-        PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderline:metrics:update",
-          {:metrics_batch_processed, aggregated_metrics}
-        )
-
-        messages
-
-      {:error, reason} ->
-        Logger.error("System metrics batch failed: #{inspect(reason)}")
-        Enum.map(messages, &Message.failed(&1, reason))
-    end
+    :ok = process_system_metrics_batch(events)
+    aggregated_metrics = aggregate_metrics(events)
+    PubSub.broadcast(
+      Thunderline.PubSub,
+      "thunderline:metrics:update",
+      {:metrics_batch_processed, aggregated_metrics}
+    )
+    messages
   end
 
   @impl Broadway
@@ -179,24 +162,14 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
     events = Enum.map(messages, & &1.data)
 
-    # Process dashboard updates and send to LiveView
-    case process_dashboard_updates_batch(events) do
-      :ok ->
-        # Send optimized updates to all dashboard clients
-        dashboard_payload = optimize_dashboard_payload(events)
-
-        PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderline_web:dashboard",
-          {:dashboard_batch_update, dashboard_payload}
-        )
-
-        messages
-
-      {:error, reason} ->
-        Logger.error("Dashboard updates batch failed: #{inspect(reason)}")
-        Enum.map(messages, &Message.failed(&1, reason))
-    end
+    :ok = process_dashboard_updates_batch(events)
+    dashboard_payload = optimize_dashboard_payload(events)
+    PubSub.broadcast(
+      Thunderline.PubSub,
+      "thunderline_web:dashboard",
+      {:dashboard_batch_update, dashboard_payload}
+    )
+    messages
   end
 
   @impl Broadway
@@ -205,19 +178,11 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
     events = Enum.map(messages, & &1.data)
 
-    # Ultra-fast WebSocket broadcasting
-    case process_websocket_broadcasts_batch(events) do
-      :ok ->
-        # Side-channel: forward embedding/time-series events to drift ingestion topic
-        Enum.each(events, fn %{"event_type" => "timeseries_embedding", "data" => data} ->
-          Phoenix.PubSub.broadcast(Thunderline.PubSub, "drift:embedding", {:timeseries_embedding, data})
-        _ -> :ok end)
-        messages
-
-      {:error, reason} ->
-        Logger.error("WebSocket broadcasts batch failed: #{inspect(reason)}")
-        Enum.map(messages, &Message.failed(&1, reason))
-    end
+    :ok = process_websocket_broadcasts_batch(events)
+    Enum.each(events, fn %{"event_type" => "timeseries_embedding", "data" => data} ->
+      Phoenix.PubSub.broadcast(Thunderline.PubSub, "drift:embedding", {:timeseries_embedding, data})
+    _ -> :ok end)
+    messages
   end
 
   # Event validation and optimization

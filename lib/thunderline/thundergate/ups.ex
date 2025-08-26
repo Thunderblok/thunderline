@@ -6,7 +6,7 @@ defmodule Thunderline.Thundergate.UPS do
   use GenServer
   alias Thunderline.EventBus, as: Bus
   alias Thunderline.Thunderbolt.Signal.Sensor
-  @legacy Thunderline.Hardware.UPS
+  # Removed unused @legacy attribute (legacy module retained for reference)
 
   def start_link(args), do: GenServer.start_link(__MODULE__, args, name: __MODULE__)
 
@@ -25,11 +25,13 @@ defmodule Thunderline.Thundergate.UPS do
   def handle_info(:poll, s) do
     {status, _raw} = read_status(s.backend, s.name)
     if status in [:on_battery, :low_battery] and s.last != status do
-      Bus.publish(%{name: "system.power.event", payload: %{stage: "paused", reason: to_string(status), source: "ups"}})
+      # Emit realtime system power pause event (domain: thundergate)
+      Bus.emit_realtime(:system_power_event, %{stage: "paused", reason: to_string(status), source: "ups", domain: "thundergate"})
       safe_boundary_close(s.close_ms)
     end
     if status == :online and s.last in [:on_battery, :low_battery] do
-      Bus.publish(%{name: "system.power.event", payload: %{stage: "power_restored", source: "ups"}})
+      # Emit realtime system power restored event
+      Bus.emit_realtime(:system_power_event, %{stage: "power_restored", source: "ups", domain: "thundergate"})
     end
     Process.send_after(self(), :poll, s.poll)
     {:noreply, %{s | last: status}}

@@ -34,7 +34,8 @@ defmodule Thunderline.Thunderblock.Domain do
     resource Thunderblock.Resources.TaskOrchestrator
     resource Thunderblock.Resources.ZoneContainer
     resource Thunderblock.Resources.SupervisionTree
-    resource Thunderblock.Resources.Community
+  # Renamed: Thunderblock.Resources.Community -> Thunderline.Thunderblock.Resources.ExecutionTenant
+  resource Thunderline.Thunderblock.Resources.ExecutionTenant
     resource Thunderblock.Resources.ClusterNode
     resource Thunderblock.Resources.DistributedState
     resource Thunderblock.Resources.LoadBalancingRule

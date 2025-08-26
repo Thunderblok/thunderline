@@ -11,6 +11,7 @@ defmodule Thunderline.Bus do
   Status: DEPRECATED shim for migration. New code should call
   `Thunderline.EventBus` directly.
   """
+  @deprecated "Use Thunderline.EventBus.subscribe/1 and Thunderline.EventBus.emit_realtime/2 (or publish_event/1) instead. This shim will be removed after Q3 2025."
 
   alias Thunderline.EventBus, as: FlowBus
 

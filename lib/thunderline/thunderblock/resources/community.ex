@@ -1,16 +1,21 @@
-defmodule Thunderblock.Resources.Community do
+defmodule Thunderline.Thunderblock.Resources.ExecutionTenant do
   @moduledoc """
-  Thunderblock Community resource for execution zone management.
+  ExecutionTenant (formerly Thunderblock.Resources.Community) for execution zone management.
 
-  This module provides the execution zone integration for communities,
-  handling resource allocation and zone provisioning.
+  This infrastructure-level resource handles execution zone provisioning,
+  resource allocation and lifecycle orchestration. User-facing community
+  semantics now live in Thunderline.Thunderlink.Resources.Community.
+
+  NOTE: Old name kept temporarily via deprecated alias at bottom. Update any
+  references to the new module before Q4 2025.
   """
 
   use Ash.Resource,
-    domain: Thunderline.Thunderblock.Domain,
+  domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer
 
   require Logger
+  require Ash.Query
 
   postgres do
     table "thunderblock_communities"
@@ -42,6 +47,7 @@ defmodule Thunderblock.Resources.Community do
     end
 
     update :update do
+      require_atomic? false
       description "Update community configuration"
 
       argument :execution_zone_id, :uuid
@@ -57,6 +63,7 @@ defmodule Thunderblock.Resources.Community do
     end
 
     update :activate do
+      require_atomic? false
       description "Activate community execution zone"
 
       change set_attribute(:status, :active)
@@ -66,6 +73,7 @@ defmodule Thunderblock.Resources.Community do
     end
 
     update :suspend do
+      require_atomic? false
       description "Suspend community execution zone"
 
       change set_attribute(:status, :suspended)
@@ -75,6 +83,7 @@ defmodule Thunderblock.Resources.Community do
     end
 
     destroy :destroy do
+      require_atomic? false
       description "Destroy community and cleanup resources"
 
       change before_action(&cleanup_execution_zone/2)
@@ -252,7 +261,7 @@ defmodule Thunderblock.Resources.Community do
   """
   def by_community_id(community_id) do
     __MODULE__
-    |> Ash.Query.filter(community_id == community_id)
+    |> Ash.Query.filter(community_id == ^community_id)
     |> Ash.read_one!()
   end
 
@@ -261,7 +270,7 @@ defmodule Thunderblock.Resources.Community do
   """
   def by_status(status) do
     __MODULE__
-    |> Ash.Query.filter(status == status)
+    |> Ash.Query.filter(status == ^status)
     |> Ash.read!()
   end
 
@@ -300,4 +309,18 @@ defmodule Thunderblock.Resources.Community do
         {:error, :community_not_found}
     end
   end
+end
+
+# Temporary deprecated alias for backward compatibility; remove after refactors complete.
+defmodule Thunderblock.Resources.Community do
+  @deprecated "Renamed to Thunderline.Thunderblock.Resources.ExecutionTenant"
+  @moduledoc false
+  @deprecated "Renamed"
+  defdelegate by_community_id(id), to: Thunderline.Thunderblock.Resources.ExecutionTenant
+  @deprecated "Renamed"
+  defdelegate by_status(status), to: Thunderline.Thunderblock.Resources.ExecutionTenant
+  @deprecated "Renamed"
+  defdelegate get_performance_metrics(id), to: Thunderline.Thunderblock.Resources.ExecutionTenant
+  @deprecated "Renamed"
+  defdelegate update_performance_metrics(id, metrics), to: Thunderline.Thunderblock.Resources.ExecutionTenant
 end

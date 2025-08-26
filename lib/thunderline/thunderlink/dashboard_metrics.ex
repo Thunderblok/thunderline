@@ -755,24 +755,8 @@ defmodule Thunderline.DashboardMetrics do
   end
 
   defp get_thunderlane_stats do
-    # Query ThunderGate's ThunderLane for CA chunk data
-    try do
-      case Thunderline.Thundergate.Thunderlane.get_chunk_state("default") do
-        {:ok, chunk_state} ->
-          %{
-            active_rules: Map.get(chunk_state, :rules, []),
-            generations: Map.get(chunk_state, :generation, 0),
-            chunk_count: 1,
-            total_cells: Map.get(chunk_state, :size, 0) |> cube_size_to_cell_count(),
-            active_cells: Map.get(chunk_state, :active_count, 0)
-          }
-
-        {:error, _} ->
-          get_default_thunderlane_stats()
-      end
-    rescue
-      _ -> get_default_thunderlane_stats()
-    end
+    # ThunderGate's ThunderLane component has been removed. Return default stats.
+    get_default_thunderlane_stats()
   end
 
   defp get_default_thunderlane_stats do
@@ -817,19 +801,10 @@ defmodule Thunderline.DashboardMetrics do
   end
 
   defp get_current_generation do
-    # Try to get current generation from AutomataLive state
-    # This is a simplified approach - in real implementation,
-    # we'd have a proper state management system
-    try do
-      # Check if there are any AutomataLive processes running
-      case Phoenix.LiveView.get_by_topic(Thunderline.PubSub, "automata:updates") do
-        [] -> 0
-        # Count actual LiveView processes
-        processes -> length(processes)
-      end
-    rescue
-      _ -> 0
-    end
+    # Previous implementation attempted to introspect LiveView processes via
+    # Phoenix.LiveView.get_by_topic/2 (removed / private). Return 0 until a
+    # supported telemetry-based approach is implemented.
+    0
   end
 
   # Removed unused get_default_cluster_stats/0 (duplicate logic elsewhere).
@@ -1074,14 +1049,7 @@ defmodule Thunderline.DashboardMetrics do
     0
   end
 
-  # Missing helper functions for CA integration
-  defp extract_active_rules(stats) do
-    case Map.get(stats, :ca_rules) do
-      %{name: name} -> [name]
-      rules when is_list(rules) -> rules
-      _ -> []
-    end
-  end
+  # Removed unused extract_active_rules/1 (legacy CA rules helper)
 
   # Removed older unused alternate CA helper implementations.
 

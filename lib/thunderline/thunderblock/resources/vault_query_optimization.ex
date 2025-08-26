@@ -12,9 +12,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultQueryOptimization do
     extensions: [AshJsonApi.Resource, AshOban.Resource],
     authorizers: [Ash.Policy.Authorizer]
 
-  import Ash.Resource.Change.Builtins
-
-  import Ash.Expr
+  # Removed unused imports (Ash.Resource.Change.Builtins, Ash.Expr)
 
   postgres do
     table "thunderblock_query_optimizations"

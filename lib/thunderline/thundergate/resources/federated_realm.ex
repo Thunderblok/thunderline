@@ -11,7 +11,7 @@ defmodule Thunderline.Thundergate.Resources.FederatedRealm do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
 
-  import Ash.Resource.Change.Builtins
+  # Removed unused import Ash.Resource.Change.Builtins to silence compile warning
 
   postgres do
     table "thundercom_federated_realms"

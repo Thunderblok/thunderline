@@ -49,7 +49,7 @@ defmodule Thunderline.MixProject do
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.0"},
       {:floki, ">= 0.30.0", only: :test},
-  {:lazy_html, ">= 0.1.0", only: :test},
+      {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 0.6"},
@@ -62,7 +62,7 @@ defmodule Thunderline.MixProject do
       # Ash Framework (includes PostgreSQL support)
       {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.0"},
-  {:ash_postgres, "~> 2.0"},
+      {:ash_postgres, "~> 2.0"},
       {:ash_graphql, "~> 1.0"},
       {:ash_json_api, "~> 1.0"},
       {:ash_oban, "~> 0.4"},

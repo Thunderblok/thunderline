@@ -12,7 +12,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   alias Phoenix.PubSub
   alias Thunderline.DashboardMetrics
   alias Thunderline.Thunderflow.EventBuffer
-  alias Thunderline.Bus
+  alias Thunderline.EventBus
   alias Thunderline.Thunderflow.Observability.NDJSON
   alias Thunderline.Thunderblock.Checkpoint
 
@@ -41,7 +41,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, EventBuffer.topic()) end)
       # Subscribe to realtime dashboard updates emitted by RealTimePipeline
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, "thunderline_web:dashboard") end)
-      safe_try(fn -> Bus.subscribe_status() end)
+  # Subscribe to status updates via canonical EventBus instead of deprecated Bus shim
+  safe_try(fn -> EventBus.subscribe("status") end)
 
       :timer.send_interval(5_000, self(), :refresh_kpis)
       :timer.send_interval(3_000, self(), :refresh_events)

@@ -1,7 +1,7 @@
 defmodule Thunderline.Thunderbolt.Signal.Sensor do
   @moduledoc "Sensor pipeline (migrated from Thunderline.Current.Sensor). Performs token stream dynamics, PLL/Hilbert phase tracking, Daisy orchestration, and event logging."
   use GenServer
-  alias Thunderline.Bus
+  alias Thunderline.EventBus
   alias Thunderline.Somatic.Embed, as: E
   alias Thunderline.Somatic.Engine, as: Somatic
   alias Thunderline.Thundercrown.Daisy, as: Daisy
@@ -14,7 +14,7 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   @cap 64
   @spark_cap 32
   def start_link(_), do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
-  def init(_), do: (Bus.subscribe_tokens(); Bus.subscribe_events(); {:ok, %{pll: %PLL{}, hilb: H.new(63), prev: [], win: [], hist: [], h_prev: 0.0, commits_pll: [], commits_hil: []}})
+  def init(_), do: (EventBus.subscribe("tokens"); EventBus.subscribe("events"); {:ok, %{pll: %PLL{}, hilb: H.new(63), prev: [], win: [], hist: [], h_prev: 0.0, commits_pll: [], commits_hil: []}})
   def restore(%{pll: pll, echo: echo}), do: GenServer.cast(__MODULE__, {:restore, pll, echo})
   def boundary_close(timeout_ms \\ 200), do: GenServer.call(__MODULE__, {:boundary_close, timeout_ms}, timeout_ms + 100)
   def handle_cast({:restore, pll_map, echo}, s) do
@@ -23,7 +23,7 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
       %{phi: phi, omega: om, eps: eps, kappa: k} -> %PLL{phi: phi, omega: om, eps: eps, kappa: k}
       _ -> %PLL{}
     end
-    Bus.broadcast_status(%{stage: "resumed_prepare", phi_pll: pll.phi})
+  EventBus.emit_realtime(:system_status, %{stage: "resumed_prepare", phi_pll: pll.phi})
     {:noreply, %{s | pll: pll, hist: (echo || []) ++ s.hist}}
   end
   def handle_info({:token, tok}, s) do
@@ -42,7 +42,7 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
     if PLL.prewindow?(pll) and :ets.lookup(:daisy_lease, :lease) == [] do
       {inj, del} = Daisy.preview_all_swarms()
       :ets.insert(:daisy_lease, {:lease, Lease.make(inj, del, 120)})
-      Bus.broadcast_status(%{stage: "prewindow", phi_pll: pll.phi, phi_h: phi_h, gate_score: g})
+  EventBus.emit_realtime(:system_status, %{stage: "prewindow", phi_pll: pll.phi, phi_h: phi_h, gate_score: g})
     end
     {commits_pll, commits_hil} =
       if PLL.gate?(pll, g) do
@@ -61,7 +61,7 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
             mu_pll = CircStats.mean_dir(commits_pll1)
             mu_h   = CircStats.mean_dir(commits_hil1)
             on_beat = (plv_pll >= 0.75 and plv_h >= 0.75 and p_pll <= 0.05 and p_h <= 0.05)
-            Bus.broadcast_status(%{stage: "committed", phi_pll: pll.phi, phi_h: phi_h, plv_pll: Float.round(plv_pll, 3), plv_h: Float.round(plv_h, 3), p_pll: Float.round(p_pll, 4), p_h: Float.round(p_h, 4), rbar_pll: Float.round(rbar_pll, 3), rbar_h: Float.round(rbar_h, 3), mu_pll: mu_pll, mu_h: mu_h, on_beat: on_beat, phases_pll: Enum.take(commits_pll1, @spark_cap) |> Enum.reverse(), phases_h: Enum.take(commits_hil1, @spark_cap) |> Enum.reverse(), inj: short(lease.inj), del: short(lease.del)})
+            EventBus.emit_realtime(:system_status, %{stage: "committed", phi_pll: pll.phi, phi_h: phi_h, plv_pll: Float.round(plv_pll, 3), plv_h: Float.round(plv_h, 3), p_pll: Float.round(p_pll, 4), p_h: Float.round(p_h, 4), rbar_pll: Float.round(rbar_pll, 3), rbar_h: Float.round(rbar_h, 3), mu_pll: mu_pll, mu_h: mu_h, on_beat: on_beat, phases_pll: Enum.take(commits_pll1, @spark_cap) |> Enum.reverse(), phases_h: Enum.take(commits_hil1, @spark_cap) |> Enum.reverse(), inj: short(lease.inj), del: short(lease.del)})
             NDJSON.write(%{event: "commit", phi_pll: pll.phi, phi_h: phi_h, plv_pll: plv_pll, plv_h: plv_h, rbar_pll: rbar_pll, p_pll: p_pll, rbar_h: rbar_h, p_h: p_h, mu_pll: mu_pll, mu_h: mu_h, on_beat: on_beat})
             {commits_pll1, commits_hil1}
           else {s.commits_pll, s.commits_hil} end
@@ -75,7 +75,7 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   def handle_call({:boundary_close, _timeout_ms}, _from, s) do
     echo = Enum.take(s.hist, 3)
     NDJSON.write(%{event: "boundary_close_requested", phi_pll: s.pll.phi})
-    Bus.broadcast_status(%{stage: "paused", reason: "boundary_close", phi_pll: s.pll.phi})
+  EventBus.emit_realtime(:system_status, %{stage: "paused", reason: "boundary_close", phi_pll: s.pll.phi})
     {:reply, %{gate_ts: System.monotonic_time(:millisecond), phi_pll: s.pll.phi, echo_window: echo, pll_state: Map.from_struct(s.pll)}, s}
   end
   # Helper functions copied from legacy module

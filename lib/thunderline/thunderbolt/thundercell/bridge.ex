@@ -10,8 +10,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
   use GenServer
   require Logger
 
-  alias Thunderline.ThunderMemory
-  alias Phoenix.PubSub
+  # Removed unused aliases (Thunderline.ThunderMemory, Phoenix.PubSub)
 
   # 30 seconds
   @heartbeat_interval 30_000
@@ -62,7 +61,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Bridge do
   # ====================================================================
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     Process.flag(:trap_exit, true)
     state = %__MODULE__{}
     {:ok, state}

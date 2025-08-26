@@ -1,6 +1,6 @@
 defmodule Thunderline.Legacy.ThunderBridgeStub do
   @moduledoc """
-  Temporary stub for the cross-runtime ThunderBridge.
+  DEPRECATED: Temporary stub for the cross-runtime ThunderBridge.
 
   Referenced widely; provides no-op communication surface. Replace with
   real transport (federated links, protocol negotiation, streaming telemetry)
