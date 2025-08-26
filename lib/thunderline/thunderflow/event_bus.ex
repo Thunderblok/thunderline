@@ -59,43 +59,16 @@ defmodule Thunderline.EventBus do
   General events are batched and processed in the background with retries
   and dead letter queue handling.
   """
-  @spec emit(atom(), map()) :: :ok | {:error, term()}
+  @spec emit(atom(), map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def emit(event_type, payload) when is_atom(event_type) and is_map(payload) do
-    source_atom = map_source_domain(extract_domain(payload))
-    name = build_name(source_atom, event_type)
-    base_attrs = %{
-      name: name,
-      type: event_type,
-      payload: payload,
-      source: source_atom,
-      correlation_id: generate_correlation_id(),
-      priority: Map.get(payload, :priority, :normal)
-    }
-
-    event =
-      case Thunderline.Event.new(base_attrs) do
-        {:ok, ev} -> ev
-        {:error, errs} ->
-          Logger.warning("Failed taxonomy construction for #{inspect(event_type)}: #{inspect(errs)}; falling back to legacy map")
-          Map.merge(base_attrs, %{timestamp: DateTime.utc_now(), pipeline: :general})
-      end
-
-    priority = Map.get(payload, :priority, :normal)
-
-    try do
-      Thunderflow.MnesiaProducer.enqueue_event(
-        Thunderflow.MnesiaProducer,
-        event,
-        pipeline_type: :general,
-        priority: priority
-      )
-    rescue
-      error ->
-        Logger.warning("MnesiaProducer not available, falling back to PubSub: #{inspect(error)}")
-        PubSub.broadcast(@pubsub, "events:#{event_type}", event)
-        :ok
+    with {:ok, ev} <- build_event(event_type, payload) do
+      route_event(ev, :general)
     end
   end
+
+  @spec emit(Thunderline.Event.t()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
+  def emit(%Thunderline.Event{} = event), do: route_event(event, :general)
+  def emit(_), do: {:error, :invalid_event}
 
   @doc """
   Emit a cross-domain event through Broadway CrossDomainPipeline.
@@ -103,7 +76,7 @@ defmodule Thunderline.EventBus do
   Cross-domain events are routed between domains with automatic transformation
   and structured error handling.
   """
-  @spec emit_cross_domain(atom(), map()) :: :ok | {:error, term()}
+  @spec emit_cross_domain(atom(), map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def emit_cross_domain(event_type, %{from_domain: from_domain, to_domain: to_domain} = payload)
       when is_atom(event_type) and is_binary(from_domain) and is_binary(to_domain) do
     source_atom = map_source_domain(from_domain)
@@ -119,20 +92,9 @@ defmodule Thunderline.EventBus do
       target_domain: to_domain
     }
 
-    event = case Thunderline.Event.new(base_attrs) do
-      {:ok, ev} -> ev
-      {:error, _} -> Map.merge(base_attrs, %{timestamp: DateTime.utc_now(), pipeline: :cross_domain})
+    with {:ok, ev} <- Thunderline.Event.new(base_attrs) do
+      route_event(ev, :cross_domain)
     end
-
-    # Enqueue to Mnesia cross-domain table
-    priority = Map.get(payload, :priority, :normal)
-
-    Thunderflow.MnesiaProducer.enqueue_event(
-      Thunderflow.CrossDomainEvents,
-      event,
-      pipeline_type: :cross_domain,
-      priority: priority
-    )
   end
 
   @doc """
@@ -141,7 +103,7 @@ defmodule Thunderline.EventBus do
   Real-time events are processed with minimal latency for agent updates,
   dashboard updates, and WebSocket broadcasts.
   """
-  @spec emit_realtime(atom(), map()) :: :ok | {:error, term()}
+  @spec emit_realtime(atom(), map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def emit_realtime(event_type, payload) when is_atom(event_type) and is_map(payload) do
     priority = Map.get(payload, :priority, :normal)
     source_atom = :flow
@@ -155,18 +117,9 @@ defmodule Thunderline.EventBus do
       priority: priority
     }
 
-    event = case Thunderline.Event.new(base_attrs) do
-      {:ok, ev} -> ev
-      {:error, _} -> Map.merge(base_attrs, %{timestamp: DateTime.utc_now(), pipeline: :realtime})
+    with {:ok, ev} <- Thunderline.Event.new(base_attrs) do
+      route_event(ev, :realtime)
     end
-
-    # Enqueue to Mnesia real-time table
-    Thunderflow.MnesiaProducer.enqueue_event(
-      Thunderflow.RealTimeEvents,
-      event,
-      pipeline_type: :realtime,
-      priority: priority
-    )
   end
 
   @doc """
@@ -174,7 +127,7 @@ defmodule Thunderline.EventBus do
 
   This is useful for bulk operations where many related events need to be processed.
   """
-  @spec emit_batch([{atom(), map()}], atom()) :: :ok | {:error, term()}
+  @spec emit_batch([{atom(), map()}], atom()) :: {:ok, [Thunderline.Event.t()]} | {:error, term()}
   def emit_batch(events, pipeline_type \\ :general)
       when is_list(events) and pipeline_type in [:general, :cross_domain, :realtime] do
     correlation_id = generate_correlation_id()
@@ -182,12 +135,20 @@ defmodule Thunderline.EventBus do
 
     event_list =
       Enum.map(events, fn {event_type, payload} ->
-        %{
-          type: event_type,
-          payload: payload,
-          timestamp: timestamp,
-          correlation_id: correlation_id
+        source_atom = map_source_domain(extract_domain(payload))
+        name = build_name(source_atom, event_type)
+        base = %{
+          name: name,
+            type: event_type,
+            payload: payload,
+            source: source_atom,
+            correlation_id: correlation_id,
+            timestamp: timestamp
         }
+        case Thunderline.Event.new(base) do
+          {:ok, ev} -> ev
+          {:error, _} -> Map.put(base, :pipeline, pipeline_type)
+        end
       end)
 
     # Enqueue events in batch to appropriate Mnesia table
@@ -204,6 +165,7 @@ defmodule Thunderline.EventBus do
       pipeline_type: pipeline_type,
       priority: priority
     )
+    {:ok, Enum.filter(event_list, &match?(%Thunderline.Event{}, &1))}
   end
 
   # Migration helpers for existing broadcast patterns
@@ -328,6 +290,44 @@ defmodule Thunderline.EventBus do
     "system." <> Atom.to_string(source) <> "." <> Atom.to_string(type)
   end
 
+  defp build_event(event_type, payload) do
+    source_atom = map_source_domain(extract_domain(payload))
+    name = build_name(source_atom, event_type)
+    attrs = %{
+      name: name,
+      type: event_type,
+      payload: payload,
+      source: source_atom,
+      correlation_id: generate_correlation_id(),
+      priority: Map.get(payload, :priority, :normal)
+    }
+    Thunderline.Event.new(attrs)
+  end
+
+  defp route_event(%Thunderline.Event{} = ev, pipeline) do
+    {table, priority} =
+      case pipeline do
+        :general -> {Thunderflow.MnesiaProducer, ev.priority}
+        :cross_domain -> {Thunderflow.CrossDomainEvents, ev.priority}
+        :realtime -> {Thunderflow.RealTimeEvents, ev.priority}
+      end
+
+    try do
+      Thunderflow.MnesiaProducer.enqueue_event(
+        table,
+        ev,
+        pipeline_type: pipeline,
+        priority: priority
+      )
+      {:ok, ev}
+    rescue
+      error ->
+        Logger.warning("MnesiaProducer not available (#{pipeline}) fallback PubSub: #{inspect(error)}")
+        PubSub.broadcast(@pubsub, "events:" <> Atom.to_string(ev.type), ev)
+        {:ok, ev}
+    end
+  end
+
   # Event validation and transformation
 
   @doc """
@@ -426,7 +426,7 @@ defmodule Thunderline.EventBus do
   def publish_event(%{type: event_type, payload: payload} = event) when is_atom(event_type) do
     # Already in new format, route directly
     source = Map.get(event, :source, :unknown)
-    priority = Map.get(event, :priority, :normal)
+  _priority = Map.get(event, :priority, :normal)
 
     case source do
       :thunder_bridge -> emit_realtime(event_type, payload)

@@ -40,8 +40,8 @@ defmodule Thunderline.MixProject do
   {:ash_authentication_phoenix, "~> 2.0"},
   # Password hashing for AshAuthentication password strategy
   {:bcrypt_elixir, "~> 3.1"},
-  # Local ML/architecture engine (cloned repo) – Cerebros
-  {:cerebros, path: "cerebros"},
+  # Local ML/architecture engine (cloned repo) – Cerebros (quarantined behind feature flag)
+  {:cerebros, path: "cerebros", only: [:dev], runtime: false},
       {:igniter, "~> 0.6", only: [:dev, :test]},
 
       # Phoenix

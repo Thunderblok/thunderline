@@ -57,6 +57,9 @@ jobs:
       - name: Compile
         run: mix compile --warnings-as-errors
 
+      - name: Event Taxonomy Lint
+        run: mix thunderline.events.lint --format=json
+
       - name: DB Setup
         run: mix ash.setup
 

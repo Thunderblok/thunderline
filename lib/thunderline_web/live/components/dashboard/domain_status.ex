@@ -7,7 +7,7 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
   """
 
   use Phoenix.Component
-  import ThunderlineWeb.CoreComponents
+  # import ThunderlineWeb.CoreComponents # removed unused import to silence warning
 
   attr :domains, :map, required: true
 

@@ -43,7 +43,7 @@ defmodule Mix.Tasks.Thunderline.Oban.Check do
     end)
 
     IO.puts("\n== 📦 Oban Instance ==")
-    case Oban.whereis() do
+  case Oban.whereis(Oban) do
       nil -> IO.puts("Oban root supervisor NOT running (nil from Oban.whereis/0)")
       pid -> IO.puts("Oban root supervisor PID: #{inspect(pid)}")
     end

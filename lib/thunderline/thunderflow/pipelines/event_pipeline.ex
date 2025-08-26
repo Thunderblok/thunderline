@@ -281,7 +281,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "event" => event,
       "domain" => "thundercore"
     }
-  |> Thunderline.Thunderflow.Jobs.DomainProcessor.new()
+  |> maybe_domain_processor()
     |> Oban.insert()
   end
 
@@ -291,7 +291,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "event" => event,
       "domain" => "thunderblock"
     }
-  |> Thunderline.Thunderflow.Jobs.DomainProcessor.new()
+  |> maybe_domain_processor()
     |> Oban.insert()
   end
 
@@ -301,7 +301,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       "event" => event,
       "domain" => "thunderbolt"
     }
-  |> Thunderline.Thunderflow.Jobs.DomainProcessor.new()
+  |> maybe_domain_processor()
     |> Oban.insert()
   end
 
@@ -312,5 +312,13 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   defp generate_trace_id do
     :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+  end
+
+  defp maybe_domain_processor(job) do
+    if Code.ensure_loaded?(Thunderline.Thunderflow.Jobs.DomainProcessor) do
+      job |> Thunderline.Thunderflow.Jobs.DomainProcessor.new() |> Oban.insert()
+    else
+      job
+    end
   end
 end

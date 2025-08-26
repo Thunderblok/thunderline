@@ -170,7 +170,11 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
               [coupling: :uniform]
           end
 
-        Thunderline.ThunderIsing.Lattice.grid_2d(height, width, coupling_opts)
+        if Code.ensure_loaded?(Thunderline.ThunderIsing.Lattice) do
+          Thunderline.ThunderIsing.Lattice.grid_2d(height, width, coupling_opts)
+        else
+          {:error, :ising_unavailable}
+        end
 
       :graph ->
         %{vertices: num_vertices} = problem.dimensions
@@ -182,7 +186,11 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
             {from, to, weight}
           end)
 
-        Thunderline.ThunderIsing.Lattice.max_cut_problem(edge_tuples, num_vertices)
+        if Code.ensure_loaded?(Thunderline.ThunderIsing.Lattice) do
+          Thunderline.ThunderIsing.Lattice.max_cut_problem(edge_tuples, num_vertices)
+        else
+          {:error, :ising_unavailable}
+        end
     end
   end
 end

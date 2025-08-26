@@ -32,7 +32,6 @@ defmodule Thunderline.Action do
     * Argument spec extraction from Ash DSL attributes/arguments
   """
   require Logger
-  alias Thunderline.Event
 
   @default_taxonomy_version 1
 
@@ -141,8 +140,11 @@ defmodule Thunderline.Action do
   end
 
   defp publish(envelope, payload) do
-    # Integrate with existing EventBus until strict constructor is in place
-  Thunderline.EventBus.emit(:action_event, Map.merge(envelope, %{payload: payload, event_name: envelope.name}))
+    attrs = Map.merge(envelope, %{payload: payload, type: :action_event, source: envelope.source})
+    case Thunderline.Event.new(attrs) do
+      {:ok, ev} -> Thunderline.EventBus.emit(:action_event, Map.merge(ev.payload, %{domain: Atom.to_string(ev.source)}))
+      {:error, errs} -> Logger.warning("Failed to construct action event #{envelope.name}: #{inspect(errs)}")
+    end
   rescue
     e -> Logger.warning("Failed to emit action event #{envelope.name}: #{inspect(e)}")
   end

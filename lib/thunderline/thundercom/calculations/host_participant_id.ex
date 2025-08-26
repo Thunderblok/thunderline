@@ -9,7 +9,16 @@ defmodule Thunderline.Thundercom.Calculations.HostParticipantId do
   def init(opts), do: {:ok, opts}
 
   @impl true
-  def expression(_opts), do: nil
+  def describe(opts), do: {:ok, Keyword.put(opts, :name, :host_participant_id)}
+
+  @impl true
+  def expression(_calculation, _opts), do: nil
+
+  @impl true
+  def has_expression?, do: false
+
+  @impl true
+  def strict_loads?, do: false
 
   @impl true
   def calculate(rooms, _opts, _context) do
@@ -28,7 +37,5 @@ defmodule Thunderline.Thundercom.Calculations.HostParticipantId do
   end
 
   @impl true
-  def load(_opts, _query) do
-    {:ok, [:participants]}
-  end
+  def load(_calculation, _opts, _query), do: {:ok, [:participants]}
 end

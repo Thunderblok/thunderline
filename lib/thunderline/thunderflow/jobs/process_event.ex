@@ -22,7 +22,7 @@ defmodule Thunderline.Thunderflow.Jobs.ProcessEvent do
   end
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"event" => event}} = job) do
+  def perform(%Oban.Job{args: %{"event" => event}} = _job) do
     start_time = System.monotonic_time()
 
     try do
@@ -61,7 +61,7 @@ defmodule Thunderline.Thunderflow.Jobs.ProcessEvent do
   end
 
   # Handle missing event argument
-  def perform(%Oban.Job{args: args} = job) do
+  def perform(%Oban.Job{args: args} = _job) do
     Logger.warning("ProcessEvent job missing event argument: #{inspect(args)}")
     JobTelemetry.emit_job_failure(:realtime, __MODULE__, :missing_event)
     {:discard, :missing_event}

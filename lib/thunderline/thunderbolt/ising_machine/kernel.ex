@@ -1,4 +1,5 @@
-defmodule Thunderline.Thunderbolt.IsingMachine.Kernel do
+if Application.compile_env(:thunderline, :enable_ising, false) do
+  defmodule Thunderline.Thunderbolt.IsingMachine.Kernel do
   @moduledoc """
   Stub numerical kernels for the Ising machine.
 
@@ -43,5 +44,6 @@ defmodule Thunderline.Thunderbolt.IsingMachine.Kernel do
 
   def magnetization(spins) do
     Nx.mean(spins) |> Nx.as_type(:f32)
+  end
   end
 end

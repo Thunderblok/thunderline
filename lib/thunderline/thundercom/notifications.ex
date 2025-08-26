@@ -14,7 +14,7 @@ defmodule Thunderline.Thundercom.Notifications do
   @behaviour Ash.Notifier
   require Logger
 
-  @pubsub_name Thunderline.PubSub
+  # @pubsub_name Thunderline.PubSub (unused)
 
   @impl Ash.Notifier
   def notify(%Ash.Notifier.Notification{} = notification) do

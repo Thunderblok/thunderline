@@ -12,7 +12,7 @@ defmodule ThunderlineWeb.Live.Components.NoiseConsole do
     {:noreply, load(socket.assigns.limit) |> then(&assign(socket, &1))}
   end
 
-  defp load(limit \\ 50) do
+  defp load(limit) do
     entries = Thunderline.Thunderflow.Observability.RingBuffer.recent(limit, Thunderline.NoiseBuffer)
     %{entries: entries, limit: limit}
   end

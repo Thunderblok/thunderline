@@ -814,7 +814,7 @@ defmodule Thunderblock.Resources.SupervisionTree do
     Ash.Changeset.change_attribute(changeset, :health_score, new_score)
   end
 
-  defp start_supervision_process(tree) do
+  defp start_supervision_process(_tree) do
     # This would start the actual OTP supervision process
     # Implementation would depend on specific supervision requirements
     :ok

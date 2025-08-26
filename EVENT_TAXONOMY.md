@@ -221,3 +221,44 @@ end
 
 ---
 Expanded draft complete. Populate remaining schema files & linter code in subsequent PRs.
+
+## 16. Creating & Validating Events (Operational How-To)
+
+All new events MUST be instantiated via the smart constructor `Thunderline.Event.new/1` (or bang `new!/1`). Raw maps (`%{type: ..., payload: ...}`) are deprecated and will be rejected at emission points as the migration hardens.
+
+Minimal example:
+```elixir
+{:ok, ev} = Thunderline.Event.new(name: "system.email.sent", source: :link, payload: %{message_id: mid, to: recipients, subject: subj})
+Thunderline.EventBus.emit(:email_sent, %{message_id: mid, to: recipients, subject: subj, domain: "thunderlink"})
+```
+
+Constructor Responsibilities:
+- Validates name format & allowed category for `source` (Section 12 matrix)
+- Supplies `id`, `at`, `correlation_id` (UUIDv4 interim) & default `taxonomy_version`
+- Infers `type` from name if omitted (last segment)
+- Applies reliability heuristic to `meta.reliability`
+
+Rejection Examples (returning `{:error, errs}`):
+- Missing name & type
+- Non-map payload
+- Category not permitted for the emitting domain (`{:forbidden_category, {source, name}}`)
+
+Linter Enforcement (CI):
+The Mix task `mix thunderline.events.lint --format=json` scans source for event literals and validates against:
+1. Registry presence (seed set; expanding)
+2. Domain/category matrix
+3. Deprecation flags
+
+CI Step (excerpt) added to `.github/workflows/ci.yml`:
+```yaml
+  - name: Event Taxonomy Lint
+    run: mix thunderline.events.lint --format=json
+```
+Failing conditions raise `Mix.raise/1` (strict mode default). Use `--no-strict` only for local exploratory runs.
+
+Migration Path:
+1. Replace ad-hoc event maps with constructor usage.
+2. Remove legacy `Thunderline.Bus` references (keeping shim temporarily).
+3. Enable `--warnings-as-errors` to forbid drift reintroduction.
+
+Any future event additions MUST update Sections 6–7 and include tests asserting constructor acceptance and linter pass.
