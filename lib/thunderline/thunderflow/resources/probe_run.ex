@@ -40,9 +40,13 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
       ]
       change set_attribute(:status, :pending)
       change after_action(fn changeset, result, _ctx ->
-        # Enqueue processor job
-        %{id: id} = result
-        %{run_id: id} |> Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor.new() |> Oban.insert()
+        # Enqueue processor job unless running in test (sandbox ownership issues with async Oban)
+        if Mix.env() != :test do
+          %{id: id} = result
+          %{run_id: id}
+          |> Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor.new()
+          |> Oban.insert()
+        end
         {:ok, result, changeset}
       end)
   end

@@ -9,7 +9,8 @@ defmodule Thunderline.MixProject do
       version: @version,
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:elixir, :app],
+  # Use default Mix compilers (was restricted to [:elixir, :app] which can skip needed steps)
+  compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
@@ -135,7 +136,8 @@ defmodule Thunderline.MixProject do
       # migrations/assets. Force with `mix deps.get` manually when you really intend it.
       setup: [&maybe_deps_get/1, "ash.setup", "assets.setup", "assets.build"],
       # Allow skipping ash.setup in tests to run fast, DB-less component/unit tests
-      test: [&maybe_ash_setup/1, "test"],
+  # Provide a non-recursive alias to run full test setup + tests.
+  "test.all": [&maybe_ash_setup/1, "test"],
       # One-shot resource -> migration -> migrate convenience
       "ash.migrate": ["ash_postgres.generate_migrations", "ecto.migrate"],
   # Option A (no esbuild/node): only Tailwind profile 'thunderline'

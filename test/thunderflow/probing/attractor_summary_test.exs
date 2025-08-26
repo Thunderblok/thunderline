@@ -1,5 +1,6 @@
 defmodule Thunderline.Thunderflow.Probing.AttractorSummaryTest do
-  use ExUnit.Case, async: false
+  # Use DataCase to ensure DB sandbox ownership is properly established
+  use Thunderline.DataCase, async: false
 
   alias Thunderline.Thunderflow.Resources.{ProbeRun, ProbeLap, ProbeAttractorSummary}
   alias Thunderline.Thunderflow.Probing.{Engine, AttractorService}

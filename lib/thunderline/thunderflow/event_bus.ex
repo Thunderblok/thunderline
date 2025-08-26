@@ -61,16 +61,25 @@ defmodule Thunderline.EventBus do
   """
   @spec emit(atom(), map()) :: :ok | {:error, term()}
   def emit(event_type, payload) when is_atom(event_type) and is_map(payload) do
-    event = %{
+    source_atom = map_source_domain(extract_domain(payload))
+    name = build_name(source_atom, event_type)
+    base_attrs = %{
+      name: name,
       type: event_type,
       payload: payload,
-      timestamp: DateTime.utc_now(),
-      domain: extract_domain(payload),
-      pipeline: :general,
-      correlation_id: generate_correlation_id()
+      source: source_atom,
+      correlation_id: generate_correlation_id(),
+      priority: Map.get(payload, :priority, :normal)
     }
 
-    # Enqueue to Mnesia instead of PubSub
+    event =
+      case Thunderline.Event.new(base_attrs) do
+        {:ok, ev} -> ev
+        {:error, errs} ->
+          Logger.warning("Failed taxonomy construction for #{inspect(event_type)}: #{inspect(errs)}; falling back to legacy map")
+          Map.merge(base_attrs, %{timestamp: DateTime.utc_now(), pipeline: :general})
+      end
+
     priority = Map.get(payload, :priority, :normal)
 
     try do
@@ -97,15 +106,23 @@ defmodule Thunderline.EventBus do
   @spec emit_cross_domain(atom(), map()) :: :ok | {:error, term()}
   def emit_cross_domain(event_type, %{from_domain: from_domain, to_domain: to_domain} = payload)
       when is_atom(event_type) and is_binary(from_domain) and is_binary(to_domain) do
-    event = %{
+    source_atom = map_source_domain(from_domain)
+    name = build_name(source_atom, event_type)
+    base_attrs = %{
+      name: name,
       type: event_type,
       payload: payload,
-      timestamp: DateTime.utc_now(),
-      from_domain: from_domain,
-      to_domain: to_domain,
-      pipeline: :cross_domain,
-      correlation_id: generate_correlation_id()
+      source: source_atom,
+      correlation_id: generate_correlation_id(),
+      priority: Map.get(payload, :priority, :normal),
+      source_domain: from_domain,
+      target_domain: to_domain
     }
+
+    event = case Thunderline.Event.new(base_attrs) do
+      {:ok, ev} -> ev
+      {:error, _} -> Map.merge(base_attrs, %{timestamp: DateTime.utc_now(), pipeline: :cross_domain})
+    end
 
     # Enqueue to Mnesia cross-domain table
     priority = Map.get(payload, :priority, :normal)
@@ -127,15 +144,21 @@ defmodule Thunderline.EventBus do
   @spec emit_realtime(atom(), map()) :: :ok | {:error, term()}
   def emit_realtime(event_type, payload) when is_atom(event_type) and is_map(payload) do
     priority = Map.get(payload, :priority, :normal)
-
-    event = %{
+    source_atom = :flow
+    name = build_name(source_atom, event_type)
+    base_attrs = %{
+      name: name,
       type: event_type,
       payload: payload,
-      timestamp: DateTime.utc_now(),
-      priority: priority,
-      pipeline: :realtime,
-      correlation_id: generate_correlation_id()
+      source: source_atom,
+      correlation_id: generate_correlation_id(),
+      priority: priority
     }
+
+    event = case Thunderline.Event.new(base_attrs) do
+      {:ok, ev} -> ev
+      {:error, _} -> Map.merge(base_attrs, %{timestamp: DateTime.utc_now(), pipeline: :realtime})
+    end
 
     # Enqueue to Mnesia real-time table
     Thunderflow.MnesiaProducer.enqueue_event(
@@ -285,6 +308,24 @@ defmodule Thunderline.EventBus do
 
   defp generate_correlation_id do
     :crypto.strong_rand_bytes(16) |> Base.encode64(padding: false)
+  end
+
+  # Map legacy or ad-hoc domain strings to taxonomy source atoms.
+  # This is a best-effort transitional mapping; refine as taxonomy hardens.
+  defp map_source_domain(nil), do: :unknown
+  defp map_source_domain("thundergate" <> _), do: :gate
+  defp map_source_domain("thunderflow" <> _), do: :flow
+  defp map_source_domain("thundercrown" <> _), do: :crown
+  defp map_source_domain("thunderbolt" <> _), do: :bolt
+  defp map_source_domain("thunderblock" <> _), do: :block
+  defp map_source_domain("thunderbridge" <> _), do: :bridge
+  defp map_source_domain("thunderlink" <> _), do: :link
+  defp map_source_domain(other) when is_binary(other), do: :unknown
+  defp map_source_domain(atom) when is_atom(atom), do: atom
+
+  defp build_name(source, type) when is_atom(source) and is_atom(type) do
+    # Basic naming: system.<source>.<type>
+    "system." <> Atom.to_string(source) <> "." <> Atom.to_string(type)
   end
 
   # Event validation and transformation
