@@ -969,7 +969,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     Ash.Changeset.change_attribute(changeset, :health_metrics, updated_metrics)
   end
 
-  defp perform_health_assessment(changeset) do
+  defp _perform_health_assessment(changeset) do
     # Perform comprehensive health assessment
     changeset
     |> calculate_health_metrics()
@@ -1024,12 +1024,12 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     :ok
   end
 
-  defp trigger_pac_backup(_pac_home) do
+  defp _trigger_pac_backup(_pac_home) do
     # Trigger backup process for PAC home
     :ok
   end
 
-  defp cleanup_pac_resources(_pac_home) do
+  defp _cleanup_pac_resources(_pac_home) do
     # Cleanup resources for terminated PAC home
     :ok
   end

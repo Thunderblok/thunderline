@@ -274,16 +274,20 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
   defp format_next_steps(results) do
     steps = ["Next Steps:"]
 
-    if results.summary.violation_count > 0 do
-      steps = [steps, "  - Address violations before deployment"]
+    steps = if results.summary.violation_count > 0 do
+      [steps, "  - Address violations before deployment"]
+    else
+      steps
     end
 
-    if length(results.unknown_edges) > 0 do
-  _steps = [steps, "  - Document unknown cross-domain edges in interaction matrix"]
+    steps = if length(results.unknown_edges) > 0 do
+      [steps, "  - Document unknown cross-domain edges in interaction matrix"]
+    else
+      steps
     end
 
-    steps = [steps, "  - Run `mix thunderline.brg.check` for operational readiness"]
-    steps = [steps, "  - Update domain catalog documentation"]
+  steps = [steps, "  - Run `mix thunderline.brg.check` for operational readiness"]
+  steps = [steps, "  - Update domain catalog documentation"]
 
     List.flatten(steps) |> Enum.join("\n")
   end

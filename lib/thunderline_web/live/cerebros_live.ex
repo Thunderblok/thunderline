@@ -1,3 +1,4 @@
+if System.get_env("ENABLE_CEREBROS") == "true" do
 defmodule ThunderlineWeb.CerebrosLive do
   @moduledoc """
   CerebrosLive - Unified front-end panel to:
@@ -202,4 +203,5 @@ defmodule ThunderlineWeb.CerebrosLive do
     end
   end
   defp parse_int(v, _) when is_integer(v), do: v
+end
 end

@@ -34,14 +34,12 @@ defmodule Thunderline.MixProject do
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
-    [
+    base = [
       {:oban, "~> 2.0"},
       {:ash_authentication, "~> 4.0"},
-  {:ash_authentication_phoenix, "~> 2.0"},
-  # Password hashing for AshAuthentication password strategy
-  {:bcrypt_elixir, "~> 3.1"},
-  # Local ML/architecture engine (cloned repo) – Cerebros (quarantined behind feature flag)
-  {:cerebros, path: "cerebros", only: [:dev], runtime: false},
+      {:ash_authentication_phoenix, "~> 2.0"},
+      # Password hashing for AshAuthentication password strategy
+      {:bcrypt_elixir, "~> 3.1"},
       {:igniter, "~> 0.6", only: [:dev, :test]},
 
       # Phoenix
@@ -125,6 +123,18 @@ defmodule Thunderline.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:git_ops, "~> 2.6.1", only: [:dev]}
     ]
+
+    cerebros_dep =
+      if System.get_env("ENABLE_CEREBROS") == "true" do
+        [
+          # Local ML/architecture engine – opt-in only. Set ENABLE_CEREBROS=true to include.
+          {:cerebros, path: "cerebros", only: [:dev], runtime: false}
+        ]
+      else
+        []
+      end
+
+    base ++ cerebros_dep
   end
 
   defp aliases do

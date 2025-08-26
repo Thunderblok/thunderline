@@ -916,12 +916,7 @@ defmodule Thunderline.ErlangBridge do
         Logger.info("Successfully connected to Erlang CA system")
         {:noreply, %{state | erlang_connected: true}}
 
-      {:error, :erlang_modules_unavailable} ->
-        # Erlang modules not available - expected in development, retry less frequently
-        Logger.debug("Erlang CA modules not available - using fallback metrics")
-        # Try again in 30 seconds
-        Process.send_after(self(), :connect_erlang, 30_000)
-        {:noreply, state}
+      # Removed unreachable :erlang_modules_unavailable clause
 
       {:error, reason} ->
         Logger.warning("Failed to connect to Erlang: #{inspect(reason)}")

@@ -6,12 +6,7 @@ defmodule ThunderlineWeb.Live.ApiClient do
   Handles data fetching from all Thunderlane backend resources with proper error handling.
   """
 
-  alias Thunderline.Thunderflow.Resources.{
-    LaneLaneConfiguration,
-    LaneConsensusRun,
-    LanePerformanceMetric,
-    LaneTelemetrySnapshot
-  }
+  # Removed unused aliases (lane resources currently not loaded)
 
   @doc """
   Fetches all lane configurations with their current states and coupling data.

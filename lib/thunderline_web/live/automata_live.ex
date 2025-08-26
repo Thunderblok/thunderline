@@ -33,15 +33,15 @@ defmodule ThunderlineWeb.AutomataLive do
      |> assign(:generation, 0)
      |> assign(:pattern_buffer, [])
      |> assign(:running, false)
-  |> assign(:blackboard_data, initial_blackboard_snapshot())
-     # milliseconds between generations
+     |> assign(:blackboard_data, initial_blackboard_snapshot())
      |> assign(:speed, 100)}
+
   end
 
+  # Grouped handle_info/2 clauses (must be contiguous)
   @impl true
   def handle_info({:metrics_update, metrics}, socket) do
     automata_data = Map.get(metrics, :automata, %{})
-
     {:noreply, assign(socket, :automata_state, automata_data)}
   end
 
@@ -54,13 +54,33 @@ defmodule ThunderlineWeb.AutomataLive do
      |> assign(:automata_state, Map.merge(socket.assigns.automata_state, data))}
   end
 
-  # Ignore/optionally react to blackboard updates for now.
   @impl true
   def handle_info({:blackboard_update, %{key: {:automata, _k}} = update}, socket) do
-  # Merge only automata related entries into blackboard_data assign for live display
-  %{key: key, value: value} = update
-  new_data = Map.put(socket.assigns.blackboard_data, key, value)
-  {:noreply, assign(socket, :blackboard_data, new_data)}
+    %{key: key, value: value} = update
+    new_data = Map.put(socket.assigns.blackboard_data, key, value)
+    {:noreply, assign(socket, :blackboard_data, new_data)}
+  end
+
+  @impl true
+  def handle_info(:next_generation, socket) do
+    # Advance the automata one generation if we're currently running.
+    # If not running, we simply ignore the tick.
+    if socket.assigns.running do
+      rule = socket.assigns.active_rule
+      pattern_buffer = socket.assigns.pattern_buffer
+
+      new_buffer = generate_next_pattern(rule, pattern_buffer)
+
+      # Schedule the next tick using the configured speed (ms)
+      schedule_next_generation(socket.assigns.speed)
+
+      {:noreply,
+       socket
+       |> assign(:pattern_buffer, new_buffer)
+       |> assign(:generation, socket.assigns.generation + 1)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -100,31 +120,7 @@ defmodule ThunderlineWeb.AutomataLive do
     {:noreply, assign(socket, :speed, speed_value)}
   end
 
-  @impl true
-  def handle_info(:next_generation, socket) do
-    if socket.assigns.running do
-      new_generation = socket.assigns.generation + 1
-
-      new_pattern =
-        generate_next_pattern(socket.assigns.active_rule, socket.assigns.pattern_buffer)
-
-      # Schedule next generation
-      schedule_next_generation(socket.assigns.speed)
-
-      {:noreply,
-       socket
-       |> assign(:generation, new_generation)
-       |> assign(:pattern_buffer, new_pattern)
-       |> tap(fn _ ->
-         # Update shared blackboard state for other processes / dashboards
-         Blackboard.put({:automata, :latest_generation}, new_generation)
-         Blackboard.put({:automata, :active_rule}, socket.assigns.active_rule)
-         Blackboard.put({:automata, :density}, calculate_density(new_pattern))
-       end)}
-    else
-      {:noreply, socket}
-    end
-  end
+  # (previous clause moved above)
 
   @impl true
   def render(assigns) do

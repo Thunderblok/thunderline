@@ -7,7 +7,11 @@ defmodule Mix.Tasks.EventsLintTaskTest do
   test "human format runs without errors" do
     output =
       capture_io(fn ->
-        Mix.Task.rerun("thunderline.events.lint", ["--format", "human"]) rescue nil
+        try do
+          Mix.Task.rerun("thunderline.events.lint", ["--format", "human"])
+        rescue
+          _ -> nil
+        end
       end)
 
     assert output =~ "No event taxonomy issues" or output =~ "Event taxonomy issues"
@@ -16,7 +20,11 @@ defmodule Mix.Tasks.EventsLintTaskTest do
   test "json format returns a machine-parsable payload" do
     output =
       capture_io(fn ->
-        Mix.Task.rerun("thunderline.events.lint", ["--format", "json"]) rescue nil
+        try do
+          Mix.Task.rerun("thunderline.events.lint", ["--format", "json"])
+        rescue
+          _ -> nil
+        end
       end)
 
     assert {:ok, payload} = Jason.decode(output)

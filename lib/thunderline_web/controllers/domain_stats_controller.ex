@@ -40,9 +40,9 @@ defmodule ThunderlineWeb.DomainStatsController do
       "thundercore" -> {:ok, get_thundercore_stats()}
       "thunderbit" -> {:ok, get_thunderbit_stats()}
       "thunderbolt" -> {:ok, get_thunderbolt_stats()}
-  "thunderblock" -> {:ok, get_thunderblock_stats()}
-  "thundergrid" -> {:ok, get_thundergrid_stats()}
-  "thunderblock_vault" -> {:ok, get_thunderblock_vault_stats()}
+      "thunderblock" -> {:ok, get_thunderblock_stats()}
+      "thundergrid" -> {:ok, get_thundergrid_stats()}
+      "thunderblock_vault" -> {:ok, get_thunderblock_vault_stats()}
       "thundercom" -> {:ok, get_thundercom_stats()}
       "thundereye" -> {:ok, get_thundereye_stats()}
       "thunderchief" -> {:ok, get_thunderchief_stats()}

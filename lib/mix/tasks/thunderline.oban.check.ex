@@ -63,8 +63,12 @@ defmodule Mix.Tasks.Thunderline.Oban.Check do
 
     if opts[:sample] do
       IO.puts("\n== 🧪 Enqueue Sample DemoJob ==")
-  {:ok, job} = Oban.insert(Thunderline.Thunderflow.Jobs.DemoJob.new(%{"source" => "mix_check"}))
-      IO.puts("Inserted job id=#{job.id} state=#{job.state}")
+      if Code.ensure_loaded?(Thunderline.Thunderflow.Jobs.DemoJob) do
+        {:ok, job} = Oban.insert(Thunderline.Thunderflow.Jobs.DemoJob.new(%{"source" => "mix_check"}))
+        IO.puts("Inserted job id=#{job.id} state=#{job.state}")
+      else
+        IO.puts("DemoJob module not loaded; skipping sample enqueue")
+      end
     end
 
     IO.puts("\nDone.\n")

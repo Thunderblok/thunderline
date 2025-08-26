@@ -40,7 +40,7 @@ defmodule Thunderline.Thunderflow.Events.Linter do
   end
 
   defp scan_file({path, content}) do
-    for {match, idx} <- Regex.scan(@event_regex, content, return: :index), reduce: [] do
+    for {match, _idx} <- Regex.scan(@event_regex, content, return: :index), reduce: [] do
       acc ->
         [{_full, {start, len}}] = [match]
         name = String.slice(content, start + 1, len - 2) # remove quotes
@@ -49,7 +49,7 @@ defmodule Thunderline.Thunderflow.Events.Linter do
     end
   end
 
-  defp validate_name(%{name: name} = entry) do
+  defp validate_name(%{name: _name} = entry) do
     []
     |> rule_format(entry)
     |> rule_segments(entry)

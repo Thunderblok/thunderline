@@ -31,7 +31,8 @@ defmodule Mix.Tasks.Thunderline.Actions.Export do
   end
 
   defp actions_for_domain(domain) do
-    for resource <- Ash.Domain.resources(domain), action <- Ash.Resource.Info.actions(resource) do
+    resources = Ash.Domain.Info.resources(domain)
+    for resource <- resources, action <- Ash.Resource.Info.actions(resource) do
       %{
         name: tool_name(resource, action),
         resource: inspect(resource),

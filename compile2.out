@@ -1,0 +1,184 @@
+==> cerebros
+     warning: Explorer.DataFrame.from_csv!/2 is undefined (module Explorer.DataFrame is not available or is yet to be defined)
+     │
+ 357 │         df = Explorer.DataFrame.from_csv!(path,
+     │                                 ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros.ex:357:33: Cerebros.parse_ames_csv/1
+
+     warning: Explorer.DataFrame.dtypes/1 is undefined (module Explorer.DataFrame is not available or is yet to be defined)
+     │
+ 361 │         dtypes = Explorer.DataFrame.dtypes(df)
+     │                                     ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros.ex:361:37: Cerebros.parse_ames_csv/1
+
+     warning: Explorer.DataFrame.to_rows/1 is undefined (module Explorer.DataFrame is not available or is yet to be defined)
+     │
+ 378 │         rows = Explorer.DataFrame.to_rows(df)
+     │                                   ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros.ex:378:35: Cerebros.parse_ames_csv/1
+
+     warning: variable "run_id" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 243 │   defp persist_artifact(run_id, nil, _store), do: nil
+     │                         ~~~~~~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/api.ex:243:25: Cerebros.API.persist_artifact/3
+
+     warning: variable "tx" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 260 │   defp maybe_normalize_targets(%{train_x: tx, train_y: ty, validation_x: vx, validation_y: vy} = ds, true) do
+     │                                           ~~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/api.ex:260:43: Cerebros.API.maybe_normalize_targets/2
+
+     warning: variable "vx" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 260 │   defp maybe_normalize_targets(%{train_x: tx, train_y: ty, validation_x: vx, validation_y: vy} = ds, true) do
+     │                                                                          ~~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/api.ex:260:74: Cerebros.API.maybe_normalize_targets/2
+
+    warning: function telemetry_config/0 is unused
+    │
+ 29 │   defp telemetry_config do
+    │        ~
+    │
+    └─ lib/cerebros/application.ex:29:8: Cerebros.Application (module)
+
+    warning: function metrics/0 is unused
+    │
+ 37 │   defp metrics do
+    │        ~
+    │
+    └─ lib/cerebros/application.ex:37:8: Cerebros.Application (module)
+
+    warning: unused alias Loader
+    │
+ 12 │   alias Cerebros.Data.Loader
+    │   ~
+    │
+    └─ lib/cerebros/cli.ex:12:3
+
+     warning: variable "num_classes" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 108 │   num_classes = 1
+     │   ~~~~~~~~~~~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/data/loader.ex:108:3: Cerebros.Data.Loader.create_cifar10_synthetic/4
+
+     warning: variable "target_column" is unused (if the variable is not meant to be used, prefix it with an underscore)
+     │
+ 199 │   defp load_and_process_csv(file_path, target_column) do
+     │                                        ~~~~~~~~~~~~~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/data/loader.ex:199:40: Cerebros.Data.Loader.load_and_process_csv/2
+
+     warning: Nx.random_normal/2 is undefined or private
+     │
+ 159 │         |> Nx.add(Nx.random_normal({batch_size}, mean: 0.0, sigma: 0.1))
+     │                      ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/data/loader.ex:159:22: Cerebros.Data.Loader.create_synthetic_regression_stream/3
+
+     warning: Nx.random_normal/2 is undefined or private
+     │
+ 192 │       noise = Nx.random_normal(Nx.shape(x), mean: 0.0, sigma: 0.1)
+     │                  ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/data/loader.ex:192:18: Cerebros.Data.Loader.apply_augmentations/1
+
+     warning: Nx.random_normal/2 is undefined or private
+     │
+ 229 │         |> Nx.add(Nx.random_normal({}, mean: 0.0, sigma: 0.1))
+     │                      ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/data/loader.ex:229:22: Cerebros.Data.Loader.generate_structured_data/0
+
+     warning: Nx.random_normal/1 is undefined or private
+     │
+ 170 │     Nx.random_normal(full_shape)
+     │        ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/data/loader.ex:170:8: Cerebros.Data.Loader.create_synthetic_inputs/2
+
+     warning: Nx.to_categorical/2 is undefined or private
+     │
+ 181 │     Nx.to_categorical(labels, num_classes: num_classes)
+     │        ~
+     │
+     └─ (cerebros 0.1.0) lib/cerebros/data/loader.ex:181:8: Cerebros.Data.Loader.create_synthetic_labels/2
+
+    warning: unused alias Spec
+    │
+ 12 │   alias Cerebros.Architecture.Spec
+    │   ~
+    │
+    └─ lib/cerebros/results/collector.ex:12:3
+
+    warning: Nx.power/2 is undefined or private. Did you mean:
+
+          * pow/2
+
+    │
+ 53 │     r = Nx.power(norm, 0.5)
+    │            ~
+    │
+    └─ (cerebros 0.1.0) lib/cerebros/viz/heatmap.ex:53:12: Cerebros.Viz.Heatmap.apply_colormap/2
+
+    warning: Nx.power/2 is undefined or private. Did you mean:
+
+          * pow/2
+
+    │
+ 54 │     g = Nx.power(norm, 1.2)
+    │            ~
+    │
+    └─ (cerebros 0.1.0) lib/cerebros/viz/heatmap.ex:54:12: Cerebros.Viz.Heatmap.apply_colormap/2
+
+    warning: Nx.power/2 is undefined or private. Did you mean:
+
+          * pow/2
+
+    │
+ 55 │     b = Nx.power(1.0 - norm, 0.7)
+    │            ~
+    │
+    └─ (cerebros 0.1.0) lib/cerebros/viz/heatmap.ex:55:12: Cerebros.Viz.Heatmap.apply_colormap/2
+
+==> thunderline
+Compiling 12 files (.ex)
+     warning: variable "steps" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 278 │       steps = [steps, "  - Address violations before deployment"]
+     │       ~
+     │
+     └─ lib/mix/tasks/thunderline.catalog.validate.ex:278:7: Mix.Tasks.Thunderline.Catalog.Validate.format_next_steps/1
+
+     warning: variable "steps" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+     │
+ 282 │       steps = [steps, "  - Document unknown cross-domain edges in interaction matrix"]
+     │       ~
+     │
+     └─ lib/mix/tasks/thunderline.catalog.validate.ex:282:7: Mix.Tasks.Thunderline.Catalog.Validate.format_next_steps/1
+
+    error: undefined variable "job"
+    │
+ 69 │       IO.puts("Inserted job id=#{job.id} state=#{job.state}")
+    │                                                  ^^^
+    │
+    └─ lib/mix/tasks/thunderline.oban.check.ex:69:50: Mix.Tasks.Thunderline.Oban.Check.run/1
+
+    error: undefined variable "job"
+    │
+ 69 │       IO.puts("Inserted job id=#{job.id} state=#{job.state}")
+    │                                  ^^^
+    │
+    └─ lib/mix/tasks/thunderline.oban.check.ex:69:34: Mix.Tasks.Thunderline.Oban.Check.run/1
+
+
+== Compilation error in file lib/mix/tasks/thunderline.oban.check.ex ==
+** (CompileError) lib/mix/tasks/thunderline.oban.check.ex: cannot compile module Mix.Tasks.Thunderline.Oban.Check (errors have been logged)
+

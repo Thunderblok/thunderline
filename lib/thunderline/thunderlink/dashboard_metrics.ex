@@ -389,83 +389,8 @@ defmodule Thunderline.DashboardMetrics do
     end
   end
 
-  defp get_real_agent_stats do
-    try do
-      # Query ThunderMemory for real agent data
-      case ThunderMemory.list_agents() do
-        {:ok, agents} ->
-          active_agents = Enum.count(agents, &(&1.status == :active))
-          total_agents = length(agents)
-
-          # Calculate neural model count (estimate based on agent types)
-          neural_models =
-            Enum.count(agents, fn agent ->
-              agent_type = Map.get(agent, :agent_type, :simple)
-              agent_type in [:neural, :ml, :ai, :learning]
-            end)
-
-          # Estimate memory usage
-          # MB estimate per agent
-          memory_per_agent = 5
-          memory_usage = total_agents * memory_per_agent
-
-          %{
-            active_count: active_agents,
-            total_count: total_agents,
-            neural_models: neural_models,
-            # Estimate 10 inferences per active agent per second
-            inferences_per_second: active_agents * 10,
-            average_accuracy: calculate_average_agent_accuracy(agents),
-            memory_usage_mb: memory_usage
-          }
-
-        {:error, _reason} ->
-          get_default_agent_stats()
-      end
-    rescue
-      _ ->
-        get_default_agent_stats()
-    end
-  end
-
-  defp get_default_agent_stats do
-    %{
-      active_count: 0,
-      total_count: 0,
-      neural_models: 0,
-      inferences_per_second: 0,
-      average_accuracy: 0.5,
-      memory_usage_mb: 0
-    }
-  end
-
-  defp calculate_average_agent_accuracy(agents) do
-    if length(agents) > 0 do
-      # Simple accuracy calculation based on agent performance
-      total_performance =
-        Enum.reduce(agents, 0, fn agent, acc ->
-          # Use update frequency as a proxy for performance
-          performance =
-            case DateTime.diff(DateTime.utc_now(), agent.updated_at, :second) do
-              # Very recent activity = high performance
-              diff when diff < 60 -> 0.9
-              # Recent activity = good performance
-              diff when diff < 300 -> 0.8
-              # Moderate activity = moderate performance
-              diff when diff < 3600 -> 0.6
-              # Old activity = low performance
-              _ -> 0.4
-            end
-
-          acc + performance
-        end)
-
-      total_performance / length(agents)
-    else
-      # Default when no agents
-      0.5
-    end
-  end
+  # Removed unused detailed agent stats helpers (get_real_agent_stats, get_default_agent_stats,
+  # calculate_average_agent_accuracy) to eliminate warnings; simplified metrics elsewhere.
 
   defp get_default_oban_stats do
     %{
@@ -907,68 +832,13 @@ defmodule Thunderline.DashboardMetrics do
     end
   end
 
-  defp get_default_cluster_stats do
-    %{
-      active_rules: [],
-      total_generations: 0,
-      cluster_count: 0,
-      total_cells: 0,
-      alive_cells: 0,
-      neural_learning_rate: 0.001,
-      neural_convergence: 0.5,
-      adaptation_cycles: 0,
-      emergence_patterns: 0,
-      quantum_entanglement: 0.0,
-      superposition_count: 0,
-      decoherence_ms: 0,
-      quantum_speedup: 1.0
-    }
-  end
+  # Removed unused get_default_cluster_stats/0 (duplicate logic elsewhere).
 
-  defp get_fallback_ca_state do
-    # Fallback state when Erlang CA is not available
-    %{
-      active_rules: [:rule_30],
-      total_generations: 0,
-      complexity_measure: 0.0,
-      stability_status: :initializing,
-      cluster_count: 0,
-      total_cells: 0,
-      alive_cells: 0,
-      neural_learning_rate: 0.001,
-      neural_convergence: 0.5,
-      adaptation_cycles: 0,
-      emergence_patterns: 0,
-      quantum_entanglement: 0.0,
-      superposition_count: 0,
-      decoherence_ms: 0,
-      quantum_speedup: 1.0
-    }
-  end
+  # Removed duplicate earlier CA helper definitions (get_fallback_ca_state/0, extract_active_rules/1)
 
-  defp extract_active_rules(stats) do
-    # Extract active CA rules from cluster stats
-    case Map.get(stats, :ca_rules) do
-      nil ->
-        []
-
-      rules when is_map(rules) ->
-        # Convert CA rules format to list of atoms
-        birth_rules = Map.get(rules, :birth_neighbors, [])
-        survival_rules = Map.get(rules, :survival_neighbors, [])
-
-        cond do
-          birth_rules == [3] and survival_rules == [2, 3] -> [:conway_game_of_life]
-          birth_rules == [5, 6, 7] and survival_rules == [4, 5, 6] -> [:conway_3d]
-          true -> [:custom_ca_rule]
-        end
-
-      _ ->
-        []
-    end
-  end
-
-  defp calculate_complexity_measure(cluster_stats, liveview_stats) do
+  # --- CA Metrics Helpers (consolidated) -------------------------------------
+  # Keep only this implementation
+  defp calculate_complexity_measure(cluster_stats, _liveview_stats) do
     # Calculate complexity based on various factors
     base_complexity = 0.1
 
@@ -1204,84 +1074,6 @@ defmodule Thunderline.DashboardMetrics do
     0
   end
 
-  defp get_telemetry_rate(_event_path) do
-    # TODO: Implement rate calculation from telemetry
-    # Return 0 instead of random data
-    0.0
-  end
-
-  defp get_telemetry_average(_event_path) do
-    # TODO: Implement average calculation from telemetry
-    # Return 0 instead of random data
-    0.0
-  end
-
-  defp calculate_average_performance(agents) do
-    if length(agents) > 0 do
-      # Simple performance metric based on update frequency
-      total_performance =
-        Enum.reduce(agents, 0, fn agent, acc ->
-          performance = DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)
-          # Higher is better, recent updates = better performance
-          acc + max(0, 100 - performance)
-        end)
-
-      total_performance / length(agents)
-    else
-      0
-    end
-  end
-
-  defp get_top_performers(agents) do
-    agents
-    |> Enum.filter(&(&1.status == :active))
-    |> Enum.sort_by(fn agent ->
-      -DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)
-    end)
-    |> Enum.take(5)
-    |> Enum.map(fn agent ->
-      %{
-        id: agent.id,
-        performance_score:
-          max(0, 100 - DateTime.diff(DateTime.utc_now(), agent.updated_at, :second)),
-        last_activity: agent.updated_at
-      }
-    end)
-  end
-
-  defp get_recent_spawns(agents) do
-    # Last hour
-    cutoff = DateTime.add(DateTime.utc_now(), -3600, :second)
-
-    agents
-    |> Enum.filter(&(DateTime.compare(&1.created_at, cutoff) == :gt))
-    |> Enum.sort_by(& &1.created_at, {:desc, DateTime})
-    |> Enum.take(10)
-    |> Enum.map(fn agent ->
-      %{
-        id: agent.id,
-        created_at: agent.created_at,
-        status: agent.status
-      }
-    end)
-  end
-
-  defp schedule_metrics_update do
-    Process.send_after(self(), :collect_metrics, @metrics_update_interval)
-  end
-
-  defp publish_metrics_update(state) do
-    metrics_data = %{
-      system: state.system_metrics,
-      events: state.event_metrics,
-      agents: state.agent_metrics,
-  thunderlane: state.thunderlane,
-      timestamp: state.last_update
-    }
-
-    PubSub.broadcast(Thunderline.PubSub, @pubsub_topic, {:metrics_update, metrics_data})
-  end
-
   # Missing helper functions for CA integration
   defp extract_active_rules(stats) do
     case Map.get(stats, :ca_rules) do
@@ -1291,21 +1083,7 @@ defmodule Thunderline.DashboardMetrics do
     end
   end
 
-  defp calculate_complexity_measure(cluster_stats, liveview_stats) do
-    # Simple complexity measure based on rule count and generation
-    rule_complexity = length(cluster_stats.active_rules ++ liveview_stats.active_rules) * 0.1
-    generation_complexity = (cluster_stats.total_generations + liveview_stats.generations) * 0.001
-    Float.round(rule_complexity + generation_complexity, 3)
-  end
-
-  defp determine_stability_status(cluster_stats) do
-    case cluster_stats.total_generations do
-      0 -> :initializing
-      n when n < 10 -> :evolving
-      n when n < 100 -> :stabilizing
-      _ -> :stable
-    end
-  end
+  # Removed older unused alternate CA helper implementations.
 
   defp get_fallback_ca_state do
     # Fallback state when all CA systems are unavailable
@@ -1349,4 +1127,48 @@ defmodule Thunderline.DashboardMetrics do
         []
     end
   end
+  # Agent metrics helper functions (consolidated here)
+  defp calculate_average_performance(agents) do
+    if agents == [] do
+      0
+    else
+      total = Enum.reduce(agents, 0, fn a, acc -> acc + max(0, 100 - DateTime.diff(DateTime.utc_now(), a.updated_at, :second)) end)
+      total / length(agents)
+    end
+  end
+
+  defp get_top_performers(agents) do
+    agents
+    |> Enum.filter(&(&1.status == :active))
+    |> Enum.sort_by(fn a -> DateTime.diff(DateTime.utc_now(), a.updated_at, :second) end)
+    |> Enum.take(5)
+    |> Enum.map(&%{id: &1.id, performance_score: max(0, 100 - DateTime.diff(DateTime.utc_now(), &1.updated_at, :second)), last_activity: &1.updated_at})
+  end
+
+  defp get_recent_spawns(agents) do
+    cutoff = DateTime.add(DateTime.utc_now(), -3600, :second)
+    agents
+    |> Enum.filter(&(DateTime.compare(&1.created_at, cutoff) == :gt))
+    |> Enum.sort_by(& &1.created_at, {:desc, DateTime})
+    |> Enum.take(10)
+    |> Enum.map(&%{id: &1.id, created_at: &1.created_at, status: &1.status})
+  end
+
+  defp schedule_metrics_update do
+    Process.send_after(self(), :collect_metrics, @metrics_update_interval)
+  end
+
+  defp publish_metrics_update(state) do
+    metrics_data = %{
+      system: state.system_metrics,
+      events: state.event_metrics,
+      agents: state.agent_metrics,
+      thunderlane: state.thunderlane,
+      timestamp: state.last_update
+    }
+    PubSub.broadcast(Thunderline.PubSub, @pubsub_topic, {:metrics_update, metrics_data})
+  end
+
+  defp get_telemetry_rate(_path), do: 0.0
+  defp get_telemetry_average(_path), do: 0.0
 end

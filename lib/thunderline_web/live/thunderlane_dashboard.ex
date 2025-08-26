@@ -1,8 +1,8 @@
-defmodule ThunderlineWeb.Live.ThunderlaneDashboard do
+defmodule ThunderlineWeb.ThunderlaneDashboard do
   @moduledoc """
   Placeholder wrapper LiveView for the Thunderlane dashboard route.
 
-  The router expects a `ThunderlineWeb.Live.ThunderlaneDashboard` module.
+  The router expects a `ThunderlineWeb.ThunderlaneDashboard` module.
   The more feature‑rich implementation currently lives in
   `ThunderlineWeb.Live.Components.ThunderlaneDashboard` (which is itself
   implemented as a LiveView today). To avoid a larger refactor right now,

@@ -290,6 +290,11 @@ defmodule Thunderline.Thundercom.Resources.Community do
               :tags, :metadata]
     end
 
+    update :internal_set_zone do
+      description "Internal action to set execution zone reference"
+      accept [:execution_zone_id]
+    end
+
     action :activate, :struct do
       description "Activate community realm"
       argument :id, :uuid, allow_nil?: false
@@ -725,37 +730,39 @@ defmodule Thunderline.Thundercom.Resources.Community do
     })
 
     # Update community with zone reference
-    Thunderblock.Resources.Community.update(community, %{execution_zone_id: zone.id})
+    community
+    |> Ash.Changeset.for_update(:internal_set_zone, %{execution_zone_id: zone.id})
+  |> Ash.update(domain: Thunderline.Thundercom.Domain)
   end
 
-  defp create_default_channels(community) do
+  defp create_default_channels(_community) do
     # Create default #general and #announcements channels
     # Implementation would go here
     :ok
   end
 
-  defp initialize_federation_socket(community) do
+  defp initialize_federation_socket(_community) do
     # Create federation socket for cross-realm communication
     # Implementation would go here
     :ok
   end
 
-  defp start_community_services(community) do
+  defp start_community_services(_community) do
     # Start community-specific services and processes
     :ok
   end
 
-  defp suspend_community_services(community) do
+  defp suspend_community_services(_community) do
     # Suspend community services while preserving state
     :ok
   end
 
-  defp provision_pac_home(community, user_id) do
+  defp provision_pac_home(_community, _user_id) do
     # Provision PAC home for new community member
     :ok
   end
 
-  defp cleanup_member_resources(community, user_id) do
+  defp cleanup_member_resources(_community, _user_id) do
     # Clean up PAC home and other member resources
     :ok
   end

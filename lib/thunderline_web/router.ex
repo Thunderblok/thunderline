@@ -66,9 +66,13 @@ defmodule ThunderlineWeb.Router do
     live "/thunderlink", DashboardLive, :thunderlink
   live "/thundercrown", DashboardLive, :thundercrown
   # Cerebros & Raincatcher (drift lab) interface
-  live "/cerebros", CerebrosLive, :index
+  if System.get_env("ENABLE_CEREBROS") == "true" do
+    live "/cerebros", CerebrosLive, :index
+  end
   # Interactive neural network playground (inspired by external visualizer)
-  live "/nn", NNPlaygroundLive, :index
+  if System.get_env("ENABLE_NN_PLAYGROUND") == "true" do
+    live "/nn", NNPlaygroundLive, :index
+  end
 
   # Discord-style community & channel navigation
   # /c/:community_slug -> community overview (channel list, description)
@@ -77,7 +81,7 @@ defmodule ThunderlineWeb.Router do
   live "/c/:community_slug/:channel_slug", ChannelLive, :show
 
     # Thunderlane Specialized Dashboard
-  live "/dashboard/thunderlane", ThunderlineWeb.Live.ThunderlaneDashboard, :index
+  live "/dashboard/thunderlane", ThunderlineDashboard, :index
 
     # 3D Cellular Automata View
   live "/automata", AutomataLive, :index

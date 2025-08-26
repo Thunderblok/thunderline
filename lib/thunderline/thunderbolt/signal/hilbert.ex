@@ -12,7 +12,9 @@ defmodule Thunderline.Thunderbolt.Signal.Hilbert do
     buf1 = put_elem(buf, idx, x)
     acc = 0..(l-1) |> Enum.reduce(0.0, fn k, a -> a + elem(taps, k) * elem(buf1, rem(idx - k + l, l)) end)
     phi = :math.atan2(acc, x)
-    phi_norm = Float.mod((phi + @pi) / (2.0 * @pi), 1.0)
+  # Normalize phase to [0,1). Float.mod/2 deprecated; emulate with remainder.
+  raw = (phi + @pi) / (2.0 * @pi)
+  phi_norm = raw - :math.floor(raw)
     idx1 = rem(idx + 1, l)
     {%__MODULE__{h | buf: buf1, idx: idx1}, phi_norm}
   end

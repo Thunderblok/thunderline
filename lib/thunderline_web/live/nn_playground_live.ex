@@ -1,3 +1,4 @@
+if System.get_env("ENABLE_NN_PLAYGROUND") == "true" do
 defmodule ThunderlineWeb.NNPlaygroundLive do
   @moduledoc """
   Interactive neural network playground LiveView.
@@ -267,4 +268,5 @@ defmodule ThunderlineWeb.NNPlaygroundLive do
   defp clamp(v, min, max) when v > max, do: max
   defp clamp(v, _min, _max), do: v
   defp mark_dirty(socket), do: (Process.send_after(self(), :recompute, 50); assign(socket, :dirty?, true))
+end
 end

@@ -855,13 +855,13 @@ defmodule Thunderline.Thundercom.Resources.FederationSocket do
     :ok
   end
 
-  defp process_inbound_message(socket, message_data, source_realm) do
+  defp process_inbound_message(_socket, _message_data, _source_realm) do
     # Process received federation message
     # Validate, filter, and route to appropriate channels
     :ok
   end
 
-  defp handle_federation_error(socket, error_type, error_message) do
+  defp handle_federation_error(socket, error_type, _error_message) do
     # Handle federation errors based on severity
     case error_type do
       "connection_lost" -> attempt_reconnection(socket)
@@ -889,10 +889,10 @@ defmodule Thunderline.Thundercom.Resources.FederationSocket do
   end
 
   # Helper functions
-  defp attempt_reconnection(socket), do: :ok
-  defp rotate_credentials(socket), do: :ok
-  defp adjust_rate_limits(socket), do: :ok
-  defp send_queued_message(socket, message), do: :ok
+  defp attempt_reconnection(_socket), do: :ok
+  defp rotate_credentials(_socket), do: :ok
+  defp adjust_rate_limits(_socket), do: :ok
+  defp send_queued_message(_socket, _message), do: :ok
   defp generate_keypair(), do: "generated_keypair"
   defp generate_certificate(), do: "generated_certificate"
   defp generate_token(), do: "generated_token"

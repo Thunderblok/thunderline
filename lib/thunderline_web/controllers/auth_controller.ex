@@ -11,6 +11,7 @@ defmodule ThunderlineWeb.AuthController do
   alias Thunderline.Thundergate.Resources.User
   alias Thunderline.Thunderlink.Resources.{Community, Channel}
   alias Thunderline.Thunderlink.Domain
+  require Ash.Query
 
   # Override success to store user & redirect
   @impl true
@@ -54,8 +55,10 @@ defmodule ThunderlineWeb.AuthController do
 
     with {:ok, community} <- community_result(community) do
       channel =
-  Channel
-  |> Ash.Query.filter(fn rec -> rec.community_id == community.id and rec.status == :active end)
+        Channel
+        # Filter community channels by community id & active status. Using expression atoms directly (no pin).
+  # Use Ash.Query.filter macro (requires Ash.Query) with pinned community id
+  |> Ash.Query.filter(community_id == ^community.id and status == :active)
         |> Ash.Query.sort(inserted_at: :asc)
         |> Ash.Query.limit(1)
         |> Ash.read_one(domain: Domain)

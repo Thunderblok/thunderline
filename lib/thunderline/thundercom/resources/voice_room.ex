@@ -124,8 +124,8 @@ defmodule Thunderline.Thundercom.Resources.VoiceRoom do
   defp do_kick(room, %{arguments: %{participant_id: participant_id}}) do
     # We do a best-effort delete; ignore if already gone.
     case Thunderline.Thundercom.Resources.VoiceParticipant
-         |> Ash.Query.for_read(:read, %{filter: [id: participant_id, room_id: room.id]})
-         |> Thunderline.Thundercom.Domain.read_one() do
+      |> Ash.Query.for_read(:read, %{filter: [id: participant_id, room_id: room.id]})
+      |> Ash.read_one(domain: Thunderline.Thundercom.Domain) do
       {:ok, participant} ->
         _ = Ash.destroy(participant, action: :leave, domain: Thunderline.Thundercom.Domain)
         Phoenix.PubSub.broadcast(Thunderline.PubSub, voice_topic(room.id), {:voice_participant_kicked, room.id, participant_id})

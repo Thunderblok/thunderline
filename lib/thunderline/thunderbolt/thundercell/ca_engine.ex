@@ -59,11 +59,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.CAEngine do
 
   def handle_call({:optimize_rules, ca_rules, performance_targets}, _from, state) do
     case optimize_ca_rules(ca_rules, performance_targets, state) do
-      {:ok, optimized_rules, new_state} ->
-        {:reply, {:ok, optimized_rules}, new_state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
+      {:ok, optimized_rules, new_state} -> {:reply, {:ok, optimized_rules}, new_state}
     end
   end
 
