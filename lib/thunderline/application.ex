@@ -116,9 +116,9 @@ defmodule Thunderline.Application do
   {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
   # Internal file observer (Thunderwatch) – now part of Thundergate domain (shim under Thunderline retained)
   Thundergate.Thunderwatch.Supervisor,
-  # Voice / WebRTC MVP infrastructure (dynamic Membrane pipelines per room)
-  {Registry, keys: :unique, name: Thunderline.Thundercom.Voice.Registry},
-  Thunderline.Thundercom.Voice.Supervisor,
+  # Voice / WebRTC MVP infrastructure (migrated to Thunderlink; gated by feature flag)
+  (Thunderline.Feature.enabled?(:enable_voice_media) && {Registry, keys: :unique, name: Thunderline.Thunderlink.Voice.Registry}) || nil,
+  (Thunderline.Feature.enabled?(:enable_voice_media) && Thunderline.Thunderlink.Voice.Supervisor) || nil,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)
@@ -128,6 +128,7 @@ defmodule Thunderline.Application do
 
       # Phoenix Web Server (conditionally started after core observability)
   ] ++ compute_children ++ endpoint_child ++ extras
+    |> Enum.filter(& &1)
 
   opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 

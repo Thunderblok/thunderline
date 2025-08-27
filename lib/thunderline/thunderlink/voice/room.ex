@@ -1,23 +1,11 @@
-defmodule Thunderline.Thundercom.Resources.VoiceRoom do
+defmodule Thunderline.Thunderlink.Voice.Room do
   @moduledoc """
-  DEPRECATED – Use `Thunderline.Thunderlink.Voice.Room`.
+  Voice Room Resource (Thunderlink) – migrated from Thundercom.
 
-  VoiceRoom Resource - Represents a real-time audio room for human + agent interaction.
-
-  MVP Scope:
-  - Create/Open room inside a community or block context
-  - Track status (:open | :closed)
-  - Basic moderation via host/creator ownership
-  - Policy surface prepared for enrichment
-
-  Future (not in MVP but anticipated):
-  - Recording linkage (session manifest resource)
-  - Transcription stream association
-  - AI Co-host / Agent participants
-  - Persistence of aggregate metrics (talk time, active speaker count)
+  DEPRECATION: `Thunderline.Thundercom.Resources.VoiceRoom` will be removed after grace cycle.
   """
   use Ash.Resource,
-    domain: Thunderline.Thundercom.Domain,
+    domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
     notifiers: [Ash.Notifier.PubSub]
@@ -40,18 +28,17 @@ defmodule Thunderline.Thundercom.Resources.VoiceRoom do
   end
 
   relationships do
-  has_many :participants, Thunderline.Thundercom.Resources.VoiceParticipant do
+    has_many :participants, Thunderline.Thunderlink.Voice.Participant do
       destination_attribute :room_id
     end
   end
 
   aggregates do
-    # Count active participants (exclude those destroyed by leave)
     count :active_participant_count, :participants
   end
 
   calculations do
-    calculate :host_participant_id, :uuid, Thunderline.Thundercom.Calculations.HostParticipantId
+    calculate :host_participant_id, :uuid, Thunderline.Thunderlink.Voice.Calculations.HostParticipantId
   end
 
   actions do
@@ -71,7 +58,6 @@ defmodule Thunderline.Thundercom.Resources.VoiceRoom do
       change after_action(&broadcast_closed/3)
     end
 
-    # Host moderation: remove a participant from the room (soft abstraction; actually destroys participant row)
     action :kick, :map do
       argument :participant_id, :uuid, allow_nil?: false
       run &do_kick/2
@@ -79,23 +65,16 @@ defmodule Thunderline.Thundercom.Resources.VoiceRoom do
   end
 
   policies do
-    # Creating a room requires an actor and at least one scope; host becomes creator.
     policy action(:create_room) do
       authorize_if expr(not is_nil(actor(:id)))
     end
-
-    # Read open rooms; creator can read closed as well.
     policy action(:read) do
       authorize_if expr(status == :open)
       authorize_if expr(created_by_id == actor(:id))
     end
-
-    # Only creator can close or kick for now (future: allow moderators/roles)
     policy action([:close, :kick]) do
       authorize_if expr(created_by_id == actor(:id))
     end
-
-    # Fallback deny (implicit) if nothing matched
   end
 
   code_interface do
@@ -105,58 +84,44 @@ defmodule Thunderline.Thundercom.Resources.VoiceRoom do
     define :read
   end
 
-  # --- Internal helpers --------------------------------------------------
   defp validate_scope!(changeset, _ctx) do
-    community_id = Ash.Changeset.get_attribute(changeset, :community_id)
-    block_id = Ash.Changeset.get_attribute(changeset, :block_id)
-    if is_nil(community_id) and is_nil(block_id) do
-      Ash.Changeset.add_error(changeset, field: :community_id, message: "either community_id or block_id must be provided")
-    else
+    if Ash.Changeset.get_attribute(changeset, :community_id) || Ash.Changeset.get_attribute(changeset, :block_id) do
       changeset
+    else
+      Ash.Changeset.add_error(changeset, field: :community_id, message: "either community_id or block_id must be provided")
     end
   end
-
   defp ensure_metadata_map(changeset, _ctx) do
     case Ash.Changeset.get_attribute(changeset, :metadata) do
       %{} -> changeset
       _ -> Ash.Changeset.change_attribute(changeset, :metadata, %{})
     end
   end
-
   defp do_kick(room, %{arguments: %{participant_id: participant_id}}) do
-    # We do a best-effort delete; ignore if already gone.
-    case Thunderline.Thundercom.Resources.VoiceParticipant
-      |> Ash.Query.for_read(:read, %{filter: [id: participant_id, room_id: room.id]})
-      |> Ash.read_one(domain: Thunderline.Thundercom.Domain) do
+    case Thunderline.Thunderlink.Voice.Participant
+         |> Ash.Query.for_read(:read, %{filter: [id: participant_id, room_id: room.id]})
+         |> Ash.read_one(domain: Thunderline.Thunderlink.Domain) do
       {:ok, participant} ->
-        _ = Ash.destroy(participant, action: :leave, domain: Thunderline.Thundercom.Domain)
+        _ = Ash.destroy(participant, action: :leave, domain: Thunderline.Thunderlink.Domain)
         Phoenix.PubSub.broadcast(Thunderline.PubSub, voice_topic(room.id), {:voice_participant_kicked, room.id, participant_id})
         {:ok, %{kicked: participant_id}}
       {:error, _} -> {:ok, %{kicked: nil, reason: :not_found}}
       nil -> {:ok, %{kicked: nil, reason: :not_found}}
     end
   end
-
-  # --- Broadcast helpers -------------------------------------------------
   defp voice_topic(room_id), do: "voice:#{room_id}"
-
   defp broadcast_created(_changeset, room, _ctx) do
-    # Ensure a live RoomPipeline process is started immediately upon creation so that
-    # the first join does not pay the startup penalty & signaling can proceed.
-  case Thunderline.Thundercom.Voice.Supervisor.ensure_room(room.id) do # deprecated path
+    case Thunderline.Thunderlink.Voice.Supervisor.ensure_room(room.id) do
       {:ok, _pid} -> :ok
       {:error, reason} ->
         require Logger
         Logger.warning("[VoiceRoom] failed to auto-start RoomPipeline for room=#{room.id} reason=#{inspect(reason)}")
     end
-
     Phoenix.PubSub.broadcast(Thunderline.PubSub, voice_topic(room.id), {:voice_room_created, room})
     {:ok, room}
   end
-
   defp broadcast_closed(_changeset, room, _ctx) do
-    # Attempt graceful teardown of the in-memory pipeline for this room.
-    _ = Thunderline.Thundercom.Voice.Supervisor.stop_room(room.id)
+    _ = Thunderline.Thunderlink.Voice.Supervisor.stop_room(room.id)
     Phoenix.PubSub.broadcast(Thunderline.PubSub, voice_topic(room.id), {:voice_room_closed, room.id})
     {:ok, room}
   end

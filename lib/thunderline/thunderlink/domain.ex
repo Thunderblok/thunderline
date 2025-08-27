@@ -30,6 +30,11 @@ defmodule Thunderline.Thunderlink.Domain do
     resource Thunderline.Thunderlink.Resources.Message
     resource Thunderline.Thunderlink.Resources.Role
 
+  # Voice/WebRTC (migrated from Thundercom – Phase A)
+  resource Thunderline.Thunderlink.Voice.Room
+  resource Thunderline.Thunderlink.Voice.Participant
+  resource Thunderline.Thunderlink.Voice.Device
+
     # Commented out until WebRTC implementation is available
     # resource Thunderlink.Resources.PeerConnection
     # resource Thunderlink.Resources.MediaStream

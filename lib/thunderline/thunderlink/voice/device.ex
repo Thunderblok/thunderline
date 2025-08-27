@@ -1,13 +1,9 @@
-defmodule Thunderline.Thundercom.Resources.VoiceDevice do
+defmodule Thunderline.Thunderlink.Voice.Device do
   @moduledoc """
-  DEPRECATED – Use `Thunderline.Thunderlink.Voice.Device`.
-
-  VoiceDevice Resource - Tracks a user's preferred input/output devices & last ICE success.
-
-  This is user-scoped configuration (potentially ephemeral) but persisted for convenience.
+  Voice Device Resource (Thunderlink) – migrated from Thundercom.
   """
   use Ash.Resource,
-    domain: Thunderline.Thundercom.Domain,
+    domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer]
 
@@ -34,22 +30,18 @@ defmodule Thunderline.Thundercom.Resources.VoiceDevice do
 
   actions do
     defaults [:read]
-
     create :register do
       accept [:principal_id, :input_device_id, :output_device_id, :metadata]
       change &ensure_metadata/2
       change &touch_last_ice/2
     end
-
     update :update_devices do
       accept [:input_device_id, :output_device_id]
     end
-
     update :mark_ice_result do
       accept [:last_ice_ok]
       change &touch_last_ice/2
     end
-
     update :deactivate do
       accept []
       change fn cs, _ -> Ash.Changeset.change_attribute(cs, :last_ice_ok, false) end
@@ -58,11 +50,9 @@ defmodule Thunderline.Thundercom.Resources.VoiceDevice do
   end
 
   policies do
-    # Owner-only operations
     policy action([:register, :update_devices, :mark_ice_result, :deactivate]) do
       authorize_if expr(principal_id == actor(:id))
     end
-
     policy action(:read) do
       authorize_if expr(principal_id == actor(:id))
     end
@@ -75,11 +65,7 @@ defmodule Thunderline.Thundercom.Resources.VoiceDevice do
     define :deactivate
   end
 
-  # --- Helpers -----------------------------------------------------------
-  defp touch_last_ice(changeset, _ctx) do
-    Ash.Changeset.change_attribute(changeset, :last_ice_ts, DateTime.utc_now())
-  end
-
+  defp touch_last_ice(changeset, _ctx), do: Ash.Changeset.change_attribute(changeset, :last_ice_ts, DateTime.utc_now())
   defp ensure_metadata(changeset, _ctx) do
     case Ash.Changeset.get_attribute(changeset, :metadata) do
       %{} -> changeset
