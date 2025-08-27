@@ -363,7 +363,9 @@ defmodule Thunderline.Event do
     crown: ["ai.intent", "system"],
     block: ["system"],
     bridge: ["system", "ui.command"],
-    unknown: ["system"]
+    unknown: ["system"],
+    # Custom evt.* experimental namespaces (tight, explicit allow-list)
+    bolt_evt: ["evt.action.ca"]
   }
 
   defp category_allowed?(source, name) when is_atom(source) and is_binary(name) do
@@ -376,7 +378,12 @@ defmodule Thunderline.Event do
         _ -> ""
       end
 
-    allowed = Map.get(@allowed_categories_by_domain, source, ["system"])
+    # Support experimental evt.* taxonomy: treat source :bolt plus evt.* as allowed via bolt_evt mapping
+    allowed =
+      case {source, String.starts_with?(name, "evt.")} do
+        {:bolt, true} -> (Map.get(@allowed_categories_by_domain, :bolt_evt, [])) ++ Map.get(@allowed_categories_by_domain, source, ["system"])
+        _ -> Map.get(@allowed_categories_by_domain, source, ["system"])
+      end
     # Allow prefix match and exact single category tokens (e.g. "system")
     Enum.any?(allowed, fn cat -> cat == prefix or String.starts_with?(prefix, cat) or String.starts_with?(name, cat) end)
   end

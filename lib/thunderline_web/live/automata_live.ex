@@ -19,10 +19,17 @@ defmodule ThunderlineWeb.AutomataLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       DashboardMetrics.subscribe()
-      # Subscribe to automata-specific updates
       PubSub.subscribe(Thunderline.PubSub, "automata:updates")
-      # Subscribe to blackboard updates (future reactive panels)
       Blackboard.subscribe()
+      # lineage & rule events
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "events:evt.action.ca.rule_parsed")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "events:dag.commit")
+    end
+
+    run_id = "default"
+    if Thunderline.Feature.enabled?(:ca_viz) and connected?(socket) do
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "ca:#{run_id}")
+      _ = Thunderline.Thunderbolt.CA.RunnerSupervisor.start_run(run_id, size: 24)
     end
 
     {:ok,
@@ -34,11 +41,25 @@ defmodule ThunderlineWeb.AutomataLive do
      |> assign(:pattern_buffer, [])
      |> assign(:running, false)
      |> assign(:blackboard_data, initial_blackboard_snapshot())
-     |> assign(:speed, 100)}
-
+     |> assign(:speed, 100)
+     |> assign(:ca_run_id, run_id)}
   end
 
   # Grouped handle_info/2 clauses (must be contiguous)
+  @impl true
+  def handle_info(%{event: "evt.action.ca.rule_parsed", payload: payload}, socket) do
+    {:noreply, push_event(socket, "rule_parsed", %{rule: payload})}
+  end
+
+  @impl true
+  def handle_info(%{event: "dag.commit", payload: payload}, socket) do
+    {:noreply,
+     push_event(socket, "dag_commit", %{
+       workflow_id: Map.get(payload, :workflow_id),
+       node_id: Map.get(payload, :node_id),
+       correlation_id: Map.get(payload, :correlation_id)
+     })}
+  end
   @impl true
   def handle_info({:metrics_update, metrics}, socket) do
     automata_data = Map.get(metrics, :automata, %{})
@@ -52,6 +73,13 @@ defmodule ThunderlineWeb.AutomataLive do
      |> assign(:generation, data.generation)
      |> assign(:pattern_buffer, data.pattern)
      |> assign(:automata_state, Map.merge(socket.assigns.automata_state, data))}
+  end
+
+  @impl true
+  def handle_info({:ca_delta, msg}, socket) do
+    # Forward delta to the 3D hook
+    push_event(socket, "ca:update", msg)
+    {:noreply, socket}
   end
 
   @impl true
@@ -128,7 +156,6 @@ defmodule ThunderlineWeb.AutomataLive do
     <div class="automata-dashboard">
       <div class="header-section">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">Cellular Automata Lab</h1>
-
         <div class="controls-panel bg-white rounded-lg shadow p-6 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <!-- Rule Selection -->
@@ -184,6 +211,11 @@ defmodule ThunderlineWeb.AutomataLive do
             </div>
           </div>
         </div>
+        <%= if Thunderline.Feature.enabled?(:ca_viz) do %>
+          <div class="mt-4">
+            <canvas id="ca-viz" phx-hook="CAVisualization" data-grid-size="24" data-performance-mode="balanced" class="w-full h-[480px] border border-gray-300 rounded bg-black"></canvas>
+          </div>
+        <% end %>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

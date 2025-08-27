@@ -116,6 +116,14 @@ config :thunderline, Thunderline.Mailer, adapter: Swoosh.Adapters.Local
 
 ## esbuild bundling removed (Option A no-node). If bundling reintroduced later, restore config :esbuild.
 
+# Re-introduced esbuild for CA visualization & richer JS hooks
+config :esbuild,
+  version: "0.23.0",
+  thunderline: [
+    args: ~w(js/app.js --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js),
+    cd: Path.expand("../assets", __DIR__)
+  ]
+
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "4.1.7",

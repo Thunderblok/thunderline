@@ -55,6 +55,11 @@ defmodule Thunderline.Thunderblock.Resources.DAGWorkflow do
       accept []
       change fn cs, _ -> Ash.Changeset.change_attribute(cs, :status, :sealed) end
     end
+
+    # Generic metadata update for lightweight pointer persistence (e.g., last_node_id)
+    update :update_metadata do
+      accept [:metadata]
+    end
   end
 
   policies do

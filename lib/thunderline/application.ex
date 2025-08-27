@@ -120,6 +120,10 @@ defmodule Thunderline.Application do
   (Thunderline.Feature.enabled?(:enable_voice_media) && {Registry, keys: :unique, name: Thunderline.Thunderlink.Voice.Registry}) || nil,
   (Thunderline.Feature.enabled?(:enable_voice_media) && Thunderline.Thunderlink.Voice.Supervisor) || nil,
 
+  # ⚡ CA Visualization infrastructure (feature gated)
+  (Thunderline.Feature.enabled?(:ca_viz) && Thunderline.Thunderbolt.CA.Registry) || nil,
+  (Thunderline.Feature.enabled?(:ca_viz) && Thunderline.Thunderbolt.CA.RunnerSupervisor) || nil,
+
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)
 

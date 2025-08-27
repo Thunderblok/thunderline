@@ -51,7 +51,8 @@ defmodule Thunderline.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
-      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
+  {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
+  {:esbuild, "~> 0.9", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
@@ -92,6 +93,8 @@ defmodule Thunderline.MixProject do
       {:stb_image, "~> 0.6"},
       # For supervision tree visualization
       {:ex_rose_tree, "~> 0.1.3"},
+      # Parsing DSLs (CA rule lines, Thundervine spec)
+      {:nimble_parsec, "~> 1.4"},
 
       # Memory and Security
 
@@ -152,8 +155,8 @@ defmodule Thunderline.MixProject do
       "ash.migrate": ["ash_postgres.generate_migrations", "ecto.migrate"],
   # Option A (no esbuild/node): only Tailwind profile 'thunderline'
   "assets.setup": ["tailwind.install --if-missing"],
-  "assets.build": ["tailwind thunderline"],
-  "assets.deploy": ["tailwind thunderline --minify", "phx.digest"]
+  "assets.build": ["tailwind thunderline", "esbuild thunderline"],
+  "assets.deploy": ["tailwind thunderline --minify", "esbuild thunderline --minify", "phx.digest"]
     ]
   end
 

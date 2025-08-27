@@ -48,8 +48,14 @@ config :thunderline, ThunderlineWeb.Endpoint,
   secret_key_base: "development_secret_key_base_that_is_at_least_64_bytes_long_for_security",
   # Esbuild removed (no Node/bundling). Tailwind binary only.
   watchers: [
-    tailwind: {Tailwind, :install_and_run, [:thunderline, ~w(--watch)]}
+    tailwind: {Tailwind, :install_and_run, [:thunderline, ~w(--watch)]},
+    esbuild: {Esbuild, :install_and_run, [:thunderline, ~w(--sourcemap=inline --watch)]}
   ]
+
+# Development feature flags (compile-time for Feature module)
+config :thunderline, :features, [
+  ca_viz: true
+]
 
 # ## SSL Support
 #

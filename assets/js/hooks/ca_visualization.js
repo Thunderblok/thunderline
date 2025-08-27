@@ -11,6 +11,21 @@ export const CAVisualization = {
   mounted() {
     this.initializeVisualization();
     this.setupEventListeners();
+    // Attach LiveView event handler for deltas if not already present
+    this.handleEvent && this.handleEvent("ca:update", ({cells}) => {
+      if (!cells) return;
+      for (const c of cells) {
+        const mesh = this.cells && this.cells.get(c.id);
+        if (!mesh) continue;
+        if (typeof c.hex === 'number') {
+          mesh.material.color.setHex(c.hex);
+        }
+        if (c.energy != null) {
+          mesh.userData.energy = c.energy;
+        }
+        mesh.userData.state = c.state;
+      }
+    });
   },
 
   destroyed() {

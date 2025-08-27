@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "name": "thunderline-assets",
+  "version": "0.1.0",
+  "scripts": {
+    "assets:build": "esbuild js/app.js --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js",
+    "assets:watch": "esbuild js/app.js --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0",
+    "three": "^0.168.0",
+    "phoenix": "^1.7.11",
+    "phoenix_html": "^4.0.0",
+    "phoenix_live_view": "^1.0.0"
+  }
+}

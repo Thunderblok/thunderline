@@ -95,6 +95,11 @@ flowchart TB
   comMsg -->|system.presence.*| flowBus
   crownAI -->|ai.intent.*| flowBus
   boltLane -->|compute events| flowBus
+  %% New command ingress for CA & workflow specs
+  flowBus -->|"cmd.ca.rule.parse"| boltLane
+  flowBus -->|"cmd.workflow.spec.parse"| boltLane
+  boltLane -->|"dag.commit"| FLOW
+  CROWN -->|"Jido/Ash AI → commands"| FLOW
   gateBridge -->|normalized ingest| flowBus
   flowBus --> flowEP --> flowRT --> linkUI
   flowEP --> flowX --> boltLane
