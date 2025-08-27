@@ -24,4 +24,24 @@ def init(_arg), do: DynamicSupervisor.init(strategy: :one_for_one)
       [{pid, _}] -> {:ok, pid}
     end
   end
+
+  @doc """
+  Stop a room pipeline if it exists. Returns :ok whether or not the room was running.
+
+  We use GenServer.stop/2 directly because the child is registered via :via and managed
+  by the DynamicSupervisor; normal termination will allow restart if mistakenly invoked,
+  but callers generally only use this when the underlying room resource has been closed.
+  """
+  def stop_room(room_id) do
+    case Registry.lookup(Thunderline.Thundercom.Voice.Registry, room_id) do
+      [] -> :ok
+      [{pid, _}] ->
+        try do
+          GenServer.stop(pid, :normal)
+        catch
+          _, _ -> :ok
+        end
+        :ok
+    end
+  end
 end

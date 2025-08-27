@@ -114,8 +114,8 @@ defmodule Thunderline.Application do
   Thunderline.Thunderbolt.Automata.Blackboard,
   # Dashboard Event Buffer (ETS ring for streaming events)
   {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
-  # Internal file observer (Thunderwatch) – optional, privacy-preserving alternative to Watchman
-  Thunderline.Thunderwatch.Supervisor,
+  # Internal file observer (Thunderwatch) – now part of Thundergate domain (shim under Thunderline retained)
+  Thundergate.Thunderwatch.Supervisor,
   # Voice / WebRTC MVP infrastructure (dynamic Membrane pipelines per room)
   {Registry, keys: :unique, name: Thunderline.Thundercom.Voice.Registry},
   Thunderline.Thundercom.Voice.Supervisor,

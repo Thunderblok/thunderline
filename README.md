@@ -14,7 +14,7 @@ The system employs a unique hybrid architecture that seamlessly integrates Entit
 
 ### Domain-Driven Excellence
 
-Thunderline is architected around seven specialized domains, each handling distinct aspects of the intelligent system:
+Thunderline is architected around seven specialized domains (with auxiliary merge/legacy surfaces), each handling distinct aspects of the intelligent system:
 
 - **ThunderBlock**: Secure data persistence and infrastructure management
 - **ThunderBolt**: High-performance compute and processing acceleration
@@ -23,6 +23,7 @@ Thunderline is architected around seven specialized domains, each handling disti
 - **ThunderGate**: External system integrations, security and gateway services
 - **ThunderGrid**: Spatial management and coordinate systems
 - **ThunderLink**: Federation protocols and inter-system communication
+  - (See `Docs/architecture/domain_topdown.md` for the full top-down container & flow map; `Docs/architecture/system_architecture_webrtc.md` for voice/WebRTC path.)
 
 ### Event-Driven Foundation
 

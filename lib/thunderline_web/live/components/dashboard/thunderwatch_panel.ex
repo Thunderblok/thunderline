@@ -3,7 +3,7 @@ defmodule ThunderlineWeb.DashboardComponents.ThunderwatchPanel do
   Dashboard tile showing Thunderwatch (internal file watcher) statistics.
   """
   use Phoenix.Component
-  alias Thunderline.Thunderwatch.Manager
+  alias Thundergate.Thunderwatch.Manager
 
   attr :stats, :map, default: %{}
 

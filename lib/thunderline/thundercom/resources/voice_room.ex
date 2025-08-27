@@ -139,11 +139,22 @@ defmodule Thunderline.Thundercom.Resources.VoiceRoom do
   defp voice_topic(room_id), do: "voice:#{room_id}"
 
   defp broadcast_created(_changeset, room, _ctx) do
+    # Ensure a live RoomPipeline process is started immediately upon creation so that
+    # the first join does not pay the startup penalty & signaling can proceed.
+    case Thunderline.Thundercom.Voice.Supervisor.ensure_room(room.id) do
+      {:ok, _pid} -> :ok
+      {:error, reason} ->
+        require Logger
+        Logger.warning("[VoiceRoom] failed to auto-start RoomPipeline for room=#{room.id} reason=#{inspect(reason)}")
+    end
+
     Phoenix.PubSub.broadcast(Thunderline.PubSub, voice_topic(room.id), {:voice_room_created, room})
     {:ok, room}
   end
 
   defp broadcast_closed(_changeset, room, _ctx) do
+    # Attempt graceful teardown of the in-memory pipeline for this room.
+    _ = Thunderline.Thundercom.Voice.Supervisor.stop_room(room.id)
     Phoenix.PubSub.broadcast(Thunderline.PubSub, voice_topic(room.id), {:voice_room_closed, room.id})
     {:ok, room}
   end

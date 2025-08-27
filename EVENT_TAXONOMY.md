@@ -70,12 +70,14 @@ Envelope Invariants:
 ## 6. Lifecycle Categories
 | Category | Description | Example Names |
 |----------|-------------|---------------|
-| `ui.command` | Raw user intent | `ui.command.email.requested` |
-| `ai.intent` | Interpreted AI intent or disambiguation | `ai.intent.email.compose` |
-| `system` | Internal system action results | `system.email.sent` |
+| `ui.command` | Raw user intent | `ui.command.email.requested`, `ui.command.voice.room.requested` |
+| `ai.intent` | Interpreted AI intent or disambiguation | `ai.intent.email.compose`, `ai.intent.voice.transcription.segment` |
+| `system` | Internal system action results | `system.email.sent`, `system.voice.room.created` |
 | `flow.reactor` | Reactor orchestration steps / retries | `flow.reactor.retry` |
 | `presence` | User or agent presence transitions | `system.presence.join` |
 | `ml.run` | ML lifecycle transitions | `ml.run.completed` |
+| `voice.signal` | WebRTC signaling primitives (offers/answers/ICE) normalized | `voice.signal.offer`, `voice.signal.answer`, `voice.signal.ice` |
+| `voice.room` | Room lifecycle, media pipeline + recording/transcription | `voice.room.closed`, `voice.room.recording.started` |
 
 (Initial table; to be expanded.)
 
@@ -93,6 +95,19 @@ Phases (optional final segment) SHOULD be used when an action has distinguishabl
 | `ml.run.started` | 1 | `%{run_id: binary, model: binary}` | persistent | After state transition -> running |
 | `ml.run.completed` | 1 | `%{run_id: binary, model: binary, duration_ms: integer}` | persistent | State transition completed |
 | `flow.reactor.retry` | 1 | `%{reactor: binary, step: binary, attempt: integer, reason: binary}` | transient | Observability & SLO |
+| `ui.command.voice.room.requested` | 1 | `%{title: binary, requested_by: binary, scope: %{community_id: binary|nil, block_id: binary|nil}}` | persistent | Root of a voice session creation flow |
+| `system.voice.room.created` | 1 | `%{room_id: binary, created_by: binary}` | persistent | Emitted after VoiceRoom persisted |
+| `system.voice.room.closed` | 1 | `%{room_id: binary, closed_by: binary}` | persistent | Terminal state of room |
+| `voice.signal.offer` | 1 | `%{room_id: binary, from: binary, sdp_type: "offer", size: integer}` | transient | Normalized inbound offer |
+| `voice.signal.answer` | 1 | `%{room_id: binary, from: binary, sdp_type: "answer", size: integer}` | transient | Normalized inbound answer |
+| `voice.signal.ice` | 1 | `%{room_id: binary, from: binary, candidate: map}` | transient | Individual ICE candidate |
+| `voice.room.participant.joined` | 1 | `%{room_id: binary, participant_id: binary, role: atom}` | transient | High-churn presence-like voice join |
+| `voice.room.participant.left` | 1 | `%{room_id: binary, participant_id: binary, reason: atom|nil}` | transient | Leave/kick/timeout |
+| `voice.room.speaking.started` | 1 | `%{room_id: binary, participant_id: binary}` | transient | Start VAD-detected speech window |
+| `voice.room.speaking.stopped` | 1 | `%{room_id: binary, participant_id: binary, duration_ms: integer}` | transient | End of speech window |
+| `voice.room.recording.started` | 1 | `%{room_id: binary, recording_id: binary}` | persistent | Recording pipeline engaged |
+| `voice.room.recording.completed` | 1 | `%{room_id: binary, recording_id: binary, duration_ms: integer, segments: integer}` | persistent | Recording artifact finalized |
+| `ai.intent.voice.transcription.segment` | 1 | `%{room_id: binary, recording_id: binary|nil, participant_id: binary|nil, text: binary, start_ms: integer, end_ms: integer}` | transient | Streaming transcript segment |
 
 Schema Detail (Selected):
 ```elixir
@@ -167,7 +182,7 @@ JSON Schema (excerpt) for `system.email.sent`:
 | `:gate` (Auth/Gateway) | `ui.command`, `system`, `presence` | Auth flows, presence join/leave |
 | `:flow` (Pipelines/Reactor) | `flow.reactor`, `system` | Reactor orchestration + internal pipeline completions |
 | `:bolt` (ML / ThunderBolt) | `ml.run`, `system` | ML lifecycle & internal orchestration |
-| `:link` (Comms / Chat / Email) | `ui.command`, `system` | User intents & email outcomes |
+| `:link` (Comms / Chat / Voice) | `ui.command`, `system`, `voice.signal`, `voice.room` | Adds voice session + signaling categories |
 | `:crown` (AI Governance) | `ai.intent`, `system` | AI interpretation & governance decisions |
 | `:block` (Provisioning/Tenancy) | `system` | Provisioning, server lifecycle events |
 | `:bridge` (Future Ingest Layer) | `system`, `ui.command` | External ingest normalization |
