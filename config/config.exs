@@ -169,7 +169,10 @@ end
 config :thunderline, Oban,
   repo: Thunderline.Repo,
   plugins: [
-    Oban.Plugins.Cron,
+    {Oban.Plugins.Cron, crontab: [
+      # Run every 5 minutes if enabled (set ENABLE_WORKFLOW_COMPACTOR_CRON=true)
+      {"*/5 * * * *", Thunderline.Thundervine.WorkflowCompactorWorker, if: fn -> System.get_env("ENABLE_WORKFLOW_COMPACTOR_CRON") in ["1", "true", "TRUE"] end}
+    ]},
     Oban.Plugins.Pruner
   ],
   queues: [

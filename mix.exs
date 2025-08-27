@@ -34,14 +34,12 @@ defmodule Thunderline.MixProject do
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
-    base = [
+    [
       {:oban, "~> 2.0"},
       {:ash_authentication, "~> 4.0"},
       {:ash_authentication_phoenix, "~> 2.0"},
-      # Password hashing for AshAuthentication password strategy
       {:bcrypt_elixir, "~> 3.1"},
       {:igniter, "~> 0.6", only: [:dev, :test]},
-
       # Phoenix
       {:phoenix, "~> 1.8.0"},
       {:phoenix_html, "~> 4.0"},
@@ -51,16 +49,15 @@ defmodule Thunderline.MixProject do
       {:floki, ">= 0.30.0", only: :test},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
-  {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
-  {:esbuild, "~> 0.9", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
+      {:esbuild, "~> 0.9", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:swoosh, "~> 1.16"},
-
-      # Ash Framework (includes PostgreSQL support)
+      # Ash Framework
       {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.0"},
       {:ash_postgres, "~> 2.0"},
@@ -71,7 +68,7 @@ defmodule Thunderline.MixProject do
       {:opentelemetry_ash, "~> 0.1.3"},
       {:ash_state_machine, "~> 0.2.12"},
       {:ash_admin, "~> 0.11"},
-
+  {:ash_ai, "~> 0.2"},
       # Additional deps
       {:uuid, "~> 1.1"},
       {:broadway, "~> 1.0"},
@@ -89,55 +86,34 @@ defmodule Thunderline.MixProject do
       {:reactor, "~> 0.15.6"},
       {:eagl, "~> 0.9.0"},
       {:simple_sat, "~> 0.1.3"},
-      # Required for eagl image loading
       {:stb_image, "~> 0.6"},
-      # For supervision tree visualization
       {:ex_rose_tree, "~> 0.1.3"},
-      # Parsing DSLs (CA rule lines, Thundervine spec)
       {:nimble_parsec, "~> 1.4"},
-
-      # Memory and Security
-
+      # Memory & Security
       {:memento, "~> 0.5.0"},
       {:cloak, "~> 1.1"},
-
-      # ECS and GraphQL
+      # ECS & GraphQL
       {:ecsx, "~> 0.5"},
       {:absinthe, "~> 1.7"},
       {:absinthe_phoenix, "~> 2.0"},
       {:absinthe_plug, "~> 1.5"},
-
-      # 3D Visualization
-      # {:hologram, "~> 0.2", only: [:dev, :test]},  # Temporarily disabled for Team Bruce integration
-
-      # Neural Computing & Machine Learning 🧠⚡
+      # Neural / ML
       {:nx, "~> 0.9"},
       {:axon, "~> 0.7"},
       {:exla, "~> 0.9"},
       {:torchx, "~> 0.9"},
       {:bumblebee, "~> 0.6"},
       {:polaris, "~> 0.1"},
-
-  # File system watching (used by internal Thunderwatch service). Only in dev & test.
-  {:file_system, "~> 1.0", only: [:dev, :test]},
-
-      # Code Quality & Development Tools
+      # File system watch (dev/test only)
+      {:file_system, "~> 1.0", only: [:dev, :test]},
+      # Code Quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:git_ops, "~> 2.6.1", only: [:dev]}
-    ]
-
-    cerebros_dep =
-      if System.get_env("ENABLE_CEREBROS") == "true" do
-        [
-          # Local ML/architecture engine – opt-in only. Set ENABLE_CEREBROS=true to include.
-          {:cerebros, path: "cerebros", only: [:dev], runtime: false}
-        ]
-      else
-        []
-      end
-
-    base ++ cerebros_dep
+      {:git_ops, "~> 2.6.1", only: [:dev]},
+      # igniter: dependency insertion point (do not remove)
+    ] ++ (if System.get_env("ENABLE_CEREBROS") == "true", do: [
+      {:cerebros, path: "cerebros", only: [:dev], runtime: false}
+    ], else: [])
   end
 
   defp aliases do

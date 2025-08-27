@@ -123,6 +123,8 @@ defmodule Thunderline.Application do
   # ⚡ CA Visualization infrastructure (feature gated)
   (Thunderline.Feature.enabled?(:ca_viz) && Thunderline.Thunderbolt.CA.Registry) || nil,
   (Thunderline.Feature.enabled?(:ca_viz) && Thunderline.Thunderbolt.CA.RunnerSupervisor) || nil,
+  # Thundervine lineage maintenance
+  (Thunderline.Feature.enabled?(:thundervine_lineage) && {Thunderline.Thundervine.WorkflowCompactor, []}) || nil,
 
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)

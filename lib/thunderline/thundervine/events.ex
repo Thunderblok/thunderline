@@ -110,13 +110,26 @@ defmodule Thunderline.Thundervine.Events do
     case :ets.lookup(@edge_cache, wf.id) do
       [{_kf, id}] -> id
       _ ->
-        # fallback to workflow metadata (DB) if available
-        case Ash.get(DAGWorkflow, wf.id) do
-          {:ok, fresh} ->
-            id = get_in(fresh.metadata, ["last_node_id"])
-            if id, do: store_ephemeral(fresh.id, id)
-            id
-          _ -> nil
+        # fallback: attempt fast latest node query (uses workflow_id+inserted_at index)
+        latest_query =
+          DAGNode
+          |> Ash.Query.filter(workflow_id: wf.id)
+          |> Ash.Query.sort(inserted_at: :desc)
+          |> Ash.Query.limit(1)
+
+        case Ash.read(latest_query) do
+          {:ok, [%{id: latest_id}]} ->
+            store_ephemeral(wf.id, latest_id)
+            latest_id
+          _ ->
+            # final fallback to workflow metadata
+            case Ash.get(DAGWorkflow, wf.id) do
+              {:ok, fresh} ->
+                id = get_in(fresh.metadata, ["last_node_id"])
+                if id, do: store_ephemeral(fresh.id, id)
+                id
+              _ -> nil
+            end
         end
     end
   end
