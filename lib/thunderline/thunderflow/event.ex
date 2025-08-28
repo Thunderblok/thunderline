@@ -357,13 +357,13 @@ defmodule Thunderline.Event do
 
   @allowed_categories_by_domain %{
     gate: ["ui.command", "system", "presence"],
-    flow: ["flow.reactor", "system"],
-    bolt: ["ml.run", "system"],
-    link: ["ui.command", "system"],
-    crown: ["ai.intent", "system"],
-    block: ["system"],
-    bridge: ["system", "ui.command"],
-    unknown: ["system"],
+    flow: ["flow.reactor", "system", "ai"],
+    bolt: ["ml.run", "system", "ai"],
+    link: ["ui.command", "system", "ai"],
+    crown: ["ai.intent", "system", "ai"],
+    block: ["system", "ai"],
+    bridge: ["system", "ui.command", "ai"],
+    unknown: ["system", "ai"],
     # Custom evt.* experimental namespaces (tight, explicit allow-list)
     bolt_evt: ["evt.action.ca"]
   }

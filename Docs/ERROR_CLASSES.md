@@ -174,6 +174,40 @@ defmodule Thunderline.ErrorClassifier do
 end
 ```
 
+## 13. Domain-Specific Parser Error Codes (Integrated Addendum)
+
+The following parser / DSL specific errors were previously tracked in a separate addendum file (`ERROR_CLASSES_APPEND.md`). They are now canonical and SHOULD be emitted using the classifier with `origin: :user`, appropriate `class` (`validation` or `permanent` depending on retry semantics), and a stable `code`.
+
+| Code | Class | HTTP Mapping | Description | Mitigation |
+|------|-------|--------------|-------------|------------|
+| E-PARSE-RULE-001 | parse.rule.syntax | 400 | CA rule line failed grammar parse | Surface first error segment, suggest canonical form `B3/S23 rate=30Hz` |
+| E-PARSE-SPEC-001 | parse.spec.syntax | 400 | Workflow spec failed grammar parse | Provide failing line number & remaining text snippet |
+| E-PARSE-SPEC-002 | parse.spec.unknown_after | 422 | `after=` references undeclared node | Ensure topological order; reorder or declare parent first |
+
+Classification Guidance:
+* Syntax errors: `origin: :user`, `class: :validation`, `severity: :info` (single occurrence) escalating to `:warn` on sustained frequency.
+* Unknown reference (`E-PARSE-SPEC-002`): `origin: :user`, `class: :validation`, may elevate to `:error` if emitted post-production deployment (indicates tooling gap).
+
+Telemetry Extension:
+Emit `[:thunderline,:parser,:error]` with metadata: `code`, `class`, `line`, `attempt` (if re-processed), and `sampled_stack: boolean`.
+
+## 14. AI Event / Error Cross-Link
+
+With the introduction of `ai_emit/2` and `emit_batch_meta/2` in `Thunderline.EventBus`, AI tool chain failures SHOULD classify errors with additional context keys:
+* `:ai_stage` – one of `:tool_start | :tool_result | :conversation_delta | :model_token`
+* `:correlation_id` – taken from batch or event correlation (see Event Taxonomy section on correlation propagation)
+
+Recommended AI-Specific Codes (reserve namespace, implement when encountered):
+| Code | Scenario | Suggested Mapping |
+|------|----------|-------------------|
+| AI-TOOL-TIMEOUT | Tool execution exceeded SLA | origin: external (if remote) or system, class: timeout |
+| AI-TOOL-BAD-OUTPUT | Output failed schema validation | origin: system, class: validation, visibility: internal_only |
+| AI-TOOL-RATE-LIMIT | Upstream model rate limited | origin: external, class: transient |
+| AI-STREAM-DROP | Streaming token channel interrupted | origin: infrastructure, class: transient |
+
+---
+Document consolidation complete (v0.3 draft). Remove `ERROR_CLASSES_APPEND.md` once all references updated.
+
 ---
 
 ---

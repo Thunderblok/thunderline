@@ -72,6 +72,7 @@ Envelope Invariants:
 |----------|-------------|---------------|
 | `ui.command` | Raw user intent | `ui.command.email.requested`, `ui.command.voice.room.requested` |
 | `ai.intent` | Interpreted AI intent or disambiguation | `ai.intent.email.compose`, `ai.intent.voice.transcription.segment` |
+| `ai` | Generic AI runtime/tool events (batch/meta/tool streaming) | `ai.tool_start`, `ai.model_token` (via EventBus.ai_emit) |
 | `system` | Internal system action results | `system.email.sent`, `system.voice.room.created` |
 | `flow.reactor` | Reactor orchestration steps / retries | `flow.reactor.retry` |
 | `presence` | User or agent presence transitions | `system.presence.join` |
@@ -95,6 +96,10 @@ Phases (optional final segment) SHOULD be used when an action has distinguishabl
 | `ml.run.started` | 1 | `%{run_id: binary, model: binary}` | persistent | After state transition -> running |
 | `ml.run.completed` | 1 | `%{run_id: binary, model: binary, duration_ms: integer}` | persistent | State transition completed |
 | `flow.reactor.retry` | 1 | `%{reactor: binary, step: binary, attempt: integer, reason: binary}` | transient | Observability & SLO |
+| `ai.tool_start` | 1 | `%{tool: binary, ai_stage: :tool_start, correlation_id: binary}` | transient | Emitted at AI tool invocation begin |
+| `ai.tool_result` | 1 | `%{tool: binary, ai_stage: :tool_result, duration_ms: integer|nil, status: atom, correlation_id: binary}` | transient | Terminal tool result (success/failure) |
+| `ai.model_token` | 1 | `%{model: binary, token: binary, seq: integer, correlation_id: binary}` | transient | Streaming token emission |
+| `ai.conversation_delta` | 1 | `%{delta: binary, role: atom, correlation_id: binary}` | transient | Conversation streaming delta |
 | `ui.command.voice.room.requested` | 1 | `%{title: binary, requested_by: binary, scope: %{community_id: binary|nil, block_id: binary|nil}}` | persistent | Root of a voice session creation flow |
 | `system.voice.room.created` | 1 | `%{room_id: binary, created_by: binary}` | persistent | Emitted after VoiceRoom persisted |
 | `system.voice.room.closed` | 1 | `%{room_id: binary, closed_by: binary}` | persistent | Terminal state of room |
@@ -193,7 +198,7 @@ JSON Schema (excerpt) for `system.email.sent`:
 
 Violations (emitting a category not in the domain row) MUST be justified in PR description & typically indicate domain boundary confusion.
 
-## 13. Correlation & Causation Threading Rules
+## 13. Correlation & Causation Threading Rules (Expanded for AI & Batches)
 | Scenario | Correlation Rule | Causation Rule | Example |
 |----------|------------------|----------------|---------|
 | First user command | `correlation_id = id` | `causation_id = nil` | `ui.command.email.requested` |
@@ -201,29 +206,38 @@ Violations (emitting a category not in the domain row) MUST be justified in PR d
 | Reactor step retry | Inherit from original root | `causation_id = previous attempt id` | `flow.reactor.retry` |
 | Terminal success/failure | Inherit | `causation_id = immediate predecessor (intent or reactor)` | `system.email.sent` |
 | Fanout (parallel steps) | Inherit | `causation_id = originating split event` | Multiple parallel reactor steps |
+| AI tool start | Inherit (from triggering command/intent) | `causation_id = parent intent/command` | `ai.tool_start` |
+| AI tool result | Inherit | `causation_id = ai.tool_start event id` | `ai.tool_result` |
+| AI streaming token | Inherit | `causation_id = ai.tool_start event id` | `ai.model_token` |
+| AI conversation delta | Inherit | `causation_id = parent (token or tool)` | `ai.conversation_delta` |
+
+Batch Emission Policy:
+* `emit_batch_meta/2` returns a batch-level `correlation_id` — **callers MUST propagate** this id to any follow-on AI tool or reactor emissions spawned from the batch.
+* When a provided payload already includes `:correlation_id`, the constructor preserves it (no overwrite) ensuring upstream trace continuity (e.g., external MCP client session id).
 
 Never re-base a correlation mid-flow. If a *new* logical transaction emerges (e.g., follow-up automation triggered by email success), start a NEW correlation with that event's id.
 
 ## 14. Automated Lint / Validation (Planned)
 Proposed Mix Task: `mix thunderline.events.lint`
 Checks:
-1. All event names used in code exist in registry (this file parsed as data section).
+1. All event names used in code exist in registry (this file parsed as data section) — includes dynamic AI names enforced via `ai_emit/2` whitelist.
 2. No forbidden domain→category pairings (Section 12).
 3. Payload validation: selected events have JSON Schema file present.
 4. Deprecations older than grace window raise warning.
 5. Ensures correlation/causation presence according to category transitions (heuristic ruleset):
    - `ui.command.*` must have `causation_id == nil`.
-   - Non-root events must have non-nil `causation_id` unless explicitly flagged `:root`.
+  - Non-root events must have non-nil `causation_id` unless explicitly flagged `:root`.
+  - AI tool & streaming events (`ai.tool_*`, `ai.model_token`, `ai.conversation_delta`) MUST have non-nil `correlation_id` AND `ai_stage` (except conversation delta which may omit `ai_stage`).
 6. Emits summary metrics for gating CI.
 
-Implementation Sketch:
+Implementation Sketch (excerpt additions for AI & batch correlation auditing):
 ```elixir
 defmodule Mix.Tasks.Thunderline.Events.Lint do
   use Mix.Task
   @shortdoc "Validate event taxonomy adherence"
   def run(_argv) do
     {:ok, registry} = Thunderline.Events.Registry.load()
-    issues = Thunderline.Events.Linter.run(registry)
+  issues = Thunderline.Events.Linter.run(registry)
     Thunderline.Events.Linter.print(issues)
     if Enum.any?(issues, & &1.severity == :error) do
       Mix.raise("Event taxonomy lint failed")
@@ -234,6 +248,8 @@ end
 
 ## 15. Future Extensions
 - CloudEvents mapping (add explicit attributes section for external boundary translation).
+- AI lineage enrichment: attach `tool_chain_id` and aggregate latency spans.
+- Batch correlation leak detector: warn if events derived from `emit_batch_meta/2` omit returned correlation id.
 - Dynamic registry generation to publish machine-readable artifact (JSON) for tooling.
 - Event replay guidelines & immutability guarantees.
 - Governance metrics: `taxonomy.drift.detected` telemetry when unknown events observed.

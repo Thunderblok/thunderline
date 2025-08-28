@@ -75,8 +75,8 @@ defmodule ThunderlineTest.MnesiaBroadwayTest do
         {:batch_event_3, %{data: "batch_3"}}
       ]
 
-      # Emit batch
-      :ok = EventBus.emit_batch(events, :general)
+  # Emit batch (now returns :ok on success)
+  :ok = EventBus.emit_batch(events, :general)
 
       # Wait a moment for processing
       Process.sleep(100)

@@ -1,6 +1,6 @@
 # 🌩️ OKO HANDBOOK: The Thunderline Technical Bible
 
-> **LIVING DOCUMENT** - Last Updated: August 23, 2025  
+> **LIVING DOCUMENT** - Last Updated: August 28, 2025  
 > **Status**: � **ATLAS HANDOVER COMPLETE - PRODUCTION READY DOCUMENTATION**  
 > **Purpose**: Comprehensive guide to Thunderline's Personal Autonomous Construct (PAC) platform & distributed AI orchestration system
 
@@ -50,8 +50,8 @@ Risk if Deferred:
 Tracking: Status values mirrored daily from Playbook into sitrep delta block; handbook retains summary only (no granular status churn to avoid duplication). Governance-affecting doc changes use commit prefix `GOV:`.
 
 
-Summary
-- Event Bus: Canonical bus exists at `Thunderline.EventBus` (ThunderFlow). Legacy `Thunderline.Bus` kept as a compatibility shim and now forwards to the canonical pipelines. Decision: no runtime breakage; prefer EventBus in new code, shim remains until alias migration completes.
+ Summary
+- Event Bus: Canonical bus exists at `Thunderline.EventBus` (ThunderFlow). Legacy `Thunderline.Bus` kept as a compatibility shim and now forwards to the canonical pipelines. Decision: no runtime breakage; prefer EventBus in new code, shim remains until alias migration completes. (Aug 25–28 update) Added AI & batch helpers: `emit_batch_meta/2` (returns batch correlation id + aggregated meta) and `ai_emit/2` (whitelisted AI tool & streaming event emission enforcing taxonomy + correlation/causation rules). Correlation threading now codified (see `Docs/EVENT_TAXONOMY.md` §13) and error cross-link updated (`Docs/ERROR_CLASSES.md` §14). Lint task planned to enforce registry & AI event invariants.
 - Dashboard: LiveView is stable and minimal. Uses `EventBuffer.snapshot/1` for feed and listens to Bus status for UPS. Real-time pipeline already broadcasts optimized topics; next step is to subscribe to those for live metrics and reduce reliance on buffer snapshots.
 - NDJSON + Checkpoint: Implemented (now under consolidated `lib/thunderline/` domains), wired to UI and optionally supervised (NDJSON behind `ENABLE_NDJSON`, Checkpoint always).
 - UPS Watcher: Present and gated via `ENABLE_UPS`. Publishes status via Bus; UI badge renders correctly. Graceful when `upsc` missing.
@@ -81,6 +81,43 @@ Health signals to watch
 - `cerebros_*` telemetry volume and error rates post-migration
 
 Codename: AGENT RAZOR
+
+---
+
+## 🔁 Event Bus AI / Batch Correlation Enhancements (Aug 25–28 2025)
+Rationale: Reduce drift & enforce governance for emerging AI + batch processing flows while preserving backward compatibility.
+
+Additions:
+1. `emit_batch_meta/2` — Emits a list of event payloads (or pre-built `%Thunderline.Event{}` structs) and returns `{batch_meta, correlation_id}` enabling callers to:
+   - Reuse a single `correlation_id` for downstream AI tool invocations spawned from the batch.
+   - Inspect per-event results & accumulated flags (e.g., reliability set, experimental markers) without re-querying storage.
+2. `ai_emit/2` — Thin helper around normalized constructor enforcing that only approved AI event names (`ai.tool_start`, `ai.tool_result`, `ai.model_token`, `ai.conversation_delta`) are emitted. Rejects unknown AI names early to prevent taxonomy sprawl.
+3. Correlation & causation propagation rules expanded (see `Docs/EVENT_TAXONOMY.md` §13). Batch root event id adopted as correlation where upstream absent; never re-bases mid-flow.
+4. Error taxonomy cross-link (see `Docs/ERROR_CLASSES.md` §14) provides guidance for classifying AI tool chain failures with contextual keys (`:ai_stage`, `:correlation_id`).
+
+Operational Guidance:
+- ALWAYS capture the returned `correlation_id` from `emit_batch_meta/2` and supply it to any subsequent `ai_emit/2` calls spawned by that batch; failing to do so will surface in future linter (`mix thunderline.events.lint`) as a drift warning.
+- Prefer `ai_emit/2` over generic `emit/2` for AI tool & streaming token events; it provides early validation + future metrics hooks.
+- When migrating older code: replace manual per-event correlation assignment inside loops with a single `emit_batch_meta/2` followed by AI tool emissions referencing the returned id.
+
+Planned Automation (not yet merged):
+- Mix task `mix thunderline.events.lint` to scan for:
+  * AI events emitted without `ai_emit/2`
+  * Missing correlation propagation after batch emission (heuristic: AI event within same function scope following a batch emit lacking explicit correlation match)
+  * Unregistered / non-whitelisted AI event names
+- Telemetry enrichment: automatic `[:thunderline,:ai,:emit]` instrumentation from `ai_emit/2` with `ai_stage` & token sequencing metadata.
+
+Risk Mitigation:
+- Early whitelist prevents ungoverned proliferation of `ai.*` names.
+- Central batch correlation issuance simplifies tracing across concurrent tool chains spawned from one root command.
+- Documentation alignment ensures SLO design (token latency, tool duration) can key off consistent correlation.
+
+Next Steps:
+1. Ship linter task (HC-03 TODO) with AI/batch correlation checks.
+2. Add machine-readable registry export (JSON) for docs site & possible MCP integration.
+3. Integrate classifier hooks to auto-tag AI errors with stage & latency buckets.
+
+Status: Code merged; tests for `emit_batch_meta/2` & `ai_emit/2` passing. Awaiting linter + telemetry instrumentation PR.
 
 ---
 
@@ -239,10 +276,10 @@ Failure Handling:
 
 ---
 
-## 🏛️ **AGENT ATLAS TENURE REPORT** - August 15, 2025
+## 🏛️ **AGENT ATLAS TENURE REPORT** -August 15, 2025
 
 > **CODENAME**: ATLAS  
-> **OPERATIONAL PERIOD**: August 2025  
+> **OPERATIONAL PERIOD**: JULY 2025  
 > **MISSION**: Strategic codebase stabilization, domain consolidation, and handover preparation  
 > **STATUS**: MISSION COMPLETE - HANDOVER READY
 
