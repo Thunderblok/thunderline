@@ -9,8 +9,8 @@ defmodule Thunderline.MixProject do
       version: @version,
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
-  # Use default Mix compilers (was restricted to [:elixir, :app] which can skip needed steps)
-  compilers: Mix.compilers(),
+      # Use default Mix compilers (was restricted to [:elixir, :app] which can skip needed steps)
+      compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
@@ -35,11 +35,13 @@ defmodule Thunderline.MixProject do
 
   defp deps do
     [
+      {:usage_rules, "~> 0.1"},
+      # igniter:deps-start
       {:oban, "~> 2.0"},
       {:ash_authentication, "~> 4.0"},
       {:ash_authentication_phoenix, "~> 2.0"},
       {:bcrypt_elixir, "~> 3.1"},
-      {:igniter, "~> 0.6", only: [:dev, :test]},
+      {:igniter, "~> 0.6"},
       # Phoenix
       {:phoenix, "~> 1.8.0"},
       {:phoenix_html, "~> 4.0"},
@@ -68,7 +70,7 @@ defmodule Thunderline.MixProject do
       {:opentelemetry_ash, "~> 0.1.3"},
       {:ash_state_machine, "~> 0.2.12"},
       {:ash_admin, "~> 0.11"},
-  {:ash_ai, "~> 0.2"},
+      {:ash_ai, "~> 0.2"},
       # Additional deps
       {:uuid, "~> 1.1"},
       {:broadway, "~> 1.0"},
@@ -109,11 +111,13 @@ defmodule Thunderline.MixProject do
       # Code Quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:git_ops, "~> 2.6.1", only: [:dev]},
-      # igniter: dependency insertion point (do not remove)
-    ] ++ (if System.get_env("ENABLE_CEREBROS") == "true", do: [
-      {:cerebros, path: "cerebros", only: [:dev], runtime: false}
-    ], else: [])
+      {:git_ops, "~> 2.6.1", only: [:dev]}
+      # Optional Cerebros local toolkit (enable with ENABLE_CEREBROS=1 if available)
+      # If you do not have the local path or hex package, leave this commented or remove.
+      # Using a runtime flag so it won't start unless explicitly enabled.
+      # {:cerebros, "~> 0.1", only: [:dev], runtime: System.get_env("ENABLE_CEREBROS") in ["1","true","TRUE"]}
+      # igniter:deps-end
+    ]
   end
 
   defp aliases do
@@ -125,14 +129,18 @@ defmodule Thunderline.MixProject do
       # migrations/assets. Force with `mix deps.get` manually when you really intend it.
       setup: [&maybe_deps_get/1, "ash.setup", "assets.setup", "assets.build"],
       # Allow skipping ash.setup in tests to run fast, DB-less component/unit tests
-  # Provide a non-recursive alias to run full test setup + tests.
-  "test.all": [&maybe_ash_setup/1, "test"],
+      # Provide a non-recursive alias to run full test setup + tests.
+      "test.all": [&maybe_ash_setup/1, "test"],
       # One-shot resource -> migration -> migrate convenience
       "ash.migrate": ["ash_postgres.generate_migrations", "ecto.migrate"],
-  # Option A (no esbuild/node): only Tailwind profile 'thunderline'
-  "assets.setup": ["tailwind.install --if-missing"],
-  "assets.build": ["tailwind thunderline", "esbuild thunderline"],
-  "assets.deploy": ["tailwind thunderline --minify", "esbuild thunderline --minify", "phx.digest"]
+      # Option A (no esbuild/node): only Tailwind profile 'thunderline'
+      "assets.setup": ["tailwind.install --if-missing"],
+      "assets.build": ["tailwind thunderline", "esbuild thunderline"],
+      "assets.deploy": [
+        "tailwind thunderline --minify",
+        "esbuild thunderline --minify",
+        "phx.digest"
+      ]
     ]
   end
 
@@ -159,9 +167,11 @@ defmodule Thunderline.MixProject do
     cond do
       skip? ->
         Mix.shell().info("[setup] Skipping deps.get (SKIP_DEPS_GET=true)")
+
       lock_missing? or phoenix_dep_missing? ->
         Mix.shell().info("[setup] Running deps.get (dependencies missing)")
         Mix.Task.run("deps.get", [])
+
       true ->
         Mix.shell().info("[setup] deps.get skipped (deps already present)")
     end
@@ -176,4 +186,6 @@ defmodule Thunderline.MixProject do
       list_unused_filters: true
     ]
   end
+
+  # (dynamic cerebros injection removed for Igniter compatibility; add manually if needed)
 end

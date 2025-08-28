@@ -79,7 +79,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
      |> assign(:friends, friends)
      |> assign(:active_friend, friends |> hd() |> Map.get(:id))
      |> assign(:ups_status, nil)
-     |> assign(:ndjson, false)}
+  |> assign(:ndjson, false)
+  |> assign(:ai_messages, [])
+  |> assign(:ai_busy, false)}
   end
 
   @impl true
@@ -91,7 +93,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
         <span class="text-[11px] opacity-50">realtime systems view</span>
         <a href="#" class="ml-auto link text-xs opacity-70 hover:opacity-100">docs</a>
       </header>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <!-- Column 1: Map + Inspector stacked -->
         <div class="space-y-6">
           <!-- 1. Domain Map -->
@@ -246,8 +248,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
           </section>
         </div>
 
-        <!-- Column 3: Peers + Trends -->
-        <div class="space-y-6">
+  <!-- Column 3: Peers + Trends (+ AI assistant) -->
+  <div class="space-y-6">
           <!-- 4. Peers -->
           <section class="panel p-4 flex flex-col">
           <div class="flex items-center gap-2 mb-2">
@@ -288,6 +290,37 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
           </div>
           <p class="text-[10px] opacity-40 mt-2">derived sample sparkline of KPI values</p>
           </section>
+          <%= if feature_enabled?(:ai_chat_panel) do %>
+          <!-- 8. AI Chat Panel (experimental) -->
+          <section class="panel p-4 flex flex-col h-[420px]">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-fuchsia-400" />
+              <h3 class="font-semibold">AI Assistant</h3>
+              <span class="ml-auto text-xs text-white/50">experimental</span>
+            </div>
+            <div id="aiChatFeed" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+              <%= if @ai_messages == [] do %>
+                <div class="p-2 rounded bg-white/5 border border-white/10 opacity-60">No messages yet. Ask the system about recent events or type /help.</div>
+              <% end %>
+              <%= for m <- (@ai_messages || []) |> Enum.reverse() do %>
+                <div class={"p-2 rounded-lg border text-[11px] leading-snug " <> (if m.role == :user, do: "bg-sky-500/10 border-sky-500/30", else: "bg-fuchsia-500/10 border-fuchsia-500/30")}>
+                  <div class="flex items-center gap-2 mb-0.5 opacity-70">
+                    <span class="badge badge-ghost badge-xs"><%= m.role %></span>
+                    <time class="opacity-40"><%= m.time %></time>
+                  </div>
+                  <div><%= m.text %></div>
+                </div>
+              <% end %>
+            </div>
+            <form phx-submit="ai_send" class="mt-2 flex gap-2">
+              <input name="q" autocomplete="off" placeholder="Ask Thunderline..." class="input input-sm input-bordered flex-1" />
+              <button class="btn btn-sm" type="submit" disabled={@ai_busy}>
+                <%= if @ai_busy, do: "...", else: "Send" %>
+              </button>
+            </form>
+            <p class="mt-2 text-[10px] opacity-40">Backed by Ash AI (stub). Commands: /help, /kpis, /events [n]</p>
+          </section>
+          <% end %>
         </div>
       </div>
     </div>
@@ -610,6 +643,24 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   end
 
   @impl true
+  def handle_event("ai_send", %{"q" => raw}, socket) do
+    unless feature_enabled?(:ai_chat_panel) do
+      {:noreply, socket}
+    else
+      q = String.trim(to_string(raw || ""))
+      if q == "" do
+        {:noreply, socket}
+      else
+        user_msg = %{role: :user, text: q, time: time_hhmmss(System.os_time(:second))}
+        msgs = [user_msg | (socket.assigns[:ai_messages] || [])]
+        {reply_role, reply_text} = ai_local_router(q, socket)
+        ai_msg = %{role: reply_role, text: reply_text, time: time_hhmmss(System.os_time(:second))}
+        {:noreply, socket |> assign(:ai_messages, [ai_msg | msgs]) |> assign_new(:ai_busy, fn -> false end)}
+      end
+    end
+  end
+
+  @impl true
   def handle_info({:status, %{source: "ups"} = st}, socket) do
     status = to_string(Map.get(st, :stage, Map.get(st, :status, "unknown")))
     {:noreply, assign(socket, :ups_status, status)}
@@ -672,6 +723,28 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   @impl true
   def handle_info(_other, socket) do
     {:noreply, socket}
+  end
+
+  # ---- AI Panel helpers -------------------------------------------------------
+  defp feature_enabled?(flag) do
+    Application.get_env(:thunderline, :features, []) |> Keyword.get(flag, false)
+  end
+
+  defp ai_local_router("/help", _socket), do: {:assistant, "Commands: /help /kpis /events <n>. Ask natural questions about recent ops."}
+  defp ai_local_router("/kpis", socket) do
+    summary = socket.assigns.kpis |> Enum.map(fn {l,v,_} -> "#{l}=#{v}" end) |> Enum.join(", ")
+    {:assistant, "Current KPIs: " <> summary}
+  end
+  defp ai_local_router(<<"/events", rest::binary>>, socket) do
+    n = rest |> String.trim() |> case do
+      <<>> -> 3
+      other -> case Integer.parse(other) do {i,_} -> max(1,min(i,10)); _ -> 3 end end
+    evs = socket.assigns.events |> Enum.take(n)
+    text = evs |> Enum.map(fn e -> "#{e.time} #{e.source}: #{String.slice(e.message,0,40)}" end) |> Enum.join(" | ")
+    {:assistant, "Recent events (#{n}): " <> text}
+  end
+  defp ai_local_router(q, socket) do
+    {:assistant, "(stub) You said: '#{String.slice(q,0,140)}'. Events feed length=#{length(socket.assigns.events)}."}
   end
 
   defp to_ui_event(%{"event_type" => type, "data" => data} = ev) do

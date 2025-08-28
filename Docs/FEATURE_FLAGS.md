@@ -26,6 +26,7 @@ Environment variables map where applicable (e.g. `ENABLE_UPS=true`). Prefer expl
 | `:presence_debug` | FEATURES_PRESENCE_DEBUG | false | boolean | Debug | Extra presence event logging | debug |
 | `:crown_daisy` | FEATURES_CROWN_DAISY | false | boolean | AI Governance | Enable Daisy cognitive swarm processes | experimental |
 | `:signal_stack` | FEATURES_SIGNAL_STACK | false | boolean | Compute | Enable signal/phase processing stack (migrated from ENABLE_SIGNAL_STACK) | experimental |
+| `:ai_chat_panel` | FEATURES_AI_CHAT_PANEL | false | boolean | UI | Enable experimental Ash AI chat assistant panel on dashboard | experimental |
 
 (Extend table as flags added.)
 

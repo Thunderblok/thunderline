@@ -140,6 +140,7 @@ These environment variables gate optional subsystems or alter setup heuristics:
 | `ENABLE_NDJSON` | `1` | Enable NDJSON structured event logging writer (UI toggle present) | disabled |
 | `ENABLE_UPS` | `1` | Start UPS watcher process (publishes power status to status bus) | disabled |
 | `ENABLE_SIGNAL_STACK` | `1` | Start experimental signal‑processing stack (PLL/Hilbert etc.) | disabled |
+| `FEATURES_AI_CHAT_PANEL` | `1` | Enable experimental Ash AI backed chat assistant panel on dashboard | disabled |
 | `TL_ENABLE_REACTOR` | `true/false` | Switch between simple EventProcessor path and Reactor orchestration | false |
 | `SKIP_DEPS_GET` | `true/false` | Skip automatic deps fetch during `mix setup` heuristic | false |
 | `SKIP_ASH_SETUP` | `true/false` | Skip Ash migrations in test alias for DB‑less unit tests | false |

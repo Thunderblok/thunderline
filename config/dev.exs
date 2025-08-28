@@ -20,11 +20,12 @@ dev_repo_defaults = [
 ]
 
 # Allow DATABASE_URL to fully override discrete settings if provided.
-repo_config = if db_url do
-  Keyword.put(dev_repo_defaults, :url, db_url)
-else
-  dev_repo_defaults
-end
+repo_config =
+  if db_url do
+    Keyword.put(dev_repo_defaults, :url, db_url)
+  else
+    dev_repo_defaults
+  end
 
 config :thunderline, Thunderline.Repo, repo_config
 
@@ -39,7 +40,11 @@ config :thunderline, ThunderlineWeb.Endpoint,
   #   BIND_ALL=1 mix phx.server  -> binds 0.0.0.0
   # Otherwise defaults to loopback only (127.0.0.1) for safety.
   http: [
-    ip: (if System.get_env("BIND_ALL") in ["1", "true", "TRUE"], do: {0, 0, 0, 0}, else: {127, 0, 0, 1}),
+    ip:
+      if(System.get_env("BIND_ALL") in ["1", "true", "TRUE"],
+        do: {0, 0, 0, 0},
+        else: {127, 0, 0, 1}
+      ),
     port: System.get_env("PORT", "4000") |> String.to_integer()
   ],
   check_origin: false,
@@ -53,9 +58,7 @@ config :thunderline, ThunderlineWeb.Endpoint,
   ]
 
 # Development feature flags (compile-time for Feature module)
-config :thunderline, :features, [
-  ca_viz: true
-]
+config :thunderline, :features, ca_viz: true, ai_chat_panel: true
 
 # ## SSL Support
 #
@@ -92,8 +95,7 @@ config :thunderline, ThunderlineWeb.Endpoint,
   ]
 
 # Market ingest mock logging throttle (adjust MARKET_INGEST_LOG_EVERY env to override)
-config :thunderline, :market_ingest,
-  log_every: 50
+config :thunderline, :market_ingest, log_every: 50
 
 # Enable dev routes for dashboard and mailbox
 config :thunderline, dev_routes: true, token_signing_secret: "vadctdmv/MrdcKdJvG1Bl3woZoYMGKXL"

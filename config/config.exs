@@ -81,16 +81,16 @@ config :thunderline,
     Thunderline.Thunderflow.Domain,
     # Realtime messaging / channels
     Thunderline.Thunderlink.Domain,
-  # Re-enabled to host AshAI-powered orchestration & MCP resources
-  Thunderline.Thundercrown.Domain,
-  # Auth/security domain now enabled for AshAuthentication integration
-  Thunderline.Thundergate.Domain,
+    # Re-enabled to host AshAI-powered orchestration & MCP resources
+    Thunderline.Thundercrown.Domain,
+    # Auth/security domain now enabled for AshAuthentication integration
+    Thunderline.Thundergate.Domain,
     Thunderline.Thundercom.Domain
 
     # OPTIONAL (disabled right now):
     # Thunderline.Thundergate.Domain,  # Auth / security / policies
     # Thunderline.Thunderbolt.Domain,  # Heavy compute / CA engine / optimization
-  # Thunderline.Thundercrown.Domain,  # (now enabled above) Governance / orchestration / AI routing
+    # Thunderline.Thundercrown.Domain,  # (now enabled above) Governance / orchestration / AI routing
     # Thunderline.Thundergrid.Domain   # Spatial grid / zone topology
   ]
 
@@ -166,21 +166,29 @@ if config_env() == :dev do
 end
 
 # Configure Oban for background job processing with AshOban integration
+# NOTE: Oban's Cron plugin does not support an inline :if option inside the crontab entry.
+# We build the crontab list conditionally at config compile time instead.
+compactor_cron =
+  if System.get_env("ENABLE_WORKFLOW_COMPACTOR_CRON") in ["1", "true", "TRUE"] do
+    [
+      {"*/5 * * * *", Thunderline.Thundervine.WorkflowCompactorWorker}
+    ]
+  else
+    []
+  end
+
 config :thunderline, Oban,
   repo: Thunderline.Repo,
   plugins: [
-    {Oban.Plugins.Cron, crontab: [
-      # Run every 5 minutes if enabled (set ENABLE_WORKFLOW_COMPACTOR_CRON=true)
-      {"*/5 * * * *", Thunderline.Thundervine.WorkflowCompactorWorker, if: fn -> System.get_env("ENABLE_WORKFLOW_COMPACTOR_CRON") in ["1", "true", "TRUE"] end}
-    ]},
+    {Oban.Plugins.Cron, crontab: compactor_cron},
     Oban.Plugins.Pruner
   ],
   queues: [
     default: 10,
     cross_domain: 5,
     scheduled_workflows: 3,
-  heavy_compute: 2,
-  probe: 2
+    heavy_compute: 2,
+    probe: 2
   ]
 
 # --- AshOban Trigger Usage Reference ---------------------------------------
@@ -219,8 +227,7 @@ import_config "#{config_env()}.exs"
 
 # AshAuthentication Phoenix integration (basic defaults; can be overridden per env)
 # AshAuthentication Phoenix generated component configuration
-config :ash_authentication, AshAuthenticationPhoenix.Components,
-  otp_app: :thunderline
+config :ash_authentication, AshAuthenticationPhoenix.Components, otp_app: :thunderline
 
 config :ash_authentication_phoenix,
   use_get?: true,
