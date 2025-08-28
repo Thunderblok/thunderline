@@ -1,0 +1,218 @@
+*** Begin Patch
+*** Update File: lib/jido/signal.ex (proposed)
+@@
+-defmodule Jido.Signal do
+-  @moduledoc """
+-  Defines the core Signal structure in Jido, implementing the CloudEvents specification (v1.0.2)
+-  with Jido-specific extensions for agent-based systems.
++defmodule Jido.Signal do
++  @moduledoc """
++  (Enhanced) Core Signal structure implementing CloudEvents v1.0.2 plus Jido extensions.
++
++  This patch introduces:
++  - A `use Jido.Signal` macro for declaring strongly‑typed custom Signal modules with
++    per‑type schema validation (NimbleOptions powered)
++  - Unified optional metadata fields: `jido_instructions`, `jido_opts`, `jido_dispatch`, `jido_metadata`
++  - Pluggable serialization helpers (`serialize/2`, `serialize!/2`, `deserialize/2`) supporting
++    single or batch Signals (JSON + alternative serializers)
++  - Type inference for struct → Signal conversion via `Jido.Signal.Serialization.TypeProvider`
++  - Internal ID generation via `Jido.Signal.ID.generate!/0` (decouples from Util)
+ 
+   https://cloudevents.io/
+@@
+-  - Built-in instruction handling
+-  - Flexible dispatch configuration
+-  - Automatic serialization
++  - Flexible dispatch configuration
++  - Optional instruction handling (still supported via `jido_instructions` field)
++  - Built-in (de)serialization helpers & struct → signal mapping
+@@
+-  ## Jido Extensions
+-
+-  Beyond the CloudEvents spec, Signals include Jido-specific fields:
+-
+-  - `jido_instructions`: List of instructions to execute (optional)
+-  - `jido_opts`: Processing options and flags (optional)
+-  - `jido_dispatch`: Routing and delivery configuration (optional)
+-  - `jido_metadata`: Additional context and tracking data - primarily for internal use (optional)
++  ## Jido Extensions
++
++  Beyond the CloudEvents spec, Signals include Jido-specific fields (all optional):
++  - `jido_instructions` – instruction list
++  - `jido_opts` – processing / execution options
++  - `jido_dispatch` – routing & delivery configuration
++  - `jido_metadata` – arbitrary context map
+@@
+-  alias Jido.Instruction
+-  alias Jido.Signal.Dispatch
+-  use TypedStruct
++  use TypedStruct
++  alias Jido.Signal.Dispatch
++  alias Jido.Signal.ID
++  alias Jido.Signal.Serialization.TypeProvider
++
++  @signal_config_schema NimbleOptions.new!(
++                        type: [type: :string, required: true, doc: "The type of the Signal"],
++                        default_source: [type: :string, required: false, doc: "Default source"],
++                        datacontenttype: [type: :string, required: false, doc: "Content type"],
++                        dataschema: [type: :string, required: false, doc: "Schema URI"],
++                        schema: [type: :keyword_list, default: [], doc: "NimbleOptions schema for data"]
++                      )
++
++  @derive {Jason.Encoder, only: [
++    :id, :source, :type, :subject, :time, :datacontenttype, :dataschema, :data, :specversion
++  ]}
+@@
+-  typedstruct do
+-    field(:specversion, String.t(), default: "1.0.2")
+-    field(:id, String.t(), enforce: true, default: Jido.Util.generate_id())
+-    field(:source, String.t(), enforce: true)
+-    field(:type, String.t(), enforce: true)
+-    field(:subject, String.t())
+-    field(:time, String.t())
+-    field(:datacontenttype, String.t())
+-    field(:dataschema, String.t())
+-    field(:data, term())
+-    # Jido-specific fields
+-    field(:jido_instructions, Jido.Instruction.instruction_list())
+-    field(:jido_opts, map())
+-    field(:jido_dispatch, Dispatch.dispatch_configs())
+-    field(:jido_metadata, map())
+-  end
++  typedstruct do
++    field :specversion, String.t(), default: "1.0.2"
++    field :id, String.t(), enforce: true, default: ID.generate!()
++    field :source, String.t(), enforce: true
++    field :type, String.t(), enforce: true
++    field :subject, String.t()
++    field :time, String.t()
++    field :datacontenttype, String.t()
++    field :dataschema, String.t()
++    field :data, term()
++    field :jido_instructions, list()
++    field :jido_opts, map()
++    field :jido_dispatch, Dispatch.dispatch_configs()
++    field :jido_metadata, map()
++  end
++
++  @doc """
++  Macro for defining a concrete Signal module with embedded schema validation.
++
++  Example:
++      defmodule MySignal do
++        use Jido.Signal,
++          type: "my.custom.signal",
++          default_source: "/my/service",
++          schema: [user_id: [type: :string, required: true]]
++      end
++  """
++  defmacro __using__(opts) do
++    escaped = Macro.escape(@signal_config_schema)
++    quote location: :keep do
++      alias Jido.Signal
++      alias Jido.Signal.ID
++      case NimbleOptions.validate(unquote(opts), unquote(escaped)) do
++        {:ok, validated} ->
++          @validated_opts validated
++          def type, do: @validated_opts[:type]
++          def default_source, do: @validated_opts[:default_source]
++          def datacontenttype, do: @validated_opts[:datacontenttype]
++          def dataschema, do: @validated_opts[:dataschema]
++          def schema, do: @validated_opts[:schema]
++
++          @spec new(map(), keyword()) :: {:ok, Signal.t()} | {:error, String.t()}
++          def new(data \\ %{}, opts \\ []) do
++            with {:ok, data} <- validate_data(data),
++                 {:ok, attrs} <- build_signal_attrs(data, opts) do
++              Signal.from_map(attrs)
++            end
++          end
++
++          @spec new!(map(), keyword()) :: Signal.t() | no_return()
++          def new!(data \\ %{}, opts \\ []) do
++            case new(data, opts) do
++              {:ok, sig} -> sig
++              {:error, r} -> raise r
++            end
++          end
++
++          def validate_data(data) do
++            case @validated_opts[:schema] do
++              [] -> {:ok, data}
++              schema when is_list(schema) ->
++                case NimbleOptions.validate(Enum.to_list(data), schema) do
++                  {:ok, kv} -> {:ok, Map.new(kv)}
++                  {:error, %NimbleOptions.ValidationError{} = e} ->
++                    {:error, Jido.Signal.Error.format_nimble_validation_error(e, "Signal", __MODULE__)}
++                end
++            end
++          end
++
++          defp build_signal_attrs(data, opts) do
++            caller =
++              Process.info(self(), :current_stacktrace)
++              |> elem(1)
++              |> Enum.find(fn {m,_,_,_} -> ms = to_string(m); ms != "Elixir.Jido.Signal" and ms != "Elixir.Process" end)
++              |> elem(0)
++              |> to_string()
++            base = %{
++              "type" => @validated_opts[:type],
++              "source" => @validated_opts[:default_source] || caller,
++              "data" => data,
++              "id" => ID.generate!(),
++              "time" => DateTime.utc_now() |> DateTime.to_iso8601(),
++              "specversion" => "1.0.2"
++            }
++            final = Enum.reduce(opts, base, fn {k,v}, acc -> Map.put(acc, to_string(k), v) end)
++            {:ok, final}
++          end
++        {:error, err} ->
++          raise CompileError, description: Jido.Signal.Error.format_nimble_config_error(err, "Signal", __MODULE__), file: __ENV__.file, line: __ENV__.line
++      end
++    end
++  end
+@@
+-  def map_to_signal_data(signals, fields) do
+-    %__MODULE__{
+-      id: Jido.Util.generate_id(),
+-      source: "http://example.com/bank",
+-      type: TypeProvider.to_string(signal),
+-      data: signal,
+-      jido_metadata: Keyword.get(fields, :jido_metadata, %{})
+-    }
+-  end
++  def map_to_signal_data(signal, _fields) do
++    %__MODULE__{ id: ID.generate(), source: "http://example.com/bank", type: TypeProvider.to_string(signal), data: signal }
++  end
++
++  @doc """Serialize a Signal or list of Signals (pluggable serializer)."""
++  @spec serialize(t() | [t()], keyword()) :: {:ok, binary()} | {:error, term()}
++  def serialize(sig_or_list, opts \\ [])
++  def serialize(%__MODULE__{}=sig, opts), do: Jido.Signal.Serialization.Serializer.serialize(sig, opts)
++  def serialize(list, opts) when is_list(list), do: Jido.Signal.Serialization.Serializer.serialize(list, opts)
++
++  @doc """Bang variant of serialize/2 returning the binary or raising."""
++  def serialize!(s, opts \\ []) do
++    case serialize(s, opts) do
++      {:ok, bin} -> bin
++      {:error, r} -> raise "Serialization failed: #{r}" end
++  end
++
++  @doc """Deserialize binary (single or list) into Signal struct(s)."""
++  @spec deserialize(binary(), keyword()) :: {:ok, t() | [t()]} | {:error, term()}
++  def deserialize(bin, opts \\ []) when is_binary(bin) do
++    case Jido.Signal.Serialization.Serializer.deserialize(bin, opts) do
++      {:ok, data} ->
++        try do
++          {:ok, to_signal(data)}
++        rescue e -> {:error, Exception.message(e)} end
++      {:error, r} -> {:error, r}
++    end
++  end
++
++  defp to_signal(list) when is_list(list), do: Enum.map(list, &elem(convert(&1),1))
++  defp to_signal(map), do: elem(convert(map),1)
++  defp convert(%__MODULE__{}=s), do: {:ok,s}
++  defp convert(m) when is_map(m), do: from_map(m)
++  defp convert(other), do: {:error, "Cannot convert #{inspect(other)} to Signal"}
+*** End Patch

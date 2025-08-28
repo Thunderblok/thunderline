@@ -1,0 +1,138 @@
+---
+config:
+  layout: dagre
+  theme: neo-dark
+---
+flowchart LR
+  BLOCK["ThunderBlock A\n(Persistence)"] -- event/state --> FLOW["ThunderFlow\n(Event/Telemetry)"]
+  BLOCK2["ThunderBlock B\n(Persistence)"]
+  BLOCK3["ThunderBlock C\n(Persistence)"]
+    GATE["ThunderGate\n(Security)"] -- authN/Z/events --> FLOW
+    LINK["ThunderLink\n(Comms + Voice)"] -- voice+msg events --> FLOW
+    GRID["ThunderGrid\n(Spatial)"] -- zone events --> FLOW
+    BOLT["ThunderBolt\n(Orchestration)"] -- orchestration events --> FLOW
+    CROWN["ThunderCrown\n(Governance/AI)"] -- ai/intent events --> FLOW
+  FLOW -- feedback --> BLOCK
+    FLOW -- signals --> GATE
+    FLOW -- updates --> LINK
+    FLOW -- placement --> GRID
+    FLOW -- tasks/compute --> BOLT
+    FLOW -- ai/context --> CROWN
+  BLOCK -- infra config --- GATE
+    GATE -- federate & auth --- LINK
+    LINK -- placement --- GRID
+    GRID -- jobs/ops --- BOLT
+    BOLT -- intent + plans --- CROWN
+  CROWN -- policy --- BLOCK
+  %% Federation (multi-block knowledge & event replication)
+  BLOCK -- replicate/events --- BLOCK2
+  BLOCK2 -- replicate/events --- BLOCK3
+  BLOCK3 -- knowledge sync --> BLOCK
+  %% Gate-mediated auth handshakes
+  BLOCK -. auth handshake .- GATE
+  BLOCK2 -. auth handshake .- GATE
+  BLOCK3 -. auth handshake .- GATE
+
+    %% Block domain resources
+  BLOCK --> blkVault["Postgres / Mnesia (Thundervault)"]
+  BLOCK --> vine["Thundervine (DAG Orchestrator)"]
+  BLOCK2 --> blkVault
+  BLOCK3 --> blkVault
+  BLOCK2 --> vine
+  BLOCK3 --> vine
+
+    %% Gate domain
+    GATE --> gatePolicy["Policy / Rate Limiter"]
+    gatePolicy --> gateBridge["ThunderBridge (Ingest / Egress)"] & gateBridge
+
+    %% Link domain
+    LINK --> lnkChan["Communities / Channels"] & voiceChan["VoiceChannel (signaling)"]
+    voiceChan --> voiceSup["VoiceSupervisor / DynamicRoom"]
+    voiceSup --> voiceRoomRes["VoiceRoom"]
+    voiceRoomRes --> voicePartRes["VoiceParticipant"] & voiceDevRes["VoiceDevice"]
+
+    %% Flow domain
+  FLOW --> flowBus["EventBus / Thunderline.Event (logical)"]
+  BLOCK2 -- federated event --> flowBus
+  BLOCK3 -- federated event --> flowBus
+
+    %% Bolt domain
+    BOLT --> boltPlan["Plan / DAG Orchestrator"]
+    boltPlan --> boltLane["Lane Engine (modern)"]
+    boltLane --> boltCell["ThunderCell (CA / compute kernels)"] & boltJobs["Workers / Jobs"]
+    boltCell -- snapshots --> blkVault
+
+  %% Crown domain (AshAI + Jido integration)
+  CROWN --> ashAI["AshAI Interface"]
+  ashAI --> jidoActs["Jido Actions Runtime"]
+  jidoActs --> crnAI["AI Orchestration / Tool Select"]
+  crnAI -- request model/tool --> gatePolicy
+  gateBridge -- egress --> extAPI["External APIs / LLMs"]
+    
+  %% ThunderCom (federated comms / legacy migration surface)
+  COM["ThunderCom\n(Federated Comms)"]
+  COM --> flowBus
+  GATE --> COM
+  BLOCK --> COM
+  BLOCK2 --> COM
+  BLOCK3 --> COM
+  COM --> LINK
+
+    %% Grid domain
+    GRID --> grZones["Zones / ECS Runtime"]
+
+    %% Voice → Flow events
+    voiceChan -- "voice.signal.*" --> flowBus
+    voiceSup -- "voice.room.*" --> flowBus
+    flowBus -- telemetry --> blkVault
+
+    %% TURN/STUN
+    gateBridge --> turn["TURN/STUN (future)"]
+
+    %% Thundervine connections
+    flowBus -->|"cmd.workflow.plan / execute"| vine
+    boltPlan -->|"consume workflow DAG"| vine
+    vine -->|"persist DAG nodes/edges"| blkVault
+    vine -->|"dag.commit"| FLOW
+  vine -->|"lineage for agents"| CROWN
+
+    %% Classes
+  BLOCK:::domain
+  BLOCK2:::domain
+  BLOCK3:::domain
+    FLOW:::central
+    GATE:::domain
+    LINK:::domain
+    GRID:::domain
+    BOLT:::domain
+  CROWN:::domain
+  COM:::domain
+    blkVault:::store
+    gatePolicy:::bridge
+    gateBridge:::bridge
+    lnkChan:::res
+    voiceChan:::res
+    voiceSup:::res
+    voiceRoomRes:::res
+    voicePartRes:::res
+    voiceDevRes:::res
+    flowBus:::pipe
+    boltPlan:::res
+    boltLane:::res
+    boltCell:::res
+    boltJobs:::res
+  ashAI:::res
+  jidoActs:::res
+    crnAI:::res
+    extAPI:::ext
+    grZones:::res
+    turn:::ext
+    vine:::res
+
+    classDef domain fill:#204059,stroke:#77b8e0,stroke-width:2px,color:#e7faff,rx:14,ry:14
+    classDef central fill:#282940,stroke:#dde0ff,stroke-width:3px,color:#fff
+    classDef res fill:#233,stroke:#7df,color:#e3faff,rx:6,ry:6
+    classDef store fill:#0f1f1f,stroke:#4fd,color:#d9ffff,rx:6,ry:6
+    classDef bridge fill:#20201f,stroke:#d4b14a,color:#fff7d5,rx:6,ry:6,stroke-dasharray:3 2
+    classDef pipe fill:#0e1633,stroke:#6aa0ff,color:#ebf3ff,rx:6,ry:6
+    classDef ext fill:#2b150e,stroke:#ffb28a,color:#fff7f2,rx:6,ry:6

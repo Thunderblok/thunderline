@@ -51,7 +51,7 @@ Tracking: Status values mirrored daily from Playbook into sitrep delta block; ha
 
 
  Summary
-- Event Bus: Canonical bus exists at `Thunderline.EventBus` (ThunderFlow). Legacy `Thunderline.Bus` kept as a compatibility shim and now forwards to the canonical pipelines. Decision: no runtime breakage; prefer EventBus in new code, shim remains until alias migration completes. (Aug 25–28 update) Added AI & batch helpers: `emit_batch_meta/2` (returns batch correlation id + aggregated meta) and `ai_emit/2` (whitelisted AI tool & streaming event emission enforcing taxonomy + correlation/causation rules). Correlation threading now codified (see `Docs/EVENT_TAXONOMY.md` §13) and error cross-link updated (`Docs/ERROR_CLASSES.md` §14). Lint task planned to enforce registry & AI event invariants.
+ - Event Bus: Canonical bus exists at `Thunderline.EventBus` (ThunderFlow). Legacy `Thunderline.Bus` kept as a compatibility shim and now forwards to the canonical pipelines. Decision: no runtime breakage; prefer EventBus in new code, shim remains until alias migration completes. (Aug 25–28 update) Added AI & batch helpers: `emit_batch_meta/2` (returns batch correlation id + aggregated meta) and `ai_emit/2` (whitelisted AI tool & streaming event emission enforcing taxonomy + correlation/causation rules). Correlation threading now codified (see `Docs/EVENT_TAXONOMY.md` §13) and error cross-link updated (`Docs/ERROR_CLASSES.md` §14). Lint task planned to enforce registry & AI event invariants. (Aug 28) UUID v7 migration complete (correlation & event ids) and architecture diagram added (see "System Architecture Overview" below & `Docs/architecture/system_overview.mmd`).
 - Dashboard: LiveView is stable and minimal. Uses `EventBuffer.snapshot/1` for feed and listens to Bus status for UPS. Real-time pipeline already broadcasts optimized topics; next step is to subscribe to those for live metrics and reduce reliance on buffer snapshots.
 - NDJSON + Checkpoint: Implemented (now under consolidated `lib/thunderline/` domains), wired to UI and optionally supervised (NDJSON behind `ENABLE_NDJSON`, Checkpoint always).
 - UPS Watcher: Present and gated via `ENABLE_UPS`. Publishes status via Bus; UI badge renders correctly. Graceful when `upsc` missing.
@@ -117,7 +117,162 @@ Next Steps:
 2. Add machine-readable registry export (JSON) for docs site & possible MCP integration.
 3. Integrate classifier hooks to auto-tag AI errors with stage & latency buckets.
 
+Correlation ID Migration Note (Aug 28 2025):
+- Previous correlation ids were Base64/hex random 128-bit values. Implementation now emits UUID v7 (time-ordered) for `Thunderline.Event` and Thundervine DAG lineage helpers. Legacy persisted events retain old ids; no backfill required. Any consumer relying on lexical sort for approximate chronology will see improved ordering characteristics immediately. No action required other than acknowledging mixed formats during retention window.
+
 Status: Code merged; tests for `emit_batch_meta/2` & `ai_emit/2` passing. Awaiting linter + telemetry instrumentation PR.
+
+### 🗺 System Architecture Overview (Aug 28 2025)
+The following Mermaid diagram provides an updated, time-sorted view of the seven operational domains, primary event flows, Thundervine DAG orchestration linkages, and external AI/model egress surfaces. It reflects:
+1. UUID v7 adoption for event & correlation ids (ingestion ordering aid)
+2. Batch + AI emission helpers (`emit_batch_meta/2`, `ai_emit/2`)
+3. Thundervine integration points (`cmd.workflow.plan/execute`, `dag.commit` lineage feedback)
+4. Voice signaling & planned TURN/STUN edge
+5. Separation of ingestion bridge vs policy gating vs orchestration
+ 6. Replacement of legacy Hermes MCP layer with `AshAI` interface + explicit `Jido Actions` runtime producing governed `ai.*` events
+
+```mermaid
+---
+config:
+  layout: dagre
+  theme: neo-dark
+---
+flowchart LR
+    BLOCK["ThunderBlock A\n(Persistence)"] -- event/state --> FLOW["ThunderFlow\n(Event/Telemetry)"]
+    BLOCK2["ThunderBlock B\n(Persistence)"]
+    BLOCK3["ThunderBlock C\n(Persistence)"]
+    GATE["ThunderGate\n(Security)"] -- authN/Z/events --> FLOW
+    LINK["ThunderLink\n(Comms + Voice)"] -- voice+msg events --> FLOW
+    GRID["ThunderGrid\n(Spatial)"] -- zone events --> FLOW
+    BOLT["ThunderBolt\n(Orchestration)"] -- orchestration events --> FLOW
+    CROWN["ThunderCrown\n(Governance/AI)\n(ai_emit/2)"] -- ai/intent events --> FLOW
+    FLOW -- feedback --> BLOCK
+    FLOW -- signals --> GATE
+    FLOW -- updates --> LINK
+    FLOW -- placement --> GRID
+    FLOW -- tasks/compute --> BOLT
+    FLOW -- ai/context --> CROWN
+    BLOCK -- infra config --- GATE
+    GATE -- federate & auth --- LINK
+    LINK -- placement --- GRID
+    GRID -- jobs/ops --- BOLT
+    BOLT -- intent + plans --- CROWN
+    CROWN -- policy --- BLOCK
+    %% Federation (multi-block knowledge & event replication)
+    BLOCK -- replicate/events --- BLOCK2
+    BLOCK2 -- replicate/events --- BLOCK3
+    BLOCK3 -- knowledge sync --> BLOCK
+    %% Gate-mediated auth handshakes
+    BLOCK -. auth handshake .- GATE
+    BLOCK2 -. auth handshake .- GATE
+    BLOCK3 -. auth handshake .- GATE
+
+    %% Block domain resources
+    BLOCK --> blkVault["Postgres / Mnesia (Thundervault)"]
+    BLOCK --> vine["Thundervine (DAG Orchestrator)"]
+    BLOCK2 --> blkVault
+    BLOCK3 --> blkVault
+    BLOCK2 --> vine
+    BLOCK3 --> vine
+
+    %% Gate domain
+    GATE --> gatePolicy["Policy / Rate Limiter"]
+    gatePolicy --> gateBridge["ThunderBridge (Ingest / Egress)"] & gateBridge
+
+    %% Link domain
+    LINK --> lnkChan["Communities / Channels"] & voiceChan["VoiceChannel (signaling)"]
+    voiceChan --> voiceSup["VoiceSupervisor / DynamicRoom"]
+    voiceSup --> voiceRoomRes["VoiceRoom"]
+    voiceRoomRes --> voicePartRes["VoiceParticipant"] & voiceDevRes["VoiceDevice"]
+
+    %% Flow domain
+    FLOW --> flowBus["EventBus / Thunderline.Event (logical)\nai_emit/2 & emit_batch_meta/2 telemetry"]
+    BLOCK2 -- federated event --> flowBus
+    BLOCK3 -- federated event --> flowBus
+
+    %% Bolt domain
+    BOLT --> boltPlan["Plan / DAG Orchestrator"]
+    boltPlan --> boltLane["Lane Engine (modern)"]
+    boltLane --> boltCell["ThunderCell (CA / compute kernels)"] & boltJobs["Workers / Jobs"]
+    boltCell -- snapshots --> blkVault
+
+  %% Crown domain (AshAI + Jido integration)
+  CROWN --> ashAI["AshAI Interface"]
+  ashAI --> jidoActs["Jido Actions Runtime"]
+  jidoActs --> crnAI["AI Orchestration / Tool Select"]
+  crnAI -- request model/tool --> gatePolicy
+    gateBridge -- egress --> extAPI["External APIs / LLMs"]
+
+    %% Grid domain
+    GRID --> grZones["Zones / ECS Runtime"]
+
+    %% Voice → Flow events
+    voiceChan -- "voice.signal.*" --> flowBus
+    voiceSup -- "voice.room.*" --> flowBus
+    flowBus -- telemetry --> blkVault
+
+    %% TURN/STUN
+    gateBridge --> turn["TURN/STUN (future)"]
+
+    %% ThunderCom (federated comms / legacy migration surface)
+    COM["ThunderCom\n(Federated Comms)"]
+    COM --> flowBus
+    GATE --> COM
+    BLOCK --> COM
+    BLOCK2 --> COM
+    BLOCK3 --> COM
+    COM --> LINK
+
+    %% Thundervine connections
+    flowBus -->|"cmd.workflow.plan / execute"| vine
+    boltPlan -->|"consume workflow DAG"| vine
+    vine -->|"persist DAG nodes/edges"| blkVault
+    vine -->|"dag.commit"| FLOW
+    vine -->|"lineage for agents"| CROWN
+
+    %% Classes
+    BLOCK:::domain
+    BLOCK2:::domain
+    BLOCK3:::domain
+    FLOW:::central
+    GATE:::domain
+    LINK:::domain
+    GRID:::domain
+    BOLT:::domain
+    CROWN:::domain
+    COM:::domain
+    blkVault:::store
+    gatePolicy:::bridge
+    gateBridge:::bridge
+    lnkChan:::res
+    voiceChan:::res
+    voiceSup:::res
+    voiceRoomRes:::res
+    voicePartRes:::res
+    voiceDevRes:::res
+    flowBus:::pipe
+    boltPlan:::res
+    boltLane:::res
+    boltCell:::res
+    boltJobs:::res
+  ashAI:::res
+  jidoActs:::res
+    crnAI:::res
+    extAPI:::ext
+    grZones:::res
+    turn:::ext
+    vine:::res
+
+    classDef domain fill:#204059,stroke:#77b8e0,stroke-width:2px,color:#e7faff,rx:14,ry:14
+    classDef central fill:#282940,stroke:#dde0ff,stroke-width:3px,color:#fff
+    classDef res fill:#233,stroke:#7df,color:#e3faff,rx:6,ry:6
+    classDef store fill:#0f1f1f,stroke:#4fd,color:#d9ffff,rx:6,ry:6
+    classDef bridge fill:#20201f,stroke:#d4b14a,color:#fff7d5,rx:6,ry:6,stroke-dasharray:3 2
+    classDef pipe fill:#0e1633,stroke:#6aa0ff,color:#ebf3ff,rx:6,ry:6
+    classDef ext fill:#2b150e,stroke:#ffb28a,color:#fff7f2,rx:6,ry:6
+```
+
+Source file: `Docs/architecture/system_overview.mmd` (authoritative; regenerate copies from there).
 
 ---
 

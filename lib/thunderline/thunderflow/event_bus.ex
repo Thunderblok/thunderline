@@ -193,7 +193,14 @@ defmodule Thunderline.EventBus do
            pipeline_type: pipeline_type,
            priority: priority
          ) do
-      :ok -> {:ok, %{correlation_id: correlation_id, count: length(events), built: built_count, pipeline: pipeline_type}}
+      :ok ->
+        # Telemetry: batch emission summary
+        :telemetry.execute(
+          [:thunderline, :event_batch, :emit],
+          %{count: built_count},
+          %{pipeline: pipeline_type, correlation_id: correlation_id}
+        )
+        {:ok, %{correlation_id: correlation_id, count: length(events), built: built_count, pipeline: pipeline_type}}
       {:error, reason} -> {:error, reason}
     end
   end
@@ -217,7 +224,16 @@ defmodule Thunderline.EventBus do
   def ai_emit(stage, payload) when stage in [:tool_start, :tool_result, :conversation_delta, :model_token] and is_map(payload) do
     # Force domain to an AI-specific placeholder so source maps to :unknown (avoiding domain-specific restrictions)
     payload = payload |> Map.put(:domain, "thunderai") |> Map.put_new(:event_name, "ai." <> Atom.to_string(stage)) |> Map.put(:ai_stage, stage)
-    emit_realtime(:ai_event, payload)
+    case emit_realtime(:ai_event, payload) do
+      {:ok, %Thunderline.Event{} = ev} = ok ->
+        :telemetry.execute(
+          [:thunderline, :ai, :emit],
+          %{count: 1},
+          %{stage: stage, name: ev.name, correlation_id: ev.correlation_id, source: ev.source}
+        )
+        ok
+      other -> other
+    end
   end
   def ai_emit(_stage, _payload), do: {:error, :unsupported_ai_stage}
 
@@ -322,7 +338,7 @@ defmodule Thunderline.EventBus do
   end
 
   defp generate_correlation_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode64(padding: false)
+    UUID.uuid7()
   end
 
   # Map legacy or ad-hoc domain strings to taxonomy source atoms.

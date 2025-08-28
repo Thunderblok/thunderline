@@ -90,7 +90,7 @@ defmodule Thunderline.Event do
     payload = attrs[:payload]
     source = attrs[:source] || infer_source(attrs[:source_domain])
     actor = attrs[:actor]
-    correlation_id = attrs[:correlation_id] || gen_corr()
+  correlation_id = attrs[:correlation_id] || gen_corr()
     causation_id = attrs[:causation_id]
     taxonomy_version = attrs[:taxonomy_version] || 1
     event_version = attrs[:event_version] || 1
@@ -340,7 +340,8 @@ defmodule Thunderline.Event do
   defp extract_metadata(_), do: %{}
 
   defp generate_correlation_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+    # UUID v7 provides sortable time component aiding ingestion ordering & tracing cohesion.
+    UUID.uuid7()
   end
 
   # Smart constructor helpers
@@ -409,6 +410,6 @@ defmodule Thunderline.Event do
     _ -> :unknown_event
   end
 
-  defp gen_uuid, do: UUID.uuid4() # TODO: switch to UUID v7 when library support available
-  defp gen_corr, do: :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+  defp gen_uuid, do: UUID.uuid7()
+  defp gen_corr, do: UUID.uuid7()
 end
