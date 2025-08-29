@@ -374,6 +374,15 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 ✅ ThunderGate   - 18 resources (100% operational, includes ThunderEye & ThunderGuard consolidation)
 ✅ ThunderGrid   - 8 resources  (100% operational)
 ✅ ThunderLink   - 9 resources  (100% operational)
+🛰️ TOCP (Open Circuit Protocol) - FEATURE GATED (scaffold only). Not part of the original 7; emerging sovereign domain for membership, routing, transport & reliability. All modules live under `Thunderline.TOCP.*` and attach only when feature flag `:tocp` is enabled. Zero-logic scaffold merged Aug 2025 (Orders Θ-01).
+    - Supervisor: `Thunderline.TOCP.Supervisor` (no children yet)
+    - Core behaviours: Wire, Security, Membership, Routing, Router, Reliability, Fragments, Store, FlowControl, Telemetry
+    - Transport scaffold: Transport.UDP (logs only; no bind)
+    - Simulation harness: Sim.Fabric / NodeModel (JSON report stub via `mix tocp.sim.run`)
+    - Config surface: `config :thunderline, :tocp` (port=5088, gossip=1000±150ms, window=32, ack_batch=10ms, ttl=8)
+    - Decisions & Telemetry docs: `Docs/TOCP_DECISIONS.md`, `Docs/TOCP_TELEMETRY.md`
+        - Security posture (v0.1): Control frame signing planned, replay window (30s), admission tokens required, fragment & credit caps hardened.
+        - Security Battle Plan: `Docs/TOCP_SECURITY.md` (Operation Iron Veil)
 ```
 
 ### **Architecture Metrics**

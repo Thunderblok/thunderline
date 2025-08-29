@@ -59,7 +59,8 @@ runtime_feature_overrides = [
   {:thundervine_lineage, "FEATURE_THUNDERVINE_LINEAGE"},
   {:ai_chat_panel, "FEATURE_AI_CHAT_PANEL"},
   {:enable_ndjson, "FEATURE_ENABLE_NDJSON"},
-  {:enable_ups, "FEATURE_ENABLE_UPS"}
+  {:enable_ups, "FEATURE_ENABLE_UPS"},
+  {:tocp, "FEATURE_TOCP"}
 ]
 
 runtime_enabled =

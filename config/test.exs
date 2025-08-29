@@ -47,3 +47,6 @@ config :thunderline, :thunderwatch,
   ignore: [~r{/\.git/}, ~r{/deps/}],
   hash?: false,
   max_events: 500
+
+# Explicit test feature flags (tocp scaffold disabled unless opted-in per test)
+config :thunderline, :features, tocp: false

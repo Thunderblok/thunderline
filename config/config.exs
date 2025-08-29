@@ -67,6 +67,36 @@ config :spark,
 config :thunderline,
   ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
+  # TOCP domain base config (scaffold). Feature flag lives under :features (flag :tocp disabled by default).
+  # The nested :tocp keyword list holds protocol runtime parameters.
+  tocp: [
+    port: 5088,
+    gossip_interval_ms: 1_000,
+    gossip_jitter_ms: 150,
+    reliability_window: 32,
+    ack_batch_ms: 10,
+    ttl_hops: 8,
+    max_retries: 5,
+    dedup_lru: 2_048,
+    # Security-tilted fragment assembly caps (MVP hardening)
+    fragments_max_assemblies_peer: 8,
+    fragments_global_cap: 256,
+    store_retention_hours: 24,
+    store_retention_bytes: 512 * 1_024 * 1_024,
+    hb_sample_ratio: 20,
+    # Credits / rate limiting (security posture)
+    credits_initial: 64,
+    credits_min: 8,
+    credit_refill_per_sec: 1_000,
+    rate_tokens_per_sec_peer: 200,
+    # Admission / identity / replay
+    admission_required: true,
+    replay_skew_ms: 30_000,
+    security_sign_control: true,
+    security_soft_encrypt_flag: :reserved,
+    selector_hysteresis_pct: 15,
+    presence_secured: true
+  ],
   ash_domains: [
     # === SLIM MODE ACTIVE ===
     # For the current milestone we only need the core runtime needed to ship

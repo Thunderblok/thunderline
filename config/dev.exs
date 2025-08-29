@@ -58,7 +58,7 @@ config :thunderline, ThunderlineWeb.Endpoint,
   ]
 
 # Development feature flags (compile-time for Feature module)
-config :thunderline, :features, ca_viz: true, ai_chat_panel: true
+config :thunderline, :features, ca_viz: true, ai_chat_panel: true, tocp: false
 
 # ## SSL Support
 #
