@@ -1,0 +1,31 @@
+# Fly.io deployment configuration for demo.thunderline.net
+# Adjust app name to a globally unique value.
+
+app = "thunderline-demo"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PHX_SERVER = "true"
+  PHX_HOST = "demo.thunderline.net"
+  PORT = "4000"
+  DEMO_MODE = "true"
+  FEATURE_CA_VIZ = "1"
+  FEATURE_THUNDERVINE_LINEAGE = "1"
+  FEATURE_AI_CHAT_PANEL = "1"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 50
+    hard_limit = 100
+
+# Optional nightly reset schedule (uses fly apps deploy + script triggered via GitHub Action)

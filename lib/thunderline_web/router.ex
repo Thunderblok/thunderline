@@ -19,6 +19,11 @@ defmodule ThunderlineWeb.Router do
   # current_user.
   end
 
+  # Demo security pipeline (rate limiting, basic auth, security headers)
+  pipeline :demo_security do
+    plug ThunderlineWeb.Plugs.DemoSecurity
+  end
+
   pipeline :dashboard do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -38,7 +43,12 @@ defmodule ThunderlineWeb.Router do
   end
 
   scope "/", ThunderlineWeb do
-    pipe_through :dashboard
+    # If DEMO_MODE enabled, insert demo_security pipeline before dashboard
+    if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
+      pipe_through [:demo_security, :dashboard]
+    else
+      pipe_through :dashboard
+    end
 
   # Thunderline Nexus dashboard at root
   live "/", ThunderlineDashboardLive, :index
@@ -49,7 +59,11 @@ defmodule ThunderlineWeb.Router do
 
   live_session :default, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do
     scope "/", ThunderlineWeb do
-      pipe_through :browser
+      if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
+        pipe_through [:demo_security, :browser]
+      else
+        pipe_through :browser
+      end
 
     # Individual domain dashboards
   live "/thundercore", DashboardLive, :thundercore

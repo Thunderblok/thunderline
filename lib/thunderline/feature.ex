@@ -12,6 +12,7 @@ defmodule Thunderline.Feature do
   """
 
   @compile {:no_warn_undefined, Application}
+  # Compile-time snapshot (default baseline)
   @features (Application.compile_env(:thunderline, :features, []) |> Enum.into(%{}))
 
   @doc """
@@ -23,7 +24,10 @@ defmodule Thunderline.Feature do
   @spec enabled?(atom(), keyword()) :: boolean()
   def enabled?(flag, opts \\ []) when is_atom(flag) do
     case Process.get({:thunderline_flag_override, flag}) do
-      nil -> Map.get(@features, flag, Keyword.get(opts, :default, false))
+      nil ->
+        # Allow runtime application env overrides (so demo/prod can enable flags without recompiling)
+        runtime = Application.get_env(:thunderline, :features, []) |> Enum.into(%{})
+        Map.get(runtime, flag, Map.get(@features, flag, Keyword.get(opts, :default, false)))
       override -> override
     end
   end
