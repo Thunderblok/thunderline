@@ -2,7 +2,8 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
   @moduledoc "Embedded control resource for Thunderbolt Automata runs. Provides start/stop/snapshot/restore actions."
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
-    data_layer: Ash.DataLayer.Ets
+    data_layer: Ash.DataLayer.Ets,
+    authorizers: [Ash.Policy.Authorizer]
 
   alias Thunderline.Thunderbolt.CA.RunnerSupervisor
 
@@ -67,6 +68,13 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
   attributes do
     attribute :run_id, :string, public?: true
     attribute :snapshot_id, :string, public?: true
+  end
+
+  policies do
+    policy action(:*) do
+      authorize_if expr(actor(:role) in [:owner, :steward, :system])
+      authorize_if expr(not is_nil(actor(:tenant_id)))
+    end
   end
 
   defp emit_event(name, payload) do

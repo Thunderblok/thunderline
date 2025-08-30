@@ -2,7 +2,8 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
   @moduledoc "Run approved Jido/AshAI tools under ThunderCrown governance."
   use Ash.Resource,
     domain: Thunderline.Thundercrown.Domain,
-    data_layer: Ash.DataLayer.Ets
+    data_layer: Ash.DataLayer.Ets,
+    authorizers: [Ash.Policy.Authorizer]
 
   code_interface do
     define :run, args: [:tool, :prompt]
@@ -28,6 +29,13 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
   attributes do
     attribute :stream_id, :string, public?: true
     attribute :correlation_id, :string, public?: true
+  end
+
+  policies do
+    policy action(:run) do
+      authorize_if expr(actor(:role) in [:owner, :steward, :system])
+      authorize_if expr(not is_nil(actor(:tenant_id)))
+    end
   end
 
   defp emit(name, payload) do
