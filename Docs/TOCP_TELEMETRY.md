@@ -11,6 +11,7 @@ All events under `[:tocp, *]`.
 | membership.tick | %{duration_ms: int} | %{node: id} | Gossip cycle duration |
 | membership.change | %{incarnation: int} | %{node: id, prev: state, new: state} | State transition |
 | routing.relay_selected | %{score: float} | %{dest: zone, via: relay_id} | Hysteresis decisions |
+| routing.relay_switch_rate | %{rate_pct: float} | %{zone: zone, switches: int, total_nodes: int, window_s: number} | Emitted periodically (default 10s) by SwitchTracker to drive hysteresis tuning |
 | delivery.packet_tx | %{bytes: int} | %{kind: kind, dest: node} | Raw UDP send |
 | delivery.packet_rx | %{bytes: int} | %{kind: kind, from: node} | Raw UDP recv |
 | reliability.window | %{inflight: int} | %{peer: node} | Sliding window gauge |
@@ -21,7 +22,7 @@ All events under `[:tocp, *]`.
 | store.offer | %{bytes: int} | %{ref: ref} | Message stored |
 | store.gc | %{evicted: int, freed_bytes: int} | %{} | Retention sweep |
 | flowcontrol.debit | %{remaining: int} | %{peer: node} | Token debit |
-| churn.relay_switch | %{interval_ms: int} | %{from: relay_id, to: relay_id} | Relay churn metric |
+| churn.relay_switch | %{interval_ms: int} | %{from: relay_id, to: relay_id} | Individual relay switch occurrence (may be sampled) |
 | sim.metric | %{value: number} | %{name: atom} | Simulation aggregate |
 | security.sig_fail | %{count: 1} | %{peer: node} | Signature verification failure |
 | security.replay_drop | %{count: 1} | %{peer: node, mid: mid} | Replay/reused mid dropped |
@@ -34,7 +35,7 @@ All events under `[:tocp, *]`.
 2. Latency/Reliability: retry rates, ack p95, window gauges.
 3. Traffic Mix: tx/rx bytes by kind, reliable %, chunked %.
 4. Store: offers, hit ratio (TBD), gc_evicted trend.
-5. Churn: relay-switch rate (<5%/min steady).
+5. Churn: relay-switch rate (<5%/min steady) via `routing.relay_switch_rate`; raw switch events sampled.
 
 ## SLO Targets
 - Convergence <30s @ 1000 nodes.
@@ -42,4 +43,9 @@ All events under `[:tocp, *]`.
 - Zone-cast latency: p95 <250ms (LAN), <800ms (2-relay path) for 1KB.
 
 ---
+Implementation Notes (Week 0+ incremental):
+- `routing.relay_switch_rate` implemented via `Thunderline.TOCP.Routing.SwitchTracker` (10s window default)
+- Security counters (`security.sig_fail`, `security.replay_drop`) aggregated by `Thunderline.TOCP.Telemetry.Aggregator` for simulator & health endpoints.
+- Simulator (`mix tocp.sim.run`) surfaces aggregated counters in JSON report under `security`.
+
 Ownership: Sibyl-Eyes

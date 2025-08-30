@@ -27,6 +27,8 @@ Environment variables map where applicable (e.g. `ENABLE_UPS=true`). Prefer expl
 | `:crown_daisy` | FEATURES_CROWN_DAISY | false | boolean | AI Governance | Enable Daisy cognitive swarm processes | experimental |
 | `:signal_stack` | FEATURES_SIGNAL_STACK | false | boolean | Compute | Enable signal/phase processing stack (migrated from ENABLE_SIGNAL_STACK) | experimental |
 | `:ai_chat_panel` | FEATURES_AI_CHAT_PANEL | false | boolean | UI | Enable experimental Ash AI chat assistant panel on dashboard | experimental |
+| `:tocp` | FEATURE_TOCP | false | boolean | Protocol | Enable TOCP supervisor & processes | scaffold |
+| `:tocp_presence_insecure` | FEATURE_TOCP_PRESENCE_INSECURE | false | boolean | Protocol | Disable signing/replay for perf tests | debug |
 
 (Extend table as flags added.)
 

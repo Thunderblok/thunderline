@@ -49,6 +49,13 @@ Risk if Deferred:
 
 Tracking: Status values mirrored daily from Playbook into sitrep delta block; handbook retains summary only (no granular status churn to avoid duplication). Governance-affecting doc changes use commit prefix `GOV:`.
 
+Recent Delta (Aug 29 2025):
+- Internal UUID v7 generator (`Thunderline.UUID`) adopted; replaces interim v4 usage for event & correlation ids (improves chronological ordering heuristics).
+- TOCP scaffold expanded: added `Routing.SwitchTracker` (emits `routing.relay_switch_rate`) & `Telemetry.Aggregator` (aggregates `security.sig_fail` / `security.replay_drop`).
+- Security primitives scaffolded: `Security.Impl` (Ed25519 sign/verify via JOSE) and `Security.Pruner` (replay window pruning) under TOCP supervisor gating.
+- Simulator report now surfaces security counters; telemetry docs & decisions updated (DIP-TOCP-002 partial progress).
+- Feature flags registry extended with `:tocp` & `:tocp_presence_insecure` (pending insecure mode wiring).
+
 
  Summary
  - Event Bus: Canonical bus exists at `Thunderline.EventBus` (ThunderFlow). Legacy `Thunderline.Bus` kept as a compatibility shim and now forwards to the canonical pipelines. Decision: no runtime breakage; prefer EventBus in new code, shim remains until alias migration completes. (Aug 25–28 update) Added AI & batch helpers: `emit_batch_meta/2` (returns batch correlation id + aggregated meta) and `ai_emit/2` (whitelisted AI tool & streaming event emission enforcing taxonomy + correlation/causation rules). Correlation threading now codified (see `Docs/EVENT_TAXONOMY.md` §13) and error cross-link updated (`Docs/ERROR_CLASSES.md` §14). Lint task planned to enforce registry & AI event invariants. (Aug 28) UUID v7 migration complete (correlation & event ids) and architecture diagram added (see "System Architecture Overview" below & `Docs/architecture/system_overview.mmd`).

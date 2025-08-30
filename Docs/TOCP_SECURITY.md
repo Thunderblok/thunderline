@@ -47,10 +47,10 @@ Emit counters & events:
 - `tocp.security.sig_fail`, `tocp.security.replay_drop`, `tocp.rate.drop`,
   `tocp.fragments.evicted`, `tocp.routing.relay_switch_rate`, `tocp.delivery.dup_rx`.
 
-Default alert actions:
-- `sig_fail > 3/s` → auto-quarantine sender **60s**.
+Default alert actions (telemetry hooks in-progress):
+- `sig_fail > 3/s` → auto-quarantine sender **60s** (counter via Aggregator).
 - `rate.drop > 5%` on a zone → halve zone credits **30s**.
-- `relay_switch_rate > 5%/min` (steady) → raise hysteresis to **25%** for **5m**.
+- `relay_switch_rate > 5%/min` (steady) → raise hysteresis to **25%** for **5m** (driven by `routing.relay_switch_rate`).
 
 ---
 
@@ -94,7 +94,7 @@ config :thunderline, :tocp, %{
 ```
 Current scaffold (keyword list) equivalent resides in `config/config.exs`; translation maintained until we refactor to the map style.
 
-**Env Overrides:** `FEATURE_TOCP=1`, future: `FEATURE_TOCP_PRESENCE_INSECURE=1` (perf testing without signing).
+**Env Overrides:** `FEATURE_TOCP=1` (enable domain), future: `FEATURE_TOCP_PRESENCE_INSECURE=1` (perf testing without signing) – relaxes `security_sign_control` & replay enforcement for benchmark profiles only.
 
 ---
 
@@ -108,17 +108,17 @@ Current scaffold (keyword list) equivalent resides in `config/config.exs`; trans
 | Topology Probe | Sparse responses + quarantine |
 | Credit Drain | Token buckets throttle; router healthy |
 
-Sim Artifact: `mix tocp.sim.run --out sim_report.json` → include security counters & pass/fail flags.
+Sim Artifact: `mix tocp.sim.run --out sim_report.json` → includes aggregated `security.sig_fail` & `security.replay_drop` counters & pass/fail flags.
 
 ---
 
 ## 🛠️ Dev Orders (Actionable)
-### Control Frame Crypto
-- Implement `Security.sign/verify` on ANNOUNCE/ADVERTISE/ACK.
-- Emit `security.sig_fail`; quarantine after threshold.
+### Control Frame Crypto (Implemented Scaffold)
+- `Security.Impl` provides Ed25519 sign/verify via JOSE; ANNOUNCE/ADVERTISE/ACK integration pending wire path.
+- Telemetry emission `security.sig_fail` implemented.
 
-### Replay Window
-- ETS LRU `{src, mid}` with timestamp buckets (skew 30s).
+### Replay Window (Implemented Scaffold)
+- ETS window + pruning task (`Security.Pruner`) active; ingestion hook TODO.
 
 ### Admission Gate
 - `Membership.admit?/2` validates zone join token (Gate stub for now).
@@ -126,11 +126,11 @@ Sim Artifact: `mix tocp.sim.run --out sim_report.json` → include security coun
 ### Quarantine Path
 - `Membership.quarantine/2`; `Router.inbound/3` returns `{:error, :quarantined}`.
 
-### Dynamic Hysteresis
-- Raise to 25% for 5m on `relay_switch_rate` breach; timer revert.
+### Dynamic Hysteresis (Partial)
+- `Routing.SwitchTracker` emits `routing.relay_switch_rate`; `HysteresisManager` scaffold will tune `hysteresis_pct`.
 
-### Rate/Credit Guard
-- `FlowControl.allowed?/1` early drop; emit `rate.drop`.
+### Rate/Credit Guard (Pending)
+- `FlowControl.allowed?/1` planned; `rate.drop` emission not yet wired.
 
 ### Docs & CI
 - Extend decisions & telemetry docs (done incrementally).
@@ -148,7 +148,7 @@ Sim Artifact: `mix tocp.sim.run --out sim_report.json` → include security coun
 ---
 
 ## 🧩 Libraries & Hooks
-- Crypto: `enacl` / libsodium; BLAKE3 via Rustler NIF binding.
+- Crypto: Ed25519 via JOSE (pure BEAM fallback chosen after enacl build friction); BLAKE3 hashing TBD.
 - Reserve Noise/macaroons/blinded tokens; provide stub flags.
 
 ---

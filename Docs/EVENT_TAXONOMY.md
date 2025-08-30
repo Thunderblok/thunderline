@@ -60,7 +60,7 @@ Guidelines:
 ```
 
 Envelope Invariants:
-- `id` MUST be UUID v7 (time sortable) — enables ingestion ordering heuristics.
+- `id` MUST be UUID v7 (time sortable) — generated via internal `Thunderline.UUID.v7/0` (Week 0 scaffold).
 - `correlation_id` stable across a logical transaction (e.g., full email send flow) — FIRST event's `id` becomes correlation id for subsequent derived events when no upstream correlation exists.
 - `causation_id` ALWAYS points to the direct parent event that triggered the emission (acyclic chain).
 - `taxonomy_version` bump ONLY on breaking semantic categorization shift, not on payload tweaks.
@@ -269,7 +269,7 @@ Thunderline.EventBus.emit(:email_sent, %{message_id: mid, to: recipients, subjec
 
 Constructor Responsibilities:
 - Validates name format & allowed category for `source` (Section 12 matrix)
-- Supplies `id`, `at`, `correlation_id` (UUIDv4 interim) & default `taxonomy_version`
+- Supplies `id` (UUID v7), `at`, `correlation_id` (UUID v7), default `taxonomy_version`
 - Infers `type` from name if omitted (last segment)
 - Applies reliability heuristic to `meta.reliability`
 
