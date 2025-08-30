@@ -83,8 +83,6 @@ defmodule Thunderline.MixProject do
       {:off_broadway_memory, "~> 1.1"},
       {:off_broadway_amqp10, "~> 0.1"},
       {:flow, "~> 1.0"},
-      {:hackney, "~> 1.18"},
-      {:httpoison, "~> 2.0"},
       {:timex, "~> 3.7"},
       {:ex_webrtc, "~> 0.13.0"},
       {:ex_sctp, "~> 0.1.2"},

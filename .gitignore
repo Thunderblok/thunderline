@@ -61,6 +61,8 @@ Raincatcher/
 cerebros/
 thunder_axon_integration/
 cerebros_core/
+copyparty/
+cerebros-core-algorithm-alpha/
 
 # Dialyzer PLT cache
 priv/plts/
