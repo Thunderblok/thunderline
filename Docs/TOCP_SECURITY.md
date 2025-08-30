@@ -94,7 +94,7 @@ config :thunderline, :tocp, %{
 ```
 Current scaffold (keyword list) equivalent resides in `config/config.exs`; translation maintained until we refactor to the map style.
 
-**Env Overrides:** `FEATURE_TOCP=1` (enable domain), future: `FEATURE_TOCP_PRESENCE_INSECURE=1` (perf testing without signing) – relaxes `security_sign_control` & replay enforcement for benchmark profiles only.
+**Env Overrides:** `FEATURE_TOCP=1` (enable domain), `FEATURE_TOCP_PRESENCE_INSECURE=1` (ALLOWED only for perf tests; emits one-shot telemetry `[:tocp,:security,:insecure_mode]` & boot WARN) – relaxes `security_sign_control` & replay enforcement for benchmark profiles only unless `ALLOW_INSECURE_TESTS=true` gating CI.
 
 ---
 
@@ -108,7 +108,7 @@ Current scaffold (keyword list) equivalent resides in `config/config.exs`; trans
 | Topology Probe | Sparse responses + quarantine |
 | Credit Drain | Token buckets throttle; router healthy |
 
-Sim Artifact: `mix tocp.sim.run --out sim_report.json` → includes aggregated `security.sig_fail` & `security.replay_drop` counters & pass/fail flags.
+Sim Artifact: `mix tocp.sim.run --out sim_report.json` → includes aggregated `security.sig_fail`, `security.replay_drop`, planned `quarantined_nodes` count & pass/fail flags.
 
 ---
 
@@ -125,12 +125,13 @@ Sim Artifact: `mix tocp.sim.run --out sim_report.json` → includes aggregated `
 
 ### Quarantine Path
 - `Membership.quarantine/2`; `Router.inbound/3` returns `{:error, :quarantined}`.
+- Telemetry (planned): `[:tocp,:security,:quarantine]` with %{count: 1, node: id, reason: r}
 
 ### Dynamic Hysteresis (Partial)
 - `Routing.SwitchTracker` emits `routing.relay_switch_rate`; `HysteresisManager` scaffold will tune `hysteresis_pct`.
 
 ### Rate/Credit Guard (Pending)
-- `FlowControl.allowed?/1` planned; `rate.drop` emission not yet wired.
+- `FlowControl.allowed?/1` planned; `flow.rate.drop` emission not yet wired.
 
 ### Docs & CI
 - Extend decisions & telemetry docs (done incrementally).

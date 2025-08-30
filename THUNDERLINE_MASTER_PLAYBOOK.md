@@ -27,6 +27,8 @@
 | HC-17 | P2 | Federation Roadmap | ActivityPub phases vague | Draft phased activation doc | Gate | Not Started |
 | HC-18 | P2 | Performance Baselines | No perf guard in CI | Add benches + regression thresholds | Platform | Not Started |
 | HC-19 | P2 | Mobile Readiness | No offline/mobile doc | Draft sync/offline strategy | Link | Not Started |
+| HC-20 | P1 | Cerebros Bridge | No formal external core bridge boundary | Create gitignored mirror + API boundary doc + DIP | Bolt Steward | Not Started |
+| HC-21 | P1 | VIM Rollout Governance | Shadow telemetry & canary activation plan missing | Implement vim.* telemetry + rollout checklist | Flow + Bolt | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
@@ -41,6 +43,8 @@ Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: 
 8. HC-08 CI/CD enhancements (release, audit, PLT caching)
 9. HC-09 Error classification + DLQ
 10. HC-10 Feature flags documentation
+
+Post-P0 Near-Term (Governance): HC-20 (Cerebros Bridge), HC-21 (VIM Rollout) prioritized after M1 gating items.
 
 Gate: All above = Milestone `M1-EMAIL-AUTOMATION` ✔
 

@@ -60,6 +60,7 @@ catch_output
 Raincatcher/
 cerebros/
 thunder_axon_integration/
+cerebros_core/
 
 # Dialyzer PLT cache
 priv/plts/

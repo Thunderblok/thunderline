@@ -126,7 +126,6 @@ Escalation: Re-classification of existing mapping requires sign-off from owning 
 - [ ] Emit additional telemetry: `[:thunderline,:error,:burst_detected]` (future adaptive backoff)
 - [ ] Add linter that warns on `raise` of plain RuntimeError in app code (encourage structured errors)
 
-## 11. Future Enhancements
 - Correlate error bursts with event categories
 - Adaptive backoff based on historical success probability
 - Structured error code registry file

@@ -129,6 +129,9 @@ defmodule Thunderline.Application do
   # ⚡🛰️ TOCP (Open Circuit Protocol) – feature-flag gated scaffold supervisor
   (Thunderline.Feature.enabled?(:tocp) && Thunderline.TOCP.Supervisor) || nil,
 
+  # ⚡🧩 Cerebros Bridge Cache (only when bridge enabled) – cache process
+  (Thunderline.Feature.enabled?(:cerebros_bridge) && Thunderline.Thunderbolt.CerebrosBridge.Cache) || nil,
+
       # ⚡👑 THUNDERCROWN - Orchestration Services
       # (MCP Bus and AI orchestration services will be added here)
 
@@ -137,14 +140,6 @@ defmodule Thunderline.Application do
 
       # Phoenix Web Server (conditionally started after core observability)
   ] ++ compute_children ++ endpoint_child ++ extras
-        |> then(fn base ->
-          # 🛰 TOCP (Open Circuit Protocol) – feature gated scaffold (Orders Θ-01)
-          if Thunderline.Feature.enabled?(:tocp) do
-            base ++ [Thunderline.TOCP.Supervisor]
-          else
-            base
-          end
-        end)
     |> Enum.filter(& &1)
 
   opts = [strategy: :one_for_one, name: Thunderline.Supervisor]

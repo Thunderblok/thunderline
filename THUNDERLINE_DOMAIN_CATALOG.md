@@ -20,6 +20,8 @@
 | AI Panel & Thread (stub) | ThunderLink / ThunderCrown (future) | Placeholder for AshAI tool execution pipeline |
 | Post-login redirect to first community/channel | ThunderLink | Immediate immersion, reduces friction after sign-in |
 | Probe analytics resources & worker added | ThunderFlow | Added `ProbeRun`, `ProbeLap`, `ProbeAttractorSummary` + Oban processing & telemetry |
+| VIM DIP introduced | Cross (Bolt/Flow/Link) | Shared Virtual Ising Machine optimization layer draft (DIP-VIM-001) |
+| Parser error consolidation | Cross | Integrated parser addendum into `ERROR_CLASSES.md` |
 | Attractor recompute + canonical Lyapunov selection | ThunderFlow | Supports parameterized recomputation & stability metrics |
 | Dependabot + CI workflow introduced | Cross | Automated dependency/security drift management & quality gates |
 
@@ -46,6 +48,7 @@ Guidelines:
 1. Any new edge requires DIP Issue + justification.
 2. △ edges must not introduce compile-time struct dependencies (use events or defined public actions).
 3. Escalate to Reactor if chatter on a △ edge exceeds 5 events/min sustained.
+ 4. Optimization (VIM) adaptors MUST treat domains as data suppliers only; no reverse coupling from solver to raw domain structs (only via published results or actions).
 
 ---
 
@@ -67,6 +70,12 @@ All cross-domain events MUST conform:
 }
 ```
 Reserved type prefixes: `reactor.`, `system.`, `audit.`, `ui.` (see Handbook for semantics). Version increments mandatory on breaking payload changes.
+
+VIM Telemetry Names (planned; see DIP-VIM-001):
+`[:vim,:router,:solve,:start|:stop|:error]`, `[:vim,:persona,:solve,:start|:stop|:error]` – shadow & active differentiation via metadata `mode`.
+
+Bridge Telemetry (Phase-1 scaffold):
+`[:cerebros,:bridge,:invoke,:start|:stop|:exception]` — invocation lifecycle (timeout & exception coverage). Future cache events: `[:cerebros,:bridge,:cache,:hit|:miss]`.
 
 ---
 

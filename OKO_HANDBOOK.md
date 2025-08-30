@@ -1,6 +1,6 @@
 # 🌩️ OKO HANDBOOK: The Thunderline Technical Bible
 
-> **LIVING DOCUMENT** - Last Updated: August 28, 2025  
+> **LIVING DOCUMENT** - Last Updated: August 30, 2025  
 > **Status**: � **ATLAS HANDOVER COMPLETE - PRODUCTION READY DOCUMENTATION**  
 > **Purpose**: Comprehensive guide to Thunderline's Personal Autonomous Construct (PAC) platform & distributed AI orchestration system
 
@@ -49,12 +49,16 @@ Risk if Deferred:
 
 Tracking: Status values mirrored daily from Playbook into sitrep delta block; handbook retains summary only (no granular status churn to avoid duplication). Governance-affecting doc changes use commit prefix `GOV:`.
 
-Recent Delta (Aug 29 2025):
+Recent Delta (Aug 29–30 2025):
 - Internal UUID v7 generator (`Thunderline.UUID`) adopted; replaces interim v4 usage for event & correlation ids (improves chronological ordering heuristics).
 - TOCP scaffold expanded: added `Routing.SwitchTracker` (emits `routing.relay_switch_rate`) & `Telemetry.Aggregator` (aggregates `security.sig_fail` / `security.replay_drop`).
 - Security primitives scaffolded: `Security.Impl` (Ed25519 sign/verify via JOSE) and `Security.Pruner` (replay window pruning) under TOCP supervisor gating.
 - Simulator report now surfaces security counters; telemetry docs & decisions updated (DIP-TOCP-002 partial progress).
-- Feature flags registry extended with `:tocp` & `:tocp_presence_insecure` (pending insecure mode wiring).
+- Feature flags registry extended with `:tocp` & `:tocp_presence_insecure` (insecure mode governance: WARN + one-shot telemetry, see High Command One-Pager).
+ - Added VIM (Virtual Ising Machine) DIP (DIP-VIM-001) establishing shared optimization layer for routing & persona; feature flags `:vim` & `:vim_active` drafted.
+ - Consolidated parser error appendix into main `ERROR_CLASSES.md` & introduced draft VIM error codes.
+ - Gap audit initiated (see "Unified Gap & Risk Assessment" section) enumerating P0/P1 blind spots across telemetry, security hardening, optimization, and ML persistence.
+  - See `Docs/HIGH_COMMAND_ONE_PAGER_2025_08_30.md` for Θ-03 sprint directives & acceptance gates.
 
 
  Summary
@@ -88,6 +92,34 @@ Health signals to watch
 - `cerebros_*` telemetry volume and error rates post-migration
 
 Codename: AGENT RAZOR
+
+---
+
+## 🔍 Unified Gap & Risk Assessment (Aug 30 2025 Sweep)
+| Area | Gap / Blind Spot | Impact | Suggested Mitigation | Priority |
+|------|------------------|--------|----------------------|----------|
+| Event Governance | No automated taxonomy linter yet (`mix thunderline.events.lint`) | Drift, inconsistent correlation rules | Implement linter (Sections EVENT_TAXONOMY §14); gate CI | P0 (HC-03) |
+| Error Handling | Classifier not implemented; DLQ policy not enforced | Retry chaos / noisy failures | Implement `Thunderline.ErrorClassifier` + Broadway middleware | P0 (HC-09) |
+| ML Persistence | Cerebros / ModelRun migrations still parked | No audit trail of ML artifacts | Promote migrations & run; add state machine | P0 (HC-04) |
+| Deployment | Missing hardened release scripts & healthcheck | Slower incident response | Author Docker multi-stage, add `/health/ready` endpoint & systemd unit | P0 (HC-07) |
+| VIM Rollout | Shadow telemetry events not yet added; no fallback counters | Hard to validate improvement safely | Implement `[:vim,:router|:persona,:solve,:start|:stop|:error]` + fallback metrics | P1 (pre-activation) |
+| Privacy | Persona feature logging rules not enforced (hashing) | Potential sensitive data leakage | Hash feature ids before telemetry; audit log anonymization | P1 |
+| Presence Security | Quarantine automation thresholds static | Over/under quarantine risk | Adaptive thresholds using EMA of baseline fail rate | P1 |
+| Feature Flags | No CI to ensure docs-table parity | Flags drift undocumented | Build `mix thunderline.flags.audit` diffing runtime used flags vs registry | P1 |
+| Simulator | No automatic CI gate for TOCP convergence SLO | Regressions slip in | Implement DIP-TOCP-005 harness in CI (assert SLOs) | P1 |
+| Observability | No dashboards for error class / retry breakdown yet | Slow root cause analysis | Grafana JSON or LiveDashboard pages seeded from taxonomy | P1 |
+| Performance | No regression benchmarks in CI (HC-18) | Latency creep undetected | Add Benchee suite + threshold gating | P2 |
+| Federation | ActivityPub phased roadmap doc missing (HC-17) | Ambiguity in integration sequence | Author phased DIP & link in Catalog | P2 |
+| Voice | TURN/STUN integration not started | NAT traversal failure risk | Add TURN config + minimal deployment guide | P2 |
+| Security Hardening | API key resource & encryption coverage matrix missing | Surface-level security posture | Add Gate API Key resource + cloak matrix doc | P1 (HC-15) |
+| Data Lifecycle | Snapshot/restore for Automata absent | Recovery complexity | Draft DIP-AUTO-SNAPSHOT & implement minimal snapshot Ash resource | P1 |
+| Policy Enforcement | Some resources ship w/o explicit policies yet | Accidental exposure risk | Audit all Ash resources: add default deny policies, log exceptions | P0 (rolling) |
+| Documentation Tooling | No stale section linter for handbook | Drift risk over time | Add script: check timestamp & open issues presence | P2 |
+| Bridge Layer | Cerebros external core bridge not formalized | Divergent ML evolution risk | Create `cerebros_core/` gitignored mirror + API boundary doc | P1 |
+
+Risk Scoring Heuristic now applied: Impact (High/Med/Low) x Probability (Expectation) aggregated into Priority; table shows consolidated outcome.
+
+Remediation Tracking: Each P0/P1 item MUST have an issue with label `gap-remediation` by Sept 2 2025. Weekly steward review audits closure throughput.
 
 ---
 

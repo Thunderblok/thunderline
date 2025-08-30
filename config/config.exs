@@ -67,6 +67,25 @@ config :spark,
 config :thunderline,
   ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
+  # Feature flags list (see FEATURE_FLAGS.md). Add flags here to enable.
+  features: [
+    # :vim, :vim_active, :cerebros_bridge
+  ],
+  # Cerebros bridge facade configuration (disabled by default)
+  cerebros_bridge: [
+    enabled: false,
+    repo_path: System.get_env("CEREBROS_REPO") || "/opt/cerebros",
+    invoke: [default_timeout_ms: 5_000],
+    cache: [ttl_ms: 30_000, max_entries: 512]
+  ],
+  # VIM (Virtual Ising Machine) config surface (shadow mode = dry-run)
+  vim: [
+    enabled: false,
+    shadow_mode: true,
+    router: [k_relays: 3, lambda_exact_k: 2.0, schedule: [t0: 3.0, alpha: 0.95, iters: 200, max_ms: 25]],
+    persona: [board_size: 128, schedule: [t0: 2.5, alpha: 0.96, iters: 150, max_ms: 40]],
+    temp_ctrl: [enabled: true, target_variance: 0.05, alpha: 0.05]
+  ],
   # TOCP domain base config (scaffold). Feature flag lives under :features (flag :tocp disabled by default).
   # The nested :tocp keyword list holds protocol runtime parameters.
   tocp: [

@@ -1,4 +1,10 @@
 defmodule Thunderline.Feature do
+  @moduledoc "Tiny feature-flag reader. Use Application env :thunderline, :features list."
+  @app :thunderline
+  @spec enabled?(atom) :: boolean
+  def enabled?(flag), do: flag in Application.get_env(@app, :features, [])
+end
+defmodule Thunderline.Feature do
   @moduledoc """
   Runtime feature flag evaluation & simple per-process overrides.
 
