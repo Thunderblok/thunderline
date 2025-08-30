@@ -19,4 +19,12 @@ defmodule Thunderline.Thunderbolt.CA.RunnerSupervisor do
     spec = {Runner, Keyword.put(opts, :run_id, run_id)}
     DynamicSupervisor.start_child(__MODULE__, spec)
   end
+
+  @doc "Stop a CA run by run_id (no-op if not running)"
+  def stop_run(run_id) do
+    case Registry.lookup(Thunderline.Thunderbolt.CA.Registry, run_id) do
+      [{pid, _}] -> DynamicSupervisor.terminate_child(__MODULE__, pid)
+      [] -> {:error, :not_found}
+    end
+  end
 end

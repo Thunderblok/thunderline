@@ -42,6 +42,10 @@ defmodule ThunderlineWeb.Router do
     plug AshGraphql.Plug
   end
 
+  pipeline :admin do
+    plug ThunderlineWeb.Plugs.RequireRoles, roles: [:owner, :steward]
+  end
+
   scope "/", ThunderlineWeb do
     # If DEMO_MODE enabled, insert demo_security pipeline before dashboard
     if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
@@ -158,19 +162,22 @@ defmodule ThunderlineWeb.Router do
     end
   end
 
-  if Mix.env() in [:dev, :test] do
-    scope "/admin" do
-      pipe_through :browser
-      forward "/", AshAdmin.Router,
-        otp_app: :thunderline,
-        apis: [
-          Thunderline.Thunderblock.Domain,
-          Thunderline.Thunderflow.Domain,
-          Thunderline.Thunderlink.Domain,
-          Thunderline.Thundercrown.Domain,
-          Thunderline.Thundergate.Domain,
-          Thunderline.Thundercom.Domain
-        ]
-    end
+  # Admin UI (AshAdmin) behind Gate roles; enable in all envs as needed
+  scope "/admin" do
+    pipe_through :browser
+    on_mount AshAuthentication.Phoenix.LiveSession
+    on_mount ThunderlineWeb.Live.Auth
+    plug ThunderlineWeb.Plugs.RequireRoles, roles: [:owner, :steward]
+
+    forward "/", AshAdmin.Router,
+      otp_app: :thunderline,
+      apis: [
+        Thunderline.Thunderblock.Domain,
+        Thunderline.Thunderflow.Domain,
+        Thunderline.Thunderlink.Domain,
+        Thunderline.Thundercrown.Domain,
+        Thunderline.Thundergate.Domain,
+        Thunderline.Thundercom.Domain
+      ]
   end
 end
