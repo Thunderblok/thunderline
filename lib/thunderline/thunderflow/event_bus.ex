@@ -338,7 +338,7 @@ defmodule Thunderline.EventBus do
   end
 
   defp generate_correlation_id do
-    UUID.uuid7()
+    Thunderline.UUID.v7()
   end
 
   # Map legacy or ad-hoc domain strings to taxonomy source atoms.

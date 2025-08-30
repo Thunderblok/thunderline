@@ -143,7 +143,7 @@ defmodule Thunderline.Thundervine.Events do
   end
 
   defp normalize_meta(meta) when is_map(meta) do
-    Map.merge(%{correlation_id: meta[:correlation_id] || UUID.uuid7()}, meta)
+  Map.merge(%{correlation_id: meta[:correlation_id] || Thunderline.UUID.v7()}, meta)
   end
-  defp normalize_meta(_), do: %{correlation_id: UUID.uuid7()}
+  defp normalize_meta(_), do: %{correlation_id: Thunderline.UUID.v7()}
 end

@@ -38,9 +38,15 @@ defmodule Thunderline.TOCP.Telemetry.Aggregator do
   def handle_info(_, s), do: {:noreply, s}
 
   defp attach do
-    for ev <- @events do
-      :telemetry.attach({__MODULE__, ev}, ev, &__MODULE__.dispatch/4, %{}) rescue _ -> :ok
-    end
+    Enum.each(@events, fn ev ->
+      id = {__MODULE__, ev}
+      try do
+        :telemetry.attach(id, ev, &__MODULE__.dispatch/4, %{})
+      rescue
+        _ -> :ok
+      end
+    end)
+    :ok
   end
 
   def dispatch([:tocp, :security_sig_fail], measurements, meta, _cfg) do

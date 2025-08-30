@@ -341,7 +341,7 @@ defmodule Thunderline.Event do
 
   defp generate_correlation_id do
     # UUID v7 provides sortable time component aiding ingestion ordering & tracing cohesion.
-    UUID.uuid7()
+  Thunderline.UUID.v7()
   end
 
   # Smart constructor helpers
@@ -410,6 +410,6 @@ defmodule Thunderline.Event do
     _ -> :unknown_event
   end
 
-  defp gen_uuid, do: UUID.uuid7()
-  defp gen_corr, do: UUID.uuid7()
+  defp gen_uuid, do: Thunderline.UUID.v7()
+  defp gen_corr, do: Thunderline.UUID.v7()
 end
