@@ -50,3 +50,16 @@ config :thunderline, :thunderwatch,
 
 # Explicit test feature flags (tocp scaffold disabled unless opted-in per test)
 config :thunderline, :features, tocp: false
+
+config :thunderline,
+  minimal_test_boot: true,
+  features: [],
+  cerebros_bridge: [
+    enabled: false,
+    invoke: [default_timeout_ms: 100],
+    cache: [ttl_ms: 1_000, max_entries: 64]
+  ],
+  vim: [
+    enabled: false,
+    shadow_mode: true
+  ]

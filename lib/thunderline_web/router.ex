@@ -157,4 +157,20 @@ defmodule ThunderlineWeb.Router do
       live_dashboard "/dev/dashboard", metrics: ThunderlineWeb.Telemetry
     end
   end
+
+  if Mix.env() in [:dev, :test] do
+    scope "/admin" do
+      pipe_through :browser
+      forward "/", AshAdmin.Router,
+        otp_app: :thunderline,
+        apis: [
+          Thunderline.Thunderblock.Domain,
+          Thunderline.Thunderflow.Domain,
+          Thunderline.Thunderlink.Domain,
+          Thunderline.Thundercrown.Domain,
+          Thunderline.Thundergate.Domain,
+          Thunderline.Thundercom.Domain
+        ]
+    end
+  end
 end

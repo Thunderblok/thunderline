@@ -281,3 +281,15 @@ config :ash_authentication, AshAuthenticationPhoenix.Components, otp_app: :thund
 config :ash_authentication_phoenix,
   use_get?: true,
   root_path: "/auth"
+
+# AshAdmin configuration (enable admin UI over all primary domains)
+config :ash_admin, AshAdmin,
+  otp_app: :thunderline,
+  domains: [
+    Thunderline.Thunderblock.Domain,
+    Thunderline.Thunderflow.Domain,
+    Thunderline.Thunderlink.Domain,
+    Thunderline.Thundercrown.Domain,
+    Thunderline.Thundergate.Domain,
+    Thunderline.Thundercom.Domain
+  ]

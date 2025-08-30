@@ -18,6 +18,8 @@ defmodule Thunderline.Application do
 
   @impl true
   def start(_type, _args) do
+    minimal? = Application.get_env(:thunderline, :minimal_test_boot, false)
+
     skip_db? = System.get_env("SKIP_ASH_SETUP") in ["1", "true"]
     start_endpoint? = case System.get_env("START_ENDPOINT") do
       val when val in ["0", "false", "FALSE", "no", "No"] -> false
@@ -38,16 +40,16 @@ defmodule Thunderline.Application do
       []
     else
       [
-    Thunderline.Repo,
-    Thunderline.MigrationRunner,
-    {Oban, oban_config()},
-    Thunderline.Thunderflow.Telemetry.ObanHealth,
-    Thunderline.Thunderflow.Telemetry.ObanDiagnostics,
+        Thunderline.Repo,
+        Thunderline.MigrationRunner,
+        {Oban, oban_config()},
+        Thunderline.Thunderflow.Telemetry.ObanHealth,
+        Thunderline.Thunderflow.Telemetry.ObanDiagnostics,
         {AshAuthentication.Supervisor, [otp_app: :thunderline]}
       ]
     end
 
-    compute_children = if start_compute? do
+    compute_children = if start_compute? and not minimal? do
       [
         Thunderline.Thunderbolt.ThunderCell.Supervisor,
         Thunderline.ErlangBridge,
@@ -55,99 +57,56 @@ defmodule Thunderline.Application do
         Thunderline.ThunderBridge
       ]
     else
-      Logger.warning("[Thunderline.Application] START_COMPUTE disabled - skipping ThunderCell/ErlangBridge/NeuralBridge/ThunderBridge")
       []
     end
 
-    endpoint_child = if start_endpoint? do
+    endpoint_child = if start_endpoint? and not minimal? do
       [ThunderlineWeb.Endpoint]
     else
-      Logger.warning("[Thunderline.Application] START_ENDPOINT disabled - skipping Phoenix Endpoint")
       []
     end
 
     extras = [
       {Task, fn -> try do Thunderline.Bus.init_tables() rescue _ -> :ok end end},
-      # NDJSON logger and UPS watcher now gated by feature helper (HC-10)
-  (Thunderline.Feature.enabled?(:enable_ndjson) && {Thunderline.Thunderflow.Observability.NDJSON, [path: System.get_env("NDJSON_PATH") || "log/events.ndjson"]}) || nil,
-  (Thunderline.Feature.enabled?(:enable_ups) && Thunderline.Thundergate.UPS) || nil,
-      # Signal-processing stack (legacy env flag until migrated to unified registry)
-  (System.get_env("ENABLE_SIGNAL_STACK") in ["1","true","TRUE"] && Thunderline.Thunderbolt.Signal.Sensor) || nil,
-  Thunderline.Thunderblock.Checkpoint
+      (on?(:enable_ndjson) && {Thunderline.Thunderflow.Observability.NDJSON, [path: System.get_env("NDJSON_PATH") || "log/events.ndjson"]}) || nil,
+      (on?(:enable_ups) && Thunderline.Thundergate.UPS) || nil,
+      (System.get_env("ENABLE_SIGNAL_STACK") in ["1","true","TRUE"] && Thunderline.Thunderbolt.Signal.Sensor) || nil,
+      Thunderline.Thunderblock.Checkpoint
     ] |> Enum.filter(& &1)
 
-  # IMPORTANT: Start DB + migrations BEFORE any pipelines or processes that might query the DB.
-  # Previously Repo/migrations were appended at the end, causing early connection attempts while
-  # Postgres might still be coming up (especially in containerized/dev environments).
-  core_db = db_children
+    core_db = db_children
 
-  children = phoenix_foundation ++ core_db ++ [
-      # ⚡🧱 THUNDERBLOCK - Storage & Memory Services
-  Thunderline.ThunderMemory,
-
-      # ⚡💧 THUNDERFLOW - Event Stream Processing
-  Thunderline.Thunderflow.Support.CircuitBreaker,
+    children = phoenix_foundation ++ core_db ++ [
+      Thunderline.ThunderMemory,
+      Thunderline.Thunderflow.Support.CircuitBreaker,
       Thunderline.Thunderflow.Observability.FanoutAggregator,
       Thunderline.Thunderflow.Observability.FanoutGuard,
       Thunderline.Thunderflow.Observability.QueueDepthCollector,
-  Thunderline.Thunderflow.Observability.DriftMetricsProducer,
-      {Thunderline.Thunderflow.Pipelines.EventPipeline, []},
-      {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []},
-      {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []},
-  # Phase 0 market & EDGAR ingestion skeletons
-  {Thunderline.Thunderflow.Pipelines.MarketIngest, []},
-  {Thunderline.Thunderflow.Pipelines.EDGARIngest, []},
+      Thunderline.Thunderflow.Observability.DriftMetricsProducer,
+      (not minimal? && {Thunderline.Thunderflow.Pipelines.EventPipeline, []}) || nil,
+      (not minimal? && {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []}) || nil,
+      (not minimal? && {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []}) || nil,
+      (not minimal? && {Thunderline.Thunderflow.Pipelines.MarketIngest, []}) || nil,
+      (not minimal? && {Thunderline.Thunderflow.Pipelines.EDGARIngest, []}) || nil,
+      (on?(:tocp) and not minimal? && Thunderline.TOCP.Supervisor) || nil,
+      (on?(:cerebros_bridge) and not minimal? && Thunderline.Thunderbolt.CerebrosBridge.Cache) || nil,
+      Thunderline.DashboardMetrics,
+      {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
+      Thunderline.Thunderbolt.Automata.Blackboard,
+      {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
+      Thundergate.Thunderwatch.Supervisor,
+      (on?(:enable_voice_media) and not minimal? && {Registry, keys: :unique, name: Thunderline.Thunderlink.Voice.Registry}) || nil,
+      (on?(:enable_voice_media) and not minimal? && Thunderline.Thunderlink.Voice.Supervisor) || nil,
+      (on?(:ca_viz) and not minimal? && Thunderline.Thunderbolt.CA.Registry) || nil,
+      (on?(:ca_viz) and not minimal? && Thunderline.Thunderbolt.CA.RunnerSupervisor) || nil,
+      (on?(:thundervine_lineage) and not minimal? && {Thunderline.Thundervine.WorkflowCompactor, []}) || nil
+    ] ++ compute_children ++ endpoint_child ++ extras
+      |> Enum.filter(& &1)
 
-  # ⚡🔥 THUNDERBOLT - Compute Acceleration Services (conditionally started)
+    opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 
-  # (Conditional DB/Ash/Oban children appended below)
-
-      # ⚡🌐 THUNDERGATE - Gateway Services
-      Thundergate.ThunderBridge,
-
-      # ⚡🔗 THUNDERLINK - Communication Services
-  Thunderlink.ThunderWebsocketClient,
-  Thunderline.DashboardMetrics,
-  # ThunderBridge implementation lives under ThunderLink domain (see thunderlink/thunder_bridge.ex)
-  {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
-  # ⚡🧠 AUTOMATA - Shared knowledge space (canonical under Thunderbolt)
-  Thunderline.Thunderbolt.Automata.Blackboard,
-  # Dashboard Event Buffer (ETS ring for streaming events)
-  {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
-  # Internal file observer (Thunderwatch) – now part of Thundergate domain (shim under Thunderline retained)
-  Thundergate.Thunderwatch.Supervisor,
-  # Voice / WebRTC MVP infrastructure (migrated to Thunderlink; gated by feature flag)
-  (Thunderline.Feature.enabled?(:enable_voice_media) && {Registry, keys: :unique, name: Thunderline.Thunderlink.Voice.Registry}) || nil,
-  (Thunderline.Feature.enabled?(:enable_voice_media) && Thunderline.Thunderlink.Voice.Supervisor) || nil,
-
-  # ⚡ CA Visualization infrastructure (feature gated)
-  (Thunderline.Feature.enabled?(:ca_viz) && Thunderline.Thunderbolt.CA.Registry) || nil,
-  (Thunderline.Feature.enabled?(:ca_viz) && Thunderline.Thunderbolt.CA.RunnerSupervisor) || nil,
-  # Thundervine lineage maintenance
-  (Thunderline.Feature.enabled?(:thundervine_lineage) && {Thunderline.Thundervine.WorkflowCompactor, []}) || nil,
-
-  # ⚡🛰️ TOCP (Open Circuit Protocol) – feature-flag gated scaffold supervisor
-  (Thunderline.Feature.enabled?(:tocp) && Thunderline.TOCP.Supervisor) || nil,
-
-  # ⚡🧩 Cerebros Bridge Cache (only when bridge enabled) – cache process
-  (Thunderline.Feature.enabled?(:cerebros_bridge) && Thunderline.Thunderbolt.CerebrosBridge.Cache) || nil,
-
-      # ⚡👑 THUNDERCROWN - Orchestration Services
-      # (MCP Bus and AI orchestration services will be added here)
-
-      # ⚡⚔️ THUNDERGUARD - Security Services
-      # (Authentication and authorization services will be added here)
-
-      # Phoenix Web Server (conditionally started after core observability)
-  ] ++ compute_children ++ endpoint_child ++ extras
-    |> Enum.filter(& &1)
-
-  opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
-
-  # Attach observability telemetry handlers
-  Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
-      Thunderline.Thunderflow.Telemetry.Oban.attach()
-  if skip_db?, do: Logger.warning("[Thunderline.Application] Starting with SKIP_ASH_SETUP - DB/Oban/AshAuth supervision children disabled for lightweight tests")
+    Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
+    Thunderline.Thunderflow.Telemetry.Oban.attach()
 
     Supervisor.start_link(children, opts)
   end
@@ -174,4 +133,6 @@ defmodule Thunderline.Application do
         Application.fetch_env!(:thunderline, Oban)
     end
   end
+
+  defp on?(flag), do: flag in Application.get_env(:thunderline, :features, [])
 end

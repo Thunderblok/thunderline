@@ -3,6 +3,8 @@
 # To keep it up to date, use `mix igniter.setup`
 [
   module_location: :outside_matching_folder,
+  # Point Igniter at the list literal bound to `base = [...]` in deps/0
+  deps_location: {:variable, :base},
   extensions: [],
   source_folders: ["lib", "test/support"],
   dont_move_files: [~r"lib/mix"]

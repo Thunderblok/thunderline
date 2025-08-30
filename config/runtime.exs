@@ -176,4 +176,16 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Req
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+
+  # Cloak Vault configuration (AshCloak uses this vault)
+  if vault_key = System.get_env("THUNDERLINE_VAULT_KEY") do
+    config :thunderline, Thunderline.Vault,
+      ciphers: [
+        default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(vault_key)}
+      ]
+  else
+    # In dev/test, you can set THUNDERLINE_VAULT_KEY to a base64-encoded 256-bit key.
+    # Leaving it unset keeps the vault unconfigured; encrypted fields should not be accessed.
+    :ok
+  end
 end

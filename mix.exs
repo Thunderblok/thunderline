@@ -7,8 +7,8 @@ defmodule Thunderline.MixProject do
     [
       app: :thunderline,
       version: @version,
-  # Bump Elixir version to support Jido ecosystem (requires >= 1.18 for ash_jido)
-  elixir: "~> 1.18",
+      # Bump Elixir version to support Jido ecosystem (requires >= 1.18 for ash_jido)
+      elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       # Use default Mix compilers (was restricted to [:elixir, :app] which can skip needed steps)
       compilers: Mix.compilers(),
@@ -36,7 +36,7 @@ defmodule Thunderline.MixProject do
 
   defp deps do
     base = [
-      {:usage_rules, "~> 0.1"},
+      {:usage_rules, "~> 0.1", only: [:dev]},
       # igniter:deps-start
       {:oban, "~> 2.0"},
       {:ash_authentication, "~> 4.0"},
@@ -54,17 +54,19 @@ defmodule Thunderline.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:esbuild, "~> 0.9", runtime: Mix.env() == :dev},
-  {:telemetry_metrics, "~> 1.1"},
+      {:telemetry_metrics, "~> 1.1"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:swoosh, "~> 1.16"},
       # Ash Framework
-  {:ash, "~> 3.5"},
+      {:ash, "~> 3.5"},
       {:ash_phoenix, "~> 2.0"},
+      {:ash_cloak, "~> 0.1.6"},
       {:ash_postgres, "~> 2.0"},
       {:ash_graphql, "~> 1.0"},
+      {:ash_rate_limiter, "~> 0.1.1"},
       {:ash_json_api, "~> 1.0"},
       {:ash_oban, "~> 0.4"},
       {:ash_events, "~> 0.4.3"},
@@ -109,10 +111,10 @@ defmodule Thunderline.MixProject do
       {:polaris, "~> 0.1"},
       # Agents (non-Jido runtime deps live above; Jido ecosystem is added below via git)
       # File system watch (dev/test only)
-  {:file_system, "~> 1.0"},
+      {:file_system, "~> 1.0"},
       # Code Quality
-  # credo required unscoped because upstream jido pulls it without :only restriction
-  {:credo, "~> 1.7", override: true},
+      # credo required unscoped because upstream jido pulls it without :only restriction
+      {:credo, "~> 1.7", override: true},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:git_ops, "~> 2.6.1", only: [:dev]}
       # Optional Cerebros local toolkit (enable with ENABLE_CEREBROS=1 if available)
@@ -126,13 +128,13 @@ defmodule Thunderline.MixProject do
     # The Jido ecosystem packages are not (all) published on Hex under these names yet.
     # We source them directly from GitHub. Pin to tags where possible for reproducibility.
     # If tags ever change, fall back to :ref => "main" but expect occasional breakage.
-  # TODO(fork): Repoint these to organization forks (Thunderblok/*) to persist local patches.
-  jido_git_deps = [
+    # TODO(fork): Repoint these to organization forks (Thunderblok/*) to persist local patches.
+    jido_git_deps = [
       # Use latest available pre-release tag for jido (v1.1.0-rc.1)
       {:jido, github: "agentjido/jido", tag: "v1.1.0-rc.1", override: true},
       {:jido_action, github: "agentjido/jido_action", ref: "main", override: true},
-  # Keep jido_signal on main until a matching release tag supports rc.1 struct shape
-  {:jido_signal, github: "agentjido/jido_signal", ref: "main", override: true},
+      # Keep jido_signal on main until a matching release tag supports rc.1 struct shape
+      {:jido_signal, github: "agentjido/jido_signal", ref: "main", override: true},
       {:jido_behaviortree, github: "agentjido/jido_behaviortree", ref: "main", override: true}
     ]
 
@@ -141,7 +143,11 @@ defmodule Thunderline.MixProject do
     # blocking other dependency resolution. You can force include by exporting
     # INCLUDE_ASH_JIDO=1 (and upgrading your Elixir toolchain).
     ash_jido_dep =
-      if System.get_env("INCLUDE_ASH_JIDO") in ["1", "true"] or Version.match?(System.version(), ">= 1.18.0") do
+      if System.get_env("INCLUDE_ASH_JIDO") in ["1", "true"] or
+           Version.match?(
+             System.version(),
+             ">= 1.18.0"
+           ) do
         [{:ash_jido, github: "agentjido/ash_jido", ref: "main", override: true}]
       else
         []

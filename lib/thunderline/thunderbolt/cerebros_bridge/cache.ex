@@ -12,9 +12,16 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Cache do
   def get(key, ttl_ms \\ 30_000) do
     case :ets.lookup(@table, key) do
       [{^key, {ts, v}}] ->
-        if System.monotonic_time(:millisecond) - ts <= ttl_ms, do: {:hit, v}, else: {:miss, nil}
+        if System.monotonic_time(:millisecond) - ts <= ttl_ms do
+          :telemetry.execute([:cerebros, :bridge, :cache, :hit], %{}, %{key: key})
+          {:hit, v}
+        else
+          :telemetry.execute([:cerebros, :bridge, :cache, :miss], %{}, %{key: key})
+          {:miss, nil}
+        end
 
       _ ->
+        :telemetry.execute([:cerebros, :bridge, :cache, :miss], %{}, %{key: key})
         {:miss, nil}
     end
   end

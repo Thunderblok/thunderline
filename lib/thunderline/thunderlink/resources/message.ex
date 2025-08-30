@@ -25,7 +25,7 @@ defmodule Thunderline.Thunderlink.Resources.Message do
   use Ash.Resource,
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource],
+    extensions: [AshJsonApi.Resource, AshOban.Resource, AshCloak],
     notifiers: [Ash.Notifier.PubSub]
 
   import Ash.Resource.Change.Builtins
