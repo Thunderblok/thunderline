@@ -1,4 +1,5 @@
 import Config
+config :thunderline, event_validator_mode: :drop, require_actor_ctx: true
 
 # Note we also include the path to a cache manifest
 # containing the digested version of static files. This

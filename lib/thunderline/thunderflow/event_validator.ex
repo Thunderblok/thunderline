@@ -9,10 +9,10 @@ defmodule Thunderline.Thunderflow.EventValidator do
   - taxonomy_version & event_version positive integers
   - Reserved prefixes: system., reactor., ui., audit. — must not collide with forbidden domain-specific disallowed list (future)
 
-  Modes (configurable via :thunderline, :event_validator):
-    :warn   -> log + telemetry only (default dev)
-    :strict -> raise (test)
-    :drop   -> emit audit drop event & telemetry (prod)
+  Modes (configurable via :thunderline, :event_validator_mode):
+    :warn  (dev)   -> log + telemetry only
+    :raise (test)  -> raise to fail fast
+    :drop  (prod)  -> emit audit drop event & telemetry
   """
   require Logger
   alias Thunderline.Event
@@ -55,7 +55,7 @@ defmodule Thunderline.Thunderflow.EventValidator do
   defp handle_failure(ev, reason) do
     case mode() do
       :warn -> Logger.warning("[EventValidator] invalid event #{ev.name} reason=#{inspect(reason)}")
-      :strict -> raise ArgumentError, "Invalid event #{ev.name}: #{inspect(reason)}"
+      :raise -> raise ArgumentError, "Invalid event #{ev.name}: #{inspect(reason)}"
       :drop -> drop_event(ev, reason)
       other -> Logger.warning("[EventValidator] unknown mode #{inspect(other)}; treating as warn")
     end
@@ -78,16 +78,14 @@ defmodule Thunderline.Thunderflow.EventValidator do
   end
 
   defp mode do
-    Application.get_env(:thunderline, :event_validator, default_mode())
+    Application.get_env(:thunderline, :event_validator_mode) || inferred_mode()
   end
 
-  defp default_mode do
+  defp inferred_mode do
     case Mix.env() do
       :prod -> :drop
-      :test -> :strict
+      :test -> :raise
       _ -> :warn
     end
-  rescue
-    _ -> :warn
   end
 end
