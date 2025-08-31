@@ -83,6 +83,8 @@ defmodule Thunderline.Application do
       Thunderline.Thunderflow.Observability.FanoutGuard,
       Thunderline.Thunderflow.Observability.QueueDepthCollector,
       Thunderline.Thunderflow.Observability.DriftMetricsProducer,
+  # WARHORSE: unified heartbeat + validator integrated via EventBus
+  {Thunderline.Thunderflow.Heartbeat, [interval: 2000]},
       (not minimal? && {Thunderline.Thunderflow.Pipelines.EventPipeline, []}) || nil,
       (not minimal? && {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []}) || nil,
       (not minimal? && {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []}) || nil,
@@ -93,6 +95,8 @@ defmodule Thunderline.Application do
       Thunderline.DashboardMetrics,
       {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
       Thunderline.Thunderbolt.Automata.Blackboard,
+  # Thundergrid authoritative zone API (WARHORSE Week1 skeleton)
+  Thunderline.Thundergrid.API,
       {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
       Thundergate.Thunderwatch.Supervisor,
       (on?(:enable_voice_media) and not minimal? && {Registry, keys: :unique, name: Thunderline.Thunderlink.Voice.Registry}) || nil,

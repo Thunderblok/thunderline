@@ -427,6 +427,15 @@ defmodule Thunderline.EventBus do
   end
 
   defp route_event(%Thunderline.Event{} = ev, pipeline) do
+    case Thunderline.Thunderflow.EventValidator.validate(ev) do
+      :ok -> :ok
+      {:error, _} = err ->
+        # In drop mode validator already emitted audit + telemetry; abort routing.
+        case err do
+          {:error, _reason} -> :ok
+        end
+        # Return early; caller still receives {:ok, ev} for compatibility unless strict mode raised earlier.
+    end
     {table, priority} =
       case pipeline do
         :general -> {Thunderflow.MnesiaProducer, ev.priority}

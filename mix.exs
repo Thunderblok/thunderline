@@ -95,6 +95,8 @@ defmodule Thunderline.MixProject do
       # Memory & Security
       {:memento, "~> 0.5.0"},
       {:cloak, "~> 1.1"},
+  # Crypto / JOSE (Ed25519 capability & policy signature stack)
+  {:jose, "~> 1.11"},
       # ECS & GraphQL
       {:ecsx, "~> 0.5"},
       {:absinthe, "~> 1.7"},
@@ -174,7 +176,9 @@ defmodule Thunderline.MixProject do
         "tailwind thunderline --minify",
         "esbuild thunderline --minify",
         "phx.digest"
-      ]
+      ],
+      # WARHORSE lint bundle (Phase1 advisory)
+      lint: ["format --check-formatted", "credo --strict"]
     ]
   end
 

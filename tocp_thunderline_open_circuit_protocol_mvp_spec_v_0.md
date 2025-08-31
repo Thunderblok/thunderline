@@ -4,6 +4,23 @@
 
 ---
 
+## 0a) Thunderline Integration Status (Aug 31, 2025)
+- Feature flag: `:tocp` (disabled by default). Enable via `config :thunderline, features: %{tocp: true}` or `FEATURES_TOCP=1`.
+- Namespaces scaffolded under `Thunderline.TOCP.*` with supervisor stub. No sockets bind unless flag enabled.
+- Config surface (defaults, overridable in runtime):
+  - `config :thunderline, :tocp, port: 5088, gossip_ms: 1000, window: 32, ack_batch_ms: 10, ttl: 8`
+- Telemetry (reserved; emitted once adapters go live):
+  - `[:tocp, :membership, :heartbeat, :tx|:rx]`, `[:tocp, :membership, :state, :change]`
+  - `[:tocp, :router, :zone_cast|:unicast, :tx|:rx]`
+  - `[:tocp, :reliability, :ack|:dup|:drop]`
+- CLI tasks (stubs/planned):
+  - `mix tocp.sim.run` – spins an in‑proc simulator (n nodes) for convergence metrics
+  - `mix tocp.dump.config` – prints effective config & feature flag status
+- Security posture alignment (Operation Iron Veil): control frame signing and replay window baked into design (see §7); enforcement hooks will sit behind `Thunderline.Thundergate` policies.
+- Event taxonomy: all node‑level observability mirrored into `%Thunderline.Event{domain: :tocp, type: "system.tocp.*"}` for the dashboard.
+
+---
+
 ## 0) Design Tenets
 - **Open‑circuit, not session‑bound:** no required persistent streams; messages are idempotent, duplicate‑tolerant.
 - **Presence‑first:** cheap, continuous membership signals drive routing & orchestration.
@@ -197,44 +214,23 @@ mtu() :: integer
 - **Supervision:** restarts isolate (membership independent of router).
 - **Registry:** ETS for membership map; `:persistent_term` for local NodeID/keys.
 - **Backpressure:** per‑peer GenServer mailbox caps; async nacks on overflow.
+- **Module layout (Thunderline):**
+  - `Thunderline.TOCP.Supervisor` – feature‑gated root supervisor
+  - `Thunderline.TOCP.Membership` – SWIM‑lite
+  - `Thunderline.TOCP.Router` – zone‑cast/unicast & next‑hop cache
+  - `Thunderline.TOCP.Reliability` – windows/acks/dup window
+  - `Thunderline.TOCP.Transport.UDP|QUIC|WebRTC|TCP|LoRa` – adapters
+  - `Thunderline.TOCP.Store` – OFFER/REQUEST & chunk reassembly
+  - `Thunderline.TOCP.Security` – key material & signing/Noise hooks
+- **Telemetry names:** as listed in §0a; map to dashboard panels via `Thunderline.Thunderflow.EventBuffer`.
 
----
-
-## 13) Threats & Mitigations
-- **Sybil:** require DID proof‑of‑control (challenge‑response at ANNOUNCE).
-- **Replay:** ts/nonce windows; drop late.
-- **Flood:** per‑zone token buckets; greylist offenders.
-- **Partition:** STOREFWD ensures eventual delivery; tombstone TTLs prevent stale comeback storms.
-
----
-
-## 14) Example (human‑readable)
-Header (fields shown), Payload (Presence.Heartbeat):
-```
-ver:1 kind:0x02 ttl:8 hops:1 prio:3 ts:1735533442123
-src: a1b2...20B dst: zone:9f3c...16B mid: 4f1e...128b flags:0x0000
-sig: 64B
-payload: {heartbeat, #{nonce => <<4 bytes>>, health => #{cpu=>0.42,mem=>0.61,lat=>24}}}
-```
-
----
-
-## 15) Success Criteria (MVP)
-- 1k nodes join in < 30s, membership convergence p95 < 5s after churn.
-- Zone‑cast 1KB message p95 < 250ms on LAN, < 800ms across two relays.
-- < 1% duplicate deliveries; zero message loss in RELIABLE mode under 1% packet loss.
-- CPU < 15% per node on modest VM; memory footprint < 64MB/node.
-
----
-
-**Appendix A – Message Kind Registry**
-- Reserve 0x01–0x3F core; 0x40–0x5F control; 0x60–0x7F experimental/vendor.
-
-**Appendix B – Codes**
-- ERROR codes: `1 bad_sig`, `2 bad_dst`, `3 ttl_expired`, `4 rate_limited`, `5 not_member`, `6 decrypt_fail`.
-
-**Appendix C – Roles**
-- `edge`: default node.
-- `relay`: stable uptime + capacity; caches zone maps & accepts STOREFWD.
-- `gateway`: transport bridge (e.g., WebRTC↔UDP, LoRa↔UDP).
+## 16) Implementation Notes & Open Items (Aug 31, 2025)
+- [ ] UDP adapter first bind (non‑blocking recv, 2‑byte length prefix for stream transports)
+- [ ] Membership gossip with piggyback (ANNOUNCE/HEARTBEAT/QUERY)
+- [ ] Zone membership cache & relay selection heuristics
+- [ ] RELIABLE sliding window; ACK batching (10ms)
+- [ ] Fragmentation (CHUNK) + reassembly
+- [ ] Security: Noise‑XK handshake skeleton; replay window enforcement
+- [ ] Store‑and‑forward: accept policy+TTL; GC policy
+- [ ] CLI simulator producing convergence metrics for 1k nodes single box
 

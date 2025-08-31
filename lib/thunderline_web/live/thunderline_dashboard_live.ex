@@ -8,6 +8,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
 
   # Re-introduce LiveView behaviour & helpers (removed during minimalization).
   use ThunderlineWeb, :live_view
+  # Attach unified auth on_mount so current_user is consistently available
+  on_mount ThunderlineWeb.Live.Auth
   require Logger
   alias Phoenix.PubSub
   alias Thunderline.DashboardMetrics
@@ -41,8 +43,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, EventBuffer.topic()) end)
       # Subscribe to realtime dashboard updates emitted by RealTimePipeline
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, "thunderline_web:dashboard") end)
-  # Subscribe to status updates via canonical EventBus instead of deprecated Bus shim
-  safe_try(fn -> EventBus.subscribe("status") end)
+      # Subscribe to status updates via canonical EventBus instead of deprecated Bus shim
+      safe_try(fn -> EventBus.subscribe("status") end)
 
       :timer.send_interval(5_000, self(), :refresh_kpis)
       :timer.send_interval(3_000, self(), :refresh_events)
@@ -79,9 +81,11 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
      |> assign(:friends, friends)
      |> assign(:active_friend, friends |> hd() |> Map.get(:id))
      |> assign(:ups_status, nil)
-  |> assign(:ndjson, false)
-  |> assign(:ai_messages, [])
-  |> assign(:ai_busy, false)}
+     |> assign(:ndjson, false)
+     |> assign(:ai_messages, [])
+     |> assign(:ai_busy, false)
+     # Admin iframe tab closed by default
+     |> assign_new(:admin_tab_open, fn -> false end)}
   end
 
   @impl true
@@ -92,8 +96,26 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
         <h1 class="text-lg font-semibold tracking-wide">Thunderline Dashboard</h1>
         <span class="text-[11px] opacity-50">realtime systems view</span>
         <a href="#" class="ml-auto link text-xs opacity-70 hover:opacity-100">docs</a>
+        <%= if can_admin?(@current_user) do %>
+          <a href="/admin" class="btn btn-xs ml-2">Admin</a>
+          <button class="btn btn-ghost btn-xs" phx-click="toggle_admin_tab"><%= if @admin_tab_open, do: "Hide", else: "Tab" %></button>
+        <% end %>
       </header>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <!-- Floating Admin iframe panel (role-gated) -->
+      <%= if @admin_tab_open and can_admin?(@current_user) do %>
+        <div class="fixed top-20 right-4 w-[640px] h-[480px] bg-neutral-900/95 backdrop-blur border border-white/10 rounded-xl shadow-2xl z-50 flex flex-col">
+          <div class="flex items-center gap-2 p-2 border-b border-white/10 text-sm">
+            <span class="w-2 h-2 rounded-full bg-sky-400" />
+            <span class="font-semibold">Admin</span>
+            <a href="/admin" class="link text-xs ml-auto" target="_blank" rel="noopener">open full</a>
+            <button class="btn btn-ghost btn-xs" phx-click="toggle_admin_tab">close</button>
+          </div>
+          <div class="flex-1">
+            <iframe src="/admin" class="w-full h-full border-0" referrerpolicy="no-referrer"></iframe>
+          </div>
+        </div>
+      <% end %>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <!-- Column 1: Map + Inspector stacked -->
         <div class="space-y-6">
           <!-- 1. Domain Map -->
@@ -325,6 +347,12 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       </div>
     </div>
     """
+  end
+
+  # Toggle Admin tab visibility
+  @impl true
+  def handle_event("toggle_admin_tab", _params, socket) do
+    {:noreply, assign(socket, :admin_tab_open, !socket.assigns[:admin_tab_open])}
   end
 
   # ---- Assign refresh helpers ---------------------------------------------------
@@ -778,4 +806,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     keys = data |> Map.delete("component") |> Map.delete(:component) |> Map.keys() |> Enum.take(3)
     (comp && to_string(comp) <> ": ") <> Enum.join(Enum.map(keys, &to_string/1), ",")
   end
+
+  # Role-gated helper for Admin visibility
+  defp can_admin?(%{role: role}) when role in [:owner, :steward, :system], do: true
+  defp can_admin?(%{"role" => role}) when role in ["owner", "steward", "system"], do: true
+  defp can_admin?(_), do: false
 end

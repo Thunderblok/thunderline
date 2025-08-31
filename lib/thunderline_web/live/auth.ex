@@ -27,6 +27,11 @@ defmodule ThunderlineWeb.Live.Auth do
     socket =
       socket
       |> assign(:current_user, actor)
+      # NOTE: Previously attempted to globally set an Ash actor with Ash.set_actor/1.
+      # Ash 3.x no longer exposes that function (or it may be intentionally private),
+      # and LiveView processes should instead pass actors explicitly when invoking
+      # Ash actions/queries. We keep a hook point here for future per-process context
+      # injection if needed.
       |> maybe_set_ash_actor(actor)
 
     {:cont, socket}
@@ -72,10 +77,5 @@ defmodule ThunderlineWeb.Live.Auth do
     Map.get(session, "tenant_id") || Map.get(session, :tenant_id)
   end
 
-  defp maybe_set_ash_actor(socket, actor) when is_map(actor) do
-    Ash.set_actor(actor)
-    socket
-  end
-
-  defp maybe_set_ash_actor(socket, _), do: socket
+  defp maybe_set_ash_actor(socket, _actor), do: socket
 end
