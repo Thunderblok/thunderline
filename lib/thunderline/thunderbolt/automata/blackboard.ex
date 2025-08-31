@@ -5,6 +5,8 @@ defmodule Thunderline.Thunderbolt.Automata.Blackboard do
   (Moved from legacy `Thunderline.Automata.Blackboard`). This relocation aligns Automata runtime constructs under the Thunderbolt domain.
   The legacy wrapper module has been removed; use this canonical namespace directly.
   """
+  @deprecated "Direct use deprecated; switch to Thunderline.Thunderflow.Blackboard facade"
+  @compile {:no_warn_undefined, Thunderline.Thunderflow.Blackboard}
   use GenServer
   alias Phoenix.PubSub
 

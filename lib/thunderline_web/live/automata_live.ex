@@ -12,7 +12,8 @@ defmodule ThunderlineWeb.AutomataLive do
   use ThunderlineWeb, :live_view
 
   alias Thunderline.DashboardMetrics
-  alias Thunderline.Thunderbolt.Automata.Blackboard
+  # Migrated: use unified Thunderflow.Blackboard facade (WARHORSE Option B)
+  alias Thunderline.Thunderflow.Blackboard
   alias Phoenix.PubSub
 
   @impl true

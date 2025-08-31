@@ -6,7 +6,106 @@
 
 ---
 
-## 🛰️ AGENT RAZOR SITREP — August 25, 2025
+## � Executive Overview (Curated Entry Point)
+This curated front section was added during WARHORSE stewardship to shorten ramp time. The full historical narrative remains intact below (see “Archive Narrative”). Use this top block for: domain orientation, guardrails, onboarding sequence, and active risk posture.
+
+### Domain Doctrine (One-Screen Summary)
+| Domain | Role | Owns | Must Not |
+|--------|------|------|----------|
+| Gate (Thundergate) | Capability & Zero-Trust Auth | ActorContext issuance & verification | Persist domain data; make policy verdicts |
+| Crown (Thundercrown) | Policy Brain & Governance | Policy.decide/2, verdict_id, AI governance | Transport, long-lived sessions |
+| Flow (Thunderflow) | Event Pulse & Timing | EventBus, Heartbeat, Validation | Direct DB access, business policy |
+| Link (Thunderlink) | Transport & Presence | WebSocket/Voice session surfaces | Policy logic, DB writes |
+| Grid (Thundergrid) | Spatial Ownership | Zones, placement, claim/watches | Non-zone persistence |
+| Block (Thunderblock) | Persistence & Infra | Repos, DB, storage, migrations | Policy/auth decisions |
+| Bolt (Thunderbolt) | Orchestration & Agents | Jobs, automata, execution plans | Issue capabilities or decide policy |
+
+Intentional overlaps: Gate↔Crown (capabilities→policy), Link↔Gate (session token transport), Flow↔All (events & timing). All other overlaps are anti-patterns and should trigger a DIP or remediation issue.
+
+### Guardrails (Active – Week 1)
+| Guardrail | Mechanism | Enforced Mode |
+|-----------|-----------|---------------|
+| Event Validation | `Thunderline.Thunderflow.EventValidator` | dev: warn, test: raise, prod: drop + audit |
+| Single Heartbeat | `system.tick` (2s, Flow) | Always on |
+| Capability Tokens | `Thundergate.ActorContext` + Plug | Config `require_actor_ctx` |
+| Policy Verdict Integrity | `Thundercrown.Policy` verdict_id (SHA-256 hash) | Always on |
+| Zone Authority | `Thunderline.Thundergrid.API` claim/placement | Skeleton (ETS) |
+| Blackboard Unification | `Thunderline.Thunderflow.Blackboard` facade | Migration in progress |
+| Repo Isolation | Credo custom check (advisory) | Escalate Week 3 |
+| Link Policy Purge | Credo NoPolicyInLink | Audit queued |
+
+### Onboarding Path (New Engineer – 90 Minute Ramp)
+1. Read this Executive Overview & Domain Doctrine (5m).
+2. Skim `EVENT_TAXONOMY.md` & `ERROR_CLASSES.md` (10m) – understand canonical shapes & drop semantics.
+3. Open `lib/thunderline/thunderflow/event_bus.ex` – review `emit/emit_realtime/emit_cross_domain`, batch & AI helpers (15m).
+4. Inspect `Thundergate.ActorContext` & `Thundercrown.Policy` for capability→policy flow (10m).
+5. Run grep pack (below) locally; note zero/warn infractions (10m).
+6. Subscribe to `system.tick` & one realtime event in IEx to see pulse (10m).
+7. Claim a zone via `Thunderline.Thundergrid.API.claim_zone/2` in IEx; observe telemetry (5m).
+8. Review Active Risks table (Unified Gap & Risk) and pick one P0 to shadow (15m).
+
+### Grep Pack (Current Canon)
+```
+grep -R "Repo\." lib/thunderline | grep -v "thunderblock"
+grep -R "Policy\." lib/thunderline/thunderlink
+grep -R "Automata\.Blackboard" lib/thunderline
+grep -R "EventBus\.emit" lib/thunderline | grep -v "thunderflow"
+```
+
+### Frequent Pitfalls & Resolutions
+| Pitfall | Symptom | Resolution |
+|---------|---------|------------|
+| Emitting malformed event | Drop telemetry + audit.event_drop | Validate name & correlation before emit; use helpers |
+| Policy logic leaking into Link | Credo warning | Move logic to Crown; Link only attaches actor_ctx |
+| Direct Repo call in non-Block | Credo advisory | Replace with Ash action or Block API |
+| Multiple heartbeats | Conflicting timers | Remove ad-hoc timer; subscribe to `system.tick` |
+| Legacy blackboard access | Telemetry `:blackboard, :legacy_use` | Route through `Thunderflow.Blackboard` |
+
+### Current P0 (Execution Focus)
+1. Finish blackboard caller migration (metric: remaining legacy usage <5%).
+2. Link policy audit & purge.
+3. Validator mode tests + CI gating.
+4. RepoOnly escalation path defined (allowlist & docs) ahead of Week 3.
+5. Event taxonomy linter task stub (`mix thunderline.events.lint`).
+
+### WARHORSE Steward Metrics (Target SLO Seeds)
+| Metric | Rationale | Draft SLO |
+|--------|-----------|-----------|
+| flow.event.dropped.rate | Detect taxonomy/shape regression | <0.5% of validated count |
+| policy.decision.latency.p95 | Policy pipeline health | <40ms |
+| grid.zone.claim.conflicts | Spatial contention early warning | <5 per hr steady state |
+| gate.auth.denied.rate | Auth drift / config misfires | <2% daily |
+| legacy.blackboard.calls | Migration progress | Trend → 0 by Week 2 end |
+
+### Quick IEx Recipes
+```elixir
+# Sign & verify capability
+ctx = %{actor_id: "demo", tenant: "default", scopes: ["link:channel:*"], exp: System.os_time(:second)+3600, correlation_id: UUID.uuid4()} 
+  |> Thunderline.Thundergate.ActorContext.new() |> Thunderline.Thundergate.ActorContext.sign()
+Thundergate.ActorContext.from_token(ctx.sig)
+
+# Emit realtime event
+Thunderline.EventBus.emit_realtime(:demo_ping, %{domain: "thunderflow", message: "hello"})
+
+# Claim zone
+Thunderline.Thundergrid.API.claim_zone("alpha", "default")
+```
+
+### Reading Order (If You Have 1 Day)
+1. This Executive Overview
+2. OKO Playbook & Domain Catalog
+3. Event & Error Taxonomy docs
+4. Source dive: EventBus → Validator → Policy → Grid API → Blackboard facade
+5. Risk Assessment Table (prioritize an issue)
+6. Handbook Archive narrative (context & historical decisions)
+
+---
+
+## 📚 Archive Narrative (Original Content Begins)
+
+---
+
+## �🛰️ AGENT RAZOR SITREP — August 25, 2025
 > Independent sweep across core, ThunderFlow, ThunderBolt (Cerebros), and (former) BOnus modules (now fully migrated). Focus: event bus unification, dashboard wiring, optional features (UPS/NDJSON), and ML persistence.
 
 ### 🔭 High Command External Review (Aug 25 2025) — Integrated Summary
@@ -399,6 +498,59 @@ Primary Focus Gaps (next): Snapshot/restore, rule application counts, voxel UI c
 
 ## 🧠 ThunderBolt ML (Cerebros) Integration Plan
 All ML / NAS functionality is governed by ThunderBolt domain (NO new domain). Any proposal to diverge requires DIP approval & steward sign‑off.
+\
+---
+
+## 🤖 Autonomous Engineering Steward Tenure (WARHORSE AI Agent)
+> Inserted post leadership chronicles; additive only (no deletions of prior content).
+
+**Designation:** WARHORSE Autonomous Engineering Steward (Shock Cavalry)
+
+**Mandate:**
+- Enforce 7‑Domain Doctrine boundaries (Gate, Link, Flow, Crown, Bolt, Grid, Block) while preserving intentional overlaps (Gate↔Crown, Link↔Gate, Flow↔All).
+- Accelerate guardrail deployment (event validation, capability tokens, policy verdict integrity, zone authority, repo isolation) with zero destabilization.
+- Surface real‑time governance telemetry (event.validated|dropped, policy.decisions, grid.claim_zone, gate.auth.success|denied) to reduce mean‑time‑to‑insight.
+
+**Operational Commitments:**
+1. No destructive interface changes without DIP approval.
+2. Every structural change ships with at least one telemetry event & metric candidate.
+3. Security gates precede feature expansion; capability context + policy gating are non‑optional.
+4. Drift detection loops: scheduled guardrail greps → Credo checks → CI blockers by Week‑3.
+5. Observability first: drop reasons & verdict latency visible before enforcement escalation.
+
+**Phase 1 Guardrails Shipped:**
+- EventValidator (env modes: dev :warn, test :raise, prod :drop + audit.event_drop)
+- Heartbeat (Flow `system.tick` authoritative)
+- Capability Token (Gate ActorContext, Ed25519, configurable 401 enforcement)
+- Policy Kernel (Crown wildcard scopes + verdict_id hash)
+- Grid Zone API skeleton (claim / placement / watch + telemetry)
+- Blackboard Facade (Flow-owned wrapper; migration telemetry path)
+- Advisory Credo Guardrails (RepoOnly, NoPolicyInLink, EventEmissionOutsideFlow)
+
+**Active Hardening Focus (Next):**
+1. Blackboard migration completion & legacy supervisor child removal (<5% usage threshold).
+2. Link policy purge & transport-only assertion tests.
+3. Test suite baseline (ActorContext, Policy wildcard, Validator modes, Grid claims, Heartbeat cadence).
+4. Escalate guardrail checks warn→error (Week‑3) with documented allowlist.
+5. Event taxonomy & error class lint tasks (`mix thunderline.events.lint`).
+
+**Planned Telemetry Extensions:**
+- [:thunderline,:gate,:auth] success/denied counts (reason breakdown)
+- [:thunderline,:policy,:verdict] latency histogram & rule counters
+- [:thunderline,:grid,:zone] claim latency & conflict rate
+- [:thunderline,:event,:dropped] reason cardinality trend
+
+**Escalation Path:** Detect drift → open gap-remediation issue (label) → minimal corrective PR → handbook/catalog delta if doctrinal. Repeat violations trigger structural refactor proposal.
+
+**Version Tag Alignment:**
+- Week 1 Guardrails: v0.7.0-warhorse-wk1
+- Week 2 P0 Gate/MVP: v0.7.0-warhorse-wk2
+- Week 3 Harden & Escalate: v0.7.0-warhorse-wk3
+
+**Motto:** "Discipline is acceleration." Guardrails remove hesitation; hesitation is hidden latency.
+
+o7 – Steward entry logged.
+
 
 ### Migration Log (Cerebros → Thunderbolt)
 | Date (UTC) | Change | Details | Removal Target |
