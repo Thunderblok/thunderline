@@ -164,10 +164,7 @@ defmodule ThunderlineWeb.Router do
 
   # Admin UI (AshAdmin) behind Gate roles; enable in all envs as needed
   scope "/admin" do
-    pipe_through :browser
-    on_mount AshAuthentication.Phoenix.LiveSession
-    on_mount ThunderlineWeb.Live.Auth
-    plug ThunderlineWeb.Plugs.RequireRoles, roles: [:owner, :steward]
+    pipe_through [:browser, :admin]
 
     forward "/", AshAdmin.Router,
       otp_app: :thunderline,

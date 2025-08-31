@@ -40,7 +40,6 @@ defmodule Thunderline.Thundercrown.Domain do
   [ThunderBolt (execution)] <----> [Thundercrown]
         |                        |
   [ThunderBlock (storage)] <──────┘
-  ```
   """
 
   use Ash.Domain
@@ -48,6 +47,8 @@ defmodule Thunderline.Thundercrown.Domain do
   resources do
     # ThunderChief → ThunderCrown (orchestration)
     resource Thunderline.Thundercrown.Resources.OrchestrationUI
+    # Agent runner for AI/Jido tools
+    resource Thunderline.Thundercrown.Resources.AgentRunner
 
     # TODO: Add other resources when implemented:
     # resource Thunderline.Thundercrown.Resources.AiPolicy

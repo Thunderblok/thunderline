@@ -14,24 +14,24 @@ defmodule ThunderlineWeb.AutomataControlLive do
 
   @impl true
   def handle_event("start", _params, socket) do
-    {:ok, %{run_id: run_id}} = AutomataRun.start(%{size: 64, tick_ms: 50})
+    {:ok, %{run_id: run_id}} = AutomataRun.start(%{size: 64, tick_ms: 50}, actor: actor(socket))
     {:noreply, socket |> assign(:running, true) |> assign(:run_id, run_id)}
   end
 
   def handle_event("stop", _params, socket) do
     if run_id = socket.assigns[:run_id] do
-      _ = AutomataRun.stop(%{run_id: run_id})
+      _ = AutomataRun.stop(%{run_id: run_id}, actor: actor(socket))
     end
     {:noreply, assign(socket, :running, false)}
   end
 
   def handle_event("snapshot", _params, socket) do
-    {:ok, %{snapshot_id: snap_id}} = AutomataRun.snapshot(%{run_id: socket.assigns[:run_id]})
+    {:ok, %{snapshot_id: snap_id}} = AutomataRun.snapshot(%{run_id: socket.assigns[:run_id]}, actor: actor(socket))
     {:noreply, assign(socket, :snapshot_id, snap_id)}
   end
 
   def handle_event("restore", %{"_id" => id}, socket) do
-    _ = AutomataRun.restore(%{run_id: socket.assigns[:run_id], snapshot_id: id})
+    _ = AutomataRun.restore(%{run_id: socket.assigns[:run_id], snapshot_id: id}, actor: actor(socket))
     {:noreply, assign(socket, :message, "restore requested for #{id}")}
   end
 
@@ -55,5 +55,9 @@ defmodule ThunderlineWeb.AutomataControlLive do
       </div>
     </Layouts.app>
     """
+  end
+
+  defp actor(socket) do
+    socket.assigns[:current_user] || Ash.get_actor()
   end
 end

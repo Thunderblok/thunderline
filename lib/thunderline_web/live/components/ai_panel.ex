@@ -10,7 +10,7 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
 
   @impl true
   def handle_event("run_agent", %{"tool" => tool, "prompt" => prompt}, socket) do
-    case AgentRunner.run(%{tool: tool, prompt: prompt}) do
+    case AgentRunner.run(%{tool: tool, prompt: prompt}, actor: actor(socket)) do
       {:ok, %{stream_id: sid, correlation_id: corr}} ->
         out = socket.assigns.output ++ ["requested: #{tool} :: stream #{sid}"]
         emit("system.agent.completed", %{tool: tool, correlation_id: corr})
@@ -20,6 +20,10 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
         out = socket.assigns.output ++ ["failed: #{inspect(reason)}"]
         {:noreply, assign(socket, :output, out)}
     end
+  end
+
+  defp actor(socket) do
+    socket.assigns[:current_user] || Ash.get_actor()
   end
 
   defp emit(name, payload) do

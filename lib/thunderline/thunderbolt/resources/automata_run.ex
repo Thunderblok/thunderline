@@ -9,7 +9,6 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
 
   resource do
     description "Automata run control surface (non-persistent)"
-    embedded? true
   end
 
   code_interface do
@@ -66,6 +65,7 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
   end
 
   attributes do
+    uuid_primary_key :id
     attribute :run_id, :string, public?: true
     attribute :snapshot_id, :string, public?: true
   end

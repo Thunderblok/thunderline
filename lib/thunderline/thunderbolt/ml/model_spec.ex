@@ -29,7 +29,7 @@ defmodule Thunderline.Thunderbolt.ML.ModelSpec do
   end
 
   relationships do
-    has_many :artifacts, Thunderline.Thunderbolt.ML.ModelArtifact
-    has_many :versions, Thunderline.Thunderbolt.ML.ModelVersion
+    has_many :artifacts, Thunderline.Thunderbolt.ML.ModelArtifact, destination_attribute: :spec_id
+    has_many :versions, Thunderline.Thunderbolt.ML.ModelVersion, destination_attribute: :spec_id
   end
 end

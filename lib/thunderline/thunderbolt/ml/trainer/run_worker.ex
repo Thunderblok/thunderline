@@ -2,6 +2,8 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
   @moduledoc "Executes a single ML training run, emitting telemetry and persisting artifacts/versions."
   use Oban.Worker, queue: :ml, max_attempts: 1
 
+  require Ash.Query
+  import Ash.Expr, only: [expr: 1]
   alias Thunderline.Thunderbolt.Domain
   alias Thunderline.Thunderbolt.ML.{TrainingRun, ModelArtifact, ModelVersion}
 
@@ -36,8 +38,12 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
 
   # --- internals ---
 
-  defp fetch_run(run_id) do
-    query = TrainingRun |> Ash.Query.filter(run_id == ^run_id) |> Ash.Query.limit(1)
+  defp fetch_run(rid) do
+    query =
+      TrainingRun
+      |> Ash.Query.filter(expr(run_id == ^rid))
+      |> Ash.Query.limit(1)
+
     case Domain.read_one(query) do
       {:ok, %TrainingRun{} = run} -> {:ok, run}
       {:ok, nil} -> {:error, :not_found}

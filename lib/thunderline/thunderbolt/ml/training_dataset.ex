@@ -24,7 +24,7 @@ defmodule Thunderline.Thunderbolt.ML.TrainingDataset do
     end
 
     update :bump_version do
-      change increment(:version, 1)
+      change increment(:version, amount: 1)
       change set_attribute(:status, :draft)
     end
 
@@ -58,8 +58,8 @@ defmodule Thunderline.Thunderbolt.ML.TrainingDataset do
   end
 
   relationships do
-    has_many :feature_views, Thunderline.Thunderbolt.ML.FeatureView
-    has_many :runs, Thunderline.Thunderbolt.ML.TrainingRun
+    has_many :feature_views, Thunderline.Thunderbolt.ML.FeatureView, destination_attribute: :dataset_id
+    has_many :runs, Thunderline.Thunderbolt.ML.TrainingRun, destination_attribute: :dataset_id
   end
 
   policies do

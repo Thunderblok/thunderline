@@ -731,7 +731,8 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:automata_state, %{active_zones: 0, total_hexes: 144, energy_level: 0})
     |> assign(:chat_messages, [])
     |> assign(:profile_updates, [])
-    |> assign(:current_user, %{id: "dashboard_user", name: "Thunder Operator"})
+    # Ensure current_user comes from Auth hook; fallback to a demo actor if absent
+    |> assign_new(:current_user, fn -> %{id: UUID.uuid4(), name: "Thunder Operator", role: :owner, tenant_id: "demo"} end)
     # Add the 8 critical dashboard component data
     |> assign(:system_health, %{})
     |> assign(:event_flow_data, [])

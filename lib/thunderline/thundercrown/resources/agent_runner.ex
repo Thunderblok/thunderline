@@ -27,6 +27,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
   end
 
   attributes do
+    uuid_primary_key :id
     attribute :stream_id, :string, public?: true
     attribute :correlation_id, :string, public?: true
   end

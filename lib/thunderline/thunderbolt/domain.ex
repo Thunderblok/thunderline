@@ -58,13 +58,25 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.Resources.MagTaskAssignment
     resource Thunderline.Thunderbolt.Resources.MagTaskExecution
 
-  # Cerebros (ML search & training)
-  resource Thunderline.Thunderbolt.Resources.ModelRun
-  resource Thunderline.Thunderbolt.Resources.ModelArtifact
-  # Phase 0 MoE + Decision trace resources
-  resource Thunderline.MoE.Expert
-  resource Thunderline.MoE.DecisionTrace
-  # NAS export job & dataset slicing belongs with orchestration/ML side
-  resource Thunderline.Export.TrainingSlice
+    # Automata controls (non-persistent control surface)
+    resource Thunderline.Thunderbolt.Resources.AutomataRun
+
+    # Cerebros (ML search & training)
+    resource Thunderline.Thunderbolt.Resources.ModelRun
+    resource Thunderline.Thunderbolt.Resources.ModelArtifact
+    # New ML stack resources
+    resource Thunderline.Thunderbolt.ML.TrainingDataset
+    resource Thunderline.Thunderbolt.ML.FeatureView
+    resource Thunderline.Thunderbolt.ML.ConsentRecord
+    resource Thunderline.Thunderbolt.ML.ModelSpec
+    resource Thunderline.Thunderbolt.ML.ModelArtifact
+    resource Thunderline.Thunderbolt.ML.ModelVersion
+    resource Thunderline.Thunderbolt.ML.TrainingRun
+
+    # Phase 0 MoE + Decision trace resources
+    resource Thunderline.MoE.Expert
+    resource Thunderline.MoE.DecisionTrace
+    # NAS export job & dataset slicing belongs with orchestration/ML side
+    resource Thunderline.Export.TrainingSlice
   end
 end
