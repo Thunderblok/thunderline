@@ -8,7 +8,7 @@
 
 | ID | Priority | Theme | Gap / Finding | Action (Decision) | Owner (TBD) | Status |
 |----|----------|-------|---------------|-------------------|-------------|--------|
-| HC-01 | P0 | Event Core | No unified publish helper | Implement `Thunderline.EventBus.publish_event/1` (validation + telemetry span) | Flow Steward | Not Started |
+| HC-01 | P0 | Event Core | No unified publish helper | Implement `Thunderline.EventBus.publish_event/1` (validation + telemetry span) | Flow Steward | In Progress |
 | HC-02 | P0 | Bus API Consistency | Shim `Thunderline.Bus` still referenced | Codemod to canonical; emit deprecation warning | Flow Steward | Planned |
 | HC-03 | P0 | Observability Docs | Missing Event & Error taxonomy specs | Author `EVENT_TAXONOMY.md` & `ERROR_CLASSES.md` | Observability Lead | Not Started |
 | HC-04 | P0 | ML Persistence | Cerebros migrations parked | Move/run migrations; add lifecycle state machine | Bolt Steward | In Progress |
@@ -47,6 +47,46 @@ Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: 
 Post-P0 Near-Term (Governance): HC-20 (Cerebros Bridge), HC-21 (VIM Rollout) prioritized after M1 gating items.
 
 Gate: All above = Milestone `M1-EMAIL-AUTOMATION` ✔
+
+---
+
+## 🛰 WARHORSE Week 1 Delta (Aug 31 2025)
+
+Status snapshot of architecture hardening & migration tasks executed under WARHORSE stewardship since Aug 28.
+
+Implemented:
+- Blackboard Migration: `Thunderline.Thunderflow.Blackboard` now the supervised canonical implementation (legacy `Thunderbolt.Automata.Blackboard` deprecated delegator only). Telemetry added for `:put` and `:fetch` with hit/miss outcomes.
+- Event Validation Guardrail: `Thunderline.Thunderflow.EventValidator` integrated into `EventBus` routing path with environment‑mode behavior (dev warn / test raise / prod drop & audit).
+- Heartbeat Unification: Single `:system_tick` emitter (`Thunderline.Thunderflow.Heartbeat`) at 2s interval.
+- Event Taxonomy Linter Task: `mix thunderline.events.lint` implemented (registry/category/AI whitelist rules) – CI wiring pending.
+- Legacy Mix Task Cleanup: Removed duplicate stub causing module redefinition.
+
+Adjusted Docs / Doctrine:
+- HC-01 moved to In Progress (publish helper exists; needs telemetry span enrichment & CI gating of linter to call it “Done”).
+- Guardrails table (Handbook) updated: Blackboard migration complete.
+
+Emerging Blindspots / Gaps (Actionable):
+1. EventBus `publish_event/1` Overloads: Three clauses accept differing maps (`data`, `payload`, generic). Consider normalizing constructor path & returning error (not silent :ok) when validation fails; currently `route_event/2` swallows validator errors returning `{:ok, ev}`.
+2. Flow → DB Direct Reads: `Thunderline.Thunderflow.Telemetry.ObanDiagnostics` queries Repo (domain doctrine says Flow should not perform direct DB access). Mitigation: Move diagnostics querying under Block or introduce a minimal `Thunderline.Thunderblock.ObanIntrospection` boundary.
+3. Residual Bus Shim: `Thunderline.Application` still invokes `Thunderline.Bus.init_tables()` task. Codemod & deprecation telemetry for HC‑02 still pending.
+4. Link Domain Policy Surface: Ash resource declarations in Link use `Ash.Policy.Authorizer` (expected) but require audit to ensure no embedded policy logic (conditions) that belong in Crown. Add Credo check `NoPolicyLogicInLink` (planned).
+5. Event Naming Consistency: Cross‑domain & realtime naming sometimes produce `system.<source>.<type>` while other helper code passes explicit `event_name`. Need taxonomy enforcement for reserved prefixes (`ui.`, `ai.`, `system.`) – extend linter (HC‑03).
+6. Blackboard Migration Metric: Add gauge/counter for deprecated module calls (currently delegator silent) to track drift → 0 (target end Week 2). Tripwire could reflect count.
+7. Validator Strictness Drift: In production path we “return ok” after drops. Provide optional strict mode flag for canary to raise on invalid events during staging.
+8. Repo Isolation Escalation: Currently advisory Credo check only; define allowlist & fail mode ahead of Week 3 (per doctrine).
+
+Planned Immediate Next (WARHORSE Week 1 Remainder / Kickoff Week 2):
+- Integrate `mix thunderline.events.lint` into CI (fail build on errors) & add JSON output parsing in pipeline.
+- Implement Bus shim deprecation telemetry: emit `[:thunderline,:bus,:shim_use]` per call site during codemod window.
+- Add `Blackboard` legacy usage counter & LiveDashboard metric panel section.
+- Refactor EventBus publish path to single constructor & explicit validator error return tuple.
+- Draft Credo checks: `NoPolicyLogicInLink`, `NoRepoOutsideBlock` (escalation flag), `NoLegacyBusAlias`.
+
+Success Metrics (Week 2 Targets):
+- legacy.blackboard.calls == 0 for 24h
+- bus.shim.use rate trending downward to zero
+- event.taxonomy.lint.errors == 0 in main for 3 consecutive days
+- repo.out_of_block.violations == 0 (warning mode) 
 
 ---
 

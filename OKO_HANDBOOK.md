@@ -30,7 +30,7 @@ Intentional overlaps: Gate↔Crown (capabilities→policy), Link↔Gate (session
 | Capability Tokens | `Thundergate.ActorContext` + Plug | Config `require_actor_ctx` |
 | Policy Verdict Integrity | `Thundercrown.Policy` verdict_id (SHA-256 hash) | Always on |
 | Zone Authority | `Thunderline.Thundergrid.API` claim/placement | Skeleton (ETS) |
-| Blackboard Unification | `Thunderline.Thunderflow.Blackboard` facade | Migration in progress |
+| Blackboard Unification | `Thunderline.Thunderflow.Blackboard` | Migrated (legacy delegator only) |
 | Repo Isolation | Credo custom check (advisory) | Escalate Week 3 |
 | Link Policy Purge | Credo NoPolicyInLink | Audit queued |
 
@@ -75,7 +75,8 @@ grep -R "EventBus\.emit" lib/thunderline | grep -v "thunderflow"
 | policy.decision.latency.p95 | Policy pipeline health | <40ms |
 | grid.zone.claim.conflicts | Spatial contention early warning | <5 per hr steady state |
 | gate.auth.denied.rate | Auth drift / config misfires | <2% daily |
-| legacy.blackboard.calls | Migration progress | Trend → 0 by Week 2 end |
+| legacy.blackboard.calls | Migration progress | Trend → 0 by Week 2 end (add counter + dashboard) |
+| blackboard.fetch.hit_rate | Cache efficiency & misuse detection | >85% (node scope excluded) |
 
 ### Quick IEx Recipes
 ```elixir

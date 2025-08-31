@@ -94,7 +94,7 @@ defmodule Thunderline.Application do
       (on?(:cerebros_bridge) and not minimal? && Thunderline.Thunderbolt.CerebrosBridge.Cache) || nil,
       Thunderline.DashboardMetrics,
       {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
-      Thunderline.Thunderbolt.Automata.Blackboard,
+  Thunderline.Thunderflow.Blackboard,
   # Thundergrid authoritative zone API (WARHORSE Week1 skeleton)
   Thunderline.Thundergrid.API,
       {Thunderline.Thunderflow.EventBuffer, [limit: 750]},
