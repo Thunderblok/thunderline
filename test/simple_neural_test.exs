@@ -3,96 +3,36 @@ defmodule SimpleNeuralTest do
   Simple test to verify Cerebros neural integration works properly.
   """
 
-  alias Thunderline.ErlangBridge
+  # Legacy ErlangBridge removed; this test now becomes a noop placeholder.
 
   def run_test() do
     IO.puts("🧠 Starting Cerebros Neural Integration Test...")
 
     # Start the bridge
-    case ErlangBridge.start_link() do
-      {:ok, pid} ->
-        IO.puts("✅ ErlangBridge started successfully: #{inspect(pid)}")
-        test_neural_functions()
-
-      {:error, reason} ->
-        IO.puts("❌ Failed to start ErlangBridge: #{inspect(reason)}")
-        :error
-    end
+    IO.puts("(skipped) ErlangBridge removed; neural legacy path deprecated")
+    :ok
   end
 
   defp test_neural_functions() do
     IO.puts("\n🔬 Testing Neural Architecture Creation...")
 
     # Test neural architecture creation
-    case ErlangBridge.create_neural_architecture(:test_cerebros, %{
-           max_levels: 3,
-           connectivity_density: 0.4
-         }) do
-      {:ok, arch_id} ->
-        IO.puts("✅ Neural architecture created: #{inspect(arch_id)}")
-
-      {:error, :erlang_unavailable} ->
-        IO.puts("⚠️  Erlang system not available (expected in dev mode)")
-
-      {:error, reason} ->
-        IO.puts("❌ Failed to create neural architecture: #{inspect(reason)}")
-    end
+    IO.puts("(skipped) create_neural_architecture/2 legacy path removed")
 
     IO.puts("\n🧬 Testing Neuron Creation...")
 
     # Test neuron creation
-    case ErlangBridge.create_neuron(:test_bolt, {5, 5, 5}, %{
-           threshold: 1.0,
-           type: :excitatory,
-           refractory_period: 2
-         }) do
-      {:ok, neuron_id} ->
-        IO.puts("✅ Neuron created: #{inspect(neuron_id)}")
-        test_neuron_operations(neuron_id)
-
-      {:error, :erlang_unavailable} ->
-        IO.puts("⚠️  Erlang system not available (expected in dev mode)")
-
-      {:error, reason} ->
-        IO.puts("❌ Failed to create neuron: #{inspect(reason)}")
-    end
+    IO.puts("(skipped) neuron creation legacy path removed")
 
     IO.puts("\n🏗️  Testing Multi-Scale Hierarchy...")
 
     # Test multi-scale hierarchy
-    case ErlangBridge.create_scale_hierarchy(:test_bolt, %{
-           base_resolution: {16, 16, 8},
-           max_levels: 4
-         }) do
-      {:ok, hierarchy_id} ->
-        IO.puts("✅ Scale hierarchy created: #{inspect(hierarchy_id)}")
-
-      {:error, :erlang_unavailable} ->
-        IO.puts("⚠️  Erlang system not available (expected in dev mode)")
-
-      {:error, reason} ->
-        IO.puts("❌ Failed to create scale hierarchy: #{inspect(reason)}")
-    end
+    IO.puts("(skipped) scale hierarchy legacy path removed")
 
     IO.puts("\n📡 Testing Asynchronous Operations...")
 
     # Test asynchronous operations (these should always work)
-    result1 =
-      ErlangBridge.propagate_neural_signal(
-        :test_level,
-        %{
-          signal_type: :activation,
-          intensity: 0.8
-        },
-        System.system_time(:millisecond)
-      )
-
-    result2 = ErlangBridge.fire_neuron(:test_neuron, 1.5)
-    result3 = ErlangBridge.simulate_neural_step(:test_bolt)
-
-    IO.puts("✅ Neural signal propagation: #{inspect(result1)}")
-    IO.puts("✅ Neuron firing: #{inspect(result2)}")
-    IO.puts("✅ Neural simulation step: #{inspect(result3)}")
+    IO.puts("(skipped) async neural ops legacy path removed")
 
     IO.puts("\n🎯 Testing Neural API Coverage...")
     test_api_coverage()
@@ -102,13 +42,7 @@ defmodule SimpleNeuralTest do
 
   defp test_neuron_operations(neuron_id) do
     # Test getting neuron state
-    case ErlangBridge.get_neuron_state(neuron_id) do
-      {:ok, state} ->
-        IO.puts("  ↳ Neuron state retrieved: #{inspect(state)}")
-
-      {:error, reason} ->
-        IO.puts("  ↳ Could not get neuron state: #{inspect(reason)}")
-    end
+    IO.puts("(skipped) neuron state legacy path removed")
   end
 
   defp test_api_coverage() do

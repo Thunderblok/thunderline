@@ -28,7 +28,7 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
 
   defp emit(name, payload) do
     with {:ok, ev} <- Thunderline.Event.new(name: name, source: :crown, payload: payload) do
-      _ = Task.start(fn -> Thunderline.EventBus.emit(ev) end)
+      _ = Task.start(fn -> Thunderline.EventBus.publish_event(ev) end)
     end
   end
 

@@ -30,7 +30,7 @@ defmodule Thunderflow.BroadwayIntegration do
       ],
       replacement_strategy: %{
         step_1: "Create EventBus module to centralize event emission",
-        step_2: "Replace direct PubSub.broadcast calls with EventBus.emit",
+  step_2: "Replace direct PubSub.broadcast calls with EventBus.publish_event",
         step_3: "Route EventBus emissions through Broadway pipelines",
         step_4: "Add structured error handling and dead letter queues",
         step_5: "Implement batching for high-frequency events"

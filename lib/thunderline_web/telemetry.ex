@@ -51,7 +51,8 @@ defmodule ThunderlineWeb.Telemetry do
       last_value("thunderline.agents.active"),
       last_value("thunderline.chunks.total"),
       last_value("thunderline.memory.usage"),
-      counter("thunderline.events.processed")
+      counter("thunderline.events.processed"),
+      counter("thunderline.gate.auth.result", tags: [:result], measurement: :count)
     ] ++ Thunderline.Thunderflow.Telemetry.Jobs.metrics()
   end
 
@@ -110,4 +111,21 @@ defmodule ThunderlineWeb.Telemetry do
   end
 
   defp mock_chunk_total, do: :rand.uniform(1000)
+
+  @doc """
+  Gate authentication telemetry event documentation.
+
+  Event: [:thunderline, :gate, :auth, :result]
+    Measurements: %{count: 1}
+    Metadata keys:
+      :result - :success | :missing | :expired | :deny | :invalid
+      :actor_id, :tenant, :scopes, :correlation_id (present only on :success)
+
+  Usage: Emitted once per inbound request by ActorContextPlug.
+  Suggested alerts:
+    * Spike in :missing or :expired > 2x 5m baseline
+    * Sustained :deny/:invalid rate above threshold (potential auth abuse)
+    * Drop in :success ratio below SLO
+  """
+  def gate_auth_event_doc, do: :ok
 end

@@ -59,6 +59,7 @@ defmodule Thunderline.MixProject do
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
+      {:pythonx, "~> 0.4.0"},
       {:swoosh, "~> 1.16"},
       # Ash Framework
       {:ash, "~> 3.5"},
@@ -95,8 +96,8 @@ defmodule Thunderline.MixProject do
       # Memory & Security
       {:memento, "~> 0.5.0"},
       {:cloak, "~> 1.1"},
-  # Crypto / JOSE (Ed25519 capability & policy signature stack)
-  {:jose, "~> 1.11"},
+      # Crypto / JOSE (Ed25519 capability & policy signature stack)
+      {:jose, "~> 1.11"},
       # ECS & GraphQL
       {:ecsx, "~> 0.5"},
       {:absinthe, "~> 1.7"},

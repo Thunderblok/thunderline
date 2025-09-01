@@ -93,6 +93,14 @@ defmodule ThunderlineWeb.DashboardLive do
         %{dashboard_pid: self()}
       )
 
+      # Attach gate auth telemetry listener (idempotent attempt)
+      :telemetry.attach(
+        "thunderline-dashboard-gate-auth",
+        [:thunderline, :gate, :auth, :result],
+        &__MODULE__.telemetry_gate_auth/4,
+        %{dashboard_pid: self()}
+      )
+
       # Start CA streaming for real-time data
       try do
         case ThunderBridge.start_ca_streaming(interval: 1000) do
@@ -152,6 +160,13 @@ defmodule ThunderlineWeb.DashboardLive do
     send(pid, {:ash_telemetry, telemetry_data})
   end
 
+  # Gate auth telemetry handler (telemetry callback)
+  def telemetry_gate_auth(_event, measurements, metadata, %{dashboard_pid: pid}) do
+    send(pid, {:gate_auth, metadata[:result] || :unknown, metadata})
+  rescue
+    _ -> :ok
+  end
+
   defp extract_domain_from_event([:ash, domain, _action, _suffix]), do: domain
   defp extract_domain_from_event([:ash, domain, _action]), do: domain
   defp extract_domain_from_event([:ash, _other]), do: :ash_core
@@ -205,6 +220,21 @@ defmodule ThunderlineWeb.DashboardLive do
       |> push_event("telemetry_update", telemetry_data)
 
     {:noreply, updated_socket}
+  end
+
+  def handle_info({:gate_auth, result, meta}, socket) do
+    stats = socket.assigns[:gate_auth_stats] || %{}
+    updated =
+      stats
+      |> Map.update(:total, 1, &(&1 + 1))
+      |> Map.update(result, 1, &(&1 + 1))
+      |> then(fn m ->
+        total = m[:total]
+        success = Map.get(m, :success, 0)
+        Map.put(m, :success_rate, (if total > 0, do: Float.round(success / total * 100.0, 2), else: 0.0))
+      end)
+
+    {:noreply, assign(socket, :gate_auth_stats, updated)}
   end
 
   # Helper functions to update dashboard state with telemetry data
@@ -743,6 +773,7 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:governance_data, %{})
     |> assign(:orchestration_data, %{})
     |> assign(:controls_data, %{})
+    |> assign(:gate_auth_stats, %{total: 0, success: 0, missing: 0, expired: 0, invalid: 0, deny: 0, success_rate: 0.0})
   |> assign(:thunderwatch_stats, %{files_indexed: 0, seq: 0, events_last_min: 0, utilization: 0, domain_counts: %{}})
   end
 

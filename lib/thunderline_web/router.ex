@@ -10,6 +10,8 @@ defmodule ThunderlineWeb.Router do
     plug :put_root_layout, html: {ThunderlineWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    # Populate current_user for non-LiveView requests (e.g. AshAdmin forward)
+    plug ThunderlineWeb.Plugs.LoadCurrentUser
   # NOTE: Removed AshAuthentication.Plug invocation because current
   # authentication flow relies on live_session on_mount hooks
   # (AshAuthentication.Phoenix.LiveSession + ThunderlineWeb.Live.Auth)

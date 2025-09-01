@@ -16,7 +16,9 @@ defmodule Thunderline.NeuralBridge do
   require Logger
   import Nx.Defn
 
-  alias Thunderline.{ThunderBridge, ErlangBridge}
+  alias Thunderline.ThunderBridge
+  # Legacy ErlangBridge removed; any former neural CA injection now unsupported
+  # until a pure ThunderCell adapter is implemented.
 
   @cerebros_levels [:micro, :meso, :macro]
   @neural_backends [:exla, :torchx, :binary]
@@ -203,7 +205,7 @@ defmodule Thunderline.NeuralBridge do
     bolt_connections = convert_cerebros_to_thunderbolt(connection_pattern, bolt_id)
 
     # Apply to Erlang CA system via ErlangBridge
-    apply_result = ErlangBridge.apply_neural_connections(bolt_id, bolt_connections)
+  apply_result = {:error, :unsupported}
 
     # Update local neural connections tracking
     updated_connections = Map.put(state.neural_connections, bolt_id, bolt_connections)
@@ -239,15 +241,7 @@ defmodule Thunderline.NeuralBridge do
   ## Private Helper Functions
 
   defp initialize_cerebros_connection(config) do
-    case ErlangBridge.connect_cerebros(config) do
-      {:ok, topology} ->
-        Logger.info("✅ Connected to Erlang Cerebros system")
-        topology
-
-      {:error, reason} ->
-        Logger.warning("⚠️ Could not connect to Cerebros: #{inspect(reason)}")
-        %{}
-    end
+    %{}
   end
 
   defp configure_nx_backend(gpu_enabled) do
@@ -563,4 +557,6 @@ defmodule Thunderline.NeuralBridge do
       true -> Nx.random_uniform(shape, min: min, max: max, type: type)
     end
   end
+
+  # Legacy compatibility shims removed.
 end

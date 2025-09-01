@@ -68,7 +68,8 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
           # Backwards compat for any legacy JSON payloads
           Jason.decode!(bin)
         %{:type => type, :payload => payload, :timestamp => ts} = map ->
-          # EventBus.emit_realtime shape (atom keys)
+          # Previously accepted emit_realtime wrapper shape; callers must now build
+          # %Thunderline.Event{} and use EventBus.publish_event/1.
           %{
             "event_type" => to_string(type),
             "data" => payload,

@@ -30,7 +30,9 @@ defmodule Thunderline.ThunderBridge do
   use GenServer
   require Logger
 
-  alias Thunderline.{ErlangBridge, EventBus}
+  # Legacy ErlangBridge fully removed; ThunderBridge now operates purely via
+  # Elixir ThunderCell components. Any former legacy calls return :unsupported.
+  alias Thunderline.{EventBus}
   alias Thunderline.Thunderbolt.ThunderCell.Aggregator, as: ThunderCellAggregator
 
   # Public API
@@ -91,8 +93,7 @@ defmodule Thunderline.ThunderBridge do
   def init(opts) do
     Logger.info("Starting ThunderBridge...")
 
-    # Subscribe to ErlangBridge events with error handling
-  subscribe_erlang_bridge()
+  # Legacy subscription removed; no-op.
 
     # Subscribe to EventBus for internal events
     try do
@@ -140,33 +141,17 @@ defmodule Thunderline.ThunderBridge do
   end
 
   def handle_call(:get_thunderbolt_registry, _from, state) do
-    case ErlangBridge.get_thunderbolt_registry() do
-      {:ok, registry} ->
-        # Transform for dashboard consumption
-        dashboard_registry = transform_thunderbolt_registry(registry)
-        {:reply, {:ok, dashboard_registry}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:reply, {:error, :unsupported}, state}
   end
 
   def handle_call(:get_thunderbit_observer, _from, state) do
-    case ErlangBridge.get_thunderbit_data() do
-      {:ok, observer_data} ->
-        # Transform for dashboard consumption
-        dashboard_data = transform_thunderbit_data(observer_data)
-        {:reply, {:ok, dashboard_data}, state}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:reply, {:error, :unsupported}, state}
   end
 
   def handle_call({:execute_command, command, params}, _from, state) do
     Logger.info("Executing CA command: #{command} with params: #{inspect(params)}")
 
-    result = ErlangBridge.execute_command(command, params)
+  result = {:error, :unsupported}
 
     # Broadcast command result to dashboard subscribers
     broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
@@ -198,26 +183,12 @@ defmodule Thunderline.ThunderBridge do
     end
   end
 
-  def handle_call({:start_ca_streaming, opts}, _from, state) do
-    case ErlangBridge.start_streaming(opts) do
-      :ok ->
-        Logger.info("Started CA streaming for dashboard")
-        {:reply, :ok, %{state | ca_streaming: true}}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+  def handle_call({:start_ca_streaming, _opts}, _from, state) do
+    {:reply, {:error, :unsupported}, state}
   end
 
   def handle_call(:stop_ca_streaming, _from, state) do
-    case ErlangBridge.stop_streaming() do
-      :ok ->
-        Logger.info("Stopped CA streaming")
-        {:reply, :ok, %{state | ca_streaming: false}}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
+    {:reply, {:error, :unsupported}, state}
   end
 
   @impl true
@@ -308,59 +279,15 @@ defmodule Thunderline.ThunderBridge do
   end
 
   # Defensive subscription wrapper so missing ErlangBridge doesn't crash init
-  defp subscribe_erlang_bridge do
-    cond do
-      is_nil(Process.whereis(Thunderline.ErlangBridge)) ->
-        Logger.warning("ErlangBridge not started yet; ThunderBridge will operate in degraded mode")
-        :degraded
-      true ->
-        try do
-          case ErlangBridge.subscribe_events(self()) do
-            :ok -> Logger.info("Subscribed to ErlangBridge events")
-            {:error, reason} -> Logger.warning("Failed to subscribe to ErlangBridge: #{inspect(reason)}")
-          end
-        catch
-          :exit, reason ->
-            Logger.warning("ErlangBridge subscribe exited: #{inspect(reason)}; continuing without it")
-          type, reason ->
-            Logger.warning("Unexpected #{inspect(type)} during ErlangBridge subscribe: #{inspect(reason)}")
-        end
-    end
-  end
+  defp subscribe_erlang_bridge, do: :ok
 
   # Private Functions
 
   defp build_dashboard_system_state do
     # Phase 1: Prefer pure Elixir ThunderCell aggregator; fallback to Erlang bridge if needed
     case ThunderCellAggregator.get_system_state() do
-      {:ok, agg} ->
-        {:ok, build_dashboard_state_from_aggregator(agg)}
-      {:error, _reason} ->
-        try do
-          case ErlangBridge.get_system_state() do
-            {:ok, erlang_state} ->
-              dashboard_state = %{
-                timestamp: DateTime.utc_now(),
-                uptime: calculate_uptime(erlang_state),
-                active_thunderbolts: count_active_thunderbolts(erlang_state),
-                total_chunks: get_total_chunks(erlang_state),
-                connected_nodes: get_connected_nodes(erlang_state),
-                memory_usage: get_memory_usage(erlang_state),
-                performance: calculate_current_performance(erlang_state),
-                health_status: :healthy,
-                connection_status: :connected,
-                ca_activity: get_ca_activity(erlang_state),
-                event_metrics: get_event_metrics(erlang_state),
-                legacy_source: true
-              }
-              {:ok, dashboard_state}
-            {:error, reason} -> {:error, reason}
-          end
-        rescue
-          error ->
-            Logger.error("Error building dashboard system state (legacy fallback): #{inspect(error)}")
-            {:error, error}
-        end
+      {:ok, agg} -> {:ok, build_dashboard_state_from_aggregator(agg)}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -544,37 +471,15 @@ defmodule Thunderline.ThunderBridge do
         {:ok, get_evolution_stats_from_aggregator(agg)}
 
       {:error, _} ->
-        case ErlangBridge.get_system_state() do
-          {:ok, state} ->
-            evolution_data =
-              case Map.get(state, :thunderbolt_evolution) do
-                %{} = data -> data
-                {:error, _} -> %{}
-                _ -> %{}
-              end
-
-            stats = %{
-              total_generations: Map.get(evolution_data, :total_generations, 0),
-              mutations_count: Map.get(evolution_data, :mutations_count, 0),
-              evolution_rate: Map.get(evolution_data, :evolution_rate, 0.0),
-              active_patterns: Map.get(evolution_data, :active_patterns, []),
-              success_rate: Map.get(evolution_data, :success_rate, 0.0),
-              source: :legacy
-            }
-
-            {:ok, stats}
-
-          {:error, _reason} ->
-            {:ok,
-             %{
-               total_generations: 0,
-               mutations_count: 0,
-               evolution_rate: 0.0,
-               active_patterns: [],
-               success_rate: 0.0,
-               source: :none
-             }}
-        end
+        {:ok,
+         %{
+           total_generations: 0,
+           mutations_count: 0,
+           evolution_rate: 0.0,
+           active_patterns: [],
+           success_rate: 0.0,
+           source: :none
+         }}
     end
   end
 
@@ -616,11 +521,7 @@ defmodule Thunderline.ThunderBridge do
     # Primary health from aggregator (Elixir ThunderCell path)
     case ThunderCellAggregator.get_system_state() do
       {:ok, _agg} -> %{erlang_connected: true, health: :healthy, source: :aggregator}
-      {:error, _} ->
-        case ErlangBridge.get_system_state() do
-          {:ok, _state} -> %{erlang_connected: true, health: :healthy, source: :legacy}
-          {:error, _reason} -> %{erlang_connected: false, health: :degraded, source: :none}
-        end
+      {:error, _} -> %{erlang_connected: false, health: :degraded, source: :none}
     end
   end
 
@@ -696,4 +597,6 @@ defmodule Thunderline.ThunderBridge do
     success_rate: 0.0,
     source: :aggregator
   }
+
+  # Legacy helper removed; all legacy calls now return {:error, :unsupported}
 end

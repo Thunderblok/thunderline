@@ -59,15 +59,17 @@ defmodule Thunderline.Thundergate.ActorContext do
   @spec verify(binary()) :: {:ok, t()} | {:error, term()}
   def verify(sig) when is_binary(sig) do
     jwk = public_key()
+    now = System.os_time(:second)
     with {true, jws, _} <- JWS.verify_strict(jwk, ["EdDSA"], sig),
          {:ok, payload} <- decode_payload(jws),
-         {:ok, ctx} <- to_struct(payload),
-         true <- ctx.exp > System.os_time(:second) do
-      {:ok, ctx}
+         {:ok, ctx} <- to_struct(payload) do
+      cond do
+        ctx.exp <= now -> {:error, :expired}
+        true -> {:ok, ctx}
+      end
     else
       false -> {:error, :invalid_signature}
       {:error, _} = e -> e
-      _ -> {:error, :expired_or_invalid}
     end
   end
 

@@ -305,6 +305,32 @@ Release flow (simplified):
 
 This project is proprietary software of OKO Holding Corporation. All rights reserved.
 
+## Architectural Guardrails (IRONWOLF)
+
+### RepoOnly Boundary
+
+All persistence access is routed through the Block domain. Direct `Repo.*` calls are only permitted in:
+
+* `lib/thunderline/thunderblock/**`
+* `priv/repo/migrations/**`
+* Explicit resource repo configuration blocks
+
+Custom Credo check (`Thunderline.Dev.CredoChecks.DomainGuardrails`) enforces this. Set `REPO_ONLY_ENFORCE=1` in CI to escalate violations from warnings to errors.
+
+Rationale: Preserve domain seams, simplify auditing, prevent cross-domain leakage of transactional concerns.
+
+### Event Emission Discipline
+
+All event publishing flows through `Thunderline.Thunderflow.EventBus.publish_event/1`. Callers must branch on return `{:ok, ev} | {:error, reason}`—no silent assumptions. Validator runs first; invalid events produce telemetry `[:thunderline, :event, :dropped]` (prod) or raise (test).
+
+### Gate Auth Telemetry
+
+Authentication outcomes surface via `[:thunderline, :gate, :auth, :result]` with result tags `:success|:missing|:expired|:deny`. Dashboards consume these metrics for real‑time visibility.
+
+### Blackboard Migration
+
+Legacy Automata blackboard deprecated; canonical implementation is `Thunderline.Thunderflow.Blackboard`. Removal of the legacy delegator proceeds after a zero‑call window on `[:thunderline, :blackboard, :legacy_call]`.
+
 ---
 
 **Engineered with precision. Operated with intelligence.**

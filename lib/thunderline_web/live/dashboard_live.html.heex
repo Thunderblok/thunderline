@@ -190,10 +190,25 @@
           <%!-- Right Panel 2 --%>
           <div class="glass-panel p-4 h-28">
             <div class="flex items-center space-x-2 mb-2">
-              <div class="w-2 h-2 bg-red-400 rounded-full"></div>
-              <h3 class="text-xs font-bold text-white">Security</h3>
+              <div class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+              <h3 class="text-xs font-bold text-white">Gate Auth</h3>
             </div>
-            <div class="text-xs text-gray-300">Minimal Threat</div>
+            <div class="text-[10px] leading-tight text-gray-300 space-y-1">
+              <%= if @gate_auth_stats.total > 0 do %>
+                <div>
+                  <span class="text-green-400">✔</span>
+                  <span> <%= Map.get(@gate_auth_stats, :success, 0) %> / <%= @gate_auth_stats.total %> (<%= @gate_auth_stats.success_rate %>%)</span>
+                </div>
+                <div class="flex flex-wrap gap-x-2 gap-y-0.5">
+                  <span class="text-yellow-300">miss:<%= Map.get(@gate_auth_stats, :missing, 0) %></span>
+                  <span class="text-orange-300">exp:<%= Map.get(@gate_auth_stats, :expired, 0) %></span>
+                  <span class="text-pink-300">inv:<%= Map.get(@gate_auth_stats, :invalid, 0) %></span>
+                  <span class="text-red-300">deny:<%= Map.get(@gate_auth_stats, :deny, 0) %></span>
+                </div>
+              <% else %>
+                <div class="text-gray-400">no auth events</div>
+              <% end %>
+            </div>
           </div>
         </div>
       </div>

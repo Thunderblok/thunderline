@@ -1,19 +1,21 @@
 defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
   @moduledoc """
-  Custom Credo checks for WARHORSE guardrails (Phase 1: advisory warnings).
+  Custom Credo checks enforcing domain guardrails (ANVIL / IRONWOLF).
 
-  Implemented lightweight regex scans; escalate & refine Week 3.
+  Escalation Plan:
+    * Phase 1 (current dev): warnings
+    * Phase 2 (CI toggle :repo_only_enforce) – direct Repo calls outside allowlist -> error
+
   Checks:
     * NoDirectRepoCallsOutsideBlock
     * NoPolicyInLink
-    * NoZoneWritesOutsideGrid (stub - pattern placeholder)
     * NoEventsOutsideFlow (emission entrypoints)
   """
   @behaviour Credo.Check
   alias Credo.{Issue, SourceFile}
 
   @impl true
-  def category, do: :warning
+  def category, do: severity()
   @impl true
   def base_priority, do: 0
   @impl true
@@ -30,7 +32,8 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
   end
 
   defp check_repo_calls(issues, filename, text) do
-    if String.contains?(text, "Repo.") and not String.contains?(filename, "/thunderblock/") do
+    allow? = String.contains?(filename, "/thunderblock/") or String.contains?(filename, "/priv/repo/migrations/")
+    if String.contains?(text, "Repo.") and not allow? do
       [issue(issues, filename, "Direct Repo call outside Block domain")] else issues end
   end
 
@@ -40,16 +43,24 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
   end
 
   defp check_event_emission(issues, filename, text) do
-    if String.contains?(text, "EventBus.emit") and not String.contains?(filename, "/thunderflow/") do
-      [issue(issues, filename, "Event emission outside Flow domain (except allowed transitional paths)")] else issues end
+    cond do
+      String.contains?(text, "EventBus.emit") ->
+        [issue(issues, filename, "Deprecated EventBus.emit usage detected (replace with publish_event/1)") | issues]
+      String.contains?(text, "EventBus.publish_event(") and not String.contains?(filename, "/thunderflow/") ->
+        [issue(issues, filename, "Event emission outside Flow domain (publish_event/1 should be invoked by Flow-centric modules or clearly justified)") | issues]
+      true -> issues
+    end
   end
 
   defp issue(issues, filename, message) do
-    [%Issue{
-      category: :warning,
-      filename: filename,
-      message: message,
-      trigger: message
-    } | issues]
+    [%Issue{category: severity(), filename: filename, message: message, trigger: message} | issues]
+  end
+
+  defp severity do
+    if System.get_env("REPO_ONLY_ENFORCE") in ["1", "true", "TRUE"] do
+      :error
+    else
+      :warning
+    end
   end
 end

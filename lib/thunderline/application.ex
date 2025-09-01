@@ -69,7 +69,7 @@ defmodule Thunderline.Application do
     compute_children = if start_compute? and not minimal? do
       [
         Thunderline.Thunderbolt.ThunderCell.Supervisor,
-        Thunderline.ErlangBridge,
+  # ErlangBridge removed (legacy Erlang CA integration deprecated)
         Thunderline.NeuralBridge,
         Thunderline.ThunderBridge
       ]

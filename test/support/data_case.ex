@@ -40,8 +40,20 @@ defmodule Thunderline.DataCase do
       # No-op when DB/Ash setup is skipped (lightweight tests)
       :ok
     else
-      pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Thunderline.Repo, shared: not tags[:async])
-      on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+      # If a global shared owner was started in test_helper (for background processes), reuse it.
+      global_owner = Application.get_env(:thunderline, :global_repo_owner)
+      async? = Map.get(tags, :async, false)
+      cond do
+        is_nil(global_owner) ->
+          pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Thunderline.Repo, shared: not async?)
+          on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+        async? ->
+          # Avoid interfering with global shared owner; create isolated owner for async test.
+          pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Thunderline.Repo, shared: false)
+          on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+        true ->
+          :ok
+      end
     end
   end
 
