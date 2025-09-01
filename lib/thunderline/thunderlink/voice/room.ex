@@ -7,7 +7,6 @@ defmodule Thunderline.Thunderlink.Voice.Room do
   use Ash.Resource,
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer],
     notifiers: [Ash.Notifier.PubSub]
 
   postgres do
@@ -64,18 +63,7 @@ defmodule Thunderline.Thunderlink.Voice.Room do
     end
   end
 
-  policies do
-    policy action(:create_room) do
-      authorize_if expr(not is_nil(actor(:id)))
-    end
-    policy action(:read) do
-      authorize_if expr(status == :open)
-      authorize_if expr(created_by_id == actor(:id))
-    end
-    policy action([:close, :kick]) do
-      authorize_if expr(created_by_id == actor(:id))
-    end
-  end
+  # Link domain policy purged (WARHORSE) – governance moves to Crown
 
   code_interface do
     define :create_room

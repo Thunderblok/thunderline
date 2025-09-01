@@ -406,12 +406,11 @@ defmodule Thunderline.ErlangBridge do
   def handle_call({:execute_command, command, params}, _from, state) do
     result = execute_erlang_command(command, params)
 
-    # Broadcast command execution event
-    EventBus.legacy_broadcast("erlang_commands", %{
+    # Publish command execution event (general pipeline)
+    publish_bridge_event("erlang_commands", :erlang_command_executed, %{
       command: command,
       params: params,
-      result: result,
-      timestamp: DateTime.utc_now()
+      result: result
     })
 
     {:reply, result, state}
@@ -935,7 +934,7 @@ defmodule Thunderline.ErlangBridge do
           broadcast_to_subscribers(state.subscribers, {:erlang_state_update, new_state})
 
           # Also broadcast to EventBus for dashboard
-          EventBus.legacy_broadcast("system_metrics", new_state)
+          publish_bridge_event("system_metrics", :system_metrics, new_state)
         end
 
         # Schedule next update
@@ -966,6 +965,27 @@ defmodule Thunderline.ErlangBridge do
   end
 
   # Private Functions
+
+  defp publish_bridge_event(topic, type, payload) do
+    attrs = %{
+      name: "system.bridge." <> Atom.to_string(type),
+      type: type,
+      source: :bridge,
+      payload: Map.merge(payload, %{topic: topic, timestamp: DateTime.utc_now()}),
+      meta: %{pipeline: infer_pipeline_from_topic(topic)}
+    }
+    with {:ok, ev} <- Thunderline.Event.new(attrs) do
+      Thunderline.EventBus.publish_event(ev)
+    end
+  end
+
+  defp infer_pipeline_from_topic(topic) do
+    cond do
+      String.contains?(topic, "agent") or String.contains?(topic, "live") -> :realtime
+      String.contains?(topic, "domain") -> :cross_domain
+      true -> :general
+    end
+  end
 
   defp connect_to_erlang do
     # Check if ThunderCell Elixir modules are available

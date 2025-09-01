@@ -1,5 +1,5 @@
 defmodule Thunderline.Thundervine.VineIngressTest do
-  use ExUnit.Case, async: false
+  use Thunderline.DataCase, async: false
 
   alias Thunderline.Thunderflow.Pipelines.VineIngress
   alias Thunderline.Thunderblock.Resources.{DAGWorkflow, DAGNode}

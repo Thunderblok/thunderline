@@ -38,6 +38,10 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
   @handler_id "thunderline-oban-jobs"
   @plugin_handler_id "thunderline-oban-plugins"
 
+  # In-memory ring buffer (ETS) for simple recent/aggregate queries used in tests & dashboard.
+  @table __MODULE__.Table
+  @max_events 500
+
   @doc """
   Attach telemetry handlers for Oban events (idempotent).
   Safe to call multiple times; subsequent calls become no-ops.
@@ -46,6 +50,7 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
   def attach do
     attach_jobs()
     attach_plugins()
+    ensure_table()
     :ok
   end
 
@@ -114,6 +119,27 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
     error -> Logger.debug("[Oban.Telemetry] plugin handler error: #{inspect(error)}")
   end
 
+  @doc "Return aggregated stats used by tests (shape kept minimal)."
+  def stats do
+    ensure_table()
+    events = :ets.tab2list(@table)
+    by_type =
+      Enum.reduce(events, %{}, fn {_k, %{ev: ev}}, acc ->
+        Map.update(acc, ev, 1, &(&1 + 1))
+      end)
+
+    %{total: length(events), by_type: by_type}
+  end
+
+  @doc "Return last N events (newest first)."
+  def recent(n \\ 10) do
+    ensure_table()
+    :ets.foldl(fn {_k, v}, acc -> [v | acc] end, [], @table)
+    |> Enum.sort_by(& &1.at, :desc)
+    |> Enum.take(n)
+    |> Enum.map(fn map -> Map.put(map, :type, map.ev) end)
+  end
+
   ## Internal helpers ----------------------------------------------------
 
   defp native_duration_to_us(nil), do: nil
@@ -144,5 +170,33 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
         _ -> :noop
       end
     end
+
+    # Also persist into ETS for stats/recent queries
+    ensure_table()
+    true = :ets.insert(@table, {System.unique_integer([:monotonic]), payload})
+    trim_table()
+  end
+
+  defp ensure_table do
+    case :ets.whereis(@table) do
+      :undefined -> :ets.new(@table, [:named_table, :public, :ordered_set, write_concurrency: true, read_concurrency: true])
+      _ -> :ok
+    end
+  end
+
+  defp trim_table do
+    size = :ets.info(@table, :size)
+    if size > @max_events do
+      # Drop oldest ~10% in one pass for amortized O(1)
+      drop = div(@max_events, 10)
+      keys = :ets.first(@table) |> collect_keys(drop, [])
+      Enum.each(keys, &:ets.delete(@table, &1))
+    end
+  end
+
+  defp collect_keys(:"$end_of_table", _n, acc), do: acc
+  defp collect_keys(_key, 0, acc), do: acc
+  defp collect_keys(key, n, acc) do
+    collect_keys(:ets.next(@table, key), n - 1, [key | acc])
   end
 end

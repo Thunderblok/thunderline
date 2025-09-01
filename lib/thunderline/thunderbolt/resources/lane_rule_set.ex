@@ -332,11 +332,13 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
 
   defp deploy_to_thundercells(_changeset, ruleset) do
     # Broadcast ruleset to all active ThunderCells
-  Thunderline.EventBus.emit_realtime(:ruleset_deployed, %{
+    with {:ok, ev} <- Thunderline.Event.new(name: "system.ruleset.deployed", source: :bolt, type: :ruleset_deployed, payload: %{
       ruleset_id: ruleset.id,
       version: ruleset.version,
       ruleset: serialize_for_deployment(ruleset)
-    })
+    }, meta: %{pipeline: :realtime}) do
+      Thunderline.EventBus.publish_event(ev)
+    end
 
     # Send to ErlangBridge for distribution
     Thunderline.ErlangBridge.deploy_ruleset(ruleset)
@@ -355,11 +357,13 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
       alpha_zy: ruleset.alpha_zy
     }
 
-  Thunderline.EventBus.emit_realtime(:alpha_gains_updated, %{
+    with {:ok, ev} <- Thunderline.Event.new(name: "system.ruleset.alpha_gains_updated", source: :bolt, type: :alpha_gains_updated, payload: %{
       ruleset_id: ruleset.id,
       version: ruleset.version,
       alpha_deltas: alpha_deltas
-    })
+    }, meta: %{pipeline: :realtime}) do
+      Thunderline.EventBus.publish_event(ev)
+    end
 
     {:ok, ruleset}
   end

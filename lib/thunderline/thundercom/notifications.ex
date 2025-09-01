@@ -436,13 +436,29 @@ defmodule Thunderline.Thundercom.Notifications do
   # ===== UTILITY FUNCTIONS =====
 
   defp broadcast_to_topic(topic, event, payload) do
-    # Migrate from direct PubSub to EventBus for Broadway pipeline processing
-    Thunderline.EventBus.broadcast_via_eventbus(topic, event, %{
-      topic: topic,
-      payload: payload,
-      source: "notifications",
-      timestamp: DateTime.utc_now()
-    })
+    pipeline = infer_pipeline_from_topic(topic)
+    attrs = %{
+      name: "system.notifications." <> event,
+      type: String.to_atom(event),
+      source: :link, # or a dedicated :notifications atom if added to taxonomy
+      payload: %{
+        topic: topic,
+        payload: payload,
+        timestamp: DateTime.utc_now()
+      },
+      meta: %{pipeline: pipeline}
+    }
+    with {:ok, ev} <- Thunderline.Event.new(attrs) do
+      Thunderline.EventBus.publish_event(ev)
+    end
+  end
+
+  defp infer_pipeline_from_topic(topic) do
+    cond do
+      String.contains?(topic, ":status") or String.contains?(topic, "agents") -> :realtime
+      String.contains?(topic, "federation") -> :cross_domain
+      true -> :general
+    end
   end
 
   defp get_community_id_from_channel(channel_id) do

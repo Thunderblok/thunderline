@@ -488,15 +488,25 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
   # ============================================================================
 
   defp emit_metrics_event(_changeset, metrics) do
-    # Emit real-time metrics update
-    Thunderline.EventBus.emit_realtime(:metrics_captured, %{
-      metric_id: metrics.id,
-      metric_type: metrics.metric_type,
-      source_type: metrics.source_type,
-      source_id: metrics.source_id,
-      timestamp: metrics.timestamp,
-      key_metrics: extract_key_metrics(metrics)
-    })
+    # Emit real-time metrics update via unified API
+    with {:ok, ev} <-
+           Thunderline.Event.new(%{
+             name: "system.metrics.captured",
+             source: :bolt,
+             payload: %{
+               metric_id: metrics.id,
+               metric_type: metrics.metric_type,
+               source_type: metrics.source_type,
+               source_id: metrics.source_id,
+               timestamp: metrics.timestamp,
+               key_metrics: extract_key_metrics(metrics)
+             },
+             meta: %{pipeline: :realtime},
+             priority: :high,
+             type: :metrics_captured
+           }) do
+      Thunderline.EventBus.publish_event(ev)
+    end
 
     # Check for alerts
     check_and_emit_alerts(metrics)
@@ -548,13 +558,22 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
       end
 
     if not Enum.empty?(alerts) do
-      Thunderline.EventBus.emit_realtime(:metrics_alerts, %{
-        metric_id: metrics.id,
-        source_type: metrics.source_type,
-        source_id: metrics.source_id,
-        alerts: alerts,
-        timestamp: metrics.timestamp
-      })
+      {:ok, ev} =
+        Thunderline.Event.new(%{
+          name: "system.metrics.alerts",
+          source: :bolt,
+          payload: %{
+            metric_id: metrics.id,
+            source_type: metrics.source_type,
+            source_id: metrics.source_id,
+            alerts: alerts,
+            timestamp: metrics.timestamp
+          },
+          meta: %{pipeline: :realtime},
+          priority: :high,
+          type: :metrics_alerts
+        })
+      Thunderline.EventBus.publish_event(ev)
     end
   end
 end

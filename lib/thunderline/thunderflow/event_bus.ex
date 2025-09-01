@@ -1,41 +1,31 @@
 defmodule Thunderline.EventBus do
   @moduledoc """
-  Centralized event emission interface for Thunderline application.
+  WARHORSE Unified EventBus (P0).
 
-  This module provides a unified API for emitting events throughout the application,
-  replacing scattered PubSub.broadcast calls with structured Broadway pipeline routing.
+  Public surface collapsed to a single publishing API:
+    * publish_event(%Thunderline.Event{}) :: {:ok, event} | {:error, reason}
+    * publish_event!(%Thunderline.Event{}) :: %Thunderline.Event{} | no_return()
 
-  ## Usage
+  Callers MUST construct events via `Thunderline.Event.new/1`.
+  All prior multi-variant emission helpers and compatibility wrappers have now been REMOVED
+  (emit/2, emit_realtime/2, emit_cross_domain/2, broadcast_via_eventbus/3, legacy_broadcast/2) are gone.
+  If you find yourself recreating them, STOP: build the event explicitly & publish.
 
-      # General domain events
-      EventBus.emit(:agent_created, %{agent_id: "123", domain: "thunderchief"})
+  Validation semantics (delegated to EventValidator):
+    * dev (:warn)  -> validator returns {:error, reason}; we propagate {:error, reason}
+    * test (:raise)-> validator raises; publish_event!/1 surfaces exception; publish_event/1 never returns {:error, reason} for invalid (process crashes in test, enforcing green)
+    * prod (:drop) -> validator returns {:error, reason}; drop telemetry already emitted; we return {:error, reason}
 
-      # Cross-domain events
-      EventBus.emit_cross_domain(:orchestration_complete, %{
-        from_domain: "thunderchief",
-        to_domain: "thunderbridge",
-        payload: orchestration_data
-      })
+  Telemetry emitted here:
+    * [:thunderline, :event, :publish] measurements: %{duration: native} metadata: %{status, name, pipeline}
+    * [:thunderline, :event, :enqueue] measurements: %{count: 1} metadata: %{pipeline, name, priority}
 
-      # Real-time events
-      EventBus.emit_realtime(:agent_status_update, %{
-        agent_id: "123",
-        status: "online",
-        priority: :high
-      })
-
-  ## Event Types
-
-  - `:general` - Domain events, background processing, non-critical updates
-  - `:cross_domain` - Inter-domain communication, orchestration events
-  - `:realtime` - Agent updates, dashboard updates, WebSocket broadcasts
-
-  ## Pipeline Routing
-
-  Events are automatically routed to appropriate Broadway pipelines:
-  - General events → EventPipeline (batching, background processing)
-  - Cross-domain events → CrossDomainPipeline (domain routing, transformation)
-  - Real-time events → RealTimePipeline (low latency, high throughput)
+  Pipeline classification heuristic (unless event.meta.pipeline preset):
+    * meta.pipeline in [:realtime,:cross_domain,:general] respected
+    * name starts with "ai." or "grid." => :realtime
+    * target_domain != "broadcast" => :cross_domain
+    * priority == :high => :realtime
+    * fallback :general
   """
 
   require Logger
@@ -43,167 +33,36 @@ defmodule Thunderline.EventBus do
 
   @pubsub Thunderline.PubSub
 
-  @doc """
-  Subscribe to events on a given topic.
-
-  This is a compatibility function for ThunderBridge and other legacy components.
-  """
+  @doc "Subscribe to a PubSub topic (legacy compatibility)."
   @spec subscribe(String.t()) :: :ok | {:error, term()}
   def subscribe(topic) when is_binary(topic) do
     PubSub.subscribe(@pubsub, topic)
   end
 
-  @doc """
-  Emit a general domain event through Broadway EventPipeline.
+  @doc "Publish a canonical %Thunderline.Event{} (unified API)."
+  @spec publish_event(Thunderline.Event.t()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
+  def publish_event(%Thunderline.Event{} = ev) do
+    start = System.monotonic_time()
+    case Thunderline.Thunderflow.EventValidator.validate(ev) do
+      :ok -> do_enqueue(ev, start)
+      {:error, reason} ->
+        telemetry_publish(start, ev, :error, pipeline_for(ev))
+        {:error, reason}
+    end
+  end
+  def publish_event(other), do: {:error, {:unsupported_event, other}}
 
-  General events are batched and processed in the background with retries
-  and dead letter queue handling.
-  """
-  @spec emit(atom(), map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
-  def emit(event_type, payload) when is_atom(event_type) and is_map(payload) do
-    with {:ok, ev} <- build_event(event_type, payload) do
-      route_event(ev, :general)
+  @doc "Bang version raising on failure."
+  @spec publish_event!(Thunderline.Event.t()) :: Thunderline.Event.t() | no_return()
+  def publish_event!(%Thunderline.Event{} = ev) do
+    case publish_event(ev) do
+      {:ok, ev} -> ev
+      {:error, reason} -> raise ArgumentError, "publish_event!/1 failed: #{inspect(reason)}"
     end
   end
 
-  @spec emit(Thunderline.Event.t()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
-  def emit(%Thunderline.Event{} = event), do: route_event(event, :general)
-  def emit(_), do: {:error, :invalid_event}
 
-  @doc """
-  Emit a cross-domain event through Broadway CrossDomainPipeline.
-
-  Cross-domain events are routed between domains with automatic transformation
-  and structured error handling.
-  """
-  @spec emit_cross_domain(atom(), map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
-  def emit_cross_domain(event_type, %{from_domain: from_domain, to_domain: to_domain} = payload)
-      when is_atom(event_type) and is_binary(from_domain) and is_binary(to_domain) do
-    source_atom = map_source_domain(from_domain)
-    name = build_name(source_atom, event_type)
-    base_attrs = %{
-      name: name,
-      type: event_type,
-      payload: payload,
-      source: source_atom,
-      correlation_id: generate_correlation_id(),
-      priority: Map.get(payload, :priority, :normal),
-      source_domain: from_domain,
-      target_domain: to_domain
-    }
-
-    with {:ok, ev} <- Thunderline.Event.new(base_attrs) do
-      route_event(ev, :cross_domain)
-    end
-  end
-
-  @doc """
-  Emit a real-time event through Broadway RealTimePipeline.
-
-  Real-time events are processed with minimal latency for agent updates,
-  dashboard updates, and WebSocket broadcasts.
-  """
-  @spec emit_realtime(atom(), map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
-  def emit_realtime(event_type, payload) when is_atom(event_type) and is_map(payload) do
-    priority = Map.get(payload, :priority, :normal)
-    source_atom = :flow
-    name =
-      cond do
-        is_binary(Map.get(payload, :event_name)) -> Map.get(payload, :event_name)
-        is_binary(Map.get(payload, :name_override)) -> Map.get(payload, :name_override)
-        true -> build_name(source_atom, event_type)
-      end
-    base_attrs = %{
-      name: name,
-      type: event_type,
-      payload: payload,
-      source: source_atom,
-      correlation_id: generate_correlation_id(),
-      priority: priority
-    }
-
-    with {:ok, ev} <- Thunderline.Event.new(base_attrs) do
-      route_event(ev, :realtime)
-    end
-  end
-
-  @doc """
-  Emit multiple events in a batch for high-efficiency processing.
-
-  This is useful for bulk operations where many related events need to be processed.
-  """
-  # Returns :ok for enqueue success (test expectations). Use emit_batch_with_events/2 if caller
-  # needs the constructed events.
-  @spec emit_batch([{atom(), map()}], atom()) :: :ok | {:error, term()}
-  def emit_batch(events, pipeline_type \\ :general)
-      when is_list(events) and pipeline_type in [:general, :cross_domain, :realtime] do
-    {correlation_id, event_list, built_count} = build_batch(events, pipeline_type)
-    {table, priority} = batch_table_and_priority(pipeline_type)
-
-    case Thunderflow.MnesiaProducer.enqueue_events(
-           table,
-           event_list,
-           pipeline_type: pipeline_type,
-           priority: priority
-         ) do
-      :ok -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  @doc """
-  Variant of emit_batch that returns the successfully constructed Event structs.
-  """
-  @spec emit_batch_with_events([{atom(), map()}], atom()) :: {:ok, [Thunderline.Event.t()]} | {:error, term()}
-  def emit_batch_with_events(events, pipeline_type \\ :general) do
-    case emit_batch(events, pipeline_type) do
-      :ok ->
-        correlation_id = nil # not easily recoverable here without refactor
-        # Reconstruct events similarly (best-effort); for precise return semantics,
-        # consider refactoring emit_batch to share construction.
-        built =
-          Enum.flat_map(events, fn {event_type, payload} ->
-            case build_event(event_type, payload) do
-              {:ok, ev} -> [ev]
-              _ -> []
-            end
-          end)
-        {:ok, built}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  @doc """
-  Batch emission variant returning metadata (non-breaking additive API).
-
-  Provides correlation_id shared across the batch, total event count, number of
-  successfully constructed events, and pipeline type. This is useful for higher-level
-  orchestration (e.g. AshAI tool chains) that want to link follow-on telemetry
-  without reconstructing events.
-  """
-  @spec emit_batch_meta([{atom(), map()}], atom()) :: {:ok, %{correlation_id: String.t(), count: non_neg_integer(), built: non_neg_integer(), pipeline: atom()}} | {:error, term()}
-  def emit_batch_meta(events, pipeline_type \\ :general)
-      when is_list(events) and pipeline_type in [:general, :cross_domain, :realtime] do
-    {correlation_id, event_list, built_count} = build_batch(events, pipeline_type)
-    {table, priority} = batch_table_and_priority(pipeline_type)
-
-    case Thunderflow.MnesiaProducer.enqueue_events(
-           table,
-           event_list,
-           pipeline_type: pipeline_type,
-           priority: priority
-         ) do
-      :ok ->
-        # Telemetry: batch emission summary
-        :telemetry.execute(
-          [:thunderline, :event_batch, :emit],
-          %{count: built_count},
-          %{pipeline: pipeline_type, correlation_id: correlation_id}
-        )
-        {:ok, %{correlation_id: correlation_id, count: length(events), built: built_count, pipeline: pipeline_type}}
-      {:error, reason} -> {:error, reason}
-    end
-  end
+  # Batch helpers removed for unification phase (can be reintroduced as separate module if needed).
 
   @doc """
   Emit an AI-related real-time event with standardized naming.
@@ -222,84 +81,34 @@ defmodule Thunderline.EventBus do
   """
   @spec ai_emit(atom(), map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def ai_emit(stage, payload) when stage in [:tool_start, :tool_result, :conversation_delta, :model_token] and is_map(payload) do
-    # Force domain to an AI-specific placeholder so source maps to :unknown (avoiding domain-specific restrictions)
     payload = payload |> Map.put(:domain, "thunderai") |> Map.put_new(:event_name, "ai." <> Atom.to_string(stage)) |> Map.put(:ai_stage, stage)
-    case emit_realtime(:ai_event, payload) do
-      {:ok, %Thunderline.Event{} = ev} = ok ->
-        :telemetry.execute(
-          [:thunderline, :ai, :emit],
-          %{count: 1},
-          %{stage: stage, name: ev.name, correlation_id: ev.correlation_id, source: ev.source}
-        )
-        ok
-      other -> other
+    base_attrs = %{
+      name: Map.fetch!(payload, :event_name),
+      type: :ai_event,
+      payload: payload,
+      source: :flow,
+      correlation_id: Map.get(payload, :correlation_id, generate_correlation_id()),
+      priority: Map.get(payload, :priority, :normal),
+      meta: %{pipeline: :realtime}
+    }
+    with {:ok, ev} <- Thunderline.Event.new(base_attrs), res <- publish_event(ev) do
+      case res do
+        {:ok, %Thunderline.Event{} = ev2} ->
+          :telemetry.execute(
+            [:thunderline, :ai, :emit],
+            %{count: 1},
+            %{stage: stage, name: ev2.name, correlation_id: ev2.correlation_id, source: ev2.source}
+          )
+          res
+        _ -> res
+      end
     end
   end
   def ai_emit(_stage, _payload), do: {:error, :unsupported_ai_stage}
 
   # Migration helpers for existing broadcast patterns
 
-  @doc """
-  Migration helper: Convert existing PubSub.broadcast calls to EventBus.emit.
-
-  This function maintains backward compatibility while routing through Broadway.
-  """
-  @spec broadcast_via_eventbus(String.t(), atom(), map()) :: :ok | {:error, term()}
-  def broadcast_via_eventbus(topic, event_type, payload) do
-    # Determine pipeline type based on topic pattern
-    pipeline_type = determine_pipeline_from_topic(topic)
-
-    case pipeline_type do
-      :realtime ->
-        emit_realtime(event_type, payload)
-
-      :cross_domain ->
-        # Extract domain info from topic for cross-domain routing
-        case extract_domains_from_topic(topic) do
-          {from_domain, to_domain} ->
-            emit_cross_domain(
-              event_type,
-              Map.merge(payload, %{
-                from_domain: from_domain,
-                to_domain: to_domain
-              })
-            )
-
-          _ ->
-            emit(event_type, payload)
-        end
-
-      _ ->
-        emit(event_type, payload)
-    end
-  end
-
-  @doc """
-  Legacy PubSub broadcast for immediate migration compatibility.
-
-  This allows gradual migration from direct PubSub to Broadway pipelines.
-  """
-  @spec legacy_broadcast(String.t(), map()) :: :ok | {:error, term()}
-  def legacy_broadcast(topic, payload) do
-    # Route to appropriate Broadway pipeline via Mnesia
-    event_type = :legacy_event
-
-    pipeline_result =
-      case determine_pipeline_from_topic(topic) do
-        :realtime -> emit_realtime(event_type, Map.put(payload, :topic, topic))
-        :cross_domain -> emit(event_type, Map.put(payload, :topic, topic))
-        _ -> emit(event_type, Map.put(payload, :topic, topic))
-      end
-
-    # For transition period, also broadcast to legacy PubSub
-    pubsub_result = PubSub.broadcast(@pubsub, topic, payload)
-
-    case {pipeline_result, pubsub_result} do
-      {:ok, :ok} -> :ok
-      {error, _} -> error
-      {_, error} -> error
-    end
-  end
+  # All legacy wrapper and broadcast helpers removed; only explicit event construction allowed.
 
   # Private helper functions
 
@@ -426,44 +235,60 @@ defmodule Thunderline.EventBus do
     end
   end
 
-  defp route_event(%Thunderline.Event{} = ev, pipeline) do
-    case Thunderline.Thunderflow.EventValidator.validate(ev) do
-      :ok -> :ok
-      {:error, _} = err ->
-        # In drop mode validator already emitted audit + telemetry; abort routing.
-        case err do
-          {:error, _reason} -> :ok
-        end
-        # Return early; caller still receives {:ok, ev} for compatibility unless strict mode raised earlier.
-    end
-    {table, priority} =
-      case pipeline do
-        :general -> {Thunderflow.MnesiaProducer, ev.priority}
-        :cross_domain -> {Thunderflow.CrossDomainEvents, ev.priority}
-        :realtime -> {Thunderflow.RealTimeEvents, ev.priority}
-      end
+  # Compatibility helper for legacy map-form publish_event clauses.
+  # Ensures we have a deterministic name when only :type is provided.
+  defp infer_name_from_type(event_type, source) when is_atom(event_type) and is_atom(source) do
+    build_name(source, event_type)
+  end
+  defp infer_name_from_type(event_type, _source) when is_atom(event_type), do: build_name(:unknown, event_type)
+  defp infer_name_from_type(_other, _source), do: "system.unknown.event"
 
+  defp do_enqueue(%Thunderline.Event{} = ev, start) do
+    pipeline = pipeline_for(ev)
+    {table, priority} = table_and_priority(pipeline, ev.priority)
     try do
-      Thunderflow.MnesiaProducer.enqueue_event(
-        table,
-        ev,
-        pipeline_type: pipeline,
-        priority: priority
-      )
+      Thunderflow.MnesiaProducer.enqueue_event(table, ev, pipeline_type: pipeline, priority: priority)
+      :telemetry.execute([:thunderline, :event, :enqueue], %{count: 1}, %{pipeline: pipeline, name: ev.name, priority: priority})
+      telemetry_publish(start, ev, :ok, pipeline)
       {:ok, ev}
     rescue
       error ->
-        Logger.warning("MnesiaProducer not available (#{pipeline}) fallback PubSub: #{inspect(error)}")
-        PubSub.broadcast(@pubsub, "events:" <> Atom.to_string(ev.type), ev)
+        Logger.warning("MnesiaProducer unavailable (#{pipeline}) fallback PubSub: #{inspect(error)}")
+        PubSub.broadcast(@pubsub, "events:" <> to_string(ev.type || :unknown), ev)
+        telemetry_publish(start, ev, :ok, :fallback_pubsub)
         {:ok, ev}
+    end
+  end
+
+  defp telemetry_publish(start, ev, status, pipeline) do
+    :telemetry.execute([
+      :thunderline, :event, :publish
+    ], %{duration: System.monotonic_time() - start}, %{status: status, name: ev.name, pipeline: pipeline})
+  end
+
+  defp pipeline_for(%Thunderline.Event{} = ev) do
+    cond do
+      match?(%{meta: %{pipeline: p}} when p in [:realtime, :cross_domain, :general], ev) -> ev.meta.pipeline
+      is_binary(ev.name) and String.starts_with?(ev.name, "ai.") -> :realtime
+      is_binary(ev.name) and String.starts_with?(ev.name, "grid.") -> :realtime
+      ev.target_domain && ev.target_domain != "broadcast" -> :cross_domain
+      ev.priority == :high -> :realtime
+      true -> :general
+    end
+  end
+
+  defp table_and_priority(pipeline, priority) do
+    case pipeline do
+      :general -> {Thunderflow.MnesiaProducer, priority}
+      :cross_domain -> {Thunderflow.CrossDomainEvents, priority}
+      :realtime -> {Thunderflow.RealTimeEvents, priority}
+      _ -> {Thunderflow.MnesiaProducer, priority || :normal}
     end
   end
 
   # Event validation and transformation
 
-  @doc """
-  Validate event structure before emission.
-  """
+  @doc "Validate event structure before emission (legacy – prefer EventValidator)."
   @spec validate_event(atom(), map()) :: {:ok, map()} | {:error, String.t()}
   def validate_event(event_type, payload) when is_atom(event_type) and is_map(payload) do
     cond do
@@ -519,54 +344,26 @@ defmodule Thunderline.EventBus do
     end
   end
 
-  @doc """
-  Compatibility function for ThunderMemory and other modules.
-
-  Accepts events in the format:
-  %{type: event_type, data: payload, source: source, timestamp: timestamp}
-  """
-  @spec publish_event(map()) :: :ok | {:error, term()}
+  # Map-form (legacy) publish variants – construct canonical event then delegate
+  @spec publish_event(map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def publish_event(%{type: event_type, data: data} = event) when is_atom(event_type) do
-    # Persist-first pathway
-    persisted =
-      event
-      |> Map.put(:payload, data)
-  |> Thunderline.Thunderflow.EventStore.append()
-
-    case persisted do
-      :ok ->
-        Phoenix.PubSub.broadcast(@pubsub, "events:all", {:event, Map.put(event, :payload, data)})
-  priority = Map.get(event, :priority, :normal)
-        source = Map.get(event, :source, :unknown)
-        pipeline_type = case {event_type, source} do
-          {:agent_spawned, :thunder_memory} -> :realtime
-          {:agent_updated, :thunder_memory} -> :realtime
-          {:chunk_created, :thunder_memory} -> :general
-          {_, :thunder_memory} -> :general
-          _ -> :general
-        end
-        payload_ext = Map.merge(data, %{source: source, priority: priority, original_timestamp: Map.get(event, :timestamp)})
-        case pipeline_type do
-          :realtime -> emit_realtime(event_type, payload_ext)
-          _ -> emit(event_type, payload_ext)
-        end
-      other -> other
+    source = map_source_domain(Map.get(event, :source_domain) || Map.get(event, :source) || "unknown")
+    name = Map.get(event, :name) || infer_name_from_type(event_type, source)
+    attrs = [name: name, type: event_type, payload: Map.put(data, :source, source), source: source]
+    with {:ok, ev} <- Thunderline.Event.new(attrs) do
+      publish_event(ev)
     end
   end
-
-  def publish_event(%{type: event_type, payload: payload} = event) when is_atom(event_type) do
-    # Already in new format, route directly
-    source = Map.get(event, :source, :unknown)
-  _priority = Map.get(event, :priority, :normal)
-
-    case source do
-      :thunder_bridge -> emit_realtime(event_type, payload)
-      _ -> emit(event_type, payload)
+  def publish_event(%{type: event_type, payload: payload} = event) when is_atom(event_type) and is_map(payload) do
+    source = map_source_domain(Map.get(event, :source_domain) || Map.get(event, :source) || "unknown")
+    name = Map.get(event, :name) || infer_name_from_type(event_type, source)
+    attrs = [name: name, type: event_type, payload: payload, source: source]
+    with {:ok, ev} <- Thunderline.Event.new(attrs) do
+      publish_event(ev)
     end
   end
-
   def publish_event(event) when is_map(event) do
-    Logger.warning("EventBus.publish_event received unsupported event format: #{inspect(event)}")
-    {:error, "Unsupported event format"}
+    Logger.warning("Unsupported legacy event map: #{inspect(event)}")
+    {:error, :unsupported_event_map}
   end
 end

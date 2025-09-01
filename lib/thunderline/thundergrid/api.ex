@@ -66,7 +66,10 @@ defmodule Thunderline.Thundergrid.API do
 
   # Helpers
   defp publish(event, meta) do
-    Thunderline.EventBus.emit(:grid_event, %{event_name: "grid." <> Atom.to_string(event), domain: "thundergrid", meta: meta})
+    event_name = "grid." <> Atom.to_string(event)
+    with {:ok, ev} <- Thunderline.Event.new(name: event_name, source: :flow, payload: %{domain: "thundergrid", meta: meta}, meta: %{pipeline: :realtime}) do
+      Thunderline.EventBus.publish_event(ev)
+    end
     PubSub.broadcast(@pubsub, zone_topic(meta.zone), {event, meta})
   end
 

@@ -36,18 +36,35 @@ defmodule Thunderline.Application do
       ThunderlineWeb.Presence
     ]
 
-    db_children = if skip_db? do
-      []
-    else
-      [
-        Thunderline.Repo,
-        Thunderline.MigrationRunner,
-        {Oban, oban_config()},
-        Thunderline.Thunderflow.Telemetry.ObanHealth,
-        Thunderline.Thunderflow.Telemetry.ObanDiagnostics,
-        {AshAuthentication.Supervisor, [otp_app: :thunderline]}
-      ]
-    end
+    db_children =
+      if skip_db? do
+        []
+      else
+        base = [
+          Thunderline.Repo,
+          Thunderline.Thunderblock.MigrationRunner
+        ]
+
+        # In minimal test boot we avoid starting Oban & its diagnostics/health reporters
+        # to prevent noisy sandbox ownership errors & speed up the suite. They can be
+        # explicitly enabled by setting START_OBAN=1.
+        start_oban? =
+          (not minimal?) and (System.get_env("START_OBAN") not in ["0", "false", "FALSE"])
+
+        oban_children =
+          if start_oban? do
+            [
+              {Oban, oban_config()},
+              Thunderline.Thunderflow.Telemetry.ObanHealth,
+              Thunderline.Thunderflow.Telemetry.ObanDiagnostics,
+              {AshAuthentication.Supervisor, [otp_app: :thunderline]}
+            ]
+          else
+            []
+          end
+
+        base ++ oban_children
+      end
 
     compute_children = if start_compute? and not minimal? do
       [
@@ -67,7 +84,7 @@ defmodule Thunderline.Application do
     end
 
     extras = [
-      {Task, fn -> try do Thunderline.Bus.init_tables() rescue _ -> :ok end end},
+      # Legacy Bus shim removed (WARHORSE)
       (on?(:enable_ndjson) && {Thunderline.Thunderflow.Observability.NDJSON, [path: System.get_env("NDJSON_PATH") || "log/events.ndjson"]}) || nil,
       (on?(:enable_ups) && Thunderline.Thundergate.UPS) || nil,
       (System.get_env("ENABLE_SIGNAL_STACK") in ["1","true","TRUE"] && Thunderline.Thunderbolt.Signal.Sensor) || nil,
@@ -110,7 +127,7 @@ defmodule Thunderline.Application do
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 
     Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
-    Thunderline.Thunderflow.Telemetry.Oban.attach()
+  Thunderline.Thunderflow.Telemetry.Oban.attach()
 
     Supervisor.start_link(children, opts)
   end

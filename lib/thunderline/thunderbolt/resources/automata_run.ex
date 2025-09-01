@@ -79,7 +79,7 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
 
   defp emit_event(name, payload) do
     with {:ok, ev} <- Thunderline.Event.new(name: name, source: :bolt, payload: payload) do
-      _ = Task.start(fn -> Thunderline.EventBus.emit(ev) end)
+      _ = Task.start(fn -> Thunderline.EventBus.publish_event(ev) end)
     end
   end
 end

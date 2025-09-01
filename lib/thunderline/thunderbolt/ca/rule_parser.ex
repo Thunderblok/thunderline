@@ -84,11 +84,9 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
 
     case Thunderline.Event.new(name: "evt.action.ca.rule_parsed", source: :bolt, payload: payload) do
       {:ok, ev} ->
-        _ = Task.start(fn -> Thunderline.EventBus.emit(ev) end)
+        _ = Task.start(fn -> Thunderline.EventBus.publish_event(ev) end)
         :ok
-
-      {:error, _} ->
-        :error
+      {:error, _} -> :error
     end
   rescue
     _ -> :ok

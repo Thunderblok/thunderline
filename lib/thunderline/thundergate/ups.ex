@@ -25,13 +25,29 @@ defmodule Thunderline.Thundergate.UPS do
   def handle_info(:poll, s) do
     {status, _raw} = read_status(s.backend, s.name)
     if status in [:on_battery, :low_battery] and s.last != status do
-      # Emit realtime system power pause event (domain: thundergate)
-      Bus.emit_realtime(:system_power_event, %{stage: "paused", reason: to_string(status), source: "ups", domain: "thundergate"})
+      with {:ok, ev} <- Thunderline.Event.new(%{
+             name: "system.gate.system_power_event",
+             type: :system_power_event,
+             source: :gate,
+             payload: %{stage: "paused", reason: to_string(status), source: "ups"},
+             meta: %{pipeline: :realtime},
+             priority: :high
+           }) do
+        _ = Thunderline.EventBus.publish_event(ev)
+      end
       safe_boundary_close(s.close_ms)
     end
     if status == :online and s.last in [:on_battery, :low_battery] do
-      # Emit realtime system power restored event
-      Bus.emit_realtime(:system_power_event, %{stage: "power_restored", source: "ups", domain: "thundergate"})
+      with {:ok, ev} <- Thunderline.Event.new(%{
+             name: "system.gate.system_power_event",
+             type: :system_power_event,
+             source: :gate,
+             payload: %{stage: "power_restored", source: "ups"},
+             meta: %{pipeline: :realtime},
+             priority: :high
+           }) do
+        _ = Thunderline.EventBus.publish_event(ev)
+      end
     end
     Process.send_after(self(), :poll, s.poll)
     {:noreply, %{s | last: status}}

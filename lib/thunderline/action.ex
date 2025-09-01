@@ -142,7 +142,7 @@ defmodule Thunderline.Action do
   defp publish(envelope, payload) do
     attrs = Map.merge(envelope, %{payload: payload, type: :action_event, source: envelope.source})
     case Thunderline.Event.new(attrs) do
-      {:ok, ev} -> Thunderline.EventBus.emit(:action_event, Map.merge(ev.payload, %{domain: Atom.to_string(ev.source)}))
+      {:ok, ev} -> _ = Thunderline.EventBus.publish_event(ev)
       {:error, errs} -> Logger.warning("Failed to construct action event #{envelope.name}: #{inspect(errs)}")
     end
   rescue

@@ -23,7 +23,9 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
       %{phi: phi, omega: om, eps: eps, kappa: k} -> %PLL{phi: phi, omega: om, eps: eps, kappa: k}
       _ -> %PLL{}
     end
-  EventBus.emit_realtime(:system_status, %{stage: "resumed_prepare", phi_pll: pll.phi})
+  with {:ok, ev} <- Thunderline.Event.new(name: "system.status.resumed_prepare", source: :bolt, payload: %{stage: "resumed_prepare", phi_pll: pll.phi}, meta: %{pipeline: :realtime}, type: :system_status) do
+    EventBus.publish_event(ev)
+  end
     {:noreply, %{s | pll: pll, hist: (echo || []) ++ s.hist}}
   end
   def handle_info({:token, tok}, s) do
@@ -42,7 +44,9 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
     if PLL.prewindow?(pll) and :ets.lookup(:daisy_lease, :lease) == [] do
       {inj, del} = Daisy.preview_all_swarms()
       :ets.insert(:daisy_lease, {:lease, Lease.make(inj, del, 120)})
-  EventBus.emit_realtime(:system_status, %{stage: "prewindow", phi_pll: pll.phi, phi_h: phi_h, gate_score: g})
+  with {:ok, ev} <- Thunderline.Event.new(name: "system.status.prewindow", source: :bolt, payload: %{stage: "prewindow", phi_pll: pll.phi, phi_h: phi_h, gate_score: g}, meta: %{pipeline: :realtime}, type: :system_status) do
+    EventBus.publish_event(ev)
+  end
     end
     {commits_pll, commits_hil} =
       if PLL.gate?(pll, g) do
@@ -61,7 +65,9 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
             mu_pll = CircStats.mean_dir(commits_pll1)
             mu_h   = CircStats.mean_dir(commits_hil1)
             on_beat = (plv_pll >= 0.75 and plv_h >= 0.75 and p_pll <= 0.05 and p_h <= 0.05)
-            EventBus.emit_realtime(:system_status, %{stage: "committed", phi_pll: pll.phi, phi_h: phi_h, plv_pll: Float.round(plv_pll, 3), plv_h: Float.round(plv_h, 3), p_pll: Float.round(p_pll, 4), p_h: Float.round(p_h, 4), rbar_pll: Float.round(rbar_pll, 3), rbar_h: Float.round(rbar_h, 3), mu_pll: mu_pll, mu_h: mu_h, on_beat: on_beat, phases_pll: Enum.take(commits_pll1, @spark_cap) |> Enum.reverse(), phases_h: Enum.take(commits_hil1, @spark_cap) |> Enum.reverse(), inj: short(lease.inj), del: short(lease.del)})
+            with {:ok, ev} <- Thunderline.Event.new(name: "system.status.committed", source: :bolt, payload: %{stage: "committed", phi_pll: pll.phi, phi_h: phi_h, plv_pll: Float.round(plv_pll, 3), plv_h: Float.round(plv_h, 3), p_pll: Float.round(p_pll, 4), p_h: Float.round(p_h, 4), rbar_pll: Float.round(rbar_pll, 3), rbar_h: Float.round(rbar_h, 3), mu_pll: mu_pll, mu_h: mu_h, on_beat: on_beat, phases_pll: Enum.take(commits_pll1, @spark_cap) |> Enum.reverse(), phases_h: Enum.take(commits_hil1, @spark_cap) |> Enum.reverse(), inj: short(lease.inj), del: short(lease.del)}, meta: %{pipeline: :realtime}, type: :system_status) do
+              EventBus.publish_event(ev)
+            end
             NDJSON.write(%{event: "commit", phi_pll: pll.phi, phi_h: phi_h, plv_pll: plv_pll, plv_h: plv_h, rbar_pll: rbar_pll, p_pll: p_pll, rbar_h: rbar_h, p_h: p_h, mu_pll: mu_pll, mu_h: mu_h, on_beat: on_beat})
             {commits_pll1, commits_hil1}
           else {s.commits_pll, s.commits_hil} end
@@ -75,7 +81,9 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   def handle_call({:boundary_close, _timeout_ms}, _from, s) do
     echo = Enum.take(s.hist, 3)
     NDJSON.write(%{event: "boundary_close_requested", phi_pll: s.pll.phi})
-  EventBus.emit_realtime(:system_status, %{stage: "paused", reason: "boundary_close", phi_pll: s.pll.phi})
+  with {:ok, ev} <- Thunderline.Event.new(name: "system.status.paused", source: :bolt, payload: %{stage: "paused", reason: "boundary_close", phi_pll: s.pll.phi}, meta: %{pipeline: :realtime}, type: :system_status) do
+    EventBus.publish_event(ev)
+  end
     {:reply, %{gate_ts: System.monotonic_time(:millisecond), phi_pll: s.pll.phi, echo_window: echo, pll_state: Map.from_struct(s.pll)}, s}
   end
   # Helper functions copied from legacy module

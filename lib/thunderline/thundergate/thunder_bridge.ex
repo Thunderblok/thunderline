@@ -86,19 +86,50 @@ defmodule Thundergate.ThunderBridge do
   """
   def publish(event) when is_map(event) do
     # Route through EventBus for Broadway pipeline processing
+    build_and_publish = fn attrs ->
+      with {:ok, ev} <- Thunderline.Event.new(attrs) do
+        Thunderline.EventBus.publish_event(ev)
+      end
+    end
+
     case event do
       %{type: event_type, payload: payload} ->
-        Thunderline.EventBus.emit_realtime(event_type, payload)
+        build_and_publish.(%{
+          name: Map.get(payload, :event_name, "system.bridge.#{event_type}"),
+          type: event_type,
+          source: :bridge,
+          payload: payload,
+          meta: %{pipeline: :realtime},
+          priority: Map.get(payload, :priority, :normal)
+        })
 
       %{event: event_type, data: payload} ->
-        Thunderline.EventBus.emit_realtime(event_type, payload)
+        build_and_publish.(%{
+          name: Map.get(payload, :event_name, "system.bridge.#{event_type}"),
+          type: event_type,
+          source: :bridge,
+          payload: payload,
+          meta: %{pipeline: :realtime},
+          priority: Map.get(payload, :priority, :normal)
+        })
 
       %{topic: topic, event: event_data} ->
-        Thunderline.EventBus.broadcast_via_eventbus(topic, :bridge_event, event_data)
+        build_and_publish.(%{
+          name: "system.bridge.bridge_event",
+          type: :bridge_event,
+          source: :bridge,
+          payload: Map.merge(event_data, %{topic: topic}),
+          meta: %{pipeline: infer_pipeline_from_topic(topic)}
+        })
 
       _ ->
-        # Fallback: treat entire event as payload
-        Thunderline.EventBus.emit_realtime(:generic_event, event)
+        build_and_publish.(%{
+          name: "system.bridge.generic_event",
+          type: :generic_event,
+          source: :bridge,
+          payload: event,
+          meta: %{pipeline: :realtime}
+        })
     end
   end
 
@@ -347,13 +378,25 @@ defmodule Thundergate.ThunderBridge do
   # Private Functions
 
   defp broadcast_event_internal(topic, event) do
-    # Migrate from direct PubSub to EventBus for Broadway pipeline processing
-    Thunderline.EventBus.broadcast_via_eventbus(topic, :thunder_bridge_event, %{
-      topic: topic,
-      event: event,
-      source: "thunder_bridge",
-      timestamp: DateTime.utc_now()
-    })
+    pipeline = infer_pipeline_from_topic(topic)
+    attrs = %{
+      name: "system.bridge.thunder_bridge_event",
+      type: :thunder_bridge_event,
+      source: :bridge,
+      payload: %{topic: topic, event: event, timestamp: DateTime.utc_now()},
+      meta: %{pipeline: pipeline}
+    }
+    with {:ok, ev} <- Thunderline.Event.new(attrs) do
+      Thunderline.EventBus.publish_event(ev)
+    end
+  end
+
+  defp infer_pipeline_from_topic(topic) do
+    cond do
+      String.contains?(topic, "agent") or String.contains?(topic, "live") -> :realtime
+      String.contains?(topic, "domain") -> :cross_domain
+      true -> :general
+    end
   end
 
   defp get_memory_usage do

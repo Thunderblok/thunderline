@@ -363,12 +363,14 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
     Thunderline.Thunderbolt.LaneCouplingPipeline.initialize_coupling(coupling)
 
     # Emit coupling creation event
-    Thunderline.EventBus.emit_realtime(:coupling_created, %{
+    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.created", source: :bolt, type: :coupling_created, payload: %{
       coupling_id: coupling.id,
       source_lane: coupling.source_lane,
       target_lane: coupling.target_lane,
       alpha_gain: coupling.alpha_gain
-    })
+    }, meta: %{pipeline: :realtime}) do
+      Thunderline.EventBus.publish_event(ev)
+    end
 
     {:ok, coupling}
   end
@@ -401,12 +403,14 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
 
   defp apply_alpha_tuning(_changeset, coupling) do
     # Real-time alpha gain update to all active coordinators
-    Thunderline.EventBus.emit_realtime(:alpha_tuned, %{
+    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.alpha_tuned", source: :bolt, type: :alpha_tuned, payload: %{
       coupling_id: coupling.id,
       source_lane: coupling.source_lane,
       target_lane: coupling.target_lane,
       new_alpha: coupling.alpha_gain
-    })
+    }, meta: %{pipeline: :realtime}) do
+      Thunderline.EventBus.publish_event(ev)
+    end
 
     # Update tuning history
     history = coupling.tuning_history || %{}
@@ -421,11 +425,13 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
   defp activate_coupling_pipeline(_changeset, coupling) do
     Thunderline.Thunderbolt.LaneCouplingPipeline.activate_coupling(coupling.id)
 
-    Thunderline.EventBus.emit_realtime(:coupling_activated, %{
+    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.activated", source: :bolt, type: :coupling_activated, payload: %{
       coupling_id: coupling.id,
       source_lane: coupling.source_lane,
       target_lane: coupling.target_lane
-    })
+    }, meta: %{pipeline: :realtime}) do
+      Thunderline.EventBus.publish_event(ev)
+    end
 
     {:ok, coupling}
   end
@@ -433,11 +439,13 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
   defp deactivate_coupling_pipeline(_changeset, coupling) do
     Thunderline.Thunderbolt.LaneCouplingPipeline.deactivate_coupling(coupling.id)
 
-    Thunderline.EventBus.emit_realtime(:coupling_deactivated, %{
+    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.deactivated", source: :bolt, type: :coupling_deactivated, payload: %{
       coupling_id: coupling.id,
       source_lane: coupling.source_lane,
       target_lane: coupling.target_lane
-    })
+    }, meta: %{pipeline: :realtime}) do
+      Thunderline.EventBus.publish_event(ev)
+    end
 
     {:ok, coupling}
   end

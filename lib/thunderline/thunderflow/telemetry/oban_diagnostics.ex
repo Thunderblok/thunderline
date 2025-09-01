@@ -45,7 +45,7 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanDiagnostics do
   defp schedule, do: Process.send_after(self(), :tick, @interval)
 
   defp run_diagnostics(stage) do
-    repo_up = Process.whereis(Thunderline.Repo) |> alive?()
+  repo_up = Thunderline.Thunderblock.ObanIntrospection.repo_alive?()
     oban_name = oban_instance_name()
     oban_pid = Oban.whereis(oban_name)
     oban_up = alive?(oban_pid)
@@ -61,8 +61,8 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanDiagnostics do
     )
 
     with true <- repo_up do
-      check_tables()
-      if oban_up, do: log_queue_overview(), else: attempt_demo_job_insert()
+  Thunderline.Thunderblock.ObanIntrospection.check_tables(verbose?())
+  if oban_up, do: Thunderline.Thunderblock.ObanIntrospection.log_queue_overview(verbose?()), else: Thunderline.Thunderblock.ObanIntrospection.attempt_demo_job_insert(verbose?())
     else
       _ -> Logger.warning("[ObanDiagnostics] Repo not up yet; skipping table & job checks")
     end
@@ -75,40 +75,6 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanDiagnostics do
 
   defp oban_instance_name do
     Application.get_env(:thunderline, Oban, []) |> Keyword.get(:name, Oban)
-  end
-
-  defp check_tables do
-    for table <- ["oban_jobs", "oban_peers"] do
-      case Thunderline.Repo.query("SELECT to_regclass($1)", [table]) do
-        {:ok, %{rows: [[nil]]}} -> Logger.error("[ObanDiagnostics] MISSING table #{table} – migration not applied")
-        {:ok, %{rows: [[present]]}} when not is_nil(present) -> if verbose?(), do: Logger.debug("[ObanDiagnostics] table_present=#{table} regclass=#{inspect(present)}")
-        {:error, err} -> Logger.error("[ObanDiagnostics] table_check_error=#{table} error=#{inspect(err)}")
-      end
-    end
-  end
-
-  defp log_queue_overview do
-    Application.get_env(:thunderline, Oban, [])
-    |> Keyword.get(:queues, [])
-    |> Enum.each(fn {queue, _concurrency} ->
-      case Thunderline.Repo.query("SELECT count(*) FROM oban_jobs WHERE queue=$1 AND state='available'", [to_string(queue)]) do
-        {:ok, %{rows: [[count]]}} -> if verbose?(), do: Logger.debug("[ObanDiagnostics] queue=#{queue} available=#{count}")
-        {:error, err} -> Logger.warning("[ObanDiagnostics] queue_stat_error queue=#{queue} error=#{inspect(err)}")
-      end
-    end)
-  end
-
-  defp attempt_demo_job_insert do
-    args = %{"probe" => true, "at" => DateTime.utc_now()}
-  case Code.ensure_loaded?(Thunderline.Thunderflow.Jobs.DemoJob) do
-      true ->
-  job = Thunderline.Thunderflow.Jobs.DemoJob.new(args)
-        case Oban.insert(job) do
-          {:ok, _job} -> Logger.info("[ObanDiagnostics] Inserted demo job (Oban not yet supervising – will run once supervisor alive)")
-          {:error, changeset} -> Logger.error("[ObanDiagnostics] Failed to insert demo job: #{inspect(changeset.errors)}")
-        end
-      false -> if verbose?(), do: Logger.debug("[ObanDiagnostics] DemoJob module not loaded; skipping test insert")
-    end
   end
 
   defp verbose?, do: System.get_env("OBAN_DIAGNOSTICS_VERBOSE") in ["1", "true", "TRUE", "yes", "Y"]

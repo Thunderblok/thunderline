@@ -4,8 +4,7 @@ defmodule Thunderline.Thunderlink.Voice.Device do
   """
   use Ash.Resource,
     domain: Thunderline.Thunderlink.Domain,
-    data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    data_layer: AshPostgres.DataLayer
 
   postgres do
     table "voice_devices"
@@ -49,14 +48,7 @@ defmodule Thunderline.Thunderlink.Voice.Device do
     end
   end
 
-  policies do
-    policy action([:register, :update_devices, :mark_ice_result, :deactivate]) do
-      authorize_if expr(principal_id == actor(:id))
-    end
-    policy action(:read) do
-      authorize_if expr(principal_id == actor(:id))
-    end
-  end
+  # Link domain policy purged (WARHORSE)
 
   code_interface do
     define :register

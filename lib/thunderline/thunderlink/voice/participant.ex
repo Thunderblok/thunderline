@@ -5,7 +5,6 @@ defmodule Thunderline.Thunderlink.Voice.Participant do
   use Ash.Resource,
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer],
     notifiers: [Ash.Notifier.PubSub]
 
   postgres do
@@ -65,26 +64,7 @@ defmodule Thunderline.Thunderlink.Voice.Participant do
     end
   end
 
-  policies do
-    policy action(:join) do
-      authorize_if expr(principal_id == actor(:id))
-    end
-    policy action(:read) do
-      authorize_if expr(principal_id == actor(:id))
-      authorize_if relates_to_actor_via([:room, :created_by_id])
-    end
-    policy action([:set_muted, :set_speaking]) do
-      authorize_if expr(principal_id == actor(:id))
-      authorize_if relates_to_actor_via([:room, :created_by_id])
-    end
-    policy action(:promote) do
-      authorize_if relates_to_actor_via([:room, :created_by_id])
-    end
-    policy action(:leave) do
-      authorize_if expr(principal_id == actor(:id))
-      authorize_if relates_to_actor_via([:room, :created_by_id])
-    end
-  end
+  # Link domain policy purged (WARHORSE)
 
   code_interface do
     define :join

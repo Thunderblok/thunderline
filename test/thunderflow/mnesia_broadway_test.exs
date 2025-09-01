@@ -8,80 +8,48 @@ defmodule ThunderlineTest.MnesiaBroadwayTest do
   alias Thunderflow.MnesiaProducer
 
   setup do
-    # Ensure Mnesia is running and tables are created
-    :ok = Memento.stop()
-    :ok = Memento.Schema.create()
+    # Start fresh in-memory mnesia (per test module)
+    :mnesia.stop()
+    # Use Memento convenience; create schema for current node
+    :ok = Memento.Schema.create([node()])
     :ok = Memento.start()
-
-    # Create test tables
-    {:ok, _} = Memento.Table.create(Thunderflow.MnesiaProducer)
-    {:ok, _} = Memento.Table.create(Thunderflow.CrossDomainEvents)
-    {:ok, _} = Memento.Table.create(Thunderflow.RealTimeEvents)
-
+    Enum.each([Thunderflow.MnesiaProducer, Thunderflow.CrossDomainEvents, Thunderflow.RealTimeEvents], fn table ->
+      _ = Memento.Table.create(table)
+    end)
     :ok
   end
 
   describe "EventBus with Mnesia" do
-    test "emit/2 enqueues events to general table" do
-      # Emit a test event
-      :ok = EventBus.emit(:test_general_event, %{data: "test_payload"})
-
-      # Wait a moment for processing
-      Process.sleep(100)
-
-      # Check that event was enqueued
+    test "publish_event/1 enqueues events to general table" do
+      {:ok, ev} = Thunderline.Event.new(name: "system.test.general", type: :test_general_event, payload: %{data: "test_payload"}, source: :flow)
+      assert {:ok, _} = EventBus.publish_event(ev)
+      Process.sleep(50)
       stats = MnesiaProducer.queue_stats(Thunderflow.MnesiaProducer)
       assert stats.total > 0
     end
 
-    test "emit_cross_domain/2 enqueues events to cross-domain table" do
-      # Emit a cross-domain event
-      :ok =
-        EventBus.emit_cross_domain(:test_cross_domain, %{
-          from_domain: "thunderchief",
-          to_domain: "thundercom",
-          data: "cross_domain_payload"
-        })
-
-      # Wait a moment for processing
-      Process.sleep(100)
-
-      # Check that event was enqueued
+    test "cross-domain event routes to cross-domain table" do
+      {:ok, ev} = Thunderline.Event.new(name: "system.chief.cross", type: :test_cross_domain, payload: %{from_domain: "thunderchief", to_domain: "thundercom", data: "x"}, source: :flow, target_domain: "thundercom")
+      assert {:ok, _} = EventBus.publish_event(ev)
+      Process.sleep(50)
       stats = MnesiaProducer.queue_stats(Thunderflow.CrossDomainEvents)
       assert stats.total > 0
     end
 
-    test "emit_realtime/2 enqueues events to realtime table" do
-      # Emit a real-time event
-      :ok =
-        EventBus.emit_realtime(:test_realtime_event, %{
-          priority: :high,
-          data: "realtime_payload"
-        })
-
-      # Wait a moment for processing
-      Process.sleep(100)
-
-      # Check that event was enqueued
+    test "high priority event infers realtime pipeline" do
+      {:ok, ev} = Thunderline.Event.new(name: "system.flow.high", type: :test_realtime_event, payload: %{data: "rt"}, source: :flow, priority: :high)
+      assert {:ok, _} = EventBus.publish_event(ev)
+      Process.sleep(50)
       stats = MnesiaProducer.queue_stats(Thunderflow.RealTimeEvents)
       assert stats.total > 0
     end
 
-    test "emit_batch/2 enqueues multiple events efficiently" do
-      # Prepare batch events
-      events = [
-        {:batch_event_1, %{data: "batch_1"}},
-        {:batch_event_2, %{data: "batch_2"}},
-        {:batch_event_3, %{data: "batch_3"}}
-      ]
-
-  # Emit batch (now returns :ok on success)
-  :ok = EventBus.emit_batch(events, :general)
-
-      # Wait a moment for processing
-      Process.sleep(100)
-
-      # Check that events were enqueued
+    test "multiple publish_event calls increase queue" do
+      for i <- 1..3 do
+        {:ok, ev} = Thunderline.Event.new(name: "system.flow.batch#{i}", type: :batch_event, payload: %{i: i}, source: :flow)
+        assert {:ok, _} = EventBus.publish_event(ev)
+      end
+      Process.sleep(50)
       stats = MnesiaProducer.queue_stats(Thunderflow.MnesiaProducer)
       assert stats.total >= 3
     end
@@ -137,43 +105,5 @@ defmodule ThunderlineTest.MnesiaBroadwayTest do
     end
   end
 
-  describe "Legacy compatibility" do
-    test "legacy_broadcast/2 routes to appropriate pipeline" do
-      # Test real-time topic routing
-      :ok = EventBus.legacy_broadcast("agent:status:update", %{agent_id: "123", status: "online"})
-
-      # Test cross-domain topic routing
-      :ok =
-        EventBus.legacy_broadcast("domain:thunderchief:thundercom", %{message: "cross domain"})
-
-      # Test general topic routing
-      :ok = EventBus.legacy_broadcast("general:event:topic", %{data: "general event"})
-
-      # Wait for processing
-      Process.sleep(200)
-
-      # Verify events were routed to appropriate tables
-      realtime_stats = MnesiaProducer.queue_stats(Thunderflow.RealTimeEvents)
-      general_stats = MnesiaProducer.queue_stats(Thunderflow.MnesiaProducer)
-
-      # At least some events should be processed
-      assert realtime_stats.total + general_stats.total > 0
-    end
-
-    test "broadcast_via_eventbus/3 maintains backward compatibility" do
-      :ok =
-        EventBus.broadcast_via_eventbus(
-          "test:topic:name",
-          :test_event_type,
-          %{data: "compatibility_test"}
-        )
-
-      # Wait for processing
-      Process.sleep(100)
-
-      # Verify event was processed
-      stats = MnesiaProducer.queue_stats(Thunderflow.MnesiaProducer)
-      assert stats.total > 0
-    end
-  end
+  # Legacy compatibility tests removed (deprecated APIs purged); guardrails enforce absence.
 end

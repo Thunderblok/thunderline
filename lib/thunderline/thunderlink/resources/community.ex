@@ -28,7 +28,6 @@ defmodule Thunderline.Thunderlink.Resources.Community do
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource],
-    authorizers: [Ash.Policy.Authorizer],
     notifiers: [Ash.Notifier.PubSub]
 
   import Ash.Resource.Change.Builtins

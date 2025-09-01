@@ -69,7 +69,16 @@ defmodule Thunderline.Thunderflow.EventValidator do
       invalid_event: Event.to_map(ev),
       reason: inspect(reason)
     }
-    _ = Thunderline.EventBus.emit_realtime(:audit_event_drop, %{event_name: "audit.event_drop", payload: audit_payload, domain: "thunderflow"})
+    with {:ok, ev} <- Thunderline.Event.new(%{
+           name: "audit.event_drop",
+           source: :flow,
+           payload: audit_payload,
+           type: :audit_event_drop,
+           meta: %{pipeline: :realtime},
+           priority: :high
+         }) do
+      _ = Thunderline.EventBus.publish_event(ev)
+    end
     :ok
   end
 

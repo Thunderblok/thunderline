@@ -9,8 +9,7 @@ defmodule Thunderline.Thunderlink.Resources.Ticket do
   use Ash.Resource,
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshOban, AshGraphql.Resource],
-    authorizers: [Ash.Policy.Authorizer]
+    extensions: [AshOban, AshGraphql.Resource]
 
   require Ash.Query
 
@@ -67,17 +66,7 @@ defmodule Thunderline.Thunderlink.Resources.Ticket do
   end
 
   # Authorization policies - CRITICAL for AshOban to work
-  policies do
-    # Allow AshOban to bypass authorization for background jobs
-    bypass AshOban.Checks.AshObanInteraction do
-      authorize_if always()
-    end
-
-    # Default policy for regular access
-    policy always() do
-      authorize_if always()
-    end
-  end
+  # Link domain policy purged (WARHORSE) – background job bypass removed (handled centrally)
 
   # AshOban configuration with working triggers
   oban do
