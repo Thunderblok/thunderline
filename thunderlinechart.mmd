@@ -1,0 +1,164 @@
+---
+config:
+  layout: dagre
+  theme: neo-dark
+---
+flowchart LR
+  %% Enhanced High Command View with Domain Coloring & Classes
+  %% solid = primary data flow, dashed = control/federation, dotted = telemetry/observability
+
+  %% Class Definitions (color-coded by domain)
+  classDef block fill:#1d3557,stroke:#457b9d,stroke-width:2px,color:#f1faee
+  classDef gate fill:#2a9d8f,stroke:#16a085,stroke-width:2px,color:#f1faee
+  classDef link fill:#6d597a,stroke:#b56576,stroke-width:2px,color:#fff
+  classDef grid fill:#264653,stroke:#2a9d8f,stroke-width:2px,color:#f1faee
+  classDef flow fill:#3d405b,stroke:#81b29a,stroke-width:2px,color:#f1faee
+  classDef bolt fill:#3a0ca3,stroke:#7209b7,stroke-width:2px,color:#fff
+  classDef crown fill:#5a189a,stroke:#c77dff,stroke-width:2px,color:#fff
+  classDef com fill:#4a5759,stroke:#6c757d,stroke-width:2px,color:#eaeaea
+  classDef obs fill:#14213d,stroke:#fca311,stroke-width:2px,color:#f1faee,stroke-dasharray: 4 2
+  classDef store fill:#283618,stroke:#606c38,stroke-width:2px,color:#fefae0
+  classDef proto fill:#1b4332,stroke:#2d6a4f,stroke-width:2px,color:#d8f3dc
+  classDef voice fill:#5f0f40,stroke:#9a031e,stroke-width:2px,color:#fff
+  classDef lineage fill:#003049,stroke:#669bbc,stroke-width:2px,color:#fff
+  classDef policy fill:#5e548e,stroke:#9f86c0,stroke-width:2px,color:#fff,stroke-dasharray: 6 3
+
+  %% Core Domains
+  BLOCK[ThunderBlock A]
+  BLOCK2[ThunderBlock B]
+  BLOCK3[ThunderBlock C]
+  GATE[ThunderGate]
+  LINK[ThunderLink]
+  GRID[ThunderGrid]
+  BOLT[ThunderBolt]
+  CROWN[ThunderCrown]
+  FLOW[ThunderFlow]
+  COM[ThunderCom]
+
+  %% Data & Event Spine
+  BLOCK -- event/state --> FLOW
+  GATE -- authN/Z/events --> FLOW
+  LINK -- voice+msg --> FLOW
+  GRID -- zone events --> FLOW
+  BOLT -- orchestration --> FLOW
+  CROWN -- ai/intent --> FLOW
+  FLOW -- feedback --> BLOCK
+  FLOW -- updates --> LINK
+  FLOW -- placement --> GRID
+  FLOW -- tasks/compute --> BOLT
+  FLOW -- ai/context --> CROWN
+
+  %% Control Plane (dashed)
+  BLOCK -- infra config --- GATE
+  GATE -- federate & auth --- LINK
+  LINK -- placement --- GRID
+  GRID -- jobs/ops --- BOLT
+  BOLT -- intent + plans --- CROWN
+  CROWN -- policy --- BLOCK
+
+  %% Federation Ring (dashed replicate)
+  BLOCK -. replicate .-> BLOCK2
+  BLOCK2 -. replicate .-> BLOCK3
+  BLOCK3 -. knowledge sync .-> BLOCK
+  BLOCK -. auth handshake .-> GATE
+  BLOCK2 -. auth handshake .-> GATE
+  BLOCK3 -. auth handshake .-> GATE
+
+  %% Resource Surfaces
+  BLOCK --> blkVault[(Thundervault)]
+  BLOCK --> vine[Thundervine]
+  BLOCK2 --> blkVault
+  BLOCK3 --> blkVault
+  BLOCK2 --> vine
+  BLOCK3 --> vine
+  GATE --> gatePolicy[Policy / Rate Limit]
+  gatePolicy --> gateBridge[ThunderBridge]
+  LINK --> lnkChan[Communities]
+  LINK --> voiceChan[VoiceChannel]
+  voiceChan --> voiceSup[VoiceSupervisor]
+  voiceSup --> voiceRoomRes[VoiceRoom]
+  voiceRoomRes --> voicePartRes[VoiceParticipant]
+  voiceRoomRes --> voiceDevRes[VoiceDevice]
+  FLOW --> flowBus[EventBus]
+  flowBus --> pubsub[PubSub]
+  pubsub --> netMesh[NetMesh]
+  netMesh --> obsTap[Telemetry Tap]
+  BLOCK2 -. federated event .-> flowBus
+  BLOCK3 -. federated event .-> flowBus
+  BOLT --> boltPlan[Plan]
+  boltPlan --> boltLane[Lane Engine]
+  boltLane --> boltCell[ThunderCell]
+  boltLane --> boltJobs[Jobs]
+  boltCell -- snapshots --> blkVault
+  CROWN --> ashAI[AshAI]
+  ashAI --> jidoActs[Jido Actions]
+  jidoActs --> crnAI[AI Orchestrator]
+  crnAI -- request model/tool --> gatePolicy
+  gateBridge -- egress --> extAPI[External APIs]
+  gateBridge --> protoLayer[Protocol Layer]
+  protoLayer --> protoIngress[Proto Ingest]
+  protoLayer --> protoEgress[Proto Egress]
+  protoLayer -. negotiation .-> COM
+  COM --> fedBus[Federation Bus]
+  fedBus --> netMesh
+  fedBus -. policy route .-> gatePolicy
+  COM --> flowBus
+  GATE --> COM
+  BLOCK --> COM
+  BLOCK2 --> COM
+  BLOCK3 --> COM
+  COM --> LINK
+  GRID --> grZones[Zones]
+  voiceChan -- voice.signal.* --> flowBus
+  voiceSup -- voice.room.* --> flowBus
+  flowBus -- telemetry --> blkVault
+  gateBridge --> turn[TURN/STUN]
+  turn --> webrtc[WebRTC]
+  webrtc --> LINK
+  flowBus -->|cmd.workflow.plan| vine
+  boltPlan -->|consume DAG| vine
+  vine -->|persist DAG| blkVault
+  vine -->|dag.commit| FLOW
+  vine -->|lineage| CROWN
+  vine --> lineageStream[Lineage Export]
+  lineageStream --> obsSink[Observability Sink]
+  obsTap --> obsSink
+  flowBus --> oTelExp[OTel Exporter]
+  oTelExp --> obsSink
+
+  %% Plane Legend (subgraph)
+  subgraph PLANES
+    CP[Control Plane]
+    DP[Data Plane]
+    FP[Federation Plane]
+    OP[Observability Plane]
+  end
+  CP -. maps to .-> gatePolicy
+  DP -. carried by .-> flowBus
+  FP -. realized via .-> fedBus
+  OP -. exports .-> obsSink
+
+  %% Class Assignments
+  class BLOCK,BLOCK2,BLOCK3 block
+  class GATE gate
+  class LINK voice
+  class GRID grid
+  class FLOW flow
+  class BOLT bolt
+  class CROWN crown
+  class COM com
+  class blkVault store
+  class vine lineage
+  class gatePolicy policy
+  class gateBridge proto
+  class protoLayer,protoIngress,protoEgress proto
+  class flowBus,pubsub,netMesh obs
+  class obsTap,obsSink,oTelExp obs
+  class voiceChan,voiceSup,voiceRoomRes,voicePartRes,voiceDevRes voice
+  class boltPlan,boltLane,boltCell,boltJobs bolt
+  class ashAI,jidoActs,crnAI crown
+  class fedBus com
+  class lineageStream lineage
+  class grZones grid
+  class turn,webrtc proto
+  class extAPI proto

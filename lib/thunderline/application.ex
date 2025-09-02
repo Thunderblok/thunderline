@@ -93,7 +93,7 @@ defmodule Thunderline.Application do
 
     core_db = db_children
 
-    children = phoenix_foundation ++ core_db ++ [
+  children = phoenix_foundation ++ core_db ++ [
       Thunderline.ThunderMemory,
       Thunderline.Thunderflow.Support.CircuitBreaker,
       Thunderline.Thunderflow.Observability.FanoutAggregator,
@@ -121,7 +121,8 @@ defmodule Thunderline.Application do
       (on?(:enable_voice_media) and not minimal? && Thunderline.Thunderlink.Voice.Supervisor) || nil,
       (on?(:ca_viz) and not minimal? && Thunderline.Thunderbolt.CA.Registry) || nil,
       (on?(:ca_viz) and not minimal? && Thunderline.Thunderbolt.CA.RunnerSupervisor) || nil,
-      (on?(:thundervine_lineage) and not minimal? && {Thunderline.Thundervine.WorkflowCompactor, []}) || nil
+      (on?(:thundervine_lineage) and not minimal? && {Thunderline.Thundervine.WorkflowCompactor, []}) || nil,
+      (not minimal? && Thunderline.Thundergate.SelfTest) || nil
     ] ++ compute_children ++ endpoint_child ++ extras
       |> Enum.filter(& &1)
 

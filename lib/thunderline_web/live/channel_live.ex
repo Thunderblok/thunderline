@@ -7,6 +7,7 @@ defmodule ThunderlineWeb.ChannelLive do
   use ThunderlineWeb, :live_view
   alias Thunderline.Thunderlink.Resources.{Community, Channel, Message}
   alias Thunderline.Thunderlink.{Domain, Topics}
+  import Thunderline.Thunderlink.Presence.Enforcer, only: [with_presence: 3, with_presence: 4]
   alias ThunderlineWeb.Presence
   require Logger
   import Ash.Expr
@@ -20,31 +21,33 @@ defmodule ThunderlineWeb.ChannelLive do
          {:ok, channel} <- fetch_channel(community.id, chslug) do
       # Presence / membership enforcement (ANVIL Priority A)
       actor_ctx = socket.assigns[:actor_ctx]
-      case Thunderline.Thunderlink.Presence.Policy.decide(:join, {:channel, channel.id}, actor_ctx) do
-        {:deny, reason} ->
-          :telemetry.execute([:thunderline, :link, :presence, :blocked_live_mount], %{count: 1}, %{channel_id: channel.id, reason: reason, actor: actor_ctx && actor_ctx.actor_id})
+      join_result = with_presence(:join, {:channel, channel.id}, actor_ctx) do
+        if connected?(socket) do
+          Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_messages(channel.id))
+          Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_reactions(channel.id))
+          Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_presence(channel.id))
+          anon_user = presence_identity(actor_ctx)
+          Presence.track_channel(self(), channel.id, anon_user)
+        end
+        :ok
+      end
+
+      case join_result do
+        {:error, _} ->
+          :telemetry.execute([:thunderline, :link, :presence, :blocked_live_mount], %{count: 1}, %{channel_id: channel.id, reason: :denied, actor: actor_ctx && actor_ctx.actor_id})
           return_path = "/c/#{community.community_slug}"
           {:ok, socket |> put_flash(:error, "access denied (presence)") |> push_navigate(to: return_path)}
-        {:allow, _} ->
-          if connected?(socket) do
-            Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_messages(channel.id))
-            Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_reactions(channel.id))
-            Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_presence(channel.id))
-            anon_user = presence_identity(actor_ctx)
-            Presence.track_channel(self(), channel.id, anon_user)
-          end
-
-      {:ok,
-       socket
-       |> assign(:community, community)
-       |> assign(:channel, channel)
-       |> assign(:messages, load_messages(channel.id))
-       |> assign(:new_message, "")
-       |> assign(:ai_thread, [])
-       |> assign(:ai_mode, false)
-  |> assign(:page_title, "#{channel.channel_name} · #{community.community_name}")
-  |> assign(:presence_users, list_channel_presence(channel.id))}
-    else
+        _ ->
+          {:ok,
+           socket
+           |> assign(:community, community)
+           |> assign(:channel, channel)
+           |> assign(:messages, load_messages(channel.id))
+           |> assign(:new_message, "")
+           |> assign(:ai_thread, [])
+           |> assign(:ai_mode, false)
+           |> assign(:page_title, "#{channel.channel_name} · #{community.community_name}")
+           |> assign(:presence_users, list_channel_presence(channel.id))}
       end
     else
       _ -> {:ok, push_navigate(socket, to: "/")}
@@ -65,12 +68,11 @@ defmodule ThunderlineWeb.ChannelLive do
     if content != "" do
       channel = socket.assigns.channel
       actor_ctx = socket.assigns[:actor_ctx]
-      case Thunderline.Thunderlink.Presence.Policy.decide(:send, {:channel, channel.id}, actor_ctx) do
-        {:deny, reason} ->
-          :telemetry.execute([:thunderline, :link, :presence, :blocked_live_send], %{count: 1}, %{channel_id: channel.id, reason: reason, actor: actor_ctx && actor_ctx.actor_id})
+      case with_presence(:send, {:channel, channel.id}, actor_ctx) do
+        {:error, _} ->
+          :telemetry.execute([:thunderline, :link, :presence, :blocked_live_send], %{count: 1}, %{channel_id: channel.id, reason: :denied, actor: actor_ctx && actor_ctx.actor_id})
           :ok
-        {:allow, _} ->
-          send_message(channel, content, actor_ctx)
+        _ -> send_message(channel, content, actor_ctx)
       end
     end
     {:noreply, assign(socket, :new_message, "")}

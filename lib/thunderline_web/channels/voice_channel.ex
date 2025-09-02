@@ -8,16 +8,17 @@ defmodule ThunderlineWeb.VoiceChannel do
   # Phase A: migrated to Thunderlink voice namespace
   alias Thunderline.Thunderlink.Voice.Supervisor, as: VoiceSupervisor
   alias Thunderline.Thunderlink.Voice.{Participant, Room}
+  import Thunderline.Thunderlink.Presence.Enforcer, only: [with_presence: 3, with_presence: 4]
 
   @impl true
   def join("voice:" <> room_id, _payload, socket) do
     actor_ctx = socket.assigns[:actor_ctx]
     resource = {:voice_room, room_id}
-    case Thunderline.Thunderlink.Presence.Policy.decide(:join, resource, actor_ctx) do
-      {:deny, reason} ->
-        :telemetry.execute([:thunderline, :link, :presence, :blocked_channel_join], %{count: 1}, %{room_id: room_id, reason: reason, actor: actor_ctx && actor_ctx.actor_id})
+  case with_presence(:join, resource, actor_ctx) do
+      {:error, _} ->
+        :telemetry.execute([:thunderline, :link, :presence, :blocked_channel_join], %{count: 1}, %{room_id: room_id, reason: :denied, actor: actor_ctx && actor_ctx.actor_id})
         {:error, %{reason: "presence_denied"}}
-      {:allow, _} ->
+      _ ->
         with {:ok, _pid} <- VoiceSupervisor.ensure_room(room_id) do
           {:ok, assign(socket, :room_id, room_id)}
         else
@@ -29,11 +30,11 @@ defmodule ThunderlineWeb.VoiceChannel do
   @impl true
   def handle_in(event, payload, socket) when event in ["webrtc:offer", "webrtc:answer", "webrtc:candidate", "participant:speaking"] do
     actor_ctx = socket.assigns[:actor_ctx]
-    case Thunderline.Thunderlink.Presence.Policy.decide(:send, {:voice_room, socket.assigns.room_id}, actor_ctx) do
-      {:deny, reason} ->
-        :telemetry.execute([:thunderline, :link, :presence, :blocked_channel_send], %{count: 1}, %{room_id: socket.assigns.room_id, reason: reason, actor: actor_ctx && actor_ctx.actor_id, event: event})
+  case with_presence(:send, {:voice_room, socket.assigns.room_id}, actor_ctx) do
+      {:error, _} ->
+        :telemetry.execute([:thunderline, :link, :presence, :blocked_channel_send], %{count: 1}, %{room_id: socket.assigns.room_id, reason: :denied, actor: actor_ctx && actor_ctx.actor_id, event: event})
         {:noreply, socket}
-      {:allow, _} ->
+      _ ->
         dispatch_voice(event, payload, socket)
         {:noreply, socket}
     end
