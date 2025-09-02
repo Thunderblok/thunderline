@@ -12,6 +12,7 @@ defmodule Thunderline.Thundergrid.API do
   """
   use GenServer
   alias Phoenix.PubSub
+  require Logger
 
   @pubsub Thunderline.PubSub
   @table :thundergrid_zones
@@ -68,7 +69,10 @@ defmodule Thunderline.Thundergrid.API do
   defp publish(event, meta) do
     event_name = "grid." <> Atom.to_string(event)
     with {:ok, ev} <- Thunderline.Event.new(name: event_name, source: :flow, payload: %{domain: "thundergrid", meta: meta}, meta: %{pipeline: :realtime}) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[Thundergrid.API] publish #{event_name} failed: #{inspect(reason)} zone=#{meta.zone}")
+      end
     end
     PubSub.broadcast(@pubsub, zone_topic(meta.zone), {event, meta})
   end

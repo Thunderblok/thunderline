@@ -975,7 +975,10 @@ defmodule Thunderline.ErlangBridge do
       meta: %{pipeline: infer_pipeline_from_topic(topic)}
     }
     with {:ok, ev} <- Thunderline.Event.new(attrs) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[ErlangBridge] publish failed: #{inspect(reason)} topic=#{topic} type=#{type}")
+      end
     end
   end
 

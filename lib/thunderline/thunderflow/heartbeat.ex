@@ -34,7 +34,10 @@ defmodule Thunderline.Thunderflow.Heartbeat do
            priority: :high,
            type: :system_tick
          }) do
-      _ = Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[Heartbeat] publish tick failed: #{inspect(reason)} seq=#{seq + 1}")
+      end
     end
     :telemetry.execute([:thunderline, :heartbeat, :tick], %{seq: seq + 1}, %{interval: interval, drift_native: drift})
     schedule(interval)

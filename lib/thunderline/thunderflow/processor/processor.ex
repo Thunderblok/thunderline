@@ -45,7 +45,10 @@ defmodule Thunderline.Thunderflow.Processor do
                type: :event_processed,
                meta: %{pipeline: :realtime}
              }) do
-          EventBus.publish_event(ev)
+          case EventBus.publish_event(ev) do
+            {:ok, res} -> {:ok, res}
+            {:error, reason} -> Logger.warning("[Processor] publish event_processed failed: #{inspect(reason)}"); {:error, reason}
+          end
         end
       end),
       Task.async(fn ->
@@ -55,7 +58,10 @@ defmodule Thunderline.Thunderflow.Processor do
                payload: event,
                type: :cross_domain_event
              }) do
-          EventBus.publish_event(ev)
+          case EventBus.publish_event(ev) do
+            {:ok, res} -> {:ok, res}
+            {:error, reason} -> Logger.warning("[Processor] publish cross_domain_event failed: #{inspect(reason)}"); {:error, reason}
+          end
         end
       end)
     ]

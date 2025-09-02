@@ -112,6 +112,7 @@ defmodule Thunderline.Application do
       Thunderline.DashboardMetrics,
       {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
   Thunderline.Thunderflow.Blackboard,
+  {Thunderline.Thunderflow.Telemetry.LegacyBlackboardWatch, []},
   # Thundergrid authoritative zone API (WARHORSE Week1 skeleton)
   Thunderline.Thundergrid.API,
       {Thunderline.Thunderflow.EventBuffer, [limit: 750]},

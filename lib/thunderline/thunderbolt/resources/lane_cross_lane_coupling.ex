@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource, AshEvents.Events]
+  require Logger
 
   postgres do
     table "thunderlane_cross_lane_coupling"
@@ -369,7 +370,10 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
       target_lane: coupling.target_lane,
       alpha_gain: coupling.alpha_gain
     }, meta: %{pipeline: :realtime}) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish coupling.created failed: #{inspect(reason)}")
+      end
     end
 
     {:ok, coupling}
@@ -409,7 +413,10 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
       target_lane: coupling.target_lane,
       new_alpha: coupling.alpha_gain
     }, meta: %{pipeline: :realtime}) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish alpha_tuned failed: #{inspect(reason)}")
+      end
     end
 
     # Update tuning history
@@ -430,7 +437,10 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
       source_lane: coupling.source_lane,
       target_lane: coupling.target_lane
     }, meta: %{pipeline: :realtime}) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish activated failed: #{inspect(reason)}")
+      end
     end
 
     {:ok, coupling}
@@ -444,7 +454,10 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
       source_lane: coupling.source_lane,
       target_lane: coupling.target_lane
     }, meta: %{pipeline: :realtime}) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish deactivated failed: #{inspect(reason)}")
+      end
     end
 
     {:ok, coupling}

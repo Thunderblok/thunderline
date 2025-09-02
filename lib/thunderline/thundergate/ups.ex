@@ -6,6 +6,7 @@ defmodule Thunderline.Thundergate.UPS do
   use GenServer
   alias Thunderline.EventBus, as: Bus
   alias Thunderline.Thunderbolt.Signal.Sensor
+  require Logger
   # Removed unused @legacy attribute (legacy module retained for reference)
 
   def start_link(args), do: GenServer.start_link(__MODULE__, args, name: __MODULE__)
@@ -33,7 +34,10 @@ defmodule Thunderline.Thundergate.UPS do
              meta: %{pipeline: :realtime},
              priority: :high
            }) do
-        _ = Thunderline.EventBus.publish_event(ev)
+        case Thunderline.EventBus.publish_event(ev) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.warning("[UPS] publish paused failed: #{inspect(reason)} status=#{status}")
+        end
       end
       safe_boundary_close(s.close_ms)
     end
@@ -46,7 +50,10 @@ defmodule Thunderline.Thundergate.UPS do
              meta: %{pipeline: :realtime},
              priority: :high
            }) do
-        _ = Thunderline.EventBus.publish_event(ev)
+        case Thunderline.EventBus.publish_event(ev) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.warning("[UPS] publish power_restored failed: #{inspect(reason)}")
+        end
       end
     end
     Process.send_after(self(), :poll, s.poll)

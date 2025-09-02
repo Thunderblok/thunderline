@@ -84,9 +84,14 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
 
     case Thunderline.Event.new(name: "evt.action.ca.rule_parsed", source: :bolt, payload: payload) do
       {:ok, ev} ->
-        _ = Task.start(fn -> Thunderline.EventBus.publish_event(ev) end)
+        _ = Task.start(fn ->
+          case Thunderline.EventBus.publish_event(ev) do
+            {:ok, _} -> :ok
+            {:error, reason} -> Logger.warning("[RuleParser] publish failed: #{inspect(reason)} original=#{String.slice(original,0,64)}")
+          end
+        end)
         :ok
-      {:error, _} -> :error
+      {:error, errs} -> Logger.warning("[RuleParser] build event failed: #{inspect(errs)}"); :error
     end
   rescue
     _ -> :ok

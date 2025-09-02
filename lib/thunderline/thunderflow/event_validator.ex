@@ -77,7 +77,10 @@ defmodule Thunderline.Thunderflow.EventValidator do
            meta: %{pipeline: :realtime},
            priority: :high
          }) do
-      _ = Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[EventValidator] publish audit.event_drop failed: #{inspect(reason)} name=#{ev.name}")
+      end
     end
     :ok
   end

@@ -278,7 +278,10 @@ defmodule Thunderline.BroadwayMonitoring do
       }
       build_and_publish = fn attrs ->
         with {:ok, ev} <- Thunderline.Event.new(attrs) do
-          Thunderline.EventBus.publish_event(ev)
+          case Thunderline.EventBus.publish_event(ev) do
+            {:ok, _} -> :ok
+            {:error, reason} -> Logger.warning("[BroadwayMonitoring] load_test publish failed: #{inspect(reason)} name=#{attrs.name}")
+          end
         end
       end
       case test_type do

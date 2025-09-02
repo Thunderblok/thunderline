@@ -449,7 +449,10 @@ defmodule Thunderline.Thundercom.Notifications do
       meta: %{pipeline: pipeline}
     }
     with {:ok, ev} <- Thunderline.Event.new(attrs) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[Notifications] publish failed: #{inspect(reason)} attrs=#{inspect(Map.take(attrs, [:name, :type]))}")
+      end
     end
   end
 

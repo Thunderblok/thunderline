@@ -4,6 +4,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
     domain: Thunderline.Thundercrown.Domain,
     data_layer: Ash.DataLayer.Ets,
     authorizers: [Ash.Policy.Authorizer]
+  require Logger
 
   code_interface do
     define :run, args: [:tool, :prompt]
@@ -41,7 +42,12 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
 
   defp emit(name, payload) do
     with {:ok, ev} <- Thunderline.Event.new(name: name, source: :crown, payload: payload) do
-      _ = Task.start(fn -> Thunderline.EventBus.publish_event(ev) end)
+      _ = Task.start(fn ->
+        case Thunderline.EventBus.publish_event(ev) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.warning("[AgentRunner] async publish failed: #{inspect(reason)} name=#{name}")
+        end
+      end)
     end
   end
 end

@@ -199,10 +199,13 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
   ## Progress Emission -----------------------------------------------------
 
     defp emit_progress(stage, data) do
-      with {:ok, ev} <- Thunderline.Event.new(name: "ai.cerebros_search_progress", source: :bolt, payload: %{stage: stage, at: System.system_time(:millisecond), data: sanitize_progress(data)}, meta: %{pipeline: :realtime}, type: :cerebros_search_progress) do
-        EventBus.publish_event(ev)
+      with {:ok, ev} <- Thunderline.Event.new(name: "ai.cerebros_search_progress", source: :bolt, payload: %{stage: stage, at: System.system_time(:millisecond), data: sanitize_progress(data)}, meta: %{pipeline: :realtime}, type: :cerebros_search_progress),
+           {:ok, _} <- EventBus.publish_event(ev) do
+        :ok
+      else
+        {:error, reason} -> Logger.warning("[Cerebros.Adapter] progress event publish failed: #{inspect(reason)}")
+        _ -> :ok
       end
-      :ok
   end
 
   defp sanitize_progress(%{artifact: path} = data) when is_binary(path) do

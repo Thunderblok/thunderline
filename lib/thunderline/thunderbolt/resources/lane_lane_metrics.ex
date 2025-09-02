@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource, AshEvents.Events]
+  require Logger
 
   postgres do
     table "thunderlane_lane_metrics"
@@ -505,7 +506,10 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
              priority: :high,
              type: :metrics_captured
            }) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[LaneMetrics] publish metrics.captured failed: #{inspect(reason)}")
+      end
     end
 
     # Check for alerts
@@ -573,7 +577,10 @@ defmodule Thunderline.Thunderbolt.Resources.LaneMetrics do
           priority: :high,
           type: :metrics_alerts
         })
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[LaneMetrics] publish metrics.alerts failed: #{inspect(reason)}")
+      end
     end
   end
 end

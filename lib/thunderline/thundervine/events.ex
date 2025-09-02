@@ -137,7 +137,12 @@ defmodule Thunderline.Thundervine.Events do
   defp publish_dag_commit(wf, node, meta) do
     payload = %{workflow_id: wf.id, node_id: node.id, correlation_id: meta.correlation_id}
     case Thunderline.Event.new(name: "dag.commit", source: :flow, payload: payload, meta: %{pipeline: :realtime}) do
-      {:ok, ev} -> _ = Thunderline.EventBus.publish_event(ev); :ok
+      {:ok, ev} ->
+        case Thunderline.EventBus.publish_event(ev) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.warning("[Thundervine.Events] publish dag.commit failed: #{inspect(reason)} wf=#{wf.id}")
+        end
+        :ok
       {:error, err} -> Logger.warning("Failed to build dag.commit event: #{inspect(err)}")
     end
   end

@@ -88,7 +88,10 @@ defmodule Thundergate.ThunderBridge do
     # Route through EventBus for Broadway pipeline processing
     build_and_publish = fn attrs ->
       with {:ok, ev} <- Thunderline.Event.new(attrs) do
-        Thunderline.EventBus.publish_event(ev)
+        case Thunderline.EventBus.publish_event(ev) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.warning("[ThunderBridge] publish failed: #{inspect(reason)} name=#{attrs.name}")
+        end
       end
     end
 
@@ -387,7 +390,10 @@ defmodule Thundergate.ThunderBridge do
       meta: %{pipeline: pipeline}
     }
     with {:ok, ev} <- Thunderline.Event.new(attrs) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[ThunderBridge] publish internal failed: #{inspect(reason)} topic=#{topic}")
+      end
     end
   end
 

@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource, AshEvents.Events]
+  require Logger
 
   postgres do
     table "thunderlane_rulesets"
@@ -337,7 +338,10 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
       version: ruleset.version,
       ruleset: serialize_for_deployment(ruleset)
     }, meta: %{pipeline: :realtime}) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[RuleSet] publish deployed failed: #{inspect(reason)}")
+      end
     end
 
     # Send to ErlangBridge for distribution
@@ -362,7 +366,10 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
       version: ruleset.version,
       alpha_deltas: alpha_deltas
     }, meta: %{pipeline: :realtime}) do
-      Thunderline.EventBus.publish_event(ev)
+      case Thunderline.EventBus.publish_event(ev) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Logger.warning("[RuleSet] publish alpha_gains_updated failed: #{inspect(reason)}")
+      end
     end
 
     {:ok, ruleset}

@@ -514,12 +514,21 @@ defmodule Thunderline.ThunderMemory do
   end
 
   defp publish_event(event_type, data) do
-    # Integrate with our EventBus
-    Thunderline.EventBus.publish_event(%{
+    name = "system.memory." <> Atom.to_string(event_type)
+    attrs = %{
+      name: name,
       type: event_type,
-      data: data,
       source: :thunder_memory,
-      timestamp: DateTime.utc_now()
-    })
+      payload: data,
+      meta: %{pipeline: :realtime}
+    }
+    case Thunderline.Event.new(attrs) do
+      {:ok, ev} ->
+        case Thunderline.EventBus.publish_event(ev) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.warning("[ThunderMemory] publish failed #{inspect(reason)} type=#{event_type}")
+        end
+      {:error, errs} -> Logger.warning("[ThunderMemory] build event failed #{inspect(errs)} type=#{event_type}")
+    end
   end
 end
