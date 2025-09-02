@@ -40,6 +40,15 @@ defmodule ThunderlineWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # MCP tool access pipeline (AshAI). API key auth optional initially; tighten later.
+  pipeline :mcp do
+    plug :accepts, ["json"]
+    # TODO (FLAG-G1 follow-up): flip required?: true once API keys issued.
+    plug AshAuthentication.Strategy.ApiKey.Plug,
+      resource: Thunderline.Thundergate.Resources.User,
+      required?: false
+  end
+
   pipeline :graphql do
     plug AshGraphql.Plug
   end
@@ -138,6 +147,19 @@ defmodule ThunderlineWeb.Router do
     get "/metrics", MetricsController, :index
     get "/health", HealthController, :check
     get "/domains/:domain/stats", DomainStatsController, :show
+  end
+
+  # Production MCP server (AshAI tools) - served separately from dev AshAi.Mcp.Dev plug.
+  scope "/mcp" do
+    pipe_through [:mcp]
+
+    forward "/", AshAi.Mcp.Router,
+      tools: [
+        :run_agent
+      ],
+      # Until upstream clients adopt 2025-03-26, we default to older statement (overridable via env).
+      protocol_version_statement: System.get_env("MCP_PROTOCOL_VERSION", "2024-11-05"),
+      otp_app: :thunderline
   end
 
   # GraphQL API

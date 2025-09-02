@@ -18,13 +18,21 @@ defmodule ThunderlineWeb.ChannelLive do
   def mount(%{"community_slug" => cslug, "channel_slug" => chslug}, _session, socket) do
     with {:ok, community} <- fetch_community(cslug),
          {:ok, channel} <- fetch_channel(community.id, chslug) do
-      if connected?(socket) do
-        Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_messages(channel.id))
-        Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_reactions(channel.id))
-        Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_presence(channel.id))
-        anon_user = "anon-" <> Base.encode16(:crypto.strong_rand_bytes(3))
-        Presence.track_channel(self(), channel.id, anon_user)
-      end
+      # Presence / membership enforcement (ANVIL Priority A)
+      actor_ctx = socket.assigns[:actor_ctx]
+      case Thunderline.Thunderlink.Presence.Policy.decide(:join, {:channel, channel.id}, actor_ctx) do
+        {:deny, reason} ->
+          :telemetry.execute([:thunderline, :link, :presence, :blocked_live_mount], %{count: 1}, %{channel_id: channel.id, reason: reason, actor: actor_ctx && actor_ctx.actor_id})
+          return_path = "/c/#{community.community_slug}"
+          {:ok, socket |> put_flash(:error, "access denied (presence)") |> push_navigate(to: return_path)}
+        {:allow, _} ->
+          if connected?(socket) do
+            Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_messages(channel.id))
+            Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_reactions(channel.id))
+            Phoenix.PubSub.subscribe(Thunderline.PubSub, Topics.channel_presence(channel.id))
+            anon_user = presence_identity(actor_ctx)
+            Presence.track_channel(self(), channel.id, anon_user)
+          end
 
       {:ok,
        socket
@@ -37,7 +45,9 @@ defmodule ThunderlineWeb.ChannelLive do
   |> assign(:page_title, "#{channel.channel_name} · #{community.community_name}")
   |> assign(:presence_users, list_channel_presence(channel.id))}
     else
-  _ -> {:ok, push_navigate(socket, to: "/")}
+      end
+    else
+      _ -> {:ok, push_navigate(socket, to: "/")}
     end
   end
 
@@ -53,7 +63,15 @@ defmodule ThunderlineWeb.ChannelLive do
   def handle_event("send", _params, socket) do
     content = String.trim(socket.assigns.new_message)
     if content != "" do
-      send_message(socket.assigns.channel, content)
+      channel = socket.assigns.channel
+      actor_ctx = socket.assigns[:actor_ctx]
+      case Thunderline.Thunderlink.Presence.Policy.decide(:send, {:channel, channel.id}, actor_ctx) do
+        {:deny, reason} ->
+          :telemetry.execute([:thunderline, :link, :presence, :blocked_live_send], %{count: 1}, %{channel_id: channel.id, reason: reason, actor: actor_ctx && actor_ctx.actor_id})
+          :ok
+        {:allow, _} ->
+          send_message(channel, content, actor_ctx)
+      end
     end
     {:noreply, assign(socket, :new_message, "")}
   end
@@ -199,13 +217,14 @@ defmodule ThunderlineWeb.ChannelLive do
     _ -> []
   end
 
-  defp send_message(channel, content) do
-    # Minimal create; later add user context & auth
+  defp send_message(channel, content, actor_ctx) do
+    # Actor derived sender; fallback ephemeral if missing (should be denied earlier)
+    sender_id = if actor_ctx, do: actor_ctx.actor_id, else: Ash.UUID.generate()
     Message.create(%{
       content: content,
       channel_id: channel.id,
       community_id: channel.community_id,
-      sender_id: Ash.UUID.generate()
+      sender_id: sender_id
     })
   rescue
     e -> Logger.error("Failed to send message: #{inspect(e)}")
@@ -257,4 +276,10 @@ defmodule ThunderlineWeb.ChannelLive do
   rescue
     _ -> []
   end
+
+  # Build presence identity; if actor present shorten actor id; else ephemeral anon token
+  defp presence_identity(%{actor_id: actor_id}) when is_binary(actor_id) do
+    String.slice(actor_id, 0, 8)
+  end
+  defp presence_identity(_), do: "anon-" <> Base.encode16(:crypto.strong_rand_bytes(3))
 end

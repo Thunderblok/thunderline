@@ -28,7 +28,19 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
 
   defp emit(name, payload) do
     with {:ok, ev} <- Thunderline.Event.new(name: name, source: :crown, payload: payload) do
-      _ = Task.start(fn -> Thunderline.EventBus.publish_event(ev) end)
+      # We purposely isolate the publish in a Task but still pattern match result inside
+      # the spawned process so failures are surfaced via telemetry and logs (no silent drop).
+      _ = Task.start(fn ->
+        case Thunderline.EventBus.publish_event(ev) do
+          {:ok, _} -> :ok
+          {:error, reason} ->
+            :telemetry.execute([
+              :thunderline, :ui, :event, :publish, :error
+            ], %{count: 1}, %{reason: reason, name: name, source: :ai_panel})
+            require Logger
+            Logger.warning("AIPanel failed to publish event #{name}: #{inspect(reason)}")
+        end
+      end)
     end
   end
 
