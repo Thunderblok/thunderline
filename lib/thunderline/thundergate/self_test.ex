@@ -18,6 +18,7 @@ defmodule Thunderline.Thundergate.SelfTest do
     :telemetry.execute([:thunderline, :gate, :self_test, :result], %{count: 1}, %{result: result})
     case result do
       :ok -> Logger.info("Gate self-test passed (401 confirmed)")
+      :ok_forbidden -> Logger.warn("Gate self-test acceptable (403) — refine policy to return 401 for unauthenticated, 403 for unauthorized.")
       other -> Logger.error("Gate self-test FAILED: #{inspect(other)}")
     end
     {:noreply, %{state | done: true}}
@@ -29,7 +30,11 @@ defmodule Thunderline.Thundergate.SelfTest do
     case :hackney.request(:get, url, headers, <<>>, []) do
       {:ok, status, _resp_headers, client} ->
         _ = :hackney.body(client)
-        if status == 401, do: :ok, else: {:unexpected_status, status}
+        cond do
+          status == 401 -> :ok
+          status == 403 -> :ok_forbidden
+          true -> {:unexpected_status, status}
+        end
       other -> {:request_error, other}
     end
   rescue

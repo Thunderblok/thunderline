@@ -35,6 +35,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    require Logger
+    Logger.debug("[DashboardLive] mount start")
     open = MapSet.new(Enum.map(@sample_domains, & &1.id))
     first_child = @sample_domains |> hd() |> Map.fetch!(:children) |> hd()
 
@@ -51,11 +53,11 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     end
 
     initial_events = live_events_snapshot(first_child.id) |> Enum.take(5)
-    nodes       = graph_nodes()
-    edge_counts = compute_edge_counts(initial_events, nodes)
-    map_nodes  = domain_map_nodes()
-    map_edges  = domain_map_edges()
-    map_health = domain_map_health()
+  nodes       = graph_nodes()
+  edge_counts = compute_edge_counts(initial_events, nodes)
+  map_nodes   = domain_map_nodes()
+  map_edges   = domain_map_edges(map_nodes)
+  map_health  = domain_map_health(map_nodes)
 
     friends = [
       %{id: 1, name: "Sarah Connor",   status: :online,  latency: 24},
@@ -75,8 +77,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
      |> assign(:graph_nodes, nodes)
      |> assign(:edge_counts, edge_counts)
      |> assign(:domain_map_nodes, map_nodes)
-     |> assign(:domain_map_edges, map_edges)
-     |> assign(:domain_map_health, map_health)
+  |> assign(:domain_map_edges, map_edges)
+  |> assign(:domain_map_health, map_health)
      |> assign(:selected_map_node, nil)
      |> assign(:friends, friends)
      |> assign(:active_friend, friends |> hd() |> Map.get(:id))
@@ -86,11 +88,13 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
      |> assign(:ai_busy, false)
      # Admin iframe tab closed by default
      |> assign_new(:admin_tab_open, fn -> false end)}
+  |> then(fn {:ok, sock} -> Logger.debug("[DashboardLive] mount end assigns_keys=#{sock.assigns |> Map.keys() |> length}" ); {:ok, sock} end)
   end
 
   @impl true
   def render(assigns) do
     ~H"""
+    <!-- DASHBOARD_SENTINEL -->
     <div class="max-w-7xl mx-auto px-4 py-6 relative">
       <header class="flex items-center gap-3 mb-5">
         <h1 class="text-lg font-semibold tracking-wide">Thunderline Dashboard</h1>
@@ -270,8 +274,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
           </section>
         </div>
 
-  <!-- Column 3: Peers + Trends (+ AI assistant) -->
-  <div class="space-y-6">
+    <!-- Column 3: Peers + Trends (+ AI assistant) -->
+    <div class="space-y-6">
           <!-- 4. Peers -->
           <section class="panel p-4 flex flex-col">
           <div class="flex items-center gap-2 mb-2">
@@ -355,6 +359,43 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     {:noreply, assign(socket, :admin_tab_open, !socket.assigns[:admin_tab_open])}
   end
 
+  @impl true
+  def handle_event("select_map_node", %{"id" => id}, socket) do
+    # Blank id clears selection. Ignore unknown ids gracefully.
+    id = empty_to_nil(id)
+    valid_ids = Map.keys(socket.assigns.domain_map_health)
+    sel = if id in valid_ids, do: id, else: nil
+    {:noreply, assign(socket, :selected_map_node, sel)}
+  end
+
+  @impl true
+  def handle_event("select_domain", %{"id" => id}, socket) do
+    # Refresh events & graph context for the chosen domain (or keep current if nil)
+    id = empty_to_nil(id) || socket.assigns.active_domain
+    events = live_events_snapshot(id) |> Enum.take(5)
+    nodes = graph_nodes()
+    edge_counts = compute_edge_counts(events, nodes)
+    {:noreply,
+     socket
+     |> assign(:active_domain, id)
+     |> assign(:events, events)
+     |> assign(:graph_nodes, nodes)
+     |> assign(:edge_counts, edge_counts)}
+  end
+
+  @impl true
+  def handle_event("select_friend", %{"id" => id}, socket) do
+    active_friend = case Integer.parse(to_string(id)) do
+      {i, _} -> i
+      :error -> socket.assigns.active_friend
+    end
+    {:noreply, assign(socket, :active_friend, active_friend)}
+  end
+
+  # Defensive catch-all so unexpected events never crash the LiveView.
+  @impl true
+  def handle_event(_other, _params, socket), do: {:noreply, socket}
+
   # ---- Assign refresh helpers ---------------------------------------------------
   defp refresh_events_assigns(socket) do
     events = live_events_snapshot(socket.assigns.active_domain) |> Enum.take(5)
@@ -412,7 +453,16 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   defp build_kpis_from_metrics(_), do: compute_kpis()
 
   defp live_events_snapshot(domain_id) do
-    case safe_call(fn -> EventBuffer.snapshot(50) end, []) do
+    list = safe_call(fn ->
+      # Guard against any unexpected blocking in EventBuffer by using a short timeout
+      task = Task.async(fn -> EventBuffer.snapshot(50) end)
+      try do
+        Task.await(task, 250)
+      catch
+        :exit, _ -> []
+      end
+    end, [])
+    case list do
       [] -> seed_events(domain_id)
       list ->
         list
@@ -469,35 +519,108 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     end)
   end
 
-  # Domain map (right panel)
+  # Domain map dynamic hex layout ------------------------------------------------
+  # Build nodes from @sample_domains (root + children) placed on a hex spiral.
   defp domain_map_nodes do
-    [
-      %{id: "thunderline-core", label: "core", x: 140, y:  90, z: 18},
-      %{id: "thundergrid",      label: "grid", x: 380, y: 150, z:  4},
-      %{id: "thunderbolt",      label: "bolt", x: 620, y:  90, z: 10},
-      %{id: "thunderblock",     label: "block",x: 520, y: 260, z:  0},
-      %{id: "mnesia",           label: "mnesia", x: 230, y: 250, z: -6}
-    ]
+    root = hd(@sample_domains)
+    # flatten: root first, then its children; could extend to multiple domain trees later
+    all = [root | (root.children || [])]
+    coords = hex_spiral_positions(length(all))
+    # scale & shift into viewBox (760x420)
+    size = 46.0
+    pts = Enum.map(coords, &hex_to_pixel(&1, size))
+    min_x = pts |> Enum.map(& &1.x) |> Enum.min(fn -> 0 end)
+    min_y = pts |> Enum.map(& &1.y) |> Enum.min(fn -> 0 end)
+    # shift so everything is inside positive space with margins
+    margin_x = 120 - min_x
+    margin_y = 110 - min_y
+    Enum.zip(all, pts)
+    |> Enum.map(fn {dom, %{x: x, y: y}} ->
+      id = Map.get(dom, :id) || Map.get(dom, "id")
+      label = Map.get(dom, :title) || Map.get(dom, "title") || id
+      z = (:erlang.phash2(id, 40) - 20) # depth variance
+      %{id: id, label: label, x: x + margin_x, y: y + margin_y, z: z}
+    end)
   end
 
-  defp domain_map_edges do
-    [
-      %{a: "thunderline-core", b: "thundergrid",  traffic: 0.8},
-      %{a: "thundergrid",      b: "thunderbolt",  traffic: 0.6},
-      %{a: "thunderbolt",      b: "thunderblock", traffic: 0.4},
-      %{a: "thundergrid",      b: "mnesia",       traffic: 0.7},
-      %{a: "mnesia",           b: "thunderline-core", traffic: 0.5}
-    ]
+  # Create edges: connect root to each child, plus ring between sequential children
+  defp domain_map_edges(nodes) when is_list(nodes) do
+    case nodes do
+      [] -> []
+      [root | children] ->
+        star = Enum.map(children, fn c -> %{a: root.id, b: c.id, traffic: traffic_level(root.id, c.id)} end)
+        ring =
+          children
+          |> Enum.chunk_every(2, 1, :discard)
+          |> Enum.map(fn [a, b] -> %{a: a.id, b: b.id, traffic: traffic_level(a.id, b.id)} end)
+          |> then(fn r ->
+            case children do
+              [] -> r
+              [_] -> r
+              _ -> r ++ [%{a: List.last(children).id, b: hd(children).id, traffic: traffic_level(List.last(children).id, hd(children).id)}]
+            end
+          end)
+        star ++ ring
+    end
   end
 
-  defp domain_map_health do
-    %{
-      "thunderline-core" => %{status: :healthy, ops: 920, cpu: 28, p95: 112, errors: 0},
-      "thundergrid"      => %{status: :warning, ops: 710, cpu: 63, p95: 188, errors: 2},
-      "thunderbolt"      => %{status: :healthy, ops: 560, cpu: 41, p95: 129, errors: 0},
-      "thunderblock"     => %{status: :healthy, ops: 330, cpu: 22, p95: 144, errors: 1},
-      "mnesia"           => %{status: :critical, ops: 480, cpu: 77, p95: 240, errors: 4}
-    }
+  defp domain_map_health(nodes) do
+    Enum.reduce(nodes, %{}, fn n, acc ->
+      seed = :erlang.phash2(n.id, 1000)
+      status =
+        cond do
+          rem(seed, 23) == 0 -> :critical
+          rem(seed, 9) == 0 -> :warning
+          true -> :healthy
+        end
+      Map.put(acc, n.id, %{
+        status: status,
+        ops: 400 + rem(seed, 600),
+        cpu: 10 + rem(div(seed, 7), 70),
+        p95: 80 + rem(div(seed, 11), 220),
+        errors: rem(div(seed, 13), 8)
+      })
+    end)
+  end
+
+  # Hex spiral axial coordinate generation (center (0,0), expanding rings)
+  defp hex_spiral_positions(n) when n <= 1, do: [%{q: 0, r: 0}]
+  defp hex_spiral_positions(n) do
+    # directions in axial coords (pointy-top)
+    dirs = [{1,0},{0,1},{-1,1},{-1,0},{0,-1},{1,-1}]
+    stream =
+      Stream.unfold({1, []}, fn {radius, _} ->
+        # start at (radius,0)
+        start = {radius, 0}
+        ring =
+          Enum.reduce(dirs, {start, []}, fn {dq, dr}, {{cq, cr}, acc} ->
+            steps = for _ <- 1..radius, reduce: {cq, cr, acc} do
+              {sq, sr, acc2} ->
+                nq = sq + dq
+                nr = sr + dr
+                {nq, nr, [{nq, nr} | acc2]}
+            end
+            {lq, lr, acc_ring} = steps
+            {{lq, lr}, acc_ring}
+          end)
+          |> elem(1)
+          |> Enum.reverse()
+        {ring, {radius + 1, []}}
+      end)
+      |> Enum.flat_map(& &1)
+      |> Enum.take(n - 1)
+    [%{q: 0, r: 0} | Enum.map(stream, fn {q,r} -> %{q: q, r: r} end)]
+  end
+
+  defp hex_to_pixel(%{q: q, r: r}, size) do
+    x = size * (:math.sqrt(3) * q + :math.sqrt(3)/2 * r)
+    y = size * (3.0/2.0 * r)
+    %{x: x, y: y}
+  end
+
+  defp traffic_level(a, b) do
+    h = :erlang.phash2({a,b}, 1000)
+    0.3 + rem(h, 500) / 1000
   end
 
   # SVG helpers

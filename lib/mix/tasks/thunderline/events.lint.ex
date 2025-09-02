@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Thunderline.Events.Lint do
+defmodule Mix.Tasks.Thunderline.Events.TaxonomyLint do
   use Mix.Task
   @shortdoc "Lint event taxonomy usage in codebase"
   @moduledoc """
