@@ -157,8 +157,8 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Get ThunderGrid metrics"
   def thundergrid_metrics do
     %{
-      # TODO: Implement zone tracking
-      active_zones: "OFFLINE",
+      # Estimate active zones from ETS table if present
+      active_zones: active_zone_count(),
       # TODO: Implement query monitoring
       spatial_queries: "OFFLINE",
       # TODO: Implement boundary tracking
@@ -881,6 +881,7 @@ defmodule Thunderline.DashboardMetrics do
   defp collect_event_metrics do
     # Get event processing statistics
     broadway_stats = get_broadway_stats()
+    dropped = get_telemetry_counter([:thunderline, :event, :dropped])
 
     %{
       total_processed: broadway_stats.total_processed || 0,
@@ -888,6 +889,7 @@ defmodule Thunderline.DashboardMetrics do
       failed_events: broadway_stats.failed_events || 0,
       queue_size: broadway_stats.queue_size || 0,
       average_latency: broadway_stats.average_latency || 0,
+      dropped_events: dropped || 0,
       pipelines: %{
         event_pipeline: get_pipeline_stats(:event_pipeline),
         cross_domain_pipeline: get_pipeline_stats(:cross_domain_pipeline),
@@ -1047,6 +1049,14 @@ defmodule Thunderline.DashboardMetrics do
     # In real implementation, this would query telemetry metrics
     # Return 0 instead of random data
     0
+  end
+
+  defp active_zone_count do
+    try do
+      :ets.info(:thundergrid_zones, :size)
+    rescue
+      _ -> 0
+    end
   end
 
   # Removed unused extract_active_rules/1 (legacy CA rules helper)

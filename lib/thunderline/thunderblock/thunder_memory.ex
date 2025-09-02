@@ -476,6 +476,7 @@ defmodule Thunderline.ThunderMemory do
           # Handle direct :ok return
           :ok -> :ok
           {:aborted, {:already_exists, _}} -> :ok
+          {:error, {:already_exists, _}} -> :ok
           {:aborted, reason} -> throw({:table_error, table, reason})
         end
       end)

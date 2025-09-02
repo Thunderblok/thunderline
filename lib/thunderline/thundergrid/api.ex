@@ -21,7 +21,8 @@ defmodule Thunderline.Thundergrid.API do
 
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
-  @doc "Claim a zone for a tenant. Returns {:ok, meta} | {:error, :owned}"
+  @zone_ttl_ms 60_000
+  @doc "Claim a zone for a tenant. Returns {:ok, meta} | {:error, :owned} | {:error, :conflict}"
   def claim_zone(zone_id, tenant) when is_binary(zone_id) and is_binary(tenant) do
     GenServer.call(__MODULE__, {:claim, zone_id, tenant})
   end
@@ -45,6 +46,7 @@ defmodule Thunderline.Thundergrid.API do
   @impl true
   def init(_opts) do
     table = :ets.new(@table, [:named_table, :public, read_concurrency: true])
+    schedule_reap()
     {:ok, %{table: table}}
   end
 
@@ -59,10 +61,33 @@ defmodule Thunderline.Thundergrid.API do
           publish(:zone_claimed, meta)
           {:ok, meta}
         [{^zone_id, %{owner: ^tenant} = meta}] -> {:ok, meta}
-        [{^zone_id, _other}] -> {:error, :owned}
+        [{^zone_id, %{since: since} = meta}] ->
+          if expired?(since, now) do
+            # Reclaim stale zone
+            new_meta = %{zone: zone_id, owner: tenant, since: now, prev_owner: meta.owner, reclaimed: true}
+            true = :ets.insert(@table, {zone_id, new_meta})
+            publish(:zone_reclaimed, new_meta)
+            {:ok, new_meta}
+          else
+            conflict_meta = %{zone: zone_id, owner: meta.owner, attempted_owner: tenant, since: meta.since}
+            publish(:zone_conflict, conflict_meta)
+            {:error, :owned}
+          end
       end
     :telemetry.execute([:thunderline, :grid, :claim_zone], %{count: 1}, %{zone: zone_id, tenant: tenant, result: elem(reply,0)})
     {:reply, reply, state}
+  end
+
+  @impl true
+  def handle_info(:reap_expired, state) do
+    now = System.system_time(:millisecond)
+    expired = for {zone_id, %{since: since} = meta} <- :ets.tab2list(@table), expired?(since, now), do: {zone_id, meta}
+    Enum.each(expired, fn {zone_id, meta} ->
+      :ets.delete(@table, zone_id)
+      publish(:zone_expired, Map.put(meta, :expired_at, now))
+    end)
+    schedule_reap()
+    {:noreply, state}
   end
 
   # Helpers
@@ -75,7 +100,16 @@ defmodule Thunderline.Thundergrid.API do
       end
     end
     PubSub.broadcast(@pubsub, zone_topic(meta.zone), {event, meta})
+    telemetry_event(event, meta)
   end
 
   defp zone_topic(zone_id), do: "grid:zone:" <> zone_id
+  defp expired?(since, now), do: now - since > @zone_ttl_ms
+  defp schedule_reap, do: Process.send_after(self(), :reap_expired, @zone_ttl_ms)
+
+  defp telemetry_event(:zone_claimed, meta), do: :telemetry.execute([:thunderline, :grid, :zone, :claimed], %{count: 1}, meta)
+  defp telemetry_event(:zone_reclaimed, meta), do: :telemetry.execute([:thunderline, :grid, :zone, :reclaimed], %{count: 1}, meta)
+  defp telemetry_event(:zone_expired, meta), do: :telemetry.execute([:thunderline, :grid, :zone, :expired], %{count: 1}, meta)
+  defp telemetry_event(:zone_conflict, meta), do: :telemetry.execute([:thunderline, :grid, :zone, :conflict], %{count: 1}, meta)
+  defp telemetry_event(_, _), do: :ok
 end

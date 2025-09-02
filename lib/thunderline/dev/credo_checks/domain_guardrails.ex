@@ -57,10 +57,14 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
   end
 
   defp severity do
-    if System.get_env("REPO_ONLY_ENFORCE") in ["1", "true", "TRUE"] do
-      :error
-    else
-      :warning
-    end
+    # Escalate to :error in any CI context or when explicit env toggle set.
+    # This moves guardrails from advisory -> enforcing without requiring every
+    # pipeline to remember REPO_ONLY_ENFORCE. MIX_ENV=ci or CI=true triggers.
+    enforce? =
+      System.get_env("REPO_ONLY_ENFORCE") in ["1", "true", "TRUE"] or
+        System.get_env("CI") in ["1", "true", "TRUE"] or
+        System.get_env("MIX_ENV") == "ci"
+
+    if enforce?, do: :error, else: :warning
   end
 end

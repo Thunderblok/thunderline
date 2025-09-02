@@ -52,7 +52,12 @@ defmodule ThunderlineWeb.Telemetry do
       last_value("thunderline.chunks.total"),
       last_value("thunderline.memory.usage"),
       counter("thunderline.events.processed"),
-      counter("thunderline.gate.auth.result", tags: [:result], measurement: :count)
+  counter("thunderline.gate.auth.result", tags: [:result], measurement: :count),
+  counter("thunderline.event.dropped", tags: [:reason, :name], measurement: :count),
+  counter("thunderline.grid.zone.claimed", tags: [:zone, :tenant], measurement: :count),
+  counter("thunderline.grid.zone.reclaimed", tags: [:zone, :tenant], measurement: :count),
+  counter("thunderline.grid.zone.expired", tags: [:zone], measurement: :count),
+  counter("thunderline.grid.zone.conflict", tags: [:zone, :owner, :attempted_owner], measurement: :count)
     ] ++ Thunderline.Thunderflow.Telemetry.Jobs.metrics()
   end
 
