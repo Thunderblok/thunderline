@@ -52,12 +52,14 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       :timer.send_interval(3_000, self(), :refresh_events)
     end
 
+    Logger.debug("[DashboardLive] before snapshot")
     initial_events = live_events_snapshot(first_child.id) |> Enum.take(5)
+    Logger.debug("[DashboardLive] after snapshot count=#{length(initial_events)}")
   nodes       = graph_nodes()
   edge_counts = compute_edge_counts(initial_events, nodes)
-  map_nodes   = domain_map_nodes()
-  map_edges   = domain_map_edges(map_nodes)
-  map_health  = domain_map_health(map_nodes)
+
+  # Defer potentially heavy domain map computation to after first render.
+  send(self(), :init_domain_map)
 
     friends = [
       %{id: 1, name: "Sarah Connor",   status: :online,  latency: 24},
@@ -67,28 +69,47 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       %{id: 5, name: "Neo",            status: :offline, latency: nil}
     ]
 
-    {:ok,
+   socket =
+    socket
+    |> assign(:domains, @sample_domains)
+    |> assign(:open_domains, open)
+    |> assign(:active_domain, first_child.id)
+    |> assign(:events, initial_events)
+    |> assign(:kpis, compute_kpis())
+    |> assign(:graph_nodes, nodes)
+    |> assign(:edge_counts, edge_counts)
+  |> assign(:domain_map_nodes, [])
+  |> assign(:domain_map_edges, [])
+  |> assign(:domain_map_health, %{})
+    |> assign(:selected_map_node, nil)
+    |> assign(:friends, friends)
+    |> assign(:active_friend, friends |> hd() |> Map.get(:id))
+    |> assign(:ups_status, nil)
+    |> assign(:ndjson, false)
+    |> assign(:ai_messages, [])
+    |> assign(:ai_busy, false)
+    |> assign_new(:admin_tab_open, fn -> false end)
+
+   Logger.debug("[DashboardLive] mount end assigns_keys=#{socket.assigns |> map_size()}")
+   {:ok, socket}
+  end
+
+  @max_domain_map_nodes 250
+
+  @impl true
+  def handle_info(:init_domain_map, socket) do
+    started = System.monotonic_time(:millisecond)
+    nodes = safe_call(&domain_map_nodes/0, [])
+    trimmed = Enum.take(nodes, @max_domain_map_nodes)
+    edges = domain_map_edges(trimmed)
+    health = domain_map_health(trimmed)
+    dur = System.monotonic_time(:millisecond) - started
+    Logger.debug("[DashboardLive] domain map built nodes=#{length(nodes)} trimmed=#{length(trimmed)} edges=#{length(edges)} ms=#{dur}")
+    {:noreply,
      socket
-     |> assign(:domains, @sample_domains)
-     |> assign(:open_domains, open)
-     |> assign(:active_domain, first_child.id)
-     |> assign(:events, initial_events)
-     |> assign(:kpis, compute_kpis())
-     |> assign(:graph_nodes, nodes)
-     |> assign(:edge_counts, edge_counts)
-     |> assign(:domain_map_nodes, map_nodes)
-  |> assign(:domain_map_edges, map_edges)
-  |> assign(:domain_map_health, map_health)
-     |> assign(:selected_map_node, nil)
-     |> assign(:friends, friends)
-     |> assign(:active_friend, friends |> hd() |> Map.get(:id))
-     |> assign(:ups_status, nil)
-     |> assign(:ndjson, false)
-     |> assign(:ai_messages, [])
-     |> assign(:ai_busy, false)
-     # Admin iframe tab closed by default
-     |> assign_new(:admin_tab_open, fn -> false end)}
-  |> then(fn {:ok, sock} -> Logger.debug("[DashboardLive] mount end assigns_keys=#{sock.assigns |> Map.keys() |> length}" ); {:ok, sock} end)
+     |> assign(:domain_map_nodes, trimmed)
+     |> assign(:domain_map_edges, edges)
+     |> assign(:domain_map_health, health)}
   end
 
   @impl true
@@ -407,10 +428,13 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     end
     nodes  = graph_nodes()
     edge_counts = compute_edge_counts(events, nodes)
+    # Periodically recompute simulated health so UI isn't static (demo behavior)
+    health = domain_map_health(socket.assigns[:domain_map_nodes] || [])
     socket
     |> assign(:events, events)
     |> assign(:graph_nodes, nodes)
     |> assign(:edge_counts, edge_counts)
+    |> assign(:domain_map_health, health)
   end
 
   # ---- Data & formatting helpers ------------------------------------------------
@@ -826,6 +850,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       |> Enum.map(&Map.put(&1, :anomaly, anomaly?(&1)))
 
     events = (new_events ++ (socket.assigns[:events] || [])) |> Enum.take(50)
+
+    # Persist raw updates into EventBuffer so periodic snapshot refreshes reflect them.
+    Enum.each(updates, fn u -> safe_try(fn -> EventBuffer.put(u) end) end)
 
     # If metrics are included elsewhere, we could refresh KPIs; keep lightweight for now
     {:noreply, socket |> assign(:events, events)}

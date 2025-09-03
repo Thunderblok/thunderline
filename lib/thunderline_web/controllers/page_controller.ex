@@ -4,4 +4,8 @@ defmodule ThunderlineWeb.PageController do
   def home(conn, _params) do
     render(conn, :home)
   end
+
+  def probe(conn, _params) do
+    send_resp(conn, 200, "OK probe")
+  end
 end

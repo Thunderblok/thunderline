@@ -119,7 +119,7 @@ defmodule ThunderlineWeb.Layouts do
   def dashboard(assigns) do
     ~H"""
     <!DOCTYPE html>
-    <html lang="en" class="h-full">
+    <html lang="en" data-theme="thunderline">
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -127,12 +127,34 @@ defmodule ThunderlineWeb.Layouts do
         <.live_title default="Thunderdash">
           {assigns[:page_title]}
         </.live_title>
+        <!-- Unified compiled bundle (no CDN duplication) -->
         <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-        <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
-        </script>
+        <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
       </head>
-        <body class="h-full bg-black" data-theme="thunderline">
-        {@inner_content}
+      <body class="min-h-screen bg-black text-neutral-content relative">
+        <!-- Global background lines layer (restored) -->
+        <div class="absolute inset-0 -z-10 pointer-events-none">
+          <svg viewBox="0 0 1600 900" class="w-full h-full">
+            <defs>
+              <linearGradient id="wire-bg" x1="0" x2="1">
+                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.5" />
+                <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.5" />
+                <stop offset="100%" stop-color="#ec4899" stop-opacity="0.5" />
+              </linearGradient>
+            </defs>
+            <g stroke="url(#wire-bg)" stroke-width="2" fill="none" opacity="0.35">
+              <%= for i <- 0..14 do %>
+                <line x1="40" y1={60 + i * 52} x2="1560" y2={40 + i * 52} />
+              <% end %>
+            </g>
+          </svg>
+        </div>
+        <div class="relative z-10">
+          <!-- DASHBOARD_LAYOUT_SENTINEL -->
+          <!-- Canary badge (remove after verification) -->
+          <div class="fixed top-2 left-2 text-[10px] px-2 py-1 rounded bg-emerald-600/80">bundle:compiled</div>
+          {@inner_content}
+        </div>
       </body>
     </html>
     """

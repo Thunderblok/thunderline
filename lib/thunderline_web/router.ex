@@ -66,6 +66,7 @@ defmodule ThunderlineWeb.Router do
     end
 
   # Thunderline Nexus dashboard at root
+  get "/probe_root", PageController, :probe
   live "/", ThunderlineDashboardLive, :index
     # Legacy dashboard preserved at /dashboard (previous root)
     live "/dashboard", DashboardLive, :home
