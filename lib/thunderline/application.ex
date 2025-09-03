@@ -107,6 +107,8 @@ defmodule Thunderline.Application do
       (not minimal? && {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []}) || nil,
       (not minimal? && {Thunderline.Thunderflow.Pipelines.MarketIngest, []}) || nil,
       (not minimal? && {Thunderline.Thunderflow.Pipelines.EDGARIngest, []}) || nil,
+  # Demo realtime emitter (dev/demo only)
+  (on?(:demo_realtime_emitter) and not minimal? && Thunderline.Thunderflow.DemoRealtimeEmitter) || nil,
       (on?(:tocp) and not minimal? && Thunderline.TOCP.Supervisor) || nil,
       (on?(:cerebros_bridge) and not minimal? && Thunderline.Thunderbolt.CerebrosBridge.Cache) || nil,
       Thunderline.DashboardMetrics,
