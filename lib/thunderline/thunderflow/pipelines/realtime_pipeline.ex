@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   alias Broadway.Message
   alias Phoenix.PubSub
+  alias Thunderline.Thunderflow.EventBuffer
   require Logger
 
   def start_link(_opts) do
@@ -70,12 +71,12 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
         %{:type => type, :payload => payload, :timestamp => ts} = map ->
           # Previously accepted emit_realtime wrapper shape; callers must now build
           # %Thunderline.Event{} and use EventBus.publish_event/1.
-          %{
-            "event_type" => to_string(type),
-            "data" => payload,
-            "timestamp" => ts,
-            "priority" => Map.get(map, :priority)
-          }
+            %{
+              "event_type" => to_string(type),
+              "data" => payload,
+              "timestamp" => ts,
+              "priority" => Map.get(map, :priority)
+            }
         %{:type => type, :payload => payload} = map ->
           %{
             "event_type" => to_string(type),
@@ -159,7 +160,14 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   @impl Broadway
   def handle_batch(:dashboard_updates, messages, _batch_info, _context) do
-    Logger.debug("Processing #{length(messages)} dashboard updates")
+    count = length(messages)
+    types =
+      messages
+      |> Enum.map(& &1.data["event_type"])
+      |> Enum.frequencies()
+      |> Enum.map(fn {t,c} -> "#{t}:#{c}" end)
+      |> Enum.join(",")
+    Logger.debug("Processing #{count} dashboard updates (types=#{types})")
 
     events = Enum.map(messages, & &1.data)
 
@@ -175,7 +183,14 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   @impl Broadway
   def handle_batch(:websocket_broadcasts, messages, _batch_info, _context) do
-    Logger.debug("Processing #{length(messages)} WebSocket broadcasts")
+    count = length(messages)
+    topics =
+      messages
+      |> Enum.map(& get_in(&1.data, ["data", "websocket_topic"]) || "general")
+      |> Enum.frequencies()
+      |> Enum.map(fn {t,c} -> "#{t}:#{c}" end)
+      |> Enum.join(",")
+    Logger.debug("Processing #{count} WebSocket broadcasts (topics=#{topics})")
 
     events = Enum.map(messages, & &1.data)
 
@@ -291,17 +306,18 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
       |> deduplicate_dashboard_events()
       |> compress_dashboard_payload()
 
-    # Send to dashboard components
     Enum.each(optimized_updates, fn update ->
-      component = get_in(update, ["data", "component"])
-
-      if component do
+      # Broadcast component-specific update if component present
+      if component = get_in(update, ["data", "component"]) do
         PubSub.broadcast(
           Thunderline.PubSub,
           "thunderline_web:dashboard:#{component}",
           {:component_update, update["data"]}
         )
       end
+
+      # Feed central EventBuffer (normalized route for LiveView stream)
+      EventBuffer.put({:dashboard_update, Map.get(update, "data", %{})})
     end)
 
     :ok

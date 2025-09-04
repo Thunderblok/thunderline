@@ -45,6 +45,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, EventBuffer.topic()) end)
       # Subscribe to realtime dashboard updates emitted by RealTimePipeline
       safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, "thunderline_web:dashboard") end)
+      # Subscribe to subsystem topics for richer visibility (best‑effort; ignore errors)
+      for t <- ["thunderline:metrics:update", "thunderline:agents:batch_update"] do
+        safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, t) end)
+      end
       # Subscribe to status updates via canonical EventBus instead of deprecated Bus shim
       safe_try(fn -> EventBus.subscribe("status") end)
 
@@ -290,6 +294,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             <button class="btn btn-outline btn-sm" phx-click="restore">Restore</button>
             <button class="btn btn-outline btn-sm">Deploy</button>
             <button class="btn btn-outline btn-sm">Restart</button>
+            <button class="btn btn-primary btn-sm col-span-2" phx-click="inject_demo">Inject Demo Event</button>
           </div>
           <p class="mt-3 text-[10px] opacity-40">actions affect selected node (future)</p>
           </section>
@@ -818,6 +823,38 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   end
 
   @impl true
+  def handle_event("inject_demo", _params, socket) do
+    Logger.debug("[DashboardLive] manual inject_demo invoked")
+    now = DateTime.utc_now()
+    msg_text = "manual inject @ " <> time_hhmmss(System.os_time(:second))
+    event = %{
+      "event_type" => "dashboard_update",
+      "data" => %{
+        "component" => "demo_injector",
+        "message" => msg_text,
+        "key" => System.unique_integer([:positive])
+      },
+      "timestamp" => now
+    }
+
+    ui_event = %{
+      source: "demo_injector",
+      time: time_hhmmss(System.os_time(:second)),
+      message: msg_text,
+      anomaly: false
+    }
+
+    # Immediate optimistic UI update
+    socket = assign(socket, :events, [ui_event | (socket.assigns[:events] || [])] |> Enum.take(50))
+
+    # Persist & broadcast through the same batch path the pipeline uses
+    safe_try(fn -> EventBuffer.put(event) end)
+    safe_try(fn -> PubSub.broadcast(Thunderline.PubSub, "thunderline_web:dashboard", {:dashboard_batch_update, %{"updates" => [event]}}) end)
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("ai_send", %{"q" => raw}, socket) do
     unless feature_enabled?(:ai_chat_panel) do
       {:noreply, socket}
@@ -844,6 +881,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   @impl true
   def handle_info({:dashboard_batch_update, %{"updates" => updates} = payload}, socket) do
     # Convert realtime pipeline updates to UI-friendly events and append to feed
+    Logger.debug("[DashboardLive] batch_update count=#{length(updates)} keys=#{Enum.map(updates, &Map.keys/1) |> length}")
     new_events =
       updates
       |> Enum.map(&to_ui_event/1)
@@ -854,13 +892,24 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     # Persist raw updates into EventBuffer so periodic snapshot refreshes reflect them.
     Enum.each(updates, fn u -> safe_try(fn -> EventBuffer.put(u) end) end)
 
+    # Refresh simulated domain map health so user sees dynamic change on batches
+    refreshed_health = domain_map_health(socket.assigns[:domain_map_nodes] || [])
+
+    # Optionally accept future kpi payload ("kpis" => list)
+    socket =
+      case Map.get(payload, "kpis") do
+        kpis when is_list(kpis) and kpis != [] -> assign(socket, :kpis, kpis)
+        _ -> socket
+      end
+
     # If metrics are included elsewhere, we could refresh KPIs; keep lightweight for now
-    {:noreply, socket |> assign(:events, events)}
+    {:noreply, socket |> assign(:events, events) |> assign(:domain_map_health, refreshed_health)}
   end
 
   @impl true
   def handle_info({:component_update, data}, socket) do
     # Component-specific updates; emit a succinct line in feed
+    Logger.debug("[DashboardLive] component_update keys=#{data |> Map.keys() |> Enum.take(5)}")
     e = %{
       source: to_string(Map.get(data, "component", "component")),
       time: time_hhmmss(System.os_time(:second)),
@@ -869,9 +918,12 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     {:noreply, assign(socket, :events, [e | (socket.assigns.events || [])] |> Enum.take(50))}
   end
 
+    # Batch realtime updates from RealTimePipeline (topic: "thunderline_web:dashboard")
+
   @impl true
   def handle_info({:dashboard_event, evt}, socket) do
     # EventBuffer push path (fallback/compat)
+    Logger.debug("[DashboardLive] dashboard_event kind=#{Map.get(evt, :kind)} domain=#{Map.get(evt, :domain)}")
     e = %{
       source: source_from_evt(evt),
       time: time_hhmmss(System.os_time(:second)),
