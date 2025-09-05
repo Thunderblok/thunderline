@@ -66,19 +66,28 @@ defmodule Thunderline.Application do
         base ++ oban_children
       end
 
-    compute_children = if start_compute? and not minimal? do
-      [
-        Thunderline.Thunderbolt.ThunderCell.Supervisor,
-  # ErlangBridge removed (legacy Erlang CA integration deprecated)
-        Thunderline.NeuralBridge,
-        Thunderline.ThunderBridge
-      ]
+    # Container runtime role (infrastructure segregation)
+    # Supported ROLE values:
+    #  web      -> Phoenix endpoint + minimal supporting processes (no heavy pipelines)
+    #  worker   -> All pipelines & Oban + no web endpoint
+    #  ingest   -> Only ingest pipelines (Market/EDGAR) + supporting telemetry
+    #  realtime -> Only RealTimePipeline (for ultra-low latency fanout)
+    #  compute  -> Thunderbolt compute supervision tree only
+    #  all      -> Full stack (current default if unset)
+    role = System.get_env("ROLE", "all") |> String.downcase()
+
+    endpoint_child = if start_endpoint? and not minimal? and role in ["web", "all"] do
+      [ThunderlineWeb.Endpoint]
     else
       []
     end
 
-    endpoint_child = if start_endpoint? and not minimal? do
-      [ThunderlineWeb.Endpoint]
+    compute_children = if start_compute? and not minimal? and role in ["compute", "all"] do
+      [
+        Thunderline.Thunderbolt.ThunderCell.Supervisor,
+        Thunderline.NeuralBridge,
+        Thunderline.ThunderBridge
+      ]
     else
       []
     end
@@ -98,15 +107,15 @@ defmodule Thunderline.Application do
       Thunderline.Thunderflow.Support.CircuitBreaker,
       Thunderline.Thunderflow.Observability.FanoutAggregator,
       Thunderline.Thunderflow.Observability.FanoutGuard,
-      Thunderline.Thunderflow.Observability.QueueDepthCollector,
+  Thunderline.Thunderflow.Observability.QueueDepthCollector,
       Thunderline.Thunderflow.Observability.DriftMetricsProducer,
   # WARHORSE: unified heartbeat + validator integrated via EventBus
-  {Thunderline.Thunderflow.Heartbeat, [interval: 2000]},
-      (not minimal? && {Thunderline.Thunderflow.Pipelines.EventPipeline, []}) || nil,
-      (not minimal? && {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []}) || nil,
-      (not minimal? && {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []}) || nil,
-      (not minimal? && {Thunderline.Thunderflow.Pipelines.MarketIngest, []}) || nil,
-      (not minimal? && {Thunderline.Thunderflow.Pipelines.EDGARIngest, []}) || nil,
+    {Thunderline.Thunderflow.Heartbeat, [interval: 2000]},
+    (not minimal? and role in ["worker", "all"] && {Thunderline.Thunderflow.Pipelines.EventPipeline, []}) || nil,
+    (not minimal? and role in ["worker", "all"] && {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []}) || nil,
+    (not minimal? and role in ["worker", "all", "realtime"] && {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []}) || nil,
+    (not minimal? and role in ["worker", "all", "ingest"] && {Thunderline.Thunderflow.Pipelines.MarketIngest, []}) || nil,
+    (not minimal? and role in ["worker", "all", "ingest"] && {Thunderline.Thunderflow.Pipelines.EDGARIngest, []}) || nil,
   # Demo realtime emitter (dev/demo only)
   (on?(:demo_realtime_emitter) and not minimal? && Thunderline.Thunderflow.DemoRealtimeEmitter) || nil,
       (on?(:tocp) and not minimal? && Thunderline.TOCP.Supervisor) || nil,
