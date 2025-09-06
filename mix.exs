@@ -92,7 +92,7 @@ defmodule Thunderline.MixProject do
       {:simple_sat, "~> 0.1.3"},
       {:stb_image, "~> 0.6"},
       {:ex_rose_tree, "~> 0.1.3"},
-  {:nimble_parsec, "~> 1.4"},
+      {:nimble_parsec, "~> 1.4"},
       # Memory & Security
       {:memento, "~> 0.5.0"},
       {:cloak, "~> 1.1"},

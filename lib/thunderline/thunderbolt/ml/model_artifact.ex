@@ -26,6 +26,8 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
   attributes do
     uuid_primary_key :id
     attribute :spec_id, :uuid, allow_nil?: false
+    # Preserve linkage to ModelRun for lineage during transition
+    attribute :model_run_id, :uuid
     attribute :uri, :string, allow_nil?: false
     attribute :checksum, :string, allow_nil?: false
     attribute :bytes, :integer, allow_nil?: false
@@ -38,5 +40,6 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
 
   relationships do
     belongs_to :spec, Thunderline.Thunderbolt.ML.ModelSpec, source_attribute: :spec_id
+    belongs_to :model_run, Thunderline.Thunderbolt.Resources.ModelRun, source_attribute: :model_run_id
   end
 end

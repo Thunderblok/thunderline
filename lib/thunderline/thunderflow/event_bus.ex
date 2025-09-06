@@ -118,12 +118,14 @@ defmodule Thunderline.Thunderflow.EventBus do
       Thunderflow.MnesiaProducer.enqueue_event(table, ev, pipeline_type: pipeline, priority: priority)
       :telemetry.execute([:thunderline, :event, :enqueue], %{count: 1}, %{pipeline: pipeline, name: ev.name, priority: priority})
       telemetry_publish(start, ev, :ok, pipeline)
+      maybe_tap(ev, pipeline, :enqueue)
       {:ok, ev}
     rescue
       error ->
         Logger.warning("MnesiaProducer unavailable (#{pipeline}) fallback PubSub: #{inspect(error)}")
         PubSub.broadcast(@pubsub, "events:" <> to_string(ev.type || :unknown), ev)
         telemetry_publish(start, ev, :ok, :fallback_pubsub)
+        maybe_tap(ev, pipeline, :fallback_pubsub)
         {:ok, ev}
     end
   end
@@ -151,6 +153,29 @@ defmodule Thunderline.Thunderflow.EventBus do
       _ -> {Thunderflow.MnesiaProducer, priority || :normal}
     end
   end
+
+  # Lightweight debug fan-out into EventBuffer so the dashboard shows *something*
+  # even if downstream pipelines are stalled. Controlled by feature flag :debug_event_tap.
+  defp maybe_tap(ev, pipeline, stage) do
+    if feature?(:debug_event_tap) do
+      safe_put = fn ->
+        msg = ev.name || to_string(ev.type || :event)
+        Thunderline.Thunderflow.EventBuffer.put(%{
+          kind: :tap,
+          domain: pipeline,
+          message: "#{msg} (#{stage})",
+          source: "eventbus"
+        })
+      end
+      try do
+        safe_put.()
+      rescue
+        _ -> :ok
+      end
+    end
+  end
+
+  defp feature?(flag), do: flag in Application.get_env(:thunderline, :features, [])
 
   # Legacy validation/transform helpers removed (enforced upstream via EventValidator).
 end

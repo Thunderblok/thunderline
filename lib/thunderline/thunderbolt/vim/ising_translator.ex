@@ -1,15 +1,12 @@
-defmodule Thunderline.VIM.IsingTranslator do
+defmodule Thunderline.Thunderbolt.VIM.IsingTranslator do
   @moduledoc """
-  P1 seam (ANVIL) – minimal translator stub from Ising parameter maps to a lattice
-  representation suitable for downstream annealing interfaces.
+  Translator from Ising parameter maps to lattice representation.
 
   Input shape:
     %{h: %{spin => field_strength, ...}, j: %{{i,j} => coupling, ...}}
 
   Output shape:
     %{spins: [{spin, h_value}], couplings: [{i, j, weight}]}
-
-  NOTE: This is a stub – future phases: validation, sparse matrix export, scaling & normalization.
   """
   @type spin :: any()
   @type h_map :: %{required(spin) => number()}
@@ -23,5 +20,6 @@ defmodule Thunderline.VIM.IsingTranslator do
       couplings: (for {{i, k}, w} <- j, do: {i, k, w})
     }
   end
+
   def to_lattice(_), do: %{spins: [], couplings: []}
 end

@@ -212,9 +212,16 @@ defmodule Thunderline.ErlangBridge do
     GenServer.call(__MODULE__, {:optimize_connectivity, strategy}, 5000)
   end
 
-  @doc "Evolve neural architecture using genetic algorithms"
-  def evolve_architecture(generations, fitness_function) do
-    GenServer.call(__MODULE__, {:evolve_architecture, generations, fitness_function}, 10000)
+  # Non-Ising GA evolution is gated behind a compile-time flag to keep Ising-only focus by default
+  if Application.compile_env(:thunderline, [:thunderbolt, :enable_non_ising], false) do
+    @doc "Evolve neural architecture using genetic algorithms"
+    def evolve_architecture(generations, fitness_function) do
+      GenServer.call(__MODULE__, {:evolve_architecture, generations, fitness_function}, 10000)
+    end
+  else
+    @doc "Evolve neural architecture using genetic algorithms (disabled: non-Ising path)"
+    @deprecated "Non-Ising evolution is disabled unless :thunderbolt.enable_non_ising=true"
+    def evolve_architecture(_generations, _fitness_function), do: {:error, :feature_disabled}
   end
 
   # ============================================================================

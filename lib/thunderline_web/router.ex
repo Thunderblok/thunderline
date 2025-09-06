@@ -57,20 +57,24 @@ defmodule ThunderlineWeb.Router do
     plug ThunderlineWeb.Plugs.RequireRoles, roles: [:owner, :steward]
   end
 
-  scope "/", ThunderlineWeb do
-    # If DEMO_MODE enabled, insert demo_security pipeline before dashboard
-    if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
-      pipe_through [:demo_security, :dashboard]
-    else
-      pipe_through :dashboard
-    end
+  # Root dashboard now wrapped in its own authenticated live_session so AshAuthentication
+  # token loading occurs consistently (previously it only had the :dashboard pipeline,
+  # which did not include AshAuthentication.Phoenix.LiveSession). This ensures the
+  # dashboard has a proper actor for any Ash AI / authorization dependent actions.
+  live_session :dashboard_root, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do
+    scope "/", ThunderlineWeb do
+      # Preserve original dashboards pipeline (layout & security) while adding auth on_mount.
+      if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
+        pipe_through [:demo_security, :dashboard]
+      else
+        pipe_through :dashboard
+      end
 
-  # Thunderline Nexus dashboard at root
-  get "/probe_root", PageController, :probe
-  live "/", ThunderlineDashboardLive, :index
-    # Legacy dashboard preserved at /dashboard (previous root)
-    live "/dashboard", DashboardLive, :home
-  # (Removed legacy /oko route after rebrand)
+      get "/probe_root", PageController, :probe
+      live "/", ThunderlineDashboardLive, :index
+      # Retain legacy /dashboard route for now (shares the same LiveView implementation elsewhere)
+      live "/dashboard", DashboardLive, :home
+    end
   end
 
   live_session :default, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do

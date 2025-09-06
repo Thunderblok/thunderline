@@ -129,8 +129,7 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
   end
 
   relationships do
-    has_many :artifacts, Thunderline.Thunderbolt.Resources.ModelArtifact do
-      # Point to the foreign key defined by the belongs_to in ModelArtifact
+    has_many :artifacts, Thunderline.Thunderbolt.ML.ModelArtifact do
       destination_attribute :model_run_id
     end
   end

@@ -432,6 +432,7 @@ mix usage_rules.search_docs "Enum.zip" --query-by title
 ## Pattern Matching
 - Use pattern matching over conditional logic when possible
 - Prefer to match on function heads instead of using `if`/`else` or `case` in function bodies
+- `%{}` matches ANY map, not just empty maps. Use `map_size(map) == 0` guard to check for truly empty maps
 
 ## Error Handling
 - Use `{:ok, result}` and `{:error, reason}` tuples for operations that can fail
@@ -454,7 +455,7 @@ mix usage_rules.search_docs "Enum.zip" --query-by title
 - Use guard clauses: `when is_binary(name) and byte_size(name) > 0`
 - Prefer multiple function clauses over complex conditional logic
 - Name functions descriptively: `calculate_total_price/2` not `calc/2`
-- Predicate function names should not start with `is` and should end in a question mark. 
+- Predicate function names should not start with `is` and should end in a question mark.
 - Names like `is_thing` should be reserved for guards
 
 ## Data Structures
@@ -494,7 +495,7 @@ mix usage_rules.search_docs "Enum.zip" --query-by title
 ## Process Communication
 - Use `GenServer.call/3` for synchronous requests expecting replies
 - Use `GenServer.cast/2` for fire-and-forget messages.
-- When in doubt, us `call` over `cast`, to ensure back-pressure
+- When in doubt, use `call` over `cast`, to ensure back-pressure
 - Set appropriate timeouts for `call/3` operations
 
 ## Fault Tolerance

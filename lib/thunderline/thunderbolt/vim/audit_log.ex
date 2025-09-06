@@ -1,6 +1,6 @@
-defmodule Thunderline.VIM.AuditLog do
+defmodule Thunderline.Thunderbolt.VIM.AuditLog do
   @moduledoc "Helpers for appending VIM audit rows (flag-guarded)."
-  alias Thunderline.VIM.Audit
+  alias Thunderline.Thunderbolt.VIM.Audit
   @spec append(map) :: :ok | {:error, term}
   def append(row) when is_map(row) do
     if (Application.get_env(:thunderline, :vim, []) |> Keyword.get(:enabled, false)) do
