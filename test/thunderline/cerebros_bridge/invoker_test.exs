@@ -1,6 +1,7 @@
 defmodule Thunderline.CerebrosBridge.InvokerTest do
-  use ExUnit.Case, async: true
-  alias Thunderline.Thunderbolt.CerebrosBridge.{Invoker, Client}
+  # Mutates Application env; must not be async to avoid races
+  use ExUnit.Case, async: false
+  alias Thunderline.Thunderbolt.CerebrosBridge.Invoker
 
   setup do
     original_flags = Application.get_env(:thunderline, :features, [])

@@ -30,6 +30,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
   import Ash.Resource.Change.Builtins
 
   import Ash.Expr
+  alias Thunderline.Thunderlink.Presence.Enforcer
   # import Ash.Resource.Change  # unused currently
 
   # ===== POSTGRES CONFIGURATION =====
@@ -216,18 +217,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
         # Presence policy check (deny-by-default enforcement)
         channel = input.resource
         actor_ctx = Map.get(context, :actor_ctx)
-        policy_resource = {:channel, channel.id}
-        case Thunderline.Thunderlink.Presence.Policy.decide(:send, policy_resource, actor_ctx) do
-          {:deny, reason} ->
-            :telemetry.execute([
-              :thunderline,
-              :link,
-              :presence,
-              :blocked
-            ], %{count: 1}, %{reason: reason, action: :send, channel_id: channel.id, actor: actor_ctx && actor_ctx.actor_id})
-            {:error, Ash.Error.Forbidden.exception([field: :base, message: "presence_denied"])}
-          {:allow, _} -> :ok
-        end
+  _ = Enforcer.with_presence(:send, {:channel, channel.id}, actor_ctx)
 
         current_count = channel.message_count || 0
         current_metrics = channel.channel_metrics || %{}
@@ -279,21 +269,11 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
       run fn input, context ->
         channel = input.resource
         actor_ctx = Map.get(context, :actor_ctx)
-        policy_resource = {:channel, channel.id}
-        case Thunderline.Thunderlink.Presence.Policy.decide(:join, policy_resource, actor_ctx) do
-          {:deny, reason} ->
-            :telemetry.execute([
-              :thunderline,
-              :link,
-              :presence,
-              :blocked
-            ], %{count: 1}, %{reason: reason, action: :join, channel_id: channel.id, actor: actor_ctx && actor_ctx.actor_id})
-            {:error, Ash.Error.Forbidden.exception([field: :base, message: "presence_denied"])}
-          {:allow, _} ->
-            Ash.Changeset.for_update(channel, :internal_update_metrics, %{
-              participant_count: channel.participant_count + 1
-            })
-            |> Ash.update()
+  Enforcer.with_presence :join, {:channel, channel.id}, actor_ctx do
+          Ash.Changeset.for_update(channel, :internal_update_metrics, %{
+            participant_count: channel.participant_count + 1
+          })
+          |> Ash.update()
         end
       end
     end
@@ -804,18 +784,6 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
   defp initialize_pac_bridge(_channel), do: :ok
 
   # ===== PRESENCE POLICY INTEGRATION HELPERS =====
-  @doc false
-  def presence_allowed?(action, channel_id, actor_ctx) do
-    case Thunderline.Thunderlink.Presence.Policy.decide(action, {:channel, channel_id}, actor_ctx) do
-      {:allow, _} -> true
-      {:deny, reason} ->
-        :telemetry.execute([
-          :thunderline,
-          :link,
-          :presence,
-          :blocked_helper
-        ], %{count: 1}, %{reason: reason, action: action, channel_id: channel_id, actor: actor_ctx && actor_ctx.actor_id})
-        false
-    end
-  end
+  # Deprecated helper removed to avoid direct Policy usage in Link domain.
+  # Use Thunderline.Thunderlink.Presence.Enforcer macros instead.
 end

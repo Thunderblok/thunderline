@@ -4,7 +4,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
   @app :thunderline
 
   @spec enabled?() :: boolean
-  def enabled?, do: Feature.enabled?(:cerebros_bridge) and get(:enabled, false)
+  def enabled?, do: Feature.enabled?(:cerebros_bridge)
 
   @spec version(Path.t()) :: {:ok, String.t()} | {:error, :version_unavailable}
   def version(repo_path \\ cfg(:repo_path)) do

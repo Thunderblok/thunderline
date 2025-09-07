@@ -19,7 +19,7 @@ defmodule Thunderline.Thundergrid.API do
 
   # Client API
 
-  def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts), do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
 
   @zone_ttl_ms 60_000
   @doc "Claim a zone for a tenant. Returns {:ok, meta} | {:error, :owned} | {:error, :conflict}"

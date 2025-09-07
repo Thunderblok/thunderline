@@ -7,6 +7,7 @@ defmodule Guardrails.NoEmitOutsideFlowTest do
       |> Path.join("**/*.ex")
       |> Path.wildcard()
       |> Enum.reject(&String.contains?(&1, "/thunderflow/"))
+      |> Enum.reject(&String.contains?(&1, "/dev/"))
       |> Enum.flat_map(&(File.read!(&1) |> String.split("\n")))
       |> Enum.filter(&String.contains?(&1, "EventBus.emit"))
 

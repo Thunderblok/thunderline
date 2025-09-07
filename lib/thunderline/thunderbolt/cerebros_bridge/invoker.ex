@@ -8,31 +8,34 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
 
   @spec invoke(atom, term, keyword) :: {:ok, term} | {:error, map}
   def invoke(op, args, opts \\ []) do
-    unless Client.enabled?(), do: return_disabled(op, args)
-    meta = %{op: op, t0: System.monotonic_time(:millisecond)}
-    :telemetry.execute(@tele_base ++ [:start], %{}, meta)
+    if not Client.enabled?() do
+      return_disabled(op, args)
+    else
+      meta = %{op: op, t0: System.monotonic_time(:millisecond)}
+      :telemetry.execute(@tele_base ++ [:start], %{}, meta)
 
-    timeout =
-      opts[:timeout_ms] ||
-        get_in(Application.get_env(:thunderline, :cerebros_bridge, []), [:invoke, :default_timeout_ms]) ||
-        5_000
+      timeout =
+        opts[:timeout_ms] ||
+          get_in(Application.get_env(:thunderline, :cerebros_bridge, []), [:invoke, :default_timeout_ms]) ||
+          5_000
 
-    task = Task.async(fn -> do_invoke(op, Translator.encode(args)) end)
+      task = Task.async(fn -> do_invoke(op, Translator.encode(args)) end)
 
-    try do
-      res = Task.await(task, timeout)
-      :telemetry.execute(@tele_base ++ [:stop], %{duration_ms: elapsed(meta)}, Map.put(meta, :ok, true))
-      Translator.decode(res)
-    catch
-      :exit, {:timeout, _} ->
-        err = %{class: :timeout, origin: :cerebros}
-        :telemetry.execute(@tele_base ++ [:exception], %{}, Map.put(meta, :error, err))
-        {:error, err}
-    rescue
-      e ->
-        err = %{class: :exception, origin: :cerebros, raw: Exception.message(e)}
-        :telemetry.execute(@tele_base ++ [:exception], %{}, Map.put(meta, :error, err))
-        {:error, err}
+      try do
+        res = Task.await(task, timeout)
+        :telemetry.execute(@tele_base ++ [:stop], %{duration_ms: elapsed(meta)}, Map.put(meta, :ok, true))
+        Translator.decode(res)
+      catch
+        :exit, {:timeout, _} ->
+          err = %{class: :timeout, origin: :cerebros}
+          :telemetry.execute(@tele_base ++ [:exception], %{}, Map.put(meta, :error, err))
+          {:error, err}
+      rescue
+        e ->
+          err = %{class: :exception, origin: :cerebros, raw: Exception.message(e)}
+          :telemetry.execute(@tele_base ++ [:exception], %{}, Map.put(meta, :error, err))
+          {:error, err}
+      end
     end
   end
 

@@ -38,7 +38,7 @@ defmodule Thunderline.TOCP.Sim.Fabric do
   end
 
   defp safe_snapshot do
-    Thunderline.TOCP.Telemetry.Aggregator.snapshot()
+  Thunderline.Thunderlink.Transport.Telemetry.Aggregator.snapshot()
   rescue
     _ -> %{sig_fail: 0, replay_drop: 0}
   end

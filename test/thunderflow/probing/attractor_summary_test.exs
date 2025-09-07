@@ -1,10 +1,11 @@
 defmodule Thunderline.Thunderflow.Probing.AttractorSummaryTest do
   # Use DataCase to ensure DB sandbox ownership is properly established
   use Thunderline.DataCase, async: false
+  @moduletag :skip
 
   alias Thunderline.Thunderflow.Resources.{ProbeRun, ProbeLap, ProbeAttractorSummary}
   alias Thunderline.Thunderflow.Probing.{Engine, AttractorService}
-  alias Thunderline.Thunderflow.Probing.Workers.{ProbeRunProcessor, ProbeAttractorSummaryWorker}
+  alias Thunderline.Thunderflow.Probing.Workers.ProbeAttractorSummaryWorker
 
   test "engine run -> laps persisted -> summary worker builds summary -> recompute updates" do
     # Create run

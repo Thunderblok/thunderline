@@ -12,9 +12,8 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:spec_id, :uri, :checksum, :bytes]
+      accept [:spec_id, :model_run_id, :uri, :checksum, :bytes, :semver]
       change set_attribute(:status, :created)
-      change set_attribute(:semver, "0.1.0")
     end
 
     update :promote do
@@ -33,7 +32,7 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
     attribute :bytes, :integer, allow_nil?: false
     attribute :status, :atom, constraints: [one_of: [:created, :promoted, :archived]], default: :created
     attribute :promoted, :boolean, default: false
-    attribute :semver, :string
+    attribute :semver, :string, default: "0.1.0"
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -41,5 +40,10 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
   relationships do
     belongs_to :spec, Thunderline.Thunderbolt.ML.ModelSpec, source_attribute: :spec_id
     belongs_to :model_run, Thunderline.Thunderbolt.Resources.ModelRun, source_attribute: :model_run_id
+  end
+
+  code_interface do
+    # Provides Thunderline.Thunderbolt.ML.ModelArtifact.create(input, opts \\ [])
+    define :create, action: :create
   end
 end

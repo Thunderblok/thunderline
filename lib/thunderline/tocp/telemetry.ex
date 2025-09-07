@@ -1,13 +1,9 @@
 defmodule Thunderline.TOCP.Telemetry do
   @moduledoc """
-  Telemetry event taxonomy placeholder (see docs/TOCP_TELEMETRY.md & DIP-TOCP-002).
-
-  Provides helper emit functions once implemented. Scaffold only.
+  Deprecated: Use `Thunderline.Thunderlink.Transport.Telemetry`.
+  Shim that delegates to the Thunderlink namespace.
   """
 
   @spec emit(atom(), map(), map()) :: :ok
-  def emit(event, measurements, meta) when is_atom(event) and is_map(measurements) and is_map(meta) do
-    :telemetry.execute([:tocp, event], measurements, meta)
-    :ok
-  end
+  defdelegate emit(event, measurements, meta), to: Thunderline.Thunderlink.Transport.Telemetry
 end

@@ -1,6 +1,7 @@
 defmodule Thunderline.TOCP.FlowControl do
   @moduledoc """
-  Flow control (credits / token buckets) contract.
+  Deprecated: Flow control (credits / token buckets) contract.
+  Prefer `Thunderline.Thunderlink.Transport.FlowControl`.
 
   Later sprint: Implement per-peer & per-zone token buckets; expose credit snapshot.
   """

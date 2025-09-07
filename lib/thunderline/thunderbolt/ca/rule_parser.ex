@@ -63,14 +63,18 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
   defp build(parts) do
     born_seq = parts |> Enum.find_value([], fn {:born, seq} -> digits(seq); _ -> nil end)
     survive_seq = parts |> Enum.find_value([], fn {:survive, seq} -> digits(seq); _ -> nil end)
-    rate = parts |> Enum.find_value(nil, fn {:rate, v} -> v; _ -> nil end)
-    seed = parts |> Enum.find_value(nil, fn {:seed, v} -> v; _ -> nil end)
-    zone = parts |> Enum.find_value(nil, fn {:zone, v} -> v; _ -> nil end)
+    rate = parts |> Enum.find_value(nil, fn {:rate, v} -> unwrap1(v); _ -> nil end)
+    seed = parts |> Enum.find_value(nil, fn {:seed, v} -> unwrap1(v); _ -> nil end)
+    zone = parts |> Enum.find_value(nil, fn {:zone, v} -> unwrap1(v); _ -> nil end)
 
     %__MODULE__{born: born_seq, survive: survive_seq, rate_hz: rate || 30, seed: seed, zone: zone}
   end
 
+  defp unwrap1([x]), do: x
+  defp unwrap1(x), do: x
+
   defp digits(seq) when is_binary(seq), do: seq |> String.graphemes() |> Enum.map(&String.to_integer/1)
+  defp digits(seq) when is_list(seq), do: seq |> Enum.join() |> digits()
 
   defp emit_parse_event(original, %__MODULE__{} = rule) do
     payload = %{

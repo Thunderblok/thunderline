@@ -35,7 +35,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
 
   policies do
     policy action(:run) do
-      authorize_if expr(actor(:role) in [:owner, :steward, :system])
+  authorize_if expr(^actor(:role) in [:owner, :steward, :system])
       authorize_if expr(not is_nil(actor(:tenant_id)))
     end
   end

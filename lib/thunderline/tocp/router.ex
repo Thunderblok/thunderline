@@ -1,6 +1,7 @@
 defmodule Thunderline.TOCP.Router do
   @moduledoc """
-  Router behaviour – ingestion point for Transport -> membership/routing decisions -> egress.
+  Deprecated: Router behaviour.
+  Prefer `Thunderline.Thunderlink.Transport.Router`.
 
   Will own backpressure hooks once FlowControl lands.
   """

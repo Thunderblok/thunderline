@@ -35,6 +35,8 @@ defmodule Thunderline.Thunderflow.Blackboard do
   @spec put(key(), value(), keyword()) :: :ok
   def put(key, value, opts \\ []) do
     scope = Keyword.get(opts, :scope, :global)
+    # Temporary migration telemetry to detect legacy facade usage in tests/guardrails
+    :telemetry.execute([:thunderline, :blackboard, :legacy_use], %{count: 1}, %{fun: :put})
     GenServer.cast(__MODULE__, {:put, scope, key, value})
   end
 

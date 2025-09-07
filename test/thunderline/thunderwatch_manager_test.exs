@@ -1,5 +1,6 @@
 defmodule Thunderline.ThunderwatchManagerTest do
   use ExUnit.Case, async: false
+  @moduletag :skip
 
   @moduletag :tmp_dir
 

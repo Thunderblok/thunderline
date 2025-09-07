@@ -1,41 +1,4 @@
 defmodule Thunderline.Thunderflow.Producers.EDGARMock do
-  @moduledoc "Mock producer emitting synthetic EDGAR filings for Phase 0 testing."
-  use GenStage
-  require Logger
-  alias Broadway.Message
-
-  def start_link(opts), do: GenStage.start_link(__MODULE__, opts, name: __MODULE__)
-
-  @impl true
-  def init(_opts) do
-    state = %{demand: 0, cik: "0000000001"}
-    Process.send_after(self(), :filing, 5_000)
-    {:producer, state}
-  end
-
-  @impl true
-  def handle_demand(incoming, state) do
-    {:noreply, [], %{state | demand: state.demand + incoming}}
-  end
-
-  @impl true
-  def handle_info(:filing, %{demand: demand}=state) do
-    filing_time = DateTime.utc_now()
-    events =
-      if demand > 0 do
-        raw = %{cik: state.cik, form: "10-Q", filing_time: filing_time, sections: %{"MDA" => "Sample text"}}
-        [build_message(raw)]
-      else
-        []
-      end
-    if demand > 0, do: Logger.debug("[EDGARMock] emitted filing #{filing_time}")
-    Process.send_after(self(), :filing, 5_000)
-    {:noreply, events, %{state | demand: max(demand - length(events), 0)}}
-  end
-
-  # Broadway 1.2.x does not expose Message.new/1; construct struct manually.
-  defp build_message(data) do
-    # Correct noop acknowledger (ack_ref must be nil to match ack/3 implementation).
-    %Message{data: data, metadata: %{}, acknowledger: Broadway.NoopAcknowledger.init()}
-  end
+  @moduledoc "Deprecated stub. EDGAR mock producer removed."
+  def start_link(_), do: {:ok, self()}
 end

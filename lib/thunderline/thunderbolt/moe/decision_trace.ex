@@ -46,9 +46,16 @@ defmodule Thunderline.MoE.DecisionTrace do
   end
 
   policies do
-    policy action([:record, :read]) do
-      authorize_if expr(tenant_id == actor(:tenant_id))
-      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
+    # Create-specific: avoid filters on create, use changing_attributes
+    policy [action(:record), action_type(:create)] do
+      authorize_if changing_attributes(tenant_id: [equals_actor: :tenant_id])
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
+    end
+
+    # Reads: enforce tenant match via filter expr
+    policy action(:read) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
     end
   end
 

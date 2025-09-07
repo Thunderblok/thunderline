@@ -40,9 +40,16 @@ defmodule Thunderline.Lineage.Edge do
   end
 
   policies do
-    policy action([:connect, :read]) do
-      authorize_if expr(tenant_id == actor(:tenant_id))
-      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
+    # Create-specific
+    policy [action(:connect), action_type(:create)] do
+      authorize_if always()
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
+    end
+
+    # Read
+    policy action(:read) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
     end
   end
 

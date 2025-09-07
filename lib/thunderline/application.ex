@@ -70,7 +70,7 @@ defmodule Thunderline.Application do
     # Supported ROLE values:
     #  web      -> Phoenix endpoint + minimal supporting processes (no heavy pipelines)
     #  worker   -> All pipelines & Oban + no web endpoint
-    #  ingest   -> Only ingest pipelines (Market/EDGAR) + supporting telemetry
+  #  ingest   -> Only ingest pipelines (supporting telemetry)
     #  realtime -> Only RealTimePipeline (for ultra-low latency fanout)
     #  compute  -> Thunderbolt compute supervision tree only
     #  all      -> Full stack (current default if unset)
@@ -109,18 +109,19 @@ defmodule Thunderline.Application do
       Thunderline.Thunderflow.Observability.FanoutGuard,
   Thunderline.Thunderflow.Observability.QueueDepthCollector,
       Thunderline.Thunderflow.Observability.DriftMetricsProducer,
-  # WARHORSE: unified heartbeat + validator integrated via EventBus
-    {Thunderline.Thunderflow.Heartbeat, [interval: 2000]},
+      # WARHORSE: unified heartbeat + validator integrated via EventBus
+      # In minimal test boot, avoid starting Heartbeat to prevent Mnesia usage/errors
+      (not minimal? && {Thunderline.Thunderflow.Heartbeat, [interval: 2000]}) || nil,
     (not minimal? and role in ["worker", "all"] && {Thunderline.Thunderflow.Pipelines.EventPipeline, []}) || nil,
     (not minimal? and role in ["worker", "all"] && {Thunderline.Thunderflow.Pipelines.CrossDomainPipeline, []}) || nil,
     (not minimal? and role in ["worker", "all", "realtime"] && {Thunderline.Thunderflow.Pipelines.RealTimePipeline, []}) || nil,
-    (not minimal? and role in ["worker", "all", "ingest"] && {Thunderline.Thunderflow.Pipelines.MarketIngest, []}) || nil,
-    (not minimal? and role in ["worker", "all", "ingest"] && {Thunderline.Thunderflow.Pipelines.EDGARIngest, []}) || nil,
+  # Market/EDGAR ingest pipelines removed
   # Demo realtime emitter (dev/demo only)
   (on?(:demo_realtime_emitter) and not minimal? && Thunderline.Thunderflow.DemoRealtimeEmitter) || nil,
-      (on?(:tocp) and not minimal? && Thunderline.TOCP.Supervisor) || nil,
+  (on?(:tocp) and not minimal? && Thunderline.Thunderlink.Transport.Supervisor) || nil,
       (on?(:cerebros_bridge) and not minimal? && Thunderline.Thunderbolt.CerebrosBridge.Cache) || nil,
-      Thunderline.DashboardMetrics,
+  # In minimal test boot, avoid starting DashboardMetrics (queries Mnesia/node state)
+  (not minimal? && Thunderline.DashboardMetrics) || nil,
       {Thunderline.Thunderflow.Observability.RingBuffer, name: Thunderline.NoiseBuffer, limit: 500},
   Thunderline.Thunderflow.Blackboard,
   {Thunderline.Thunderflow.Telemetry.LegacyBlackboardWatch, []},

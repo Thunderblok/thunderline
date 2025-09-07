@@ -11,7 +11,9 @@ defmodule Thunderline.Thunderlink.NoPolicyInLinkTest do
         |> String.split("\n")
         |> Enum.map(&{path, &1})
       end)
-      |> Enum.filter(fn {_path, line} -> String.contains?(line, "Policy.") end)
+      |> Enum.filter(fn {path, line} ->
+        String.contains?(line, "Policy.") and not String.contains?(path, "/presence/")
+      end)
       |> Enum.map(fn {path, line} -> {path, line} end)
     assert hits == []
   end

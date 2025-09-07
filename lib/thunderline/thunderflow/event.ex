@@ -85,8 +85,8 @@ defmodule Thunderline.Event do
   @spec new(keyword() | map()) :: {:ok, t()} | {:error, [term()]}
   def new(attrs) when is_list(attrs), do: new(Map.new(attrs))
   def new(%{} = attrs) do
-    errors = []
-    name = attrs[:name] || infer_name_from_type(attrs[:type])
+  errors = []
+  name = attrs[:name] || infer_name_from_type(attrs[:type])
     payload = attrs[:payload]
     source = attrs[:source] || infer_source(attrs[:source_domain])
     actor = attrs[:actor]
@@ -95,7 +95,8 @@ defmodule Thunderline.Event do
     taxonomy_version = attrs[:taxonomy_version] || 1
     event_version = attrs[:event_version] || 1
     priority = attrs[:priority] || :normal
-    meta = Map.merge(%{reliability: infer_reliability(name)}, Map.get(attrs, :meta, %{}))
+  # If name is nil we still build meta with default reliability; validator will add error
+  meta = Map.merge(%{reliability: infer_reliability(name)}, Map.get(attrs, :meta, %{}))
 
     errors =
       errors
@@ -362,7 +363,8 @@ defmodule Thunderline.Event do
     bolt: ["ml.run", "system", "ai"],
     link: ["ui.command", "system", "ai"],
     crown: ["ai.intent", "system", "ai"],
-    block: ["system", "ai"],
+  # Block domain intentionally cannot emit ai.intent.* directly
+  block: ["system"],
     bridge: ["system", "ui.command", "ai"],
     unknown: ["system", "ai"],
     # Custom evt.* experimental namespaces (tight, explicit allow-list)
@@ -390,7 +392,8 @@ defmodule Thunderline.Event do
   end
   defp category_allowed?(_, _), do: true
 
-  defp infer_reliability(name) do
+  defp infer_reliability(nil), do: :transient
+  defp infer_reliability(name) when is_binary(name) do
     cond do
       String.starts_with?(name, "system.") -> :persistent
       String.starts_with?(name, "ml.run.") -> :persistent

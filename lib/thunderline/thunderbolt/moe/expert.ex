@@ -46,9 +46,16 @@ defmodule Thunderline.MoE.Expert do
   end
 
   policies do
-    policy action([:register, :update_metrics, :read]) do
-      authorize_if expr(tenant_id == actor(:tenant_id))
-      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
+    # Create-specific: avoid filter on creates; rely on multitenancy/inputs & system override
+    policy [action(:register), action_type(:create)] do
+      authorize_if always()
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
+    end
+
+    # Read/Update: enforce same-tenant
+    policy action([:update_metrics, :read]) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
     end
   end
 

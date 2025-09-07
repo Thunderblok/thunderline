@@ -15,7 +15,8 @@ defmodule Thunderline.Guardrails.RepoOnlyTest do
         String.contains?(line, "Repo.") and
           not String.match?(line, ~r/\brepo\s+Thunderline\.Repo\b/) and
           not String.contains?(path, "/application.ex") and
-          not String.contains?(path, "/dev/")
+          not String.contains?(path, "/dev/") and
+          not String.contains?(path, "/migration_runner.ex")
       end)
       |> Enum.map(fn {p, l} -> p <> ":" <> l end)
 

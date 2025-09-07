@@ -1,6 +1,6 @@
 defmodule Thunderline.Features.FeatureWindow do
   @moduledoc """
-  Unified feature window across market & EDGAR sources.
+  Unified feature window across event sources.
   Partial windows (status :open) may lack labels; fill action finalizes to :filled.
   Superseded windows retained for provenance.
 
@@ -20,7 +20,7 @@ defmodule Thunderline.Features.FeatureWindow do
   attributes do
     uuid_primary_key :id
     attribute :tenant_id, :uuid, allow_nil?: false
-    attribute :kind, :atom, allow_nil?: false, constraints: [one_of: [:market, :edgar]]
+  attribute :kind, :atom, allow_nil?: false
     attribute :key, :string, allow_nil?: false
     attribute :window_start, :utc_datetime, allow_nil?: false
     attribute :window_end, :utc_datetime, allow_nil?: false
@@ -68,10 +68,16 @@ defmodule Thunderline.Features.FeatureWindow do
   end
 
   policies do
-    # Only same-tenant actor may mutate or read
-    policy action([:ingest_window, :fill_labels, :supersede, :read]) do
-      authorize_if expr(tenant_id == actor(:tenant_id))
-      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance])
+    # Create-specific policy: for creates we can't reference resource attrs directly in filters.
+    policy [action(:ingest_window), action_type(:create)] do
+      authorize_if changing_attributes(tenant_id: [equals_actor: :tenant_id])
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
+    end
+
+    # Read and updates authorized by tenant match
+    policy action([:fill_labels, :supersede, :read]) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
     end
   end
 

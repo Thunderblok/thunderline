@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderflow.BlackboardMigrationTest do
       assert :ok == Blackboard.put({:automata, :test_key}, 42)
       assert 42 == Blackboard.get({:automata, :test_key})
 
-      assert_receive {:telemetry_event, [:thunderline, :blackboard, :legacy_use], %{count: 1}, %{fun: :put}}, 500
+  assert_receive {[:thunderline, :blackboard, :legacy_use], ^ref, %{count: 1}, %{fun: :put}}, 1000
     after
       :telemetry.detach(ref)
     end

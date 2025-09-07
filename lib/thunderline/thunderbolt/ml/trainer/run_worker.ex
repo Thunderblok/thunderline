@@ -73,13 +73,14 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
     end
   end
 
-  defp build_artifact(%TrainingRun{spec_id: spec_id, run_id: run_id}) do
+  defp build_artifact(%TrainingRun{id: model_run_uuid, spec_id: spec_id, run_id: run_id}) do
     uri = "s3://ml-artifacts/" <> run_id <> ".bin"
     checksum = run_id |> :crypto.hash(:sha256) |> Base.encode16(case: :lower)
     bytes = :rand.uniform(5_000_000) + 500_000
 
     %{
       spec_id: spec_id,
+      model_run_id: model_run_uuid,
       uri: uri,
       checksum: checksum,
       bytes: bytes

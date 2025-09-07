@@ -64,7 +64,7 @@ defmodule Thunderline.Thunderbolt.ML.TrainingDataset do
 
   policies do
     policy action(:*) do
-      authorize_if expr(^actor(:tenant_id) == tenant_id)
+  authorize_if expr(tenant_id == ^actor(:tenant_id))
     end
   end
 

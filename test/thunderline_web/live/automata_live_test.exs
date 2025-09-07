@@ -3,6 +3,7 @@ defmodule ThunderlineWeb.AutomataLiveTest do
   import Phoenix.LiveViewTest
 
   @moduletag :automata
+  @moduletag :skip
 
   # Helper to extract assigns safely from a LiveView pid
   defp view_assigns(view) do

@@ -49,9 +49,16 @@ defmodule Thunderline.Export.TrainingSlice do
   end
 
   policies do
-    policy action([:enqueue, :mark_completed, :mark_failed, :read]) do
-      authorize_if expr(tenant_id == actor(:tenant_id))
-      authorize_if expr(actor(:role) == :system and actor(:scope) in [:maintenance, :export])
+    # Create-specific: avoid filter usage on create
+    policy [action(:enqueue), action_type(:create)] do
+      authorize_if always()
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance, :export])
+    end
+
+    # Read/Updates: enforce same-tenant
+    policy action([:mark_completed, :mark_failed, :read]) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance, :export])
     end
   end
 

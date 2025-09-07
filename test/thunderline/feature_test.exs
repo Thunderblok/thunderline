@@ -1,5 +1,6 @@
 defmodule Thunderline.FeatureTest do
-  use ExUnit.Case, async: true
+  # Mutates Application env; must not be async to avoid races
+  use ExUnit.Case, async: false
 
   test "enabled?/1 returns false when flag absent" do
     original = Application.get_env(:thunderline, :features, [])

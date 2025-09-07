@@ -1,6 +1,7 @@
 defmodule Thunderline.TOCP.Wire do
   @moduledoc """
-  Wire-level constants & envelope encoding/decoding contracts.
+  Deprecated: Wire-level constants & envelope encoding/decoding contracts.
+  Prefer `Thunderline.Thunderlink.Transport.Wire`.
 
   Defines the public behaviours for packing/unpacking TOCP frames (ETF/BERT envelope),
   version negotiation, and frame classification. No logic yet – scaffold only.

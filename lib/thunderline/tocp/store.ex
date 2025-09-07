@@ -1,6 +1,7 @@
 defmodule Thunderline.TOCP.Store do
   @moduledoc """
-  Store-and-forward retention policy contract.
+  Deprecated: Store-and-forward retention policy contract.
+  Prefer `Thunderline.Thunderlink.Transport.Store`.
 
   Week-2: Offer/Request; retention 24h / 512MB (DIP-TOCP-003) with TTL & byte GC.
   """

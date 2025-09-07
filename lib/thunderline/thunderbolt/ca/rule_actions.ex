@@ -19,14 +19,22 @@ defmodule Thunderline.Thunderbolt.CA.RuleActions do
   actions do
     defaults []
 
-    # Accepts a rule line string, returns parsed map representation.
-    action :parse_rule, :map do
+    action :parse_rule do
+      returns :map
       argument :line, :string, allow_nil?: false
-      run fn input, _ctx ->
-        line = input.arguments.line
-        case Thunderline.CA.RuleParser.parse(line) do
-          {:ok, rule} -> {:ok, Map.from_struct(rule)}
-          {:error, err} -> {:error, Ash.Error.Invalid.new(errors: [to_string(err[:message] || inspect(err))])}
+      run fn input, _context ->
+        case Thunderline.CA.RuleParser.parse(input.arguments.line) do
+          {:ok, rule} ->
+            {:ok,
+             %{
+               born: rule.born,
+               survive: rule.survive,
+               rate_hz: rule.rate_hz,
+               seed: rule.seed,
+               zone: rule.zone
+             }}
+          {:error, err} ->
+            {:error, to_string(err[:message] || "invalid rule line")}
         end
       end
     end

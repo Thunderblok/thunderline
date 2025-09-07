@@ -65,42 +65,89 @@ defmodule Thunderline.Thundervine.SpecParser do
   end
 
   defp build(parts) do
-    wf_name = Enum.find_value(parts, fn {:workflow, name} -> name; _ -> nil end)
+    wf_name =
+      Enum.find_value(parts, fn
+        {:workflow, name} -> normalize_token(name)
+        _ -> nil
+      end)
     node_parts = Enum.filter(parts, &match?({:node, _}, &1))
 
-    {nodes, _seen} =
-      Enum.map_reduce(node_parts, MapSet.new(), fn {:node, node_tokens}, seen ->
+    nodes =
+      Enum.map(node_parts, fn {:node, node_tokens} ->
         {name, attrs} = extract_node(node_tokens)
-        after_refs = Map.get(attrs, :after, [])
-        unknown = Enum.find(after_refs, fn ref -> not MapSet.member?(seen, ref) end)
-        if unknown do
-          throw({:error, {:unknown_after, unknown, Map.get(attrs, :line, 0)}})
-        end
-        node = %{
+        %{
           name: name,
           kind: Map.get(attrs, :kind, "task"),
           ref: Map.get(attrs, :ref, name),
-          after: after_refs,
+          after: Map.get(attrs, :after, []),
           line: Map.get(attrs, :line, 0)
         }
-        {node, MapSet.put(seen, name)}
       end)
 
-    {:ok, %{name: wf_name, nodes: nodes}}
+    # Validate that all :after references exist among defined node names (normalized)
+    names = MapSet.new(Enum.map(nodes, fn n -> n.name |> String.trim() end))
+    case Enum.find(nodes, fn %{after: after_refs} ->
+           Enum.find(after_refs, fn ref ->
+             ref_norm = ref |> String.trim()
+             not MapSet.member?(names, ref_norm)
+           end)
+         end) do
+      nil -> :ok
+      %{after: after_refs, line: line} ->
+        unknown = Enum.find(after_refs, fn ref -> not MapSet.member?(names, String.trim(ref)) end)
+        throw({:error, {:unknown_after, unknown, line}})
+    end
+
+  {:ok, %{name: wf_name, nodes: nodes}}
   catch
     {:error, reason} -> {:error, reason}
   end
 
   defp extract_node(tokens) do
     # tokens like [node_name: "fetch", attr: ["kind","task"], after_raw: "a,b"]
-    name = Enum.find_value(tokens, fn {:node_name, n} -> n; _ -> nil end)
-    attrs = Enum.reduce(tokens, %{line: line_from(tokens)}, fn
-      {:attr, [k, v]}, acc -> Map.put(acc, String.to_atom(k), v)
-      {:after_raw, list}, acc -> Map.put(acc, :after, String.split(list, ",", trim: true))
-      _, acc -> acc
-    end)
+    name =
+      Enum.find_value(tokens, fn
+        {:node_name, n} -> normalize_token(n)
+        _ -> nil
+      end)
+
+    attrs =
+      Enum.reduce(tokens, %{line: line_from(tokens)}, fn
+        {:attr, kv}, acc when is_list(kv) ->
+          [k, v] =
+            case kv do
+              [k, v] -> [normalize_token(k), normalize_token(v)]
+              other -> other |> List.flatten() |> Enum.map(&normalize_token/1)
+            end
+          Map.put(acc, String.to_atom(k), v)
+
+        # after_raw may be a binary or a single-element list; normalize then split
+        {:after_raw, raw}, acc ->
+          list = raw |> normalize_token() |> String.split(",", trim: true)
+          Map.put(acc, :after, list)
+
+        _, acc ->
+          acc
+      end)
+
     {name, attrs}
   end
 
   defp line_from(_tokens), do: 0 # NimbleParsec line metadata available in error path; for success we skip for now
+
+  # NimbleParsec can wrap captured binaries in single-element lists when tagged or repeated.
+  # Ensure we always return a binary for downstream logic.
+  defp normalize_token(value) when is_binary(value), do: value
+  defp normalize_token([value]) when is_binary(value), do: value
+  defp normalize_token(value) when is_list(value) do
+    value
+    |> List.flatten()
+    |> Enum.map(fn
+      v when is_binary(v) -> v
+      v when is_integer(v) -> <<v>>
+      v -> to_string(v)
+    end)
+    |> Enum.join()
+  end
+  defp normalize_token(value), do: to_string(value)
 end

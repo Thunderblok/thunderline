@@ -52,6 +52,8 @@ defmodule Thunderline.DataCase do
           pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Thunderline.Repo, shared: false)
           on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
         true ->
+          # Use global shared owner and allow this test process to access it
+          Ecto.Adapters.SQL.Sandbox.allow(Thunderline.Repo, global_owner, self())
           :ok
       end
     end

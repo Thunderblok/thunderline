@@ -18,7 +18,7 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanStatsTest do
   test "recent reflects inserted telemetry events" do
     # Simulate minimal meta for handler
     meta = %{queue: :default, worker: "TestWorker", state: :available}
-    ObanTelemetry.handle_event([:oban, :job, :start], %{}, meta, %{})
+    ObanTelemetry.handle_job_event([:oban, :job, :start], %{}, meta, %{})
     Process.sleep(5)
     events = ObanTelemetry.recent(5)
     assert length(events) == 1

@@ -1,6 +1,7 @@
 defmodule Thunderline.TOCP.Membership do
   @moduledoc """
-  SWIM-lite membership state & gossip tick scaffold.
+  Deprecated: SWIM-lite membership state & gossip tick scaffold.
+  Prefer `Thunderline.Thunderlink.Transport.Membership`.
 
   Week-1 target: Maintain ETS tables for alive/suspect/dead with piggybacked updates.
   This module will supervise its own periodic gossip Task in later implementation.

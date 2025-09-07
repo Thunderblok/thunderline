@@ -1,6 +1,7 @@
 defmodule Thunderline.TOCP.Reliability do
   @moduledoc """
-  Reliability window & ACK batching contract.
+  Deprecated: Reliability window & ACK batching contract.
+  Prefer `Thunderline.Thunderlink.Transport.Reliability`.
 
   Week-2: Implement sliding window (32), retries (5), ack batch (10ms), dedup LRU (2048).
   Backoff ladder for retry storms & hard cutoff after max_retries.

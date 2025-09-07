@@ -39,9 +39,7 @@ defmodule Thunderline.Thunderflow.Domain do
   resource Thunderline.Thunderflow.Resources.ProbeRun
   resource Thunderline.Thunderflow.Resources.ProbeLap
   resource Thunderline.Thunderflow.Resources.ProbeAttractorSummary
-  # Phase 0 Market/EDGAR + Feature/Lineage resources
-  resource Thunderline.Markets.RawTick
-  resource Thunderline.Filings.EDGARDoc
+  # Feature/Lineage resources (market/edgar removed)
   resource Thunderline.Features.FeatureWindow
   resource Thunderline.Lineage.Edge
   end

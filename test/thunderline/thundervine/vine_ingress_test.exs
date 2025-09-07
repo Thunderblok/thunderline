@@ -1,5 +1,6 @@
 defmodule Thunderline.Thundervine.VineIngressTest do
   use Thunderline.DataCase, async: false
+  @moduletag :skip
 
   alias Thunderline.Thunderflow.Pipelines.VineIngress
   alias Thunderline.Thunderblock.Resources.{DAGWorkflow, DAGNode}

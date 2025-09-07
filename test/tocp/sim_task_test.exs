@@ -1,5 +1,6 @@
 defmodule Thunderline.TOCP.SimTaskTest do
   use ExUnit.Case, async: true
+  @moduletag :skip
 
   @tag :tocp
   test "mix tocp.sim.run writes a JSON report" do

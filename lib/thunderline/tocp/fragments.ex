@@ -1,6 +1,7 @@
 defmodule Thunderline.TOCP.Fragments do
   @moduledoc """
-  Fragmentation/assembly behaviour.
+  Deprecated: Fragmentation/assembly behaviour.
+  Prefer `Thunderline.Thunderlink.Transport.Fragments`.
 
   Week-2: CHUNK assembly with per-peer/global caps.
   """

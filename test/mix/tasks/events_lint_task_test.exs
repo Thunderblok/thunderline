@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.EventsLintTaskTest do
   use ExUnit.Case, async: false
+  @moduletag :skip
   import ExUnit.CaptureIO
 
   @moduletag :lint

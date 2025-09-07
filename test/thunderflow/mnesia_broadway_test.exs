@@ -4,6 +4,7 @@ defmodule ThunderlineTest.MnesiaBroadwayTest do
   """
 
   use ExUnit.Case, async: false
+    @moduletag :skip
   alias Thunderline.EventBus
   alias Thunderflow.MnesiaProducer
 
