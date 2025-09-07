@@ -1,11 +1,11 @@
-# TOCP Domain Decisions (DIP Index)
+# Thunderlink Transport (formerly TOCP) — Domain Decisions (DIP Index)
 
 Status: Scaffold (Week 0)  
 Owner: Prometheus-Net  
 Motto: Structa, Tuta, Certa.
 
 ## Scope
-Sovereign protocol domain for membership, routing, transport, reliability & store/forward bridging into existing domains via explicit bridges (no raw struct coupling).
+Sovereign transport layer for membership, routing, transport, reliability & store/forward bridging into existing domains via explicit bridges (no raw struct coupling). Code namespace consolidated under `Thunderline.Thunderlink.Transport.*`; existing TOCP modules remain as shims during transition.
 
 ## Decision Records
 

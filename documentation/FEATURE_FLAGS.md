@@ -29,6 +29,7 @@ Environment variables map where applicable (e.g. `ENABLE_UPS=true`). Prefer expl
 | `:ai_chat_panel` | FEATURES_AI_CHAT_PANEL | false | boolean | UI | Enable experimental Ash AI chat assistant panel on dashboard | experimental |
 | `:tocp` | FEATURE_TOCP | false | boolean | Protocol | Enable TOCP supervisor & processes | scaffold |
 | `:tocp_presence_insecure` | FEATURE_TOCP_PRESENCE_INSECURE | false | boolean | Protocol | (Governed) Disable control-frame signing & replay enforcement ONLY for perf tests; emits one-shot `[:tocp,:security,:insecure_mode]` + boot WARN; CI fails unless `ALLOW_INSECURE_TESTS=true` | debug |
+(Note) Both `:tocp` and `:tocp_presence_insecure` control the Thunderlink Transport subsystem (formerly TOCP). Telemetry prefix remains `[:tocp, *]` during transition.
 | `:vim` | FEATURE_VIM | false | boolean | Optimization | Enable Virtual Ising Machine layer (routing/persona) in shadow/active modes (see DIP-VIM-001) | experimental |
 | `:vim_active` | FEATURE_VIM_ACTIVE | false | boolean | Optimization | Force VIM into active (non‑shadow) decision application for canary % of traffic | preview |
 

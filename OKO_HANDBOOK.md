@@ -151,8 +151,8 @@ Tracking: Status values mirrored daily from Playbook into sitrep delta block; ha
 
 Recent Delta (Aug 29–30 2025):
 - Internal UUID v7 generator (`Thunderline.UUID`) adopted; replaces interim v4 usage for event & correlation ids (improves chronological ordering heuristics).
-- TOCP scaffold expanded: added `Routing.SwitchTracker` (emits `routing.relay_switch_rate`) & `Telemetry.Aggregator` (aggregates `security.sig_fail` / `security.replay_drop`).
-- Security primitives scaffolded: `Security.Impl` (Ed25519 sign/verify via JOSE) and `Security.Pruner` (replay window pruning) under TOCP supervisor gating.
+- Thunderlink Transport (formerly TOCP) scaffold expanded: added `Thunderline.Thunderlink.Transport.Routing.SwitchTracker` (emits `routing.relay_switch_rate`) & `Thunderline.Thunderlink.Transport.Telemetry.Aggregator` (aggregates `security.sig_fail` / `security.replay_drop`).
+- Security primitives scaffolded: `Thunderline.Thunderlink.Transport.Security.Impl` (Ed25519 sign/verify via JOSE) and `Thunderline.Thunderlink.Transport.Security.Pruner` (replay window pruning) under transport supervisor gating.
 - Simulator report now surfaces security counters; telemetry docs & decisions updated (DIP-TOCP-002 partial progress).
 - Feature flags registry extended with `:tocp` & `:tocp_presence_insecure` (insecure mode governance: WARN + one-shot telemetry, see High Command One-Pager).
  - Added VIM (Virtual Ising Machine) DIP (DIP-VIM-001) establishing shared optimization layer for routing & persona; feature flags `:vim` & `:vim_active` drafted.
@@ -206,7 +206,7 @@ Codename: AGENT RAZOR
 | Privacy | Persona feature logging rules not enforced (hashing) | Potential sensitive data leakage | Hash feature ids before telemetry; audit log anonymization | P1 |
 | Presence Security | Quarantine automation thresholds static | Over/under quarantine risk | Adaptive thresholds using EMA of baseline fail rate | P1 |
 | Feature Flags | No CI to ensure docs-table parity | Flags drift undocumented | Build `mix thunderline.flags.audit` diffing runtime used flags vs registry | P1 |
-| Simulator | No automatic CI gate for TOCP convergence SLO | Regressions slip in | Implement DIP-TOCP-005 harness in CI (assert SLOs) | P1 |
+| Simulator | No automatic CI gate for Transport convergence SLO | Regressions slip in | Implement DIP-TOCP-005 harness in CI (assert SLOs) | P1 |
 | Observability | No dashboards for error class / retry breakdown yet | Slow root cause analysis | Grafana JSON or LiveDashboard pages seeded from taxonomy | P1 |
 | Performance | No regression benchmarks in CI (HC-18) | Latency creep undetected | Add Benchee suite + threshold gating | P2 |
 | Federation | ActivityPub phased roadmap doc missing (HC-17) | Ambiguity in integration sequence | Author phased DIP & link in Catalog | P2 |

@@ -44,8 +44,8 @@ All events under `[:tocp, *]`.
 
 ---
 Implementation Notes (Week 0+ incremental):
-- `routing.relay_switch_rate` implemented via `Thunderline.TOCP.Routing.SwitchTracker` (10s window default)
-- Security counters (`security.sig_fail`, `security.replay_drop`) aggregated by `Thunderline.TOCP.Telemetry.Aggregator` for simulator & health endpoints.
+- `routing.relay_switch_rate` implemented via `Thunderline.Thunderlink.Transport.Routing.SwitchTracker` (10s window default)
+- Security counters (`security.sig_fail`, `security.replay_drop`) aggregated by `Thunderline.Thunderlink.Transport.Telemetry.Aggregator` for simulator & health endpoints.
 - Simulator (`mix tocp.sim.run`) surfaces aggregated counters in JSON report under `security`.
 
 Ownership: Sibyl-Eyes

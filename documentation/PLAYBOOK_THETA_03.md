@@ -12,13 +12,13 @@ Objective: Land security wiring, migrations, email MVP slice, ops baseline, taxo
 | Security Roadmap | DIP-TOCP-004 | IN PROGRESS (scaffold) |
 | Simulator Gates | DIP-TOCP-005 | UPDATED (schema v0.2) |
 | Feature Flags | FEATURE_FLAGS.md | Updated w/ insecure governance |
-| Decisions Log | TOCP_DECISIONS.md | Synced Aug 30 |
+| Decisions Log | TOCP_DECISIONS.md (applies to Thunderlink Transport) | Synced Aug 30 |
 | One-Pager | HIGH_COMMAND_ONE_PAGER_2025_08_30.md | Source of sprint directives |
 
 ---
 ## 1. 48h PR Targets (Blocking Set)
 
-### 1.1 TOCP Security Wiring PR
+### 1.1 Thunderlink Transport Security Wiring PR
 Checklist:
 - [ ] Integrate `Security.Impl.verify/2` in Membership ANNOUNCE/ADVERTISE/ACK ingest path
 - [ ] Invoke replay window check before state mutation
@@ -37,7 +37,7 @@ Checklist:
 - [ ] Apply & verify idempotent rollback locally
 - [ ] Tag `ml.schema.version` in telemetry exporter (counter or gauge)
 - [ ] Add test ensuring resources CRUD after migration
-- [ ] Update `MIGRATIONS.md` + CHANGELOG TOCP section
+- [ ] Update `MIGRATIONS.md` + CHANGELOG (Transport/TOCP section)
 
 ### 1.3 Email MVP Scaffold PR (HC-05)
 Checklist:
@@ -110,7 +110,7 @@ Change Process:
 - Replay ETS Sharding: `:ets.new({:replay, shard}, ...)`; shard = `:erlang.phash2(src, n)`; prune oldest bucket by timestamp.
 - Signature Cache: simple ETS set `{pubkey_hash, ts}`; upsert on verify success; skip re-verify if within TTL.
 - Hysteresis Cooldown: store last switch ts; disallow switch while `(now - last_ts) < cooldown_ms` unless forced by failure.
-- Config Guardrails: `TOCP.Config.normalize/1` (clamp intervals, ensure non-negative, log sanitized keys).
+- Config Guardrails: `Thunderline.Thunderlink.Transport.Config.normalize/1` (clamp intervals, ensure non-negative, log sanitized keys). Legacy TOCP.Config delegates.
 
 ---
 ## 7. Telemetry Delta Plan
@@ -119,7 +119,7 @@ Change Process:
 | security.sig_fail | Implemented | Security.Impl | Counter increment per failure |
 | security.replay_drop | Implemented | Security.Impl | After replay rejection |
 | security.quarantine | Planned | Membership/Router | Emit once per state change |
-| security.insecure_mode | Planned | TOCP.Supervisor boot | One-shot if flag active |
+| security.insecure_mode | Planned | Transport.Supervisor boot | One-shot if flag active |
 | flow.rate.drop | Planned | FlowControl | Drop decision path |
 | routing.relay_selected | Implemented | SwitchTracker | Latency metric derivation |
 

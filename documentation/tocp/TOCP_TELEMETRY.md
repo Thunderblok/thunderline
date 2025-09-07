@@ -1,6 +1,6 @@
-# TOCP Telemetry Specification
+# Thunderlink Transport Telemetry Specification (formerly TOCP)
 
-Prefix: `[:tocp, *]`
+Prefix: `[:tocp, *]` (unchanged for compatibility)
 Version: 0 (scaffold)
 
 ## Event Matrix
@@ -23,7 +23,7 @@ Version: 0 (scaffold)
 | flow.rate.drop | %{count: 1} | %{kind: k} | 1:1 | (Planned) Dropped due to FlowControl.allowed?/1 false |
 
 ## Sampling Rules
-Heartbeat samples controlled by config `:tocp, :hb_sample_ratio` (default 20 -> 1/20).
+Heartbeat samples controlled by config `:tocp, :hb_sample_ratio` (default 20 -> 1/20). Note: despite consolidation under `Thunderline.Thunderlink.Transport.*`, the telemetry prefix and config key remain `:tocp`.
 All other control & reliability events unsampled for MVP.
 
 ## Metrics Derivations (Dashboards)

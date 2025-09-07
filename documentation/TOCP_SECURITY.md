@@ -1,4 +1,6 @@
-# ⚔️ TOCP Presence Security — Battle Plan (v0.1)
+# ⚔️ Thunderlink Transport Presence Security — Battle Plan (v0.1)
+
+Note: This document refers to the transport subsystem formerly named TOCP. Code has been consolidated under `Thunderline.Thunderlink.Transport.*`. Telemetry prefix and feature flags remain `:tocp` for compatibility.
 **Codename:** Operation Iron Veil  
 **Audience:** Warden & Prometheus Lines  
 **Status:** Ratified (Scaffold Integrated)  

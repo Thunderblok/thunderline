@@ -383,15 +383,15 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 ✅ ThunderGate   - 18 resources (100% operational, includes ThunderEye & ThunderGuard consolidation)
 ✅ ThunderGrid   - 8 resources  (100% operational)
 ✅ ThunderLink   - 9 resources  (100% operational)
-🛰️ TOCP (Open Circuit Protocol) - FEATURE GATED (scaffold only). Not part of the original 7; emerging sovereign domain for membership, routing, transport & reliability. All modules live under `Thunderline.TOCP.*` and attach only when feature flag `:tocp` is enabled. Zero-logic scaffold merged Aug 2025 (Orders Θ-01).
-    - Supervisor: `Thunderline.TOCP.Supervisor` (no children yet)
-    - Core behaviours: Wire, Security, Membership, Routing, Router, Reliability, Fragments, Store, FlowControl, Telemetry
-    - Transport scaffold: Transport.UDP (logs only; no bind)
-    - Simulation harness: Sim.Fabric / NodeModel (JSON report stub via `mix tocp.sim.run`)
+🛰️ Thunderlink Transport (formerly TOCP) — FEATURE GATED (scaffold only). Not part of the original 7; emerging transport layer for membership, routing, reliability & store/forward. Code has been consolidated under `Thunderline.Thunderlink.Transport.*` (TOCP modules remain as shims). Feature flag `:tocp` still controls activation. Zero‑logic scaffold merged Aug 2025 (Orders Θ‑01).
+    - Supervisor: `Thunderline.Thunderlink.Transport.Supervisor` (feature‑gated)
+    - Core behaviours & components: `Admission`, `Config`, `FlowControl`, `Fragments`, `Membership`, `Reliability`, `Router`, `Routing.*`, `Security.*`, `Store`, `Telemetry.*`, `Wire` — under `Thunderline.Thunderlink.Transport.*`
+    - Transport scaffold: `Thunderline.TOCP.Transport.UDP` (legacy stub, logs only; no bind)
+    - Simulation harness: `Thunderline.TOCP.Sim.Fabric` / `NodeModel` (JSON report via `mix tocp.sim.run`)
     - Config surface: `config :thunderline, :tocp` (port=5088, gossip=1000±150ms, window=32, ack_batch=10ms, ttl=8)
-    - Decisions & Telemetry docs: `Docs/TOCP_DECISIONS.md`, `Docs/TOCP_TELEMETRY.md`
+    - Decisions & Telemetry docs: see `documentation/TOCP_DECISIONS.md`, `documentation/TOCP_TELEMETRY.md` (apply to Thunderlink Transport; telemetry prefix remains `[:tocp, *]` for compatibility)
         - Security posture (v0.1): Control frame signing planned, replay window (30s), admission tokens required, fragment & credit caps hardened.
-        - Security Battle Plan: `Docs/TOCP_SECURITY.md` (Operation Iron Veil)
+        - Security Battle Plan: `documentation/TOCP_SECURITY.md` (Operation Iron Veil)
 ```
 
 ### **Architecture Metrics**

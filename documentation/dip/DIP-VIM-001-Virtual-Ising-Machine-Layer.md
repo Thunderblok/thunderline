@@ -1,7 +1,7 @@
 # DIP-VIM-001 — Virtual Ising Machine (VIM) Layer
 
 Status: Draft  
-Owners: Thunderline Core (Routing/TOCP), Cerebros Personalization  
+Owners: Thunderline Core (Thunderlink Transport Routing), Cerebros Personalization  
 Reviewers: High Command @ OKO, ThunderBolt & ThunderFlow Stewards  
 Created: 2025-08-30  
 Decision Window: 7 days from creation
@@ -9,7 +9,7 @@ Decision Window: 7 days from creation
 ---
 ## 1. Summary
 Introduce a Virtual Ising Machine (VIM) as a shared optimization layer for:
-- **Routing relay selection** in TOCP (exact-K, diversity & anti-correlation aware)
+- **Routing relay selection** in Thunderlink Transport (exact-K, diversity & anti-correlation aware)
 - **Persona “style board” selection** in Cerebros (energy-minimized template/constraint masks)
 
 VIM exposes APIs to define sparse binary quadratic problems (BQM/Ising h, J, constraints), solve them via simulated annealing (SA)/tabu, and inject results into runtime decisions. Entirely feature-flagged, auditable, and degradable to existing heuristics.

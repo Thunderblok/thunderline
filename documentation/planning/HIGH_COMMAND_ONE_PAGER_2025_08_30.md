@@ -8,9 +8,9 @@ Codename: Θ-03 — "From scaffold to signal"
 ## Executive Snapshot
 
 ✅ UUID v7 adoption → improved ordering/traceability
-✅ TOCP scaffold extended → first security + routing telemetry live
-✅ Feature flags parity → :tocp, :tocp_presence_insecure documented
-✅ DIP-TOCP-002 telemetry taxonomy → PARTIAL acceptance (security + churn primitives)
+✅ Thunderlink Transport (formerly TOCP) scaffold extended → first security + routing telemetry live
+✅ Feature flags parity → :tocp, :tocp_presence_insecure documented (controls Thunderlink Transport attach & insecure mode)
+✅ DIP-TOCP-002 telemetry taxonomy → PARTIAL acceptance (security + churn primitives; telemetry prefix remains `[:tocp, *]`)
 
 ⚠️ Remaining REDs: ML persistence (HC-04), Email MVP (HC-05), Presence policies (HC-06), Deployment/CI cluster (HC-07/08/09)
 
@@ -23,7 +23,7 @@ RED: HC-04 ML persistence, HC-05 Email MVP, HC-06 Presence/membership policy, HC
 
 ---
 ## 48-Hour Targets (Approve & Ship PRs)
-1. TOCP Security Wiring PR
+1. Thunderlink Transport Security Wiring PR
    - Wire Membership/Router to Security.Impl (verify signatures, replay window check)
    - Increment counters, emit security.quarantine
    - Implement FlowControl.allowed?/1 + :rate.drop telemetry
@@ -42,7 +42,7 @@ RED: HC-04 ML persistence, HC-05 Email MVP, HC-06 Presence/membership policy, HC
 
 ---
 ## 7-Day Tactical Plan
-- Finish TOCP Week-1 (membership + UDP) behind flag → 1k-node convergence <30s, p95 stabilize <5s
+- Finish Transport Week-1 (membership + UDP) behind flag → 1k-node convergence <30s, p95 stabilize <5s
 - Quarantine auto-actions (tripwire → timer-based reset)
 - Error classifier + DLQ policy skeleton (HC-09) with Broadway hook
 - Dashboard: security counters + switch rate panels; insecure mode banner if active
@@ -90,7 +90,7 @@ Planned (P1): security.quarantine, security.insecure_mode (one-shot), reliabilit
 
 ---
 ## Feature Flags Governance
-- :tocp (enables TOCP supervisor tree)
+- :tocp (enables Thunderlink Transport supervisor tree)
 - :tocp_presence_insecure (ALLOWED only with boot WARN + emit [:tocp,:security,:insecure_mode])
 Policy: In CI, insecure presence requires ALLOW_INSECURE_TESTS=true or test fails.
 
@@ -126,7 +126,7 @@ Policy: In CI, insecure presence requires ALLOW_INSECURE_TESTS=true or test fail
 - Replay ETS: shard by (src mod X), prune by time buckets, cap by buckets
 - Signature cache: short TTL to reduce hot-loop overhead
 - Hysteresis: add cooldown window after churn spikes (dampen reselection thrash)
-- Config guardrails: centralize normalization & clamping (TOCP.Config)
+- Config guardrails: centralize normalization & clamping (Thunderline.Thunderlink.Transport.Config; legacy TOCP.Config delegates)
 - Simulator gate: force FAIL when presence insecure unless ALLOW_INSECURE_TESTS=true
 
 ---

@@ -1,6 +1,6 @@
-# TOCP Decisions Log (DIPs)
+# Thunderlink Transport Decisions Log (DIPs) — formerly TOCP
 
-Domain: Thunderline.TOCP.*  
+Domain: Thunderline.Thunderlink.Transport.* (TOCP modules remain as shims)  
 Scope: Scaffold -> Week1 (Presence/Routing) -> Week2 (Reliability/Fragments/Store)
 
 ## Active DIPs (Snapshot: 2025-08-30)
@@ -23,7 +23,7 @@ Scope (delivered):
 - delivery.packet_tx, delivery.packet_rx, delivery.retry, delivery.ack
 - security.sig_fail, security.replay_drop (counters surfaced in simulator artifact)
 Sampling: Heartbeat sample 1/20 (hb_sample_ratio config). All listed control & security events unsampled in MVP.
-Decision: Prefix `[:tocp, *]` exported via Flow telemetry exporter -> OTel (`tocp.<event_path>` metric names).
+Decision: Prefix `[:tocp, *]` exported via Flow telemetry exporter -> OTel (`tocp.<event_path>` metric names). Consolidation into `Thunderline.Thunderlink.Transport.*` does not change the telemetry prefix.
 Follow-on (P1 backlog):
 - zone.presence.* metrics (per-zone membership counts & churn)
 - reliability.window metrics (dup_rx_ratio, timeout counters) once reliability slice lands

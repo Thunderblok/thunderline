@@ -1,4 +1,4 @@
-# TOCP (Thunderline Open Circuit Protocol) — MVP Spec v0.1
+# Thunderlink Transport (formerly TOCP) — MVP Spec v0.1
 
 > Goal: Transport‑agnostic, low‑overhead, presence‑centric protocol for swarms (1k–10k nodes) that works over UDP/QUIC/WebRTC/LoRa/TCP with identical semantics. Inspired by Hotline, Telnet, IRC/ICQ presence, Gnutella/DHT gossip, and store‑and‑forward BBS/Usenet.
 
@@ -6,7 +6,7 @@
 
 ## 0a) Thunderline Integration Status (Aug 31, 2025)
 - Feature flag: `:tocp` (disabled by default). Enable via `config :thunderline, features: %{tocp: true}` or `FEATURES_TOCP=1`.
-- Namespaces scaffolded under `Thunderline.TOCP.*` with supervisor stub. No sockets bind unless flag enabled.
+- Namespaces consolidated under `Thunderline.Thunderlink.Transport.*` (legacy `Thunderline.TOCP.*` modules persist as shims). No sockets bind unless flag enabled.
 - Config surface (defaults, overridable in runtime):
   - `config :thunderline, :tocp, port: 5088, gossip_ms: 1000, window: 32, ack_batch_ms: 10, ttl: 8`
 - Telemetry (reserved; emitted once adapters go live):
@@ -214,14 +214,14 @@ mtu() :: integer
 - **Supervision:** restarts isolate (membership independent of router).
 - **Registry:** ETS for membership map; `:persistent_term` for local NodeID/keys.
 - **Backpressure:** per‑peer GenServer mailbox caps; async nacks on overflow.
-- **Module layout (Thunderline):**
-  - `Thunderline.TOCP.Supervisor` – feature‑gated root supervisor
-  - `Thunderline.TOCP.Membership` – SWIM‑lite
-  - `Thunderline.TOCP.Router` – zone‑cast/unicast & next‑hop cache
-  - `Thunderline.TOCP.Reliability` – windows/acks/dup window
-  - `Thunderline.TOCP.Transport.UDP|QUIC|WebRTC|TCP|LoRa` – adapters
-  - `Thunderline.TOCP.Store` – OFFER/REQUEST & chunk reassembly
-  - `Thunderline.TOCP.Security` – key material & signing/Noise hooks
+**Module layout (Thunderline):**
+  - `Thunderline.Thunderlink.Transport.Supervisor` – feature‑gated root supervisor (legacy `Thunderline.TOCP.Supervisor` delegates)
+  - `Thunderline.Thunderlink.Transport.Membership` – SWIM‑lite
+  - `Thunderline.Thunderlink.Transport.Router` – zone‑cast/unicast & next‑hop cache
+  - `Thunderline.Thunderlink.Transport.Reliability` – windows/acks/dup window
+  - `Thunderline.TOCP.Transport.UDP|QUIC|WebRTC|TCP|LoRa` – adapters (legacy stubs)
+  - `Thunderline.Thunderlink.Transport.Store` – OFFER/REQUEST & chunk reassembly
+  - `Thunderline.Thunderlink.Transport.Security` – key material & signing/Noise hooks
 - **Telemetry names:** as listed in §0a; map to dashboard panels via `Thunderline.Thunderflow.EventBuffer`.
 
 ## 16) Implementation Notes & Open Items (Aug 31, 2025)
