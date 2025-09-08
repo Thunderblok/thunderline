@@ -1,3 +1,4 @@
+<Layouts.app flash={@flash}>
 <%!-- Command Center Dashboard --%>
 <div id="command-center" class="min-h-screen bg-black relative overflow-hidden">
   
@@ -28,7 +29,7 @@
         
       </div>
     </div>
-  
+
 
     <%!-- Top Navigation Bar - Centered over logo --%>
     <nav class="relative z-20 px-4 md:px-8 py-3 mt-52">
@@ -62,12 +63,36 @@
     </nav>
   </header>
 
-  <%!-- Main Content Grid --%>
+  <%!-- Main Content --%>
   <div class="relative z-10 px-4 md:px-8 pb-8 pt-32">
-    <%!-- 13-Panel Custom Layout --%>
     <div class="max-w-7xl mx-auto mt-20" style="margin-top: 5.75rem;">
+      <%!-- Tabs Bar --%>
+      <div id="dashboard-tabs" class="mb-6 border-b border-white/10">
+  <div id="dashboard-tablist" class="flex gap-2 text-xs font-medium" role="tablist" phx-hook="Tabs" data-active-tab={@active_tab}>
+          <%= for {tab_key, label} <- [{"overview", "Overview"}, {"system", "System"}, {"events", "Events"}, {"controls", "Controls"}, {"thunderwatch", "Thunderwatch"}] do %>
+            <.link
+              patch={"?tab=#{tab_key}"}
+              class={[
+                "px-3 py-2 rounded-t-md border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60",
+                if(@active_tab == tab_key, do: "text-cyan-300 border-cyan-400", else: "text-gray-400 border-transparent hover:text-gray-200")
+              ]}
+              id={"tab-" <> tab_key <> "-link"}
+              role="tab"
+              aria-selected={to_string(@active_tab == tab_key)}
+              aria-controls={"panel-" <> tab_key}
+              tabindex={if(@active_tab == tab_key, do: "0", else: "-1")}
+              data-tab-key={tab_key}
+            >
+              {label}
+            </.link>
+          <% end %>
+        </div>
+      </div>
+
+      <%= case @active_tab do %>
+        <% "overview" -> %>
       <%!-- Top Row - 4 panels --%>
-      <div class="grid grid-cols-4 gap-4 mb-4">
+      <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview-link" class="grid grid-cols-4 gap-4 mb-4" tabindex="0">
       
         <%!-- Top Panel 1 --%>
         <div class="glass-panel p-4">
@@ -116,7 +141,7 @@
       </div>
 
       <%!-- Middle Row - Left side panels, Center panel, Right side panels --%>
-      <div class="flex gap-4 mb-4 h-64">
+  <div class="flex gap-4 mb-4 h-64">
         <%!-- Left Column --%>
         <div class="w-48 space-y-4">
           <%!-- Left Panel 1 --%>
@@ -213,8 +238,8 @@
         </div>
       </div>
 
-      <%!-- Bottom Row - 4 panels --%>
-      <div class="grid grid-cols-4 gap-4">
+  <%!-- Bottom Row - 4 panels --%>
+  <div class="grid grid-cols-4 gap-4">
 
         <%!-- Bottom Panel 1 --%>
         <div class="glass-panel p-4">
@@ -252,7 +277,56 @@
           <div class="text-xs text-gray-300">Real-time</div>
         </div>
       </div>
+
+        <% "system" -> %>
+          <div id="panel-system" role="tabpanel" aria-labelledby="tab-system-link" class="space-y-4" tabindex="0">
+            <div class="glass-panel p-4">
+              <h3 class="text-sm font-bold text-white mb-2">System Health</h3>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-300">
+                <div>Nodes: <span class="text-cyan-300"><%= @system_metrics.connected_nodes %></span></div>
+                <div>Active Agents: <span class="text-cyan-300"><%= @system_metrics.active_agents %></span></div>
+                <div>Chunks: <span class="text-cyan-300"><%= @system_metrics.total_chunks %></span></div>
+                <div>Memory: <span class="text-cyan-300"><%= @system_metrics.memory_usage %></span></div>
+              </div>
+            </div>
+            <div class="glass-panel p-4">
+              <.system_health_panel data={@system_health} />
+            </div>
+          </div>
+
+        <% "events" -> %>
+          <div id="panel-events" role="tabpanel" aria-labelledby="tab-events-link" class="glass-panel p-0 overflow-hidden" tabindex="0">
+            <div class="px-4 pt-3">
+              <h3 class="text-sm font-bold text-white">Event Flow</h3>
+            </div>
+            <div class="px-2 pb-2 pt-1">
+              <ThunderlineWeb.DashboardComponents.EventFlow.event_flow_panel events={@events} streams={@streams} />
+            </div>
+          </div>
+
+        <% "controls" -> %>
+          <div id="panel-controls" role="tabpanel" aria-labelledby="tab-controls-link" class="glass-panel p-4" tabindex="0">
+            <h3 class="text-sm font-bold text-white mb-3">System Controls</h3>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button class="px-3 py-2 rounded bg-red-600/80 hover:bg-red-600 text-white" phx-click="system_control" phx-value-action="emergency_stop">Emergency Stop</button>
+              <button class="px-3 py-2 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white" phx-click="system_control" phx-value-action="system_restart">Restart</button>
+              <button class="px-3 py-2 rounded bg-yellow-600/80 hover:bg-yellow-600 text-white" phx-click="system_control" phx-value-action="safe_mode">Safe Mode</button>
+              <button class="px-3 py-2 rounded bg-amber-600/80 hover:bg-amber-600 text-white" phx-click="system_control" phx-value-action="maintenance_mode">Maintenance</button>
+            </div>
+          </div>
+
+        <% "thunderwatch" -> %>
+          <div id="panel-thunderwatch" role="tabpanel" aria-labelledby="tab-thunderwatch-link" class="glass-panel p-3" tabindex="0">
+            <.thunderwatch_panel stats={@thunderwatch_stats} />
+          </div>
+
+        <% _ -> %>
+          <div class="text-gray-300">Unknown tab</div>
+      <% end %>
     </div>
 
   </div>
 </div>
+
+
+</Layouts.app>

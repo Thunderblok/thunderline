@@ -1,0 +1,10 @@
+{
+  "terminal.integrated.defaultProfile.linux": "PowerShell",
+  "terminal.integrated.profiles.linux": {
+    "PowerShell": {
+      "path": "/mnt/c/Program Files/PowerShell/7/pwsh.exe",
+      "args": ["-NoLogo"],
+      "icon": "terminal-powershell"
+    }
+  }
+}

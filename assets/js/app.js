@@ -25,6 +25,55 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 let Hooks = {
   CAVisualization,
   AutoScroll,
+  Tabs: {
+    mounted() {
+      // Persist and a11y keyboard navigation for tabs
+      const container = this.el
+      const links = Array.from(container.querySelectorAll('[role="tab"]'))
+      const storageKey = this.getStorageKey()
+      // Restore last tab if no ?tab present
+      const url = new URL(window.location.href)
+      const hasTab = url.searchParams.has('tab')
+      const saved = localStorage.getItem(storageKey)
+      if (!hasTab && saved) {
+        // Trigger a patch navigation by clicking the matching tab link
+        const match = links.find(l => l.dataset.tabKey === saved)
+        if (match) match.click()
+      }
+
+      // Save on click
+      links.forEach(link => {
+        link.addEventListener('click', () => {
+          const key = link.dataset.tabKey
+          if (key) localStorage.setItem(storageKey, key)
+        })
+      })
+
+      // Keyboard nav
+      container.addEventListener('keydown', (e) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return
+        e.preventDefault()
+        const currentIndex = links.findIndex(l => l.getAttribute('aria-selected') === 'true')
+        let nextIndex = currentIndex
+        if (e.key === 'ArrowRight') nextIndex = (currentIndex + 1) % links.length
+        if (e.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + links.length) % links.length
+        if (e.key === 'Home') nextIndex = 0
+        if (e.key === 'End') nextIndex = links.length - 1
+        const next = links[nextIndex]
+        if (next) {
+          next.focus()
+          next.click()
+        }
+      })
+    },
+    getStorageKey() {
+      try {
+        // Namespace by path so different dashboard routes keep independent selection
+        const path = window.location.pathname
+        return `thunderline:dashboard:last_tab:${path}`
+      } catch (_) { return 'thunderline:dashboard:last_tab' }
+    }
+  },
   EventFlowScroll: {
     mounted() {
       this.userLocked = false

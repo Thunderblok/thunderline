@@ -199,12 +199,22 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   @impl true
-  def handle_params(%{"domain" => domain}, _uri, socket) do
-    {:noreply, assign(socket, :active_domain, String.to_atom(domain))}
+  def handle_params(%{"domain" => domain} = params, _uri, socket) do
+    tab = validate_tab(params["tab"])
+    {:noreply,
+     socket
+     |> assign(:active_domain, String.to_atom(domain))
+     |> assign(:active_tab, tab)
+     |> maybe_persist_tab(tab)}
   end
 
-  def handle_params(_params, _uri, socket) do
-    {:noreply, assign(socket, :active_domain, :overview)}
+  def handle_params(params, _uri, socket) do
+    tab = validate_tab(params["tab"])
+    {:noreply,
+     socket
+     |> assign(:active_domain, :overview)
+     |> assign(:active_tab, tab)
+     |> maybe_persist_tab(tab)}
   end
 
   @impl true
@@ -574,6 +584,11 @@ defmodule ThunderlineWeb.DashboardLive do
     {:noreply, assign(socket, :active_domain, String.to_atom(domain))}
   end
 
+  def handle_event("set_tab", %{"tab" => tab}, socket) do
+    tab = validate_tab(tab)
+    {:noreply, socket |> assign(:active_tab, tab) |> maybe_persist_tab(tab)}
+  end
+
   def handle_event("manage_node", _params, socket) do
     Logger.info("Managing Thunderline Node...")
     {:noreply, socket}
@@ -740,10 +755,36 @@ defmodule ThunderlineWeb.DashboardLive do
 
   # Private Functions
 
-  defp assign_initial_state(socket, _params) do
+  defp assign_initial_state(socket, params) do
+    # Resolve active tab from params or persisted store
+    resolved_tab =
+      case params["tab"] do
+        nil ->
+          # Try ETS backed persistence
+          try do
+            if user = socket.assigns[:current_user] do
+              key = {user[:id] || user.id, :last_dashboard_tab}
+              case :ets.whereis(:thunderline_session_cache) do
+                :undefined -> nil
+                _ ->
+                  case :ets.lookup(:thunderline_session_cache, key) do
+                    [{^key, tab}] when is_binary(tab) -> validate_tab(tab)
+                    _ -> nil
+                  end
+              end
+            else
+              nil
+            end
+          rescue
+            _ -> nil
+          end
+        tab -> validate_tab(tab)
+      end || "overview"
+
     socket
     |> assign(:page_title, "Thunderblock Dashboard")
     |> assign(:active_domain, :overview)
+    |> assign(:active_tab, resolved_tab)
     |> assign(:automata_expanded, false)
     |> assign(:loading, true)
     |> assign(:connected, false)
@@ -775,6 +816,55 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:controls_data, %{})
     |> assign(:gate_auth_stats, %{total: 0, success: 0, missing: 0, expired: 0, invalid: 0, deny: 0, success_rate: 0.0})
   |> assign(:thunderwatch_stats, %{files_indexed: 0, seq: 0, events_last_min: 0, utilization: 0, domain_counts: %{}})
+  end
+
+  # Tabs helpers
+  defp allowed_tabs do
+    [
+      "overview",
+      "system",
+      "events",
+      "controls",
+      "thunderwatch"
+    ]
+  end
+
+  # Optional: persist tab across reconnects per user in session ETS or temp assign
+  defp maybe_persist_tab(socket, tab) when is_binary(tab) do
+    # Ensure ETS table exists (best-effort)
+    try do
+      case :ets.whereis(:thunderline_session_cache) do
+        :undefined ->
+          :ets.new(:thunderline_session_cache, [
+            :set,
+            :public,
+            :named_table,
+            {:read_concurrency, true},
+            {:write_concurrency, true}
+          ])
+        _tid -> :ok
+      end
+    rescue
+      _ -> :ok
+    end
+
+    # Best-effort insert; don't crash if ets not available
+    try do
+      if user = socket.assigns[:current_user] do
+        key = {user[:id] || user.id, :last_dashboard_tab}
+        :ets.insert(:thunderline_session_cache, {key, tab})
+      end
+    rescue
+      _ -> :ok
+    end
+
+    socket
+  end
+  defp maybe_persist_tab(socket, _), do: socket
+
+  defp validate_tab(nil), do: "overview"
+  defp validate_tab(tab) when is_binary(tab) do
+    if tab in allowed_tabs(), do: tab, else: "overview"
   end
 
   # Inject Thunderwatch panel helper (render integration done in HEEx template section below)

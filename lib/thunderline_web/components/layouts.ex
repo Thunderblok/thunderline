@@ -23,8 +23,8 @@ defmodule ThunderlineWeb.Layouts do
         <.live_title default="Thunderline" suffix=" · Phoenix Framework">
           {assigns[:page_title]}
         </.live_title>
-        <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-        <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+        <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+        <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
         </script>
         <script>
           (() => {
@@ -128,8 +128,8 @@ defmodule ThunderlineWeb.Layouts do
           {assigns[:page_title]}
         </.live_title>
         <!-- Unified compiled bundle (no CDN duplication) -->
-        <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-        <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+        <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+        <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}></script>
       </head>
       <body class="min-h-screen bg-black text-neutral-content relative">
         <!-- Global background lines layer (restored) -->
