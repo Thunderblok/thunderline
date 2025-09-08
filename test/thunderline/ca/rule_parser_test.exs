@@ -1,6 +1,6 @@
 defmodule Thunderline.CA.RuleParserTest do
   use ExUnit.Case, async: true
-  alias Thunderline.CA.RuleParser
+  alias Thunderline.Thunderbolt.CA.RuleParser
 
   describe "parse/1" do
     test "parses classic Conway rule with extras" do

@@ -6,8 +6,8 @@ defmodule Thunderline.CA do
   swap between direct parser calls & Ash actions without breaking callers.
   """
 
-  alias Thunderline.CA.RuleParser
+  alias Thunderline.Thunderbolt.CA.RuleParser
 
-  @spec parse_rule(String.t()) :: {:ok, Thunderline.CA.RuleParser.t()} | {:error, term()}
+  @spec parse_rule(String.t()) :: {:ok, Thunderline.Thunderbolt.CA.RuleParser.t()} | {:error, term()}
   def parse_rule(line) when is_binary(line), do: RuleParser.parse(line)
 end

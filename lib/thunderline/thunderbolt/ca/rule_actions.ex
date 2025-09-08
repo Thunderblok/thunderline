@@ -23,7 +23,7 @@ defmodule Thunderline.Thunderbolt.CA.RuleActions do
       returns :map
       argument :line, :string, allow_nil?: false
       run fn input, _context ->
-        case Thunderline.CA.RuleParser.parse(input.arguments.line) do
+        case Thunderline.Thunderbolt.CA.RuleParser.parse(input.arguments.line) do
           {:ok, rule} ->
             {:ok,
              %{

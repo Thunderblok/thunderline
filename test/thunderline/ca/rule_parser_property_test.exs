@@ -1,7 +1,7 @@
 defmodule Thunderline.CA.RuleParserPropertyTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.CA.RuleParser
+  alias Thunderline.Thunderbolt.CA.RuleParser
 
   test "digits are within 0..8 and unique within born/survive sets" do
     for _ <- 1..50 do

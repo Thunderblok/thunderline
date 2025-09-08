@@ -1,8 +1,8 @@
 defmodule Thunderline.TOCP.ConfigSecurityTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.TOCP.Config
-  alias Thunderline.TOCP.Security.Impl
+  alias Thunderline.Thunderlink.Transport.Config
+  alias Thunderline.Thunderlink.Transport.Security.Impl
 
   test "config normalization provides nested maps" do
     c = Config.get()
