@@ -389,9 +389,9 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
     - Transport scaffold: `Thunderline.TOCP.Transport.UDP` (legacy stub, logs only; no bind)
     - Simulation harness: `Thunderline.TOCP.Sim.Fabric` / `NodeModel` (JSON report via `mix tocp.sim.run`)
     - Config surface: `config :thunderline, :tocp` (port=5088, gossip=1000±150ms, window=32, ack_batch=10ms, ttl=8)
-    - Decisions & Telemetry docs: see `documentation/TOCP_DECISIONS.md`, `documentation/TOCP_TELEMETRY.md` (apply to Thunderlink Transport; telemetry prefix remains `[:tocp, *]` for compatibility)
+    - Decisions & Telemetry docs: see `documentation/tocp/TOCP_DECISIONS.md`, `documentation/tocp/TOCP_TELEMETRY.md` (apply to Thunderlink Transport; telemetry prefix remains `[:tocp, *]` for compatibility; top-level TOCP_*.md are shims)
         - Security posture (v0.1): Control frame signing planned, replay window (30s), admission tokens required, fragment & credit caps hardened.
-        - Security Battle Plan: `documentation/TOCP_SECURITY.md` (Operation Iron Veil)
+        - Security Battle Plan: `documentation/tocp/TOCP_SECURITY.md` (Operation Iron Veil)
 ```
 
 ### **Architecture Metrics**
