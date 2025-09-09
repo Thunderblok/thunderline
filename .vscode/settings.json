@@ -1,7 +1,14 @@
 {
-  "terminal.integrated.defaultProfile.linux": "PowerShell",
+  // Use the native WSL bash for building/running the Elixir project to avoid UNC path + Windows toolchain issues.
+  "terminal.integrated.defaultProfile.linux": "bash",
   "terminal.integrated.profiles.linux": {
-    "PowerShell": {
+    "bash": {
+      "path": "/bin/bash",
+      "args": ["-l"],
+      "icon": "terminal-bash"
+    },
+    // Optional: keep a profile to explicitly open the Windows PowerShell if you really need it
+    "Windows PowerShell": {
       "path": "/mnt/c/Program Files/PowerShell/7/pwsh.exe",
       "args": ["-NoLogo"],
       "icon": "terminal-powershell"
