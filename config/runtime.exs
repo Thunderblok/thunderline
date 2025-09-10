@@ -1,4 +1,5 @@
 import Config
+config :langchain, openai_key: fn -> System.fetch_env!("OPENAI_API_KEY") end
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
@@ -31,6 +32,7 @@ end
 if System.get_env("LOG_STDERR") == "1" do
   config :logger, :console, device: :standard_error
 end
+
 config :logger, level: :debug, backends: [:console]
 
 # ------------------------------------------------------------
@@ -44,13 +46,17 @@ config :logger, level: :debug, backends: [:console]
 #   FEATURE_AI_CHAT_PANEL=0/1
 #   FEATURE_ENABLE_NDJSON=1 (NDJSON logging) / FEATURE_ENABLE_UPS=1
 # ------------------------------------------------------------
-if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
+if System.get_env("DEMO_MODE") in ["1", "true", "TRUE"] do
   base = Application.get_env(:thunderline, :features, []) |> Enum.into(%{})
-  demo = base |> Map.merge(%{
-    ca_viz: true,
-    thundervine_lineage: true,
-    ai_chat_panel: true
-  })
+
+  demo =
+    base
+    |> Map.merge(%{
+      ca_viz: true,
+      thundervine_lineage: true,
+      ai_chat_panel: true
+    })
+
   config :thunderline, :features, demo |> Enum.into([])
 end
 
@@ -65,10 +71,12 @@ runtime_feature_overrides = [
 
 runtime_enabled =
   runtime_feature_overrides
-  |> Enum.reduce(Application.get_env(:thunderline, :features, []) |> Enum.into(%{}), fn {flag, env}, acc ->
+  |> Enum.reduce(Application.get_env(:thunderline, :features, []) |> Enum.into(%{}), fn {flag,
+                                                                                         env},
+                                                                                        acc ->
     case System.get_env(env) do
-      val when val in ["1","true","TRUE"] -> Map.put(acc, flag, true)
-      val when val in ["0","false","FALSE"] -> Map.put(acc, flag, false)
+      val when val in ["1", "true", "TRUE"] -> Map.put(acc, flag, true)
+      val when val in ["0", "false", "FALSE"] -> Map.put(acc, flag, false)
       _ -> acc
     end
   end)

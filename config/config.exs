@@ -82,7 +82,11 @@ config :thunderline,
   vim: [
     enabled: false,
     shadow_mode: true,
-    router: [k_relays: 3, lambda_exact_k: 2.0, schedule: [t0: 3.0, alpha: 0.95, iters: 200, max_ms: 25]],
+    router: [
+      k_relays: 3,
+      lambda_exact_k: 2.0,
+      schedule: [t0: 3.0, alpha: 0.95, iters: 200, max_ms: 25]
+    ],
     persona: [board_size: 128, schedule: [t0: 2.5, alpha: 0.96, iters: 150, max_ms: 40]],
     temp_ctrl: [enabled: true, target_variance: 0.05, alpha: 0.05]
   ],
@@ -117,6 +121,7 @@ config :thunderline,
     presence_secured: true
   ],
   ash_domains: [
+    Thunderline.Chat,
     # === SLIM MODE ACTIVE ===
     # For the current milestone we only need the core runtime needed to ship
     # fast on comms + events + storage. Extra domains are commented out to
@@ -135,13 +140,13 @@ config :thunderline,
     # Auth/security domain now enabled for AshAuthentication integration
     Thunderline.Thundergate.Domain,
     Thunderline.Thundercom.Domain
-
-    # OPTIONAL (disabled right now):
-    # Thunderline.Thundergate.Domain,  # Auth / security / policies
-    # Thunderline.Thunderbolt.Domain,  # Heavy compute / CA engine / optimization
-    # Thunderline.Thundercrown.Domain,  # (now enabled above) Governance / orchestration / AI routing
-    # Thunderline.Thundergrid.Domain   # Spatial grid / zone topology
   ]
+
+# OPTIONAL (disabled right now):
+# Thunderline.Thundergate.Domain,  # Auth / security / policies
+# Thunderline.Thunderbolt.Domain,  # Heavy compute / CA engine / optimization
+# Thunderline.Thundercrown.Domain,  # (now enabled above) Governance / orchestration / AI routing
+# Thunderline.Thundergrid.Domain   # Spatial grid / zone topology
 
 # Configures the endpoint
 config :thunderline, ThunderlineWeb.Endpoint,
@@ -237,7 +242,9 @@ config :thunderline, Oban,
     cross_domain: 5,
     scheduled_workflows: 3,
     heavy_compute: 2,
-    probe: 2
+    probe: 2,
+    chat_responses: [limit: 10],
+    conversations: [limit: 10]
   ]
 
 # --- AshOban Trigger Usage Reference ---------------------------------------

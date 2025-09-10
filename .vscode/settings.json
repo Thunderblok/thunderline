@@ -7,11 +7,7 @@
       "args": ["-l"],
       "icon": "terminal-bash"
     },
-    // Optional: keep a profile to explicitly open the Windows PowerShell if you really need it
-    "Windows PowerShell": {
-      "path": "/mnt/c/Program Files/PowerShell/7/pwsh.exe",
-      "args": ["-NoLogo"],
-      "icon": "terminal-powershell"
+   
     }
   }
-}
+

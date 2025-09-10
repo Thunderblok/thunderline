@@ -125,6 +125,9 @@ defmodule ThunderlineWeb.Router do
 
     # Admin and monitoring
       live "/metrics", MetricsLive, :index
+      # Chat interface (conversations & messages)
+      live "/chat", ChatLive, :index
+      live "/chat/:conversation_id", ChatLive, :show
     end
   end
 
