@@ -1,4 +1,4 @@
-services:
+aleriservices:
   postgres:
     image: postgres:16
     container_name: thunderline_postgres
