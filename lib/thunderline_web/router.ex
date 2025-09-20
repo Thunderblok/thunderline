@@ -40,6 +40,13 @@ defmodule ThunderlineWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # RPC pipeline: JSON + session + current_user for session-based auth
+  pipeline :rpc do
+    plug :accepts, ["json"]
+    plug :fetch_session
+    plug ThunderlineWeb.Plugs.LoadCurrentUser
+  end
+
   # MCP tool access pipeline (AshAI). API key auth optional initially; tighten later.
   pipeline :mcp do
     plug :accepts, ["json"]
@@ -155,6 +162,14 @@ defmodule ThunderlineWeb.Router do
     get "/metrics", MetricsController, :index
     get "/health", HealthController, :check
     get "/domains/:domain/stats", DomainStatsController, :show
+  end
+
+  # AshTypescript HTTP RPC endpoints (typed TS client uses these by default)
+  scope "/rpc", ThunderlineWeb do
+    pipe_through :rpc
+
+    post "/run", RpcController, :run
+    post "/validate", RpcController, :validate
   end
 
   # Production MCP server (AshAI tools) - served separately from dev AshAi.Mcp.Dev plug.

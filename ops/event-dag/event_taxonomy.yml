@@ -1,0 +1,44 @@
+# Canonical Event Taxonomy (v1)
+
+version: 1
+domains:
+  - gate   # UI/API edge
+  - flow   # Pipelines, reactors
+  - bolt   # ML runs
+  - link   # Chat/WS
+  - crown  # Policy/Governance
+  - block  # Workspaces/Blocks
+  - bridge # External bridges/adapters
+
+events:
+  - name: ui.command.message_send
+    version: 1
+    domain: link
+    payload_schema:
+      required: [message_id, channel_id, actor_id, text]
+      properties:
+        message_id: { type: string }
+        channel_id: { type: string }
+        actor_id: { type: string }
+        text: { type: string, maxLength: 8000 }
+
+  - name: ml.run.started
+    version: 1
+    domain: bolt
+    payload_schema:
+      required: [run_id, trial_id, model, dataset_ref]
+      properties:
+        run_id: { type: string }
+        trial_id: { type: string }
+        model: { type: string }
+        dataset_ref: { type: string }
+
+  - name: audit.action.run
+    version: 1
+    domain: crown
+    payload_schema:
+      required: [actor_id, action, resource]
+      properties:
+        actor_id: { type: string }
+        action: { type: string }
+        resource: { type: string }

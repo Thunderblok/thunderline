@@ -17,7 +17,7 @@ defmodule Thunderline.Thunderlink.Domain do
   - P2P communication protocols
   """
 
-  use Ash.Domain, extensions: [AshOban.Domain, AshGraphql.Domain]
+  use Ash.Domain, extensions: [AshOban.Domain, AshGraphql.Domain, AshTypescript.Rpc]
 
   resources do
     # Support → ThunderLink (social/community features)
@@ -70,6 +70,17 @@ defmodule Thunderline.Thunderlink.Domain do
 
       # Escalate a ticket (manual trigger)
       update Thunderline.Thunderlink.Resources.Ticket, :escalate_ticket, :escalate
+    end
+  end
+
+  # Expose a minimal, least-privilege surface for ash_typescript RPC
+  # This allows generating a type-safe client for selected actions only.
+  typescript_rpc do
+    resource Thunderline.Thunderlink.Resources.Ticket do
+      # Read a list of tickets (no pagination/sort beyond what's supported by the action)
+      rpc_action :list_tickets, :read
+      # Open a new ticket
+      rpc_action :create_ticket, :open
     end
   end
 end

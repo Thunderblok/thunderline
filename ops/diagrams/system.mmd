@@ -1,0 +1,8 @@
+flowchart LR
+  Client -->|HTTP/WebSocket| Phoenix
+  Phoenix --> Ash
+  Ash --> Postgres[(DB)]
+  Phoenix --> Oban((Jobs))
+  subgraph Observability
+    Phoenix --> Telemetry --> OTEL
+  end

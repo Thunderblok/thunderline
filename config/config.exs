@@ -7,6 +7,27 @@
 # General application configuration
 import Config
 
+## AshTypescript configuration (typed TS client & RPC)
+config :ash_typescript,
+  # Default output into Phoenix assets (adjust if separate frontend)
+  output_file: "assets/js/ash_rpc.ts",
+  # HTTP RPC endpoints
+  run_endpoint: "/rpc/run",
+  validate_endpoint: "/rpc/validate",
+  # Field casing from/to the client
+  input_field_formatter: :camel_case,
+  output_field_formatter: :camel_case,
+  # Multitenancy: get tenant from conn/socket assigns by default
+  require_tenant_parameters: false,
+  # Generate Zod schemas & validation helpers alongside client
+  generate_zod_schemas: true,
+  zod_import_path: "zod",
+  zod_schema_suffix: "ZodSchema",
+  generate_validation_functions: true,
+  # Phoenix channel RPC generation is optional; disabled by default
+  generate_phx_channel_rpc_actions: false,
+  phoenix_import_path: "phoenix"
+
 config :ash_graphql, authorize_update_destroy_with_error?: true
 
 config :ash,
