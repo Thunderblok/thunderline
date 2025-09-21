@@ -35,12 +35,15 @@
 
 ## Observability
 
-- Telemetry libs present; opentelemetry_ash included. Exporter wiring TBD → Tempo/OTLP
-- Golden signals to define: HTTP latency p95, error rate, queue depth, DB saturation
+- OpenTelemetry exporter toggles: set `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME=thunderline`.
+- Golden signals (emitted via :telemetry):
+  - per-stage lag/throughput/error for Broadway pipelines
+  - DLQ depth (pipeline dlq events)
+  - per-trial time-to-metric p50/p95 (via metrics processing)
 
 ## Security
 
-- CI runs Sobelow. Add gitleaks (secrets) and Trivy (images) in Phase 2.
+- CI runs Sobelow and Trivy. Trivy SARIF uploaded to code scanning. See `.trivyignore` for allowlist.
 
 ## Notes
 

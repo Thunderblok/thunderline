@@ -1,9 +1,9 @@
 # Partitions & Backpressure Policy
 
 - Partition keys by event type:
-  - link/ui.command.* -> channel_id (stable ordering per channel)
-  - bolt/ml.run.* -> trial_id (isolate per trial)
-  - crown/audit.* -> actor_id (coalesce actor streams)
+  - link/ui.command.* -> pac_id (stable ordering per PAC)
+  - bolt/ml.* -> trial_id (isolate per trial)
+  - gate.* -> realm_id (isolate per realm)
 
 - Partition counts:
   - Dev: 4 partitions per processor by default
@@ -16,3 +16,5 @@
 
 - Idempotency keys:
   - event.id + event.name + event.version
+
+See taxonomy v1 in `ops/event-dag/event_taxonomy.yml` for the authoritative partition map.

@@ -141,7 +141,20 @@ defmodule Thunderline.Application do
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
 
     Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
-  Thunderline.Thunderflow.Telemetry.Oban.attach()
+    Thunderline.Thunderflow.Telemetry.Oban.attach()
+
+    # OpenTelemetry instrumentation (no-op if OTEL_DISABLED=1)
+    if System.get_env("OTEL_DISABLED") not in ["1", "true", "TRUE"] do
+      # Phoenix spans (router, endpoint, liveview)
+      :ok = OpentelemetryPhoenix.setup()
+
+      # Ecto spans (if Repo is started later, handlers still capture events)
+      try do
+        :ok = OpentelemetryEcto.setup(Thunderline.Repo, [])
+      rescue
+        _ -> :ok
+      end
+    end
 
     Supervisor.start_link(children, opts)
   end

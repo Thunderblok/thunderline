@@ -1,0 +1,35 @@
+apiVersion: thunderline/v1
+kind: TrialSpec
+metadata:
+  name: "cerebros-nas-seed-v1"
+  labels: { engine: cerebros, project: "voxels" }
+dataset:
+  ref: "s3://datasets/kjv_sample.jsonl"
+  tokenizer: "basic_en@v1"
+search:
+  budget: { maxTrials: 30, maxWallTime: "4h" }
+  objective: { metric: "val_perplexity", goal: "min" }
+  params:
+    embedding_dim:   { choice: [16, 24, 32] }
+    seq_len:         { choice: [64, 96, 128] }
+    epochs:          { int: { min: 23, max: 65 } }
+    batch_size:      { int: { min: 10, max: 64 } }
+    grad_accum:      { int: { min: 2, max: 3 } }
+    lr:              { loguniform: { min: 1e-4, max: 5e-2 } }
+    activation:      { choice: ["relu","gelu","swish","softsign"] }
+    lateral_conn:    { float: { min: 0.04, max: 0.40 } }
+    vertical_conn:   { float: { min: 0.04, max: 0.40 } }
+runtime:
+  device: "cpu|gpu"
+  precision: "fp16_acc32"
+policy:
+  earlyStop:
+    metric: "val_perplexity"
+    mode: "min"
+    graceSteps: 200
+    patience: 3
+  promoteIf:
+    metric: "val_perplexity"
+    mode: "min"
+    threshold: 1.25
+    byStep: 2000

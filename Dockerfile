@@ -16,7 +16,7 @@ ENV MIX_ENV=${MIX_ENV} \
     HEX_UNSAFE_HTTPS=1 \
     LANG=C.UTF-8
 
-RUN apk add --no-cache build-base git nodejs npm python3 curl bash openssl ncurses-libs
+RUN apk add --no-cache build-base git nodejs npm python3 curl bash openssl ncurses-libs ca-certificates
 
 WORKDIR /app
 
@@ -32,7 +32,7 @@ RUN mix deps.get --only ${MIX_ENV} && mix deps.compile
 COPY priv priv
 COPY lib lib
 COPY assets assets
-COPY tailwind.config.js esbuild.config.js package.json tsconfig.json* ./ 2>/dev/null || true
+COPY tailwind.config.js esbuild.config.js package.json tsconfig.json* ./
 
 # Precompile assets (Tailwind+esbuild) and release
 RUN mix assets.deploy
@@ -41,16 +41,28 @@ RUN mix release
 
 ############################################################
 FROM alpine:${ALPINE_VERSION} AS runtime
-RUN apk add --no-cache openssl ncurses-libs libstdc++ bash
+RUN apk add --no-cache openssl ncurses-libs libstdc++ bash ca-certificates tzdata
 WORKDIR /app
 
 ENV MIX_ENV=prod \
     LANG=C.UTF-8 \
     REPLACE_OS_VARS=true \
-    PHX_SERVER=true
+    PHX_SERVER=true \
+    # OpenTelemetry exporter configuration (set at runtime if using OTLP)
+    OTEL_SERVICE_NAME=thunderline \
+    OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+
+# Optional OTLP endpoints (uncomment and set via env in deployment if needed)
+# ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+# ENV OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
 
 # Copy release from build image
 COPY --from=build /app/_build/prod/rel/${APP_NAME} ./
+
+# Create non-root user and set ownership (for writable dirs like var/log)
+RUN addgroup -S app && adduser -S app -G app && \
+    mkdir -p /app/var && chown -R app:app /app
+USER app
 
 # Expose Phoenix port
 EXPOSE 4000
@@ -62,7 +74,8 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=5 CMD nc -z localhost 4000 || 
 COPY scripts/docker/dev_entrypoint.sh ./bin/dev_entrypoint.sh
 RUN chmod +x ./bin/dev_entrypoint.sh
 
-ENTRYPOINT ["/app/bin/${APP_NAME}"]
+# Use exec form; expand app name at build time
+ENTRYPOINT ["/app/bin/thunderline"]
 CMD ["start"]
 
 # For demo mode (DEMO_MODE=1) recommendations:

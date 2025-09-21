@@ -36,6 +36,42 @@ end
 config :logger, level: :debug, backends: [:console]
 
 # ------------------------------------------------------------
+# OpenTelemetry Runtime Wiring (enabled by default; can be disabled via env)
+#
+# Use OTEL_SERVICE_NAME, OTEL_EXPORTER_OTLP_ENDPOINT/TRACES_ENDPOINT to direct traces.
+# Set OTEL_DISABLED=1 to skip instrumentation entirely.
+# ------------------------------------------------------------
+if System.get_env("OTEL_DISABLED") not in ["1", "true", "TRUE"] do
+  # Resource/service attributes
+  service_name = System.get_env("OTEL_SERVICE_NAME") || "thunderline"
+  service_namespace = System.get_env("OTEL_SERVICE_NAMESPACE") || "thunderline"
+  service_version = Application.spec(:thunderline, :vsn) |> to_string()
+
+  config :opentelemetry, :resource, [
+    service: [
+      name: service_name,
+      namespace: service_namespace,
+      version: service_version
+    ]
+  ]
+
+  exporter_opts =
+    case {System.get_env("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"), System.get_env("OTEL_EXPORTER_OTLP_ENDPOINT")} do
+      {traces_ep, _} when is_binary(traces_ep) and traces_ep != "" -> [traces_endpoint: traces_ep]
+      {_, endpoint} when is_binary(endpoint) and endpoint != "" -> [endpoint: endpoint]
+      _ -> []
+    end
+
+  config :opentelemetry, :processors, [
+    {:otel_batch_processor, %{exporter: {:opentelemetry_exporter, exporter_opts}}}
+  ]
+
+  # Phoenix & Ecto instrumentation enables spans for web and DB
+  config :opentelemetry_phoenix, enable: true
+  config :opentelemetry_ecto, enable: true
+end
+
+# ------------------------------------------------------------
 # Runtime Feature Flag Overrides (Demo / Env-based)
 # Allows enabling features at runtime without recompilation. The
 # Feature.enabled?/2 helper now checks Application env first.

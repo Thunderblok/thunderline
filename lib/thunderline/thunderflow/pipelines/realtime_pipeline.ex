@@ -11,6 +11,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   alias Broadway.Message
   alias Phoenix.PubSub
   alias Thunderline.Thunderflow.EventBuffer
+  alias Thunderline.Event
   require Logger
 
   def start_link(_opts) do
@@ -63,51 +64,16 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   @impl Broadway
   def handle_message(_processor, %Message{} = message, _context) do
-    event_data =
+    canonical =
       case message.data do
-        bin when is_binary(bin) ->
-          # Backwards compat for any legacy JSON payloads
-          Jason.decode!(bin)
-        %{:type => type, :payload => payload, :timestamp => ts} = map ->
-          # Previously accepted emit_realtime wrapper shape; callers must now build
-          # %Thunderline.Event{} and use EventBus.publish_event/1.
-            %{
-              "event_type" => to_string(type),
-              "data" => payload,
-              "timestamp" => ts,
-              "priority" => Map.get(map, :priority)
-            }
-        %{:type => type, :payload => payload} = map ->
-          %{
-            "event_type" => to_string(type),
-            "data" => payload,
-            "timestamp" => Map.get(map, :timestamp, DateTime.utc_now()),
-            "priority" => Map.get(map, :priority)
-          }
-        %{"type" => type, "payload" => payload} = map ->
-          # Mixed key legacy variant
-          %{
-            "event_type" => to_string(type),
-            "data" => payload,
-            "timestamp" => Map.get(map, "timestamp", DateTime.utc_now()),
-            "priority" => Map.get(map, "priority")
-          }
-        map when is_map(map) ->
-          # If it already looks normalized, pass through; else wrap
-          cond do
-            Map.has_key?(map, "event_type") and Map.has_key?(map, "data") -> map
-            true -> %{"event_type" => "unknown", "data" => map, "timestamp" => DateTime.utc_now()}
-          end
-        other ->
-          %{"event_type" => "unknown", "data" => other, "timestamp" => DateTime.utc_now()}
+        %Event{} = ev -> ev
+        bin when is_binary(bin) -> bin |> Jason.decode!() |> Event.normalize!()
+        map when is_map(map) -> Event.normalize!(map)
+        other -> Event.new!(name: "system.unknown.event", source: :flow, payload: %{data: other})
       end
 
     try do
-      processed_event =
-        event_data
-        |> validate_realtime_event()
-        |> add_realtime_metadata()
-        |> optimize_for_latency()
+      processed_event = canonical |> enrich_for_realtime()
 
       # Route based on event urgency and type
       batcher = determine_realtime_batcher(processed_event)
@@ -126,7 +92,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   def handle_batch(:agent_updates, messages, _batch_info, _context) do
     Logger.debug("Processing #{length(messages)} agent updates")
 
-    events = Enum.map(messages, & &1.data)
+  events = Enum.map(messages, & &1.data)
 
     # Process agent updates with minimal latency (currently infallible)
     :ok = process_agent_updates_batch(events)
@@ -146,7 +112,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   def handle_batch(:system_metrics, messages, _batch_info, _context) do
     Logger.debug("Processing #{length(messages)} system metrics")
 
-    events = Enum.map(messages, & &1.data)
+  events = Enum.map(messages, & &1.data)
 
     :ok = process_system_metrics_batch(events)
     aggregated_metrics = aggregate_metrics(events)
@@ -163,13 +129,13 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     count = length(messages)
     types =
       messages
-      |> Enum.map(& &1.data["event_type"])
+      |> Enum.map(& &1.data.name)
       |> Enum.frequencies()
       |> Enum.map(fn {t,c} -> "#{t}:#{c}" end)
       |> Enum.join(",")
     Logger.debug("Processing #{count} dashboard updates (types=#{types})")
 
-    events = Enum.map(messages, & &1.data)
+  events = Enum.map(messages, & &1.data)
 
     :ok = process_dashboard_updates_batch(events)
     dashboard_payload = optimize_dashboard_payload(events)
@@ -186,71 +152,47 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     count = length(messages)
     topics =
       messages
-      |> Enum.map(& get_in(&1.data, ["data", "websocket_topic"]) || "general")
+      |> Enum.map(& (get_in(&1.data.payload, ["websocket_topic"]) || get_in(&1.data.payload, [:websocket_topic]) || "general"))
       |> Enum.frequencies()
       |> Enum.map(fn {t,c} -> "#{t}:#{c}" end)
       |> Enum.join(",")
     Logger.debug("Processing #{count} WebSocket broadcasts (topics=#{topics})")
 
-    events = Enum.map(messages, & &1.data)
+  events = Enum.map(messages, & &1.data)
 
     :ok = process_websocket_broadcasts_batch(events)
-    Enum.each(events, fn %{"event_type" => "timeseries_embedding", "data" => data} ->
-      Phoenix.PubSub.broadcast(Thunderline.PubSub, "drift:embedding", {:timeseries_embedding, data})
-    _ -> :ok end)
+    Enum.each(events, fn %Event{name: name, payload: data} ->
+      if name == "ai.timeseries.embedding" do
+        Phoenix.PubSub.broadcast(Thunderline.PubSub, "drift:embedding", {:timeseries_embedding, data})
+      end
+    end)
     messages
   end
 
-  # Event validation and optimization
-  defp validate_realtime_event(event) do
-  # Ensure essential fields; synthesize if missing (soft validation to avoid pipeline failures)
-  event = Map.put_new(event, "event_type", "unknown")
-  event = Map.put_new(event, "data", %{})
-  event = Map.put_new(event, "timestamp", DateTime.utc_now())
-  event
+  # Event enrichment and optimization on canonical struct
+  defp enrich_for_realtime(%Event{} = ev) do
+    ev
+    |> Event.put_metadata(:processed_at, System.system_time(:microsecond))
+    |> Event.put_metadata(:processing_node, Node.self())
+    |> Event.put_metadata(:latency_budget_ms, calculate_latency_budget(ev))
   end
 
-  defp add_realtime_metadata(event) do
-    Map.merge(event, %{
-      "processed_at" => System.system_time(:microsecond),
-      "processing_node" => Node.self(),
-      "latency_budget_ms" => calculate_latency_budget(event)
-    })
+  defp calculate_latency_budget(%Event{name: name}) do
+    cond do
+      String.contains?(name, "agent_state_change") -> 10
+      String.contains?(name, "system_alert") -> 5
+      String.contains?(name, "dashboard_update") -> 50
+      true -> 100
+    end
   end
 
-  defp optimize_for_latency(event) do
-    # Remove unnecessary data for latency-critical events
-    essential_fields = ["event_type", "data", "timestamp", "processed_at", "latency_budget_ms"]
-
-    Map.take(event, essential_fields)
-  end
-
-  # 10ms budget
-  defp calculate_latency_budget(%{"event_type" => "agent_state_change"}), do: 10
-  # 5ms budget
-  defp calculate_latency_budget(%{"event_type" => "system_alert"}), do: 5
-  # 50ms budget
-  defp calculate_latency_budget(%{"event_type" => "dashboard_update"}), do: 50
-  # 100ms default
-  defp calculate_latency_budget(_), do: 100
-
-  defp determine_realtime_batcher(%{"event_type" => event_type}) do
-    case event_type do
-      type when type in ["agent_spawned", "agent_updated", "agent_terminated"] ->
-        :agent_updates
-
-      type when type in ["system_metrics", "performance_update", "health_check"] ->
-        :system_metrics
-
-      type when type in ["dashboard_update", "chart_data", "live_stats"] ->
-        :dashboard_updates
-
-      type when type in ["websocket_message", "live_notification", "chat_message"] ->
-        :websocket_broadcasts
-
-      _ ->
-        # Default fallback
-        :dashboard_updates
+  defp determine_realtime_batcher(%Event{name: name}) do
+    cond do
+      String.contains?(name, "agent_spawned") or String.contains?(name, "agent_updated") or String.contains?(name, "agent_terminated") -> :agent_updates
+      String.contains?(name, "system_metrics") or String.contains?(name, "performance_update") or String.contains?(name, "health_check") -> :system_metrics
+      String.contains?(name, "dashboard_update") or String.contains?(name, "chart_data") or String.contains?(name, "live_stats") -> :dashboard_updates
+      String.contains?(name, "websocket_message") or String.contains?(name, "live_notification") or String.contains?(name, "chat_message") -> :websocket_broadcasts
+      true -> :dashboard_updates
     end
   end
 
@@ -259,13 +201,13 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     # Group by agent_id for efficient processing
     agent_updates =
       events
-      |> Enum.group_by(fn event -> get_in(event, ["data", "agent_id"]) end)
+      |> Enum.group_by(fn %Event{payload: p} -> p["agent_id"] || p[:agent_id] end)
       |> Enum.filter(fn {agent_id, _updates} -> agent_id != nil end)
 
     # Process each agent's updates
     Enum.each(agent_updates, fn {agent_id, updates} ->
       # Get latest state for each agent
-      latest_state = get_latest_agent_state(updates)
+  latest_state = get_latest_agent_state(updates)
 
       # Broadcast individual agent update
       PubSub.broadcast(
@@ -281,9 +223,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   defp process_system_metrics_batch(events) do
     # Process metrics in parallel for different subsystems
     metrics_by_subsystem =
-      Enum.group_by(events, fn event ->
-        get_in(event, ["data", "subsystem"])
-      end)
+      Enum.group_by(events, fn %Event{payload: p} -> p["subsystem"] || p[:subsystem] end)
 
     Enum.each(metrics_by_subsystem, fn {subsystem, metrics} ->
       processed_metrics = aggregate_subsystem_metrics(subsystem, metrics)
@@ -308,16 +248,16 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
     Enum.each(optimized_updates, fn update ->
       # Broadcast component-specific update if component present
-      if component = get_in(update, ["data", "component"]) do
+      if component = (update.payload["component"] || update.payload[:component]) do
         PubSub.broadcast(
           Thunderline.PubSub,
           "thunderline_web:dashboard:#{component}",
-          {:component_update, update["data"]}
+          {:component_update, update.payload}
         )
       end
 
       # Feed central EventBuffer (normalized route for LiveView stream)
-      EventBuffer.put({:dashboard_update, Map.get(update, "data", %{})})
+      EventBuffer.put({:dashboard_update, update.payload})
     end)
 
     :ok
@@ -326,9 +266,9 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   defp process_websocket_broadcasts_batch(events) do
     # Ultra-fast WebSocket processing
     broadcasts =
-      events
-      |> Enum.map(&prepare_websocket_message/1)
-      |> Enum.group_by(& &1.topic)
+  events
+  |> Enum.map(&prepare_websocket_message/1)
+  |> Enum.group_by(& &1.topic)
 
     # Batch broadcast by topic for efficiency
     Enum.each(broadcasts, fn {topic, messages} ->
@@ -346,10 +286,8 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   defp get_latest_agent_state(updates) do
     # Get the most recent update for an agent
     updates
-    |> Enum.max_by(fn update ->
-      update["timestamp"] || update["processed_at"] || 0
-    end)
-    |> Map.get("data")
+    |> Enum.max_by(fn %Event{metadata: md, timestamp: ts} -> md[:processed_at] || ts || 0 end)
+    |> Map.get(:payload)
   end
 
   defp aggregate_subsystem_metrics(subsystem, metrics) do
@@ -373,7 +311,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   defp optimize_dashboard_payload(events) do
     %{
-      "updates" => events,
+      "updates" => Enum.map(events, &Event.to_map/1),
       "optimized_at" => DateTime.utc_now(),
       "update_count" => length(events),
       "compressed_size" => estimate_payload_size(events)
@@ -383,12 +321,9 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   defp deduplicate_dashboard_events(events) do
     # Remove duplicate dashboard events to reduce payload
     events
-    |> Enum.group_by(fn event ->
-      {get_in(event, ["data", "component"]), get_in(event, ["data", "key"])}
-    end)
+    |> Enum.group_by(fn %Event{payload: p} -> {p["component"] || p[:component], p["key"] || p[:key]} end)
     |> Enum.map(fn {_key, group} ->
-      # Take the latest event from each group
-      Enum.max_by(group, & &1["timestamp"])
+      Enum.max_by(group, fn %Event{timestamp: ts} -> ts end)
     end)
   end
 
@@ -397,21 +332,21 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     events
   end
 
-  defp prepare_websocket_message(event) do
+  defp prepare_websocket_message(%Event{} = event) do
     %{
-      topic: get_in(event, ["data", "websocket_topic"]) || "general",
-      payload: event["data"],
-      timestamp: event["timestamp"]
+      topic: get_in(event.payload, ["websocket_topic"]) || get_in(event.payload, [:websocket_topic]) || "general",
+      payload: event.payload,
+      timestamp: event.timestamp
     }
   end
 
   defp extract_latest_metric_values(metrics) do
     # Extract the most recent values for each metric type
     metrics
-    |> Enum.group_by(fn metric -> get_in(metric, ["data", "metric_name"]) end)
+    |> Enum.group_by(fn %Event{payload: p} -> p["metric_name"] || p[:metric_name] end)
     |> Enum.map(fn {metric_name, values} ->
-      latest = Enum.max_by(values, & &1["timestamp"])
-      {metric_name, get_in(latest, ["data", "value"])}
+      latest = Enum.max_by(values, fn %Event{timestamp: ts} -> ts end)
+      {metric_name, (latest.payload["value"] || latest.payload[:value])}
     end)
     |> Enum.into(%{})
   end
@@ -429,11 +364,14 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     # Calculate average processing latency
     latencies =
       events
-      |> Enum.map(fn event ->
-        processed_at = event["processed_at"] || System.system_time(:microsecond)
-        timestamp = event["timestamp"] || processed_at
-        # Convert to milliseconds
-        abs(processed_at - timestamp) / 1000
+      |> Enum.map(fn %Event{metadata: md, timestamp: ts} ->
+        processed_at = md[:processed_at] || System.system_time(:microsecond)
+        base_ts =
+          case ts do
+            %DateTime{} = dt -> DateTime.to_unix(dt, :microsecond)
+            _ -> processed_at
+          end
+        abs(processed_at - base_ts) / 1000
       end)
 
     if length(latencies) > 0 do
@@ -445,7 +383,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   defp count_event_types(events) do
     events
-    |> Enum.group_by(& &1["event_type"])
+    |> Enum.group_by(& &1.name)
     |> Enum.map(fn {type, events} -> {type, length(events)} end)
     |> Enum.into(%{})
   end
@@ -453,6 +391,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   defp estimate_payload_size(events) do
     # Rough estimate of payload size for optimization decisions
     events
+    |> Enum.map(&Event.to_map/1)
     |> Jason.encode!()
     |> byte_size()
   end

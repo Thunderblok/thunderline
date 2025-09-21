@@ -16,6 +16,13 @@ defmodule Thunderline.MixProject do
       listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
       deps: deps(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test,
+        "coveralls.github": :test
+      ],
       consolidate_protocols: Mix.env() != :dev,
       dialyzer: dialyzer()
     ]
@@ -55,8 +62,14 @@ defmodule Thunderline.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:esbuild, "~> 0.9", runtime: Mix.env() == :dev},
-      {:telemetry_metrics, "~> 1.1"},
-      {:telemetry_poller, "~> 1.0"},
+  {:telemetry_metrics, "~> 1.1"},
+  {:telemetry_poller, "~> 1.0"},
+  # OpenTelemetry
+  {:opentelemetry, "~> 1.4"},
+  {:opentelemetry_exporter, "~> 1.8"},
+  {:opentelemetry_phoenix, "~> 2.0"},
+  {:opentelemetry_ecto, "~> 1.2"},
+  {:opentelemetry_oban, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
@@ -95,7 +108,8 @@ defmodule Thunderline.MixProject do
       {:simple_sat, "~> 0.1.3"},
       {:stb_image, "~> 0.6"},
       {:ex_rose_tree, "~> 0.1.3"},
-      {:nimble_parsec, "~> 1.4"},
+  {:nimble_parsec, "~> 1.4"},
+  {:yamerl, "~> 0.10"},
       # Memory & Security
       {:memento, "~> 0.5.0"},
       {:cloak, "~> 1.1"},
@@ -118,7 +132,8 @@ defmodule Thunderline.MixProject do
       {:file_system, "~> 1.0"},
       # Code Quality
       # credo required unscoped because upstream jido pulls it without :only restriction
-      {:credo, "~> 1.7", override: true},
+  {:credo, "~> 1.7", override: true},
+  {:excoveralls, "~> 0.18", only: [:test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:git_ops, "~> 2.6.1", only: [:dev]}
       # Optional Cerebros local toolkit (enable with ENABLE_CEREBROS=1 if available)

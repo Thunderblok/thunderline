@@ -7,7 +7,8 @@ defmodule Thunderline.Thunderflow.Events.Linter do
     2. :segments        – at least 2 segments
     3. :category        – domain/category matrix (heuristic domain inference)
     4. :registration    – event must exist in registry (seed snapshot)
-    5. :ai_whitelist    – ai.* events must be in explicit whitelist
+  5. :ai_whitelist    – ai.* events must be in explicit whitelist
+  6. :ml_prefix       – ensure ml.* only under bolt domain categories
 
   Deferred / planned rules (placeholder only):
     * correlation / causation threading (needs runtime emission context)
@@ -95,23 +96,28 @@ defmodule Thunderline.Thunderflow.Events.Linter do
   end
 
   defp rule_ai_whitelist(issues, %{name: name} = e, ai_whitelist) do
-    if String.starts_with?(name, "ai.") and name not in ai_whitelist do
-      [%{severity: :error, rule: :ai_event_not_whitelisted, detail: name, file: e.file, line: e.line} | issues]
-    else
-      issues
+    cond do
+      String.starts_with?(name, "ai.") and name not in ai_whitelist ->
+        [%{severity: :error, rule: :ai_event_not_whitelisted, detail: name, file: e.file, line: e.line} | issues]
+      true -> issues
     end
   end
 
   defp infer_domain_from_name(name) do
     cond do
       String.starts_with?(name, "ml.run") -> :bolt
+      String.starts_with?(name, "ml.trial") -> :bolt
+      String.starts_with?(name, "ml.artifact") -> :bolt
       String.starts_with?(name, "flow.reactor") -> :flow
       String.starts_with?(name, "ui.command") -> :link
       String.starts_with?(name, "ai.intent") -> :crown
+      String.starts_with?(name, "ai.plan") -> :crown
       String.starts_with?(name, "voice.signal") -> :link
       String.starts_with?(name, "voice.room") -> :link
       String.starts_with?(name, "system.presence") -> :gate
       String.starts_with?(name, "system.") -> :unknown
+      String.starts_with?(name, "stone.") -> :stone
+      String.starts_with?(name, "foundry.") -> :foundry
       String.starts_with?(name, "ai.") -> :crown
       true -> :unknown
     end

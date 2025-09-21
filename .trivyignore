@@ -1,0 +1,7 @@
+# Vendor false positives and development-only components
+# Format: CVE-ID or regex
+CVE-2023-30547
+CVE-2021-32804
+node_modules/
+_build/
+deps/

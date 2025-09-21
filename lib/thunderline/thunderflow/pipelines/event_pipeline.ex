@@ -10,9 +10,11 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   alias Broadway.Message
   alias Phoenix.PubSub
+  alias Thunderline.Thunderflow.Support.Idempotency
   require Logger
 
   def start_link(_opts) do
+    Idempotency.start_link()
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
@@ -54,12 +56,21 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     try do
       processed_event = transform_event(event_data)
 
+      # Idempotency: skip duplicates based on event id/name/version if present
+      key = idempotency_key(processed_event)
+      if key && Idempotency.seen?(key) do
+        :telemetry.execute([:thunderline, :event, :dedup], %{count: 1}, %{name: processed_event["action"]})
+        Message.put_broadway_cancelled(message, true)
+      else
+        if key, do: Idempotency.mark!(key)
+
       # Route to appropriate batcher based on event type
       batcher = determine_batcher(processed_event)
 
       message
       |> Message.update_data(fn _ -> processed_event end)
       |> Message.put_batcher(batcher)
+      end
     rescue
       error ->
         Logger.error("Event processing failed: #{inspect(error)}")
@@ -74,8 +85,10 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     events = Enum.map(messages, & &1.data)
 
     # Process events in batch
+    :telemetry.execute([:thunderline, :pipeline, :domain_events, :start], %{count: length(messages)}, %{})
     case process_domain_events_batch(events) do
       :ok ->
+        :telemetry.execute([:thunderline, :pipeline, :domain_events, :stop], %{count: length(messages)}, %{})
         # Broadcast batch completion
         PubSub.broadcast(
           Thunderline.PubSub,
@@ -86,6 +99,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
         messages
 
       {:error, failed_events} ->
+        :telemetry.execute([:thunderline, :pipeline, :domain_events, :error], %{count: length(failed_events)}, %{})
         # Mark failed events and retry successful ones
         handle_batch_failures(messages, failed_events)
     end
@@ -98,8 +112,10 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
     # Process critical events with higher priority
     events = Enum.map(messages, & &1.data)
 
+    :telemetry.execute([:thunderline, :pipeline, :critical_events, :start], %{count: length(messages)}, %{})
     case process_critical_events_batch(events) do
       :ok ->
+        :telemetry.execute([:thunderline, :pipeline, :critical_events, :stop], %{count: length(messages)}, %{})
         # Immediate notification for critical events
         PubSub.broadcast(
           Thunderline.PubSub,
@@ -110,7 +126,8 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
         messages
 
       {:error, reason} ->
-        Logger.error("Critical event batch failed: #{inspect(reason)}")
+  Logger.error("Critical event batch failed: #{inspect(reason)}")
+  :telemetry.execute([:thunderline, :pipeline, :critical_events, :error], %{count: length(messages)}, %{reason: inspect(reason)})
 
         # Send alerts for critical event failures
         PubSub.broadcast(
@@ -306,12 +323,41 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
   end
 
   defp handle_batch_failures(messages, _failed_events) do
-    # Implementation for handling partial batch failures
-    messages
+    # Implementation for handling partial batch failures -> DLQ placeholder
+    Enum.map(messages, fn m ->
+      attempt = (m.metadata[:attempt] || 0) + 1
+      {max_attempts, _backoff} = retry_budget(m)
+      if attempt >= max_attempts do
+        # DLQ: publish to topic, in future persist
+        :telemetry.execute([:thunderline, :pipeline, :dlq], %{count: 1}, %{})
+        Message.failed(m, :dlq)
+      else
+        m
+        |> Message.update_metadata(&Map.put(&1, :attempt, attempt))
+        |> Message.failed(:retry)
+      end
+    end)
   end
 
   defp generate_trace_id do
     :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+  end
+
+  defp idempotency_key(%{"payload" => p} = e) when is_map(p) do
+    id = p["id"] || p["event_id"] || p[:id] || p[:event_id]
+    name = e["action"]
+    ver = e["version"] || 1
+    if id, do: {id, name, ver}, else: nil
+  end
+  defp idempotency_key(_), do: nil
+
+  defp retry_budget(%Message{data: %{"action" => action}}) do
+    cond do
+      String.starts_with?(action, "ml.run") -> {5, :exponential}
+      String.starts_with?(action, "ml.trial") -> {3, :linear}
+      String.starts_with?(action, "ui.command") -> {2, :none}
+      true -> {3, :exponential}
+    end
   end
 
   defp maybe_domain_processor(job) do

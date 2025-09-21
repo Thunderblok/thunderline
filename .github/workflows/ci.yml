@@ -63,8 +63,19 @@ jobs:
       - name: DB Setup
         run: mix ash.setup
 
-      - name: Run Tests
-        run: mix test --color --slowest 10
+      - name: Run Tests (coverage threshold)
+        run: mix coveralls.json --color --slowest 10 --min-coverage 70
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: cover/excoveralls.json
+
+      - name: Coverage summary
+        run: |
+          echo "## Test Coverage" >> $GITHUB_STEP_SUMMARY
+          jq '.summary' cover/excoveralls.json >> $GITHUB_STEP_SUMMARY
 
       - name: Credo
         run: mix credo --strict
@@ -85,6 +96,29 @@ jobs:
       - name: Migration Drift Check (AshPostgres)
         run: |
           mix ash_postgres.generate_migrations --check --dry-run || (echo "\n[ERROR] Schema drift detected. Run 'mix ash_postgres.generate_migrations' locally and commit the new migration(s)." && exit 1)
+
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.2
+
+      - name: Trivy FS scan (SARIF)
+        run: trivy fs --exit-code 0 --severity HIGH,CRITICAL --ignore-unfixed --format sarif --output trivy-fs.sarif --ignorefile .trivyignore .
+
+      - name: Build Docker image for scan
+        run: |
+          docker build -t thunderline:ci .
+
+      - name: Trivy Image scan (SARIF)
+        run: trivy image --exit-code 0 --severity HIGH,CRITICAL --ignore-unfixed --format sarif --output trivy-image.sarif thunderline:ci
+
+      - name: Upload Trivy SARIF (FS)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+
+      - name: Upload Trivy SARIF (Image)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
 
   dependency-auto-merge:
     if: github.event_name == 'pull_request'

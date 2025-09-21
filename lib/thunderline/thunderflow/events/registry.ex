@@ -14,8 +14,10 @@ defmodule Thunderline.Thunderflow.Events.Registry do
     "system.email.failed" => %{version: 1, reliability: :persistent},
     "system.presence.join" => %{version: 1, reliability: :transient},
     "system.presence.leave" => %{version: 1, reliability: :transient},
-    "ml.run.started" => %{version: 1, reliability: :persistent},
-    "ml.run.completed" => %{version: 1, reliability: :persistent},
+  "ml.trial.started" => %{version: 1, reliability: :persistent},
+  "ml.run.metrics" => %{version: 1, reliability: :transient},
+  "ml.run.completed" => %{version: 1, reliability: :persistent},
+  "ml.artifact.created" => %{version: 1, reliability: :persistent},
     "flow.reactor.retry" => %{version: 1, reliability: :transient},
     # AI runtime/tool events (whitelist)
     "ai.tool_start" => %{version: 1, reliability: :transient},
@@ -25,17 +27,21 @@ defmodule Thunderline.Thunderflow.Events.Registry do
     # Voice / signaling subset
     "voice.signal.offer" => %{version: 1, reliability: :transient},
     "voice.signal.answer" => %{version: 1, reliability: :transient},
-    "voice.signal.ice" => %{version: 1, reliability: :transient}
+    "voice.signal.ice" => %{version: 1, reliability: :transient},
+    # Governance / proofs
+    "stone.proof.emitted" => %{version: 1, reliability: :persistent}
   }
 
   @categories_by_domain %{
     gate: ["ui.command", "system", "presence"],
     flow: ["flow.reactor", "system"],
-    bolt: ["ml.run", "system"],
+    bolt: ["ml.run", "ml.trial", "ml.artifact", "system"],
     link: ["ui.command", "system", "voice.signal", "voice.room"],
-    crown: ["ai.intent", "system"],
+    crown: ["ai.intent", "ai.plan", "system"],
     block: ["system"],
     bridge: ["system", "ui.command"],
+    stone: ["stone.proof", "system"],
+    foundry: ["foundry.blueprint", "foundry.factory", "foundry.resource", "system"],
     unknown: ["system"]
   }
 
