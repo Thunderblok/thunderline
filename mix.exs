@@ -70,6 +70,7 @@ defmodule Thunderline.MixProject do
   {:opentelemetry_phoenix, "~> 2.0"},
   {:opentelemetry_ecto, "~> 1.2"},
   {:opentelemetry_oban, "~> 1.0"},
+  {:opentelemetry_semantic_conventions, "~> 1.27"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
