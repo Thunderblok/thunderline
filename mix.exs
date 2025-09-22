@@ -31,7 +31,7 @@ defmodule Thunderline.MixProject do
   def application do
     [
       mod: {Thunderline.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :inets, :ssl]
     ]
   end
 
@@ -64,13 +64,12 @@ defmodule Thunderline.MixProject do
       {:esbuild, "~> 0.9", runtime: Mix.env() == :dev},
   {:telemetry_metrics, "~> 1.1"},
   {:telemetry_poller, "~> 1.0"},
-  # OpenTelemetry
+  # OpenTelemetry (align versions to avoid conflicts)
   {:opentelemetry, "~> 1.4"},
-  {:opentelemetry_exporter, "~> 1.8"},
-  {:opentelemetry_phoenix, "~> 2.0"},
+  {:opentelemetry_exporter, "~> 1.8", only: :prod},
+  {:opentelemetry_phoenix, "~> 1.2"},
   {:opentelemetry_ecto, "~> 1.2"},
   {:opentelemetry_oban, "~> 1.0"},
-  {:opentelemetry_semantic_conventions, "~> 1.27"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
@@ -109,6 +108,9 @@ defmodule Thunderline.MixProject do
       {:simple_sat, "~> 0.1.3"},
       {:stb_image, "~> 0.6"},
       {:ex_rose_tree, "~> 0.1.3"},
+    # Native and benchmarking
+  {:rustler, "~> 0.36"},
+    {:benchee, "~> 1.3", only: [:dev]},
   {:nimble_parsec, "~> 1.4"},
   {:yamerl, "~> 0.10"},
       # Memory & Security

@@ -362,7 +362,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   defp maybe_domain_processor(job) do
     if Code.ensure_loaded?(Thunderline.Thunderflow.Jobs.DomainProcessor) do
-      job |> Thunderline.Thunderflow.Jobs.DomainProcessor.new() |> Oban.insert()
+      Thunderline.Thunderflow.Jobs.DomainProcessor.new(job)
     else
       job
     end
