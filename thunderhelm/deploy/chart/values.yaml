@@ -1,0 +1,174 @@
+# Global overrides
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Thunderline application image (build/push your image then set these)
+image:
+  repository: thunderline/app    # e.g. ghcr.io/yourorg/thunderline
+  tag: "2.1.0"
+  pullPolicy: IfNotPresent
+
+# Common environment (projected to web/worker pods via ConfigMap/Secret)
+env:
+  # Non-secret settings
+  MINIO_BUCKET: "thunderline-artifacts"
+  SERVICE_NAME: "thunderline"
+  LOG_LEVEL: "info"
+  # Optional: feature flags (comma separated or individual env per feature)
+  FEATURES: ""  # e.g. "enable_ndjson,thundervine_lineage"
+
+  # Secrets (populated via Kubernetes Secret in templates)
+  secrets:
+    DATABASE_URL: ""             # e.g. ecto://postgres:postgres@postgres:5432/thunderline
+    MINIO_ENDPOINT: ""           # e.g. http://minio:9000
+    MINIO_ACCESS_KEY: ""
+    MINIO_SECRET_KEY: ""
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""  # e.g. http://otel-collector:4317
+    OTEL_HEADERS: ""                 # optional: "authorization=Bearer <token>"
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: false
+
+# Web (Phoenix Endpoint) Deployment/Service
+web:
+  enabled: true
+  replicas: 1
+
+  env:
+    ROLE: "web"
+    START_ENDPOINT: "true"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+
+  podAnnotations: {}
+  podLabels: {}
+
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 4000
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: thunderline.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    # - secretName: thunderline-tls
+    #   hosts:
+    #     - thunderline.local
+
+# Worker Deployment (no Service; runs event pipelines, Oban, etc.)
+worker:
+  enabled: true
+  replicas: 1
+
+  env:
+    ROLE: "worker"
+    START_ENDPOINT: "false"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+
+  podAnnotations: {}
+  podLabels: {}
+
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Optional Federation runtime (Flower server) as Python Deployment/Service
+federation:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: python
+    tag: "3.11-slim"
+    pullPolicy: IfNotPresent
+
+  # Port Flower server will bind to
+  port: 8081
+
+  # Command/args to start a demo Flower server (override in prod with a baked image)
+  command:
+    - /bin/sh
+    - -c
+  args:
+    - |
+      pip install --no-cache-dir "flwr[simulation]" && \
+      python - <<'PY'
+      from flwr.server import ServerApp, start_server
+      from flwr.server.strategy import FedAvg
+      def app() -> ServerApp:
+          return ServerApp(FedAvg())
+      if __name__ == "__main__":
+          start_server(server_app=app(), server_address="0.0.0.0:8081")
+      PY
+
+  env: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  service:
+    enabled: true
+    type: ClusterIP
+
+# Optional subcharts (set enabled=true to bring dependencies)
+postgresql:
+  enabled: false
+  auth:
+    username: postgres
+    password: postgres
+    database: thunderline
+
+minio:
+  enabled: false
+  auth:
+    rootUser: minio
+    rootPassword: minio123
+  defaultBuckets: "thunderline-artifacts"
+
+opentelemetryCollector:
+  enabled: false
+
+kubePrometheusStack:
+  enabled: false
+
+# Probes
+probes:
+  web:
+    liveness:
+      path: /health
+      initialDelaySeconds: 20
+      periodSeconds: 10
+    readiness:
+      path: /
+      initialDelaySeconds: 10
+      periodSeconds: 10
+  worker:
+    liveness:
+      initialDelaySeconds: 20
+      periodSeconds: 10
+    readiness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+# Image pull secrets
+imagePullSecrets: []

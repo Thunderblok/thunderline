@@ -1,0 +1,76 @@
+# Example dev values for Thunderhelm
+# - Single replica web and worker
+# - No ingress (use port-forward)
+# - Federation (Flower) disabled
+# - Secrets set to local/dev defaults (change as needed)
+
+image:
+  repository: thunderline/app
+  tag: "2.1.0"
+  pullPolicy: IfNotPresent
+
+env:
+  MINIO_BUCKET: "thunderline-artifacts"
+  SERVICE_NAME: "thunderline"
+  LOG_LEVEL: "debug"
+  FEATURES: ""  # e.g. "enable_ndjson"
+
+  secrets:
+    DATABASE_URL: "ecto://postgres:postgres@postgres:5432/thunderline"
+    MINIO_ENDPOINT: "http://minio:9000"
+    MINIO_ACCESS_KEY: "minio"
+    MINIO_SECRET_KEY: "minio123"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""   # e.g. http://otel-collector:4317
+    OTEL_HEADERS: ""
+
+web:
+  enabled: true
+  replicas: 1
+  env:
+    ROLE: "web"
+    START_ENDPOINT: "true"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 4000
+  ingress:
+    enabled: false
+
+worker:
+  enabled: true
+  replicas: 1
+  env:
+    ROLE: "worker"
+    START_ENDPOINT: "false"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+
+federation:
+  enabled: false
+  replicas: 1
+  image:
+    repository: python
+    tag: "3.11-slim"
+  port: 8081
+  service:
+    enabled: true
+    type: ClusterIP
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: false
+
+# Leave optional dependencies disabled; provide these externally in dev
+postgresql:
+  enabled: false
+minio:
+  enabled: false
+opentelemetryCollector:
+  enabled: false
+kubePrometheusStack:
+  enabled: false

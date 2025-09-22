@@ -1,0 +1,58 @@
+apiVersion: thunderline.okocorp/v1
+kind: FederationSpec
+metadata:
+  name: coop-chat-v2-demo
+  tenant: pac-ops
+spec:
+  modelRef:
+    uri: s3://thunderline-artifacts/models/coop-chat-v2/base.pt
+    sha256: "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    format: torch
+  strategy:
+    name: fedavg                 # fedavg | fedprox | custom
+    params:
+      clientFraction: 0.2        # fraction of clients per round (0–1]
+      minAvailable: 5            # minimum clients required to start a round
+      localEpochs: 1
+      localBatchSize: 32
+      learningRate: 5.0e-5
+      proxMu: 0.0                # only used when name=fedprox
+  rounds:
+    total: 10                    # number of aggregation rounds
+    timeoutSeconds: 180          # optional round timeout budget
+  privacy:
+    dp:
+      enabled: false
+      epsilon: 3.0
+      delta: 1.0e-5
+    secureAggregation:
+      enabled: false
+  clientSelector:
+    tenant: pac-ops
+    tags: ["edge", "region-us-east"]
+    embeddingQuery: ""           # reserved for pgvector-powered selector
+  datasetSpec:
+    schema: parquet
+    shards:
+      - uri: s3://thunderline-artifacts/datasets/coop_chat_v2/shard-000.parquet
+        sha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      - uri: s3://thunderline-artifacts/datasets/coop_chat_v2/shard-001.parquet
+        sha256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  artifacts:
+    outputBucket: thunderline-artifacts
+    prefix: "federations/coop-chat-v2"
+  telemetry:
+    otlp:
+      enabled: true
+      endpoint: "http://otel-collector:4317"
+      headers: ""                # e.g. "authorization=Bearer <token>"
+  constraints:
+    lease:
+      maxEpochs: 1
+      maxTokens: 1000000
+      ttlSeconds: 1800           # lease TTL for idempotent client claims
+
+# Notes:
+# - Thunderline stores this spec and enforces governance (Ash/PG).
+# - Client Manifests are derived from datasetSpec + constraints per client.
+# - For production, secureAggregation and DP settings should be aligned with policy.

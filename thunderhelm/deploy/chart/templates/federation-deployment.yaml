@@ -1,0 +1,65 @@
+{{- if .Values.federation.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-federation
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: federation
+spec:
+  replicas: {{ .Values.federation.replicas }}
+  selector:
+    matchLabels:
+      {{- include "thunderhelm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: federation
+  template:
+    metadata:
+      labels:
+        {{- include "thunderhelm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: federation
+    spec:
+      serviceAccountName: {{ default (include "thunderhelm.fullname" .) .Values.serviceAccount.name }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: federation
+          image: "{{ .Values.federation.image.repository }}:{{ .Values.federation.image.tag }}"
+          imagePullPolicy: {{ .Values.federation.image.pullPolicy }}
+          {{- if .Values.federation.command }}
+          command: {{- toYaml .Values.federation.command | nindent 12 }}
+          {{- end }}
+          {{- if .Values.federation.args }}
+          args: {{- toYaml .Values.federation.args | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "thunderhelm.fullname" . }}-env
+            - secretRef:
+                name: {{ include "thunderhelm.fullname" . }}-secrets
+          env:
+            {{- range $k, $v := .Values.federation.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.federation.port }}
+          {{- with $.Values.federation.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.federation.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.federation.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.federation.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

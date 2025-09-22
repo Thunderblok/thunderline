@@ -1,0 +1,107 @@
+{
+  "id": null,
+  "uid": "flower-power",
+  "title": "Flower Power — Federated Training (Thunderline + Flower)",
+  "timezone": "",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["thunderline", "flower", "federation"],
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "federation_id",
+        "type": "query",
+        "label": "Federation",
+        "datasource": null,
+        "query": "label_values(fl_rounds_completed_total, federation_id)",
+        "includeAll": false,
+        "refresh": 2,
+        "multi": false,
+        "current": {}
+      },
+      {
+        "name": "tenant",
+        "type": "query",
+        "label": "Tenant",
+        "datasource": null,
+        "query": "label_values(fl_rounds_completed_total, tenant)",
+        "includeAll": true,
+        "refresh": 2,
+        "multi": true,
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Clients Joined (total)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(fl_clients_joined_total{federation_id=~\"$federation_id\", tenant=~\"$tenant\"})",
+          "legendFormat": "joined"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Rounds Completed (total)",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(fl_rounds_completed_total{federation_id=~\"$federation_id\", tenant=~\"$tenant\"})",
+          "legendFormat": "completed"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Rounds Completed Over Time",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum by (federation_id) (rate(fl_rounds_completed_total{federation_id=~\"$federation_id\", tenant=~\"$tenant\"}[5m]))",
+          "legendFormat": "{{federation_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Aggregate Duration p95 (seconds)",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(fl_aggregate_duration_seconds_bucket{federation_id=~\"$federation_id\"}[5m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tokens per Second (Top 10 Clients)",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "topk(10, avg_over_time(fl_tokens_per_second{federation_id=~\"$federation_id\"}[5m]))",
+          "legendFormat": "{{client_id}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Watts per Token (if reported)",
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "avg_over_time(fl_watts_per_token{federation_id=~\"$federation_id\"}[5m])",
+          "legendFormat": "{{client_id}}"
+        }
+      ]
+    }
+  ]
+}
