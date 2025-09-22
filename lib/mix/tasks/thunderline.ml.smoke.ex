@@ -71,17 +71,17 @@ defmodule Mix.Tasks.Thunderline.Ml.Smoke do
       verify = take(spec, ["verify"]) || false
 
       trial_payload = %{
-        "trial_id" => trial_id,
-        "run_id" => run_id,
-        "dataset_ref" => dataset_ref,
-        "params" => params,
-        "kernel" => kernel,
-        "backend" => backend,
-        "m" => m,
-        "n" => n,
-        "k" => k,
-        "repeats" => repeats,
-        "verify" => verify
+        trial_id: trial_id,
+        run_id: run_id,
+        dataset_ref: dataset_ref,
+        params: params,
+        kernel: kernel,
+        backend: backend,
+        m: m,
+        n: n,
+        k: k,
+        repeats: repeats,
+        verify: verify
       }
 
       IO.puts("[smoke] Emitting ml.trial.started trial_id=#{trial_id} run_id=#{run_id}")
@@ -95,12 +95,12 @@ defmodule Mix.Tasks.Thunderline.Ml.Smoke do
         }
 
         IO.puts("[smoke] Emitting ml.run.metrics step=#{i} accuracy=#{metrics["accuracy"]}")
-        emit_metrics!(%{"run_id" => run_id, "metrics" => metrics})
+        emit_metrics!(%{run_id: run_id, metrics: metrics})
         Process.sleep(sleep_ms)
       end)
 
       IO.puts("[smoke] Emitting ml.run.completed run_id=#{run_id}")
-      emit_completed!(%{"run_id" => run_id, "status" => "ok"})
+      emit_completed!(%{run_id: run_id, status: "ok"})
 
       IO.puts("""
       [smoke] Done.

@@ -27,10 +27,33 @@ services:
       SECRET_KEY_BASE: dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev_dev
       TOKEN_SIGNING_SECRET: dev_token_signing_secret
       PHX_SERVER: "true"
+      # Dev observability and gating toggles
+      OTEL_DISABLED: "1"
+      GATE_SELFTEST_DISABLED: "1"
+      # MLflow tracking (service below)
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     ports:
       - "4000:4000"
     volumes:
       - .:/app
     command: ["/app/scripts/docker/dev_entrypoint.sh"]
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: thunderline_mlflow
+    restart: unless-stopped
+    environment:
+      BACKEND_STORE_URI: sqlite:////mlflow/mlflow.db
+      MLFLOW_ARTIFACTS_DESTINATION: file:/mlartifacts
+    volumes:
+      - mlflow_data:/mlflow
+      - mlartifacts:/mlartifacts
+    command: >
+      sh -c "mlflow server --host 0.0.0.0 --port 5000
+             --backend-store-uri \"$BACKEND_STORE_URI\"
+             --artifacts-destination \"$MLFLOW_ARTIFACTS_DESTINATION\""
+    ports:
+      - "5000:5000"
 volumes:
   postgres_data:
+  mlflow_data:
+  mlartifacts:

@@ -94,7 +94,8 @@ config :thunderline,
   ],
   # Numerics adapter defaults (fallback; switch to :sidecar or :nif via env/config)
   numerics_adapter: Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback,
-  numerics_sidecar_url: System.get_env("THUNDERLINE_NUMERICS_SIDECAR_URL") || "http://localhost:8089",
+  numerics_sidecar_url:
+    System.get_env("THUNDERLINE_NUMERICS_SIDECAR_URL") || "http://localhost:8089",
   # Cerebros bridge facade configuration (disabled by default)
   cerebros_bridge: [
     enabled: false,

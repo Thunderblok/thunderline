@@ -47,16 +47,16 @@ if System.get_env("OTEL_DISABLED") not in ["1", "true", "TRUE"] do
   service_namespace = System.get_env("OTEL_SERVICE_NAMESPACE") || "thunderline"
   service_version = Application.spec(:thunderline, :vsn) |> to_string()
 
-  config :opentelemetry, :resource, [
+  config :opentelemetry, :resource,
     service: [
       name: service_name,
       namespace: service_namespace,
       version: service_version
     ]
-  ]
 
   exporter_opts =
-    case {System.get_env("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"), System.get_env("OTEL_EXPORTER_OTLP_ENDPOINT")} do
+    case {System.get_env("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"),
+          System.get_env("OTEL_EXPORTER_OTLP_ENDPOINT")} do
       {traces_ep, _} when is_binary(traces_ep) and traces_ep != "" -> [traces_endpoint: traces_ep]
       {_, endpoint} when is_binary(endpoint) and endpoint != "" -> [endpoint: endpoint]
       _ -> []

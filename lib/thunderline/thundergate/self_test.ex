@@ -7,9 +7,14 @@ defmodule Thunderline.Thundergate.SelfTest do
 
   @impl true
   def init(:ok) do
-    # Delay slightly to allow Endpoint to come up
-    Process.send_after(self(), :probe, 800)
-    {:ok, %{done: false}}
+    if gate_selftest_disabled?() do
+      Logger.info("Gate self-test disabled for this environment")
+      {:ok, %{done: true, skipped: true}}
+    else
+      # Delay slightly to allow Endpoint to come up
+      Process.send_after(self(), :probe, 800)
+      {:ok, %{done: false}}
+    end
   end
 
   @impl true
@@ -22,6 +27,11 @@ defmodule Thunderline.Thundergate.SelfTest do
       other -> Logger.error("Gate self-test FAILED: #{inspect(other)}")
     end
     {:noreply, %{state | done: true}}
+  end
+
+  defp gate_selftest_disabled? do
+    System.get_env("GATE_SELFTEST_DISABLED") in ["1", "true", "TRUE"] or
+      Application.get_env(:thunderline, :gate_selftest_disabled, false)
   end
 
   defp probe do

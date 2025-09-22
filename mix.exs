@@ -62,21 +62,21 @@ defmodule Thunderline.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:esbuild, "~> 0.9", runtime: Mix.env() == :dev},
-  {:telemetry_metrics, "~> 1.1"},
-  {:telemetry_poller, "~> 1.0"},
-  # OpenTelemetry (align versions to avoid conflicts)
-  {:opentelemetry, "~> 1.4"},
-  {:opentelemetry_exporter, "~> 1.8", only: :prod},
-  {:opentelemetry_phoenix, "~> 1.2"},
-  {:opentelemetry_ecto, "~> 1.2"},
-  {:opentelemetry_oban, "~> 1.0"},
+      {:telemetry_metrics, "~> 1.1"},
+      {:telemetry_poller, "~> 1.0"},
+      # OpenTelemetry (align versions to avoid conflicts)
+      {:opentelemetry, "~> 1.4"},
+      {:opentelemetry_exporter, "~> 1.8", only: :prod},
+      {:opentelemetry_phoenix, "~> 1.2"},
+      {:opentelemetry_ecto, "~> 1.2"},
+      {:opentelemetry_oban, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:pythonx, "~> 0.4.0"},
       {:swoosh, "~> 1.16"},
       # Ash Framework
-      {:ash, "~> 3.5"},
+      {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.0"},
       {:ash_cloak, "~> 0.1.6"},
       {:ash_postgres, "~> 2.0"},
@@ -89,8 +89,8 @@ defmodule Thunderline.MixProject do
       {:ash_state_machine, "~> 0.2.12"},
       {:ash_admin, "~> 0.11"},
       {:ash_ai, "~> 0.2"},
-  # Type-safe TS client & RPC bridge
-  {:ash_typescript, github: "ash-project/ash_typescript", ref: "main"},
+      # Type-safe TS client & RPC bridge
+      {:ash_typescript, github: "ash-project/ash_typescript", ref: "main"},
       # Additional deps
       {:uuid, "~> 1.1"},
       {:broadway, "~> 1.0"},
@@ -108,11 +108,11 @@ defmodule Thunderline.MixProject do
       {:simple_sat, "~> 0.1.3"},
       {:stb_image, "~> 0.6"},
       {:ex_rose_tree, "~> 0.1.3"},
-    # Native and benchmarking
-  {:rustler, "~> 0.36"},
-    {:benchee, "~> 1.3", only: [:dev]},
-  {:nimble_parsec, "~> 1.4"},
-  {:yamerl, "~> 0.10"},
+      # Native and benchmarking
+      {:rustler, "~> 0.36"},
+      {:benchee, "~> 1.3", only: [:dev]},
+      {:nimble_parsec, "~> 1.4"},
+      {:yamerl, "~> 0.10"},
       # Memory & Security
       {:memento, "~> 0.5.0"},
       {:cloak, "~> 1.1"},
@@ -135,8 +135,8 @@ defmodule Thunderline.MixProject do
       {:file_system, "~> 1.0"},
       # Code Quality
       # credo required unscoped because upstream jido pulls it without :only restriction
-  {:credo, "~> 1.7", override: true},
-  {:excoveralls, "~> 0.18", only: [:test], runtime: false},
+      {:credo, "~> 1.7", override: true},
+      {:excoveralls, "~> 0.18", only: [:test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:git_ops, "~> 2.6.1", only: [:dev]}
       # Optional Cerebros local toolkit (enable with ENABLE_CEREBROS=1 if available)
@@ -185,7 +185,13 @@ defmodule Thunderline.MixProject do
       #  2. We detect a missing representative dependency folder (phoenix) or lock file.
       # This prevents surprise re-resolution of deps during iterative dev where you just want
       # migrations/assets. Force with `mix deps.get` manually when you really intend it.
-      setup: [&maybe_deps_get/1, "ash.setup", "assets.setup", "assets.build"],
+      setup: [
+        &maybe_deps_get/1,
+        "ash.setup",
+        "assets.setup",
+        "assets.build",
+        "run priv/repo/seeds.exs"
+      ],
       # Allow skipping ash.setup in tests to run fast, DB-less component/unit tests
       # Provide a non-recursive alias to run full test setup + tests.
       "test.all": [&maybe_ash_setup/1, "test"],
@@ -200,7 +206,8 @@ defmodule Thunderline.MixProject do
         "phx.digest"
       ],
       # WARHORSE lint bundle (Phase1 advisory)
-      lint: ["format --check-formatted", "credo --strict"]
+      lint: ["format --check-formatted", "credo --strict"],
+      test: ["ash.setup --quiet", "test"]
     ]
   end
 

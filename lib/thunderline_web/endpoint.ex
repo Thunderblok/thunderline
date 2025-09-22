@@ -39,6 +39,12 @@ defmodule ThunderlineWeb.Endpoint do
       otp_app: :thunderline,
       path: "/ash_ai/mcp"
 
+    plug AshAi.Mcp.Dev,
+      # For many tools, you will need to set the `protocol_version_statement` to the older version.
+      protocol_version_statement: "2024-11-05",
+      otp_app: :thunderline,
+      path: "/ash_ai/mcp"
+
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
