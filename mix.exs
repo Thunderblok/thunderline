@@ -74,6 +74,7 @@ defmodule Thunderline.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:pythonx, "~> 0.4.0"},
+      {:venomous, "~> 0.7"},
       {:swoosh, "~> 1.16"},
       # Ash Framework
       {:ash, "~> 3.0"},

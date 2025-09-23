@@ -223,7 +223,7 @@ defmodule Thunderline.Thundercom.Resources.Community do
       destination_attribute :community_id
     end
 
-  has_many :pac_homes, Thunderline.Thundercom.Resources.PACHome do
+  has_many :pac_homes, Thunderline.Thunderblock.Resources.PACHome do
       destination_attribute :community_id
     end
 

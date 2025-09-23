@@ -98,16 +98,67 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
     {cmd, args} = {python, [script | passthrough_args]}
 
     Mix.shell().info("[exec] #{cmd} #{Enum.map_join(args, " ", &escape_arg/1)}")
-    {status, exit_code} =
-      run_streaming(cmd, args, env: env, cd: repo)
 
-    case status do
-      :ok ->
-        Mix.shell().info("[done] Cerebros demo completed with exit code #{exit_code}")
+    # Try Venomous first (managed Python workers); fallback to System.cmd streaming
+    venomous_supported? =
+      Code.ensure_loaded?(Venomous) and function_exported?(Venomous, :python, 2)
+
+    result =
+      if venomous_supported? do
+        # Configure Venomous SnakeManager at runtime with our repo/script context
+        snake_envvars = Enum.map(env, fn {k, v} -> {k, v} end)
+
+        Application.put_env(:venomous, :snake_manager, %{
+          python_opts: [
+            module_paths: [repo],
+            cd: repo,
+            envvars: snake_envvars,
+            python_executable: python
+          ],
+          snake_ttl_minutes: 5,
+          perpetual_workers: 0
+        })
+
+        args_map = %Venomous.SnakeArgs{
+          module: :venomous_bridge,
+          func: :run_cerebros,
+          args: [repo, script, python, passthrough_args, snake_envvars]
+        }
+
+        try do
+          Venomous.python(args_map, python_timeout: 300_000)
+        rescue
+          _ -> :venomous_error
+        end
+      else
+        :venomous_unavailable
+      end
+
+    case result do
+      {:ok, %{"returncode" => 0}} ->
+        Mix.shell().info("[done] Cerebros demo completed with exit code 0")
         :ok
 
-      {:error, reason} ->
-        Mix.raise("Cerebros demo failed: #{inspect(reason)}")
+      {:ok, %{"returncode" => code}} when is_integer(code) and code != 0 ->
+        Mix.raise("Cerebros demo (venomous) exited non-zero: #{code}")
+
+      {:ok, %{"error" => msg}} ->
+        Mix.raise("Cerebros demo (venomous) failed: #{inspect(msg)}")
+
+      _fallback ->
+        # Fallback to direct System.cmd streaming
+        case run_streaming(cmd, args, env: env, cd: repo) do
+          {:ok, exit_code} ->
+            if exit_code == 0 do
+              Mix.shell().info("[done] Cerebros demo completed with exit code 0")
+              :ok
+            else
+              Mix.raise("Cerebros demo exited non-zero: #{exit_code}")
+            end
+
+          {:error, reason} ->
+            Mix.raise("Cerebros demo failed: #{inspect(reason)}")
+        end
     end
   end
 

@@ -45,18 +45,21 @@ defmodule Thunderline.Thunderflow.Resources.EventStream do
     end
 
     update :pause do
+      require_atomic? false
       change fn changeset, _context ->
         Ash.Changeset.change_attribute(changeset, :status, :paused)
       end
     end
 
     update :resume do
+      require_atomic? false
       change fn changeset, _context ->
         Ash.Changeset.change_attribute(changeset, :status, :active)
       end
     end
 
     update :increment_event_count do
+      require_atomic? false
       change fn changeset, _context ->
         current_count = Ash.Changeset.get_attribute(changeset, :event_count) || 0
 
