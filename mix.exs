@@ -166,11 +166,7 @@ defmodule Thunderline.MixProject do
     # blocking other dependency resolution. You can force include by exporting
     # INCLUDE_ASH_JIDO=1 (and upgrading your Elixir toolchain).
     ash_jido_dep =
-      if System.get_env("INCLUDE_ASH_JIDO") in ["1", "true"] or
-           Version.match?(
-             System.version(),
-             ">= 1.18.0"
-           ) do
+      if System.get_env("INCLUDE_ASH_JIDO") in ["1", "true", "TRUE"] do
         [{:ash_jido, github: "agentjido/ash_jido", ref: "main", override: true}]
       else
         []

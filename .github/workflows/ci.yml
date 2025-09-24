@@ -20,13 +20,13 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: thunderblock
+          POSTGRES_DB: thunderline
         ports: ["5432:5432"]
         options: >-
           --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=5
     env:
       MIX_ENV: test
-      DATABASE_URL: ecto://postgres:postgres@localhost:5432/thunderblock
+      DATABASE_URL: ecto://postgres:postgres@localhost:5432/thunderline
     steps:
       - name: Checkout
         uses: actions/checkout@v4

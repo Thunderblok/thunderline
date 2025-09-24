@@ -14,7 +14,7 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   @cap 64
   @spark_cap 32
   def start_link(_), do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
-  def init(_), do: (EventBus.subscribe("tokens"); EventBus.subscribe("events"); {:ok, %{pll: %PLL{}, hilb: H.new(63), prev: [], win: [], hist: [], h_prev: 0.0, commits_pll: [], commits_hil: []}})
+  def init(_), do: {:ok, %{pll: %PLL{}, hilb: H.new(63), prev: [], win: [], hist: [], h_prev: 0.0, commits_pll: [], commits_hil: []}}
   def restore(%{pll: pll, echo: echo}), do: GenServer.cast(__MODULE__, {:restore, pll, echo})
   def boundary_close(timeout_ms \\ 200), do: GenServer.call(__MODULE__, {:boundary_close, timeout_ms}, timeout_ms + 100)
   def handle_cast({:restore, pll_map, echo}, s) do

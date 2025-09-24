@@ -95,15 +95,6 @@ defmodule Thunderline.ThunderBridge do
 
   # Legacy subscription removed; no-op.
 
-    # Subscribe to EventBus for internal events
-    try do
-      EventBus.subscribe("erlang_commands")
-      EventBus.subscribe("system_metrics")
-    rescue
-      error ->
-        Logger.warning("EventBus not available during init: #{inspect(error)}")
-        # Continue without EventBus subscription
-    end
 
     state = %{
       dashboard_subscribers: MapSet.new(),

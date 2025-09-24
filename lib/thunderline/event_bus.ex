@@ -24,13 +24,8 @@ defmodule Thunderline.EventBus do
   per topic per process (suppresses crashes seen at boot).
   """
   @spec subscribe(term()) :: :ok
-  def subscribe(topic) do
-    key = {:eventbus_subscribe_warned, topic}
-    unless Process.get(key) do
-      Logger.warning("EventBus.subscribe/1 is a no-op shim (topic=#{inspect(topic)}) – migrate to telemetry or pipeline consumer")
-      Process.put(key, true)
-    end
-    :ok
+  def subscribe(_topic) do
+    raise "EventBus.subscribe/1 has been removed. Use Phoenix.PubSub or telemetry; see Thunderflow.EventBuffer/RealTimePipeline."
   end
 
   # --- Legacy convenience API (kept for tests/backwards compatibility) ---

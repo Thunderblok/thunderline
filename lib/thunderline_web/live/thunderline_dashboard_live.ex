@@ -49,8 +49,6 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       for t <- ["thunderline:metrics:update", "thunderline:agents:batch_update"] do
         safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, t) end)
       end
-      # Subscribe to status updates via canonical EventBus instead of deprecated Bus shim
-      safe_try(fn -> EventBus.subscribe("status") end)
 
       :timer.send_interval(5_000, self(), :refresh_kpis)
       :timer.send_interval(3_000, self(), :refresh_events)
