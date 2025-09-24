@@ -99,9 +99,58 @@ config :thunderline,
   # Cerebros bridge facade configuration (disabled by default)
   cerebros_bridge: [
     enabled: false,
-    repo_path: System.get_env("CEREBROS_REPO") || "/opt/cerebros",
-    invoke: [default_timeout_ms: 5_000],
-    cache: [ttl_ms: 30_000, max_entries: 512]
+    repo_path:
+      System.get_env("CEREBROS_REPO") ||
+        Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+    script_path:
+      System.get_env("CEREBROS_SCRIPT") ||
+        Path.expand(
+          "../../cerebros-core-algorithm-alpha/generative-proof-of-concept-CPU-preprocessing-in-memory.py",
+          __DIR__
+        ),
+    python_executable: System.get_env("CEREBROS_PYTHON") || "python3",
+    working_dir:
+      System.get_env("CEREBROS_WORKDIR") ||
+        Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+    invoke: [
+      default_timeout_ms:
+        case System.get_env("CEREBROS_TIMEOUT_MS") do
+          nil -> 15_000
+          value -> String.to_integer(value)
+        end,
+      max_retries:
+        case System.get_env("CEREBROS_MAX_RETRIES") do
+          nil -> 2
+          value -> String.to_integer(value)
+        end,
+      retry_backoff_ms:
+        case System.get_env("CEREBROS_RETRY_BACKOFF_MS") do
+          nil -> 750
+          value -> String.to_integer(value)
+        end
+    ],
+    env: %{
+      "PYTHONUNBUFFERED" => "1"
+    },
+    cache: [
+      enabled:
+        case System.get_env("CEREBROS_CACHE_ENABLED") do
+          "0" -> false
+          "false" -> false
+          "FALSE" -> false
+          _ -> true
+        end,
+      ttl_ms:
+        case System.get_env("CEREBROS_CACHE_TTL_MS") do
+          nil -> 30_000
+          value -> String.to_integer(value)
+        end,
+      max_entries:
+        case System.get_env("CEREBROS_CACHE_MAX_ENTRIES") do
+          nil -> 512
+          value -> String.to_integer(value)
+        end
+    ]
   ],
   # VIM (Virtual Ising Machine) config surface (shadow mode = dry-run)
   vim: [

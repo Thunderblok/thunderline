@@ -85,7 +85,6 @@ defmodule Thunderline.Application do
     compute_children = if start_compute? and not minimal? and role in ["compute", "all"] do
       [
         Thunderline.Thunderbolt.ThunderCell.Supervisor,
-        Thunderline.NeuralBridge,
         Thunderline.ThunderBridge
       ]
     else

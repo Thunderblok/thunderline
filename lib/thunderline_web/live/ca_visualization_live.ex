@@ -10,8 +10,6 @@ defmodule ThunderlineWeb.CaVisualizationLive do
     if connected?(socket) do
       # Subscribe to CA updates from ThunderBridge
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "ca_updates")
-      # Subscribe to neural updates from NeuralBridge 🧠
-      Phoenix.PubSub.subscribe(Thunderline.PubSub, "neural_updates")
     end
 
     initial_state = %{
@@ -23,13 +21,7 @@ defmodule ThunderlineWeb.CaVisualizationLive do
       update_interval: 500,
       view_mode: "cubes",
       fps: 0,
-      rendered_objects: 0,
-      # Neural integration state 🧠⚡
-      neural_enabled: false,
-      neural_activity: %{micro: 0.0, meso: 0.0, macro: 0.0, total: 0.0},
-      cerebros_connected: false,
-      learning_active: false,
-      gpu_enabled: false
+      rendered_objects: 0
     }
 
     {:ok, assign(socket, initial_state)}
@@ -82,59 +74,9 @@ defmodule ThunderlineWeb.CaVisualizationLive do
             <option value="points">Points</option>
           </select>
         </div>
-        
-    <!-- Neural Controls 🧠⚡ -->
-        <div
-          class="neural-controls"
-          style="margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;"
-        >
-          <h4 style="color: #00ff88;">🧠 Neural Integration</h4>
-          <div class="control-group">
-            <button
-              phx-click="toggle_neural"
-              class={"btn neural-btn #{if @neural_enabled, do: "active", else: ""}"}
-            >
-              {if @neural_enabled, do: "Neural ON", else: "Neural OFF"}
-            </button>
-            <button phx-click="initialize_cerebros" class="btn">Init Cerebros</button>
-            <button phx-click="start_learning" class="btn">Start Learning</button>
-          </div>
 
-          <div class="neural-status" style="margin-top: 10px; font-size: 12px;">
-            <div>Cerebros: {if @cerebros_connected, do: "✅ Connected", else: "❌ Disconnected"}</div>
-            <div>Learning: {if @learning_active, do: "🎯 Active", else: "⏸️ Inactive"}</div>
-            <div>GPU: {if @gpu_enabled, do: "🚀 Enabled", else: "💻 CPU Only"}</div>
-          </div>
-        </div>
       </div>
-      
-    <!-- Neural Activity Visualization -->
-      <div
-        class="neural-activity"
-        style="position: absolute; top: 20px; right: 200px; z-index: 100; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; color: white;"
-      >
-        <h4 style="color: #00ff88;">🧠 Neural Activity</h4>
-        <div style="font-family: monospace; font-size: 12px;">
-          <div>
-            Micro:
-            <span style="color: #00ffff;">{Float.round(@neural_activity.micro || 0.0, 3)}</span>
-          </div>
-          <div>
-            Meso: <span style="color: #88ff00;">{Float.round(@neural_activity.meso || 0.0, 3)}</span>
-          </div>
-          <div>
-            Macro:
-            <span style="color: #ff8800;">{Float.round(@neural_activity.macro || 0.0, 3)}</span>
-          </div>
-          <div style="border-top: 1px solid #444; margin-top: 5px; padding-top: 5px;">
-            Total:
-            <span style="color: #ff00ff; font-weight: bold;">
-              {Float.round(@neural_activity.total || 0.0, 3)}
-            </span>
-          </div>
-        </div>
-      </div>
-      
+
     <!-- Performance Stats -->
       <div
         class="performance-stats"
@@ -201,70 +143,6 @@ defmodule ThunderlineWeb.CaVisualizationLive do
     {:noreply, assign(socket, view_mode: mode)}
   end
 
-  # Neural integration event handlers 🧠⚡
-  def handle_event("toggle_neural", _params, socket) do
-    new_neural_enabled = !socket.assigns.neural_enabled
-
-    if new_neural_enabled do
-      # Initialize neural system
-      case Thunderline.NeuralBridge.initialize_neural_system() do
-        {:ok, :initialized} ->
-          socket =
-            assign(socket, neural_enabled: true)
-            |> put_flash(:info, "🧠 Neural system initialized!")
-
-        {:error, reason} ->
-          socket = put_flash(socket, :error, "❌ Neural init failed: #{inspect(reason)}")
-      end
-    else
-      socket =
-        assign(socket, neural_enabled: false)
-        |> put_flash(:info, "🧠 Neural system disabled")
-    end
-
-    {:noreply, socket}
-  end
-
-  def handle_event("initialize_cerebros", _params, socket) do
-    case Thunderline.NeuralBridge.create_cerebros_architecture() do
-      {:ok, architecture_summary} ->
-        socket =
-          assign(socket,
-            cerebros_connected: true,
-            gpu_enabled: Map.get(architecture_summary, :gpu_enabled, false)
-          )
-          |> put_flash(
-            :info,
-            "🚀 Cerebros architecture created! #{architecture_summary.total_parameters} parameters"
-          )
-
-      {:error, reason} ->
-        socket = put_flash(socket, :error, "❌ Cerebros init failed: #{inspect(reason)}")
-    end
-
-    {:noreply, socket}
-  end
-
-  def handle_event("start_learning", _params, socket) do
-    training_config = %{
-      learning_rate: 0.001,
-      batch_size: 32,
-      epochs: 100
-    }
-
-    case Thunderline.NeuralBridge.start_neural_training(training_config) do
-      {:ok, :training_started} ->
-        socket =
-          assign(socket, learning_active: true)
-          |> put_flash(:info, "🎯 Neural training started!")
-
-      {:error, reason} ->
-        socket = put_flash(socket, :error, "❌ Training failed: #{inspect(reason)}")
-    end
-
-    {:noreply, socket}
-  end
-
   # Handle updates from the JavaScript hook
   def handle_event("ca_update", params, socket) do
     %{
@@ -311,25 +189,6 @@ defmodule ThunderlineWeb.CaVisualizationLive do
     end
   end
 
-  # Handle neural updates from NeuralBridge 🧠⚡
-  def handle_info({:neural_update, neural_data}, socket) do
-    # Update neural activity visualization
-    socket =
-      assign(socket,
-        neural_activity: neural_data.neural_activity || socket.assigns.neural_activity,
-        generation: neural_data.generation || socket.assigns.generation
-      )
-
-    # Send neural data to JS hook for 3D visualization
-    socket =
-      push_event(socket, "neural_update", %{
-        activity: neural_data.neural_activity,
-        generation: neural_data.generation,
-        tensors: format_tensors_for_js(neural_data.tensors)
-      })
-
-    {:noreply, socket}
-  end
 
   # Private helper functions
   defp generate_random_grid(width, height, depth) do

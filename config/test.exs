@@ -57,8 +57,51 @@ config :thunderline,
   features: [],
   cerebros_bridge: [
     enabled: false,
-    invoke: [default_timeout_ms: 100],
-    cache: [ttl_ms: 1_000, max_entries: 64]
+    repo_path: Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+    script_path:
+      Path.expand(
+        "../../cerebros-core-algorithm-alpha/generative-proof-of-concept-CPU-preprocessing-in-memory.py",
+        __DIR__
+      ),
+    python_executable: System.get_env("CEREBROS_PYTHON") || "python3",
+    working_dir: Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+    invoke: [
+      default_timeout_ms:
+        case System.get_env("CEREBROS_TIMEOUT_MS") do
+          nil -> 5_000
+          value -> String.to_integer(value)
+        end,
+      max_retries:
+        case System.get_env("CEREBROS_MAX_RETRIES") do
+          nil -> 1
+          value -> String.to_integer(value)
+        end,
+      retry_backoff_ms:
+        case System.get_env("CEREBROS_RETRY_BACKOFF_MS") do
+          nil -> 250
+          value -> String.to_integer(value)
+        end
+    ],
+    env: %{"PYTHONUNBUFFERED" => "1"},
+    cache: [
+      enabled:
+        case System.get_env("CEREBROS_CACHE_ENABLED") do
+          "0" -> false
+          "false" -> false
+          "FALSE" -> false
+          _ -> true
+        end,
+      ttl_ms:
+        case System.get_env("CEREBROS_CACHE_TTL_MS") do
+          nil -> 1_000
+          value -> String.to_integer(value)
+        end,
+      max_entries:
+        case System.get_env("CEREBROS_CACHE_MAX_ENTRIES") do
+          nil -> 64
+          value -> String.to_integer(value)
+        end
+    ]
   ],
   vim: [
     enabled: false,
