@@ -118,6 +118,8 @@ defmodule Thunderline.Application do
   # Demo realtime emitter (dev/demo only)
   (on?(:demo_realtime_emitter) and not minimal? && Thunderline.Thunderflow.DemoRealtimeEmitter) || nil,
   (on?(:tocp) and not minimal? && Thunderline.Thunderlink.Transport.Supervisor) || nil,
+      (on?(:cerebros_bridge) and not minimal? &&
+         {Task.Supervisor, name: Thunderline.TaskSupervisor, restart: :transient}) || nil,
       (on?(:cerebros_bridge) and not minimal? && Thunderline.Thunderbolt.CerebrosBridge.Cache) || nil,
   # In minimal test boot, avoid starting DashboardMetrics (queries Mnesia/node state)
   (not minimal? && Thunderline.DashboardMetrics) || nil,
