@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
     * Emit canonical `%Thunderline.Event{}` telemetry for run lifecycle milestones
   """
 
-  alias Thunderline.ErrorClass
+  alias Thunderline.Thunderflow.ErrorClass
   alias Thunderline.Event
   alias Thunderline.EventBus
   alias Thunderline.Feature

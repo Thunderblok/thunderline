@@ -1,207 +1,30 @@
 defmodule Thunderline.ThunderBridge do
   @moduledoc """
-  Main bridge interface for Thunderline dashboard integration.
+  DEPRECATED – Use `Thundergate.ThunderBridge` instead.
 
-  This module serves as the primary interface between the Phoenix LiveView
-  dashboard and the underlying Erlang cellular automata system. It provides
-  a clean, stable API for dashboard components while managing the complexity
-  of Erlang integration internally.
-
-  ## Features
-
-  - Real-time system metrics
-  - Event streaming and subscriptions
-  - Command execution interface
-  - Automatic reconnection and fault tolerance
-  - Performance monitoring and metrics
-
-  ## Usage
-
-      # Get system state for dashboard
-      {:ok, state} = ThunderBridge.get_system_state()
-
-      # Execute CA commands
-      :ok = ThunderBridge.execute_command(:start_evolution, bolt_id)
-
-      # Subscribe to events
-      ThunderBridge.subscribe_dashboard_events(self())
+  Delegates to the authoritative bridge in the Gate domain and emits a
+  deprecation telemetry counter. This shim should be removed after callers migrate.
   """
 
-  use GenServer
   require Logger
 
-  # Legacy ErlangBridge fully removed; ThunderBridge now operates purely via
-  # Elixir ThunderCell components. Any former legacy calls return :unsupported.
-  alias Thunderline.{EventBus}
-  alias Thunderline.Thunderbolt.ThunderCell.Aggregator, as: ThunderCellAggregator
+  @deprecated "Use Thundergate.ThunderBridge instead"
 
-  # Public API
+  def start_link(opts \\ []), do: tap_deprecated(&Thundergate.ThunderBridge.start_link/1, [opts])
+  def get_system_state, do: tap_deprecated(&Thundergate.ThunderBridge.get_system_state/0, [])
+  def get_thunderbolt_registry, do: tap_deprecated(&Thundergate.ThunderBridge.get_thunderbolt_registry/0, [])
+  def get_thunderbit_observer, do: tap_deprecated(&Thundergate.ThunderBridge.get_thunderbit_observer/0, [])
+  def execute_command(command, params \\ []), do: tap_deprecated(&Thundergate.ThunderBridge.execute_command/2, [command, params])
+  def subscribe_dashboard_events(subscriber_pid), do: tap_deprecated(&Thundergate.ThunderBridge.subscribe_dashboard_events/1, [subscriber_pid])
+  def get_performance_metrics, do: tap_deprecated(&Thundergate.ThunderBridge.get_performance_metrics/0, [])
+  def get_evolution_stats, do: tap_deprecated(&Thundergate.ThunderBridge.get_evolution_stats/0, [])
+  def start_ca_streaming(opts \\ []), do: tap_deprecated(&Thundergate.ThunderBridge.start_ca_streaming/1, [opts])
+  def stop_ca_streaming, do: tap_deprecated(&Thundergate.ThunderBridge.stop_ca_streaming/0, [])
 
-  @doc "Start the ThunderBridge GenServer"
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
-  @doc "Get comprehensive system state for dashboard display"
-  def get_system_state do
-    GenServer.call(__MODULE__, :get_system_state, 10_000)
-  end
-
-  @doc "Get ThunderBolt registry for CA panel"
-  def get_thunderbolt_registry do
-    GenServer.call(__MODULE__, :get_thunderbolt_registry, 5_000)
-  end
-
-  @doc "Get ThunderBit observer data for monitoring"
-  def get_thunderbit_observer do
-    GenServer.call(__MODULE__, :get_thunderbit_observer, 5_000)
-  end
-
-  @doc "Execute command on CA system"
-  def execute_command(command, params \\ []) do
-    GenServer.call(__MODULE__, {:execute_command, command, params}, 5_000)
-  end
-
-  @doc "Subscribe to dashboard-relevant events"
-  def subscribe_dashboard_events(subscriber_pid) do
-    GenServer.call(__MODULE__, {:subscribe_dashboard, subscriber_pid})
-  end
-
-  @doc "Get performance metrics for system health panel"
-  def get_performance_metrics do
-    GenServer.call(__MODULE__, :get_performance_metrics, 5_000)
-  end
-
-  @doc "Get CA evolution statistics"
-  def get_evolution_stats do
-    GenServer.call(__MODULE__, :get_evolution_stats, 5_000)
-  end
-
-  @doc "Start real-time CA data streaming"
-  def start_ca_streaming(opts \\ []) do
-    GenServer.call(__MODULE__, {:start_ca_streaming, opts})
-  end
-
-  @doc "Stop CA data streaming"
-  def stop_ca_streaming do
-    GenServer.call(__MODULE__, :stop_ca_streaming)
-  end
-
-  # GenServer Implementation
-
-  @impl true
-  def init(opts) do
-    Logger.info("Starting ThunderBridge...")
-
-  # Legacy subscription removed; no-op.
-
-
-    state = %{
-      dashboard_subscribers: MapSet.new(),
-      last_system_state: %{},
-      performance_history: [],
-      ca_streaming: false,
-      opts: opts,
-      erlang_connected: false
-    }
-
-    # Start periodic health checks
-    :timer.send_interval(30_000, self(), :health_check)
-
-    {:ok, state}
-  end
-
-  @impl true
-  def handle_call(:get_system_state, _from, state) do
-    case build_dashboard_system_state() do
-      {:ok, system_state} ->
-        {:reply, {:ok, system_state}, %{state | last_system_state: system_state}}
-
-      {:error, reason} ->
-        # Return cached state if available, otherwise error
-        case state.last_system_state do
-          %{} = cached when map_size(cached) > 0 ->
-            Logger.warning("Using cached system state due to error: #{inspect(reason)}")
-            cached_with_warning = Map.put(cached, :connection_warning, true)
-            {:reply, {:ok, cached_with_warning}, state}
-
-          _ ->
-            {:reply, {:error, reason}, state}
-        end
-    end
-  end
-
-  def handle_call(:get_thunderbolt_registry, _from, state) do
-    {:reply, {:error, :unsupported}, state}
-  end
-
-  def handle_call(:get_thunderbit_observer, _from, state) do
-    {:reply, {:error, :unsupported}, state}
-  end
-
-  def handle_call({:execute_command, command, params}, _from, state) do
-    Logger.info("Executing CA command: #{command} with params: #{inspect(params)}")
-
-  result = {:error, :unsupported}
-
-    # Broadcast command result to dashboard subscribers
-    broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
-      :command_result,
-      command,
-      params,
-      result
-    })
-
-    {:reply, result, state}
-  end
-
-  def handle_call({:subscribe_dashboard, subscriber_pid}, _from, state) do
-    new_subscribers = MapSet.put(state.dashboard_subscribers, subscriber_pid)
-    Process.monitor(subscriber_pid)
-
-    Logger.debug("Dashboard subscriber added: #{inspect(subscriber_pid)}")
-    {:reply, :ok, %{state | dashboard_subscribers: new_subscribers}}
-  end
-
-  def handle_call(:get_performance_metrics, _from, state) do
-    metrics = calculate_performance_metrics(state.performance_history)
-    {:reply, {:ok, metrics}, state}
-  end
-
-  def handle_call(:get_evolution_stats, _from, state) do
-    case get_ca_evolution_statistics() do
-      {:ok, stats} -> {:reply, {:ok, stats}, state}
-    end
-  end
-
-  def handle_call({:start_ca_streaming, _opts}, _from, state) do
-    {:reply, {:error, :unsupported}, state}
-  end
-
-  def handle_call(:stop_ca_streaming, _from, state) do
-    {:reply, {:error, :unsupported}, state}
-  end
-
-  @impl true
-  def handle_info({:erlang_state_update, new_state}, state) do
-    # Process Erlang state update and broadcast to dashboard
-    dashboard_state = transform_erlang_state_for_dashboard(new_state)
-
-    broadcast_to_dashboard_subscribers(state.dashboard_subscribers, {
-      :system_state_update,
-      dashboard_state
-    })
-
-    # Update performance history
-    new_history = update_performance_history(state.performance_history, new_state)
-
-    {:noreply,
-     %{
-       state
-       | last_system_state: dashboard_state,
-         performance_history: new_history,
-         erlang_connected: true
-     }}
+  defp tap_deprecated(fun, args) do
+    :telemetry.execute([:thunderline, :deprecated_module, :used], %{count: 1}, %{module: __MODULE__})
+    Logger.warning("[DEPRECATED] #{__MODULE__} called; use Thundergate.ThunderBridge")
+    apply(fun, args)
   end
 
   def handle_info({:EXIT, _from, reason}, state) do

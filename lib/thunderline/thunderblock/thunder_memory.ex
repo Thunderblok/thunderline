@@ -290,7 +290,7 @@ defmodule Thunderline.ThunderMemory do
   end
 
   @impl true
-  def handle_call({:get_metrics, metric_name, aggregation_level}, _from, state) do
+  def handle_call({:get_metrics, metric_name, _aggregation_level}, _from, state) do
     result =
       Memento.transaction!(fn ->
         # Simple query for now - can be optimized with time-based aggregation

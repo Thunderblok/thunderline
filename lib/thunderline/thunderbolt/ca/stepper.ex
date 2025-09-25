@@ -1,4 +1,4 @@
-defmodule Thunderline.CA.Stepper do
+defmodule Thunderline.Thunderbolt.CA.Stepper do
   @moduledoc """
   Pure stepping logic for CA grid.
 

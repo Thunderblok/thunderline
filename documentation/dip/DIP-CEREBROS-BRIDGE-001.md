@@ -43,7 +43,7 @@ Exception: `{:error, %{class: :exception, origin: :cerebros}}`.
 |------|-------------|
 | RPC Integration | Real callouts (Port or direct module) with allowlist |
 | Cache Wiring | Use `Cache.get/put` for repeated persona/routing fetches |
-| ErrorClassifier | Wrap errors into `%Thunderline.ErrorClass{}` |
+| ErrorClassifier | Wrap errors into `%Thunderline.Thunderflow.ErrorClass{}` |
 | Metrics Enrichment | Add duration_ms, version, success? metadata expansions |
 | Bridge Tests | Unit tests for version/timeout/exception branches |
 | Security | Payload sanitization & PII hashing (persona) |

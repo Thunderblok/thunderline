@@ -5,7 +5,7 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
   defstruct born: [], survive: [], rate_hz: 30, seed: nil, zone: nil, rest: nil
 
   # Helpers
-  digit = ascii_string([?0..?9], min: 1)
+  _digit = ascii_string([?0..?9], min: 1)
   ws = ignore(optional(ascii_string([?\s, ?\t], min: 1)))
 
   rule_seq = ascii_string([?0..?9], min: 1)

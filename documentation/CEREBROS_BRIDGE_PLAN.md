@@ -43,7 +43,7 @@ Introduce facade modules under `Thunderline.ThunderBolt.CerebrosBridge`:
 | `Translator` | Map raw external structs/maps into Ash resource changesets or VIM Problem inputs |
 | `Cache` | Optional ETS caching of expensive intermediate results |
 
-All outward calls return `{:ok, value}` / `{:error, %Thunderline.ErrorClass{}}` (classifier enforced).
+All outward calls return `{:ok, value}` / `{:error, %Thunderline.Thunderflow.ErrorClass{}}` (classifier enforced).
 
 ## 5. Data Flow Examples
 Persona Board → VIM:
@@ -123,3 +123,13 @@ config :thunderline, :cerebros_bridge, %{
 
 ---
 "A bridge is secure when its absence produces a warning, not a crash."  
+
+# Cerebros Bridge Version Record
+
+Tracks the external cerebros core algorithm repo commit hash used locally.
+
+| Date | Commit | Notes |
+|------|--------|-------|
+| (pending) | (none) | Bridge not yet synced locally |
+
+Update workflow: On sync, update table + include diff summary; PR commit message prefix `CEREBROS-BRIDGE:`.

@@ -21,7 +21,7 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
   @impl true
   def param_names, do: []
   @impl true
-  def run(%SourceFile{filename: filename} = source_file, params) do
+  def run(%SourceFile{filename: filename} = source_file, _params) do
     text = SourceFile.source(source_file)
     issues =
       []

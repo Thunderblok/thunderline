@@ -49,7 +49,10 @@ defmodule Thunderline.Thunderflow.EventValidator do
   end
 
   defp valid_reserved?(name) do
-    Enum.any?(@reserved_prefixes, &String.starts_with?(name, &1)) or true
+    # Allow names that start with any reserved family. If you want to allow
+    # additional non-reserved families (e.g., "ai."), adjust @reserved_prefixes
+    # or extend this function accordingly.
+    Enum.any?(@reserved_prefixes, &String.starts_with?(name, &1))
   end
 
   defp handle_failure(ev, reason) do

@@ -1,6 +1,6 @@
 defmodule Thunderline.ErrorClassifierTest do
   use ExUnit.Case, async: true
-  alias Thunderline.ErrorClassifier
+  alias Thunderline.Thunderflow.ErrorClassifier
 
   test "classify ecto changeset" do
     cs = %Ecto.Changeset{valid?: false, changes: %{}} |> Map.put(:action, :insert)

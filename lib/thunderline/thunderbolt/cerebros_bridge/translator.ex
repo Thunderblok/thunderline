@@ -41,7 +41,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
   Encode a Cerebros bridge contract into command execution parameters.
   """
   @spec encode(atom(), term(), map(), keyword()) :: encoded_call
-  def encode(:start_run, %Contracts.RunStartedV1{} = contract, config, opts \\ []) do
+  def encode(op, payload, config, opts \\ [])
+  def encode(:start_run, %Contracts.RunStartedV1{} = contract, config, opts) do
     payload = contract_to_map(contract)
 
     build_call(:start_run, payload, config, opts,
@@ -60,7 +61,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
     )
   end
 
-  def encode(:record_trial, %Contracts.TrialReportedV1{} = contract, config, opts \\ []) do
+  def encode(:record_trial, %Contracts.TrialReportedV1{} = contract, config, opts) do
     payload = contract_to_map(contract)
 
     build_call(:record_trial, payload, config, opts,
@@ -78,7 +79,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
     )
   end
 
-  def encode(:finalize_run, %Contracts.RunFinalizedV1{} = contract, config, opts \\ []) do
+  def encode(:finalize_run, %Contracts.RunFinalizedV1{} = contract, config, opts) do
     payload = contract_to_map(contract)
 
     build_call(:finalize_run, payload, config, opts,
@@ -96,7 +97,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
     )
   end
 
-  def encode(op, payload, config, opts \\ []) when is_atom(op) do
+  def encode(op, payload, config, opts) when is_atom(op) do
     payload_map = normalize_value(payload) || %{}
 
     build_call(op, payload_map, config, opts,

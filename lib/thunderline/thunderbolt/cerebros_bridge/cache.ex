@@ -175,7 +175,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Cache do
   defp truthy?(_), do: true
 
   defp stale?(_inserted_ms, nil), do: false
-  defp stale?(inserted_ms, ttl_ms) when ttl_ms <= 0, do: false
+  defp stale?(_inserted_ms, ttl_ms) when ttl_ms <= 0, do: false
   defp stale?(inserted_ms, ttl_ms), do: now_ms() - inserted_ms > ttl_ms
 
   defp now_ms, do: System.monotonic_time(:millisecond)

@@ -6,6 +6,6 @@ defmodule Thunderline.HTTPTest do
   test "GET JSON happy path (skipped by default)" do
     # Only run when network allowed; set MIX_ENV or remove :skip
     url = System.get_env("HTTP_TEST_URL") || "https://httpbin.org/json"
-    assert {:ok, %Req.Response{status: 200}} = Thunderline.HTTP.get(url)
+    assert {:ok, %Req.Response{status: 200}} = Thunderline.Thunderlink.HTTP.get(url)
   end
 end

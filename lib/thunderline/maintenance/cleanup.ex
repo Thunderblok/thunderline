@@ -141,7 +141,7 @@ defmodule Thunderline.Maintenance.Cleanup do
     end)
   end
 
-  defp do_delete(path, true), do: :ok
+  defp do_delete(_path, true), do: :ok
   defp do_delete(path, false) do
     case File.rm(path) do
       :ok -> :ok

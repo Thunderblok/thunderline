@@ -37,7 +37,7 @@ Augmented Severity Guidance:
 ## 4. Mapping Strategy (Draft)
 Classifier contract:
 ```elixir
-@spec classify(term(), map()) :: %Thunderline.ErrorClass{}
+@spec classify(term(), map()) :: %Thunderline.Thunderflow.ErrorClass{}
 ```
 Context keys (suggested):
 | Key | Type | Purpose |
@@ -51,7 +51,7 @@ Context keys (suggested):
 
 Struct example produced:
 ```elixir
-%Thunderline.ErrorClass{
+%Thunderline.Thunderflow.ErrorClass{
   origin: :system,
   class: :transient,
   severity: :error,
@@ -118,7 +118,7 @@ Metadata includes: `class`, `origin`, `severity`, `queue`, `attempt`.
 Escalation: Re-classification of existing mapping requires sign-off from owning domain steward + observability steward (to prevent silent SLO drift).
 
 ## 10. Open TODOs (HC-09 Completion)
-- [ ] Implement `Thunderline.ErrorClassifier` module & struct definition
+- [ ] Implement `Thunderline.Thunderflow.ErrorClassifier` module & struct definition
 - [ ] Broadway integration (retry + DLQ producers) with per-class backoff config
 - [ ] Add tests for mapping of SMTP codes & Mint timeouts
 - [ ] Define metrics dashboards (error rate, class breakdown, DLQ depth, retry success %) 
@@ -132,8 +132,8 @@ Escalation: Re-classification of existing mapping requires sign-off from owning 
 
 ## 12. Example Implementation Sketch
 ```elixir
-defmodule Thunderline.ErrorClassifier do
-  alias Thunderline.ErrorClass
+defmodule Thunderline.Thunderflow.ErrorClassifier do
+  alias Thunderline.Thunderflow.ErrorClass
   @spec classify(term(), map()) :: ErrorClass.t()
   def classify(%Ecto.Changeset{} = cs, ctx) do
     error_class(:user, :validation, severity: :info, visibility: :user_safe, code: "ECTO_INVALID", reason: changeset_summary(cs), raw: cs, ctx: ctx)
@@ -211,3 +211,14 @@ Document consolidation complete (v0.3 draft). Remove `ERROR_CLASSES_APPEND.md` o
 
 ---
 Expanded draft complete. Implement classifier + integration in HC-09 PR series.
+
+
+## Parser Error Classes (Incremental Addendum)
+
+| Code | Class | HTTP Mapping | Description | Mitigation |
+|------|-------|--------------|-------------|------------|
+| E-PARSE-RULE-001 | parse.rule.syntax | 400 | CA rule line failed grammar parse | Surface first error segment, suggest canonical form B3/S23 rate=30Hz |
+| E-PARSE-SPEC-001 | parse.spec.syntax | 400 | Workflow spec failed grammar parse | Provide failing line number & remaining text snippet |
+| E-PARSE-SPEC-002 | parse.spec.unknown_after | 422 | after= references undeclared node | Ensure topological order; reorder or declare parent first |
+
+Add to main ERROR_CLASSES.md on next consolidation sweep.

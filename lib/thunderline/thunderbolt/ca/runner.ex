@@ -8,7 +8,7 @@ defmodule Thunderline.Thunderbolt.CA.Runner do
   """
   use GenServer
   require Logger
-  alias Thunderline.CA.Stepper
+  alias Thunderline.Thunderbolt.CA.Stepper
 
   @default_tick_ms 50        # ~20 Hz; can be adjusted via opts
   @telemetry_event [:thunderline, :ca, :tick]

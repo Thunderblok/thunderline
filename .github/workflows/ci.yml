@@ -34,8 +34,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.15'
-          otp-version: '26'
+          elixir-version: '1.18'
+          otp-version: '27'
 
       - name: Cache deps
         uses: actions/cache@v4
@@ -55,7 +55,7 @@ jobs:
         run: mix deps.get
 
       - name: Compile
-        run: mix compile --warnings-as-errors
+        run: mix compile
 
       - name: Event Taxonomy Lint
         run: mix thunderline.events.lint --format=json

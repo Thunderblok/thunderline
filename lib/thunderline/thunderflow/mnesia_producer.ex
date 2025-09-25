@@ -245,16 +245,19 @@ defmodule Thunderflow.MnesiaProducer do
 
   defp ensure_table_exists(table) do
     case Memento.Table.create(table) do
+      {:atomic, :ok} ->
+        Logger.info("MnesiaProducer: Created table #{table}")
+        :ok
       :ok ->
         Logger.info("MnesiaProducer: Created table #{table}")
         :ok
-
       {:error, {:already_exists, _}} ->
         :ok
-
-      {:error, reason} ->
-        Logger.error("MnesiaProducer: Failed to create table #{table}: #{inspect(reason)}")
-        {:error, reason}
+      {:aborted, {:already_exists, _}} ->
+        :ok
+      other ->
+        Logger.error("MnesiaProducer: Failed to create table #{table}: #{inspect(other)}")
+        {:error, other}
     end
   end
 

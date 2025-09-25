@@ -1,10 +1,10 @@
 defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
   @moduledoc """
   Executes Cerebros bridge calls as external subprocesses with retries,
-  telemetry, and structured `%Thunderline.ErrorClass{}` mapping.
+  telemetry, and structured `%Thunderline.Thunderflow.ErrorClass{}` mapping.
   """
 
-  alias Thunderline.ErrorClass
+  alias Thunderline.Thunderflow.ErrorClass
   alias Thunderline.Thunderbolt.CerebrosBridge.Client
 
   require Logger
@@ -184,7 +184,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
   end
 
   defp maybe_backoff(nil, _attempt), do: :ok
-  defp maybe_backoff(backoff_ms, attempt) when backoff_ms <= 0, do: :ok
+  defp maybe_backoff(backoff_ms, _attempt) when backoff_ms <= 0, do: :ok
   defp maybe_backoff(backoff_ms, attempt) do
     scaled = trunc(backoff_ms * backoff_multiplier(attempt))
     Process.sleep(scaled)
