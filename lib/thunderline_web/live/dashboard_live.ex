@@ -32,6 +32,15 @@ defmodule ThunderlineWeb.DashboardLive do
   import ThunderlineWeb.DashboardComponents.SystemControls, only: [system_controls_panel: 1]
   import ThunderlineWeb.DashboardComponents.ThunderwatchPanel, only: [thunderwatch_panel: 1]
 
+  @pipeline_modules %{
+    ingest: Thunderline.Thunderflow.Broadway.VectorIngest,
+    embed: Thunderline.Thundercrown.Serving.Embedding,
+    curate: Thunderline.Thunderflow.Curation.DatasetParzen,
+    propose: Thunderline.Thunderbolt.Hpo.TrialSelector,
+    train: Thunderline.Thunderbolt.Hpo.TrialTrainer,
+    serve: Thundercrown.Serving.Registry
+  }
+
   @impl true
   def mount(params, _session, socket) do
     if connected?(socket) do
@@ -382,11 +391,18 @@ defmodule ThunderlineWeb.DashboardLive do
     events = Map.get(metrics, :events, %{})
     agents = Map.get(metrics, :agents, %{})
     thunderlane = Map.get(metrics, :thunderlane, %{})
+  ml_pipeline = Map.get(metrics, :ml_pipeline)
     # Existing domain metrics kept in :domain_metrics
     domain_metrics = socket.assigns[:domain_metrics] || %{}
 
     # Rebuild the :metrics assign used by template combining domain + dynamic thunderlane
     rebuilt_metrics = Map.put(domain_metrics, :thunderlane, thunderlane)
+
+    ml_pipeline_status =
+      case ml_pipeline do
+        %{} = payload -> normalize_ml_pipeline_status(payload)
+        _ -> socket.assigns[:ml_pipeline_status] || get_ml_pipeline_status()
+      end
 
     socket =
       socket
@@ -394,6 +410,7 @@ defmodule ThunderlineWeb.DashboardLive do
       |> assign(:event_metrics, events)
       |> assign(:agent_metrics, agents)
       |> assign(:metrics, rebuilt_metrics)
+      |> assign(:ml_pipeline_status, ml_pipeline_status)
 
     {:noreply, socket}
   end
@@ -816,6 +833,7 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:controls_data, %{})
     |> assign(:gate_auth_stats, %{total: 0, success: 0, missing: 0, expired: 0, invalid: 0, deny: 0, success_rate: 0.0})
   |> assign(:thunderwatch_stats, %{files_indexed: 0, seq: 0, events_last_min: 0, utilization: 0, domain_counts: %{}})
+    |> assign(:ml_pipeline_status, get_ml_pipeline_status())
   end
 
   # Tabs helpers
@@ -910,6 +928,7 @@ defmodule ThunderlineWeb.DashboardLive do
     governance_data = get_governance_data()
     orchestration_data = get_orchestration_data()
     controls_data = get_controls_data()
+  ml_pipeline_status = get_ml_pipeline_status()
 
     socket
     |> assign(:loading, false)
@@ -927,6 +946,7 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:governance_data, governance_data)
     |> assign(:orchestration_data, orchestration_data)
     |> assign(:controls_data, controls_data)
+    |> assign(:ml_pipeline_status, ml_pipeline_status)
   end
 
   defp get_real_system_metrics do
@@ -1544,4 +1564,142 @@ defmodule ThunderlineWeb.DashboardLive do
       boot_mode: Enum.random(["normal", "safe", "maintenance"])
     }
   end
+
+  defp get_ml_pipeline_status do
+    snapshot = DashboardMetrics.get_ml_pipeline_snapshot()
+    order = Map.get(snapshot, :order, Map.keys(@pipeline_modules))
+    notes = Map.get(snapshot, :notes, "HC directive staged — awaiting live pipeline telemetry")
+
+    statuses =
+      Enum.reduce(order, %{}, fn step, acc ->
+        telemetry_status = Map.get(snapshot, step)
+        fallback_status = pipeline_component_status(module_for_step(step))
+        status = telemetry_status || fallback_status
+        Map.put(acc, step, status)
+      end)
+
+    statuses
+    |> Map.put(:order, order)
+    |> Map.put(:notes, notes)
+    |> Map.put(:trial_metrics, Map.get(snapshot, :trial_metrics, %{}))
+    |> Map.put(:parzen_metrics, Map.get(snapshot, :parzen_metrics, %{}))
+  end
+
+  defp pipeline_component_status(nil), do: :unknown
+  defp pipeline_component_status(module) do
+    cond do
+      Code.ensure_loaded?(module) and function_exported?(module, :enabled?, 0) ->
+        safe_enabled_status(module)
+
+      Code.ensure_loaded?(module) ->
+        :scaffolded
+
+      true ->
+        :missing
+    end
+  end
+
+  defp safe_enabled_status(module) do
+    try do
+      if module.enabled?(), do: :online, else: :disabled
+    rescue
+      _ -> :scaffolded
+    end
+  end
+
+  defp normalize_ml_pipeline_status(%{} = incoming) do
+    base = get_ml_pipeline_status()
+
+    updated =
+      Enum.reduce(base.order, base, fn key, acc ->
+        case Map.fetch(incoming, key) do
+          {:ok, status} -> Map.put(acc, key, status)
+          :error -> acc
+        end
+      end)
+
+    updated
+    |> Map.put(:notes, Map.get(incoming, :notes, base.notes))
+    |> Map.put(:trial_metrics, Map.merge(base[:trial_metrics] || %{}, Map.get(incoming, :trial_metrics, %{})))
+    |> Map.put(:parzen_metrics, Map.merge(base[:parzen_metrics] || %{}, Map.get(incoming, :parzen_metrics, %{})))
+  end
+  defp normalize_ml_pipeline_status(_), do: get_ml_pipeline_status()
+
+  defp module_for_step(step), do: Map.get(@pipeline_modules, step)
+
+  defp pipeline_status_class(:online), do: "bg-emerald-500/20 text-emerald-200 border-emerald-400/60"
+  defp pipeline_status_class(:disabled), do: "bg-yellow-500/20 text-yellow-200 border-yellow-400/60"
+  defp pipeline_status_class(:scaffolded), do: "bg-blue-500/15 text-blue-200 border-blue-400/40"
+  defp pipeline_status_class(:missing), do: "bg-red-500/15 text-red-200 border-red-400/40"
+  defp pipeline_status_class(:offline), do: "bg-slate-500/20 text-slate-200 border-slate-400/40"
+  defp pipeline_status_class(_), do: "bg-gray-500/10 text-gray-200 border-gray-400/30"
+
+  defp pipeline_status_label(:online), do: "ONLINE"
+  defp pipeline_status_label(:disabled), do: "DISABLED"
+  defp pipeline_status_label(:scaffolded), do: "SCAFFOLD"
+  defp pipeline_status_label(:missing), do: "MISSING"
+  defp pipeline_status_label(:offline), do: "OFFLINE"
+  defp pipeline_status_label(other) when is_atom(other), do: other |> Atom.to_string() |> String.upcase()
+  defp pipeline_status_label(other) when is_binary(other), do: String.upcase(other)
+  defp pipeline_status_label(_), do: "UNKNOWN"
+
+  defp format_trial_last_event(%{type: type} = event) do
+    run = Map.get(event, :run_id)
+    trial = Map.get(event, :trial_id)
+    timestamp = format_timestamp(Map.get(event, :at))
+
+    parts =
+      [
+        type |> to_string() |> String.upcase(),
+        optional_identifier("run", run),
+        optional_identifier("trial", trial),
+        timestamp
+      ]
+      |> Enum.reject(&blank?/1)
+
+    Enum.join(parts, " • ")
+  end
+  defp format_trial_last_event(_), do: "—"
+
+  defp format_parzen_last_observation(%{best_metric: metric} = parzen) do
+    run = Map.get(parzen, :last_run_id)
+    timestamp = format_timestamp(Map.get(parzen, :updated_at))
+
+    parts =
+      [
+        optional_identifier("run", run),
+        metric && "best #{format_metric(metric)}",
+        timestamp && "at #{timestamp}"
+      ]
+      |> Enum.reject(&blank?/1)
+
+    case parts do
+      [] -> "—"
+      _ -> Enum.join(parts, " • ")
+    end
+  end
+  defp format_parzen_last_observation(_), do: "—"
+
+  defp format_metric(nil), do: "—"
+  defp format_metric(value) when is_float(value) do
+    :erlang.float_to_binary(value, [:compact, {:decimals, 4}])
+  end
+  defp format_metric(value) when is_integer(value), do: Integer.to_string(value)
+  defp format_metric(value) when is_binary(value), do: value
+  defp format_metric(value), do: to_string(value)
+
+  defp format_timestamp(%DateTime{} = dt) do
+    try do
+      Calendar.strftime(dt, "%H:%M:%SZ")
+    rescue
+      _ -> DateTime.to_iso8601(dt)
+    end
+  end
+  defp format_timestamp(_), do: nil
+
+  defp optional_identifier(_label, nil), do: nil
+  defp optional_identifier(label, value), do: "#{label} #{value}"
+
+  defp blank?(value) when value in [nil, ""], do: true
+  defp blank?(value), do: false
 end

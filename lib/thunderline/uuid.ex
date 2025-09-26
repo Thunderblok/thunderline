@@ -10,7 +10,7 @@ defmodule Thunderline.UUID do
     2 bits variant (10)
     62 bits rand_b
   """
-  use Bitwise
+  import Bitwise
 
   @spec v7() :: String.t()
   def v7 do

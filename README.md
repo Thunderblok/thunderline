@@ -60,7 +60,7 @@ Thunderline incorporates the **THUNDERSTRUCK** algorithm, a sophisticated implem
 ### Prerequisites
 
 - Elixir 1.15+ with OTP 26+
-- PostgreSQL 14+ for persistent storage
+- PostgreSQL 18 for persistent storage
 - Node.js 18+ for asset compilation
 
 ### Installation
@@ -94,7 +94,7 @@ Run `mix deps.get` manually when you intentionally want to resolve/update depend
 
 ### Docker Development (Optional)
 
-Thunderline includes a minimal `docker-compose.yml` providing a Postgres 16 service and a placeholder app service definition.
+Thunderline includes a minimal `docker-compose.yml` providing a Postgres 18 service and a placeholder app service definition.
 
 ### Developer Environment Health Check
 

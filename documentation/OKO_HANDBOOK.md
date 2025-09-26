@@ -742,6 +742,42 @@ Failure Handling:
 3. **Federation protocol**: ActivityPub implementation for multi-instance coordination
 4. **Performance baseline**: Establish benchmarks before adding new features
 
+### ⚡ High Command Directive – Event→Model Flywheel (Sep 26 2025)
+
+> Mission: Ship the ingest→embed→curate→train→serve loop end-to-end with Ash-first ownership, Broadway throughput, and Parzen-guided HPO.
+
+**Execution Flow (10k ft)**
+1. **Ingest & Normalize** – Broadway pipeline P1 consumes external streams (Kafka/HTTP/S3), normalizes into Ash `Event` / `Document`, and enforces taxonomy + audit fields.
+2. **Embed & Persist** – Bumblebee/NX serving batches embeddings; Ash AI persists vectors (pgvector) and spawns `DatasetChunk` entries with provenance metadata.
+3. **Density Curation** – Rose-tree Parzen curator updates shard densities via zipper paths, computes `quality_score` / `density_score`, and prunes stale shards.
+4. **Trial Pre-Selection** – TPE sampler maintains good/bad Parzen trees, emits `Trial` proposals with l/g scoring, and records demand back to `HPORun` coordinators.
+5. **Train & Evaluate** – Axon/NX or Cerebros bridge trainers request density-ranked chunks, run trials, log metrics, and transition trials to `:complete` / `:failed`.
+6. **Register & Serve** – Winning artifacts registered in `ModelArtifact`, deployed via Nx.Serving or bridge microservice, surfaced through Ash/MCP actions.
+7. **Observe & Orchestrate** – Thundergrid GraphQL exposes trials/parzen/dataset state; Thundervine DAG records lineage; Jido policies manage SLA (proposal <200 ms) and retries/prunes.
+
+**Canonical Resources & Interfaces**
+- Ash resources: `Document`, `Event`, `DatasetChunk`, `ParzenTree`, `Trial`, `HPORun`, `ModelArtifact`, `Automaton`, `DPState` (pgvector-enabled where needed, policy hardened).
+- Broadway lines: P1 ingest→embed→index, P2 dataset curation, P3 trial pre-selector, P4 train/eval router, P5 registry/serve notifications.
+- Thundergrid GraphQL additions: queries (`trials`, `parzenTree`, `datasetChunks`, `dpStates`), mutations (`proposeTrials`, `registerModel`), subscriptions (`onTrialUpdate`).
+- Jido SOP: `:branch_expand`, `:prune`, `:bubble_up`, `:teleport_neighbor` actions, density-aware throttling, SLA + budget telemetry.
+
+**Guardrails & Telemetry**
+- Embed version drift handled via `embed_version` column + dual-write upgrade path.
+- Metrics/Telemetry: `[:vector,:embed,:ms]`, `[:parzen,:propose,:ms]`, `[:trial,:train,:s]`, dataset density heatmaps, curator pruning counters.
+- Security: Ash policies for vector datasets (multi-tenant isolation, PII gating), API key enforcement before GraphQL mutations, event taxonomy compliance.
+- Backpressure: Broadway concurrency tuning, DLQ path, curator snapshots (Welford stats + mini-kmeans splits) persisted for warm restart.
+
+**Rollout Checklist Snapshot**
+1. Enable pgvector; generate Ash migrations for resources above (with indexes).
+2. Deploy Bumblebee/NX serving (EXLA, batch=64) with health telemetry.
+3. Implement Parzen zipper updates, persist node summaries, emit governance events.
+4. Wire Cerebros bridge endpoints (`/propose`, `/train`, `/metrics`) + handshake doc.
+5. Update dashboard/Thundergrid tiles for trials, densities, curator health.
+6. Author Jido runbook + policy tests; integrate Observability metrics + alerts.
+7. Canary HPORun on toy dataset; verify DAG lineage + GraphQL subscriptions.
+
+Note: This directive complements the Guerrilla backlog—tackle after Wave 1 auth/vault items land to avoid scope drift.
+
 **Long-term Vision (Next 90 Days)**
 1. **MCP integration**: Model Context Protocol for AI tool coordination
 2. **Production deployment**: Multi-tenant architecture with proper security
@@ -1183,7 +1219,7 @@ Multiple Thunderline instances can federate through ActivityPub protocol:
 
 ### **Prerequisites**
 - **Elixir 1.15+** with OTP 26+
-- **PostgreSQL 14+** for primary data storage
+- **PostgreSQL 18** for primary data storage
 - **Node.js 18+** for asset compilation
 - **Git** for version control
 

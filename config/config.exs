@@ -195,7 +195,7 @@ config :thunderline,
     presence_secured: true
   ],
   ash_domains: [
-    Thunderline.Chat,
+    Thunderline.Thunderlink.Chat,
     # === SLIM MODE ACTIVE ===
     # For the current milestone we only need the core runtime needed to ship
     # fast on comms + events + storage. Extra domains are commented out to

@@ -6,7 +6,7 @@ Supported components and versions
 - Thunderline image: appVersion 2.1.x (Phoenix 1.8, Ash 3.x; OTP 26+; Elixir 1.18+)
 - Python (for Flower server/clients): 3.10–3.12 (3.11 recommended)
 - Node.js (for Thunderline asset pipeline): 18+ (only needed to build images)
-- Postgres: 14+ (Thunderline DB)
+- Postgres: 18 (Thunderline DB)
 - MinIO/S3: S3-compatible object store (for model artifacts/checkpoints)
 - OTLP Collector (optional but recommended): for tracing/metrics export
 - Prometheus + Grafana (optional but recommended): metrics and dashboards

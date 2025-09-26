@@ -156,6 +156,18 @@ _Status legend: [x] done · [ ] pending · [~] scaffolded / partial_
 39. [ ] Add StreamManager + Oban counters to LiveDashboard / Grafana JSON.
 40. [ ] Update `THUNDERLINE_DOMAIN_CATALOG.md` + README with new guards and progress.
 
+#### High Command Directive – Event→Model Flow (Sep 26 2025)
+
+1. [ ] Author Ash resources for ML pipeline (`Document`, `Event`, `DatasetChunk`, `ParzenTree`, `Trial`, `HPORun`, `ModelArtifact`) with pgvector support and governance policies.
+2. [ ] Stand up Broadway P1 ingest pipeline: normalize events/docs, batch embed with Bumblebee/NX, persist vectors + chunks, emit `system.vector.indexed`.
+3. [ ] Implement Dataset Parzen curator service (Rose-Tree zipper updates, quality/density scoring, shard pruning telemetry).
+4. [ ] Build Trial pre-selector (TPE good/bad Parzen trees, l/g ratio sampler) and persist `:proposed` trials with density metadata.
+5. [ ] Wire Cerebros bridge + Axon trainers to consume trials, log metrics, and emit `model.candidate` events.
+6. [ ] Register model artifacts + serving adapters (Nx.Serving + bridge), expose Ash/MCP actions for predict/vector_search/register.
+7. [ ] Extend Thundergrid GraphQL with trials/parzen/dataset queries + subscriptions; surface dashboard tiles for live monitoring.
+8. [ ] Persist lineage into Thundervine DAG (trials ↔ dataset chunks ↔ docs/events, parzen snapshots, model registry edges).
+9. [ ] Codify Jido policy playbooks for proposal SLA, retry/prune loops, and integrate observability metrics.
+
 ---
 
 ## **🎯 THE VISION: Complete User Journey**

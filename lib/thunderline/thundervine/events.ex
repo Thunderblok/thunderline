@@ -7,6 +7,7 @@ defmodule Thunderline.Thundervine.Events do
   share the same durability semantics.
   """
   require Logger
+  require Ash.Query
   alias Thunderline.Thunderblock.Resources.{DAGWorkflow, DAGNode, DAGEdge}
 
   # Ensure or start a workflow anchored on correlation id (one workflow per run id)

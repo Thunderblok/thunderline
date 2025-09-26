@@ -151,7 +151,7 @@ defmodule ThunderlineWeb.ChatLive do
 
     conversations =
       if socket.assigns.current_user do
-        Thunderline.Chat.list_conversations!(actor: socket.assigns.current_user)
+  Thunderline.Thunderlink.Chat.list_conversations!(actor: socket.assigns.current_user)
       else
         []
       end
@@ -167,7 +167,9 @@ defmodule ThunderlineWeb.ChatLive do
 
   def handle_params(%{"conversation_id" => conversation_id}, _, socket) do
     conversation =
-      Thunderline.Chat.get_conversation!(conversation_id, actor: socket.assigns.current_user)
+      Thunderline.Thunderlink.Chat.get_conversation!(conversation_id,
+        actor: socket.assigns.current_user
+      )
 
     cond do
       socket.assigns[:conversation] && socket.assigns[:conversation].id == conversation.id ->
@@ -183,7 +185,9 @@ defmodule ThunderlineWeb.ChatLive do
 
     socket
     |> assign(:conversation, conversation)
-    |> stream(:messages, Thunderline.Chat.message_history!(conversation.id, stream?: true))
+    |> stream(:messages,
+      Thunderline.Thunderlink.Chat.message_history!(conversation.id, stream?: true)
+    )
     |> assign_message_form()
     |> then(&{:noreply, &1})
   end
@@ -258,13 +262,13 @@ defmodule ThunderlineWeb.ChatLive do
   defp assign_message_form(socket) do
     form =
       if socket.assigns.conversation do
-        Thunderline.Chat.form_to_create_message(
+  Thunderline.Thunderlink.Chat.form_to_create_message(
           actor: socket.assigns.current_user,
           private_arguments: %{conversation_id: socket.assigns.conversation.id}
         )
         |> to_form()
       else
-        Thunderline.Chat.form_to_create_message(actor: socket.assigns.current_user)
+  Thunderline.Thunderlink.Chat.form_to_create_message(actor: socket.assigns.current_user)
         |> to_form()
       end
 

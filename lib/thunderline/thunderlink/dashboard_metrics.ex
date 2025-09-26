@@ -19,6 +19,12 @@ defmodule Thunderline.DashboardMetrics do
   @pubsub_topic "dashboard:metrics"
   # 5 seconds
   @metrics_update_interval 5_000
+  @pipeline_steps [:ingest, :embed, :curate, :propose, :train, :serve]
+  @telemetry_table :thunderline_dashboard_telemetry
+  @ml_pipeline_table :thunderline_dashboard_ml_pipeline
+  @pipeline_handler_id "thunderline-dashboard-metrics-pipeline"
+  @trial_handler_id "thunderline-dashboard-metrics-ml"
+  @notes_key {:notes, :ml_pipeline}
 
   ## Public API
 
@@ -56,6 +62,22 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Unsubscribe from metrics updates"
   def unsubscribe do
     PubSub.unsubscribe(Thunderline.PubSub, @pubsub_topic)
+  end
+
+  @doc "Return the latest ML pipeline telemetry snapshot with statuses and metrics"
+  def get_ml_pipeline_snapshot do
+    ensure_tables()
+
+    status_map =
+      Enum.reduce(@pipeline_steps, %{}, fn step, acc ->
+        Map.put(acc, step, pipeline_status(step))
+      end)
+
+    status_map
+    |> Map.put(:order, @pipeline_steps)
+    |> Map.put(:notes, current_pipeline_note() || "HC directive staged — awaiting live pipeline telemetry")
+    |> Map.put(:trial_metrics, current_trial_metrics())
+    |> Map.put(:parzen_metrics, current_parzen_metrics())
   end
 
   ## Domain-specific metrics functions for DashboardLive
@@ -527,6 +549,10 @@ defmodule Thunderline.DashboardMetrics do
   def init(opts) do
     Logger.info("Starting DashboardMetrics system...")
 
+    ensure_tables()
+    attach_pipeline_handlers()
+    attach_trial_handlers()
+
     # Schedule periodic metrics updates
     schedule_metrics_update()
 
@@ -535,6 +561,7 @@ defmodule Thunderline.DashboardMetrics do
       event_metrics: %{},
       agent_metrics: %{},
       thunderlane: %{},
+      ml_pipeline: %{},
       last_update: DateTime.utc_now(),
       opts: opts
     }
@@ -565,6 +592,7 @@ defmodule Thunderline.DashboardMetrics do
       events: state.event_metrics,
       agents: state.agent_metrics,
       thunderlane: state.thunderlane,
+      ml_pipeline: state.ml_pipeline,
       last_update: state.last_update,
       timestamp: DateTime.utc_now()
     }
@@ -848,6 +876,7 @@ defmodule Thunderline.DashboardMetrics do
         event_metrics: collect_event_metrics(),
         agent_metrics: collect_agent_metrics(),
         thunderlane: collect_thunderlane_metrics(),
+        ml_pipeline: collect_ml_pipeline_metrics(),
         last_update: DateTime.utc_now()
     }
   end
@@ -951,6 +980,10 @@ defmodule Thunderline.DashboardMetrics do
     }
   end
 
+  defp collect_ml_pipeline_metrics do
+    get_ml_pipeline_snapshot()
+  end
+
   defp get_system_uptime_percentage do
     # For now, assume 99%+ uptime if system is running
     # TODO: Implement real uptime tracking with downtime history
@@ -1044,11 +1077,20 @@ defmodule Thunderline.DashboardMetrics do
     end
   end
 
-  defp get_telemetry_counter(_event_path) do
-    # TODO: Implement telemetry integration
-    # In real implementation, this would query telemetry metrics
-    # Return 0 instead of random data
-    0
+  defp get_telemetry_counter(event_path) when is_list(event_path) do
+    ensure_tables()
+
+    key = telemetry_counter_key(event_path)
+
+    case :ets.lookup(@telemetry_table, key) do
+      [{^key, value}] -> value
+      _ -> 0
+    end
+  end
+  defp get_telemetry_counter(_), do: 0
+
+  defp telemetry_counter_key(event_path) do
+    {:telemetry, List.to_tuple(event_path)}
   end
 
   defp active_zone_count do
@@ -1056,6 +1098,368 @@ defmodule Thunderline.DashboardMetrics do
       :ets.info(:thundergrid_zones, :size)
     rescue
       _ -> 0
+    end
+  end
+
+  defp ensure_tables do
+    ensure_table(@telemetry_table)
+    ensure_table(@ml_pipeline_table)
+  end
+
+  defp ensure_table(name) do
+    case :ets.info(name) do
+      :undefined ->
+        :ets.new(name, [:named_table, :public, :set, {:read_concurrency, true}, {:write_concurrency, true}])
+      _ ->
+        :ok
+    end
+  rescue
+    ArgumentError -> :ok
+  end
+
+  defp attach_pipeline_handlers do
+    events = [
+      [:thunderline, :pipeline, :domain_events, :start],
+      [:thunderline, :pipeline, :domain_events, :stop],
+      [:thunderline, :pipeline, :domain_events, :error],
+      [:thunderline, :pipeline, :critical_events, :start],
+      [:thunderline, :pipeline, :critical_events, :stop],
+      [:thunderline, :pipeline, :critical_events, :error],
+      [:thunderline, :pipeline, :dlq],
+      [:thunderline, :event, :enqueue],
+      [:thunderline, :event, :publish],
+      [:thunderline, :event, :dedup],
+      [:thunderline, :event, :dropped]
+    ]
+
+    maybe_attach_many(@pipeline_handler_id, events, &__MODULE__.handle_pipeline_telemetry/4)
+  end
+
+  defp attach_trial_handlers do
+    events = [
+      [:thunderline, :domain_processor, :ml, :trial, :allowed],
+      [:thunderline, :domain_processor, :ml, :trial, :enqueued],
+      [:thunderline, :domain_processor, :ml, :trial, :denied],
+      [:thunderline, :domain_processor, :ml, :trial, :completed],
+      [:thunderline, :domain_processor, :ml, :run, :metrics],
+      [:thunderline, :domain_processor, :ml, :run, :completed],
+      [:thunderline, :domain_processor, :ml, :artifact, :created],
+      [:thunderline, :domain_processor, :error]
+    ]
+
+    maybe_attach_many(@trial_handler_id, events, &__MODULE__.handle_trial_telemetry/4)
+  end
+
+  defp maybe_attach_many(id, events, handler) do
+    :telemetry.attach_many(id, events, handler, %{})
+  rescue
+    ArgumentError -> :ok
+  end
+
+  def handle_pipeline_telemetry([:thunderline, :pipeline, :dlq] = event, measurements, metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+    update_pipeline_from_stage(:domain_events, :dlq, metadata)
+  end
+
+  def handle_pipeline_telemetry([:thunderline, :pipeline, pipeline, stage] = event, measurements, metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+    update_pipeline_from_stage(pipeline, stage, metadata)
+  end
+
+  def handle_pipeline_telemetry(event, measurements, _metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+  end
+
+  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :trial, status], measurements, metadata, _config)
+      when status in [:allowed, :enqueued, :denied, :completed] do
+    increment_telemetry_counter([:thunderline, :domain_processor, :ml, :trial, status], measurement_count(measurements))
+    update_trial_metric(status, metadata)
+
+    case status do
+      :allowed -> maybe_set_status(:propose, :online, metadata)
+      :enqueued -> maybe_set_status(:train, :online, metadata)
+      :completed -> maybe_set_status(:train, :online, metadata)
+      :denied ->
+        maybe_set_status(:propose, :degraded, metadata)
+        append_pipeline_note("trial denied #{format_trial_identifier(metadata)}")
+    end
+  end
+
+  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :run, :metrics] = event, measurements, metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+    update_parzen_metrics(measurements, metadata)
+    maybe_set_status(:curate, :online, metadata)
+  end
+
+  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :run, :completed] = event, measurements, metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+    update_trial_metric(:completed, metadata)
+    maybe_set_status(:train, :online, metadata)
+  end
+
+  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :artifact, :created] = event, measurements, metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+    update_parzen_metrics(measurements, metadata)
+    maybe_set_status(:serve, :online, metadata)
+  end
+
+  def handle_trial_telemetry([:thunderline, :domain_processor, :error] = event, measurements, metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+    maybe_set_status(:train, :degraded, metadata)
+    append_pipeline_note("domain processor error #{inspect(meta_get(metadata, :error))}")
+  end
+
+  def handle_trial_telemetry(event, measurements, _metadata, _config) do
+    increment_telemetry_counter(event, measurement_count(measurements))
+  end
+
+  defp increment_telemetry_counter(event, value) do
+    ensure_tables()
+
+    count =
+      cond do
+        is_integer(value) -> value
+        is_float(value) -> trunc(value)
+        true -> 1
+      end
+
+    key = telemetry_counter_key(event)
+    :ets.update_counter(@telemetry_table, key, {2, max(count, 0)}, {key, 0})
+    :ets.insert(@telemetry_table, {{:last_seen, key}, DateTime.utc_now()})
+  end
+
+  defp measurement_count(measurements) when is_map(measurements) do
+    cond do
+      is_number(measurements[:count]) -> measurements[:count]
+      is_number(measurements["count"]) -> measurements["count"]
+      true -> 1
+    end
+  end
+  defp measurement_count(_), do: 1
+
+  defp update_pipeline_from_stage(pipeline, :start, metadata) do
+    maybe_set_status(pipeline_to_step(pipeline), :processing, metadata)
+  end
+
+  defp update_pipeline_from_stage(pipeline, :stop, metadata) do
+    maybe_set_status(pipeline_to_step(pipeline), :online, metadata)
+  end
+
+  defp update_pipeline_from_stage(pipeline, :error, metadata) do
+    step = pipeline_to_step(pipeline)
+    maybe_set_status(step, :degraded, metadata)
+    append_pipeline_note("#{format_pipeline_step(step)} error #{format_reason(metadata)}")
+  end
+
+  defp update_pipeline_from_stage(_pipeline, :dlq, metadata) do
+    maybe_set_status(:ingest, :degraded, metadata)
+    append_pipeline_note("DLQ activity detected #{format_reason(metadata)}")
+  end
+
+  defp update_pipeline_from_stage(_pipeline, _stage, _metadata), do: :ok
+
+  defp pipeline_to_step(:domain_events), do: :ingest
+  defp pipeline_to_step(:critical_events), do: :ingest
+  defp pipeline_to_step(_), do: nil
+
+  defp maybe_set_status(nil, _status, _metadata), do: :ok
+  defp maybe_set_status(step, status, metadata) do
+    set_pipeline_status(step, status, metadata)
+  end
+
+  defp set_pipeline_status(step, status, metadata) do
+    ensure_tables()
+
+    entry = %{
+      status: status,
+      updated_at: DateTime.utc_now(),
+      metadata: sanitize_metadata(metadata)
+    }
+
+    :ets.insert(@ml_pipeline_table, {{:status, step}, entry})
+  end
+
+  defp pipeline_status(step) do
+    ensure_tables()
+
+    case :ets.lookup(@ml_pipeline_table, {{:status, step}}) do
+      [{{:status, ^step}, %{status: status}}] -> status
+      _ -> nil
+    end
+  end
+
+  defp append_pipeline_note(message) when is_binary(message) do
+    ensure_tables()
+
+    entry = %{message: message, at: DateTime.utc_now()}
+
+    notes =
+      case :ets.lookup(@ml_pipeline_table, @notes_key) do
+        [{@notes_key, existing}] when is_list(existing) -> Enum.take([entry | existing], 5)
+        _ -> [entry]
+      end
+
+    :ets.insert(@ml_pipeline_table, {@notes_key, notes})
+  end
+
+  defp current_pipeline_note do
+    ensure_tables()
+
+    case :ets.lookup(@ml_pipeline_table, @notes_key) do
+      [{@notes_key, [first | _]}] -> format_note(first)
+      _ -> nil
+    end
+  end
+
+  defp format_note(%{message: message, at: %DateTime{} = at}) when is_binary(message) do
+    "#{DateTime.to_iso8601(at)} — #{message}"
+  rescue
+    _ -> message
+  end
+  defp format_note(%{message: message}) when is_binary(message), do: message
+  defp format_note(_), do: nil
+
+  defp current_trial_metrics do
+    ensure_tables()
+
+    last_event =
+      case :ets.lookup(@ml_pipeline_table, {:trial, :last_event}) do
+        [{_, value}] -> value
+        _ -> nil
+      end
+
+    %{
+      allowed: get_counter({:trial, :allowed}),
+      enqueued: get_counter({:trial, :enqueued}),
+      denied: get_counter({:trial, :denied}),
+      completed: get_counter({:trial, :completed}),
+      last_event: last_event
+    }
+  end
+
+  defp current_parzen_metrics do
+    ensure_tables()
+
+    last_metrics =
+      case :ets.lookup(@ml_pipeline_table, {:parzen, :last_metrics}) do
+        [{_, value}] -> value
+        _ -> %{}
+      end
+
+    %{
+      observations: get_counter({:parzen, :observations}),
+      best_metric: Map.get(last_metrics, :best_metric),
+      last_run_id: Map.get(last_metrics, :run_id),
+      metrics: Map.get(last_metrics, :metrics),
+      updated_at: Map.get(last_metrics, :at)
+    }
+  end
+
+  defp get_counter(key) do
+    ensure_tables()
+
+    counter_key = {:counter, key}
+
+    case :ets.lookup(@ml_pipeline_table, counter_key) do
+      [{^counter_key, value}] -> value
+      _ -> 0
+    end
+  end
+
+  defp increment_counter(key, amount \\ 1) do
+    ensure_tables()
+    counter_key = {:counter, key}
+    :ets.update_counter(@ml_pipeline_table, counter_key, {2, amount}, {counter_key, 0})
+  end
+
+  defp update_trial_metric(type, metadata) do
+    increment_counter({:trial, type})
+
+    entry = %{
+      type: type,
+      run_id: meta_get(metadata, :run_id),
+      trial_id: meta_get(metadata, :trial_id),
+      at: DateTime.utc_now()
+    }
+
+    :ets.insert(@ml_pipeline_table, {{:trial, :last_event}, entry})
+  end
+
+  defp update_parzen_metrics(_measurements, metadata) do
+    increment_counter({:parzen, :observations})
+
+    metrics = meta_get(metadata, :metrics)
+    best_metric = best_metric_from(metrics)
+
+    entry = %{
+      run_id: meta_get(metadata, :run_id),
+      metrics: metrics,
+      best_metric: best_metric,
+      at: DateTime.utc_now()
+    }
+
+    :ets.insert(@ml_pipeline_table, {{:parzen, :last_metrics}, entry})
+  end
+
+  defp best_metric_from(%{} = metrics) do
+    metrics
+    |> Map.values()
+    |> Enum.filter(&is_number/1)
+    |> case do
+      [] -> nil
+      values -> Enum.max(values)
+    end
+  end
+  defp best_metric_from(_), do: nil
+
+  defp sanitize_metadata(metadata) when is_map(metadata) do
+    Enum.reduce(metadata, %{}, fn {k, v}, acc ->
+      key =
+        cond do
+          is_atom(k) -> k
+          is_binary(k) -> safe_existing_atom(k)
+          true -> k
+        end
+
+      Map.put(acc, key, v)
+    end)
+  end
+  defp sanitize_metadata(_), do: %{}
+
+  defp safe_existing_atom(value) when is_binary(value) do
+    try do
+      String.to_existing_atom(value)
+    rescue
+      ArgumentError -> value
+    end
+  end
+  defp safe_existing_atom(value), do: value
+
+  defp meta_get(metadata, key) when is_map(metadata) and is_atom(key) do
+    cond do
+      Map.has_key?(metadata, key) -> Map.get(metadata, key)
+      Map.has_key?(metadata, Atom.to_string(key)) -> Map.get(metadata, Atom.to_string(key))
+      true -> nil
+    end
+  end
+  defp meta_get(_metadata, _key), do: nil
+
+  defp format_reason(metadata) do
+    meta_get(metadata, :reason) || inspect(metadata)
+  end
+
+  defp format_pipeline_step(nil), do: "pipeline"
+  defp format_pipeline_step(step) when is_atom(step) do
+    step |> Atom.to_string() |> String.upcase()
+  end
+
+  defp format_trial_identifier(metadata) do
+    trial = meta_get(metadata, :trial_id) || "unknown"
+    run = meta_get(metadata, :run_id)
+
+    case run do
+      nil -> "(trial #{inspect(trial)})"
+      _ -> "(trial #{inspect(trial)}, run #{inspect(run)})"
     end
   end
 
@@ -1142,6 +1546,7 @@ defmodule Thunderline.DashboardMetrics do
       events: state.event_metrics,
       agents: state.agent_metrics,
       thunderlane: state.thunderlane,
+      ml_pipeline: state.ml_pipeline,
       timestamp: state.last_update
     }
     PubSub.broadcast(Thunderline.PubSub, @pubsub_topic, {:metrics_update, metrics_data})

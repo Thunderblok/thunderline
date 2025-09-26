@@ -73,6 +73,8 @@ defmodule ThunderlineWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  slot :inner_block, required: true
+
   def app(assigns) do
     ~H"""
     <header class="navbar px-4 sm:px-6 lg:px-8">
@@ -104,7 +106,7 @@ defmodule ThunderlineWeb.Layouts do
 
     <main class="px-4 py-20 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-2xl space-y-4">
-        {@inner_content}
+        <%= render_slot(@inner_block) %>
       </div>
     </main>
 
@@ -153,7 +155,7 @@ defmodule ThunderlineWeb.Layouts do
           <!-- DASHBOARD_LAYOUT_SENTINEL -->
           <!-- Canary badge (remove after verification) -->
           <div class="fixed top-2 left-2 text-[10px] px-2 py-1 rounded bg-emerald-600/80">bundle:compiled</div>
-          {@inner_content}
+          <%= render_slot(@inner_block) %>
         </div>
       </body>
     </html>

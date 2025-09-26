@@ -276,6 +276,55 @@
           </div>
           <div class="text-xs text-gray-300">Real-time</div>
         </div>
+
+          <%!-- ML Pipeline Panel --%>
+          <div class="glass-panel p-4 col-span-4">
+            <div class="flex items-center space-x-2 mb-3">
+              <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+              <h3 class="text-sm font-bold text-white">Event→Model Flywheel</h3>
+              <span class="text-[10px] uppercase tracking-widest text-cyan-200/70">High Command</span>
+            </div>
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+              <%= for step <- @ml_pipeline_status[:order] || [] do %>
+                <div class="flex flex-col gap-1">
+                  <span class="text-[11px] font-semibold tracking-wide text-gray-200 uppercase">
+                    {step |> Atom.to_string() |> String.replace("_", " ")}
+                  </span>
+                  <span class={["px-2 py-1 rounded border text-[11px] font-mono", pipeline_status_class(@ml_pipeline_status[step])]}>
+                    {pipeline_status_label(@ml_pipeline_status[step])}
+                  </span>
+                </div>
+              <% end %>
+            </div>
+            <% trial_metrics = Map.get(@ml_pipeline_status, :trial_metrics, %{}) %>
+            <% parzen_metrics = Map.get(@ml_pipeline_status, :parzen_metrics, %{}) %>
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-gray-200">
+              <div class="rounded border border-cyan-500/30 bg-cyan-500/10 p-3">
+                <p class="text-[10px] uppercase tracking-wide text-cyan-200/80 font-semibold">Trial Activity</p>
+                <div class="mt-2 grid grid-cols-3 gap-2">
+                  <span>Allowed <span class="font-mono text-cyan-200">{Map.get(trial_metrics, :allowed, 0)}</span></span>
+                  <span>Enqueued <span class="font-mono text-cyan-200">{Map.get(trial_metrics, :enqueued, 0)}</span></span>
+                  <span>Denied <span class="font-mono text-amber-200">{Map.get(trial_metrics, :denied, 0)}</span></span>
+                </div>
+                <div class="mt-2 text-[10px] text-cyan-100/70">
+                  Last event: {format_trial_last_event(Map.get(trial_metrics, :last_event))}
+                </div>
+              </div>
+              <div class="rounded border border-sky-500/30 bg-sky-500/10 p-3">
+                <p class="text-[10px] uppercase tracking-wide text-sky-200/80 font-semibold">Parzen Observer</p>
+                <div class="mt-2 flex flex-wrap gap-3">
+                  <span>Observations <span class="font-mono text-sky-200">{Map.get(parzen_metrics, :observations, 0)}</span></span>
+                  <span>Best <span class="font-mono text-sky-200">{format_metric(Map.get(parzen_metrics, :best_metric))}</span></span>
+                </div>
+                <div class="mt-2 text-[10px] text-sky-100/70">
+                  Last update: {format_parzen_last_observation(parzen_metrics)}
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 text-[10px] text-gray-400 italic">
+              {@ml_pipeline_status[:notes] || "Directive staged"}
+            </div>
+          </div>
       </div>
 
         <% "system" -> %>
