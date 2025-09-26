@@ -2,6 +2,7 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
   use ThunderlineWeb, :live_component
 
   alias Thunderline.Thundercrown.Resources.AgentRunner
+  alias ThunderlineWeb.Auth.Actor
 
   @impl true
   def update(assigns, socket) do
@@ -23,7 +24,13 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
   end
 
   defp actor(socket) do
-    socket.assigns[:current_user] || Ash.get_actor()
+    cond do
+      is_map(socket.assigns[:actor]) -> socket.assigns[:actor]
+      match?(%{actor: actor_map} when is_map(actor_map), socket.assigns[:actor_ctx]) ->
+        socket.assigns.actor_ctx.actor
+      is_map(socket.assigns[:current_user]) -> Actor.build_actor(socket.assigns[:current_user], %{})
+      true -> nil
+    end
   end
 
   defp emit(name, payload) do

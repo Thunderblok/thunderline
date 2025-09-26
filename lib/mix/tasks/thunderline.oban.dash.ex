@@ -29,11 +29,11 @@ defmodule Mix.Tasks.Thunderline.Oban.Dash do
       IO.puts(format_event(e))
     end)
 
-    IO.puts("\n== Aggregates ==")
-    IO.puts("Total events: #{stats.total}")
-    IO.puts("By type: #{inspect(stats.by_type)}")
-    IO.puts("Queues:  #{inspect(stats.queues)}")
-    IO.puts("Workers: #{inspect(stats.workers)}")
+  IO.puts("\n== Aggregates ==")
+  IO.puts("Total events: #{stats.total}")
+  IO.puts("By type: #{inspect(stats.by_type)}")
+  IO.puts("Queues:  #{inspect(Map.get(stats, :queues, %{}))}")
+  IO.puts("Workers: #{inspect(Map.get(stats, :workers, %{}))}")
   end
 
   defp ensure_attached do

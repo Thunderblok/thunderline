@@ -25,7 +25,8 @@ defmodule ThunderlineWeb.Auth.Actor do
       Passing `:generate` produces a deterministic default actor similar to prior behaviour.
   """
   @spec from_session(map(), keyword()) :: t() | nil
-  def from_session(session, opts \\ []) when is_map(session) do
+  def from_session(session, opts \\ [])
+  def from_session(session, opts) when is_map(session) do
     allow_demo? = Keyword.get(opts, :allow_demo?, false)
     default = Keyword.get(opts, :default, fn _ -> nil end)
 
@@ -58,7 +59,7 @@ defmodule ThunderlineWeb.Auth.Actor do
 
   def build_actor(%{} = map, session) do
     %{
-  id: Map.get(map, :id) || Map.get(map, "id") || UUID.generate(),
+      id: Map.get(map, :id) || Map.get(map, "id") || UUID.generate(),
       email: Map.get(map, :email) || Map.get(map, "email"),
       role: Map.get(map, :role) || Map.get(map, "role") || session_role(session) || :owner,
       tenant_id: Map.get(map, :tenant_id) || Map.get(map, "tenant_id") || session_tenant(session) || default_tenant()

@@ -13,7 +13,6 @@ defmodule Thunderline.Thunderlink.Presence.Enforcer do
   On denial returns {:error, Ash.Error.Forbidden.t()} so callers can unify error handling.
   Emits unified telemetry `[:thunderline,:link,:presence,:blocked_enforcer]` for any denial.
   """
-  alias Thunderline.Thundergate.ActorContext
   alias Thunderline.Thunderlink.Presence.Policy
 
   # 3-arity form returns {:ok, meta} | {:error, Ash.Error.Forbidden.t()}

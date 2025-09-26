@@ -162,7 +162,6 @@ defmodule Mix.Tasks.Thunderline.Ml.Smoke do
   end
 
   # Get nested value from a map via list of keys (string keys)
-  defp take(nil, _ks), do: nil
   defp take(map, keys) when is_map(map) and is_list(keys) do
     Enum.reduce_while(keys, map, fn k, acc ->
       cond do
@@ -171,6 +170,8 @@ defmodule Mix.Tasks.Thunderline.Ml.Smoke do
       end
     end)
   end
+
+  defp take(_map, _keys), do: nil
 
   defp to_int(v) when is_integer(v), do: v
   defp to_int(v) when is_binary(v) do

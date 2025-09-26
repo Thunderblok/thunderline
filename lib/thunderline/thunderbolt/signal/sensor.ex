@@ -1,10 +1,8 @@
 defmodule Thunderline.Thunderbolt.Signal.Sensor do
   @moduledoc "Sensor pipeline (migrated from Thunderline.Current.Sensor). Performs token stream dynamics, PLL/Hilbert phase tracking, Daisy orchestration, and event logging."
   use GenServer
+  require Logger
   alias Thunderline.EventBus
-  alias Thunderline.Somatic.Embed, as: E
-  alias Thunderline.Somatic.Engine, as: Somatic
-  alias Thunderline.Thundercrown.Daisy, as: Daisy
   alias Thunderline.Thunderbolt.Signal.{PLL, Lease}
   alias Thunderline.Thunderbolt.Signal.Hilbert, as: H
   alias Thunderline.Thunderbolt.Signal.PLV, as: PLV
@@ -32,11 +30,11 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   end
   def handle_info({:token, tok}, s) do
     win = ([to_string(tok) | s.win] |> Enum.take(16)) |> Enum.reverse()
-    v   = velocity(win, s.prev)
+  v   = velocity(win, s.prev)
     h_t = entropy(win)
     s_t = h_t - s.h_prev
     rho = recurrence(win, s.hist, 16)
-    a   = Somatic.tag(tok)
+  a   = somatic_tag(tok)
     i   = identity_density(win)
     r   = dot(weights(), Map.values(a)) + 0.6 * i
     pulse = boundary?(tok, v, s_t) or rho > 0.8
@@ -44,7 +42,7 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
     g = sigmoid(2.0*r + 1.0*rho - 1.5*abs(s_t) - 1.0*v - 0.5)
     {hilb, phi_h} = H.step(s.hilb, g)
     if PLL.prewindow?(pll) and :ets.lookup(:daisy_lease, :lease) == [] do
-      {inj, del} = Daisy.preview_all_swarms()
+      {inj, del} = daisy_preview_all_swarms()
       :ets.insert(:daisy_lease, {:lease, Lease.make(inj, del, 120)})
   with {:ok, ev} <- Thunderline.Event.new(name: "system.status.prewindow", source: :bolt, payload: %{stage: "prewindow", phi_pll: pll.phi, phi_h: phi_h, gate_score: g}, meta: %{pipeline: :realtime}, type: :system_status),
        {:ok, _} <- EventBus.publish_event(ev) do :ok else
@@ -58,8 +56,8 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
           [{:lease, lease}] -> unless Lease.expired?(lease) do
             :ets.delete(:daisy_lease, :lease)
               # Canonical Cerebros inferencer (domain-sorted under Thunderbolt.Cerebros)
-              Thunderline.Thunderbolt.Cerebros.Inferencer.apply_injection(lease.inj && lease.inj[:shard] || lease.inj)
-            Daisy.commit_all_swarms(lease.inj, lease.del)
+              cerebros_apply_injection(lease.inj && lease.inj[:shard] || lease.inj)
+            daisy_commit_all_swarms(lease.inj, lease.del)
             commits_pll1 = [pll.phi | s.commits_pll] |> Enum.take(@cap)
             commits_hil1 = [phi_h   | s.commits_hil] |> Enum.take(@cap)
             plv_pll = PLV.plv(commits_pll1)
@@ -96,15 +94,25 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   end
   # Helper functions copied from legacy module
   defp velocity(_win, []), do: 0.0
-  defp velocity(win, prev), do: 1.0 - E.cosine(E.vec(Enum.join(win, "")), E.vec(Enum.join(prev, "")))
+
+  defp velocity(win, prev) do
+    current = embed_vec(Enum.join(win, ""))
+    previous = embed_vec(Enum.join(prev, ""))
+
+    1.0 - embed_cosine(current, previous)
+  end
   defp entropy(win) do
     chars = win |> Enum.join("") |> :binary.bin_to_list()
     total = max(length(chars), 1)
     chars |> Enum.frequencies() |> Map.values() |> Enum.reduce(0.0, fn c, acc -> p = c/total; acc - p * (:math.log(p + 1.0e-12)/:math.log(2)) end)
   end
   defp recurrence(win, hist, gap) do
-    v = E.vec(Enum.join(win, ""))
-    hist |> Enum.drop(gap) |> Enum.map(fn w -> E.cosine(v, E.vec(Enum.join(w, ""))) end) |> Enum.max(fn -> 0.0 end)
+    vector = embed_vec(Enum.join(win, ""))
+
+    hist
+    |> Enum.drop(gap)
+    |> Enum.map(fn window -> embed_cosine(vector, embed_vec(Enum.join(window, ""))) end)
+    |> Enum.max(fn -> 0.0 end)
   end
   defp boundary?(tok, v, s) do
     t = to_string(tok)
@@ -123,4 +131,101 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   defp short(nil), do: nil
   defp short(map) when is_map(map), do: Map.take(map, [:score, :ts])
   defp short(x), do: x
+
+  defp somatic_tag(token) do
+    if Code.ensure_loaded?(Thunderline.Somatic.Engine) and
+         function_exported?(Thunderline.Somatic.Engine, :tag, 1) do
+      Thunderline.Somatic.Engine.tag(token)
+    else
+      %{}
+    end
+  end
+
+  defp daisy_preview_all_swarms do
+    if Code.ensure_loaded?(Thunderline.Thundercrown.Daisy) and
+         function_exported?(Thunderline.Thundercrown.Daisy, :preview_all_swarms, 0) do
+      Thunderline.Thundercrown.Daisy.preview_all_swarms()
+    else
+      {nil, nil}
+    end
+  end
+
+  defp daisy_commit_all_swarms(injection, deletion) do
+    if Code.ensure_loaded?(Thunderline.Thundercrown.Daisy) and
+         function_exported?(Thunderline.Thundercrown.Daisy, :commit_all_swarms, 2) do
+      Thunderline.Thundercrown.Daisy.commit_all_swarms(injection, deletion)
+    else
+      :ok
+    end
+  end
+
+  defp cerebros_apply_injection(payload) do
+    if Code.ensure_loaded?(Thunderline.Thunderbolt.Cerebros.Inferencer) and
+         function_exported?(Thunderline.Thunderbolt.Cerebros.Inferencer, :apply_injection, 1) do
+      Thunderline.Thunderbolt.Cerebros.Inferencer.apply_injection(payload)
+    else
+      :ok
+    end
+  end
+
+  defp embed_vec(string) when is_binary(string) do
+    cond do
+      Code.ensure_loaded?(Thunderline.Somatic.Embed) and
+          function_exported?(Thunderline.Somatic.Embed, :vec, 1) ->
+        Thunderline.Somatic.Embed.vec(string)
+
+      true ->
+        fallback_vec(string)
+    end
+  end
+
+  defp embed_vec(_), do: fallback_vec("")
+
+  defp embed_cosine(lhs, rhs) do
+    cond do
+      Code.ensure_loaded?(Thunderline.Somatic.Embed) and
+          function_exported?(Thunderline.Somatic.Embed, :cosine, 2) ->
+        Thunderline.Somatic.Embed.cosine(lhs, rhs)
+
+      true ->
+        fallback_cosine(lhs, rhs)
+    end
+  end
+
+  defp fallback_vec(string) do
+    string
+    |> :binary.bin_to_list()
+    |> Enum.map(&(&1 / 255))
+  end
+
+  defp fallback_cosine(lhs, rhs) do
+    {aligned_lhs, aligned_rhs} = align_vectors(lhs, rhs)
+
+    dot = Enum.zip(aligned_lhs, aligned_rhs) |> Enum.reduce(0.0, fn {l, r}, acc -> acc + l * r end)
+    lhs_mag = magnitude(aligned_lhs)
+    rhs_mag = magnitude(aligned_rhs)
+
+    denom = lhs_mag * rhs_mag
+
+    if denom == 0.0 do
+      0.0
+    else
+      dot / denom
+    end
+  end
+
+  defp align_vectors(lhs, rhs) do
+    size = max(length(lhs), length(rhs))
+
+    {pad(lhs, size), pad(rhs, size)}
+  end
+
+  defp pad(list, size) when length(list) >= size, do: Enum.take(list, size)
+  defp pad(list, size), do: list ++ List.duplicate(0.0, size - length(list))
+
+  defp magnitude(list) do
+    list
+    |> Enum.reduce(0.0, fn value, acc -> acc + value * value end)
+    |> :math.sqrt()
+  end
 end

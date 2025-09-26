@@ -824,5 +824,42 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     :calculate_optimization_score,
     :broadcast_health_update
   ]
-  def __silence_unused__, do: :ok
+
+  def __silence_unused__ do
+    _ = [
+      &validate_initialization_requirements/1,
+      &complete_chunk_initialization/2,
+      &prepare_activation/1,
+      &start_activation_process/2,
+      &finalize_activation/2,
+      &prepare_deactivation/1,
+      &start_deactivation_process/2,
+      &finalize_deactivation/2,
+      &start_optimization_process/2,
+      &apply_optimization_changes/2,
+      &prepare_maintenance_mode/1,
+      &start_maintenance_procedures/2,
+      &complete_maintenance_procedures/2,
+      &prepare_scaling_operation/1,
+      &start_scaling_process/2,
+      &finalize_scaling_operation/2,
+      &validate_recovery_conditions/1,
+      &complete_recovery_process/2,
+      &prepare_force_reset/1,
+      &complete_force_reset/2,
+      &execute_emergency_stop/2,
+      &complete_emergency_recovery/2,
+      &prepare_shutdown/1,
+      &start_shutdown_process/2,
+      &finalize_shutdown/2,
+      &calculate_chunk_boundaries/1,
+      &initialize_chunk_supervisor/2,
+      &subscribe_to_thundercore_pulse/2,
+      &create_orchestration_event/2,
+      &calculate_optimization_score/1,
+      &broadcast_health_update/2
+    ]
+
+    :ok
+  end
 end

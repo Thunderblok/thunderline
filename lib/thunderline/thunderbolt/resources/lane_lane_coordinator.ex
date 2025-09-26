@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource, AshEvents.Events]
+  require Logger
 
   postgres do
     table "thunderlane_coordinators"
@@ -278,7 +279,7 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
   # ============================================================================
 
   defp start_coordinator_process(_changeset, coordinator) do
-    case Thunderline.Thunderbolt.LaneCoordinator.Supervisor.start_coordinator(coordinator) do
+    case maybe_start_lane_coordinator(coordinator) do
       {:ok, pid} ->
         coordinator
         |> Ash.Changeset.for_update(:update, %{
@@ -326,23 +327,13 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
 
   defp deploy_ruleset_to_lane(_changeset, coordinator) do
     # Signal the coordinator GenServer to deploy the new ruleset
-    case coordinator.coordinator_pid do
-      nil ->
+    case parse_pid(coordinator.coordinator_pid) do
+      {:ok, pid} ->
+        maybe_deploy_ruleset(pid, coordinator.active_ruleset_id)
         {:ok, coordinator}
 
-      pid_string ->
-        try do
-          pid = pid_string |> String.to_atom() |> :erlang.list_to_pid()
-
-          Thunderline.Thunderbolt.LaneCoordinator.GenServer.deploy_ruleset(
-            pid,
-            coordinator.active_ruleset_id
-          )
-
-          {:ok, coordinator}
-        rescue
-          _ -> {:ok, coordinator}
-        end
+      :error ->
+        {:ok, coordinator}
     end
   end
 
@@ -362,17 +353,68 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
   end
 
   defp signal_coordinator(coordinator, signal) do
-    case coordinator.coordinator_pid do
-      nil ->
+    case parse_pid(coordinator.coordinator_pid) do
+      {:ok, pid} ->
+        safe_call(pid, signal)
+      :error ->
         :ok
+    end
+  end
 
-      pid_string ->
-        try do
-          pid = pid_string |> String.to_atom() |> :erlang.list_to_pid()
-          GenServer.call(pid, signal)
-        rescue
-          _ -> :ok
-        end
+  defp maybe_start_lane_coordinator(coordinator) do
+    if Code.ensure_loaded?(Thunderline.Thunderbolt.LaneCoordinator.Supervisor) and
+         function_exported?(Thunderline.Thunderbolt.LaneCoordinator.Supervisor, :start_coordinator, 1) do
+      Thunderline.Thunderbolt.LaneCoordinator.Supervisor.start_coordinator(coordinator)
+    else
+      {:error, :lane_coordinator_supervisor_unavailable}
+    end
+  end
+
+  defp maybe_deploy_ruleset(pid, ruleset_id) do
+    if Code.ensure_loaded?(Thunderline.Thunderbolt.LaneCoordinator.GenServer) and
+         function_exported?(Thunderline.Thunderbolt.LaneCoordinator.GenServer, :deploy_ruleset, 2) do
+      Thunderline.Thunderbolt.LaneCoordinator.GenServer.deploy_ruleset(pid, ruleset_id)
+    else
+      Logger.debug("[LaneCoordinator] coordinator GenServer unavailable, skipping deploy")
+      :ok
+    end
+  end
+
+  defp parse_pid(nil), do: :error
+
+  defp parse_pid(pid_string) when is_binary(pid_string) do
+    candidate =
+      pid_string
+      |> String.trim()
+      |> String.trim_leading("#PID")
+
+    if candidate == "" do
+      :error
+    else
+      candidate
+      |> String.to_charlist()
+      |> safe_list_to_pid()
+    end
+  rescue
+    ArgumentError -> :error
+  end
+
+  defp parse_pid(_), do: :error
+
+  defp safe_list_to_pid(charlist) do
+    try do
+      {:ok, :erlang.list_to_pid(charlist)}
+    rescue
+      _ -> :error
+    end
+  end
+
+  defp safe_call(pid, message) do
+    try do
+      GenServer.call(pid, message)
+    catch
+      :exit, _ -> :ok
+      _type, _reason -> :ok
     end
   end
 end

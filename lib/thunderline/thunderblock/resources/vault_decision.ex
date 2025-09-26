@@ -10,8 +10,6 @@ defmodule Thunderline.Thunderblock.Resources.VaultDecision do
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer
 
-  import Ash.Resource.Change.Builtins
-
   postgres do
     table "decisions"
     repo Thunderline.Repo

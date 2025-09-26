@@ -41,6 +41,7 @@ Thunderline incorporates the **THUNDERSTRUCK** algorithm, a sophisticated implem
 ## Technical Excellence
 
 ### Framework Foundation
+
 - **Phoenix LiveView**: Real-time user interfaces with server-side rendering
 - **Ash Framework 3.x**: Declarative resource modeling with built-in APIs
 - **ECSx**: High-performance entity-component-system for agent coordination
@@ -48,6 +49,7 @@ Thunderline incorporates the **THUNDERSTRUCK** algorithm, a sophisticated implem
 - **PostgreSQL + Mnesia**: Dual-layer persistence for durability and performance
 
 ### Advanced Capabilities
+
 - **3D Cellular Automata**: Real-time spatial computing with 60 FPS visualization
 - **Federation Protocols**: Multi-node coordination and distributed consensus
 - **Behavioral Intelligence**: Agent-based processing with learning capabilities
@@ -56,6 +58,7 @@ Thunderline incorporates the **THUNDERSTRUCK** algorithm, a sophisticated implem
 ## Getting Started
 
 ### Prerequisites
+
 - Elixir 1.15+ with OTP 26+
 - PostgreSQL 14+ for persistent storage
 - Node.js 18+ for asset compilation
@@ -82,6 +85,7 @@ The application will be available at [localhost:4000](http://localhost:4000).
 #### Dependency Fetch Behavior
 
 `mix setup` no longer always runs `mix deps.get`. It now:
+
 1. Skips entirely if `SKIP_DEPS_GET=true`
 2. Runs `deps.get` only when `mix.lock` or a representative dep directory (e.g. `deps/phoenix`) is missing
 3. Logs why it ran or skipped (`[setup] Running deps.get (dependencies missing)` / `[setup] deps.get skipped (deps already present)`).
@@ -97,6 +101,7 @@ Thunderline includes a minimal `docker-compose.yml` providing a Postgres 16 serv
 Run `bash scripts/dev_health.sh` to quickly diagnose common WSL / Linux dev issues (Docker daemon, Postgres availability, inotify limits, port conflicts, Elixir/Erlang versions, ElixirLS cache size). This helps when encountering ElixirLS `EPIPE` crashes or intermittent `connection refused` errors.
 
 Start only Postgres (run Elixir locally):
+
 ```bash
 docker compose up -d postgres
 export DATABASE_URL=ecto://postgres:postgres@localhost:5432/thunderblock
@@ -105,6 +110,7 @@ mix phx.server
 ```
 
 Diagnostics:
+
 ```bash
 docker exec -it thunderline_postgres pg_isready -U postgres
 mix thunderline.doctor.db
@@ -112,12 +118,14 @@ mix thunderline.oban.dash   # live in-terminal Oban telemetry & job stats snapsh
 ```
 
 Full stack (when a Dockerfile is added):
+
 ```bash
 docker compose up -d
 docker compose logs -f thunderline
 ```
 
 Hard reset (DESTROYS data):
+
 ```bash
 docker compose down -v
 docker compose up -d postgres
@@ -125,6 +133,7 @@ mix thunderline.dev.init
 ```
 
 Seed a baseline community & channel (needs existing user UUID):
+
 ```bash
 OWNER_USER_ID=<uuid> COMMUNITY_SLUG=general CHANNEL_SLUG=lobby mix thunderline.dev.init
 ```
@@ -146,6 +155,7 @@ These environment variables gate optional subsystems or alter setup heuristics:
 | `SKIP_ASH_SETUP` | `true/false` | Skip Ash migrations in test alias for DB‑less unit tests | false |
 
 Set in your shell or `.envrc`:
+
 ```bash
 export ENABLE_NDJSON=1
 export ENABLE_UPS=1
@@ -189,7 +199,6 @@ Previously experimental modules under a `BOnus/` path have been promoted into th
 - In-memory noise buffer: `Thunderline.Thunderflow.Observability.RingBuffer` (live surfaced via noise console component) replaces legacy `Thunderline.Log.RingBuffer` path.
 - Oban telemetry capture: `Thunderline.Thunderflow.Telemetry.Oban` stores recent job lifecycle events in ETS and powers `mix thunderline.oban.dash`.
 - Deprecated module `Thunderline.Automata.Blackboard` fully replaced by canonical `Thunderline.Thunderbolt.Automata.Blackboard` (wrapper removed).
-
 
 ### Production Deployment
 
@@ -333,14 +342,14 @@ To keep the platform secure and current while minimizing manual toil, Thunderlin
 - **Schema Drift Guard** – CI runs `ash_postgres.generate_migrations --check --dry-run`; PRs fail if resources and DB snapshots diverge. See `CONTRIBUTING.md`.
 
 Developer responsibilities:
- 
+
 1. Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`, etc.).
 2. Ensure new Ash resources have migrations & tests before merging.
 3. Address Dialyzer warnings intentionally (no blanket ignores).
 4. Keep security scans passing; never suppress Sobelow findings without justification.
 
 Release flow (simplified):
- 
+
 1. Land changes on `main` with proper commit prefixes.
 2. Run `mix git_ops.release --yes` (dev env) to cut a tagged release (updates version + CHANGELOG + README if configured).
 3. Push the tag; deployment pipeline (future) consumes the tag for artifact builds.
@@ -382,4 +391,3 @@ Legacy Automata blackboard deprecated; canonical implementation is `Thunderline.
 ⚡ ⚡
 
 "Aut viam inveniam aut faciam"
-

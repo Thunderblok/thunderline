@@ -8,6 +8,15 @@
       "icon": "terminal-bash"
     },
    
-    }
+    },
+    "cSpell.words": [
+      "inotify",
+      "Mnesia",
+      "Oban",
+      "Thunderblocks",
+      "Thunderline",
+      "topdown",
+      "webrtc"
+    ]
   }
 

@@ -331,12 +331,6 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
       _ -> :ok
     end
   end
-
-  defp get_queue_depths do
-    # Would use actual MetricSources.queue_depths()
-    %{total: 42, pending: 15, processing: 5, failed: 2, dead_letter: 0}
-  end
-
   defp find_stuck_jobs, do: []
   defp get_retry_rates, do: %{last_hour: 0.02, last_day: 0.015}
 

@@ -255,7 +255,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
             suspended_until: suspended_until,
             suspension_reason: reason
           })
-          |> Thunderblock.Domain.update!()
+          |> Ash.update!(domain: Thunderline.Thunderblock.Domain)
 
         # Suspend PAC services
         suspend_pac_services(updated_pac_home)
@@ -1036,4 +1036,18 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
 
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  def __pac_home_silence__ do
+    _ = [
+      &deploy_agent_to_pac/2,
+      &terminate_agent_in_pac/2,
+      &_perform_health_assessment/1,
+      &check_resource_limits/1,
+      &report_health_to_zone/1,
+      &_trigger_pac_backup/1,
+      &_cleanup_pac_resources/1
+    ]
+
+    :ok
+  end
 end

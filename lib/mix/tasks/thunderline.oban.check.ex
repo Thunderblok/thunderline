@@ -43,7 +43,7 @@ defmodule Mix.Tasks.Thunderline.Oban.Check do
     end)
 
     IO.puts("\n== 📦 Oban Instance ==")
-  case Oban.whereis(Oban) do
+    case Oban.whereis(Oban) do
       nil -> IO.puts("Oban root supervisor NOT running (nil from Oban.whereis/0)")
       pid -> IO.puts("Oban root supervisor PID: #{inspect(pid)}")
     end
@@ -63,8 +63,10 @@ defmodule Mix.Tasks.Thunderline.Oban.Check do
 
     if opts[:sample] do
       IO.puts("\n== 🧪 Enqueue Sample DemoJob ==")
-      if Code.ensure_loaded?(Thunderline.Thunderflow.Jobs.DemoJob) do
-        {:ok, job} = Oban.insert(Thunderline.Thunderflow.Jobs.DemoJob.new(%{"source" => "mix_check"}))
+      demo_job = Thunderline.Thunderflow.Jobs.DemoJob
+
+      if Code.ensure_loaded?(demo_job) and function_exported?(demo_job, :new, 1) do
+        {:ok, job} = Oban.insert(apply(demo_job, :new, [%{"source" => "mix_check"}]))
         IO.puts("Inserted job id=#{job.id} state=#{job.state}")
       else
         IO.puts("DemoJob module not loaded; skipping sample enqueue")

@@ -2,6 +2,7 @@ defmodule ThunderlineWeb.AutomataControlLive do
   use ThunderlineWeb, :live_view
 
   alias Thunderline.Thunderbolt.Resources.AutomataRun
+  alias ThunderlineWeb.Auth.Actor
 
   @impl true
   def mount(_params, _session, socket) do
@@ -58,6 +59,12 @@ defmodule ThunderlineWeb.AutomataControlLive do
   end
 
   defp actor(socket) do
-    socket.assigns[:current_user] || Ash.get_actor()
+    cond do
+      is_map(socket.assigns[:actor]) -> socket.assigns[:actor]
+      match?(%{actor: actor_map} when is_map(actor_map), socket.assigns[:actor_ctx]) ->
+        socket.assigns.actor_ctx.actor
+      is_map(socket.assigns[:current_user]) -> Actor.build_actor(socket.assigns[:current_user], %{})
+      true -> nil
+    end
   end
 end

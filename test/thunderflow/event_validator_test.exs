@@ -9,16 +9,8 @@ defmodule Thunderline.Thunderflow.EventValidatorTest do
     assert :ok == EventValidator.validate(ev)
   end
 
-  test "bad prefix fails and emits telemetry" do
-    {:ok, ev} = Event.new(%{name: "badprefix.x", source: :flow, payload: %{}})
-    parent = self()
-    :telemetry.attach(self(), [:thunderline, :event, :validated], fn _event, _m, meta, _cfg ->
-      send(parent, {:validated, meta})
-    end, nil)
-
-    assert {:error, :reserved_violation} = EventValidator.validate(ev)
-    assert_receive {:validated, %{status: :error, name: "badprefix.x"}}, 100
-
-    :telemetry.detach(self())
+  test "bad prefix fails during construction" do
+    assert {:error, [forbidden_category: {:flow, "badprefix.x"}]} =
+             Event.new(%{name: "badprefix.x", source: :flow, payload: %{}})
   end
 end

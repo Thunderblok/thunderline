@@ -67,8 +67,8 @@ defmodule Thunderline.Thunderlink.Transport.Security.Impl do
     conf = Thunderline.Thunderlink.Transport.Config.get()
     skew = conf.replay.skew_ms
     cutoff = system_time_ms() - skew
-    for { {key_id, mid} = k, ts } <- :ets.tab2list(@table), ts < cutoff do
-      :ets.delete(@table, k)
+    for {entry, ts} <- :ets.tab2list(@table), ts < cutoff do
+      :ets.delete(@table, entry)
     end
     :ok
   end

@@ -68,7 +68,7 @@ defmodule Thundergate.Thunderwatch.Manager do
   end
 
   @impl true
-  def handle_info({:file_event, watcher_pid, {path, events}}, state) when is_list(events) do
+  def handle_info({:file_event, _watcher_pid, {path, events}}, state) when is_list(events) do
     if File.regular?(path) and not ignored?(path, state.ignore) do
       meta = file_meta(path, state.hash?) |> Map.put(:events, events)
       update_index(path, meta)

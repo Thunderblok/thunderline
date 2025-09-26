@@ -11,16 +11,16 @@ defmodule Thunderline.Guardrails.EventBusDeprecatedUsageTest do
   """
 
   @deprecated_patterns [
-    ~r/Thunderline\.EventBus\.emit_realtime\(/,
-    ~r/Thunderline\.EventBus\.emit_cross_domain\(/,
-    ~r/Thunderline\.EventBus\.emit\(/,
-    ~r/Thunderline\.EventBus\.broadcast_via_eventbus\(/,
-    ~r/Thunderline\.EventBus\.legacy_broadcast\(/,
-    ~r/\bEventBus\.emit_realtime\(/,
-    ~r/\bEventBus\.emit_cross_domain\(/,
-    ~r/\bEventBus\.emit\(/,
-    ~r/\blegacy_broadcast\(/,
-    ~r/\bbroadcast_via_eventbus\(/
+    "Thunderline.EventBus.emit_realtime(",
+    "Thunderline.EventBus.emit_cross_domain(",
+    "Thunderline.EventBus.emit(",
+    "Thunderline.EventBus.broadcast_via_eventbus(",
+    "Thunderline.EventBus.legacy_broadcast(",
+    "EventBus.emit_realtime(",
+    "EventBus.emit_cross_domain(",
+    "EventBus.emit(",
+    "legacy_broadcast(",
+    "broadcast_via_eventbus("
   ]
 
   test "no deprecated EventBus emit* calls outside allowlist" do
@@ -37,7 +37,7 @@ defmodule Thunderline.Guardrails.EventBusDeprecatedUsageTest do
       for file <- files, reduce: [] do
         acc ->
           content = File.read!(file)
-          if Enum.any?(@deprecated_patterns, &Regex.match?(&1, content)) do
+          if Enum.any?(@deprecated_patterns, &String.contains?(content, &1)) do
             [{file, :deprecated_calls_found} | acc]
           else
             acc

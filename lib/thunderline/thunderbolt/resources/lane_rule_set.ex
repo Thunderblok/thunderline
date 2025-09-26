@@ -376,10 +376,20 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
   end
 
   defp trigger_cerebros_optimization(_changeset, ruleset) do
-    # Trigger Cerebros learning plane optimization
-    Thunderlearn.LocalTuner.optimize_async(ruleset)
+    # Trigger Cerebros learning plane optimization when the optional Thunderlearn tuner is available
+    maybe_optimize_with_thunderlearn(ruleset)
 
     {:ok, ruleset}
+  end
+
+  defp maybe_optimize_with_thunderlearn(ruleset) do
+    if Code.ensure_loaded?(Thunderlearn.LocalTuner) and
+         function_exported?(Thunderlearn.LocalTuner, :optimize_async, 1) do
+      Thunderlearn.LocalTuner.optimize_async(ruleset)
+    else
+      Logger.debug("[RuleSet] Thunderlearn.LocalTuner unavailable, skipping optimization")
+      :ok
+    end
   end
 
   defp serialize_for_signature(ruleset) do

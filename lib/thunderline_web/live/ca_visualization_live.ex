@@ -168,18 +168,20 @@ defmodule ThunderlineWeb.CaVisualizationLive do
     # This receives data from Thunderline.ThunderBridge
     case data do
       %{grid: grid, generation: gen, stats: stats} ->
+        formatted_stats = format_tensors_for_js(stats)
+
         # Send real data to JS hook
         socket =
           push_event(socket, "ca_real_data", %{
             grid: grid,
             generation: gen,
-            stats: stats
+            stats: formatted_stats
           })
 
         {:noreply,
          assign(socket,
            generation: gen,
-           alive_cells: stats[:alive_cells] || 0,
+           alive_cells: formatted_stats[:alive_cells] || stats[:alive_cells] || 0,
            grid: grid,
            pattern: "real-time"
          )}
@@ -222,12 +224,12 @@ defmodule ThunderlineWeb.CaVisualizationLive do
         tensor_data =
           case tensor do
             %Nx.Tensor{} -> Nx.to_list(tensor)
-            _ -> []
+            _ -> tensor
           end
 
         {key, tensor_data}
       rescue
-        _ -> {key, []}
+        _ -> {key, tensor}
       end
     end)
     |> Map.new()

@@ -162,12 +162,15 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
   defp run_system_cmd(command, args, opts) do
     env = format_env(opts[:env] || %{})
 
-    System.cmd(command, args,
-      env: env,
-      cd: opts[:cd],
-      input: opts[:input],
-      stderr_to_stdout: false
-    )
+    cmd_opts =
+      [
+        env: env,
+        stderr_to_stdout: false
+      ]
+      |> maybe_put(:input, opts[:input])
+      |> maybe_put(:cd, opts[:cd])
+
+    System.cmd(command, args, cmd_opts)
     |> wrap_cmd_result()
   rescue
     e ->
@@ -289,5 +292,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
   end
 
   defp format_env(_), do: []
+
+  defp maybe_put(opts, _key, nil), do: opts
+  defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
 
 end
