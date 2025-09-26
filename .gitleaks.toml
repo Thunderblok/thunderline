@@ -1,0 +1,8 @@
+title = "Thunderline gitleaks policy"
+
+[allowlist]
+  description = "Documented placeholders"
+  regexes = [
+    "ghp_your_token_here",
+    "ghp_replace_me"
+  ]

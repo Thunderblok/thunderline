@@ -86,7 +86,75 @@ Success Metrics (Week 2 Targets):
 - legacy.blackboard.calls == 0 for 24h
 - bus.shim.use rate trending downward to zero
 - event.taxonomy.lint.errors == 0 in main for 3 consecutive days
-- repo.out_of_block.violations == 0 (warning mode) 
+- repo.out_of_block.violations == 0 (warning mode)
+
+---
+
+## 🛡 Wave 0 "Secure & Breathe" Recap (Sep 26 2025)
+
+Rapid stabilization slice delivered ahead of HC-08/HC-03 efforts:
+
+- ✅ Secret hygiene restored – `.roo/` and `mcp/` paths ignored, leaked artifacts purged.
+- ✅ `CODEBASE_REVIEW_CHECKLIST.md` resurrected with up-to-date Ash 3.x + MCP checks.
+- ✅ Secret handling doctrine codified in `README.md` with `.envrc.example` scaffolding.
+- ✅ Gitleaks pre-push hook + CI action enforce PAT/secret scans (`./scripts/git-hooks/install.sh`).
+- ✅ OpenTelemetry bootstrap guarded; missing `:opentelemetry_exporter` now downgrades to a warning.
+
+Next tactical objectives (Wave 1 – "Breathe & Route"):
+
+1. Re-wire `ThunderlineWeb.UserSocket` with AshAuthentication session tokens (`current_user` assign).
+2. Stand up API key issuance (`mix thunderline.auth.issue_key`) and flip router guards to `required?: true`.
+3. Reinstate Thunderblock vault / policy surfaces once actor context is dependable.
+4. Resurrect Thunderbolt StreamManager supervisor + PubSub bridge with ExUnit coverage.
+
+These line up directly with HC-05/HC-06 prerequisites and keep momentum toward M1.
+
+---
+
+### Guerrilla Backlog Tracker (Sep 26 2025)
+
+_Status legend: [x] done · [ ] pending · [~] scaffolded / partial_
+
+1. [x] Re-add `.roo/` and `mcp/` to `.gitignore`; purge tracked artifacts.
+2. [x] Restore `CODEBASE_REVIEW_CHECKLIST.md` with Ash 3.x/MCP gates.
+3. [x] Wire gitleaks pre-push guard (`./scripts/git-hooks/install.sh`).
+4. [x] Document MCP/GitHub token handling; ship `.envrc.example`.
+5. [ ] Hook `ThunderlineWeb.UserSocket` into AshAuthentication session tokens.
+6. [ ] Finish router API key flip (issuance mix task + `required?: true`).
+7. [ ] Re-enable Thunderblock vault resource policies.
+8. [ ] Clean Ash 3.x fragments in `VaultKnowledgeNode` (lines 15–614).
+9. [ ] Fix `pac_home` validation/fragment syntax for Ash 3.x.
+10. [ ] Restore AshOban triggers in `task_orchestrator` and `workflow_tracker`.
+11. [ ] Introduce `ChannelParticipant` Ash resource + relationships.
+12. [ ] Fix Ash 3.x validations/fragments in `Thundercom.Message`.
+13. [ ] Resolve `federation_socket` fragment/validation issues; recover AshOban trigger.
+14. [ ] Repair `Thundercom.Role` fragment filters + AshOban trigger syntax.
+15. [ ] Replace `Thunderlink.DashboardMetrics` stubs with live telemetry.
+16. [ ] Pipe telemetry into `dashboard_live.ex` (CPU/memory/latency).
+17. [ ] Complete `ThunderlaneDashboard` TODO wiring.
+18. [ ] Add Stream/Flow telemetry for pipeline throughput & failures.
+19. [ ] Rebuild Thunderbolt `StreamManager` supervisor + PubSub bridge.
+20. [ ] Ship ExUnit coverage for StreamManager ingest/drop behaviors.
+21. [ ] Fix `Thunderbolt.Resources.Chunk` state machine (AshStateMachine 3.x).
+22. [ ] Implement real resource allocation logic + orchestration events.
+23. [ ] Add ML health threshold evaluation to `chunk_health.ex`.
+24. [ ] Finish `activation_rule` evaluation workflow (notifications, ML init).
+25. [ ] Implement secure key management in `lane_rule_set.ex`.
+26. [ ] Flesh out `topology_partitioner.ex` with 3D strategies.
+27. [ ] Convert Thundergrid `SpatialCoordinate`/`ZoneBoundary` routes to Ash 3.x.
+28. [ ] Build shared `Thunderline.Thundergrid.Validations` module + consume it.
+29. [ ] Re-enable Thundergrid policies once actor context is wired.
+30. [ ] Fix `ZoneEvent` aggregate `group_by` syntax and add tests.
+31. [ ] Implement ThunderGate `Mnesia → PostgreSQL` sync.
+32. [ ] Extend `Thunderchief.DomainProcessor` Oban job with per-domain delegation.
+33. [ ] Gate `Thundercrown.AgentRunner` via ThunderGate policy; call AshAI/Jido actions.
+34. [~] Reintroduce Jido/Bumblebee serving supervisor + echo fallback (scaffolded; needs validation/tests).
+35. [ ] Expand `Thundercrown.McpBus` docs + CLI examples.
+36. [ ] Swap `Thunderline.Thunderflow.Event` UUID fallback to UUID v7 provider.
+37. [ ] Ship `mix thunderline.flags.audit` to verify feature usage vs config.
+38. [x] Harden telemetry boot when `:opentelemetry_exporter` missing.
+39. [ ] Add StreamManager + Oban counters to LiveDashboard / Grafana JSON.
+40. [ ] Update `THUNDERLINE_DOMAIN_CATALOG.md` + README with new guards and progress.
 
 ---
 
@@ -114,15 +182,17 @@ Planned Next: Presence & channel membership policies, AshAI action wiring, email
 This Playbook is now bound by the ecological governance rules (see OKO Handbook & Domain Catalog augmentations). Each phase must prove *systemic balance* not just feature completeness.
 
 Phase Acceptance Criteria now includes:
+
 1. Domain Impact Matrix delta reviewed (no predation / mutation drift)
 2. Event Taxonomy adherence (no ad-hoc event shape divergence)
 3. Balance Metrics trend acceptable (no > threshold excursions newly introduced)
 4. Steward sign-offs captured in PR references
-5. Catalog synchronization executed (resource + relationship updates) 
+5. Catalog synchronization executed (resource + relationship updates)
 
 Balance Review Gate (BRG) is inserted at end of every major sprint; failing BRG triggers a `stability_sprint` (hardening, no net new features).
 
 BRG Checklist (automatable future task):
+
 - [ ] `warning.count` below threshold or trending downward
 - [ ] No unauthorized Interaction Matrix edges
 - [ ] Reactor retry & undo rates within SLO
@@ -136,42 +206,50 @@ BRG Checklist (automatable future task):
 ## **🔄 THE COMPLETE FLOW ARCHITECTURE**
 
 ### **Phase 1: User Onboarding (ThunderBlock Provisioning)**
-```
+
+```text
 User → ThunderBlock Dashboard → Server Provisioning → PAC Initialization
 ```
 
 **Current Status**: 🟡 **NEEDS DASHBOARD INTEGRATION**
+
 - ✅ ThunderBlock resources exist (supervision trees, communities, zones)
 - ❌ Dashboard UI not connected to backend
 - ❌ Server provisioning flow incomplete
 
 ### **Phase 2: Personal Workspace Setup**
-```
+
+```text
 User Server → File Management → Calendar/Todo → PAC Configuration
 ```
 
 **Current Status**: 🟡 **PARTIALLY IMPLEMENTED**
+
 - ✅ File system abstractions exist
 - ❌ Calendar/Todo integrations missing
 - ❌ PAC personality/preferences setup
 
 ### **Phase 3: AI Integration (ThunderCrown Governance)**
-```
+
+```text
 PAC → ThunderCrown MCP → LLM/Model Selection → API/Self-Hosted
 ```
 
 **Current Status**: � **FOUNDATION READY**
+
 - ✅ ThunderCrown orchestration framework exists
 - ❌ MCP toolkit integration
 - ❌ Multi-LLM routing system
 - ❌ Governance policies for AI actions
 
 ### **Phase 4: Orchestration (ThunderBolt Command)**
-```
+
+```text
 LLM → ThunderBolt → Sub-Agent Deployment → Task Coordination
 ```
 
 **Current Status**: � **CORE ENGINE OPERATIONAL**
+
 - ✅ ThunderBolt orchestration framework
 - ✅ **ThunderCell native Elixir processing** (NEWLY CONVERTED)
 - ✅ 3D cellular automata engine fully operational
@@ -179,11 +257,13 @@ LLM → ThunderBolt → Sub-Agent Deployment → Task Coordination
 - ❌ Task delegation protocols
 
 ### **Phase 5: Automation Execution (ThunderFlow + ThunderLink)**
-```
+
+```text
 ThunderBolt → ThunderFlow Selection → ThunderLink Targeting → Automation Execution
 ```
 
 **Current Status**: 🟢 **CORE ENGINE READY (Auth + Chat Surface Online)**
+
 - ✅ ThunderFlow event processing working
 - ✅ ThunderLink communication implemented
 - ✅ State machines restored and functional
@@ -194,13 +274,15 @@ ThunderBolt → ThunderFlow Selection → ThunderLink Targeting → Automation E
 
 ## **🎯 FIRST ITERATION GOAL: "Send an Email"**
 
-### **Success Criteria**: 
+### **Success Criteria**
+
 User says "Send an email to John about the project update" → Email gets sent automatically with intelligent content generation.
 
-### **Implementation Path**:
+### **Implementation Path**
 
 #### **Sprint 1: Foundation (Week 1)**
-**Goal**: Get the basic infrastructure talking to each other
+
+**Goal**: Get the basic infrastructure talking to each other.
 
 ```bash
 # 1. ThunderBlock Dashboard Connection
@@ -219,8 +301,9 @@ User says "Send an email to John about the project update" → Email gets sent a
 - Contact management system
 ```
 
-Additions (Systems Governance Requirements):
-```
+##### Additions (Systems Governance Requirements)
+
+```text
 # 4. Governance Hooks
 - Add metrics: event.queue.depth (baseline), reactor.retry.rate (initial null), fanout distribution snapshot
 - Register Email flow events under `ui.command.email.*` → normalized `%Thunderline.Event{}`
@@ -228,7 +311,8 @@ Additions (Systems Governance Requirements):
 ```
 
 #### **Sprint 2: Intelligence (Week 2)**
-**Goal**: Make the PAC understand and execute email tasks
+
+**Goal**: Make the PAC understand and execute email tasks.
 
 ```bash
 # 1. Natural Language Processing
@@ -247,8 +331,9 @@ Additions (Systems Governance Requirements):
 - Improve future suggestions
 ```
 
-Additions:
-```
+##### Additions – Reactor & Telemetry
+
+```text
 # 4. Reactor Adoption (if multi-step email composition)
 - Reactor diagram committed (Mermaid)
 - Undo path for failed external send (mark draft, not sent)
@@ -260,7 +345,8 @@ Additions:
 ```
 
 #### **Sprint 3: Automation (Week 3)**
-**Goal**: Seamless end-to-end automation
+
+**Goal**: Seamless end-to-end automation.
 
 ```bash
 # 1. Context Awareness
@@ -279,8 +365,9 @@ Additions:
 - Contact relationship mapping
 ```
 
-Additions:
-```
+##### Additions – Homeostasis
+
+```text
 # 4. Homeostasis Checks
 - Verify added context sources didn't introduce unauthorized edges
 - Catalog update with any new context resources
@@ -292,6 +379,7 @@ Additions:
 ## **🏗️ CURRENT ARCHITECTURE STATUS**
 
 ### **✅ WHAT'S WORKING (Green Light)**
+
 ```elixir
 # 1. Core Engine
 - Ash 3.x resources compiling cleanly
@@ -326,6 +414,7 @@ Additions:
 ```
 
 ### **🟡 WHAT'S PARTIAL (Yellow Light)**
+
 ```elixir
 # 1. ThunderBlock Infrastructure
 - Resources defined but dashboard disconnected
@@ -357,6 +446,7 @@ Additions:
 ```
 
 ### **🔴 WHAT'S MISSING (Red Light)**
+
 ```elixir
 # 1. Frontend Applications
 - ThunderBlock dashboard UI
@@ -388,6 +478,7 @@ Additions:
 ## **🎯 IMPLEMENTATION PRIORITY MATRIX**
 
 ### **HIGH IMPACT, LOW EFFORT** (Do First)
+
 1. **ThunderBlock Dashboard Connection**
    - Use existing Ash resources
    - Phoenix LiveView for real-time updates
@@ -406,6 +497,7 @@ Additions:
    - Simple governance rules
 
 ### **HIGH IMPACT, HIGH EFFORT** (Plan Carefully)
+
 1. **Multi-LLM Routing System**
    - Support OpenAI, Anthropic, local models
    - Load balancing and failover
@@ -422,11 +514,13 @@ Additions:
    - Offline capabilities
 
 ### **LOW IMPACT, LOW EFFORT** (Fill Gaps)
+
 1. **Documentation & Tutorials**
 2. **Basic Analytics Dashboard**
 3. **Simple Admin Tools**
 
 ### **LOW IMPACT, HIGH EFFORT** (Avoid For Now)
+
 1. **Advanced ML Features**
 2. **Custom Hardware Integration**
 3. **Enterprise Features**
@@ -436,6 +530,7 @@ Additions:
 ## **🚧 IMMEDIATE NEXT STEPS (This Week)**
 
 ### **Day 1-2: Assessment & Planning**
+
 ```bash
 # 1. Audit Current ThunderBlock Resources
 - Map all existing backend capabilities
@@ -451,6 +546,7 @@ Additions:
 High Command Alignment: Map each planned task to HC P0 backlog where applicable (Email Flow ↔ HC-05, dashboard resource audit supports HC-06 presence groundwork). Sprint board cards must reference HC IDs.
 
 ### **Day 3-4: Foundation Building**
+
 ```bash
 # 1. ThunderBlock Dashboard MVP
 - Basic Phoenix LiveView interface

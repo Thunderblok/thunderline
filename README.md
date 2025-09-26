@@ -151,6 +151,35 @@ export ENABLE_NDJSON=1
 export ENABLE_UPS=1
 ```
 
+### Secret & MCP Token Handling
+
+- Never commit MCP credentials. The `.roo/` and `mcp/` directories are ignored and must stay untracked (verify with `git ls-files`).
+- Supply tokens through your shell or `.envrc`. We recommend [direnv](https://direnv.net/) for automatic loading.
+- The GitHub MCP server expects `GITHUB_PERSONAL_ACCESS_TOKEN`; other servers may use their own env vars. Keep values in your local environment only.
+- Run the secret scanner before every push:
+
+  ```bash
+  gitleaks protect --verbose --redact
+  ```
+
+- Enforce local scans by installing the bundled pre-push hook:
+
+  ```bash
+  ./scripts/git-hooks/install.sh
+  ```
+
+- CI also blocks merges if `gitleaks` finds any secrets.
+
+Copy `.envrc.example` to `.envrc` (ignored) or create your own `.envrc.local` (do **not** commit):
+
+```bash
+export GITHUB_PERSONAL_ACCESS_TOKEN="ghp_your_token_here"
+export GITHUB_TOOLSETS=""
+export GITHUB_READ_ONLY="1"   # optional read-only mode
+```
+
+If a credential ever hits the tree, revoke it immediately, rotate the secret, and rewrite the offending commits before pushing again.
+
 ### Former BOnus Modules Migration
 
 Previously experimental modules under a `BOnus/` path have been promoted into their appropriate domain namespaces (`lib/thunderline/**`). The build no longer alters `elixirc_paths` to include a BOnus directory; references in historical documentation now refer to migrated code. If you encounter an old note mentioning `BOnus/lib`, treat it as already consolidated.
@@ -169,15 +198,19 @@ For production environments, Thunderline supports containerized deployment with 
 ## System Capabilities
 
 ### Real-Time Processing
+
 Thunderline processes events with sub-millisecond latency through its distributed event architecture, enabling real-time decision making and immediate system responsiveness.
 
 ### Intelligent Coordination
+
 The system employs sophisticated algorithms for resource allocation, task distribution, and agent coordination, ensuring optimal performance across all operational domains.
 
 ### Comprehensive Observability
+
 Built-in monitoring and observability tools provide deep insights into system behavior, performance metrics, and operational health across all domains.
 
 ### Scalable Architecture
+
 The domain-driven design allows for selective scaling of individual system components based on load patterns and operational requirements.
 
 ## Event Processing Pipeline
@@ -187,6 +220,7 @@ The domain-driven design allows for selective scaling of individual system compo
 Thunderline uses a **gated event processing architecture** that provides both simplicity and power:
 
 **Default Path (TL_ENABLE_REACTOR=false)**:
+
 - Simple, direct event processing via `Thunderline.Thunderflow.Processor` (replaces deprecated `Thunderline.EventProcessor`)
 - Optimized for high-throughput with minimal overhead
 - Exponential backoff with jitter for resilient retries
@@ -194,6 +228,7 @@ Thunderline uses a **gated event processing architecture** that provides both si
 - Comprehensive telemetry and error classification
 
 **Advanced Path (TL_ENABLE_REACTOR=true)**:
+
 - Reactor-based saga orchestration (available when needed)
 - Complex compensation and undo logic
 - Recursive workflows and advanced DAG patterns
@@ -201,23 +236,27 @@ Thunderline uses a **gated event processing architecture** that provides both si
 ### Operational Features
 
 **Smart Retry Strategy:**
+
 ```elixir
 # Exponential backoff: 1s → 2s → 4s → 8s → 16s (capped at 5min)
 # With ±20% jitter to prevent thundering herd
 ```
 
 **Circuit Breaker Protection:**
+
 ```elixir
 # Protects against failing domains:
 # 5 failures → open for 30s → half-open test → closed
 ```
 
 **Error Classification:**
+
 - `:transient` - Network/timeout errors (retry)
 - `:permanent` - Validation/constraint errors (discard)
 - `:unknown` - Unclassified errors (retry with caution)
 
 **Key Telemetry Metrics:**
+
 - `thunderline.jobs.retries` - Retry attempts by queue/worker
 - `thunderline.jobs.failures` - Failures by error type
 - `thunderline.cross_domain.latency` - Cross-domain operation timing
@@ -226,6 +265,7 @@ Thunderline uses a **gated event processing architecture** that provides both si
 ### Usage
 
 **Simple Event Processing:**
+
 ```elixir
 # Canonical interface - routes to simple processor by default
 Ash.run!(Thunderline.Integrations.EventOps, :process_event, %{
@@ -239,6 +279,7 @@ Ash.run!(Thunderline.Integrations.EventOps, :process_event, %{
 ```
 
 **Job Queue Integration:**
+
 ```elixir
 # For background processing
 %{"event" => %{
@@ -251,6 +292,7 @@ Ash.run!(Thunderline.Integrations.EventOps, :process_event, %{
 ```
 
 **Canonical Event Structure:**
+
 ```elixir
 # All events normalized to this shape
 %Thunderline.Event{
@@ -283,20 +325,22 @@ Thunderline development follows rigorous engineering standards with comprehensiv
 
 To keep the platform secure and current while minimizing manual toil, Thunderline uses:
 
-* **Dependabot** (`.github/dependabot.yml`) – daily Elixir/Mix dependency checks grouped by stack (Ash, Phoenix, Oban, ML toolchain) and weekly GitHub Actions updates.
-* **Grouped Updates** – related libraries (e.g. Ash extensions) are upgraded together to reduce transitive breakage and ease review.
-* **CI Pipeline** (`.github/workflows/ci.yml`) – runs compile (warnings-as-errors), tests, Credo, Dialyzer, and Sobelow security scanning on every PR and push to `main`.
-* **Auto‑Merge (Optional)** – Dependabot PRs auto-squash when the full CI matrix is green (see `dependency-auto-merge` job). Disable by removing that job if manual review is preferred.
-* **Semantic Versioning & Changelog** – `git_ops` (dev-only) + `.gitops.json` manage `mix.exs` version bumps and CHANGELOG sections based on commit prefixes.
-* **Schema Drift Guard** – CI runs `ash_postgres.generate_migrations --check --dry-run`; PRs fail if resources and DB snapshots diverge. See `CONTRIBUTING.md`.
+- **Dependabot** (`.github/dependabot.yml`) – daily Elixir/Mix dependency checks grouped by stack (Ash, Phoenix, Oban, ML toolchain) and weekly GitHub Actions updates.
+- **Grouped Updates** – related libraries (e.g. Ash extensions) are upgraded together to reduce transitive breakage and ease review.
+- **CI Pipeline** (`.github/workflows/ci.yml`) – runs compile (warnings-as-errors), tests, Credo, Dialyzer, and Sobelow security scanning on every PR and push to `main`.
+- **Auto‑Merge (Optional)** – Dependabot PRs auto-squash when the full CI matrix is green (see `dependency-auto-merge` job). Disable by removing that job if manual review is preferred.
+- **Semantic Versioning & Changelog** – `git_ops` (dev-only) + `.gitops.json` manage `mix.exs` version bumps and CHANGELOG sections based on commit prefixes.
+- **Schema Drift Guard** – CI runs `ash_postgres.generate_migrations --check --dry-run`; PRs fail if resources and DB snapshots diverge. See `CONTRIBUTING.md`.
 
 Developer responsibilities:
+ 
 1. Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`, etc.).
 2. Ensure new Ash resources have migrations & tests before merging.
 3. Address Dialyzer warnings intentionally (no blanket ignores).
 4. Keep security scans passing; never suppress Sobelow findings without justification.
 
 Release flow (simplified):
+ 
 1. Land changes on `main` with proper commit prefixes.
 2. Run `mix git_ops.release --yes` (dev env) to cut a tagged release (updates version + CHANGELOG + README if configured).
 3. Push the tag; deployment pipeline (future) consumes the tag for artifact builds.
@@ -311,9 +355,9 @@ This project is proprietary software of OKO Holding Corporation. All rights rese
 
 All persistence access is routed through the Block domain. Direct `Repo.*` calls are only permitted in:
 
-* `lib/thunderline/thunderblock/**`
-* `priv/repo/migrations/**`
-* Explicit resource repo configuration blocks
+- `lib/thunderline/thunderblock/**`
+- `priv/repo/migrations/**`
+- Explicit resource repo configuration blocks
 
 Custom Credo check (`Thunderline.Dev.CredoChecks.DomainGuardrails`) enforces this. Set `REPO_ONLY_ENFORCE=1` in CI to escalate violations from warnings to errors.
 

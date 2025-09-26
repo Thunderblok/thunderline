@@ -67,4 +67,8 @@ cerebros-core-algorithm-alpha/
 # Dialyzer PLT cache
 priv/plts/
 
+# Local MCP config/runtime artifacts
+.roo/
+mcp/
+
 

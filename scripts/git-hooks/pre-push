@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$REPO_ROOT"
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  cat <<'EOF'
+[gitleaks] binary not found.
+Install gitleaks from https://github.com/gitleaks/gitleaks/releases
+or via a package manager (e.g. `brew install gitleaks`).
+EOF
+  exit 1
+fi
+
+# Scan the repo history relevant to this push. `protect --staged` catches the
+# staged diff, and `detect` covers the repo to guard rebases/rewrites.
+if ! gitleaks protect --staged --redact --verbose; then
+  echo "[gitleaks] Potential secrets detected in staged changes." >&2
+  exit 1
+fi
+
+if ! gitleaks detect --source . --redact; then
+  echo "[gitleaks] Repository scan failed. See findings above." >&2
+  exit 1
+fi
+
+exit 0

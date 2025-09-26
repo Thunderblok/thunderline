@@ -62,9 +62,18 @@ if System.get_env("OTEL_DISABLED") not in ["1", "true", "TRUE"] do
       _ -> []
     end
 
-  config :opentelemetry, :processors, [
-    {:otel_batch_processor, %{exporter: {:opentelemetry_exporter, exporter_opts}}}
-  ]
+  exporter_available? =
+    Code.ensure_loaded?(:opentelemetry_exporter) and
+      function_exported?(:opentelemetry_exporter, :start_link, 1)
+
+  if exporter_available? do
+    config :opentelemetry, :processors, [
+      {:otel_batch_processor, %{exporter: {:opentelemetry_exporter, exporter_opts}}}
+    ]
+  else
+    IO.puts(:stderr, "[otel] opentelemetry_exporter not available; telemetry export disabled.")
+    config :opentelemetry, :processors, []
+  end
 
   # Phoenix & Ecto instrumentation enables spans for web and DB
   config :opentelemetry_phoenix, enable: true
