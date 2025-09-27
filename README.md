@@ -132,6 +132,20 @@ docker compose up -d postgres
 mix thunderline.dev.init
 ```
 
+### Livebook HPO/NAS Demo
+
+Use the `livebook/cerebros_thunderline.livemd` notebook to drive a full Thunderline × Cerebros loop against your local Postgres state. The notebook boots Thunderline’s Ash domains inside Livebook, seeds a demo dataset/model spec, then walks through proposal generation, trial evaluation, Pareto inspection, and artifact/version persistence.
+
+1. Ensure the database is ready: `mix ecto.create && mix ecto.migrate`
+2. Launch Livebook from the repo root: `livebook server`
+3. Open `livebook/cerebros_thunderline.livemd`
+4. Pick a mode:
+  - `CEREBROS_MODE=mock` (default) → everything runs locally with synthetic metrics
+  - `CEREBROS_MODE=remote` plus `CEREBROS_URL=http://host:port` → calls an external Cerebros service that implements `/propose` and `/train`
+5. Run the sections in order; results persist via the existing `ModelRun`, `ModelArtifact`, and `ModelVersion` tables.
+
+Set `TL_LIVEBOOK_TENANT` (default `demo-tenant`) when you want the notebook to operate under a specific Ash actor context. The Livebook disables Oban/Vault so you can iterate without starting the entire Phoenix stack; restart the app normally when you need all workers.
+
 Seed a baseline community & channel (needs existing user UUID):
 
 ```bash

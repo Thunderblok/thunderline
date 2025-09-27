@@ -56,7 +56,7 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
     end
 
     update :complete do
-      accept [:best_metric, :completed_trials]
+      accept [:best_metric, :completed_trials, :metadata]
       change transition_state(:succeeded)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
     end

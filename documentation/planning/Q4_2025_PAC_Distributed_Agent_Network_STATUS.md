@@ -17,6 +17,23 @@
 
 Legend: ADVANCED CORE (stable + feature-complete), PARTIAL (core path working, features missing), SCAFFOLD (structure only), EMERGING (recently added, converging), MISSING (no code yet).
 
+### Immediate Sprint Target (September 2025)
+
+**Outcome:** Demonstrate a complete PAC training cycle (data prep → Cerebros NAS trials → artifact promotion → capability vector update) ready for Thundergrid deployment.
+
+**Prerequisites & Owners**
+
+| Thread | Focus | Primary Owner | Support | Notes |
+| --- | --- | --- | --- | --- |
+| Data Readiness | Finalize `memory_nodes` IVFFlat index, retention/TTL doc, dataset manifest | Block (you) | AI Dev | Enables MOTPE sampling and replay safety |
+| Cerebros Bridge | Land facade, telemetry, first invocation path | AI Dev | Bolt | Lives behind feature flag until end-to-end validated |
+| Search & Trials | Rose-Tree shortlist + MOTPE config for target PAC | Bolt | Flow | Derives candidate slate for Cerebros |
+| Promotion & VCV | Artifact scoring + VCV refresh + Thundergrid publish | Crown | Grid | Depends on training metrics availability |
+| Observability | Training run telemetry + dashboard panels + BRG hook | Observability | Flow | Share instrumentation plan w/ BRG owners |
+| Runbook & QA | Integration test + operator runbook + release checklist | Gate | All | Gated by telemetry + policy guardrails |
+
+📌 Kanban board with granular tasks: `documentation/planning/PAC_training_cycle_kanban.md`.
+
 ## 2. Detailed Pillar Status
 
 ### 2.1 Memory / Vector Vault

@@ -1,0 +1,532 @@
+# Cerebros × Thunderline — Persistent HPO/NAS Loop
+
+> End-to-end demo tying Thunderline's Ash resources (Postgres-backed) to a Cerebros sampler/runner from inside Livebook. Pick `:mock` for an entirely local loop, or point at a remote Cerebros service that speaks the `/propose` and `/train` contract.
+
+---
+
+## 1️⃣ Bootstrapping Thunderline inside Livebook
+
+```elixir
+project_root = Path.expand("..", __DIR__)
+
+Mix.install(
+  [
+    {:thunderline, path: project_root},
+    {:req, "~> 0.5"},
+    {:vega_lite, "~> 0.1"},
+    {:kino, "~> 0.14"}
+  ],
+  config_path: Path.join(project_root, "config/config.exs"),
+  lockfile: Path.join(project_root, "mix.lock"),
+  force: true
+)
+
+Code.eval_file(Path.join(project_root, "config/runtime.exs"))
+
+Application.put_env(:thunderline, Oban, nil)
+Application.put_env(:thunderline, Thunderline.Vault, nil)
+
+for app <- [:logger, :ash, :ash_postgres, :ecto_sql, :crypto, :req, :vega_lite, :kino] do
+  {:ok, _} = Application.ensure_all_started(app)
+end
+
+{:ok, _repo_pid} =
+  case Process.whereis(Thunderline.Repo) do
+    nil -> Thunderline.Repo.start_link()
+    pid -> {:ok, pid}
+  end
+
+Logger.configure(level: :info)
+```
+
+### Database prerequisites
+
+Run `mix ecto.create && mix ecto.migrate` once from the project root before executing the Livebook. The notebook relies on the same Postgres schema Thunderline uses.
+
+---
+
+## 2️⃣ Thunderline helper modules
+
+```elixir
+alias Thunderline.Thunderbolt.ML.{TrainingDataset, FeatureView, ModelSpec, ModelArtifact, ModelVersion}
+alias Thunderline.Thunderbolt.Resources.ModelRun
+
+require Ash.Query
+
+mode =
+  System.get_env("CEREBROS_MODE", "mock")
+  |> String.downcase()
+  |> case do
+    "remote" -> :remote
+    _ -> :mock
+  end
+
+cerebros_base = System.get_env("CEREBROS_URL", "http://localhost:8088")
+tenant_id = System.get_env("TL_LIVEBOOK_TENANT", "demo-tenant")
+actor = %{tenant_id: tenant_id, roles: [:operator, :ml_operator]}
+ctx = [actor: actor]
+
+search_space = %{
+  "head" => %{"choice" => ["kgam", "irope"]},
+  "lr" => %{"loguniform" => [1.0e-5, 1.0e-2]},
+  "controller.smooth" => %{"uniform" => [0.0, 0.5]},
+  "controller.max_temp" => %{"uniform" => [0.7, 1.3]},
+  "curation.kernel_bw" => %{"uniform" => [0.1, 1.0]}
+}
+
+request_k = System.get_env("TL_LIVEBOOK_K", "5") |> String.to_integer()
+
+module_digest = fn params ->
+  params
+  |> Jason.encode!()
+  |> :crypto.hash(:sha256)
+  |> Base.encode16(case: :lower)
+end
+
+defmodule TLBook.Helpers do
+  alias Thunderline.Thunderbolt.ML.{TrainingDataset, FeatureView, ModelSpec, ModelArtifact, ModelVersion}
+  alias Thunderline.Thunderbolt.Resources.ModelRun
+
+  require Ash.Query
+
+  def ensure_dataset(name, tenant_id, opts) do
+    query =
+      TrainingDataset
+      |> Ash.Query.for_read(:read)
+      |> Ash.Query.filter(name == ^name and tenant_id == ^tenant_id)
+
+    case Ash.read_one(query, opts) do
+      {:ok, nil} ->
+        params = %{
+          name: name,
+          tenant_id: tenant_id,
+          purpose: :train,
+          description: "Livebook demo dataset",
+          status: :draft
+        }
+
+        Ash.create!(TrainingDataset, params, opts)
+
+      {:ok, dataset} ->
+        dataset
+
+      {:error, error} ->
+        raise error
+    end
+  end
+
+  def ensure_feature_view(dataset, name, opts) do
+    query =
+      FeatureView
+      |> Ash.Query.for_read(:read)
+      |> Ash.Query.filter(dataset_id == ^dataset.id and name == ^name)
+
+    case Ash.read_one(query, opts) do
+      {:ok, nil} ->
+        params = %{
+          dataset_id: dataset.id,
+          name: name,
+          schema_json: %{
+            "summary" => "synthetic shard #{name}",
+            "fields" => [
+              %{"name" => "embedding", "type" => "vector", "dim" => 1536},
+              %{"name" => "label", "type" => "string"}
+            ]
+          },
+          materialization: "parquet",
+          version: 1
+        }
+
+        Ash.create!(FeatureView, params, opts)
+
+      {:ok, feature_view} ->
+        feature_view
+
+      {:error, error} ->
+        raise error
+    end
+  end
+
+  def ensure_model_spec(name, tenant_id, opts) do
+    query =
+      ModelSpec
+      |> Ash.Query.for_read(:read)
+      |> Ash.Query.filter(tenant_id == ^tenant_id and base_model == ^name)
+
+    case Ash.read_one(query, opts) do
+      {:ok, nil} ->
+        params = %{
+          tenant_id: tenant_id,
+          base_model: name,
+          task: :classification,
+          adapter: :lora,
+          framework: :pytorch,
+          params: %{context_length: 2048, hidden_size: 4096}
+        }
+
+        Ash.create!(ModelSpec, params, opts)
+
+      {:ok, spec} ->
+        spec
+
+      {:error, error} ->
+        raise error
+    end
+  end
+
+  def start_model_run(spec, dataset, requested_trials, metadata, opts) do
+    run =
+      Ash.create!(
+        ModelRun,
+        %{
+          search_space_version: 1,
+          requested_trials: requested_trials,
+          max_params: 2_000_000,
+          metadata:
+            metadata
+            |> Map.put("spec_id", spec.id)
+            |> Map.put("dataset_id", dataset.id)
+        },
+        opts
+      )
+
+    Ash.update!(run, :start, %{}, opts)
+  end
+
+  def complete_model_run(run, trials, opts) do
+    best = Enum.max_by(trials, &score/1, fn -> raise "no trials" end)
+
+    metadata =
+      (run.metadata || %{})
+      |> Map.put("trials", Enum.map(trials, &trial_to_map/1))
+      |> Map.put("updated_at", DateTime.utc_now() |> DateTime.to_iso8601())
+
+    updated_run =
+      Ash.update!(
+        run,
+        :complete,
+        %{
+          best_metric: best.metrics.accuracy,
+          completed_trials: length(trials),
+          metadata: metadata
+        },
+        opts
+      )
+
+    {updated_run, best}
+  end
+
+  def persist_best_artifact(spec, dataset, run, best, checksum_fun, opts) do
+    checksum = checksum_fun.(best.params)
+    artifact_uri = "s3://thunderline/livebook/#{run.id}/#{best.id}.bin"
+
+    artifact =
+      Ash.create!(
+        ModelArtifact,
+        %{
+          spec_id: spec.id,
+          model_run_id: run.id,
+          uri: artifact_uri,
+          checksum: checksum,
+          bytes: Map.get(best.metrics, :artifact_bytes, 128_000),
+          semver: "0.1.#{System.unique_integer([:positive])}"
+        },
+        opts
+      )
+
+    Ash.create!(
+      ModelVersion,
+      %{
+        spec_id: spec.id,
+        artifact_id: artifact.id,
+        dataset_id: dataset.id,
+        metrics: Map.new(best.metrics),
+        notes: "Recorded via Livebook HPO demo"
+      },
+      opts
+    )
+  end
+
+  defp score(%{metrics: %{accuracy: acc, latency_ms: latency}}) do
+    0.7 * acc - 0.3 * (latency / 100.0)
+  end
+
+  defp trial_to_map(%{id: id, params: params, metrics: metrics, density: density}) do
+    %{
+      "id" => id,
+      "params" => params,
+      "metrics" => Map.new(metrics),
+      "density" => density
+    }
+  end
+end
+
+
+defmodule TLBook.CerebrosClient do
+  def propose(base, run_id, space, k) do
+    Req.post!(
+      Path.join(base, "/propose"),
+      json: %{run_id: run_id, k: k, space: space}
+    ).body
+  end
+
+  def train(base, trial_id, params, dataset_payload) do
+    Req.post!(
+      Path.join(base, "/train"),
+      json: %{trial_id: trial_id, params: params, dataset: dataset_payload}
+    ).body
+  end
+end
+
+
+defmodule TLBook.Trainer do
+  def run(:mock, _base, trial_id, params, dataset) do
+    head = Map.fetch!(params, "head")
+
+    base_acc = if head == "kgam", do: 0.80, else: 0.86
+    base_lat = if head == "kgam", do: 34.0, else: 58.0
+
+    smooth = Map.get(params, "controller.smooth", 0.2)
+    bw = Map.get(params, "curation.kernel_bw", 0.5)
+    lr = Map.get(params, "lr", 1.0e-3)
+
+    latency =
+      base_lat - 10.0 * smooth + 6.0 * (bw - 0.5) + (:rand.uniform() - 0.5) * 4.0
+
+    accuracy =
+      base_acc + 0.04 * :math.exp(-abs(bw - 0.4)) - 0.03 * smooth +
+        0.02 * :math.log10(1.0e-2 / lr) * 0.1 + (:rand.uniform() - 0.5) * 0.01
+
+    energy = 1.8 + 0.02 * latency + (:rand.uniform() - 0.5) * 0.1
+
+    %{
+      id: trial_id,
+      accuracy: Float.round(accuracy, 4),
+      latency_ms: Float.round(latency, 2),
+      energy_j: Float.round(energy, 3),
+      dataset_size: length(dataset),
+      artifact_bytes: 96_000 + :rand.uniform(16_000)
+    }
+  end
+
+  def run(:remote, base, trial_id, params, dataset) do
+    TLBook.CerebrosClient.train(base, trial_id, params, dataset)
+    |> normalize_metrics(trial_id, dataset)
+  end
+
+  defp normalize_metrics(%{"accuracy" => acc, "latency_ms" => lat} = metrics, trial_id, dataset) do
+    %{
+      id: trial_id,
+      accuracy: acc,
+      latency_ms: lat,
+      energy_j: Map.get(metrics, "energy_j", 0.0),
+      dataset_size: length(dataset),
+      artifact_bytes: Map.get(metrics, "artifact_bytes", 128_000)
+    }
+  end
+
+  defp normalize_metrics(%{"metrics" => metrics} = payload, trial_id, dataset) do
+    normalize_metrics(metrics, trial_id, dataset)
+    |> Map.merge(%{raw: payload})
+  end
+end
+
+
+defmodule TLBook.Pareto do
+  def frontier(points) do
+    Enum.filter(points, fn candidate ->
+      not Enum.any?(points, fn other ->
+        better_or_equal?(other, candidate) and strictly_better?(other, candidate)
+      end)
+    end)
+  end
+
+  defp better_or_equal?(a, b) do
+    a.metrics.accuracy >= b.metrics.accuracy and a.metrics.latency_ms <= b.metrics.latency_ms
+  end
+
+  defp strictly_better?(a, b) do
+    a.metrics.accuracy > b.metrics.accuracy or a.metrics.latency_ms < b.metrics.latency_ms
+  end
+end
+```
+
+---
+
+## 3️⃣ Seed dataset & model spec (persistent Postgres)
+
+```elixir
+dataset = TLBook.Helpers.ensure_dataset("demo-livebook-dataset", tenant_id, ctx)
+
+feature_views =
+  1..8
+  |> Enum.map(fn idx ->
+    TLBook.Helpers.ensure_feature_view(dataset, "demo-shard-#{idx}", ctx)
+  end)
+
+spec = TLBook.Helpers.ensure_model_spec("cerebros-demo-base", tenant_id, ctx)
+
+%{
+  dataset_id: dataset.dataset_id,
+  shards: Enum.map(feature_views, & &1.feature_view_id),
+  spec_id: spec.id
+}
+```
+
+---
+
+## 4️⃣ Create/run a Cerebros ModelRun
+
+```elixir
+metadata = %{
+  "mode" => Atom.to_string(mode),
+  "search_space" => search_space,
+  "feature_views" => Enum.map(feature_views, & &1.feature_view_id)
+}
+
+model_run = TLBook.Helpers.start_model_run(spec, dataset, request_k, metadata, ctx)
+model_run.id
+```
+
+---
+
+## 5️⃣ Generate proposals (mock or remote Cerebros)
+
+```elixir
+proposals =
+  case mode do
+    :mock ->
+      for _ <- 1..request_k do
+        %{
+          "params" => %{
+            "head" => Enum.random(["kgam", "irope"]),
+            "lr" => :math.exp(:rand.uniform() * ( :math.log(1.0e-2) - :math.log(1.0e-5)) + :math.log(1.0e-5)),
+            "controller.smooth" => :rand.uniform() * 0.5,
+            "controller.max_temp" => 0.7 + :rand.uniform() * 0.6,
+            "curation.kernel_bw" => 0.1 + :rand.uniform() * 0.9
+          },
+          "score" => %{"l" => :rand.uniform(), "g" => :rand.uniform()}
+        }
+      end
+
+    :remote ->
+      TLBook.CerebrosClient.propose(cerebros_base, model_run.id, search_space, request_k)
+  end
+
+Enum.take(proposals, 3)
+```
+
+---
+
+## 6️⃣ Evaluate trials & persist best result
+
+```elixir
+dataset_payload = Enum.map(feature_views, & &1.feature_view_id)
+
+trials =
+  proposals
+  |> Enum.with_index(1)
+  |> Enum.map(fn {proposal, rank} ->
+    trial_id = Thunderline.UUID.v7()
+    params = proposal["params"]
+
+    metrics =
+      TLBook.Trainer.run(mode, cerebros_base, trial_id, params, dataset_payload)
+
+    %{
+      id: trial_id,
+      rank: rank,
+      params: params,
+      density: Map.get(proposal, "score", %{}),
+      metrics: metrics
+    }
+  end)
+
+{completed_run, best_trial} = TLBook.Helpers.complete_model_run(model_run, trials, ctx)
+
+TLBook.Helpers.persist_best_artifact(spec, dataset, completed_run, best_trial, module_digest, ctx)
+
+best_trial
+```
+
+---
+
+## 7️⃣ Visualise Pareto frontier & trial table
+
+```elixir
+pareto = TLBook.Pareto.frontier(trials)
+
+plot_rows =
+  Enum.map(trials, fn trial ->
+    %{
+      trial: trial.id,
+      rank: trial.rank,
+      head: trial.params["head"],
+      accuracy: trial.metrics.accuracy,
+      latency_ms: trial.metrics.latency_ms,
+      energy_j: trial.metrics.energy_j,
+      pareto?: Enum.any?(pareto, &(&1.id == trial.id))
+    }
+  end)
+
+VegaLite.new()
+|> VegaLite.data_from_values(plot_rows)
+|> VegaLite.mark(:point)
+|> VegaLite.encode_field(:x, "latency_ms", type: :quantitative, title: "Latency (ms)")
+|> VegaLite.encode_field(:y, "accuracy", type: :quantitative, title: "Accuracy")
+|> VegaLite.encode_field(:color, "head", type: :nominal)
+|> VegaLite.encode_field(:shape, "pareto?", type: :nominal)
+```
+
+```elixir
+Kino.DataTable.new(plot_rows)
+```
+
+---
+
+## 8️⃣ Inspect persisted Thunderline state
+
+```elixir
+fresh_run = Ash.get!(ModelRun, completed_run.id)
+fresh_versions =
+  ModelVersion
+  |> Ash.Query.for_read(:read)
+  |> Ash.Query.filter(spec_id == ^spec.id and dataset_id == ^dataset.id)
+  |> Ash.read!(ctx)
+
+%{
+  run_state: fresh_run.state,
+  completed_trials: fresh_run.completed_trials,
+  best_metric: fresh_run.best_metric,
+  stored_trials: get_in(fresh_run.metadata, ["trials"]) |> length(),
+  versions: Enum.map(fresh_versions, & &1.metrics)
+}
+```
+
+---
+
+## 9️⃣ Remote mode contract
+
+To switch to a real Cerebros service:
+
+1. Export the mode & endpoint before launching Livebook:
+
+```bash
+export CEREBROS_MODE=remote
+export CEREBROS_URL=http://localhost:8088
+```
+
+2. Implement the endpoints:
+   * `POST /propose` → returns the JSON list used above
+   * `POST /train` → returns metrics (`accuracy`, `latency_ms`, optional `energy_j`, `artifact_bytes`)
+
+3. Optional: feed the returned metrics back into Cerebros so the sampler updates the priors.
+
+---
+
+## 🔜 Next steps
+
+* Swap the mock trainer for the real Cerebros bridge once `/train` is wired to the Python worker.
+* Extend the Livebook with Oban workers (`TrainingRun.queue/1`) when background execution is ready.
+* Surface VCV updates in Thundergrid: read the newly inserted `ModelVersion` rows and generate capability vectors for PAC routing.
+* Add dashboards (Kino.VegaLite or Grafana) to compare successive `ModelRun`s for a tenant.
