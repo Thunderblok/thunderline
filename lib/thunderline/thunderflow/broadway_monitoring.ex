@@ -271,30 +271,46 @@ defmodule Thunderline.BroadwayMonitoring do
 
     for i <- 1..total_events do
       now = DateTime.utc_now()
+
       base_payload = %{
         test_id: i,
         timestamp: now,
         payload: generate_test_payload()
       }
+
       build_and_publish = fn attrs ->
         with {:ok, ev} <- Thunderline.Event.new(attrs) do
           case Thunderline.EventBus.publish_event(ev) do
-            {:ok, _} -> :ok
-            {:error, reason} -> Logger.warning("[BroadwayMonitoring] load_test publish failed: #{inspect(reason)} name=#{attrs.name}")
+            {:ok, _} ->
+              :ok
+
+            {:error, reason} ->
+              Logger.warning(
+                "[BroadwayMonitoring] load_test publish failed: #{inspect(reason)} name=#{attrs.name}"
+              )
           end
         end
       end
+
       case test_type do
         :general ->
-          build_and_publish.(%{name: "system.test.load_test_general", type: :load_test_general, source: :flow, payload: base_payload})
+          build_and_publish.(%{
+            name: "system.test.load_test_general",
+            type: :load_test_general,
+            source: :flow,
+            payload: base_payload
+          })
+
         :cross_domain ->
           build_and_publish.(%{
             name: "system.test.load_test_cross_domain",
             type: :load_test_cross_domain,
             source: :flow,
-            payload: Map.merge(base_payload, %{from_domain: "thunderchief", to_domain: "thundercom"}),
+            payload:
+              Map.merge(base_payload, %{from_domain: "thunderchief", to_domain: "thundercom"}),
             target_domain: "thundercom"
           })
+
         :realtime ->
           build_and_publish.(%{
             name: "system.test.load_test_realtime",
@@ -328,7 +344,13 @@ defmodule Thunderline.BroadwayMonitoring do
       timestamp: DateTime.utc_now()
     }
 
-    with {:ok, ev} <- Thunderline.Event.new(%{name: "system.test.general_event", type: :test_general_event, source: :flow, payload: test_event}),
+    with {:ok, ev} <-
+           Thunderline.Event.new(%{
+             name: "system.test.general_event",
+             type: :test_general_event,
+             source: :flow,
+             payload: test_event
+           }),
          {:ok, _} <- Thunderline.EventBus.publish_event(ev) do
       %{success: true, event_type: :general}
     else
@@ -344,13 +366,14 @@ defmodule Thunderline.BroadwayMonitoring do
       timestamp: DateTime.utc_now()
     }
 
-    with {:ok, ev} <- Thunderline.Event.new(%{
-           name: "system.test.cross_domain_event",
-           type: :test_cross_domain_event,
-           source: :flow,
-           payload: test_event,
-           target_domain: "thundercom"
-         }),
+    with {:ok, ev} <-
+           Thunderline.Event.new(%{
+             name: "system.test.cross_domain_event",
+             type: :test_cross_domain_event,
+             source: :flow,
+             payload: test_event,
+             target_domain: "thundercom"
+           }),
          {:ok, _} <- Thunderline.EventBus.publish_event(ev) do
       %{success: true, event_type: :cross_domain}
     else
@@ -366,14 +389,15 @@ defmodule Thunderline.BroadwayMonitoring do
       timestamp: DateTime.utc_now()
     }
 
-    with {:ok, ev} <- Thunderline.Event.new(%{
-           name: "system.test.realtime_event",
-           type: :test_realtime_event,
-           source: :flow,
-           payload: test_event,
-           meta: %{pipeline: :realtime},
-           priority: :high
-         }),
+    with {:ok, ev} <-
+           Thunderline.Event.new(%{
+             name: "system.test.realtime_event",
+             type: :test_realtime_event,
+             source: :flow,
+             payload: test_event,
+             meta: %{pipeline: :realtime},
+             priority: :high
+           }),
          {:ok, _} <- Thunderline.EventBus.publish_event(ev) do
       %{success: true, event_type: :realtime}
     else
@@ -385,12 +409,13 @@ defmodule Thunderline.BroadwayMonitoring do
     topic = "test:legacy:topic"
     payload = %{legacy: true, message: "test legacy broadcast"}
 
-    with {:ok, ev} <- Thunderline.Event.new(%{
-           name: "system.test.legacy_broadcast",
-           type: :legacy_event,
-           source: :flow,
-           payload: Map.put(payload, :topic, topic)
-         }),
+    with {:ok, ev} <-
+           Thunderline.Event.new(%{
+             name: "system.test.legacy_broadcast",
+             type: :legacy_event,
+             source: :flow,
+             payload: Map.put(payload, :topic, topic)
+           }),
          {:ok, _} <- Thunderline.EventBus.publish_event(ev) do
       %{success: true, event_type: :legacy}
     else

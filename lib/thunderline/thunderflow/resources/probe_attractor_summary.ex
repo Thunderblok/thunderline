@@ -13,6 +13,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeAttractorSummary do
   postgres do
     table "probe_attractor_summaries"
     repo Thunderline.Repo
+
     custom_indexes do
       index [:corr_dim]
       index [:lyap]
@@ -25,7 +26,9 @@ defmodule Thunderline.Thunderflow.Resources.ProbeAttractorSummary do
     update :recompute do
       accept [:m, :tau]
       argument :min_points, :integer, allow_nil?: true
-  description "Recompute attractor summary (simple & Rosenstein) with optional new parameters. Updates canonical Lyapunov selection in-place."
+
+      description "Recompute attractor summary (simple & Rosenstein) with optional new parameters. Updates canonical Lyapunov selection in-place."
+
       change fn changeset, _ ->
         # Custom change executed by service layer outside; placeholder to allow action invocation.
         {:ok, changeset}

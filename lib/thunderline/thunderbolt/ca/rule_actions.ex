@@ -8,20 +8,13 @@ defmodule Thunderline.Thunderbolt.CA.RuleActions do
   """
   use Ash.Resource, data_layer: :embedded
 
-  attributes do
-    attribute :born, {:array, :integer}
-    attribute :survive, {:array, :integer}
-    attribute :rate_hz, :integer
-    attribute :seed, :string
-    attribute :zone, :string
-  end
-
   actions do
     defaults []
 
     action :parse_rule do
       returns :map
       argument :line, :string, allow_nil?: false
+
       run fn input, _context ->
         case Thunderline.Thunderbolt.CA.RuleParser.parse(input.arguments.line) do
           {:ok, rule} ->
@@ -33,10 +26,19 @@ defmodule Thunderline.Thunderbolt.CA.RuleActions do
                seed: rule.seed,
                zone: rule.zone
              }}
+
           {:error, err} ->
             {:error, to_string(err[:message] || "invalid rule line")}
         end
       end
     end
+  end
+
+  attributes do
+    attribute :born, {:array, :integer}
+    attribute :survive, {:array, :integer}
+    attribute :rate_hz, :integer
+    attribute :seed, :string
+    attribute :zone, :string
   end
 end

@@ -22,10 +22,16 @@ defmodule Thunderline.Thundervine.SpecParser do
 
   import NimbleParsec
 
-  @type node_spec :: %{name: String.t(), kind: String.t(), ref: String.t(), after: [String.t()], line: pos_integer()}
+  @type node_spec :: %{
+          name: String.t(),
+          kind: String.t(),
+          ref: String.t(),
+          after: [String.t()],
+          line: pos_integer()
+        }
   @type workflow_spec :: %{name: String.t(), nodes: [node_spec()]}
 
-  ws = ignore(repeat(choice([string(" "), string("\t")])) )
+  ws = ignore(repeat(choice([string(" "), string("\t")])))
   ident = ascii_string([?a..?z, ?A..?Z, ?0..?9, ?_, ?., ?-], min: 1)
   name = ident
 
@@ -54,13 +60,16 @@ defmodule Thunderline.Thundervine.SpecParser do
     |> ignore(optional(ws))
     |> eos()
 
-  defparsec :raw, parser
+  defparsec(:raw, parser)
 
   @spec parse(String.t()) :: {:ok, workflow_spec()} | {:error, term()}
   def parse(text) do
     case raw(text) do
-      {:ok, parts, _, _, _, _} -> build(parts)
-      {:error, reason, rest, _, {line, _col}, _} -> {:error, %{message: reason, rest: rest, line: line}}
+      {:ok, parts, _, _, _, _} ->
+        build(parts)
+
+      {:error, reason, rest, _, {line, _col}, _} ->
+        {:error, %{message: reason, rest: rest, line: line}}
     end
   end
 
@@ -70,11 +79,13 @@ defmodule Thunderline.Thundervine.SpecParser do
         {:workflow, name} -> normalize_token(name)
         _ -> nil
       end)
+
     node_parts = Enum.filter(parts, &match?({:node, _}, &1))
 
     nodes =
       Enum.map(node_parts, fn {:node, node_tokens} ->
         {name, attrs} = extract_node(node_tokens)
+
         %{
           name: name,
           kind: Map.get(attrs, :kind, "task"),
@@ -86,19 +97,22 @@ defmodule Thunderline.Thundervine.SpecParser do
 
     # Validate that all :after references exist among defined node names (normalized)
     names = MapSet.new(Enum.map(nodes, fn n -> n.name |> String.trim() end))
+
     case Enum.find(nodes, fn %{after: after_refs} ->
            Enum.find(after_refs, fn ref ->
              ref_norm = ref |> String.trim()
              not MapSet.member?(names, ref_norm)
            end)
          end) do
-      nil -> :ok
+      nil ->
+        :ok
+
       %{after: after_refs, line: line} ->
         unknown = Enum.find(after_refs, fn ref -> not MapSet.member?(names, String.trim(ref)) end)
         throw({:error, {:unknown_after, unknown, line}})
     end
 
-  {:ok, %{name: wf_name, nodes: nodes}}
+    {:ok, %{name: wf_name, nodes: nodes}}
   catch
     {:error, reason} -> {:error, reason}
   end
@@ -119,6 +133,7 @@ defmodule Thunderline.Thundervine.SpecParser do
               [k, v] -> [normalize_token(k), normalize_token(v)]
               other -> other |> List.flatten() |> Enum.map(&normalize_token/1)
             end
+
           Map.put(acc, String.to_atom(k), v)
 
         # after_raw may be a binary or a single-element list; normalize then split
@@ -133,12 +148,14 @@ defmodule Thunderline.Thundervine.SpecParser do
     {name, attrs}
   end
 
-  defp line_from(_tokens), do: 0 # NimbleParsec line metadata available in error path; for success we skip for now
+  # NimbleParsec line metadata available in error path; for success we skip for now
+  defp line_from(_tokens), do: 0
 
   # NimbleParsec can wrap captured binaries in single-element lists when tagged or repeated.
   # Ensure we always return a binary for downstream logic.
   defp normalize_token(value) when is_binary(value), do: value
   defp normalize_token([value]) when is_binary(value), do: value
+
   defp normalize_token(value) when is_list(value) do
     value
     |> List.flatten()
@@ -149,5 +166,6 @@ defmodule Thunderline.Thundervine.SpecParser do
     end)
     |> Enum.join()
   end
+
   defp normalize_token(value), do: to_string(value)
 end

@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource, AshEvents.Events]
+
   require Logger
 
   postgres do
@@ -356,6 +357,7 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
     case parse_pid(coordinator.coordinator_pid) do
       {:ok, pid} ->
         safe_call(pid, signal)
+
       :error ->
         :ok
     end
@@ -363,7 +365,11 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
 
   defp maybe_start_lane_coordinator(coordinator) do
     if Code.ensure_loaded?(Thunderline.Thunderbolt.LaneCoordinator.Supervisor) and
-         function_exported?(Thunderline.Thunderbolt.LaneCoordinator.Supervisor, :start_coordinator, 1) do
+         function_exported?(
+           Thunderline.Thunderbolt.LaneCoordinator.Supervisor,
+           :start_coordinator,
+           1
+         ) do
       Thunderline.Thunderbolt.LaneCoordinator.Supervisor.start_coordinator(coordinator)
     else
       {:error, :lane_coordinator_supervisor_unavailable}

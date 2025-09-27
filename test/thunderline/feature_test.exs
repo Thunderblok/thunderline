@@ -4,6 +4,7 @@ defmodule Thunderline.FeatureTest do
 
   test "enabled?/1 returns false when flag absent" do
     original = Application.get_env(:thunderline, :features, [])
+
     try do
       Application.put_env(:thunderline, :features, [])
       refute Thunderline.Feature.enabled?(:vim)
@@ -14,6 +15,7 @@ defmodule Thunderline.FeatureTest do
 
   test "enabled?/1 returns true when flag present" do
     original = Application.get_env(:thunderline, :features, [])
+
     try do
       Application.put_env(:thunderline, :features, [:vim])
       assert Thunderline.Feature.enabled?(:vim)

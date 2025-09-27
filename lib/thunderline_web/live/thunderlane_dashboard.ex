@@ -41,19 +41,27 @@ defmodule ThunderlineWeb.ThunderlaneDashboard do
     ~H"""
     <div class="thunderlane-dashboard-placeholder px-8 py-10">
       <h1 class="text-3xl font-bold text-gray-900 mb-4">⚡ Thunderlane Dashboard</h1>
-      <p class="text-gray-600 mb-6 max-w-2xl">This is a temporary placeholder LiveView. The immersive visualization (nested hexagonal lanes, radial consensus bursts, flowing performance gradients, and telemetry layers) is implemented in <code>ThunderlineWeb.Live.Components.ThunderlaneDashboard</code> and will be integrated here after component extraction/refactor.</p>
+      <p class="text-gray-600 mb-6 max-w-2xl">
+        This is a temporary placeholder LiveView. The immersive visualization (nested hexagonal lanes, radial consensus bursts, flowing performance gradients, and telemetry layers) is implemented in
+        <code>ThunderlineWeb.Live.Components.ThunderlaneDashboard</code>
+        and will be integrated here after component extraction/refactor.
+      </p>
 
       <div class="mt-8 p-6 rounded-lg border border-dashed border-gray-300 bg-white shadow-sm">
         <h2 class="text-xl font-semibold mb-2">Next Steps</h2>
         <ul class="list-disc ml-6 space-y-1 text-sm text-gray-700">
           <li>Extract visual panels from the component module into function components.</li>
-          <li>Stream real metrics & events via PubSub topics (e.g. <code>"thunderlane:dashboard"</code>).</li>
+          <li>
+            Stream real metrics & events via PubSub topics (e.g. <code>"thunderlane:dashboard"</code>).
+          </li>
           <li>Attach telemetry handlers for per‑panel performance instrumentation.</li>
           <li>Add feature flag gating & role based authorization via AshPolicies.</li>
         </ul>
       </div>
 
-      <div class="mt-10 text-xs text-gray-400 font-mono">placeholder:true • route alive • refactor pending</div>
+      <div class="mt-10 text-xs text-gray-400 font-mono">
+        placeholder:true • route alive • refactor pending
+      </div>
     </div>
     """
   end

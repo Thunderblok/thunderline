@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderflow.Observability.RingBufferTest do
     assert length(recent) == 5
     # Newest first, values 10..6
     values = Enum.map(recent, fn {_ts, {:val, v}} -> v end)
-    assert values == [10,9,8,7,6]
+    assert values == [10, 9, 8, 7, 6]
     assert Process.alive?(pid)
   end
 end

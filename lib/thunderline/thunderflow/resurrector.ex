@@ -10,14 +10,21 @@ defmodule Thunderline.Thunderflow.Resurrector do
   alias Thunderline.Thundercrown.Daisy
 
   def start_link(_), do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
-  def init(_), do: (Process.send_after(self(), :maybe_resurrect, 0); {:ok, %{}})
+
+  def init(_),
+    do:
+      (
+        Process.send_after(self(), :maybe_resurrect, 0)
+        {:ok, %{}}
+      )
 
   def handle_info(:maybe_resurrect, s) do
     case Checkpoint.read() do
       {:ok, %{"pending" => true} = m} -> do_resurrect(m)
-      {:ok, %{pending: true} = m}     -> do_resurrect(m)
+      {:ok, %{pending: true} = m} -> do_resurrect(m)
       _ -> :noop
     end
+
     {:noreply, s}
   end
 
@@ -26,10 +33,20 @@ defmodule Thunderline.Thunderflow.Resurrector do
       nil -> :ok
       snap -> Daisy.restore_all_swarms(snap)
     end
-    pll = Map.get(m, :pll_state) || Map.get(m, "pll_state") || %{"phi" => 0.0, "omega" => 0.25, "eps" => 0.1, "kappa" => 0.05}
+
+    pll =
+      Map.get(m, :pll_state) || Map.get(m, "pll_state") ||
+        %{"phi" => 0.0, "omega" => 0.25, "eps" => 0.1, "kappa" => 0.05}
+
     echo = Map.get(m, :echo_window) || Map.get(m, "echo_window") || []
     Sensor.restore(%{pll: pll, echo: echo})
-    NDJSON.write(%{event: "resumed", reason: Map.get(m, :reason) || Map.get(m, "reason") || "unknown", gate_ts: Map.get(m, :gate_ts) || Map.get(m, "gate_ts")})
+
+    NDJSON.write(%{
+      event: "resumed",
+      reason: Map.get(m, :reason) || Map.get(m, "reason") || "unknown",
+      gate_ts: Map.get(m, :gate_ts) || Map.get(m, "gate_ts")
+    })
+
     Checkpoint.mark_pending(false, "resumed")
     :ok
   end

@@ -44,8 +44,8 @@ defmodule ThunderlineWeb.DashboardLive do
   @impl true
   def mount(params, _session, socket) do
     if connected?(socket) do
-  # Subscribe to centralized dashboard event buffer topic
-  Phoenix.PubSub.subscribe(Thunderline.PubSub, Thunderline.Thunderflow.EventBuffer.topic())
+      # Subscribe to centralized dashboard event buffer topic
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, Thunderline.Thunderflow.EventBuffer.topic())
       # Subscribe to ThunderBridge events
       try do
         ThunderBridge.subscribe_dashboard_events(self())
@@ -63,7 +63,7 @@ defmodule ThunderlineWeb.DashboardLive do
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "domain_events")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "thundergrid:events")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "federation:events")
-  Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderwatch:events")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderwatch:events")
       # Subscribe to aggregated dashboard metrics updates
       try do
         DashboardMetrics.subscribe()
@@ -73,7 +73,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
       # Subscribe to Oban health updates if available
       try do
-  Thunderline.Thunderflow.Telemetry.ObanHealth.subscribe()
+        Thunderline.Thunderflow.Telemetry.ObanHealth.subscribe()
       rescue
         _ -> :ok
       end
@@ -146,7 +146,10 @@ defmodule ThunderlineWeb.DashboardLive do
       |> stream(:dashboard_events, [], dom_id: &("evt-" <> to_string(&1.id)))
       |> then(fn s ->
         events = Thunderline.Thunderflow.EventBuffer.snapshot(50)
-        Enum.reduce(events, s, fn evt, acc -> stream_insert(acc, :dashboard_events, evt, at: 0) end)
+
+        Enum.reduce(events, s, fn evt, acc ->
+          stream_insert(acc, :dashboard_events, evt, at: 0)
+        end)
         |> assign(:events, events)
       end)
 
@@ -210,6 +213,7 @@ defmodule ThunderlineWeb.DashboardLive do
   @impl true
   def handle_params(%{"domain" => domain} = params, _uri, socket) do
     tab = validate_tab(params["tab"])
+
     {:noreply,
      socket
      |> assign(:active_domain, String.to_atom(domain))
@@ -219,6 +223,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
   def handle_params(params, _uri, socket) do
     tab = validate_tab(params["tab"])
+
     {:noreply,
      socket
      |> assign(:active_domain, :overview)
@@ -228,8 +233,8 @@ defmodule ThunderlineWeb.DashboardLive do
 
   @impl true
   def handle_info({:ash_telemetry, telemetry_data}, socket) do
-  # Forward to event buffer for normalization & broadcasting
-  Thunderline.Thunderflow.EventBuffer.put({:ash_telemetry, telemetry_data})
+    # Forward to event buffer for normalization & broadcasting
+    Thunderline.Thunderflow.EventBuffer.put({:ash_telemetry, telemetry_data})
     # Update dashboard state with real telemetry data
     updated_socket =
       socket
@@ -243,6 +248,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
   def handle_info({:gate_auth, result, meta}, socket) do
     stats = socket.assigns[:gate_auth_stats] || %{}
+
     updated =
       stats
       |> Map.update(:total, 1, &(&1 + 1))
@@ -250,7 +256,12 @@ defmodule ThunderlineWeb.DashboardLive do
       |> then(fn m ->
         total = m[:total]
         success = Map.get(m, :success, 0)
-        Map.put(m, :success_rate, (if total > 0, do: Float.round(success / total * 100.0, 2), else: 0.0))
+
+        Map.put(
+          m,
+          :success_rate,
+          if(total > 0, do: Float.round(success / total * 100.0, 2), else: 0.0)
+        )
       end)
 
     {:noreply, assign(socket, :gate_auth_stats, updated)}
@@ -391,7 +402,7 @@ defmodule ThunderlineWeb.DashboardLive do
     events = Map.get(metrics, :events, %{})
     agents = Map.get(metrics, :agents, %{})
     thunderlane = Map.get(metrics, :thunderlane, %{})
-  ml_pipeline = Map.get(metrics, :ml_pipeline)
+    ml_pipeline = Map.get(metrics, :ml_pipeline)
     # Existing domain metrics kept in :domain_metrics
     domain_metrics = socket.assigns[:domain_metrics] || %{}
 
@@ -456,19 +467,19 @@ defmodule ThunderlineWeb.DashboardLive do
 
   def handle_info({:agent_event, event}, socket) do
     socket = handle_agent_event(socket, event)
-  Thunderline.Thunderflow.EventBuffer.put({:agent_event, event})
+    Thunderline.Thunderflow.EventBuffer.put({:agent_event, event})
     {:noreply, socket}
   end
 
   def handle_info({:chunk_event, event}, socket) do
     socket = handle_chunk_event(socket, event)
-  Thunderline.Thunderflow.EventBuffer.put({:chunk_event, event})
+    Thunderline.Thunderflow.EventBuffer.put({:chunk_event, event})
     {:noreply, socket}
   end
 
   def handle_info({:domain_event, domain, event}, socket) do
     socket = handle_domain_event(socket, domain, event)
-  Thunderline.Thunderflow.EventBuffer.put({:domain_event, domain, event})
+    Thunderline.Thunderflow.EventBuffer.put({:domain_event, domain, event})
     {:noreply, socket}
   end
 
@@ -486,16 +497,24 @@ defmodule ThunderlineWeb.DashboardLive do
   # Raw thunderwatch event -> accumulate metrics
   def handle_info({:thunderwatch, %{seq: seq, path: path, meta: meta} = evt}, socket) do
     now = System.system_time(:microsecond)
-    tw = socket.assigns[:thunderwatch_stats] || %{files_indexed: 0, last_seq: 0, events: [], domain_counts: %{}, last_sample_at: now}
+
+    tw =
+      socket.assigns[:thunderwatch_stats] ||
+        %{files_indexed: 0, last_seq: 0, events: [], domain_counts: %{}, last_sample_at: now}
+
     # Update domain counts using inferred domain in meta
     domain = meta[:domain] || :system
     domain_counts = Map.update(tw.domain_counts || %{}, domain, 1, &(&1 + 1))
-    files_indexed = (socket.assigns[:thunderwatch_files] || %{}) |> Map.put(path, true) |> map_size()
+
+    files_indexed =
+      (socket.assigns[:thunderwatch_files] || %{}) |> Map.put(path, true) |> map_size()
+
     thunderwatch_files = (socket.assigns[:thunderwatch_files] || %{}) |> Map.put(path, true)
     # Keep sliding window of last ~200 events
     events = [{now, evt} | Enum.take(tw.events || [], 199)]
     events_last_min = count_recent(events, 60_000_000)
     utilization = min(events_last_min / 200.0 * 100.0, 100.0)
+
     stats = %{
       files_indexed: files_indexed,
       seq: seq,
@@ -505,7 +524,11 @@ defmodule ThunderlineWeb.DashboardLive do
       utilization: utilization,
       events: events
     }
-    {:noreply, socket |> assign(:thunderwatch_stats, stats) |> assign(:thunderwatch_files, thunderwatch_files)}
+
+    {:noreply,
+     socket
+     |> assign(:thunderwatch_stats, stats)
+     |> assign(:thunderwatch_files, thunderwatch_files)}
   end
 
   defp count_recent(events, window_us) do
@@ -514,10 +537,14 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   # Accept raw ThunderCell aggregate state maps forwarded via PubSub or bridge
-  def handle_info(%{thundercell_cluster: _cluster, thundercell_telemetry: _telemetry} = state_map, socket) do
+  def handle_info(
+        %{thundercell_cluster: _cluster, thundercell_telemetry: _telemetry} = state_map,
+        socket
+      ) do
     now = System.monotonic_time(:millisecond)
     last_ts = socket.assigns[:last_thundercell_update_ts] || 0
-    min_interval = 1_000 # ms throttle window
+    # ms throttle window
+    min_interval = 1_000
 
     cond do
       now - last_ts < min_interval ->
@@ -525,12 +552,15 @@ defmodule ThunderlineWeb.DashboardLive do
         if socket.assigns[:thundercell_coalesce_timer] do
           {:noreply, assign(socket, :pending_thundercell_state, state_map)}
         else
-          timer = Process.send_after(self(), :flush_thundercell_state, min_interval - (now - last_ts))
+          timer =
+            Process.send_after(self(), :flush_thundercell_state, min_interval - (now - last_ts))
+
           {:noreply,
            socket
            |> assign(:pending_thundercell_state, state_map)
            |> assign(:thundercell_coalesce_timer, timer)}
         end
+
       true ->
         # Apply immediately
         socket =
@@ -538,7 +568,10 @@ defmodule ThunderlineWeb.DashboardLive do
           |> assign(:thundercell_state, state_map)
           |> assign(:last_thundercell_update_ts, now)
           |> update(:system_metrics, fn metrics ->
-            Map.merge(metrics || %{}, Map.take(state_map, [:thundercell_cluster, :thundercell_telemetry]))
+            Map.merge(
+              metrics || %{},
+              Map.take(state_map, [:thundercell_cluster, :thundercell_telemetry])
+            )
           end)
 
         {:noreply, socket}
@@ -550,6 +583,7 @@ defmodule ThunderlineWeb.DashboardLive do
     case socket.assigns do
       %{pending_thundercell_state: state_map} ->
         now = System.monotonic_time(:millisecond)
+
         socket =
           socket
           |> assign(:thundercell_state, state_map)
@@ -557,9 +591,14 @@ defmodule ThunderlineWeb.DashboardLive do
           |> assign(:pending_thundercell_state, nil)
           |> assign(:thundercell_coalesce_timer, nil)
           |> update(:system_metrics, fn metrics ->
-            Map.merge(metrics || %{}, Map.take(state_map, [:thundercell_cluster, :thundercell_telemetry]))
+            Map.merge(
+              metrics || %{},
+              Map.take(state_map, [:thundercell_cluster, :thundercell_telemetry])
+            )
           end)
+
         {:noreply, socket}
+
       _ ->
         {:noreply, assign(socket, :thundercell_coalesce_timer, nil)}
     end
@@ -577,11 +616,14 @@ defmodule ThunderlineWeb.DashboardLive do
         if count > 0 do
           Logger.debug("Suppressed #{count} unknown messages in last window")
         end
+
         Logger.debug("Unknown message in DashboardLive: #{inspect(limit_msg(msg))}")
+
         {:noreply,
          socket
          |> assign(:unknown_msg_last_log_ts, now)
          |> assign(:unknown_msg_count, 0)}
+
       true ->
         {:noreply, assign(socket, :unknown_msg_count, count + 1)}
     end
@@ -589,6 +631,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
   defp limit_msg(msg) do
     rendered = inspect(msg)
+
     if byte_size(rendered) > 500 do
       String.slice(rendered, 0, 500) <> "…(truncated)"
     else
@@ -781,8 +824,11 @@ defmodule ThunderlineWeb.DashboardLive do
           try do
             if user = socket.assigns[:current_user] do
               key = {user[:id] || user.id, :last_dashboard_tab}
+
               case :ets.whereis(:thunderline_session_cache) do
-                :undefined -> nil
+                :undefined ->
+                  nil
+
                 _ ->
                   case :ets.lookup(:thunderline_session_cache, key) do
                     [{^key, tab}] when is_binary(tab) -> validate_tab(tab)
@@ -795,7 +841,9 @@ defmodule ThunderlineWeb.DashboardLive do
           rescue
             _ -> nil
           end
-        tab -> validate_tab(tab)
+
+        tab ->
+          validate_tab(tab)
       end || "overview"
 
     socket
@@ -820,19 +868,35 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:chat_messages, [])
     |> assign(:profile_updates, [])
     # Ensure current_user comes from Auth hook; fallback to a demo actor if absent
-    |> assign_new(:current_user, fn -> %{id: UUID.uuid4(), name: "Thunder Operator", role: :owner, tenant_id: "demo"} end)
+    |> assign_new(:current_user, fn ->
+      %{id: UUID.uuid4(), name: "Thunder Operator", role: :owner, tenant_id: "demo"}
+    end)
     # Add the 8 critical dashboard component data
     |> assign(:system_health, %{})
     |> assign(:event_flow_data, [])
-  |> assign(:events, [])
+    |> assign(:events, [])
     |> assign(:alerts_data, %{})
     |> assign(:memory_metrics_data, %{})
     |> assign(:federation_data, %{})
     |> assign(:governance_data, %{})
     |> assign(:orchestration_data, %{})
     |> assign(:controls_data, %{})
-    |> assign(:gate_auth_stats, %{total: 0, success: 0, missing: 0, expired: 0, invalid: 0, deny: 0, success_rate: 0.0})
-  |> assign(:thunderwatch_stats, %{files_indexed: 0, seq: 0, events_last_min: 0, utilization: 0, domain_counts: %{}})
+    |> assign(:gate_auth_stats, %{
+      total: 0,
+      success: 0,
+      missing: 0,
+      expired: 0,
+      invalid: 0,
+      deny: 0,
+      success_rate: 0.0
+    })
+    |> assign(:thunderwatch_stats, %{
+      files_indexed: 0,
+      seq: 0,
+      events_last_min: 0,
+      utilization: 0,
+      domain_counts: %{}
+    })
     |> assign(:ml_pipeline_status, get_ml_pipeline_status())
   end
 
@@ -860,7 +924,9 @@ defmodule ThunderlineWeb.DashboardLive do
             {:read_concurrency, true},
             {:write_concurrency, true}
           ])
-        _tid -> :ok
+
+        _tid ->
+          :ok
       end
     rescue
       _ -> :ok
@@ -878,9 +944,11 @@ defmodule ThunderlineWeb.DashboardLive do
 
     socket
   end
+
   defp maybe_persist_tab(socket, _), do: socket
 
   defp validate_tab(nil), do: "overview"
+
   defp validate_tab(tab) when is_binary(tab) do
     if tab in allowed_tabs(), do: tab, else: "overview"
   end
@@ -899,13 +967,13 @@ defmodule ThunderlineWeb.DashboardLive do
     system_metrics = get_real_system_metrics()
 
     # Get domain-specific metrics
-      domain_metrics = %{
+    domain_metrics = %{
       thundercore: DashboardMetrics.thundercore_metrics(),
       thunderbit: get_thunderbit_metrics(),
       thunderbolt: get_thunderbolt_metrics(),
       thunderblock: DashboardMetrics.thunderblock_metrics(),
       thundergrid: DashboardMetrics.thundergrid_metrics(),
-        thunderblock_vault: DashboardMetrics.thunderblock_vault_metrics(),
+      thunderblock_vault: DashboardMetrics.thunderblock_vault_metrics(),
       thundercom: DashboardMetrics.thundercom_metrics(),
       thundereye: DashboardMetrics.thundereye_metrics(),
       thunderchief: DashboardMetrics.thunderchief_metrics(),
@@ -928,7 +996,7 @@ defmodule ThunderlineWeb.DashboardLive do
     governance_data = get_governance_data()
     orchestration_data = get_orchestration_data()
     controls_data = get_controls_data()
-  ml_pipeline_status = get_ml_pipeline_status()
+    ml_pipeline_status = get_ml_pipeline_status()
 
     socket
     |> assign(:loading, false)
@@ -1025,6 +1093,7 @@ defmodule ThunderlineWeb.DashboardLive do
       if Process.whereis(Thunderline.ThunderBridge) == nil do
         raise "thunder_bridge_not_running"
       end
+
       case ThunderBridge.get_thunderbolt_registry() do
         {:ok, registry} ->
           %{
@@ -1050,6 +1119,7 @@ defmodule ThunderlineWeb.DashboardLive do
       if Process.whereis(Thunderline.ThunderBridge) == nil do
         raise "thunder_bridge_not_running"
       end
+
       case ThunderBridge.get_thunderbit_observer() do
         {:ok, observer} ->
           %{
@@ -1188,7 +1258,7 @@ defmodule ThunderlineWeb.DashboardLive do
       {:thunderbolt, "⚡"},
       {:thunderblock, "🏗️"},
       {:thundergrid, "🔷"},
-  {:thunderblock_vault, "🗄️"},
+      {:thunderblock_vault, "🗄️"},
       {:thundercom, "📡"},
       {:thundereye, "👁️"},
       {:thunderchief, "👑"},
@@ -1586,6 +1656,7 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   defp pipeline_component_status(nil), do: :unknown
+
   defp pipeline_component_status(module) do
     cond do
       Code.ensure_loaded?(module) and function_exported?(module, :enabled?, 0) ->
@@ -1620,15 +1691,26 @@ defmodule ThunderlineWeb.DashboardLive do
 
     updated
     |> Map.put(:notes, Map.get(incoming, :notes, base.notes))
-    |> Map.put(:trial_metrics, Map.merge(base[:trial_metrics] || %{}, Map.get(incoming, :trial_metrics, %{})))
-    |> Map.put(:parzen_metrics, Map.merge(base[:parzen_metrics] || %{}, Map.get(incoming, :parzen_metrics, %{})))
+    |> Map.put(
+      :trial_metrics,
+      Map.merge(base[:trial_metrics] || %{}, Map.get(incoming, :trial_metrics, %{}))
+    )
+    |> Map.put(
+      :parzen_metrics,
+      Map.merge(base[:parzen_metrics] || %{}, Map.get(incoming, :parzen_metrics, %{}))
+    )
   end
+
   defp normalize_ml_pipeline_status(_), do: get_ml_pipeline_status()
 
   defp module_for_step(step), do: Map.get(@pipeline_modules, step)
 
-  defp pipeline_status_class(:online), do: "bg-emerald-500/20 text-emerald-200 border-emerald-400/60"
-  defp pipeline_status_class(:disabled), do: "bg-yellow-500/20 text-yellow-200 border-yellow-400/60"
+  defp pipeline_status_class(:online),
+    do: "bg-emerald-500/20 text-emerald-200 border-emerald-400/60"
+
+  defp pipeline_status_class(:disabled),
+    do: "bg-yellow-500/20 text-yellow-200 border-yellow-400/60"
+
   defp pipeline_status_class(:scaffolded), do: "bg-blue-500/15 text-blue-200 border-blue-400/40"
   defp pipeline_status_class(:missing), do: "bg-red-500/15 text-red-200 border-red-400/40"
   defp pipeline_status_class(:offline), do: "bg-slate-500/20 text-slate-200 border-slate-400/40"
@@ -1639,7 +1721,10 @@ defmodule ThunderlineWeb.DashboardLive do
   defp pipeline_status_label(:scaffolded), do: "SCAFFOLD"
   defp pipeline_status_label(:missing), do: "MISSING"
   defp pipeline_status_label(:offline), do: "OFFLINE"
-  defp pipeline_status_label(other) when is_atom(other), do: other |> Atom.to_string() |> String.upcase()
+
+  defp pipeline_status_label(other) when is_atom(other),
+    do: other |> Atom.to_string() |> String.upcase()
+
   defp pipeline_status_label(other) when is_binary(other), do: String.upcase(other)
   defp pipeline_status_label(_), do: "UNKNOWN"
 
@@ -1659,6 +1744,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
     Enum.join(parts, " • ")
   end
+
   defp format_trial_last_event(_), do: "—"
 
   defp format_parzen_last_observation(%{best_metric: metric} = parzen) do
@@ -1678,12 +1764,15 @@ defmodule ThunderlineWeb.DashboardLive do
       _ -> Enum.join(parts, " • ")
     end
   end
+
   defp format_parzen_last_observation(_), do: "—"
 
   defp format_metric(nil), do: "—"
+
   defp format_metric(value) when is_float(value) do
     :erlang.float_to_binary(value, [:compact, {:decimals, 4}])
   end
+
   defp format_metric(value) when is_integer(value), do: Integer.to_string(value)
   defp format_metric(value) when is_binary(value), do: value
   defp format_metric(value), do: to_string(value)
@@ -1695,6 +1784,7 @@ defmodule ThunderlineWeb.DashboardLive do
       _ -> DateTime.to_iso8601(dt)
     end
   end
+
   defp format_timestamp(_), do: nil
 
   defp optional_identifier(_label, nil), do: nil

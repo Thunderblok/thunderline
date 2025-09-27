@@ -9,11 +9,13 @@ defmodule Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback do
     with {:ok, {ar, ac}} <- shape(a),
          {:ok, {br, bc}} <- shape(b),
          true <- ac == br do
-      res = for i <- 0..(ar - 1) do
-        for j <- 0..(bc - 1) do
-          Enum.reduce(0..(ac - 1), 0.0, fn k, acc -> acc + get(a, i, k) * get(b, k, j) end)
+      res =
+        for i <- 0..(ar - 1) do
+          for j <- 0..(bc - 1) do
+            Enum.reduce(0..(ac - 1), 0.0, fn k, acc -> acc + get(a, i, k) * get(b, k, j) end)
+          end
         end
-      end
+
       {:ok, res}
     else
       false -> {:error, :shape_mismatch}
@@ -26,6 +28,7 @@ defmodule Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback do
   defp shape(list) when is_list(list) and list != [] do
     rows = length(list)
     cols = length(hd(list))
+
     if Enum.all?(list, fn row -> is_list(row) and length(row) == cols end) do
       {:ok, {rows, cols}}
     else

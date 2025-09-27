@@ -10,18 +10,21 @@ defmodule Thunderline.Thundercom.Voice.Supervisor do
   def start_link(arg), do: DynamicSupervisor.start_link(__MODULE__, arg, name: __MODULE__)
 
   @impl true
-def init(_arg), do: DynamicSupervisor.init(strategy: :one_for_one)
+  def init(_arg), do: DynamicSupervisor.init(strategy: :one_for_one)
 
   def ensure_room(room_id) do
-  case Registry.lookup(Thunderline.Thundercom.Voice.Registry, room_id) do
+    case Registry.lookup(Thunderline.Thundercom.Voice.Registry, room_id) do
       [] ->
-  spec = {Thunderline.Thundercom.Voice.RoomPipeline, room_id}
+        spec = {Thunderline.Thundercom.Voice.RoomPipeline, room_id}
+
         case DynamicSupervisor.start_child(__MODULE__, spec) do
           {:ok, pid} -> {:ok, pid}
           {:error, {:already_started, pid}} -> {:ok, pid}
           {:error, reason} -> {:error, reason}
         end
-      [{pid, _}] -> {:ok, pid}
+
+      [{pid, _}] ->
+        {:ok, pid}
     end
   end
 
@@ -34,13 +37,16 @@ def init(_arg), do: DynamicSupervisor.init(strategy: :one_for_one)
   """
   def stop_room(room_id) do
     case Registry.lookup(Thunderline.Thundercom.Voice.Registry, room_id) do
-      [] -> :ok
+      [] ->
+        :ok
+
       [{pid, _}] ->
         try do
           GenServer.stop(pid, :normal)
         catch
           _, _ -> :ok
         end
+
         :ok
     end
   end

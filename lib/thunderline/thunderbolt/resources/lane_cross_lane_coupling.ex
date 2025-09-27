@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource, AshEvents.Events]
+
   require Logger
 
   postgres do
@@ -364,15 +365,27 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
     Thunderline.Thunderbolt.LaneCouplingPipeline.initialize_coupling(coupling)
 
     # Emit coupling creation event
-    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.created", source: :bolt, type: :coupling_created, payload: %{
-      coupling_id: coupling.id,
-      source_lane: coupling.source_lane,
-      target_lane: coupling.target_lane,
-      alpha_gain: coupling.alpha_gain
-    }, meta: %{pipeline: :realtime}) do
+    with {:ok, ev} <-
+           Thunderline.Event.new(
+             name: "system.coupling.created",
+             source: :bolt,
+             type: :coupling_created,
+             payload: %{
+               coupling_id: coupling.id,
+               source_lane: coupling.source_lane,
+               target_lane: coupling.target_lane,
+               alpha_gain: coupling.alpha_gain
+             },
+             meta: %{pipeline: :realtime}
+           ) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish coupling.created failed: #{inspect(reason)}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "[CrossLaneCoupling] publish coupling.created failed: #{inspect(reason)}"
+          )
       end
     end
 
@@ -388,9 +401,9 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
 
   defp validate_alpha_bounds(changeset) do
     alpha = Ash.Changeset.get_attribute(changeset, :alpha_gain)
-  # Use get_data/2 for the full struct; retain backward compatibility expectation
-  data = Ash.Changeset.get_data(changeset, :__struct__)
-  bounds = (data && Map.get(data, :adaptation_bounds)) || %{min: 0.0, max: 1.0}
+    # Use get_data/2 for the full struct; retain backward compatibility expectation
+    data = Ash.Changeset.get_data(changeset, :__struct__)
+    bounds = (data && Map.get(data, :adaptation_bounds)) || %{min: 0.0, max: 1.0}
 
     min_alpha = Map.get(bounds, :min, 0.0)
     max_alpha = Map.get(bounds, :max, 1.0)
@@ -407,15 +420,25 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
 
   defp apply_alpha_tuning(_changeset, coupling) do
     # Real-time alpha gain update to all active coordinators
-    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.alpha_tuned", source: :bolt, type: :alpha_tuned, payload: %{
-      coupling_id: coupling.id,
-      source_lane: coupling.source_lane,
-      target_lane: coupling.target_lane,
-      new_alpha: coupling.alpha_gain
-    }, meta: %{pipeline: :realtime}) do
+    with {:ok, ev} <-
+           Thunderline.Event.new(
+             name: "system.coupling.alpha_tuned",
+             source: :bolt,
+             type: :alpha_tuned,
+             payload: %{
+               coupling_id: coupling.id,
+               source_lane: coupling.source_lane,
+               target_lane: coupling.target_lane,
+               new_alpha: coupling.alpha_gain
+             },
+             meta: %{pipeline: :realtime}
+           ) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish alpha_tuned failed: #{inspect(reason)}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("[CrossLaneCoupling] publish alpha_tuned failed: #{inspect(reason)}")
       end
     end
 
@@ -432,14 +455,24 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
   defp activate_coupling_pipeline(_changeset, coupling) do
     Thunderline.Thunderbolt.LaneCouplingPipeline.activate_coupling(coupling.id)
 
-    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.activated", source: :bolt, type: :coupling_activated, payload: %{
-      coupling_id: coupling.id,
-      source_lane: coupling.source_lane,
-      target_lane: coupling.target_lane
-    }, meta: %{pipeline: :realtime}) do
+    with {:ok, ev} <-
+           Thunderline.Event.new(
+             name: "system.coupling.activated",
+             source: :bolt,
+             type: :coupling_activated,
+             payload: %{
+               coupling_id: coupling.id,
+               source_lane: coupling.source_lane,
+               target_lane: coupling.target_lane
+             },
+             meta: %{pipeline: :realtime}
+           ) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish activated failed: #{inspect(reason)}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("[CrossLaneCoupling] publish activated failed: #{inspect(reason)}")
       end
     end
 
@@ -449,14 +482,24 @@ defmodule Thunderline.Thunderbolt.Resources.CrossLaneCoupling do
   defp deactivate_coupling_pipeline(_changeset, coupling) do
     Thunderline.Thunderbolt.LaneCouplingPipeline.deactivate_coupling(coupling.id)
 
-    with {:ok, ev} <- Thunderline.Event.new(name: "system.coupling.deactivated", source: :bolt, type: :coupling_deactivated, payload: %{
-      coupling_id: coupling.id,
-      source_lane: coupling.source_lane,
-      target_lane: coupling.target_lane
-    }, meta: %{pipeline: :realtime}) do
+    with {:ok, ev} <-
+           Thunderline.Event.new(
+             name: "system.coupling.deactivated",
+             source: :bolt,
+             type: :coupling_deactivated,
+             payload: %{
+               coupling_id: coupling.id,
+               source_lane: coupling.source_lane,
+               target_lane: coupling.target_lane
+             },
+             meta: %{pipeline: :realtime}
+           ) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[CrossLaneCoupling] publish deactivated failed: #{inspect(reason)}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("[CrossLaneCoupling] publish deactivated failed: #{inspect(reason)}")
       end
     end
 

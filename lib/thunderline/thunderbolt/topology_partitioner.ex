@@ -8,6 +8,7 @@ defmodule Thunderline.Thunderbolt.TopologyPartitioner do
     total = topology.total_cells || 0
     partitions = if total > 0, do: max(1, div(total, 50_000)), else: 1
     assignments = %{0 => %{cells: total, range: {0, max(total - 1, 0)}}}
+
     {:ok,
      %{
        partition_count: partitions,

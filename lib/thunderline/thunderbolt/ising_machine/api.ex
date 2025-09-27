@@ -6,7 +6,9 @@ defmodule Thunderline.Thunderbolt.IsingMachine.API do
   downstream pattern matches that handle error branches don't trigger
   unreachable clause warnings during compilation.
   """
-  def quick_solve(_h, _w, opts \\ []), do: maybe_ok(%{energy: 0.0, steps: Keyword.get(opts, :max_steps, 0)}, opts)
+  def quick_solve(_h, _w, opts \\ []),
+    do: maybe_ok(%{energy: 0.0, steps: Keyword.get(opts, :max_steps, 0)}, opts)
+
   def solve_grid(opts \\ []), do: maybe_ok(%{result: :grid_solution}, opts)
   def solve_max_cut(_edges, _n, opts \\ []), do: maybe_ok(%{cut: 0.0}, opts)
   def solve_with_parallel_tempering(_lat, opts \\ []), do: maybe_ok(%{energy: 0.0}, opts)

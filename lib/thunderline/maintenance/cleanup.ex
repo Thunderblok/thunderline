@@ -23,6 +23,7 @@ defmodule Thunderline.Maintenance.Cleanup do
   @spec default_paths() :: %{logs: [binary()], artifacts: [binary()]}
   def default_paths do
     conf = Application.get_env(:thunderline, __MODULE__, [])
+
     %{
       logs: Keyword.get(conf, :log_paths, ["log", "erl_crash.dump", "thunderline_chk.dets"]),
       artifacts:
@@ -43,6 +44,7 @@ defmodule Thunderline.Maintenance.Cleanup do
   @spec cutoff_from(String.t() | nil) :: DateTime.t() | nil
   def cutoff_from(nil), do: nil
   def cutoff_from(""), do: nil
+
   def cutoff_from(str) when is_binary(str) do
     with [_, num_s, unit] <- Regex.run(~r/^\s*(\d+)\s*([smhdw])\s*$/i, str),
          {num, ""} <- Integer.parse(num_s) do
@@ -66,7 +68,9 @@ defmodule Thunderline.Maintenance.Cleanup do
 
   Returns a list of {path, size_bytes, mtime} tuples.
   """
-  @spec list_candidates(category(), DateTime.t() | nil) :: [{binary(), non_neg_integer(), DateTime.t()}]
+  @spec list_candidates(category(), DateTime.t() | nil) :: [
+          {binary(), non_neg_integer(), DateTime.t()}
+        ]
   def list_candidates(category, cutoff) do
     paths = default_paths()
 
@@ -102,6 +106,7 @@ defmodule Thunderline.Maintenance.Cleanup do
         case File.stat(path) do
           {:ok, %File.Stat{mtime: mtime, size: size}} ->
             mdt = datetime_from_erl(mtime)
+
             if cutoff == nil or DateTime.compare(mdt, cutoff) == :lt do
               [{path, size, mdt}]
             else
@@ -128,9 +133,15 @@ defmodule Thunderline.Maintenance.Cleanup do
   Returns: %{count: n, bytes: total, deleted: [paths], errors: [{path, reason}]}
   """
   @spec delete([{binary(), non_neg_integer(), DateTime.t()}], boolean()) ::
-          %{count: non_neg_integer(), bytes: non_neg_integer(), deleted: [binary()], errors: list()}
+          %{
+            count: non_neg_integer(),
+            bytes: non_neg_integer(),
+            deleted: [binary()],
+            errors: list()
+          }
   def delete(candidates, dry_run?) do
-    Enum.reduce(candidates, %{count: 0, bytes: 0, deleted: [], errors: []}, fn {path, size, _}, acc ->
+    Enum.reduce(candidates, %{count: 0, bytes: 0, deleted: [], errors: []}, fn {path, size, _},
+                                                                               acc ->
       case do_delete(path, dry_run?) do
         :ok ->
           %{acc | count: acc.count + 1, bytes: acc.bytes + size, deleted: [path | acc.deleted]}
@@ -142,6 +153,7 @@ defmodule Thunderline.Maintenance.Cleanup do
   end
 
   defp do_delete(_path, true), do: :ok
+
   defp do_delete(path, false) do
     case File.rm(path) do
       :ok -> :ok

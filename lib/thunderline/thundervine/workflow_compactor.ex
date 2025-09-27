@@ -45,8 +45,11 @@ defmodule Thunderline.Thundervine.WorkflowCompactor do
 
   defp seal(wf) do
     case Ash.Changeset.for_update(wf, :seal, %{}) |> Ash.update() do
-      {:ok, _} -> Logger.info("[WorkflowCompactor] sealed workflow=#{wf.id}")
-      {:error, err} -> Logger.warning("[WorkflowCompactor] seal_failed=#{inspect(err)} wf=#{wf.id}")
+      {:ok, _} ->
+        Logger.info("[WorkflowCompactor] sealed workflow=#{wf.id}")
+
+      {:error, err} ->
+        Logger.warning("[WorkflowCompactor] seal_failed=#{inspect(err)} wf=#{wf.id}")
     end
   end
 end

@@ -20,7 +20,13 @@ defmodule Thunderline.Thunderflow.Events.Linter do
   patterns (<segment>.<segment>.<...>) and apply static validations.
   """
 
-  @type issue :: %{severity: :error | :warning, rule: atom(), detail: term(), file: String.t() | nil, line: integer() | nil}
+  @type issue :: %{
+          severity: :error | :warning,
+          rule: atom(),
+          detail: term(),
+          file: String.t() | nil,
+          line: integer() | nil
+        }
 
   @event_regex ~r/"([a-z0-9_]+\.[a-z0-9_]+\.[a-z0-9_\.]+)"/i
 
@@ -44,7 +50,8 @@ defmodule Thunderline.Thunderflow.Events.Linter do
     for {match, _idx} <- Regex.scan(@event_regex, content, return: :index), reduce: [] do
       acc ->
         [{_full, {start, len}}] = [match]
-        name = String.slice(content, start + 1, len - 2) # remove quotes
+        # remove quotes
+        name = String.slice(content, start + 1, len - 2)
         line = content |> binary_part(0, start + len) |> String.split("\n") |> length()
         [%{name: name, file: path, line: line} | acc]
     end
@@ -69,8 +76,12 @@ defmodule Thunderline.Thunderflow.Events.Linter do
 
   defp rule_segments(issues, %{name: name} = e) do
     segs = String.split(name, ".")
+
     if length(segs) < 2 do
-      [%{severity: :error, rule: :too_few_segments, detail: name, file: e.file, line: e.line} | issues]
+      [
+        %{severity: :error, rule: :too_few_segments, detail: name, file: e.file, line: e.line}
+        | issues
+      ]
     else
       issues
     end
@@ -80,10 +91,25 @@ defmodule Thunderline.Thunderflow.Events.Linter do
     prefix = name |> String.split(".") |> Enum.take(2) |> Enum.join(".")
     domain = infer_domain_from_name(name)
     allowed = Map.get(cats, domain, ["system"])
+
     cond do
-      Enum.any?(allowed, &String.starts_with?(name, &1)) -> issues
-      Enum.any?(allowed, &String.starts_with?(prefix, &1)) -> issues
-      true -> [%{severity: :warning, rule: :category_mismatch, detail: {domain, name}, file: e.file, line: e.line} | issues]
+      Enum.any?(allowed, &String.starts_with?(name, &1)) ->
+        issues
+
+      Enum.any?(allowed, &String.starts_with?(prefix, &1)) ->
+        issues
+
+      true ->
+        [
+          %{
+            severity: :warning,
+            rule: :category_mismatch,
+            detail: {domain, name},
+            file: e.file,
+            line: e.line
+          }
+          | issues
+        ]
     end
   end
 
@@ -91,15 +117,29 @@ defmodule Thunderline.Thunderflow.Events.Linter do
     if Map.has_key?(registry, name) do
       issues
     else
-      [%{severity: :warning, rule: :unregistered_event, detail: name, file: e.file, line: e.line} | issues]
+      [
+        %{severity: :warning, rule: :unregistered_event, detail: name, file: e.file, line: e.line}
+        | issues
+      ]
     end
   end
 
   defp rule_ai_whitelist(issues, %{name: name} = e, ai_whitelist) do
     cond do
       String.starts_with?(name, "ai.") and name not in ai_whitelist ->
-        [%{severity: :error, rule: :ai_event_not_whitelisted, detail: name, file: e.file, line: e.line} | issues]
-      true -> issues
+        [
+          %{
+            severity: :error,
+            rule: :ai_event_not_whitelisted,
+            detail: name,
+            file: e.file,
+            line: e.line
+          }
+          | issues
+        ]
+
+      true ->
+        issues
     end
   end
 

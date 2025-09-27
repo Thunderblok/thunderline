@@ -6,6 +6,7 @@ defmodule Guardrails.LinkPresenceEnforcedTest do
       Path.wildcard("lib/thunderline/thunderlink/**/*.ex")
       |> Enum.flat_map(fn f ->
         body = File.read!(f)
+
         if Regex.match?(~r/Message\.create\(|join_channel\(|send_message\(/, body) and
              not String.contains?(body, "with_presence(") do
           [f]

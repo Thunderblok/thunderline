@@ -14,7 +14,10 @@ defmodule Thunderline.Repo.Migrations.CreateVoiceParticipants do
       add :joined_at, :utc_datetime, null: false, default: fragment("now()")
     end
 
-    create unique_index(:voice_participants, [:room_id, :principal_id], name: :voice_participants_unique_room_principal)
+    create unique_index(:voice_participants, [:room_id, :principal_id],
+             name: :voice_participants_unique_room_principal
+           )
+
     create index(:voice_participants, [:principal_id])
   end
 end

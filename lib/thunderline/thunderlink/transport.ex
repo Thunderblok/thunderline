@@ -33,5 +33,6 @@ defmodule Thunderline.Thunderlink.Transport do
   defdelegate verify(key_id, payload, sig), to: Thunderline.Thunderlink.Transport.Security.Impl
 
   @spec replay_seen?(binary(), binary(), non_neg_integer()) :: boolean()
-  defdelegate replay_seen?(key_id, mid, ts_ms), to: Thunderline.Thunderlink.Transport.Security.Impl
+  defdelegate replay_seen?(key_id, mid, ts_ms),
+    to: Thunderline.Thunderlink.Transport.Security.Impl
 end

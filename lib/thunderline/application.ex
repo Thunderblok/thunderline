@@ -19,6 +19,7 @@ defmodule Thunderline.Application do
         maybe_vault_child(),
         {Phoenix.PubSub, name: Thunderline.PubSub},
   Thunderline.Thunderflow.EventBuffer,
+  Thunderline.Thunderflow.Blackboard,
         ThunderlineWeb.Presence,
         maybe_oban_child(),
         ThunderlineWeb.Endpoint

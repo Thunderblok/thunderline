@@ -35,13 +35,13 @@ defmodule Thunderline.Thunderflow.Domain do
     resource Thunderline.Thunderflow.Resources.SystemAction
     # Event logging resource
     resource Thunderline.Thunderflow.Events.Event
-  # Probe & drift resources (integrated from Raincatcher)
-  resource Thunderline.Thunderflow.Resources.ProbeRun
-  resource Thunderline.Thunderflow.Resources.ProbeLap
-  resource Thunderline.Thunderflow.Resources.ProbeAttractorSummary
-  # Feature/Lineage resources (market/edgar removed)
-  resource Thunderline.Features.FeatureWindow
-  resource Thunderline.Lineage.Edge
+    # Probe & drift resources (integrated from Raincatcher)
+    resource Thunderline.Thunderflow.Resources.ProbeRun
+    resource Thunderline.Thunderflow.Resources.ProbeLap
+    resource Thunderline.Thunderflow.Resources.ProbeAttractorSummary
+    # Feature/Lineage resources (market/edgar removed)
+    resource Thunderline.Features.FeatureWindow
+    resource Thunderline.Lineage.Edge
   end
 
   @doc """

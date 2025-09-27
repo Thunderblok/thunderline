@@ -26,12 +26,18 @@ defmodule Thunderline.Thundercrown.Stone do
 
     emit_verdict_event(action, decision, rationale, proof)
 
-    :telemetry.execute([
-      :thunderline, :stone, :verdict
-    ], %{duration: System.monotonic_time() - start}, %{
-      action: action,
-      decision: decision
-    })
+    :telemetry.execute(
+      [
+        :thunderline,
+        :stone,
+        :verdict
+      ],
+      %{duration: System.monotonic_time() - start},
+      %{
+        action: action,
+        decision: decision
+      }
+    )
 
     {decision, proof}
   end
@@ -47,10 +53,14 @@ defmodule Thunderline.Thundercrown.Stone do
   defp shrink_subject(other), do: %{payload: other}
 
   defp rationale(:trial_start, true, _ev), do: "dataset present and budget acceptable"
+
   defp rationale(:trial_start, false, ev) do
-    has_dataset = not is_nil(get_in(ev, [:payload, :dataset_ref]) || get_in(ev, ["payload", "dataset_ref"]))
+    has_dataset =
+      not is_nil(get_in(ev, [:payload, :dataset_ref]) || get_in(ev, ["payload", "dataset_ref"]))
+
     if has_dataset, do: "budget constraint failed", else: "dataset_ref missing"
   end
+
   defp rationale(_action, true, _ev), do: "policy condition satisfied"
   defp rationale(_action, false, _ev), do: "policy condition not satisfied"
 
@@ -71,9 +81,13 @@ defmodule Thunderline.Thundercrown.Stone do
     case Event.new(attrs) do
       {:ok, ev} ->
         case Thunderline.EventBus.publish_event(ev) do
-          {:ok, _} -> :ok
-          {:error, reason} -> Logger.warning("[Stone] failed to publish verdict event: #{inspect(reason)}")
+          {:ok, _} ->
+            :ok
+
+          {:error, reason} ->
+            Logger.warning("[Stone] failed to publish verdict event: #{inspect(reason)}")
         end
+
       {:error, errs} ->
         Logger.warning("[Stone] failed to build verdict event: #{inspect(errs)}")
     end

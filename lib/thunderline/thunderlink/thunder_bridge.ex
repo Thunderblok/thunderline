@@ -12,17 +12,35 @@ defmodule Thunderline.ThunderBridge do
 
   def start_link(opts \\ []), do: tap_deprecated(&Thundergate.ThunderBridge.start_link/1, [opts])
   def get_system_state, do: tap_deprecated(&Thundergate.ThunderBridge.get_system_state/0, [])
-  def get_thunderbolt_registry, do: tap_deprecated(&Thundergate.ThunderBridge.get_thunderbolt_registry/0, [])
-  def get_thunderbit_observer, do: tap_deprecated(&Thundergate.ThunderBridge.get_thunderbit_observer/0, [])
-  def execute_command(command, params \\ []), do: tap_deprecated(&Thundergate.ThunderBridge.execute_command/2, [command, params])
-  def subscribe_dashboard_events(subscriber_pid), do: tap_deprecated(&Thundergate.ThunderBridge.subscribe_dashboard_events/1, [subscriber_pid])
-  def get_performance_metrics, do: tap_deprecated(&Thundergate.ThunderBridge.get_performance_metrics/0, [])
-  def get_evolution_stats, do: tap_deprecated(&Thundergate.ThunderBridge.get_evolution_stats/0, [])
-  def start_ca_streaming(opts \\ []), do: tap_deprecated(&Thundergate.ThunderBridge.start_ca_streaming/1, [opts])
+
+  def get_thunderbolt_registry,
+    do: tap_deprecated(&Thundergate.ThunderBridge.get_thunderbolt_registry/0, [])
+
+  def get_thunderbit_observer,
+    do: tap_deprecated(&Thundergate.ThunderBridge.get_thunderbit_observer/0, [])
+
+  def execute_command(command, params \\ []),
+    do: tap_deprecated(&Thundergate.ThunderBridge.execute_command/2, [command, params])
+
+  def subscribe_dashboard_events(subscriber_pid),
+    do: tap_deprecated(&Thundergate.ThunderBridge.subscribe_dashboard_events/1, [subscriber_pid])
+
+  def get_performance_metrics,
+    do: tap_deprecated(&Thundergate.ThunderBridge.get_performance_metrics/0, [])
+
+  def get_evolution_stats,
+    do: tap_deprecated(&Thundergate.ThunderBridge.get_evolution_stats/0, [])
+
+  def start_ca_streaming(opts \\ []),
+    do: tap_deprecated(&Thundergate.ThunderBridge.start_ca_streaming/1, [opts])
+
   def stop_ca_streaming, do: tap_deprecated(&Thundergate.ThunderBridge.stop_ca_streaming/0, [])
 
   defp tap_deprecated(fun, args) do
-    :telemetry.execute([:thunderline, :deprecated_module, :used], %{count: 1}, %{module: __MODULE__})
+    :telemetry.execute([:thunderline, :deprecated_module, :used], %{count: 1}, %{
+      module: __MODULE__
+    })
+
     Logger.warning("[DEPRECATED] #{__MODULE__} called; use Thundergate.ThunderBridge")
     apply(fun, args)
   end
@@ -87,8 +105,12 @@ defmodule Thunderline.ThunderBridge do
   end
 
   def handle_info(msg, state) do
-  # Push to noise buffer instead of spamming logs; dashboard can pull
-    Thunderline.Thunderflow.Observability.RingBuffer.push({:thunder_bridge, msg}, Thunderline.NoiseBuffer)
+    # Push to noise buffer instead of spamming logs; dashboard can pull
+    Thunderline.Thunderflow.Observability.RingBuffer.push(
+      {:thunder_bridge, msg},
+      Thunderline.NoiseBuffer
+    )
+
     {:noreply, state}
   end
 
@@ -105,16 +127,23 @@ defmodule Thunderline.ThunderBridge do
     end
   end
 
-  defp build_dashboard_state_from_aggregator(%{clusters: clusters, telemetry: telemetry, system: system}) do
+  defp build_dashboard_state_from_aggregator(%{
+         clusters: clusters,
+         telemetry: telemetry,
+         system: system
+       }) do
     generation_stats = Map.get(telemetry, :generation_stats, %{})
     avg_gen_time = Map.get(generation_stats, :avg_generation_time, 0.0)
+
     performance = %{
       thunderbolts_per_second: 0.0,
       chunks_per_second: 0.0,
       memory_efficiency: 0.0,
       response_time: avg_gen_time
     }
+
     total_cells = Enum.reduce(clusters, 0, fn c, acc -> acc + (c[:cell_count] || 0) end)
+
     %{
       timestamp: DateTime.utc_now(),
       uptime: system[:uptime_ms],
@@ -134,7 +163,8 @@ defmodule Thunderline.ThunderBridge do
   defp build_ca_activity_from_clusters(clusters, generation_stats) do
     %{
       evolution_active: Enum.any?(clusters, &(not &1.paused)),
-      generation_count: Map.get(generation_stats, :total_generations, estimate_generation(clusters)),
+      generation_count:
+        Map.get(generation_stats, :total_generations, estimate_generation(clusters)),
       mutation_rate: 0.0,
       energy_level: 0.0
     }
@@ -395,7 +425,8 @@ defmodule Thunderline.ThunderBridge do
   defp get_evolution_stats_from_aggregator(%{telemetry: %{generation_stats: gen_stats}}) do
     %{
       total_generations: Map.get(gen_stats, :total_generations, 0),
-      mutations_count: 0, # Not yet tracked in Elixir path
+      # Not yet tracked in Elixir path
+      mutations_count: 0,
       evolution_rate: Map.get(gen_stats, :avg_generation_time, 0.0),
       active_patterns: [],
       success_rate: 0.0,
@@ -403,14 +434,15 @@ defmodule Thunderline.ThunderBridge do
     }
   end
 
-  defp get_evolution_stats_from_aggregator(_), do: %{
-    total_generations: 0,
-    mutations_count: 0,
-    evolution_rate: 0.0,
-    active_patterns: [],
-    success_rate: 0.0,
-    source: :aggregator
-  }
+  defp get_evolution_stats_from_aggregator(_),
+    do: %{
+      total_generations: 0,
+      mutations_count: 0,
+      evolution_rate: 0.0,
+      active_patterns: [],
+      success_rate: 0.0,
+      source: :aggregator
+    }
 
   # Legacy helper removed; all legacy calls now return {:error, :unsupported}
 end

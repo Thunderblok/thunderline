@@ -6,7 +6,8 @@ defmodule Thunderline.Thunderlink.Transport.Telemetry do
   """
 
   @spec emit(atom(), map(), map()) :: :ok
-  def emit(event, measurements, meta) when is_atom(event) and is_map(measurements) and is_map(meta) do
+  def emit(event, measurements, meta)
+      when is_atom(event) and is_map(measurements) and is_map(meta) do
     :telemetry.execute([:tocp, event], measurements, meta)
     :ok
   end

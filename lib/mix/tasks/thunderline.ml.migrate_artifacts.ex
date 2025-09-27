@@ -23,8 +23,11 @@ defmodule Mix.Tasks.Thunderline.Ml.MigrateArtifacts do
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("app.start")
+
     {opts, _rest, _invalid} =
-      OptionParser.parse(args, strict: [execute: :boolean, dry_run: :boolean, from_jsonl: :string])
+      OptionParser.parse(args,
+        strict: [execute: :boolean, dry_run: :boolean, from_jsonl: :string]
+      )
 
     execute? = Keyword.get(opts, :execute, false)
     dry_run? = Keyword.get(opts, :dry_run, !execute?)
@@ -41,7 +44,9 @@ defmodule Mix.Tasks.Thunderline.Ml.MigrateArtifacts do
     {to_insert, skipped} =
       Enum.split_with(rows, fn row -> needs_insert?(repo, row) end)
 
-    IO.puts("Candidate inserts: #{length(to_insert)} | Skipped (exists or invalid): #{length(skipped)}")
+    IO.puts(
+      "Candidate inserts: #{length(to_insert)} | Skipped (exists or invalid): #{length(skipped)}"
+    )
 
     if dry_run? do
       IO.puts("Dry-run only. No changes written.")
@@ -56,7 +61,9 @@ defmodule Mix.Tasks.Thunderline.Ml.MigrateArtifacts do
   # --- helpers ---
 
   defp fetch_all(repo, table) do
-    %{columns: cols, rows: rows} = Ecto.Adapters.SQL.query!(repo, "SELECT * FROM #{table} ORDER BY inserted_at")
+    %{columns: cols, rows: rows} =
+      Ecto.Adapters.SQL.query!(repo, "SELECT * FROM #{table} ORDER BY inserted_at")
+
     Enum.map(rows, fn row -> Enum.zip(cols, row) |> Map.new() end)
   end
 
@@ -72,13 +79,32 @@ defmodule Mix.Tasks.Thunderline.Ml.MigrateArtifacts do
     {uri, checksum} = extract_uri_checksum(legacy_row)
 
     cond do
-      is_nil(uri) and is_nil(checksum) -> false
+      is_nil(uri) and is_nil(checksum) ->
+        false
+
       true ->
         %{rows: [[n]]} =
           case {uri, checksum} do
-            {nil, cs} -> Ecto.Adapters.SQL.query!(repo, "SELECT COUNT(*) FROM ml_model_artifacts WHERE checksum = $1", [cs])
-            {u, nil} -> Ecto.Adapters.SQL.query!(repo, "SELECT COUNT(*) FROM ml_model_artifacts WHERE uri = $1", [u])
-            {u, cs} -> Ecto.Adapters.SQL.query!(repo, "SELECT COUNT(*) FROM ml_model_artifacts WHERE uri = $1 OR checksum = $2", [u, cs])
+            {nil, cs} ->
+              Ecto.Adapters.SQL.query!(
+                repo,
+                "SELECT COUNT(*) FROM ml_model_artifacts WHERE checksum = $1",
+                [cs]
+              )
+
+            {u, nil} ->
+              Ecto.Adapters.SQL.query!(
+                repo,
+                "SELECT COUNT(*) FROM ml_model_artifacts WHERE uri = $1",
+                [u]
+              )
+
+            {u, cs} ->
+              Ecto.Adapters.SQL.query!(
+                repo,
+                "SELECT COUNT(*) FROM ml_model_artifacts WHERE uri = $1 OR checksum = $2",
+                [u, cs]
+              )
           end
 
         n == 0
@@ -87,13 +113,24 @@ defmodule Mix.Tasks.Thunderline.Ml.MigrateArtifacts do
 
   defp insert_row(repo, legacy_row) do
     params = map_legacy_to_new(legacy_row)
+
     sql = """
     INSERT INTO ml_model_artifacts (id, spec_id, uri, checksum, bytes, status, promoted, semver, inserted_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
     ON CONFLICT DO NOTHING
     """
 
-    args = [params.id, params.spec_id, params.uri, params.checksum, params.bytes, params.status, params.promoted, params.semver]
+    args = [
+      params.id,
+      params.spec_id,
+      params.uri,
+      params.checksum,
+      params.bytes,
+      params.status,
+      params.promoted,
+      params.semver
+    ]
+
     Ecto.Adapters.SQL.query!(repo, sql, args)
   end
 
@@ -109,7 +146,11 @@ defmodule Mix.Tasks.Thunderline.Ml.MigrateArtifacts do
       id: Map.get(row, "id") || Ecto.UUID.generate(),
       spec_id: Map.get(row, "spec_id") || Map.get(row, "model_run_id") || Ecto.UUID.generate(),
       uri: Map.get(row, "path") || Map.get(row, "uri") || "",
-      checksum: Map.get(row, "checksum") || (Map.get(row, "metric") && :crypto.hash(:sha256, to_string(Map.get(row, "metric"))) |> Base.encode16(case: :lower)) || nil,
+      checksum:
+        Map.get(row, "checksum") ||
+          (Map.get(row, "metric") &&
+             :crypto.hash(:sha256, to_string(Map.get(row, "metric")))
+             |> Base.encode16(case: :lower)) || nil,
       bytes: Map.get(row, "bytes") || 0,
       status: "created",
       promoted: false,

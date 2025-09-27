@@ -20,6 +20,7 @@ defmodule Mix.Tasks.Thunderline.Events.Lint do
     findings =
       files
       |> Enum.flat_map(&lint_file/1)
+      |> Kernel.++(deprecated_emit_findings())
 
     if findings != [] do
       output(findings, format)
@@ -34,14 +35,27 @@ defmodule Mix.Tasks.Thunderline.Events.Lint do
     |> Enum.flat_map(fn [full, inner] ->
       name = capture_string(inner, ~r/name:\s*"([^"]+)"/)
       tax_v = capture_int(inner, ~r/taxonomy_version:\s*(\d+)/)
-      ev_v  = capture_int(inner, ~r/event_version:\s*(\d+)/)
-      issues = []
-      |> maybe_issue(name == nil, :missing_name, name)
-      |> maybe_issue(name && length(String.split(name, ".")) < 2, :short_name, name)
-      |> maybe_issue(name && not allowed_prefix?(name), :bad_prefix, name)
-      |> maybe_issue(inner =~ ~r/taxonomy_version:/ and (tax_v == nil or tax_v < 1), :bad_taxonomy_version, inspect(tax_v))
-      |> maybe_issue(inner =~ ~r/event_version:/ and (ev_v == nil or ev_v < 1), :bad_event_version, inspect(ev_v))
-      Enum.map(issues, fn issue -> %{file: path, issue: issue, snippet: String.slice(full, 0, 200)} end)
+      ev_v = capture_int(inner, ~r/event_version:\s*(\d+)/)
+
+      issues =
+        []
+        |> maybe_issue(name == nil, :missing_name, name)
+        |> maybe_issue(name && length(String.split(name, ".")) < 2, :short_name, name)
+        |> maybe_issue(name && not allowed_prefix?(name), :bad_prefix, name)
+        |> maybe_issue(
+          inner =~ ~r/taxonomy_version:/ and (tax_v == nil or tax_v < 1),
+          :bad_taxonomy_version,
+          inspect(tax_v)
+        )
+        |> maybe_issue(
+          inner =~ ~r/event_version:/ and (ev_v == nil or ev_v < 1),
+          :bad_event_version,
+          inspect(ev_v)
+        )
+
+      Enum.map(issues, fn issue ->
+        %{file: path, issue: issue, snippet: String.slice(full, 0, 200)}
+      end)
     end)
   end
 
@@ -68,9 +82,29 @@ defmodule Mix.Tasks.Thunderline.Events.Lint do
   defp maybe_issue(list, true, type, val), do: [%{type: type, value: val} | list]
 
   defp output(findings, :json), do: IO.puts(Jason.encode!(findings))
+
   defp output(findings, :text) do
     Enum.each(findings, fn %{file: f, issue: %{type: t, value: v}} ->
       Mix.shell().error("[event-lint] #{f}: #{t} #{inspect(v)}")
     end)
+  end
+
+  defp deprecated_emit_findings do
+    case Thunderline.Dev.EventBusLint.check() do
+      :ok ->
+        []
+
+      {:error, offenders} ->
+        Enum.map(offenders, fn path ->
+          %{
+            file: path,
+            issue: %{
+              type: :deprecated_emit_helper,
+              value: "replace with Thunderline.Thunderflow.EventBus.publish_event/1"
+            },
+            snippet: nil
+          }
+        end)
+    end
   end
 end

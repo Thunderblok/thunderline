@@ -81,7 +81,8 @@ defmodule Thunderline.Thunderflow.Jobs.DomainProcessor do
         enqueue_result =
           case kernel do
             "gemm_fp16_acc32" ->
-              if Code.ensure_loaded?(GemmRunner) and is_integer(m) and is_integer(n) and is_integer(k) do
+              if Code.ensure_loaded?(GemmRunner) and is_integer(m) and is_integer(n) and
+                   is_integer(k) do
                 args = %{
                   "run_id" => run_id,
                   "m" => m,
@@ -125,19 +126,37 @@ defmodule Thunderline.Thunderflow.Jobs.DomainProcessor do
 
   defp handle_run_metrics(ev) do
     payload = ev["payload"] || %{}
-    :telemetry.execute(@tele_base ++ [:ml, :run, :metrics], %{count: 1}, Map.take(payload, ["run_id", "metrics"]))
+
+    :telemetry.execute(
+      @tele_base ++ [:ml, :run, :metrics],
+      %{count: 1},
+      Map.take(payload, ["run_id", "metrics"])
+    )
+
     :ok
   end
 
   defp handle_run_completed(ev) do
     payload = ev["payload"] || %{}
-    :telemetry.execute(@tele_base ++ [:ml, :run, :completed], %{}, Map.take(payload, ["run_id", "status"]))
+
+    :telemetry.execute(
+      @tele_base ++ [:ml, :run, :completed],
+      %{},
+      Map.take(payload, ["run_id", "status"])
+    )
+
     :ok
   end
 
   defp handle_artifact_created(ev) do
     payload = ev["payload"] || %{}
-    :telemetry.execute(@tele_base ++ [:ml, :artifact, :created], %{}, Map.take(payload, ["artifact_id", "run_id", "uri", "kind"]))
+
+    :telemetry.execute(
+      @tele_base ++ [:ml, :artifact, :created],
+      %{},
+      Map.take(payload, ["artifact_id", "run_id", "uri", "kind"])
+    )
+
     :ok
   end
 

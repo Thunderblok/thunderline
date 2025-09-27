@@ -25,11 +25,17 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
 
   defp actor(socket) do
     cond do
-      is_map(socket.assigns[:actor]) -> socket.assigns[:actor]
+      is_map(socket.assigns[:actor]) ->
+        socket.assigns[:actor]
+
       match?(%{actor: actor_map} when is_map(actor_map), socket.assigns[:actor_ctx]) ->
         socket.assigns.actor_ctx.actor
-      is_map(socket.assigns[:current_user]) -> Actor.build_actor(socket.assigns[:current_user], %{})
-      true -> nil
+
+      is_map(socket.assigns[:current_user]) ->
+        Actor.build_actor(socket.assigns[:current_user], %{})
+
+      true ->
+        nil
     end
   end
 
@@ -37,17 +43,29 @@ defmodule ThunderlineWeb.Live.Components.AIPanel do
     with {:ok, ev} <- Thunderline.Event.new(name: name, source: :crown, payload: payload) do
       # We purposely isolate the publish in a Task but still pattern match result inside
       # the spawned process so failures are surfaced via telemetry and logs (no silent drop).
-      _ = Task.start(fn ->
-        case Thunderline.EventBus.publish_event(ev) do
-          {:ok, _} -> :ok
-          {:error, reason} ->
-            :telemetry.execute([
-              :thunderline, :ui, :event, :publish, :error
-            ], %{count: 1}, %{reason: reason, name: name, source: :ai_panel})
-            require Logger
-            Logger.warning("AIPanel failed to publish event #{name}: #{inspect(reason)}")
-        end
-      end)
+      _ =
+        Task.start(fn ->
+          case Thunderline.EventBus.publish_event(ev) do
+            {:ok, _} ->
+              :ok
+
+            {:error, reason} ->
+              :telemetry.execute(
+                [
+                  :thunderline,
+                  :ui,
+                  :event,
+                  :publish,
+                  :error
+                ],
+                %{count: 1},
+                %{reason: reason, name: name, source: :ai_panel}
+              )
+
+              require Logger
+              Logger.warning("AIPanel failed to publish event #{name}: #{inspect(reason)}")
+          end
+        end)
     end
   end
 

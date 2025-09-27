@@ -11,7 +11,8 @@ defmodule Thunderline.Thunderlink.Chat.Message.Changes.CreateConversationIfNotPr
       )
     else
       Ash.Changeset.before_action(changeset, fn changeset ->
-        conversation = Thunderline.Thunderlink.Chat.create_conversation!(Ash.Context.to_opts(context))
+        conversation =
+          Thunderline.Thunderlink.Chat.create_conversation!(Ash.Context.to_opts(context))
 
         Ash.Changeset.force_change_attribute(changeset, :conversation_id, conversation.id)
       end)

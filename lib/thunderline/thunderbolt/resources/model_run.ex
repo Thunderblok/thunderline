@@ -16,21 +16,21 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
     repo Thunderline.Repo
   end
 
-  json_api do
-    type "model_runs"
-  end
-
   state_machine do
     # Allowed starting states, with a default
     initial_states([:initialized])
     default_initial_state(:initialized)
 
     transitions do
-  transition(:start, from: [:initialized], to: [:running])
-  transition(:complete, from: [:running], to: [:succeeded])
-  transition(:fail, from: [:running], to: [:failed])
-  transition(:cancel, from: [:running], to: [:cancelled])
+      transition(:start, from: [:initialized], to: [:running])
+      transition(:complete, from: [:running], to: [:succeeded])
+      transition(:fail, from: [:running], to: [:failed])
+      transition(:cancel, from: [:running], to: [:cancelled])
     end
+  end
+
+  json_api do
+    type "model_runs"
   end
 
   code_interface do

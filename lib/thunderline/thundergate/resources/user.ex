@@ -15,6 +15,7 @@ defmodule Thunderline.Thundergate.Resources.User do
         confirmation_required? true
       end
     end
+
     add_ons do
       log_out_everywhere do
         apply_on_password_change? true

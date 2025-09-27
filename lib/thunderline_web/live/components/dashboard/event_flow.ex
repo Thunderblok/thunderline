@@ -27,19 +27,27 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
         <span class="text-[10px] text-gray-500">last {min(length(@events), @max)} events</span>
       </div>
       <div class="flex-1 overflow-hidden">
-        <div id="event-flow" phx-hook="EventFlowScroll" phx-update="stream" class="space-y-1.5 h-full overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-cyan-600/40 scrollbar-track-transparent">
+        <div
+          id="event-flow"
+          phx-hook="EventFlowScroll"
+          phx-update="stream"
+          class="space-y-1.5 h-full overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-cyan-600/40 scrollbar-track-transparent"
+        >
           <%= if Map.has_key?(assigns, :streams) and Map.has_key?(assigns.streams, :dashboard_events) do %>
             <%= for {dom_id, event} <- @streams.dashboard_events do %>
-              <div id={dom_id} class={[
-                    "group relative rounded-md border px-2 py-1.5 backdrop-blur transition-colors",
-                    domain_card_class(event.domain)
-                  ]}>
+              <div
+                id={dom_id}
+                class={[
+                  "group relative rounded-md border px-2 py-1.5 backdrop-blur transition-colors",
+                  domain_card_class(event.domain)
+                ]}
+              >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-1.5">
                     <span class={[
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
-                        domain_pill_class(event.domain)
-                      ]}>
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
+                      domain_pill_class(event.domain)
+                    ]}>
                       {pretty_domain(event.domain)}
                     </span>
                     <span class="text-[11px] text-gray-400/70 font-mono">
@@ -47,9 +55,10 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
                     </span>
                   </div>
                   <div class={[
-                      "w-2 h-2 rounded-full shadow-inner",
-                      status_indicator_class(event.status)
-                    ]}></div>
+                    "w-2 h-2 rounded-full shadow-inner",
+                    status_indicator_class(event.status)
+                  ]}>
+                  </div>
                 </div>
                 <div class="mt-1.5 text-[11px] leading-tight text-gray-200/90 group-hover:text-white truncate">
                   {event.message}
@@ -64,35 +73,36 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
           <% else %>
             <%= for event <- Enum.take(@events, @max) do %>
               <div class={[
-                    "group relative rounded-md border px-2 py-1.5 backdrop-blur transition-colors",
-                    domain_card_class(event.domain)
-                  ]}>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-1.5">
-                  <span class={[
+                "group relative rounded-md border px-2 py-1.5 backdrop-blur transition-colors",
+                domain_card_class(event.domain)
+              ]}>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-1.5">
+                    <span class={[
                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset",
                       domain_pill_class(event.domain)
                     ]}>
-                    {pretty_domain(event.domain)}
-                  </span>
-                  <span class="text-[11px] text-gray-400/70 font-mono">
-                    {format_timestamp(event.timestamp)}
-                  </span>
-                </div>
-                <div class={[
+                      {pretty_domain(event.domain)}
+                    </span>
+                    <span class="text-[11px] text-gray-400/70 font-mono">
+                      {format_timestamp(event.timestamp)}
+                    </span>
+                  </div>
+                  <div class={[
                     "w-2 h-2 rounded-full shadow-inner",
                     status_indicator_class(event.status)
-                  ]}></div>
-              </div>
-              <div class="mt-1.5 text-[11px] leading-tight text-gray-200/90 group-hover:text-white truncate">
-                {event.message}
-              </div>
-              <%= if event[:source] do %>
-                <div class="mt-1 text-[10px] text-gray-500/70 font-mono truncate">
-                  {event.source}
+                  ]}>
+                  </div>
                 </div>
-              <% end %>
-            </div>
+                <div class="mt-1.5 text-[11px] leading-tight text-gray-200/90 group-hover:text-white truncate">
+                  {event.message}
+                </div>
+                <%= if event[:source] do %>
+                  <div class="mt-1 text-[10px] text-gray-500/70 font-mono truncate">
+                    {event.source}
+                  </div>
+                <% end %>
+              </div>
             <% end %>
           <% end %>
         </div>
@@ -134,27 +144,39 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
 
   defp normalize_domain(nil), do: :unknown
   defp normalize_domain(d) when is_atom(d), do: d
+
   defp normalize_domain(d) when is_binary(d) do
     d |> String.downcase() |> String.replace_prefix("thunderline_", "") |> String.to_atom()
   rescue
     _ -> :unknown
   end
+
   defp normalize_domain(_), do: :unknown
 
-  defp pretty_domain(d) when is_atom(d), do: d |> Atom.to_string() |> String.replace_prefix("thunderline_", "")
+  defp pretty_domain(d) when is_atom(d),
+    do: d |> Atom.to_string() |> String.replace_prefix("thunderline_", "")
+
   defp pretty_domain(d) when is_binary(d), do: d
   defp pretty_domain(_), do: "unknown"
 
   # Status indicator coloring
-  defp status_indicator_class(status) when status in ["processing", :processing], do: "bg-yellow-400 animate-pulse"
-  defp status_indicator_class(status) when status in ["completed", :completed, :ok], do: "bg-green-400"
+  defp status_indicator_class(status) when status in ["processing", :processing],
+    do: "bg-yellow-400 animate-pulse"
+
+  defp status_indicator_class(status) when status in ["completed", :completed, :ok],
+    do: "bg-green-400"
+
   defp status_indicator_class(status) when status in ["error", :error, :failed], do: "bg-red-500"
   defp status_indicator_class(status) when status in ["warning", :warning], do: "bg-amber-400"
   defp status_indicator_class(_), do: "bg-gray-500"
 
   # Flexible timestamp formatting (DateTime, NaiveDateTime, integer system time)
-  defp format_timestamp(%DateTime{} = dt), do: dt |> DateTime.to_time() |> Time.truncate(:second) |> to_string()
-  defp format_timestamp(%NaiveDateTime{} = ndt), do: ndt |> NaiveDateTime.to_time() |> Time.truncate(:second) |> to_string()
+  defp format_timestamp(%DateTime{} = dt),
+    do: dt |> DateTime.to_time() |> Time.truncate(:second) |> to_string()
+
+  defp format_timestamp(%NaiveDateTime{} = ndt),
+    do: ndt |> NaiveDateTime.to_time() |> Time.truncate(:second) |> to_string()
+
   defp format_timestamp(int) when is_integer(int) do
     int
     |> DateTime.from_unix!(:microsecond)
@@ -164,5 +186,6 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
   rescue
     _ -> "--:--:--"
   end
+
   defp format_timestamp(_), do: "--:--:--"
 end

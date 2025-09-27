@@ -19,9 +19,15 @@ defmodule Thunderline.DeprecatedModulesTelemetryTest do
   setup do
     # Attach a test handler to capture deprecated module usage
     handler_id = :deprecated_test_handler
-    :telemetry.attach(handler_id, [:thunderline, :deprecated_module, :used], fn _event, measurements, metadata, pid ->
-      send(pid, {:deprecated_fired, measurements, metadata})
-    end, self())
+
+    :telemetry.attach(
+      handler_id,
+      [:thunderline, :deprecated_module, :used],
+      fn _event, measurements, metadata, pid ->
+        send(pid, {:deprecated_fired, measurements, metadata})
+      end,
+      self()
+    )
 
     on_exit(fn ->
       try do
@@ -30,6 +36,7 @@ defmodule Thunderline.DeprecatedModulesTelemetryTest do
         _ -> :ok
       end
     end)
+
     :ok
   end
 
@@ -38,8 +45,10 @@ defmodule Thunderline.DeprecatedModulesTelemetryTest do
       # Avoid compile-time warnings by checking module/function availability
       if Code.ensure_loaded?(mod) and function_exported?(mod, :__deprecated_test_emit__, 0) do
         apply(mod, :__deprecated_test_emit__, [])
-        assert_receive {:deprecated_fired, %{count: 1}, %{module: ^mod}}, 200,
-          "Expected telemetry for #{inspect(mod)}"
+
+        assert_receive {:deprecated_fired, %{count: 1}, %{module: ^mod}},
+                       200,
+                       "Expected telemetry for #{inspect(mod)}"
       else
         # Module isn't present anymore; skip emission check
         :ok

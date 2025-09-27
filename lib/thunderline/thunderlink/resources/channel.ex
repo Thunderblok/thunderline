@@ -217,7 +217,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
         # Presence policy check (deny-by-default enforcement)
         channel = input.resource
         actor_ctx = Map.get(context, :actor_ctx)
-  _ = Enforcer.with_presence(:send, {:channel, channel.id}, actor_ctx)
+        _ = Enforcer.with_presence(:send, {:channel, channel.id}, actor_ctx)
 
         current_count = channel.message_count || 0
         current_metrics = channel.channel_metrics || %{}
@@ -269,7 +269,8 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
       run fn input, context ->
         channel = input.resource
         actor_ctx = Map.get(context, :actor_ctx)
-  Enforcer.with_presence :join, {:channel, channel.id}, actor_ctx do
+
+        Enforcer.with_presence :join, {:channel, channel.id}, actor_ctx do
           Ash.Changeset.for_update(channel, :internal_update_metrics, %{
             participant_count: channel.participant_count + 1
           })

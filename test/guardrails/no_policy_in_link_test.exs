@@ -1,5 +1,6 @@
 defmodule Thunderline.Thunderlink.NoPolicyInLinkTest do
   use ExUnit.Case, async: true
+
   test "no policy usage in Link domain" do
     hits =
       "lib/thunderline/thunderlink"
@@ -15,6 +16,7 @@ defmodule Thunderline.Thunderlink.NoPolicyInLinkTest do
         String.contains?(line, "Policy.") and not String.contains?(path, "/presence/")
       end)
       |> Enum.map(fn {path, line} -> {path, line} end)
+
     assert hits == []
   end
 end

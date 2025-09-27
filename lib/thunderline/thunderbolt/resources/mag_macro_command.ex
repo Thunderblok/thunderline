@@ -7,7 +7,6 @@ defmodule Thunderline.Thunderbolt.Resources.MagMacroCommand do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer
 
-
   postgres do
     table "thundermag_macro_commands"
     repo Thunderline.Repo

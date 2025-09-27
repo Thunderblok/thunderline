@@ -7,6 +7,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeLap do
   postgres do
     table "probe_laps"
     repo Thunderline.Repo
+
     custom_indexes do
       index [:run_id, :lap_index], unique: true
     end

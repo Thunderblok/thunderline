@@ -27,225 +27,92 @@ defmodule Thunderline.Thundercom.Resources.Message do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource],
     notifiers: [Ash.Notifier.PubSub]
+
   import Ash.Resource.Change.Builtins
 
+  # ===== POSTGRES CONFIGURATION =====
+  postgres do
+    table "thunderblock_messages"
+    repo Thunderline.Repo
 
-  # ===== ATTRIBUTES =====
-  attributes do
-    uuid_primary_key :id
-
-    attribute :content, :string do
-      allow_nil? false
-      description "The message content text"
-      constraints min_length: 1, max_length: 4000
+    references do
+      reference :channel, on_delete: :delete, on_update: :update
+      reference :community, on_delete: :delete, on_update: :update
+      reference :reply_to, on_delete: :nilify, on_update: :update
+      reference :thread_root, on_delete: :nilify, on_update: :update
+      reference :replies, on_delete: :delete, on_update: :update
+      reference :thread_messages, on_delete: :delete, on_update: :update
     end
 
-    attribute :message_type, :atom do
-      allow_nil? false
-      description "Type of message"
-      default :text
+    custom_indexes do
+      index [:channel_id, :inserted_at], name: "messages_channel_time_idx"
+      index [:sender_id, :inserted_at], name: "messages_sender_time_idx"
+      index [:thread_root_id, :inserted_at], name: "messages_thread_idx"
+      index [:reply_to_id], name: "messages_reply_idx"
+      index [:status, :inserted_at], name: "messages_status_time_idx"
+      index [:message_type, :sender_type], name: "messages_type_idx"
+      index [:ephemeral_until], name: "messages_ephemeral_idx"
+      index "USING GIN (search_vector)", name: "messages_search_idx"
+      index "USING GIN (mentions)", name: "messages_mentions_idx"
+      index "USING GIN (message_flags)", name: "messages_flags_idx"
+      index "USING GIN (tags)", name: "messages_tags_idx"
+      index "USING GIN (reactions)", name: "messages_reactions_idx"
     end
 
-    attribute :sender_id, :uuid do
-      allow_nil? false
-      description "ID of the message sender (user or AI agent)"
-    end
+    check_constraints do
+      check_constraint :valid_thread_counts,
+                       "thread_participant_count >= 0 AND thread_message_count >= 0"
 
-    attribute :sender_type, :atom do
-      allow_nil? false
-      description "Type of sender"
-      default :user
+      check_constraint :valid_content_length, "char_length(content) > 0"
     end
-
-    attribute :status, :atom do
-      allow_nil? false
-      description "Message status"
-      default :active
-    end
-
-    attribute :reply_to_id, :uuid do
-      allow_nil? true
-      description "ID of message this is replying to (for threading)"
-    end
-
-    attribute :thread_root_id, :uuid do
-      allow_nil? true
-      description "ID of the root message in thread chain"
-    end
-
-    attribute :attachments, {:array, :map} do
-      allow_nil? false
-      description "File attachments and media content"
-      default []
-    end
-
-    attribute :reactions, :map do
-      allow_nil? false
-      description "Emoji reactions and their counts"
-      default %{}
-    end
-
-    attribute :mentions, {:array, :uuid} do
-      allow_nil? false
-      description "User IDs mentioned in message"
-      default []
-    end
-
-    attribute :channel_mentions, {:array, :uuid} do
-      allow_nil? false
-      description "Channel IDs mentioned in message"
-      default []
-    end
-
-    attribute :role_mentions, {:array, :uuid} do
-      allow_nil? false
-      description "Role IDs mentioned in message"
-      default []
-    end
-
-    attribute :message_flags, {:array, :atom} do
-      allow_nil? false
-      description "Message flags and special properties"
-      default []
-      # Possible flags: :pinned, :announcement, :urgent, :ai_generated, :pac_command, :federated
-    end
-
-    attribute :edit_history, {:array, :map} do
-      allow_nil? false
-      description "History of message edits"
-      default []
-    end
-
-    attribute :ai_metadata, :map do
-      allow_nil? false
-      description "AI-specific message metadata"
-      default %{
-        model_used: nil,
-        confidence_score: nil,
-        processing_time_ms: nil,
-        token_count: nil
-      }
-    end
-
-    attribute :pac_metadata, :map do
-      allow_nil? false
-      description "PAC coordination metadata"
-      default %{
-        command_type: nil,
-        execution_status: nil,
-        target_agents: [],
-        result_data: nil
-      }
-    end
-
-    attribute :federation_metadata, :map do
-      allow_nil? false
-      description "Cross-realm federation metadata"
-      default %{
-        origin_realm: nil,
-        origin_user: nil,
-        federation_signature: nil,
-        relay_path: []
-      }
-    end
-
-    attribute :search_vector, :string do
-      allow_nil? true
-      description "Full-text search vector (tsvector)"
-    end
-
-    attribute :thread_participant_count, :integer do
-      allow_nil? false
-      description "Number of unique participants in thread"
-      default 0
-      constraints min: 0
-    end
-
-    attribute :thread_message_count, :integer do
-      allow_nil? false
-      description "Number of messages in thread (if root message)"
-      default 0
-      constraints min: 0
-    end
-
-    attribute :last_thread_activity, :utc_datetime do
-      allow_nil? true
-      description "Timestamp of last activity in thread"
-    end
-
-    attribute :moderation_data, :map do
-      allow_nil? false
-      description "Content moderation analysis results"
-      default %{
-        toxicity_score: 0.0,
-        spam_score: 0.0,
-        flags: [],
-        auto_actions: []
-      }
-    end
-
-    attribute :message_metrics, :map do
-      allow_nil? false
-      description "Message engagement and interaction metrics"
-      default %{
-        view_count: 0,
-        reaction_count: 0,
-        reply_count: 0,
-        share_count: 0
-      }
-    end
-
-    attribute :ephemeral_until, :utc_datetime do
-      allow_nil? true
-      description "Timestamp when ephemeral message expires"
-    end
-
-    attribute :tags, {:array, :string} do
-      allow_nil? false
-      description "Message categorization tags"
-      default []
-    end
-
-    attribute :metadata, :map do
-      allow_nil? false
-      description "Additional message metadata"
-      default %{}
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
   end
 
-  # ===== RELATIONSHIPS =====
-  relationships do
-  belongs_to :channel, Thunderline.Thundercom.Resources.Channel do
-      attribute_writable? true
-      source_attribute :channel_id
-      destination_attribute :id
-    end
+  # ===== JSON API CONFIGURATION =====
+  json_api do
+    type "message"
 
-  belongs_to :community, Thunderline.Thundercom.Resources.Community do
-      source_attribute :community_id
-      destination_attribute :id
+    routes do
+      base("/messages")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:edit)
+      delete(:destroy)
     end
+  end
 
-  belongs_to :reply_to, Thunderline.Thundercom.Resources.Message do
-      source_attribute :reply_to_id
-      destination_attribute :id
-    end
+  # ===== POLICIES =====
+  #   policies do
+  #     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+  #       authorize_if always()
+  #     end
 
-  belongs_to :thread_root, Thunderline.Thundercom.Resources.Message do
-      source_attribute :thread_root_id
-      destination_attribute :id
-    end
+  #   policy always() do
+  #     authorize_if always()
+  #   end
+  # end
 
-  has_many :replies, Thunderline.Thundercom.Resources.Message do
-      destination_attribute :reply_to_id
-    end
-
-  has_many :thread_messages, Thunderline.Thundercom.Resources.Message do
-      destination_attribute :thread_root_id
-    end
+  # ===== CODE INTERFACE =====
+  code_interface do
+    define :create
+    define :send_ai_response, args: [:content, :sender_id, :ai_metadata, :channel_id]
+    define :send_pac_command, args: [:content, :sender_id, :pac_metadata, :channel_id]
+    define :send_system_message, args: [:content, :channel_id]
+    define :edit, args: [:content]
+    define :add_reaction, args: [:emoji, :user_id]
+    define :remove_reaction, args: [:emoji, :user_id]
+    define :flag, args: []
+    define :soft_delete, args: []
+    define :pin, args: []
+    define :by_channel, args: [:channel_id, :limit]
+    define :thread_messages, args: [:thread_root_id]
+    define :by_sender, args: [:sender_id]
+    define :recent_messages, args: [:hours_back]
+    define :search, args: [:search_term, :channel_id]
+    define :flagged_messages, action: :flagged_messages
+    define :ai_messages, action: :ai_messages
+    define :pac_commands, action: :pac_commands
+    define :cleanup_ephemeral, action: :cleanup_ephemeral
   end
 
   # ===== ACTIONS =====
@@ -254,10 +121,27 @@ defmodule Thunderline.Thundercom.Resources.Message do
 
     create :create do
       description "Create a new message in channel"
-      accept [:content, :message_type, :sender_id, :sender_type, :reply_to_id, :attachments,
-              :mentions, :channel_mentions, :role_mentions, :message_flags, :ai_metadata,
-              :pac_metadata, :federation_metadata, :ephemeral_until, :tags, :metadata,
-              :channel_id, :community_id]
+
+      accept [
+        :content,
+        :message_type,
+        :sender_id,
+        :sender_type,
+        :reply_to_id,
+        :attachments,
+        :mentions,
+        :channel_mentions,
+        :role_mentions,
+        :message_flags,
+        :ai_metadata,
+        :pac_metadata,
+        :federation_metadata,
+        :ephemeral_until,
+        :tags,
+        :metadata,
+        :channel_id,
+        :community_id
+      ]
 
       change fn changeset, _context ->
         content = Ash.Changeset.get_attribute(changeset, :content) || ""
@@ -266,10 +150,11 @@ defmodule Thunderline.Thundercom.Resources.Message do
         search_vector = generate_search_vector(content)
 
         # Set thread root if this is a reply
-        thread_root_id = case Ash.Changeset.get_attribute(changeset, :reply_to_id) do
-          nil -> nil
-          reply_to_id -> get_thread_root_id(reply_to_id)
-        end
+        thread_root_id =
+          case Ash.Changeset.get_attribute(changeset, :reply_to_id) do
+            nil -> nil
+            reply_to_id -> get_thread_root_id(reply_to_id)
+          end
 
         changeset
         |> Ash.Changeset.change_attribute(:search_vector, search_vector)
@@ -278,28 +163,28 @@ defmodule Thunderline.Thundercom.Resources.Message do
       end
 
       change after_action(fn _changeset, message, _context ->
-        # Update channel message count and last message timestamp
-        update_channel_message_stats(message.channel_id)
+               # Update channel message count and last message timestamp
+               update_channel_message_stats(message.channel_id)
 
-        # Update thread statistics if this is a reply
-        if message.reply_to_id do
-          update_thread_stats(message.thread_root_id || message.reply_to_id)
-        end
+               # Update thread statistics if this is a reply
+               if message.reply_to_id do
+                 update_thread_stats(message.thread_root_id || message.reply_to_id)
+               end
 
-        # Process mentions and notifications
-        process_message_mentions(message)
+               # Process mentions and notifications
+               process_message_mentions(message)
 
-        # Run content moderation
-        moderate_message_content(message)
+               # Run content moderation
+               moderate_message_content(message)
 
-        # Handle special message types
-        handle_special_message_type(message)
+               # Handle special message types
+               handle_special_message_type(message)
 
-        # Broadcast message to channel subscribers
-        broadcast_new_message(message)
+               # Broadcast message to channel subscribers
+               broadcast_new_message(message)
 
-        {:ok, message}
-      end)
+               {:ok, message}
+             end)
     end
 
     create :send_ai_response do
@@ -334,7 +219,9 @@ defmodule Thunderline.Thundercom.Resources.Message do
         changeset
         |> Ash.Changeset.change_attribute(:message_type, :system)
         |> Ash.Changeset.change_attribute(:sender_type, :system)
-        |> Ash.Changeset.change_attribute(:sender_id, Ash.UUID.generate())  # System UUID
+
+        # System UUID
+        |> Ash.Changeset.change_attribute(:sender_id, Ash.UUID.generate())
       end
     end
 
@@ -353,7 +240,9 @@ defmodule Thunderline.Thundercom.Resources.Message do
           edit_reason: "user_edit"
         }
 
-        updated_history = [edit_entry | current_history] |> Enum.take(10)  # Keep last 10 edits
+        # Keep last 10 edits
+
+        updated_history = [edit_entry | current_history] |> Enum.take(10)
 
         changeset
         |> Ash.Changeset.change_attribute(:status, :edited)
@@ -361,10 +250,10 @@ defmodule Thunderline.Thundercom.Resources.Message do
       end
 
       change after_action(fn _changeset, message, _context ->
-        # Broadcast message edit
-        broadcast_message_edit(message)
-        {:ok, message}
-      end)
+               # Broadcast message edit
+               broadcast_message_edit(message)
+               {:ok, message}
+             end)
     end
 
     update :add_reaction do
@@ -388,17 +277,21 @@ defmodule Thunderline.Thundercom.Resources.Message do
 
         # Add user to emoji reaction list
         emoji_reactions = Map.get(current_reactions, emoji, [])
-        updated_reactions = if user_id in emoji_reactions do
-          current_reactions  # User already reacted with this emoji
-        else
-          Map.put(current_reactions, emoji, [user_id | emoji_reactions])
-        end
+
+        updated_reactions =
+          if user_id in emoji_reactions do
+            # User already reacted with this emoji
+            current_reactions
+          else
+            Map.put(current_reactions, emoji, [user_id | emoji_reactions])
+          end
 
         # Update reaction count
-        total_reactions = updated_reactions
-        |> Map.values()
-        |> Enum.map(&length/1)
-        |> Enum.sum()
+        total_reactions =
+          updated_reactions
+          |> Map.values()
+          |> Enum.map(&length/1)
+          |> Enum.sum()
 
         updated_metrics = Map.put(current_metrics, "reaction_count", total_reactions)
 
@@ -408,10 +301,16 @@ defmodule Thunderline.Thundercom.Resources.Message do
       end
 
       change after_action(fn _changeset, message, context ->
-        # Broadcast reaction update
-        broadcast_reaction_update(message, context.arguments.emoji, context.arguments.user_id, :added)
-        {:ok, message}
-      end)
+               # Broadcast reaction update
+               broadcast_reaction_update(
+                 message,
+                 context.arguments.emoji,
+                 context.arguments.user_id,
+                 :added
+               )
+
+               {:ok, message}
+             end)
     end
 
     update :remove_reaction do
@@ -437,17 +336,20 @@ defmodule Thunderline.Thundercom.Resources.Message do
         emoji_reactions = Map.get(current_reactions, emoji, [])
         updated_emoji_reactions = List.delete(emoji_reactions, user_id)
 
-        updated_reactions = if updated_emoji_reactions == [] do
-          Map.delete(current_reactions, emoji)  # Remove emoji entirely if no reactions
-        else
-          Map.put(current_reactions, emoji, updated_emoji_reactions)
-        end
+        updated_reactions =
+          if updated_emoji_reactions == [] do
+            # Remove emoji entirely if no reactions
+            Map.delete(current_reactions, emoji)
+          else
+            Map.put(current_reactions, emoji, updated_emoji_reactions)
+          end
 
         # Update reaction count
-        total_reactions = updated_reactions
-        |> Map.values()
-        |> Enum.map(&length/1)
-        |> Enum.sum()
+        total_reactions =
+          updated_reactions
+          |> Map.values()
+          |> Enum.map(&length/1)
+          |> Enum.sum()
 
         updated_metrics = Map.put(current_metrics, "reaction_count", total_reactions)
 
@@ -457,10 +359,16 @@ defmodule Thunderline.Thundercom.Resources.Message do
       end
 
       change after_action(fn _changeset, message, context ->
-        # Broadcast reaction update
-        broadcast_reaction_update(message, context.arguments.emoji, context.arguments.user_id, :removed)
-        {:ok, message}
-      end)
+               # Broadcast reaction update
+               broadcast_reaction_update(
+                 message,
+                 context.arguments.emoji,
+                 context.arguments.user_id,
+                 :removed
+               )
+
+               {:ok, message}
+             end)
     end
 
     update :flag do
@@ -472,10 +380,10 @@ defmodule Thunderline.Thundercom.Resources.Message do
       end
 
       change after_action(fn _changeset, message, _context ->
-        # Notify moderation team
-        notify_moderation_team(message)
-        {:ok, message}
-      end)
+               # Notify moderation team
+               notify_moderation_team(message)
+               {:ok, message}
+             end)
     end
 
     update :soft_delete do
@@ -488,10 +396,10 @@ defmodule Thunderline.Thundercom.Resources.Message do
       end
 
       change after_action(fn _changeset, message, _context ->
-        # Broadcast message deletion
-        broadcast_message_deletion(message)
-        {:ok, message}
-      end)
+               # Broadcast message deletion
+               broadcast_message_deletion(message)
+               {:ok, message}
+             end)
     end
 
     update :pin do
@@ -501,20 +409,22 @@ defmodule Thunderline.Thundercom.Resources.Message do
 
       change fn changeset, _context ->
         current_flags = Ash.Changeset.get_attribute(changeset, :message_flags) || []
-        updated_flags = if :pinned in current_flags do
-          current_flags
-        else
-          [:pinned | current_flags]
-        end
+
+        updated_flags =
+          if :pinned in current_flags do
+            current_flags
+          else
+            [:pinned | current_flags]
+          end
 
         Ash.Changeset.change_attribute(changeset, :message_flags, updated_flags)
       end
 
       change after_action(fn _changeset, message, _context ->
-        # Add to channel's pinned messages
-        Thunderblock.Resources.Channel.pin_message(message.channel_id, message.id)
-        {:ok, message}
-      end)
+               # Add to channel's pinned messages
+               Thunderblock.Resources.Channel.pin_message(message.channel_id, message.id)
+               {:ok, message}
+             end)
     end
 
     # Query actions
@@ -631,101 +541,22 @@ defmodule Thunderline.Thundercom.Resources.Message do
       description "Remove expired ephemeral messages"
       require_atomic? false
 
-      filter expr(
-        not is_nil(ephemeral_until) and ephemeral_until < now()
-      )
+      filter expr(not is_nil(ephemeral_until) and ephemeral_until < now())
 
       change after_action(fn _changeset, messages, _context ->
-        # Broadcast ephemeral message cleanup
-        for message <- messages do
-          broadcast_message_deletion(message)
-        end
-        {:ok, messages}
-      end)
+               # Broadcast ephemeral message cleanup
+               for message <- messages do
+                 broadcast_message_deletion(message)
+               end
+
+               {:ok, messages}
+             end)
     end
   end
 
-  # ===== POLICIES =====
-  #   policies do
-  #     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #       authorize_if always()
-  #     end
-
-  #   policy always() do
-  #     authorize_if always()
-  #   end
-  # end
-
-  # ===== CODE INTERFACE =====
-  code_interface do
-    define :create
-    define :send_ai_response, args: [:content, :sender_id, :ai_metadata, :channel_id]
-    define :send_pac_command, args: [:content, :sender_id, :pac_metadata, :channel_id]
-    define :send_system_message, args: [:content, :channel_id]
-    define :edit, args: [:content]
-    define :add_reaction, args: [:emoji, :user_id]
-    define :remove_reaction, args: [:emoji, :user_id]
-    define :flag, args: []
-    define :soft_delete, args: []
-    define :pin, args: []
-    define :by_channel, args: [:channel_id, :limit]
-    define :thread_messages, args: [:thread_root_id]
-    define :by_sender, args: [:sender_id]
-    define :recent_messages, args: [:hours_back]
-    define :search, args: [:search_term, :channel_id]
-    define :flagged_messages, action: :flagged_messages
-    define :ai_messages, action: :ai_messages
-    define :pac_commands, action: :pac_commands
-    define :cleanup_ephemeral, action: :cleanup_ephemeral
-  end
-
-  # ===== POSTGRES CONFIGURATION =====
-  postgres do
-    table "thunderblock_messages"
-    repo Thunderline.Repo
-
-    references do
-      reference :channel, on_delete: :delete, on_update: :update
-      reference :community, on_delete: :delete, on_update: :update
-      reference :reply_to, on_delete: :nilify, on_update: :update
-      reference :thread_root, on_delete: :nilify, on_update: :update
-      reference :replies, on_delete: :delete, on_update: :update
-      reference :thread_messages, on_delete: :delete, on_update: :update
-    end
-
-    custom_indexes do
-      index [:channel_id, :inserted_at], name: "messages_channel_time_idx"
-      index [:sender_id, :inserted_at], name: "messages_sender_time_idx"
-      index [:thread_root_id, :inserted_at], name: "messages_thread_idx"
-      index [:reply_to_id], name: "messages_reply_idx"
-      index [:status, :inserted_at], name: "messages_status_time_idx"
-      index [:message_type, :sender_type], name: "messages_type_idx"
-      index [:ephemeral_until], name: "messages_ephemeral_idx"
-      index "USING GIN (search_vector)", name: "messages_search_idx"
-      index "USING GIN (mentions)", name: "messages_mentions_idx"
-      index "USING GIN (message_flags)", name: "messages_flags_idx"
-      index "USING GIN (tags)", name: "messages_tags_idx"
-      index "USING GIN (reactions)", name: "messages_reactions_idx"
-    end
-
-    check_constraints do
-      check_constraint :valid_thread_counts, "thread_participant_count >= 0 AND thread_message_count >= 0"
-      check_constraint :valid_content_length, "char_length(content) > 0"
-    end
-  end
-
-  # ===== JSON API CONFIGURATION =====
-  json_api do
-    type "message"
-
-    routes do
-      base "/messages"
-      get :read
-      index :read
-      post :create
-      patch :edit
-      delete :destroy
-    end
+  # ===== PREPARATIONS =====
+  preparations do
+    prepare build(load: [:channel, :community, :reply_to, :thread_root])
   end
 
   # ===== OBAN CONFIGURATION =====
@@ -753,9 +584,227 @@ defmodule Thunderline.Thundercom.Resources.Message do
     # validate {Thunderblock.Validations, :valid_attachments}, on: [:create, :update]
   end
 
-  # ===== PREPARATIONS =====
-  preparations do
-    prepare build(load: [:channel, :community, :reply_to, :thread_root])
+  # ===== ATTRIBUTES =====
+  attributes do
+    uuid_primary_key :id
+
+    attribute :content, :string do
+      allow_nil? false
+      description "The message content text"
+      constraints min_length: 1, max_length: 4000
+    end
+
+    attribute :message_type, :atom do
+      allow_nil? false
+      description "Type of message"
+      default :text
+    end
+
+    attribute :sender_id, :uuid do
+      allow_nil? false
+      description "ID of the message sender (user or AI agent)"
+    end
+
+    attribute :sender_type, :atom do
+      allow_nil? false
+      description "Type of sender"
+      default :user
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      description "Message status"
+      default :active
+    end
+
+    attribute :reply_to_id, :uuid do
+      allow_nil? true
+      description "ID of message this is replying to (for threading)"
+    end
+
+    attribute :thread_root_id, :uuid do
+      allow_nil? true
+      description "ID of the root message in thread chain"
+    end
+
+    attribute :attachments, {:array, :map} do
+      allow_nil? false
+      description "File attachments and media content"
+      default []
+    end
+
+    attribute :reactions, :map do
+      allow_nil? false
+      description "Emoji reactions and their counts"
+      default %{}
+    end
+
+    attribute :mentions, {:array, :uuid} do
+      allow_nil? false
+      description "User IDs mentioned in message"
+      default []
+    end
+
+    attribute :channel_mentions, {:array, :uuid} do
+      allow_nil? false
+      description "Channel IDs mentioned in message"
+      default []
+    end
+
+    attribute :role_mentions, {:array, :uuid} do
+      allow_nil? false
+      description "Role IDs mentioned in message"
+      default []
+    end
+
+    attribute :message_flags, {:array, :atom} do
+      allow_nil? false
+      description "Message flags and special properties"
+      default []
+      # Possible flags: :pinned, :announcement, :urgent, :ai_generated, :pac_command, :federated
+    end
+
+    attribute :edit_history, {:array, :map} do
+      allow_nil? false
+      description "History of message edits"
+      default []
+    end
+
+    attribute :ai_metadata, :map do
+      allow_nil? false
+      description "AI-specific message metadata"
+
+      default %{
+        model_used: nil,
+        confidence_score: nil,
+        processing_time_ms: nil,
+        token_count: nil
+      }
+    end
+
+    attribute :pac_metadata, :map do
+      allow_nil? false
+      description "PAC coordination metadata"
+
+      default %{
+        command_type: nil,
+        execution_status: nil,
+        target_agents: [],
+        result_data: nil
+      }
+    end
+
+    attribute :federation_metadata, :map do
+      allow_nil? false
+      description "Cross-realm federation metadata"
+
+      default %{
+        origin_realm: nil,
+        origin_user: nil,
+        federation_signature: nil,
+        relay_path: []
+      }
+    end
+
+    attribute :search_vector, :string do
+      allow_nil? true
+      description "Full-text search vector (tsvector)"
+    end
+
+    attribute :thread_participant_count, :integer do
+      allow_nil? false
+      description "Number of unique participants in thread"
+      default 0
+      constraints min: 0
+    end
+
+    attribute :thread_message_count, :integer do
+      allow_nil? false
+      description "Number of messages in thread (if root message)"
+      default 0
+      constraints min: 0
+    end
+
+    attribute :last_thread_activity, :utc_datetime do
+      allow_nil? true
+      description "Timestamp of last activity in thread"
+    end
+
+    attribute :moderation_data, :map do
+      allow_nil? false
+      description "Content moderation analysis results"
+
+      default %{
+        toxicity_score: 0.0,
+        spam_score: 0.0,
+        flags: [],
+        auto_actions: []
+      }
+    end
+
+    attribute :message_metrics, :map do
+      allow_nil? false
+      description "Message engagement and interaction metrics"
+
+      default %{
+        view_count: 0,
+        reaction_count: 0,
+        reply_count: 0,
+        share_count: 0
+      }
+    end
+
+    attribute :ephemeral_until, :utc_datetime do
+      allow_nil? true
+      description "Timestamp when ephemeral message expires"
+    end
+
+    attribute :tags, {:array, :string} do
+      allow_nil? false
+      description "Message categorization tags"
+      default []
+    end
+
+    attribute :metadata, :map do
+      allow_nil? false
+      description "Additional message metadata"
+      default %{}
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  # ===== RELATIONSHIPS =====
+  relationships do
+    belongs_to :channel, Thunderline.Thundercom.Resources.Channel do
+      attribute_writable? true
+      source_attribute :channel_id
+      destination_attribute :id
+    end
+
+    belongs_to :community, Thunderline.Thundercom.Resources.Community do
+      source_attribute :community_id
+      destination_attribute :id
+    end
+
+    belongs_to :reply_to, Thunderline.Thundercom.Resources.Message do
+      source_attribute :reply_to_id
+      destination_attribute :id
+    end
+
+    belongs_to :thread_root, Thunderline.Thundercom.Resources.Message do
+      source_attribute :thread_root_id
+      destination_attribute :id
+    end
+
+    has_many :replies, Thunderline.Thundercom.Resources.Message do
+      destination_attribute :reply_to_id
+    end
+
+    has_many :thread_messages, Thunderline.Thundercom.Resources.Message do
+      destination_attribute :thread_root_id
+    end
   end
 
   # ===== PRIVATE FUNCTIONS =====
@@ -829,12 +878,13 @@ defmodule Thunderline.Thundercom.Resources.Message do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "thunderblock:channels:#{message.channel_id}:reactions",
-      {:reaction_update, %{
-        message_id: message.id,
-        emoji: emoji,
-        user_id: user_id,
-        action: action
-      }}
+      {:reaction_update,
+       %{
+         message_id: message.id,
+         emoji: emoji,
+         user_id: user_id,
+         action: action
+       }}
     )
   end
 

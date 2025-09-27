@@ -4,6 +4,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
     domain: Thunderline.Thundercrown.Domain,
     data_layer: Ash.DataLayer.Ets,
     authorizers: [Ash.Policy.Authorizer]
+
   require Logger
 
   code_interface do
@@ -20,10 +21,23 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
       run fn _input, %{arguments: %{tool: tool, prompt: prompt}} ->
         # TODO: Gate with ThunderGate policy and actual AshAI/Jido invocation
         corr = Thunderline.UUID.v7()
-        emit("ui.command.agent.requested", %{tool: tool, prompt: String.slice(prompt, 0, 120), correlation_id: corr})
+
+        emit("ui.command.agent.requested", %{
+          tool: tool,
+          prompt: String.slice(prompt, 0, 120),
+          correlation_id: corr
+        })
+
         # Simulate token/stream id
         {:ok, %{stream_id: "ai-" <> String.slice(corr, 0, 8), correlation_id: corr}}
       end
+    end
+  end
+
+  policies do
+    policy action(:run) do
+      authorize_if expr(^actor(:role) in [:owner, :steward, :system])
+      authorize_if expr(not is_nil(actor(:tenant_id)))
     end
   end
 
@@ -33,21 +47,20 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
     attribute :correlation_id, :string, public?: true
   end
 
-  policies do
-    policy action(:run) do
-  authorize_if expr(^actor(:role) in [:owner, :steward, :system])
-      authorize_if expr(not is_nil(actor(:tenant_id)))
-    end
-  end
-
   defp emit(name, payload) do
     with {:ok, ev} <- Thunderline.Event.new(name: name, source: :crown, payload: payload) do
-      _ = Task.start(fn ->
-        case Thunderline.EventBus.publish_event(ev) do
-          {:ok, _} -> :ok
-          {:error, reason} -> Logger.warning("[AgentRunner] async publish failed: #{inspect(reason)} name=#{name}")
-        end
-      end)
+      _ =
+        Task.start(fn ->
+          case Thunderline.EventBus.publish_event(ev) do
+            {:ok, _} ->
+              :ok
+
+            {:error, reason} ->
+              Logger.warning(
+                "[AgentRunner] async publish failed: #{inspect(reason)} name=#{name}"
+              )
+          end
+        end)
     end
   end
 end

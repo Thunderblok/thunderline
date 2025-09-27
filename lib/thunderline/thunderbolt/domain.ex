@@ -61,8 +61,8 @@ defmodule Thunderline.Thunderbolt.Domain do
     # Automata controls (non-persistent control surface)
     resource Thunderline.Thunderbolt.Resources.AutomataRun
 
-  # Cerebros (ML search & training)
-  resource Thunderline.Thunderbolt.Resources.ModelRun
+    # Cerebros (ML search & training)
+    resource Thunderline.Thunderbolt.Resources.ModelRun
     # New ML stack resources
     resource Thunderline.Thunderbolt.ML.TrainingDataset
     resource Thunderline.Thunderbolt.ML.FeatureView

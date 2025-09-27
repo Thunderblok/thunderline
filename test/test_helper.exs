@@ -3,8 +3,14 @@ ExUnit.start(assert_receive_timeout: 200)
 # Keep optional subsystems off unless a test opts in.
 Application.put_env(:thunderline, :minimal_test_boot, true)
 Application.put_env(:thunderline, :features, [])
-Application.put_env(:thunderline, :cerebros_bridge, [enabled: false, invoke: [default_timeout_ms: 100], cache: [ttl_ms: 1000, max_entries: 64]])
-Application.put_env(:thunderline, :vim, [enabled: false, shadow_mode: true])
+
+Application.put_env(:thunderline, :cerebros_bridge,
+  enabled: false,
+  invoke: [default_timeout_ms: 100],
+  cache: [ttl_ms: 1000, max_entries: 64]
+)
+
+Application.put_env(:thunderline, :vim, enabled: false, shadow_mode: true)
 
 {:ok, _} = Application.ensure_all_started(:thunderline)
 

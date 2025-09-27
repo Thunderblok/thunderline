@@ -34,13 +34,15 @@ defmodule Thunderline.CerebrosBridge.InvokerTest do
 
   test "invoke returns disabled error when flag off" do
     Application.put_env(:thunderline, :features, [])
-    Application.put_env(:thunderline, :cerebros_bridge, [enabled: false])
+    Application.put_env(:thunderline, :cerebros_bridge, enabled: false)
 
-    assert {:error, %{class: :dependency}} = Invoker.invoke(:foo, %{command: "echo", args: [], env: %{}, expect_json?: false})
+    assert {:error, %{class: :dependency}} =
+             Invoker.invoke(:foo, %{command: "echo", args: [], env: %{}, expect_json?: false})
   end
 
   test "invoke echoes args when enabled" do
     Application.put_env(:thunderline, :features, [:ml_nas])
+
     Application.put_env(:thunderline, :cerebros_bridge,
       enabled: true,
       env: %{},

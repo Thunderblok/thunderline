@@ -25,12 +25,17 @@ defmodule Thunderline.Thunderflow.Probing.Engine do
     do_loop(spec, prompt, nil, nil, 0, [])
   end
 
-  defp do_loop(%{laps: laps} = spec, _prompt, _prev_emb, _baseline, lap, acc) when lap >= laps, do: Enum.reverse(acc)
+  defp do_loop(%{laps: laps} = spec, _prompt, _prev_emb, _baseline, lap, acc) when lap >= laps,
+    do: Enum.reverse(acc)
+
   defp do_loop(spec, prompt, prev_emb, baseline_dist, lap, acc) do
     provider_mod = resolve_provider(spec.provider)
     t0 = System.monotonic_time(:microsecond)
     {:ok, text} = provider_mod.generate(prompt, %{model: spec.model})
-    {emb, _norm} = Embedding.hash_embedding(text, dim: spec.embedding_dim, ngram: spec.embedding_ngram)
+
+    {emb, _norm} =
+      Embedding.hash_embedding(text, dim: spec.embedding_dim, ngram: spec.embedding_ngram)
+
     cos_prev = if prev_emb, do: Embedding.cosine(prev_emb, emb), else: 0.0
 
     row = %{
@@ -49,15 +54,21 @@ defmodule Thunderline.Thunderflow.Probing.Engine do
 
     {row, baseline_dist} = maybe_mc(row, baseline_dist, prompt, provider_mod, spec)
 
-    :telemetry.execute([
-      :thunderline, :probe, :lap
-    ], %{
-      char_entropy: row.char_entropy,
-      lexical_diversity: row.lexical_diversity,
-      repetition_ratio: row.repetition_ratio,
-      cosine_to_prev: row.cosine_to_prev,
-      elapsed_ms: row.elapsed_ms
-    }, %{lap_index: lap, provider: spec.provider, model: spec.model, condition: spec.condition})
+    :telemetry.execute(
+      [
+        :thunderline,
+        :probe,
+        :lap
+      ],
+      %{
+        char_entropy: row.char_entropy,
+        lexical_diversity: row.lexical_diversity,
+        repetition_ratio: row.repetition_ratio,
+        cosine_to_prev: row.cosine_to_prev,
+        elapsed_ms: row.elapsed_ms
+      },
+      %{lap_index: lap, provider: spec.provider, model: spec.model, condition: spec.condition}
+    )
 
     do_loop(spec, prompt, emb, baseline_dist, lap + 1, [row | acc])
   end
@@ -65,8 +76,13 @@ defmodule Thunderline.Thunderflow.Probing.Engine do
   defp maybe_mc(row, baseline_dist, prompt, provider_mod, %{samples: s} = spec) when s > 1 do
     fun = fn p -> provider_mod.generate(p, %{model: spec.model}) end
     dist = MonteCarlo.distribution(fun, prompt, s)
+
     if baseline_dist == nil do
-      {Map.merge(row, %{mc_dist: dist, js_divergence_vs_baseline: nil, topk_overlap_vs_baseline: nil}), dist}
+      {Map.merge(row, %{
+         mc_dist: dist,
+         js_divergence_vs_baseline: nil,
+         topk_overlap_vs_baseline: nil
+       }), dist}
     else
       {Map.merge(row, %{
          mc_dist: dist,
@@ -75,9 +91,11 @@ defmodule Thunderline.Thunderflow.Probing.Engine do
        }), baseline_dist}
     end
   end
+
   defp maybe_mc(row, baseline_dist, _prompt, _provider_mod, _spec), do: {row, baseline_dist}
 
   defp resolve_provider("mock"), do: Mock
+
   defp resolve_provider(other) do
     raise "Unknown probe provider #{inspect(other)} (extend Thunderline.Thunderflow.Probing.Engine.resolve_provider/1)"
   end

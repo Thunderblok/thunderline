@@ -60,6 +60,7 @@ defmodule Thunderline.Thundergate.ActorContext do
   def verify(sig) when is_binary(sig) do
     jwk = public_key()
     now = System.os_time(:second)
+
     with {true, jws, _} <- JWS.verify_strict(jwk, ["EdDSA"], sig),
          {:ok, payload} <- decode_payload(jws),
          {:ok, ctx} <- to_struct(payload) do
@@ -102,8 +103,11 @@ defmodule Thunderline.Thundergate.ActorContext do
 
   defp keypair do
     case Application.get_env(:thunderline, :gate_keys) do
-      %{jwk_ed25519_priv: priv_map, jwk_ed25519_pub: pub_map} -> {JWK.from_map(priv_map), JWK.from_map(pub_map)}
-      _ -> ephemeral()
+      %{jwk_ed25519_priv: priv_map, jwk_ed25519_pub: pub_map} ->
+        {JWK.from_map(priv_map), JWK.from_map(pub_map)}
+
+      _ ->
+        ephemeral()
     end
   end
 

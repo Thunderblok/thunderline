@@ -54,8 +54,8 @@ defmodule ThunderlineWeb.HealthController do
   defp check_database do
     try do
       # Simple database connectivity check
-      case Thunderline.Repo.query("SELECT 1", []) do
-        {:ok, _} -> :ok
+      case Thunderline.Thunderblock.Health.ping() do
+        :ok -> :ok
         {:error, _} -> :error
       end
     rescue

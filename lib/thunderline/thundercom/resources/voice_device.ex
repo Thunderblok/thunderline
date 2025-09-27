@@ -16,20 +16,11 @@ defmodule Thunderline.Thundercom.Resources.VoiceDevice do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :principal_id, :uuid, allow_nil?: false
-    attribute :input_device_id, :string, allow_nil?: true
-    attribute :output_device_id, :string, allow_nil?: true
-    attribute :last_ice_ok, :boolean, allow_nil?: false, default: false
-    attribute :last_ice_ts, :utc_datetime, allow_nil?: true
-    attribute :metadata, :map, allow_nil?: false, default: %{}
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  identities do
-    identity :unique_principal, [:principal_id]
+  code_interface do
+    define :register
+    define :update_devices
+    define :mark_ice_result
+    define :deactivate
   end
 
   actions do
@@ -68,11 +59,20 @@ defmodule Thunderline.Thundercom.Resources.VoiceDevice do
     end
   end
 
-  code_interface do
-    define :register
-    define :update_devices
-    define :mark_ice_result
-    define :deactivate
+  attributes do
+    uuid_primary_key :id
+    attribute :principal_id, :uuid, allow_nil?: false
+    attribute :input_device_id, :string, allow_nil?: true
+    attribute :output_device_id, :string, allow_nil?: true
+    attribute :last_ice_ok, :boolean, allow_nil?: false, default: false
+    attribute :last_ice_ts, :utc_datetime, allow_nil?: true
+    attribute :metadata, :map, allow_nil?: false, default: %{}
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  identities do
+    identity :unique_principal, [:principal_id]
   end
 
   # --- Helpers -----------------------------------------------------------

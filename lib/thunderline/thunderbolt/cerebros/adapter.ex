@@ -45,7 +45,11 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
          {:ok, run} <- maybe_start_run(run),
          {:ok, artifacts} <- persist_artifacts(run, result),
          {:ok, run} <- complete_run(run, result) do
-      {:ok, put_in(result[:persisted], %{model_run_id: run.id, artifact_ids: Enum.map(artifacts, & &1.id)})}
+      {:ok,
+       put_in(result[:persisted], %{
+         model_run_id: run.id,
+         artifact_ids: Enum.map(artifacts, & &1.id)
+       })}
     else
       error ->
         Logger.error("[Cerebros.Adapter] persistence pipeline failed: #{inspect(error)}")
@@ -90,6 +94,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
 
   defp delegate(opts) when is_list(opts) do
     emit_progress(:start, %{mode: :opts})
+
     internal(opts)
     |> tap(fn
       {:ok, res} -> emit_progress(:complete, res)
@@ -97,7 +102,9 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
     end)
   end
 
-  defp external_available?, do: function_exported?(elem(@external_fun, 0), elem(@external_fun, 1), elem(@external_fun, 2))
+  defp external_available?,
+    do: function_exported?(elem(@external_fun, 0), elem(@external_fun, 1), elem(@external_fun, 2))
+
   defp cli_available?, do: System.find_executable("cerebros") != nil
 
   defp external(spec) do
@@ -113,8 +120,11 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
   defp cli(spec) do
     json = Jason.encode!(spec)
     {out, exit} = System.cmd("cerebros", ["json", "--spec"], input: json, stderr_to_stdout: true)
+
     case exit do
-      0 -> Jason.decode(out)
+      0 ->
+        Jason.decode(out)
+
       _ ->
         Logger.error("[Cerebros.Adapter] CLI failed (code #{exit}): #{out}")
         internal(spec_to_internal_opts(spec))
@@ -143,7 +153,9 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
     [dataset: dataset, trials: trials, max_params: max_params, seed: seed]
   end
 
-  defp normalize_result(%{best_metric: _} = res), do: Map.put_new(res, :persisted, %{model_run_id: nil, artifact_ids: []})
+  defp normalize_result(%{best_metric: _} = res),
+    do: Map.put_new(res, :persisted, %{model_run_id: nil, artifact_ids: []})
+
   defp normalize_result(other), do: other
 
   ## Persistence -----------------------------------------------------------
@@ -168,7 +180,11 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
   defp persist_artifacts(run, result) do
     spec = result.best_spec || %{}
     artifact_path = result.artifact
-    metrics = %{metric: result.best_metric, params: Map.get(result, :params, Map.get(spec, :params, -1))}
+
+    metrics = %{
+      metric: result.best_metric,
+      params: Map.get(result, :params, Map.get(spec, :params, -1))
+    }
 
     artifacts = [
       %{
@@ -185,7 +201,9 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
     created =
       Enum.reduce(artifacts, [], fn attrs, acc ->
         case ModelArtifact.create(attrs) do
-          {:ok, art} -> [art | acc]
+          {:ok, art} ->
+            [art | acc]
+
           {:error, reason} ->
             Logger.error("[Cerebros.Adapter] artifact persist failed: #{inspect(reason)}")
             acc
@@ -198,18 +216,33 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
 
   ## Progress Emission -----------------------------------------------------
 
-    defp emit_progress(stage, data) do
-      with {:ok, ev} <- Thunderline.Event.new(name: "ai.cerebros_search_progress", source: :bolt, payload: %{stage: stage, at: System.system_time(:millisecond), data: sanitize_progress(data)}, meta: %{pipeline: :realtime}, type: :cerebros_search_progress),
-           {:ok, _} <- EventBus.publish_event(ev) do
+  defp emit_progress(stage, data) do
+    with {:ok, ev} <-
+           Thunderline.Event.new(
+             name: "ai.cerebros_search_progress",
+             source: :bolt,
+             payload: %{
+               stage: stage,
+               at: System.system_time(:millisecond),
+               data: sanitize_progress(data)
+             },
+             meta: %{pipeline: :realtime},
+             type: :cerebros_search_progress
+           ),
+         {:ok, _} <- EventBus.publish_event(ev) do
+      :ok
+    else
+      {:error, reason} ->
+        Logger.warning("[Cerebros.Adapter] progress event publish failed: #{inspect(reason)}")
+
+      _ ->
         :ok
-      else
-        {:error, reason} -> Logger.warning("[Cerebros.Adapter] progress event publish failed: #{inspect(reason)}")
-        _ -> :ok
-      end
+    end
   end
 
   defp sanitize_progress(%{artifact: path} = data) when is_binary(path) do
     Map.put(data, :artifact, Path.basename(path))
   end
+
   defp sanitize_progress(data), do: data
 end

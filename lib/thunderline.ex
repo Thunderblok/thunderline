@@ -64,6 +64,7 @@ defmodule Thunderline do
 
   defp memory_snapshot do
     mem = :erlang.memory()
+
     %{
       total: mem[:total],
       processes: mem[:processes],
@@ -141,7 +142,11 @@ defmodule Thunderline do
 
   defp oban_peers_table? do
     try do
-      case Ecto.Adapters.SQL.query(Thunderline.Repo, "SELECT to_regclass('public.oban_peers')", []) do
+      case Ecto.Adapters.SQL.query(
+             Thunderline.Repo,
+             "SELECT to_regclass('public.oban_peers')",
+             []
+           ) do
         {:ok, %{rows: [[nil]]}} -> false
         {:ok, %{rows: [[_]]}} -> true
         _ -> false
@@ -159,6 +164,7 @@ defmodule Thunderline do
       count -> count
     end
   end
+
   # -------- Delegated compute helpers (thin shortcuts) --------
   @doc "Quick access to Ising machine optimization."
   defdelegate ising_solve(height, width, opts \\ []),

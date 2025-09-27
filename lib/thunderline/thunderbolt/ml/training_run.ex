@@ -15,12 +15,14 @@ defmodule Thunderline.Thunderbolt.ML.TrainingRun do
       accept [:tenant_id, :dataset_id, :spec_id, :params]
       change set_attribute(:run_id, Thunderline.UUID.v7())
       change set_attribute(:status, :queued)
+
       change after_action(fn _changeset, result ->
-        %{run_id: result.run_id}
-        |> Thunderline.Thunderbolt.ML.Trainer.RunWorker.new(queue: :ml)
-        |> Oban.insert()
-        {:ok, result}
-      end)
+               %{run_id: result.run_id}
+               |> Thunderline.Thunderbolt.ML.Trainer.RunWorker.new(queue: :ml)
+               |> Oban.insert()
+
+               {:ok, result}
+             end)
     end
 
     update :mark_started do
@@ -50,7 +52,11 @@ defmodule Thunderline.Thunderbolt.ML.TrainingRun do
     attribute :spec_id, :uuid, allow_nil?: false
     attribute :artifact_id, :uuid
     attribute :params, :map, default: %{}
-    attribute :status, :atom, constraints: [one_of: [:queued, :running, :completed, :failed]], default: :queued
+
+    attribute :status, :atom,
+      constraints: [one_of: [:queued, :running, :completed, :failed]],
+      default: :queued
+
     attribute :error, :string
     attribute :started_at, :utc_datetime_usec
     attribute :completed_at, :utc_datetime_usec

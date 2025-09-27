@@ -17,7 +17,8 @@ defmodule Thunderline.Thunderflow.Observability.RingBuffer do
   @doc """
   Push a message (any term) into the ring buffer
   """
-  def push(message, server \\ __MODULE__), do: GenServer.cast(server, {:push, System.system_time(:millisecond), message})
+  def push(message, server \\ __MODULE__),
+    do: GenServer.cast(server, {:push, System.system_time(:millisecond), message})
 
   @doc """
   Return most recent N entries (timestamp, message) newest-first

@@ -113,11 +113,19 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.GemmRunner do
   end
 
   defp select_backend!("nif") do
-    Application.put_env(:thunderline, :numerics_adapter, Thunderline.Thunderbolt.Numerics.Adapters.NIF)
+    Application.put_env(
+      :thunderline,
+      :numerics_adapter,
+      Thunderline.Thunderbolt.Numerics.Adapters.NIF
+    )
   end
 
   defp select_backend!("python") do
-    Application.put_env(:thunderline, :numerics_adapter, Thunderline.Thunderbolt.Numerics.Adapters.Sidecar)
+    Application.put_env(
+      :thunderline,
+      :numerics_adapter,
+      Thunderline.Thunderbolt.Numerics.Adapters.Sidecar
+    )
   end
 
   defp select_backend!(other) do
@@ -142,7 +150,9 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.GemmRunner do
     ev = Emitter.run_metrics(payload)
 
     case EventBus.publish_event(ev) do
-      {:ok, _} -> :ok
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
         Logger.error("publish ml.run.metrics failed: #{inspect(reason)}")
         :ok
@@ -153,7 +163,9 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.GemmRunner do
     ev = Emitter.run_completed(payload)
 
     case EventBus.publish_event(ev) do
-      {:ok, _} -> :ok
+      {:ok, _} ->
+        :ok
+
       {:error, reason} ->
         Logger.error("publish ml.run.completed failed: #{inspect(reason)}")
         :ok
@@ -169,9 +181,11 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.GemmRunner do
   defp percentiles(samples, ps) do
     s = Enum.sort(samples)
     len = length(s)
+
     Enum.reduce(ps, {nil, nil}, fn p, {acc50, acc95} ->
       idx = max(0, min(len - 1, trunc(Float.ceil(p / 100.0 * len)) - 1))
       val = Enum.at(s, idx) || hd(s)
+
       case p do
         50 -> {val, acc95}
         95 -> {acc50, val}

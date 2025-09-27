@@ -16,15 +16,15 @@ defmodule ThunderlineWeb.DashboardComponents.ThunderwatchPanel do
       </div>
       <div class="grid grid-cols-3 gap-2 text-center text-xs">
         <div>
-          <div class="text-slate-300 font-mono"><%= @stats.files_indexed || 0 %></div>
+          <div class="text-slate-300 font-mono">{@stats.files_indexed || 0}</div>
           <div class="text-slate-500">files</div>
         </div>
         <div>
-          <div class="text-slate-300 font-mono"><%= @stats.events_last_min || 0 %></div>
+          <div class="text-slate-300 font-mono">{@stats.events_last_min || 0}</div>
           <div class="text-slate-500">events/min</div>
         </div>
         <div>
-          <div class="text-slate-300 font-mono"><%= @stats.seq || 0 %></div>
+          <div class="text-slate-300 font-mono">{@stats.seq || 0}</div>
           <div class="text-slate-500">seq</div>
         </div>
       </div>
@@ -34,7 +34,7 @@ defmodule ThunderlineWeb.DashboardComponents.ThunderwatchPanel do
       <div class="flex flex-wrap gap-1">
         <%= for {domain, count} <- (@stats.domain_counts || %{}) |> Enum.sort_by(&elem(&1,1), :desc) |> Enum.take(10) do %>
           <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800/70 text-slate-300">
-            <%= domain %>: <%= count %>
+            {domain}: {count}
           </span>
         <% end %>
       </div>
@@ -46,15 +46,22 @@ defmodule ThunderlineWeb.DashboardComponents.ThunderwatchPanel do
     seq = Manager.current_seq()
     snap = Manager.snapshot()
     files_indexed = map_size(snap)
-    domain_counts = snap |> Enum.map(fn {_p,m}-> m[:domain] end) |> Enum.frequencies() |> Enum.sort_by(&elem(&1,1), :desc)
-    events_last_min = Manager.changes_since(seq - 500) |> Enum.count(fn e -> recent?(e, 60_000_000) end)
+
+    domain_counts =
+      snap
+      |> Enum.map(fn {_p, m} -> m[:domain] end)
+      |> Enum.frequencies()
+      |> Enum.sort_by(&elem(&1, 1), :desc)
+
+    events_last_min =
+      Manager.changes_since(seq - 500) |> Enum.count(fn e -> recent?(e, 60_000_000) end)
 
     %{
       seq: seq,
       files_indexed: files_indexed,
       events_last_min: events_last_min,
       domain_counts: domain_counts,
-    utilization: min((events_last_min / 200.0) * 100.0, 100.0)
+      utilization: min(events_last_min / 200.0 * 100.0, 100.0)
     }
   rescue
     _ -> %{}

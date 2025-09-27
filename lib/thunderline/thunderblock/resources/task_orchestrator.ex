@@ -139,7 +139,7 @@ defmodule Thunderblock.Resources.TaskOrchestrator do
 
       run fn input, _context ->
         workflow_id = "domain_sync_#{System.unique_integer([:positive])}"
-  domains = [:thunderbit, :thunderflow, :thunderlink, :thunderblock_vault, :thundercrown]
+        domains = [:thunderbit, :thunderflow, :thunderlink, :thunderblock_vault, :thundercrown]
 
         # Create master workflow tracker
         Thunderline.Thunderblock.Resources.WorkflowTracker.create(%{

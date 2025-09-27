@@ -14,10 +14,17 @@ defmodule ThunderlineWeb.VoiceChannel do
   def join("voice:" <> room_id, _payload, socket) do
     actor_ctx = socket.assigns[:actor_ctx]
     resource = {:voice_room, room_id}
-  case with_presence(:join, resource, actor_ctx) do
+
+    case with_presence(:join, resource, actor_ctx) do
       {:error, _} ->
-        :telemetry.execute([:thunderline, :link, :presence, :blocked_channel_join], %{count: 1}, %{room_id: room_id, reason: :denied, actor: actor_ctx && actor_ctx.actor_id})
+        :telemetry.execute(
+          [:thunderline, :link, :presence, :blocked_channel_join],
+          %{count: 1},
+          %{room_id: room_id, reason: :denied, actor: actor_ctx && actor_ctx.actor_id}
+        )
+
         {:error, %{reason: "presence_denied"}}
+
       _ ->
         with {:ok, _pid} <- VoiceSupervisor.ensure_room(room_id) do
           {:ok, assign(socket, :room_id, room_id)}
@@ -28,20 +35,49 @@ defmodule ThunderlineWeb.VoiceChannel do
   end
 
   @impl true
-  def handle_in(event, payload, socket) when event in ["webrtc:offer", "webrtc:answer", "webrtc:candidate", "participant:speaking"] do
+  def handle_in(event, payload, socket)
+      when event in ["webrtc:offer", "webrtc:answer", "webrtc:candidate", "participant:speaking"] do
     actor_ctx = socket.assigns[:actor_ctx]
-  case with_presence(:send, {:voice_room, socket.assigns.room_id}, actor_ctx) do
+
+    case with_presence(:send, {:voice_room, socket.assigns.room_id}, actor_ctx) do
       {:error, _} ->
-        :telemetry.execute([:thunderline, :link, :presence, :blocked_channel_send], %{count: 1}, %{room_id: socket.assigns.room_id, reason: :denied, actor: actor_ctx && actor_ctx.actor_id, event: event})
+        :telemetry.execute(
+          [:thunderline, :link, :presence, :blocked_channel_send],
+          %{count: 1},
+          %{
+            room_id: socket.assigns.room_id,
+            reason: :denied,
+            actor: actor_ctx && actor_ctx.actor_id,
+            event: event
+          }
+        )
+
         {:noreply, socket}
+
       _ ->
         dispatch_voice(event, payload, socket)
         {:noreply, socket}
     end
   end
 
-  defp dispatch_voice("webrtc:offer", %{"sdp" => sdp, "principal_id" => pid}, socket), do: Thunderline.Thunderlink.Voice.RoomPipeline.handle_offer(socket.assigns.room_id, pid, sdp)
-  defp dispatch_voice("webrtc:answer", %{"sdp" => sdp, "principal_id" => pid}, socket), do: Thunderline.Thunderlink.Voice.RoomPipeline.handle_answer(socket.assigns.room_id, pid, sdp)
-  defp dispatch_voice("webrtc:candidate", %{"candidate" => cand, "principal_id" => pid}, socket), do: Thunderline.Thunderlink.Voice.RoomPipeline.add_ice(socket.assigns.room_id, pid, cand)
-  defp dispatch_voice("participant:speaking", %{"principal_id" => pid, "speaking" => speaking?}, socket), do: Thunderline.Thunderlink.Voice.RoomPipeline.update_speaking(socket.assigns.room_id, pid, speaking?)
+  defp dispatch_voice("webrtc:offer", %{"sdp" => sdp, "principal_id" => pid}, socket),
+    do: Thunderline.Thunderlink.Voice.RoomPipeline.handle_offer(socket.assigns.room_id, pid, sdp)
+
+  defp dispatch_voice("webrtc:answer", %{"sdp" => sdp, "principal_id" => pid}, socket),
+    do: Thunderline.Thunderlink.Voice.RoomPipeline.handle_answer(socket.assigns.room_id, pid, sdp)
+
+  defp dispatch_voice("webrtc:candidate", %{"candidate" => cand, "principal_id" => pid}, socket),
+    do: Thunderline.Thunderlink.Voice.RoomPipeline.add_ice(socket.assigns.room_id, pid, cand)
+
+  defp dispatch_voice(
+         "participant:speaking",
+         %{"principal_id" => pid, "speaking" => speaking?},
+         socket
+       ),
+       do:
+         Thunderline.Thunderlink.Voice.RoomPipeline.update_speaking(
+           socket.assigns.room_id,
+           pid,
+           speaking?
+         )
 end

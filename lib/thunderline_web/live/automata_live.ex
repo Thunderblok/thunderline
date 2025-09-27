@@ -28,6 +28,7 @@ defmodule ThunderlineWeb.AutomataLive do
     end
 
     run_id = "default"
+
     if Thunderline.Feature.enabled?(:ca_viz) and connected?(socket) do
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "ca:#{run_id}")
       _ = Thunderline.Thunderbolt.CA.RunnerSupervisor.start_run(run_id, size: 24)
@@ -61,6 +62,7 @@ defmodule ThunderlineWeb.AutomataLive do
        correlation_id: Map.get(payload, :correlation_id)
      })}
   end
+
   @impl true
   def handle_info({:metrics_update, metrics}, socket) do
     automata_data = Map.get(metrics, :automata, %{})
@@ -173,7 +175,7 @@ defmodule ThunderlineWeb.AutomataLive do
                 <option value="rule_184" selected={@active_rule == :rule_184}>Rule 184</option>
               </select>
             </div>
-
+            
     <!-- Speed Control -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Speed (ms)</label>
@@ -188,13 +190,13 @@ defmodule ThunderlineWeb.AutomataLive do
               />
               <span class="text-sm text-gray-500">{@speed}ms</span>
             </div>
-
+            
     <!-- Generation Counter -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Generation</label>
               <div class="text-2xl font-mono text-blue-600">{@generation}</div>
             </div>
-
+            
     <!-- Control Buttons -->
             <div class="flex space-x-2">
               <button
@@ -214,7 +216,14 @@ defmodule ThunderlineWeb.AutomataLive do
         </div>
         <%= if Thunderline.Feature.enabled?(:ca_viz) do %>
           <div class="mt-4">
-            <canvas id="ca-viz" phx-hook="CAVisualization" data-grid-size="24" data-performance-mode="balanced" class="w-full h-[480px] border border-gray-300 rounded bg-black"></canvas>
+            <canvas
+              id="ca-viz"
+              phx-hook="CAVisualization"
+              data-grid-size="24"
+              data-performance-mode="balanced"
+              class="w-full h-[480px] border border-gray-300 rounded bg-black"
+            >
+            </canvas>
           </div>
         <% end %>
       </div>
@@ -243,7 +252,7 @@ defmodule ThunderlineWeb.AutomataLive do
             </div>
           </div>
         </div>
-
+        
     <!-- Stats and Info -->
         <div class="space-y-6">
           <!-- Blackboard Snapshot -->
@@ -281,7 +290,7 @@ defmodule ThunderlineWeb.AutomataLive do
               </div>
             </div>
           </div>
-
+          
     <!-- Automata Metrics -->
           <%= if @automata_state != %{} do %>
             <div class="bg-white rounded-lg shadow p-6">
@@ -320,7 +329,7 @@ defmodule ThunderlineWeb.AutomataLive do
               </div>
             </div>
           <% end %>
-
+          
     <!-- Pattern Analysis -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Pattern Analysis</h3>
@@ -488,7 +497,9 @@ defmodule ThunderlineWeb.AutomataLive do
         snapshot
         |> Enum.filter(fn {k, _v} -> match?({:automata, _}, k) end)
         |> Map.new()
-      _ -> %{}
+
+      _ ->
+        %{}
     end
   end
 

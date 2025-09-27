@@ -10,7 +10,8 @@ defmodule Thunderline.Thunderbolt.CA.Runner do
   require Logger
   alias Thunderline.Thunderbolt.CA.Stepper
 
-  @default_tick_ms 50        # ~20 Hz; can be adjusted via opts
+  # ~20 Hz; can be adjusted via opts
+  @default_tick_ms 50
   @telemetry_event [:thunderline, :ca, :tick]
 
   def start_link(opts) do
@@ -25,6 +26,7 @@ defmodule Thunderline.Thunderbolt.CA.Runner do
     size = Keyword.get(opts, :size, 24)
     ruleset = Keyword.get(opts, :ruleset, %{rule: :demo})
     tick_ms = Keyword.get(opts, :tick_ms, @default_tick_ms)
+
     state = %{
       run_id: run_id,
       grid: %{size: size},
@@ -32,22 +34,38 @@ defmodule Thunderline.Thunderbolt.CA.Runner do
       seq: 0,
       tick_ms: tick_ms
     }
+
     schedule_tick(tick_ms)
-    Logger.info("[CA.Runner] started run=#{inspect(run_id)} size=#{size}Hz=#{Float.round(1000.0/tick_ms,1)}")
+
+    Logger.info(
+      "[CA.Runner] started run=#{inspect(run_id)} size=#{size}Hz=#{Float.round(1000.0 / tick_ms, 1)}"
+    )
+
     {:ok, state}
   end
 
   @impl true
-  def handle_info(:tick, %{grid: grid, ruleset: rules, run_id: run_id, seq: seq, tick_ms: tick_ms} = st) do
+  def handle_info(
+        :tick,
+        %{grid: grid, ruleset: rules, run_id: run_id, seq: seq, tick_ms: tick_ms} = st
+      ) do
     started = System.monotonic_time(:microsecond)
+
     case Stepper.next(grid, rules) do
       {:ok, deltas, new_grid} ->
         msg = %{run_id: run_id, seq: seq + 1, cells: deltas}
         Phoenix.PubSub.broadcast(Thunderline.PubSub, "ca:#{run_id}", {:ca_delta, msg})
         duration_ms = (System.monotonic_time(:microsecond) - started) / 1000
-        :telemetry.execute(@telemetry_event, %{duration_ms: duration_ms, cells: length(deltas)}, %{run_id: run_id})
+
+        :telemetry.execute(
+          @telemetry_event,
+          %{duration_ms: duration_ms, cells: length(deltas)},
+          %{run_id: run_id}
+        )
+
         schedule_tick(tick_ms)
         {:noreply, %{st | grid: new_grid, seq: seq + 1}}
+
       {:error, reason} ->
         Logger.error("[CA.Runner] step error run=#{run_id} reason=#{inspect(reason)}")
         schedule_tick(tick_ms)

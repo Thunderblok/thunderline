@@ -17,27 +17,13 @@ defmodule Thunderline.Thundercom.Resources.VoiceParticipant do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :room_id, :uuid, allow_nil?: false
-    attribute :principal_id, :uuid, allow_nil?: false, description: "User or PAC id"
-    attribute :principal_type, :atom, allow_nil?: false, default: :user, constraints: [one_of: [:user, :pac, :agent]]
-    attribute :role, :atom, allow_nil?: false, default: :listener, constraints: [one_of: [:host, :speaker, :listener]]
-    attribute :muted, :boolean, allow_nil?: false, default: false
-    attribute :speaking, :boolean, allow_nil?: false, default: false
-    attribute :last_active_at, :utc_datetime, allow_nil?: true
-    create_timestamp :joined_at
-  end
-
-  identities do
-    identity :unique_room_principal, [:room_id, :principal_id]
-  end
-
-  relationships do
-  belongs_to :room, Thunderline.Thundercom.Resources.VoiceRoom do
-      source_attribute :room_id
-      destination_attribute :id
-    end
+  code_interface do
+    define :join
+    define :set_muted
+    define :set_speaking
+    define :promote
+    define :leave
+    define :read
   end
 
   actions do
@@ -104,18 +90,42 @@ defmodule Thunderline.Thundercom.Resources.VoiceParticipant do
     end
   end
 
-  code_interface do
-    define :join
-    define :set_muted
-    define :set_speaking
-    define :promote
-    define :leave
-    define :read
+  attributes do
+    uuid_primary_key :id
+    attribute :room_id, :uuid, allow_nil?: false
+    attribute :principal_id, :uuid, allow_nil?: false, description: "User or PAC id"
+
+    attribute :principal_type, :atom,
+      allow_nil?: false,
+      default: :user,
+      constraints: [one_of: [:user, :pac, :agent]]
+
+    attribute :role, :atom,
+      allow_nil?: false,
+      default: :listener,
+      constraints: [one_of: [:host, :speaker, :listener]]
+
+    attribute :muted, :boolean, allow_nil?: false, default: false
+    attribute :speaking, :boolean, allow_nil?: false, default: false
+    attribute :last_active_at, :utc_datetime, allow_nil?: true
+    create_timestamp :joined_at
+  end
+
+  relationships do
+    belongs_to :room, Thunderline.Thundercom.Resources.VoiceRoom do
+      source_attribute :room_id
+      destination_attribute :id
+    end
+  end
+
+  identities do
+    identity :unique_room_principal, [:room_id, :principal_id]
   end
 
   # --- Change helpers ----------------------------------------------------
   defp ensure_role(changeset, _ctx) do
     role = Ash.Changeset.get_attribute(changeset, :role)
+
     if role in [:host, :speaker, :listener] do
       changeset
     else
@@ -125,6 +135,7 @@ defmodule Thunderline.Thundercom.Resources.VoiceParticipant do
 
   defp validate_promotion(changeset, _ctx) do
     role = Ash.Changeset.get_attribute(changeset, :role)
+
     if role in [:host, :speaker, :listener] do
       changeset
     else
@@ -140,27 +151,52 @@ defmodule Thunderline.Thundercom.Resources.VoiceParticipant do
   defp topic(room_id), do: "voice:#{room_id}"
 
   defp broadcast_join(_changeset, participant, _ctx) do
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, topic(participant.room_id), {:voice_participant_joined, participant})
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      topic(participant.room_id),
+      {:voice_participant_joined, participant}
+    )
+
     {:ok, participant}
   end
 
   defp broadcast_leave(_changeset, participant, _ctx) do
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, topic(participant.room_id), {:voice_participant_left, participant.id})
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      topic(participant.room_id),
+      {:voice_participant_left, participant.id}
+    )
+
     {:ok, participant}
   end
 
   defp broadcast_muted(_changeset, participant, _ctx) do
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, topic(participant.room_id), {:voice_participant_muted, participant.id, participant.muted})
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      topic(participant.room_id),
+      {:voice_participant_muted, participant.id, participant.muted}
+    )
+
     {:ok, participant}
   end
 
   defp broadcast_speaking(_changeset, participant, _ctx) do
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, topic(participant.room_id), {:voice_participant_speaking, participant.id, participant.speaking})
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      topic(participant.room_id),
+      {:voice_participant_speaking, participant.id, participant.speaking}
+    )
+
     {:ok, participant}
   end
 
   defp broadcast_promote(_changeset, participant, _ctx) do
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, topic(participant.room_id), {:voice_participant_role, participant.id, participant.role})
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      topic(participant.room_id),
+      {:voice_participant_role, participant.id, participant.role}
+    )
+
     {:ok, participant}
   end
 end

@@ -23,10 +23,19 @@ defmodule Thunderline.Thunderbolt.Cerebros.Artifacts do
 
   @doc "Stub prediction helper until real model loading implemented."
   def predict_stub(%{"spec" => spec}, samples) when is_list(samples) do
-    %{spec_id: spec["id"], count: length(samples), predictions: Enum.map(samples, fn _ -> :stub end)}
+    %{
+      spec_id: spec["id"],
+      count: length(samples),
+      predictions: Enum.map(samples, fn _ -> :stub end)
+    }
   end
+
   def predict_stub(%{spec: spec}, samples) when is_list(samples) do
-    %{spec_id: spec[:id], count: length(samples), predictions: Enum.map(samples, fn _ -> :stub end)}
+    %{
+      spec_id: spec[:id],
+      count: length(samples),
+      predictions: Enum.map(samples, fn _ -> :stub end)
+    }
   end
 
   def persist(_artifact), do: :ok

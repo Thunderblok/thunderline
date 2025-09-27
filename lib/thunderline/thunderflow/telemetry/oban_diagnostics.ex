@@ -42,10 +42,11 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanDiagnostics do
   defp diagnostics_enabled? do
     System.get_env("OBAN_DIAGNOSTICS") in [nil, "", "1", "true", "TRUE", "yes"]
   end
+
   defp schedule, do: Process.send_after(self(), :tick, @interval)
 
   defp run_diagnostics(stage) do
-  repo_up = Thunderline.Thunderblock.ObanIntrospection.repo_alive?()
+    repo_up = Thunderline.Thunderblock.ObanIntrospection.repo_alive?()
     oban_name = oban_instance_name()
     oban_pid = Oban.whereis(oban_name)
     oban_up = alive?(oban_pid)
@@ -56,13 +57,17 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanDiagnostics do
         true -> :warning
       end
 
-    Logger.log(log_level,
+    Logger.log(
+      log_level,
       "[ObanDiagnostics] stage=#{stage} repo_up=#{repo_up} oban_up=#{oban_up} name=#{inspect(oban_name)}"
     )
 
     with true <- repo_up do
-  Thunderline.Thunderblock.ObanIntrospection.check_tables(verbose?())
-  if oban_up, do: Thunderline.Thunderblock.ObanIntrospection.log_queue_overview(verbose?()), else: Thunderline.Thunderblock.ObanIntrospection.attempt_demo_job_insert(verbose?())
+      Thunderline.Thunderblock.ObanIntrospection.check_tables(verbose?())
+
+      if oban_up,
+        do: Thunderline.Thunderblock.ObanIntrospection.log_queue_overview(verbose?()),
+        else: Thunderline.Thunderblock.ObanIntrospection.attempt_demo_job_insert(verbose?())
     else
       _ -> Logger.warning("[ObanDiagnostics] Repo not up yet; skipping table & job checks")
     end
@@ -77,5 +82,6 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanDiagnostics do
     Application.get_env(:thunderline, Oban, []) |> Keyword.get(:name, Oban)
   end
 
-  defp verbose?, do: System.get_env("OBAN_DIAGNOSTICS_VERBOSE") in ["1", "true", "TRUE", "yes", "Y"]
+  defp verbose?,
+    do: System.get_env("OBAN_DIAGNOSTICS_VERBOSE") in ["1", "true", "TRUE", "yes", "Y"]
 end

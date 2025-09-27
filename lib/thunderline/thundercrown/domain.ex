@@ -44,6 +44,13 @@ defmodule Thunderline.Thundercrown.Domain do
 
   use Ash.Domain, extensions: [AshAi]
 
+  # Expose governance-approved actions as AshAI MCP tools (initial slice).
+  # Additional tools should be added only after Crown policy review.
+  tools do
+    # Run an approved agent/tool with a prompt under governance.
+    tool :run_agent, Thunderline.Thundercrown.Resources.AgentRunner, :run
+  end
+
   resources do
     # ThunderChief → ThunderCrown (orchestration)
     resource Thunderline.Thundercrown.Resources.OrchestrationUI
@@ -57,12 +64,5 @@ defmodule Thunderline.Thundercrown.Domain do
 
     # ThunderClock → ThunderCrown (temporal orchestration)
     # Note: ThunderClock resources will be added when implemented
-  end
-
-  # Expose governance-approved actions as AshAI MCP tools (initial slice).
-  # Additional tools should be added only after Crown policy review.
-  tools do
-    # Run an approved agent/tool with a prompt under governance.
-    tool :run_agent, Thunderline.Thundercrown.Resources.AgentRunner, :run
   end
 end

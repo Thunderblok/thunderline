@@ -21,7 +21,12 @@ defmodule Mix.Tasks.Thunderline.Actions.Export do
       |> Enum.flat_map(&actions_for_domain/1)
 
     File.mkdir_p!(Path.dirname(path))
-    File.write!(path, Jason.encode!(%{generated_at: DateTime.utc_now(), tools: tools}, pretty: true))
+
+    File.write!(
+      path,
+      Jason.encode!(%{generated_at: DateTime.utc_now(), tools: tools}, pretty: true)
+    )
+
     Mix.shell().info("Exported #{length(tools)} tools to #{path}")
   end
 
@@ -32,6 +37,7 @@ defmodule Mix.Tasks.Thunderline.Actions.Export do
 
   defp actions_for_domain(domain) do
     resources = Ash.Domain.Info.resources(domain)
+
     for resource <- resources, action <- Ash.Resource.Info.actions(resource) do
       %{
         name: tool_name(resource, action),

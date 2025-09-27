@@ -7,8 +7,8 @@ defmodule Mix.Tasks.Numerics.GemmDemo do
     Mix.Task.run("app.start")
     alias Thunderline.Thunderbolt.Numerics
 
-    a = for _ <- 1..4, do: (for _ <- 1..4, do: :rand.uniform())
-    b = for _ <- 1..4, do: (for _ <- 1..4, do: :rand.uniform())
+    a = for _ <- 1..4, do: for(_ <- 1..4, do: :rand.uniform())
+    b = for _ <- 1..4, do: for(_ <- 1..4, do: :rand.uniform())
 
     case Numerics.gemm_fp16_acc32(a, b) do
       {:ok, res} -> IO.puts("GEMM ok: #{inspect(hd(res))} ...")

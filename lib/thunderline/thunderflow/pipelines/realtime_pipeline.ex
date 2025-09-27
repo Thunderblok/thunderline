@@ -92,10 +92,11 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   def handle_batch(:agent_updates, messages, _batch_info, _context) do
     Logger.debug("Processing #{length(messages)} agent updates")
 
-  events = Enum.map(messages, & &1.data)
+    events = Enum.map(messages, & &1.data)
 
     # Process agent updates with minimal latency (currently infallible)
     :ok = process_agent_updates_batch(events)
+
     PubSub.broadcast(
       Thunderline.PubSub,
       "thunderline:agents:batch_update",
@@ -105,6 +106,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
          timestamp: DateTime.utc_now()
        }}
     )
+
     messages
   end
 
@@ -112,60 +114,77 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   def handle_batch(:system_metrics, messages, _batch_info, _context) do
     Logger.debug("Processing #{length(messages)} system metrics")
 
-  events = Enum.map(messages, & &1.data)
+    events = Enum.map(messages, & &1.data)
 
     :ok = process_system_metrics_batch(events)
     aggregated_metrics = aggregate_metrics(events)
+
     PubSub.broadcast(
       Thunderline.PubSub,
       "thunderline:metrics:update",
       {:metrics_batch_processed, aggregated_metrics}
     )
+
     messages
   end
 
   @impl Broadway
   def handle_batch(:dashboard_updates, messages, _batch_info, _context) do
     count = length(messages)
+
     types =
       messages
       |> Enum.map(& &1.data.name)
       |> Enum.frequencies()
-      |> Enum.map(fn {t,c} -> "#{t}:#{c}" end)
+      |> Enum.map(fn {t, c} -> "#{t}:#{c}" end)
       |> Enum.join(",")
+
     Logger.debug("Processing #{count} dashboard updates (types=#{types})")
 
-  events = Enum.map(messages, & &1.data)
+    events = Enum.map(messages, & &1.data)
 
     :ok = process_dashboard_updates_batch(events)
     dashboard_payload = optimize_dashboard_payload(events)
+
     PubSub.broadcast(
       Thunderline.PubSub,
       "thunderline_web:dashboard",
       {:dashboard_batch_update, dashboard_payload}
     )
+
     messages
   end
 
   @impl Broadway
   def handle_batch(:websocket_broadcasts, messages, _batch_info, _context) do
     count = length(messages)
+
     topics =
       messages
-      |> Enum.map(& (get_in(&1.data.payload, ["websocket_topic"]) || get_in(&1.data.payload, [:websocket_topic]) || "general"))
+      |> Enum.map(
+        &(get_in(&1.data.payload, ["websocket_topic"]) ||
+            get_in(&1.data.payload, [:websocket_topic]) || "general")
+      )
       |> Enum.frequencies()
-      |> Enum.map(fn {t,c} -> "#{t}:#{c}" end)
+      |> Enum.map(fn {t, c} -> "#{t}:#{c}" end)
       |> Enum.join(",")
+
     Logger.debug("Processing #{count} WebSocket broadcasts (topics=#{topics})")
 
-  events = Enum.map(messages, & &1.data)
+    events = Enum.map(messages, & &1.data)
 
     :ok = process_websocket_broadcasts_batch(events)
+
     Enum.each(events, fn %Event{name: name, payload: data} ->
       if name == "ai.timeseries.embedding" do
-        Phoenix.PubSub.broadcast(Thunderline.PubSub, "drift:embedding", {:timeseries_embedding, data})
+        Phoenix.PubSub.broadcast(
+          Thunderline.PubSub,
+          "drift:embedding",
+          {:timeseries_embedding, data}
+        )
       end
     end)
+
     messages
   end
 
@@ -188,11 +207,24 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   defp determine_realtime_batcher(%Event{name: name}) do
     cond do
-      String.contains?(name, "agent_spawned") or String.contains?(name, "agent_updated") or String.contains?(name, "agent_terminated") -> :agent_updates
-      String.contains?(name, "system_metrics") or String.contains?(name, "performance_update") or String.contains?(name, "health_check") -> :system_metrics
-      String.contains?(name, "dashboard_update") or String.contains?(name, "chart_data") or String.contains?(name, "live_stats") -> :dashboard_updates
-      String.contains?(name, "websocket_message") or String.contains?(name, "live_notification") or String.contains?(name, "chat_message") -> :websocket_broadcasts
-      true -> :dashboard_updates
+      String.contains?(name, "agent_spawned") or String.contains?(name, "agent_updated") or
+          String.contains?(name, "agent_terminated") ->
+        :agent_updates
+
+      String.contains?(name, "system_metrics") or String.contains?(name, "performance_update") or
+          String.contains?(name, "health_check") ->
+        :system_metrics
+
+      String.contains?(name, "dashboard_update") or String.contains?(name, "chart_data") or
+          String.contains?(name, "live_stats") ->
+        :dashboard_updates
+
+      String.contains?(name, "websocket_message") or String.contains?(name, "live_notification") or
+          String.contains?(name, "chat_message") ->
+        :websocket_broadcasts
+
+      true ->
+        :dashboard_updates
     end
   end
 
@@ -207,7 +239,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     # Process each agent's updates
     Enum.each(agent_updates, fn {agent_id, updates} ->
       # Get latest state for each agent
-  latest_state = get_latest_agent_state(updates)
+      latest_state = get_latest_agent_state(updates)
 
       # Broadcast individual agent update
       PubSub.broadcast(
@@ -248,7 +280,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
     Enum.each(optimized_updates, fn update ->
       # Broadcast component-specific update if component present
-      if component = (update.payload["component"] || update.payload[:component]) do
+      if component = update.payload["component"] || update.payload[:component] do
         PubSub.broadcast(
           Thunderline.PubSub,
           "thunderline_web:dashboard:#{component}",
@@ -266,9 +298,9 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   defp process_websocket_broadcasts_batch(events) do
     # Ultra-fast WebSocket processing
     broadcasts =
-  events
-  |> Enum.map(&prepare_websocket_message/1)
-  |> Enum.group_by(& &1.topic)
+      events
+      |> Enum.map(&prepare_websocket_message/1)
+      |> Enum.group_by(& &1.topic)
 
     # Batch broadcast by topic for efficiency
     Enum.each(broadcasts, fn {topic, messages} ->
@@ -321,7 +353,9 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
   defp deduplicate_dashboard_events(events) do
     # Remove duplicate dashboard events to reduce payload
     events
-    |> Enum.group_by(fn %Event{payload: p} -> {p["component"] || p[:component], p["key"] || p[:key]} end)
+    |> Enum.group_by(fn %Event{payload: p} ->
+      {p["component"] || p[:component], p["key"] || p[:key]}
+    end)
     |> Enum.map(fn {_key, group} ->
       Enum.max_by(group, fn %Event{timestamp: ts} -> ts end)
     end)
@@ -334,7 +368,9 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
 
   defp prepare_websocket_message(%Event{} = event) do
     %{
-      topic: get_in(event.payload, ["websocket_topic"]) || get_in(event.payload, [:websocket_topic]) || "general",
+      topic:
+        get_in(event.payload, ["websocket_topic"]) || get_in(event.payload, [:websocket_topic]) ||
+          "general",
       payload: event.payload,
       timestamp: event.timestamp
     }
@@ -346,7 +382,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
     |> Enum.group_by(fn %Event{payload: p} -> p["metric_name"] || p[:metric_name] end)
     |> Enum.map(fn {metric_name, values} ->
       latest = Enum.max_by(values, fn %Event{timestamp: ts} -> ts end)
-      {metric_name, (latest.payload["value"] || latest.payload[:value])}
+      {metric_name, latest.payload["value"] || latest.payload[:value]}
     end)
     |> Enum.into(%{})
   end
@@ -366,11 +402,13 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
       events
       |> Enum.map(fn %Event{metadata: md, timestamp: ts} ->
         processed_at = md[:processed_at] || System.system_time(:microsecond)
+
         base_ts =
           case ts do
             %DateTime{} = dt -> DateTime.to_unix(dt, :microsecond)
             _ -> processed_at
           end
+
         abs(processed_at - base_ts) / 1000
       end)
 

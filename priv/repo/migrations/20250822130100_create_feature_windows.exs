@@ -5,8 +5,10 @@ defmodule Thunderline.Repo.Migrations.CreateFeatureWindows do
     create table(:feature_windows, primary_key: false) do
       add :id, :uuid, primary_key: true
       add :tenant_id, :uuid, null: false
-      add :kind, :string, null: false # market | edgar
-      add :key, :text, null: false # symbol or cik
+      # market | edgar
+      add :kind, :string, null: false
+      # symbol or cik
+      add :key, :text, null: false
       add :window_start, :utc_datetime, null: false
       add :window_end, :utc_datetime, null: false
       add :status, :string, null: false, default: "open"

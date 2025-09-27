@@ -11,12 +11,21 @@ defmodule Thunderline.Thunderblock.Resources.DAGEdge do
     repo Thunderline.Repo
   end
 
+  actions do
+    defaults [:create, :read]
+  end
+
   attributes do
     uuid_primary_key :id
     attribute :workflow_id, :uuid, allow_nil?: false
     attribute :from_node_id, :uuid, allow_nil?: false
     attribute :to_node_id, :uuid, allow_nil?: false
-    attribute :edge_type, :atom, allow_nil?: false, default: :causal, constraints: [one_of: [:causal, :follows, :child]]
+
+    attribute :edge_type, :atom,
+      allow_nil?: false,
+      default: :causal,
+      constraints: [one_of: [:causal, :follows, :child]]
+
     create_timestamp :inserted_at
   end
 
@@ -29,9 +38,5 @@ defmodule Thunderline.Thunderblock.Resources.DAGEdge do
 
   identities do
     identity :unique_edge, [:workflow_id, :from_node_id, :to_node_id, :edge_type]
-  end
-
-  actions do
-    defaults [:create, :read]
   end
 end

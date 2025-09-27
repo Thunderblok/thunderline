@@ -8,6 +8,7 @@ defmodule Thunderline.Thunderbolt.CA do
 
   alias Thunderline.Thunderbolt.CA.RuleParser
 
-  @spec parse_rule(String.t()) :: {:ok, Thunderline.Thunderbolt.CA.RuleParser.t()} | {:error, term()}
+  @spec parse_rule(String.t()) ::
+          {:ok, Thunderline.Thunderbolt.CA.RuleParser.t()} | {:error, term()}
   def parse_rule(line) when is_binary(line), do: RuleParser.parse(line)
 end

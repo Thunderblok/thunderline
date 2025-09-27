@@ -106,7 +106,7 @@ defmodule ThunderlineWeb.Layouts do
 
     <main class="px-4 py-20 sm:px-6 lg:px-8">
       <div class="mx-auto max-w-2xl space-y-4">
-        <%= render_slot(@inner_block) %>
+        {render_slot(@inner_block)}
       </div>
     </main>
 
@@ -131,7 +131,8 @@ defmodule ThunderlineWeb.Layouts do
         </.live_title>
         <!-- Unified compiled bundle (no CDN duplication) -->
         <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
-        <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}></script>
+        <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
+        </script>
       </head>
       <body class="min-h-screen bg-black text-neutral-content relative">
         <!-- Global background lines layer (restored) -->
@@ -154,7 +155,9 @@ defmodule ThunderlineWeb.Layouts do
         <div class="relative z-10">
           <!-- DASHBOARD_LAYOUT_SENTINEL -->
           <!-- Canary badge (remove after verification) -->
-          <div class="fixed top-2 left-2 text-[10px] px-2 py-1 rounded bg-emerald-600/80">bundle:compiled</div>
+          <div class="fixed top-2 left-2 text-[10px] px-2 py-1 rounded bg-emerald-600/80">
+            bundle:compiled
+          </div>
           {@inner_content}
         </div>
       </body>

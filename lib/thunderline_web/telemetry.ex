@@ -52,12 +52,15 @@ defmodule ThunderlineWeb.Telemetry do
       last_value("thunderline.chunks.total"),
       last_value("thunderline.memory.usage"),
       counter("thunderline.events.processed"),
-  counter("thunderline.gate.auth.result", tags: [:result], measurement: :count),
-  counter("thunderline.event.dropped", tags: [:reason, :name], measurement: :count),
-  counter("thunderline.grid.zone.claimed", tags: [:zone, :tenant], measurement: :count),
-  counter("thunderline.grid.zone.reclaimed", tags: [:zone, :tenant], measurement: :count),
-  counter("thunderline.grid.zone.expired", tags: [:zone], measurement: :count),
-  counter("thunderline.grid.zone.conflict", tags: [:zone, :owner, :attempted_owner], measurement: :count)
+      counter("thunderline.gate.auth.result", tags: [:result], measurement: :count),
+      counter("thunderline.event.dropped", tags: [:reason, :name], measurement: :count),
+      counter("thunderline.grid.zone.claimed", tags: [:zone, :tenant], measurement: :count),
+      counter("thunderline.grid.zone.reclaimed", tags: [:zone, :tenant], measurement: :count),
+      counter("thunderline.grid.zone.expired", tags: [:zone], measurement: :count),
+      counter("thunderline.grid.zone.conflict",
+        tags: [:zone, :owner, :attempted_owner],
+        measurement: :count
+      )
     ] ++ Thunderline.Thunderflow.Telemetry.Jobs.metrics()
   end
 
@@ -94,13 +97,17 @@ defmodule ThunderlineWeb.Telemetry do
   def dispatch_agent_metrics do
     mock? = Application.get_env(:thunderline, :mock_metrics, false)
 
-    agents = if mock?, do: estimate_agents(), else: Thunderline.Thunderflow.MetricSources.active_agents()
-    chunks = if mock?, do: mock_chunk_total(), else: Thunderline.Thunderflow.MetricSources.chunk_total()
+    agents =
+      if mock?, do: estimate_agents(), else: Thunderline.Thunderflow.MetricSources.active_agents()
+
+    chunks =
+      if mock?, do: mock_chunk_total(), else: Thunderline.Thunderflow.MetricSources.chunk_total()
 
     :telemetry.execute([:thunderline, :agents], %{active: agents})
     :telemetry.execute([:thunderline, :chunks], %{total: chunks})
 
     qstats = Thunderline.Thunderflow.MetricSources.queue_depths()
+
     :telemetry.execute([:thunderline, :events], %{
       pending: qstats.pending,
       processing: qstats.processing,

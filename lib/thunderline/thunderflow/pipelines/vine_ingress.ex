@@ -28,10 +28,12 @@ defmodule Thunderline.Thunderflow.Pipelines.VineIngress do
       name: __MODULE__,
       producers: [
         default: [
-          module: {BroadwayPubSub.Producer, [
-            pubsub: @pubsub,
-            subscription_topics: [@rule_topic, @spec_topic]
-          ]},
+          module:
+            {BroadwayPubSub.Producer,
+             [
+               pubsub: @pubsub,
+               subscription_topics: [@rule_topic, @spec_topic]
+             ]},
           stages: 1
         ]
       ],
@@ -53,6 +55,7 @@ defmodule Thunderline.Thunderflow.Pipelines.VineIngress do
 
   defp handle_command(%{type: :cmd_ca_rule_parse, payload: %{line: line} = payload}) do
     meta = Map.get(payload, :meta, %{})
+
     with {:ok, rule} <- CA.parse_rule(line),
          {:ok, _} <- Events.rule_parsed(rule, meta) do
       {:ok, :rule_committed}
@@ -60,8 +63,10 @@ defmodule Thunderline.Thunderflow.Pipelines.VineIngress do
       {:error, e} -> {:error, {:rule_parse_failed, e}}
     end
   end
+
   defp handle_command(%{type: :cmd_workflow_spec_parse, payload: %{spec: text} = payload}) do
     meta = Map.get(payload, :meta, %{})
+
     with {:ok, spec} <- Thundervine.SpecParser.parse(text),
          {:ok, _} <- Events.workflow_spec_parsed(spec, meta) do
       {:ok, :workflow_committed}
@@ -69,12 +74,15 @@ defmodule Thunderline.Thunderflow.Pipelines.VineIngress do
       {:error, e} -> {:error, {:spec_parse_failed, e}}
     end
   end
+
   defp handle_command(%{line: _} = legacy) do
     # Backwards compat for older tests
     Map.put(legacy, :type, :cmd_ca_rule_parse) |> handle_command()
   end
+
   defp handle_command(%{spec: _} = legacy) do
     Map.put(legacy, :type, :cmd_workflow_spec_parse) |> handle_command()
   end
+
   defp handle_command(other), do: {:error, {:unsupported_command, other}}
 end

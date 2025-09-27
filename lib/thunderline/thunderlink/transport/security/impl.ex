@@ -21,10 +21,16 @@ defmodule Thunderline.Thunderlink.Transport.Security.Impl do
   @impl true
   def verify(_key_id, payload, {pub, sig}) do
     jwk = JOSE.JWK.from(public_key: pub)
+
     case JOSE.JWS.verify(jwk, sig) do
-      {true, ^payload, _jws} -> :ok
+      {true, ^payload, _jws} ->
+        :ok
+
       _ ->
-        Thunderline.Thunderlink.Transport.Telemetry.emit(:security_sig_fail, %{count: 1}, %{peer: Base.encode16(pub)})
+        Thunderline.Thunderlink.Transport.Telemetry.emit(:security_sig_fail, %{count: 1}, %{
+          peer: Base.encode16(pub)
+        })
+
         {:error, :invalid_signature}
     end
   end
@@ -38,16 +44,28 @@ defmodule Thunderline.Thunderlink.Transport.Security.Impl do
     now = system_time_ms()
 
     if ts_ms < now - skew do
-      Thunderline.Thunderlink.Transport.Telemetry.emit(:security_replay_drop, %{count: 1}, %{peer: key_id, mid: mid, reason: :stale})
+      Thunderline.Thunderlink.Transport.Telemetry.emit(:security_replay_drop, %{count: 1}, %{
+        peer: key_id,
+        mid: mid,
+        reason: :stale
+      })
+
       true
     else
       entry = {key_id, mid}
+
       case :ets.lookup(@table, entry) do
         [] ->
           :ets.insert(@table, {entry, ts_ms})
           false
+
         _ ->
-          Thunderline.Thunderlink.Transport.Telemetry.emit(:security_replay_drop, %{count: 1}, %{peer: key_id, mid: mid, reason: :duplicate})
+          Thunderline.Thunderlink.Transport.Telemetry.emit(:security_replay_drop, %{count: 1}, %{
+            peer: key_id,
+            mid: mid,
+            reason: :duplicate
+          })
+
           true
       end
     end
@@ -56,9 +74,18 @@ defmodule Thunderline.Thunderlink.Transport.Security.Impl do
   def ensure_table do
     case :ets.whereis(@table) do
       :undefined ->
-        :ets.new(@table, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
+        :ets.new(@table, [
+          :set,
+          :public,
+          :named_table,
+          read_concurrency: true,
+          write_concurrency: true
+        ])
+
         :ok
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 
@@ -67,9 +94,11 @@ defmodule Thunderline.Thunderlink.Transport.Security.Impl do
     conf = Thunderline.Thunderlink.Transport.Config.get()
     skew = conf.replay.skew_ms
     cutoff = system_time_ms() - skew
+
     for {entry, ts} <- :ets.tab2list(@table), ts < cutoff do
       :ets.delete(@table, entry)
     end
+
     :ok
   end
 
@@ -82,7 +111,9 @@ defmodule Thunderline.Thunderlink.Transport.Security.Impl do
         pub = jwk |> JOSE.JWK.to_public()
         :persistent_term.put({__MODULE__, :jwk}, {jwk, pub})
         {jwk, pub}
-      pair -> pair
+
+      pair ->
+        pair
     end
   end
 end

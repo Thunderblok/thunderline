@@ -20,7 +20,7 @@ defmodule Thunderline.Thundervine.SpecParserTest do
   end
 
   test "unknown after reference error" do
-    bad = "workflow W\n  node a kind=task\n  node b kind=task after=x";
+    bad = "workflow W\n  node a kind=task\n  node b kind=task after=x"
     assert {:error, {:unknown_after, "x", _}} = SpecParser.parse(bad)
   end
 end

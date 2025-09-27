@@ -36,6 +36,7 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanHealth do
   defp snapshot do
     name = oban_instance_name()
     pid = Oban.whereis(name)
+
     %{
       running?: is_pid(pid) and Process.alive?(pid),
       queues: running_queues(pid),
@@ -46,6 +47,7 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanHealth do
   end
 
   defp running_queues(nil), do: []
+
   defp running_queues(pid) do
     try do
       :sys.get_state(pid)
@@ -59,17 +61,27 @@ defmodule Thunderline.Thunderflow.Telemetry.ObanHealth do
   end
 
   defp maybe_log_change(nil, %{running?: false}) do
-    Logger.warning("[ObanHealth] Oban not running at startup – jobs will be deferred until it comes online (name=#{inspect(oban_instance_name())}).")
+    Logger.warning(
+      "[ObanHealth] Oban not running at startup – jobs will be deferred until it comes online (name=#{inspect(oban_instance_name())})."
+    )
   end
+
   defp maybe_log_change(%{running?: prev}, %{running?: now}) when prev != now do
     level = if now, do: :info, else: :error
-    Logger.log(level, "[ObanHealth] Oban running? changed #{inspect(prev)} -> #{inspect(now)} (name=#{inspect(oban_instance_name())})")
+
+    Logger.log(
+      level,
+      "[ObanHealth] Oban running? changed #{inspect(prev)} -> #{inspect(now)} (name=#{inspect(oban_instance_name())})"
+    )
   end
+
   defp maybe_log_change(_, _), do: :ok
 
   defp maybe_log_verbose(%{running?: running?, queues: queues} = status) do
     if verbose?() do
-      Logger.info("[ObanHealth][tick] running=#{running?} queues=#{inspect(queues)} node=#{status.node} name=#{inspect(status.name)} ts=#{DateTime.to_iso8601(status.ts)}")
+      Logger.info(
+        "[ObanHealth][tick] running=#{running?} queues=#{inspect(queues)} node=#{status.node} name=#{inspect(status.name)} ts=#{DateTime.to_iso8601(status.ts)}"
+      )
     end
   end
 

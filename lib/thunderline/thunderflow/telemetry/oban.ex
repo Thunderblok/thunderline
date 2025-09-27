@@ -56,17 +56,32 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
 
   defp attach_jobs do
     case :telemetry.attach_many(@handler_id, @job_events, &__MODULE__.handle_job_event/4, %{}) do
-      :ok -> :ok
-      {:error, :already_exists} -> :ok
-      {:error, reason} -> Logger.warning("[Oban.Telemetry] failed to attach job handlers: #{inspect(reason)}")
+      :ok ->
+        :ok
+
+      {:error, :already_exists} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("[Oban.Telemetry] failed to attach job handlers: #{inspect(reason)}")
     end
   end
 
   defp attach_plugins do
-    case :telemetry.attach_many(@plugin_handler_id, @plugin_events, &__MODULE__.handle_plugin_event/4, %{}) do
-      :ok -> :ok
-      {:error, :already_exists} -> :ok
-      {:error, reason} -> Logger.warning("[Oban.Telemetry] failed to attach plugin handlers: #{inspect(reason)}")
+    case :telemetry.attach_many(
+           @plugin_handler_id,
+           @plugin_events,
+           &__MODULE__.handle_plugin_event/4,
+           %{}
+         ) do
+      :ok ->
+        :ok
+
+      {:error, :already_exists} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("[Oban.Telemetry] failed to attach plugin handlers: #{inspect(reason)}")
     end
   end
 
@@ -123,6 +138,7 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
   def stats do
     ensure_table()
     events = :ets.tab2list(@table)
+
     by_type =
       Enum.reduce(events, %{}, fn {_k, %{ev: ev}}, acc ->
         Map.update(acc, ev, 1, &(&1 + 1))
@@ -134,6 +150,7 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
   @doc "Return last N events (newest first)."
   def recent(n \\ 10) do
     ensure_table()
+
     :ets.foldl(fn {_k, v}, acc -> [v | acc] end, [], @table)
     |> Enum.sort_by(& &1.at, :desc)
     |> Enum.take(n)
@@ -143,7 +160,9 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
   ## Internal helpers ----------------------------------------------------
 
   defp native_duration_to_us(nil), do: nil
-  defp native_duration_to_us(native) when is_integer(native), do: System.convert_time_unit(native, :native, :microsecond)
+
+  defp native_duration_to_us(native) when is_integer(native),
+    do: System.convert_time_unit(native, :native, :microsecond)
 
   defp log_event(_event, simplified) do
     Logger.debug(fn -> "[Oban.Telemetry] #{inspect(simplified)}" end)
@@ -179,13 +198,23 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
 
   defp ensure_table do
     case :ets.whereis(@table) do
-      :undefined -> :ets.new(@table, [:named_table, :public, :ordered_set, write_concurrency: true, read_concurrency: true])
-      _ -> :ok
+      :undefined ->
+        :ets.new(@table, [
+          :named_table,
+          :public,
+          :ordered_set,
+          write_concurrency: true,
+          read_concurrency: true
+        ])
+
+      _ ->
+        :ok
     end
   end
 
   defp trim_table do
     size = :ets.info(@table, :size)
+
     if size > @max_events do
       # Drop oldest ~10% in one pass for amortized O(1)
       drop = div(@max_events, 10)
@@ -196,6 +225,7 @@ defmodule Thunderline.Thunderflow.Telemetry.Oban do
 
   defp collect_keys(:"$end_of_table", _n, acc), do: acc
   defp collect_keys(_key, 0, acc), do: acc
+
   defp collect_keys(key, n, acc) do
     collect_keys(:ets.next(@table, key), n - 1, [key | acc])
   end

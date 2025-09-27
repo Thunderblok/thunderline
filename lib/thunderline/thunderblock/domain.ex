@@ -34,8 +34,9 @@ defmodule Thunderline.Thunderblock.Domain do
     resource Thunderblock.Resources.TaskOrchestrator
     resource Thunderblock.Resources.ZoneContainer
     resource Thunderblock.Resources.SupervisionTree
-  # Renamed: Thunderblock.Resources.Community -> Thunderline.Thunderblock.Resources.ExecutionTenant
-  resource Thunderline.Thunderblock.Resources.ExecutionTenant
+
+    # Renamed: Thunderblock.Resources.Community -> Thunderline.Thunderblock.Resources.ExecutionTenant
+    resource Thunderline.Thunderblock.Resources.ExecutionTenant
     resource Thunderblock.Resources.ClusterNode
     resource Thunderblock.Resources.DistributedState
     resource Thunderblock.Resources.LoadBalancingRule
@@ -45,7 +46,7 @@ defmodule Thunderline.Thunderblock.Domain do
     # ThunderChief Orchestration (integrated into ThunderBlock)
     resource Thunderline.Thunderblock.Resources.WorkflowTracker
 
-  # Legacy rename: ThunderVault → ThunderBlock (storage & memory) -> metrics & resources exposed as :thunderblock and :thunderblock_vault
+    # Legacy rename: ThunderVault → ThunderBlock (storage & memory) -> metrics & resources exposed as :thunderblock and :thunderblock_vault
     resource Thunderline.Thunderblock.Resources.VaultAction
     resource Thunderline.Thunderblock.Resources.VaultAgent
     resource Thunderline.Thunderblock.Resources.VaultCacheEntry
@@ -59,8 +60,8 @@ defmodule Thunderline.Thunderblock.Domain do
     resource Thunderline.Thunderblock.Resources.VaultUser
     resource Thunderline.Thunderblock.Resources.VaultUserToken
 
-  # PAC user personal construct home (moved from Thunderlink)
-  resource Thunderline.Thunderblock.Resources.PACHome
+    # PAC user personal construct home (moved from Thunderlink)
+    resource Thunderline.Thunderblock.Resources.PACHome
 
     # Thundervine DAG (durable workflow lineage / memory)
     resource Thunderline.Thunderblock.Resources.DAGWorkflow

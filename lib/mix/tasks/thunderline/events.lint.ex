@@ -31,8 +31,10 @@ defmodule Mix.Tasks.Thunderline.Events.TaxonomyLint do
 
     emit_report(issues, opts[:format])
 
-    if opts[:strict] && Enum.any?(issues, & &1.severity == :error) do
-      Mix.raise("Event taxonomy lint failed (#{Enum.count(issues, & &1.severity == :error)} errors)")
+    if opts[:strict] && Enum.any?(issues, &(&1.severity == :error)) do
+      Mix.raise(
+        "Event taxonomy lint failed (#{Enum.count(issues, &(&1.severity == :error))} errors)"
+      )
     end
   end
 
@@ -44,13 +46,17 @@ defmodule Mix.Tasks.Thunderline.Events.TaxonomyLint do
   defp emit_report(issues, "json") do
     IO.puts(Jason.encode!(%{issues: issues, count: length(issues)}, pretty: true))
   end
+
   defp emit_report(issues, _human) do
     if issues == [] do
       Mix.shell().info("No event taxonomy issues found")
     else
       Mix.shell().info("Event taxonomy issues (#{length(issues)}):")
+
       Enum.each(issues, fn i ->
-        Mix.shell().info("  [#{String.upcase(to_string(i.severity))}] #{i.rule} #{inspect(i.detail)} (#{i.file}:#{i.line})")
+        Mix.shell().info(
+          "  [#{String.upcase(to_string(i.severity))}] #{i.rule} #{inspect(i.detail)} (#{i.file}:#{i.line})"
+        )
       end)
     end
   end

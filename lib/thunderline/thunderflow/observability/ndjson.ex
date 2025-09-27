@@ -12,6 +12,7 @@ defmodule Thunderline.Thunderflow.Observability.NDJSON do
   @legacy Thunderline.Log.NDJSON
 
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+
   def init(opts) do
     path = Keyword.get(opts, :path, "log/events.ndjson")
     File.mkdir_p!(Path.dirname(path))

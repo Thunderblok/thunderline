@@ -33,6 +33,7 @@ defmodule Mix.Tasks.Thunderline.Ml.Smoke do
   @impl true
   def run(argv) do
     Mix.Task.run("app.start", [])
+
     {opts, _rest, _invalid} =
       OptionParser.parse(argv,
         switches: [
@@ -174,6 +175,7 @@ defmodule Mix.Tasks.Thunderline.Ml.Smoke do
   defp take(_map, _keys), do: nil
 
   defp to_int(v) when is_integer(v), do: v
+
   defp to_int(v) when is_binary(v) do
     case Integer.parse(v) do
       {i, _} -> i

@@ -8,6 +8,11 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
     repo Thunderline.Repo
   end
 
+  code_interface do
+    # Provides Thunderline.Thunderbolt.ML.ModelArtifact.create(input, opts \\ [])
+    define :create, action: :create
+  end
+
   actions do
     defaults [:read, :destroy]
 
@@ -30,7 +35,11 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
     attribute :uri, :string, allow_nil?: false
     attribute :checksum, :string, allow_nil?: false
     attribute :bytes, :integer, allow_nil?: false
-    attribute :status, :atom, constraints: [one_of: [:created, :promoted, :archived]], default: :created
+
+    attribute :status, :atom,
+      constraints: [one_of: [:created, :promoted, :archived]],
+      default: :created
+
     attribute :promoted, :boolean, default: false
     attribute :semver, :string, default: "0.1.0"
     create_timestamp :inserted_at
@@ -39,11 +48,8 @@ defmodule Thunderline.Thunderbolt.ML.ModelArtifact do
 
   relationships do
     belongs_to :spec, Thunderline.Thunderbolt.ML.ModelSpec, source_attribute: :spec_id
-    belongs_to :model_run, Thunderline.Thunderbolt.Resources.ModelRun, source_attribute: :model_run_id
-  end
 
-  code_interface do
-    # Provides Thunderline.Thunderbolt.ML.ModelArtifact.create(input, opts \\ [])
-    define :create, action: :create
+    belongs_to :model_run, Thunderline.Thunderbolt.Resources.ModelRun,
+      source_attribute: :model_run_id
   end
 end

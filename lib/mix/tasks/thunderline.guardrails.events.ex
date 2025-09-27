@@ -9,6 +9,7 @@ defmodule Mix.Tasks.Thunderline.Guardrails.Events do
   """
   def run(_args) do
     files = Path.wildcard("lib/**/*.ex")
+
     offenders =
       for f <- files,
           body = File.read!(f),
@@ -16,6 +17,7 @@ defmodule Mix.Tasks.Thunderline.Guardrails.Events do
           not (String.contains?(body, "{:ok") and String.contains?(body, "{:error")) do
         f
       end
+
     if offenders != [] do
       Mix.raise("Unchecked publish_event/1 calls in:\n" <> Enum.join(offenders, "\n"))
     end

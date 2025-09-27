@@ -7,11 +7,31 @@ defmodule Thunderline.Thunderflow.Probing.AttractorService do
   def recompute(run_id, opts \\ []) do
     with {:ok, run} <- Ash.get(ProbeRun, run_id) do
       summary = run |> Attractor.summarize_run(opts) |> put_canonical()
-      case Ash.read_one(ProbeAttractorSummary, [run_id: run.id]) do
-        {:ok, nil} -> Ash.create(ProbeAttractorSummary, summary)
+
+      case Ash.read_one(ProbeAttractorSummary, run_id: run.id) do
+        {:ok, nil} ->
+          Ash.create(ProbeAttractorSummary, summary)
+
         {:ok, rec} ->
-          Ash.update(rec, Map.take(summary, [:points,:delay_rows,:m,:tau,:corr_dim,:lyap,:lyap_r2,:lyap_window,:lyap_canonical,:reliable,:note]))
-        other -> other
+          Ash.update(
+            rec,
+            Map.take(summary, [
+              :points,
+              :delay_rows,
+              :m,
+              :tau,
+              :corr_dim,
+              :lyap,
+              :lyap_r2,
+              :lyap_window,
+              :lyap_canonical,
+              :reliable,
+              :note
+            ])
+          )
+
+        other ->
+          other
       end
     end
   end
@@ -24,5 +44,6 @@ defmodule Thunderline.Thunderflow.Probing.AttractorService do
     ro = Map.get(s, :lyap_rosenstein) || Map.get(s, :lyap)
     if r2 >= 0.6 and is_number(ro), do: ro, else: simple
   end
+
   defp canonical_lyap(%{lyap: simple}), do: simple
 end

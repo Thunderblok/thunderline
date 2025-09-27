@@ -17,7 +17,7 @@ defmodule Thunderline.Thunderflow.BlackboardTripwire do
   def assert_migrated! do
     offenders =
       :code.all_loaded()
-  |> Enum.filter(fn {m, _} -> match?(~c"Elixir.Thunderline." ++ _, Atom.to_charlist(m)) end)
+      |> Enum.filter(fn {m, _} -> match?(~c"Elixir.Thunderline." ++ _, Atom.to_charlist(m)) end)
       |> Enum.filter(&references_legacy?/1)
       |> Enum.map(&elem(&1, 0))
       |> Enum.reject(&(&1 in [@legacy_mod, Thunderline.Thunderflow.Blackboard]))
@@ -33,19 +33,27 @@ defmodule Thunderline.Thunderflow.BlackboardTripwire do
     case :beam_lib.chunks(:code.which(mod), [:abstract_code]) do
       {:ok, {_, [{:abstract_code, {:raw_abstract_v1, forms}}]}} ->
         Enum.any?(forms, fn
-          {:attribute, _, :import, {@legacy_mod, _}} -> true
+          {:attribute, _, :import, {@legacy_mod, _}} ->
+            true
+
           {:attribute, _, :compile, {:inline, list}} when is_list(list) ->
             Enum.any?(list, fn {f, _} -> function_clause_mentions?(mod, f) end)
-          _ -> false
+
+          _ ->
+            false
         end)
-      _ -> false
+
+      _ ->
+        false
     end
   end
 
   defp function_clause_mentions?(mod, fun) do
     # Fallback heuristic: convert function info to string and look for legacy module
     try do
-      (mod.module_info(:exports) |> Keyword.has_key?(fun)) && false
-    rescue _ -> false end
+      mod.module_info(:exports) |> Keyword.has_key?(fun) && false
+    rescue
+      _ -> false
+    end
   end
 end

@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderblock.Resources.ExecutionTenant do
   """
 
   use Ash.Resource,
-  domain: Thunderline.Thunderblock.Domain,
+    domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer
 
   require Logger
@@ -322,5 +322,6 @@ defmodule Thunderblock.Resources.Community do
   @deprecated "Renamed"
   defdelegate get_performance_metrics(id), to: Thunderline.Thunderblock.Resources.ExecutionTenant
   @deprecated "Renamed"
-  defdelegate update_performance_metrics(id, metrics), to: Thunderline.Thunderblock.Resources.ExecutionTenant
+  defdelegate update_performance_metrics(id, metrics),
+    to: Thunderline.Thunderblock.Resources.ExecutionTenant
 end

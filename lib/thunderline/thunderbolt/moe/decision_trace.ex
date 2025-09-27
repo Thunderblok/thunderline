@@ -15,34 +15,29 @@ defmodule Thunderline.MoE.DecisionTrace do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :tenant_id, :uuid, allow_nil?: false
-    attribute :feature_window_id, :uuid, allow_nil?: false
-    attribute :router_version, :string, allow_nil?: false
-    attribute :gate_scores, :map, allow_nil?: false, default: %{}
-    attribute :selected_experts, :map, allow_nil?: false, default: %{}
-    attribute :actions, :map, allow_nil?: false, default: %{}
-    attribute :blended_action, :map
-    attribute :pnl_snapshot, :map
-    attribute :risk_flags, :map, allow_nil?: false, default: %{}
-    attribute :behavior_embedding, :binary
-    attribute :hash, :binary, allow_nil?: false
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
+  code_interface do
+    define :record
+    define :read
   end
 
   actions do
     defaults [:read]
-    create :record do
-      accept [:tenant_id, :feature_window_id, :router_version, :gate_scores, :selected_experts, :actions, :blended_action, :pnl_snapshot, :risk_flags, :behavior_embedding, :hash]
-    end
-  end
 
-  multitenancy do
-    strategy :attribute
-    attribute :tenant_id
-    global? false
+    create :record do
+      accept [
+        :tenant_id,
+        :feature_window_id,
+        :router_version,
+        :gate_scores,
+        :selected_experts,
+        :actions,
+        :blended_action,
+        :pnl_snapshot,
+        :risk_flags,
+        :behavior_embedding,
+        :hash
+      ]
+    end
   end
 
   policies do
@@ -59,8 +54,26 @@ defmodule Thunderline.MoE.DecisionTrace do
     end
   end
 
-  code_interface do
-    define :record
-    define :read
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :tenant_id, :uuid, allow_nil?: false
+    attribute :feature_window_id, :uuid, allow_nil?: false
+    attribute :router_version, :string, allow_nil?: false
+    attribute :gate_scores, :map, allow_nil?: false, default: %{}
+    attribute :selected_experts, :map, allow_nil?: false, default: %{}
+    attribute :actions, :map, allow_nil?: false, default: %{}
+    attribute :blended_action, :map
+    attribute :pnl_snapshot, :map
+    attribute :risk_flags, :map, allow_nil?: false, default: %{}
+    attribute :behavior_embedding, :binary
+    attribute :hash, :binary, allow_nil?: false
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 end

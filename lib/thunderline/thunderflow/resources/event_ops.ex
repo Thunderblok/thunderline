@@ -11,6 +11,10 @@ defmodule Thunderline.Thunderflow.Resources.EventOps do
     domain: Thunderline.Thunderflow.Domain,
     data_layer: :embedded
 
+  code_interface do
+    define :process_event, action: :process_event
+  end
+
   actions do
     defaults []
 
@@ -20,15 +24,8 @@ defmodule Thunderline.Thunderflow.Resources.EventOps do
 
       run fn input, _ctx ->
         event = get_in(input, [:arguments, :event])
-        result =
-          if reactor_enabled?() do
-            case Code.ensure_loaded(Thunderline.Reactors.RealtimeReactor) do
-              {:module, _} -> Reactor.run(Thunderline.Reactors.RealtimeReactor, %{event: event})
-              _ -> Thunderline.Thunderflow.Processor.process_event(event)
-            end
-          else
-            Thunderline.Thunderflow.Processor.process_event(event)
-          end
+
+        result = Thunderline.Thunderchief.Orchestrator.dispatch_event(event)
 
         case result do
           {:ok, _} -> {:ok, %{status: :processed}}
@@ -39,15 +36,4 @@ defmodule Thunderline.Thunderflow.Resources.EventOps do
     end
   end
 
-  code_interface do
-    define :process_event, action: :process_event
-  end
-
-  defp reactor_enabled? do
-    case System.get_env("TL_ENABLE_REACTOR") do
-      "true" -> true
-      "1" -> true
-      _ -> false
-    end
-  end
 end

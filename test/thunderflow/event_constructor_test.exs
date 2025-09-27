@@ -31,7 +31,9 @@ defmodule Thunderflow.EventConstructorTest do
 
   test "category enforcement: forbidden category for domain" do
     # :block domain not allowed to emit ai.intent.*
-    assert {:error, errs} = Event.new(%{name: "ai.intent.email.compose", source: :block, payload: %{}})
+    assert {:error, errs} =
+             Event.new(%{name: "ai.intent.email.compose", source: :block, payload: %{}})
+
     assert Enum.any?(errs, fn e -> match?({:forbidden_category, _}, e) end)
   end
 end

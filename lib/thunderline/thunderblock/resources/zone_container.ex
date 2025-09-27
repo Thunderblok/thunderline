@@ -193,7 +193,7 @@ defmodule Thunderblock.Resources.ZoneContainer do
         Thunderblock.ZoneManager.start_zone(zone.id)
 
         # Report to Thunderchief orchestrator
-  Thunderline.Thunderflow.ClusterStateManager.register_zone(zone.id, %{
+        Thunderline.Thunderflow.ClusterStateManager.register_zone(zone.id, %{
           zone_name: zone.zone_name,
           zone_type: zone.zone_type,
           capacity_config: zone.capacity_config

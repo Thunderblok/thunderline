@@ -1,381 +1,567 @@
 <Layouts.app flash={@flash}>
-<%!-- Command Center Dashboard --%>
-<div id="command-center" class="min-h-screen bg-black relative overflow-hidden">
-  
-  <%!-- Header Section with Logo, Rays, and Navigation --%>
-  <header class="relative w-full pb-16 h-40">
-    <%!-- Game of Life Logo --%>
-  <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-      <div class="relative w-16 h-16">
-        <%!-- Simple glider pattern from Game of Life --%>
-        <div class="absolute inset-0 flex flex-col justify-center items-center space-y-1">
-          <%!-- Glider pattern: famous Game of Life shape --%>
-          <div class="flex space-x-1">
-            <div class="w-2 h-2"></div>
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8);"></div>
-            <div class="w-2 h-2"></div>
-          </div>
-          <div class="flex space-x-1">
-            <div class="w-2 h-2"></div>
-            <div class="w-2 h-2"></div>
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.2s;"></div>
-          </div>
-          <div class="flex space-x-1">
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.4s;"></div>
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.1s;"></div>
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.3s;"></div>
+  <%!-- Command Center Dashboard --%>
+  <div id="command-center" class="min-h-screen bg-black relative overflow-hidden">
+    <%!-- Header Section with Logo, Rays, and Navigation --%>
+    <header class="relative w-full pb-16 h-40">
+      <%!-- Game of Life Logo --%>
+      <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+        <div class="relative w-16 h-16">
+          <%!-- Simple glider pattern from Game of Life --%>
+          <div class="absolute inset-0 flex flex-col justify-center items-center space-y-1">
+            <%!-- Glider pattern: famous Game of Life shape --%>
+            <div class="flex space-x-1">
+              <div class="w-2 h-2"></div>
+              <div
+                class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
+                style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8);"
+              >
+              </div>
+              <div class="w-2 h-2"></div>
+            </div>
+            <div class="flex space-x-1">
+              <div class="w-2 h-2"></div>
+              <div class="w-2 h-2"></div>
+              <div
+                class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
+                style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.2s;"
+              >
+              </div>
+            </div>
+            <div class="flex space-x-1">
+              <div
+                class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
+                style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.4s;"
+              >
+              </div>
+              <div
+                class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
+                style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.1s;"
+              >
+              </div>
+              <div
+                class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
+                style="box-shadow: 0 0 8px rgba(6, 255, 165, 0.8); animation-delay: 0.3s;"
+              >
+              </div>
+            </div>
           </div>
         </div>
-        
       </div>
-    </div>
 
-
-    <%!-- Top Navigation Bar - Centered over logo --%>
-    <nav class="relative z-20 px-4 md:px-8 py-3 mt-52">
-    <div class="flex items-center justify-center">
-      <div class="nav-glass px-8 py-3 rounded-full">
-        <div class="flex items-center space-x-6">
-          <span class="text-sm font-medium text-cyan-300 cursor-pointer hover:text-cyan-200 transition-colors">DASHBOARD</span>
-          <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">TERMINAL</span>
-          <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">ADMIN</span>
-          <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">PROFILE</span>
-          <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">SETTINGS</span>
+      <%!-- Top Navigation Bar - Centered over logo --%>
+      <nav class="relative z-20 px-4 md:px-8 py-3 mt-52">
+        <div class="flex items-center justify-center">
+          <div class="nav-glass px-8 py-3 rounded-full">
+            <div class="flex items-center space-x-6">
+              <span class="text-sm font-medium text-cyan-300 cursor-pointer hover:text-cyan-200 transition-colors">
+                DASHBOARD
+              </span>
+              <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+                TERMINAL
+              </span>
+              <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+                ADMIN
+              </span>
+              <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+                PROFILE
+              </span>
+              <span class="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+                SETTINGS
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    <%!-- Domain Color Legend (compact) --%>
-    <div class="absolute top-4 left-4 hidden md:flex flex-wrap gap-1 max-w-sm text-[10px] font-mono">
-      <span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/30">thunderbolt</span>
-      <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30">thunderblock</span>
-      <span class="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/30">thunderflow</span>
-      <span class="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/30">thundergrid</span>
-      <span class="px-2 py-0.5 rounded-full bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-400/30">thundergate</span>
-      <span class="px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 ring-1 ring-pink-400/30">thunderlink</span>
-      <span class="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 ring-1 ring-teal-400/30">thunderlane</span>
-      <span class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/30">thundercrown</span>
-    </div>
-    
-    <%!-- System Status - positioned absolute top right --%>
-    <div class="absolute top-4 right-8">
-      <span class="text-xs text-white/60">Mode: <%= String.upcase("#{@mode}") %></span>
-    </div>
-    </nav>
-  </header>
+        <%!-- Domain Color Legend (compact) --%>
+        <div class="absolute top-4 left-4 hidden md:flex flex-wrap gap-1 max-w-sm text-[10px] font-mono">
+          <span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 ring-1 ring-blue-400/30">
+            thunderbolt
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/30">
+            thunderblock
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-400/30">
+            thunderflow
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-400/30">
+            thundergrid
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-fuchsia-400/30">
+            thundergate
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 ring-1 ring-pink-400/30">
+            thunderlink
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 ring-1 ring-teal-400/30">
+            thunderlane
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/30">
+            thundercrown
+          </span>
+        </div>
 
-  <%!-- Main Content --%>
-  <div class="relative z-10 px-4 md:px-8 pb-8 pt-32">
-    <div class="max-w-7xl mx-auto mt-20" style="margin-top: 5.75rem;">
-      <%!-- Tabs Bar --%>
-      <div id="dashboard-tabs" class="mb-6 border-b border-white/10">
-  <div id="dashboard-tablist" class="flex gap-2 text-xs font-medium" role="tablist" phx-hook="Tabs" data-active-tab={@active_tab}>
-          <%= for {tab_key, label} <- [{"overview", "Overview"}, {"system", "System"}, {"events", "Events"}, {"controls", "Controls"}, {"thunderwatch", "Thunderwatch"}] do %>
-            <.link
-              patch={"?tab=#{tab_key}"}
-              class={[
-                "px-3 py-2 rounded-t-md border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60",
-                if(@active_tab == tab_key, do: "text-cyan-300 border-cyan-400", else: "text-gray-400 border-transparent hover:text-gray-200")
-              ]}
-              id={"tab-" <> tab_key <> "-link"}
-              role="tab"
-              aria-selected={to_string(@active_tab == tab_key)}
-              aria-controls={"panel-" <> tab_key}
-              tabindex={if(@active_tab == tab_key, do: "0", else: "-1")}
-              data-tab-key={tab_key}
+        <%!-- System Status - positioned absolute top right --%>
+        <div class="absolute top-4 right-8">
+          <span class="text-xs text-white/60">Mode: {String.upcase("#{@mode}")}</span>
+        </div>
+      </nav>
+    </header>
+
+    <%!-- Main Content --%>
+    <div class="relative z-10 px-4 md:px-8 pb-8 pt-32">
+      <div class="max-w-7xl mx-auto mt-20" style="margin-top: 5.75rem;">
+        <%!-- Tabs Bar --%>
+        <div id="dashboard-tabs" class="mb-6 border-b border-white/10">
+          <div
+            id="dashboard-tablist"
+            class="flex gap-2 text-xs font-medium"
+            role="tablist"
+            phx-hook="Tabs"
+            data-active-tab={@active_tab}
+          >
+            <%= for {tab_key, label} <- [{"overview", "Overview"}, {"system", "System"}, {"events", "Events"}, {"controls", "Controls"}, {"thunderwatch", "Thunderwatch"}] do %>
+              <.link
+                patch={"?tab=#{tab_key}"}
+                class={[
+                  "px-3 py-2 rounded-t-md border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60",
+                  if(@active_tab == tab_key,
+                    do: "text-cyan-300 border-cyan-400",
+                    else: "text-gray-400 border-transparent hover:text-gray-200"
+                  )
+                ]}
+                id={"tab-" <> tab_key <> "-link"}
+                role="tab"
+                aria-selected={to_string(@active_tab == tab_key)}
+                aria-controls={"panel-" <> tab_key}
+                tabindex={if(@active_tab == tab_key, do: "0", else: "-1")}
+                data-tab-key={tab_key}
+              >
+                {label}
+              </.link>
+            <% end %>
+          </div>
+        </div>
+
+        <%= case @active_tab do %>
+          <% "overview" -> %>
+            <%!-- Top Row - 4 panels --%>
+            <div
+              id="panel-overview"
+              role="tabpanel"
+              aria-labelledby="tab-overview-link"
+              class="grid grid-cols-4 gap-4 mb-4"
+              tabindex="0"
             >
-              {label}
-            </.link>
-          <% end %>
-        </div>
-      </div>
-
-      <%= case @active_tab do %>
-        <% "overview" -> %>
-      <%!-- Top Row - 4 panels --%>
-      <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview-link" class="grid grid-cols-4 gap-4 mb-4" tabindex="0">
-      
-        <%!-- Top Panel 1 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Thunderline Node</h3>
-          </div>
-          <div class="text-xs text-gray-300">Online</div>
-        </div>
-
-        <%!-- Top Panel 2 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Thunderblock</h3>
-          </div>
-          <div class="text-xs text-gray-300">Connected</div>
-        </div>
-
-        <%!-- Top Panel 3 --%>
-        <div class="glass-panel p-0 overflow-hidden flex flex-col">
-          <div class="flex items-center space-x-2 px-4 pt-3">
-            <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Activity</h3>
-          </div>
-          <div class="flex-1 px-2 pb-2 pt-1">
-            <ThunderlineWeb.DashboardComponents.EventFlow.event_flow_panel events={@events} streams={@streams} />
-          </div>
-        </div>
-
-        <%!-- Top Panel 4 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Resources</h3>
-          </div>
-          <div class="text-xs text-gray-300">CPU: <%= @system_health[:cpu_usage] || 19 %>%</div>
-        </div>
-
-        <%!-- Top Panel 5 (Thunderwatch) --%>
-        <div class="glass-panel p-0 col-span-4">
-          <div class="p-3">
-            <.thunderwatch_panel stats={@thunderwatch_stats} />
-          </div>
-        </div>
-      </div>
-
-      <%!-- Middle Row - Left side panels, Center panel, Right side panels --%>
-  <div class="flex gap-4 mb-4 h-64">
-        <%!-- Left Column --%>
-        <div class="w-48 space-y-4">
-          <%!-- Left Panel 1 --%>
-          <div class="glass-panel p-4 h-28">
-            <div class="flex items-center space-x-2 mb-2">
-              <div class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
-              <h3 class="text-xs font-bold text-white">Thunderlane</h3>
-            </div>
-            <div class="text-xs text-gray-300">Learning</div>
-          </div>
-          
-          <%!-- Left Panel 2 --%>
-          <div class="glass-panel p-4 h-28">
-            <div class="flex items-center space-x-2 mb-2">
-              <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-              <h3 class="text-xs font-bold text-white">Network</h3>
-            </div>
-            <div class="text-xs text-gray-300"><%= @metrics.thunderlane.total_nodes || "OFFLINE" %></div>
-          </div>
-        </div>
-        
-        <%!-- Center Column - 3D Thundergrid View --%>
-        <div class="flex-1">
-          <div class="glass-panel p-6 h-full relative overflow-hidden">
-            <h2 class="text-xl font-bold text-white mb-4 text-center">Thundergrid 3D</h2>
-            
-            <%!-- 3D Grid Container --%>
-            <div class="absolute inset-4 perspective-1000">
-              <div class="grid-3d transform-3d" style="transform: rotateX(60deg) rotateY(30deg);">
-                <%!-- Grid Layers --%>
-                <div class="grid grid-cols-8 gap-1 absolute" style="transform: translateZ(0px);">
-                  <%= for i <- 1..64 do %>
-                    <div class="w-3 h-3 border border-cyan-400/30 bg-cyan-400/20 animate-pulse"></div>
-                  <% end %>
+              <%!-- Top Panel 1 --%>
+              <div class="glass-panel p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Thunderline Node</h3>
                 </div>
-                
-                <div class="grid grid-cols-8 gap-1 absolute" style="transform: translateZ(20px);">
-                  <%= for i <- 1..64 do %>
-                    <div class="w-3 h-3 border border-purple-400/30 bg-purple-400/20 animate-pulse"></div>
-                  <% end %>
+                <div class="text-xs text-gray-300">Online</div>
+              </div>
+
+              <%!-- Top Panel 2 --%>
+              <div class="glass-panel p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <div class="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Thunderblock</h3>
                 </div>
-                
-                <div class="grid grid-cols-8 gap-1 absolute" style="transform: translateZ(40px);">
-                  <%= for i <- 1..64 do %>
-                    <div class="w-3 h-3 border border-pink-400/30 bg-pink-400/20 animate-pulse"></div>
-                  <% end %>
+                <div class="text-xs text-gray-300">Connected</div>
+              </div>
+
+              <%!-- Top Panel 3 --%>
+              <div class="glass-panel p-0 overflow-hidden flex flex-col">
+                <div class="flex items-center space-x-2 px-4 pt-3">
+                  <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Activity</h3>
+                </div>
+                <div class="flex-1 px-2 pb-2 pt-1">
+                  <ThunderlineWeb.DashboardComponents.EventFlow.event_flow_panel
+                    events={@events}
+                    streams={@streams}
+                  />
+                </div>
+              </div>
+
+              <%!-- Top Panel 4 --%>
+              <div class="glass-panel p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <div class="w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Resources</h3>
+                </div>
+                <div class="text-xs text-gray-300">CPU: {@system_health[:cpu_usage] || 19}%</div>
+              </div>
+
+              <%!-- Top Panel 5 (Thunderwatch) --%>
+              <div class="glass-panel p-0 col-span-4">
+                <div class="p-3">
+                  <.thunderwatch_panel stats={@thunderwatch_stats} />
                 </div>
               </div>
             </div>
-            
-            <%!-- Grid Stats Overlay --%>
-            <div class="absolute bottom-4 left-4 right-4 flex justify-between text-xs">
-              <span class="text-cyan-400">Nodes: <%= @metrics.thundergrid.total_nodes || "OFFLINE" %></span>
-              <span class="text-purple-400">Active: <%= @metrics.thundergrid.active_nodes || "OFFLINE" %></span>
-              <span class="text-pink-400">Load: <%= @metrics.thundergrid.current_load || "OFFLINE" %></span>
-            </div>
-          </div>
-        </div>
-        
-        <%!-- Right Column --%>
-        <div class="w-48 space-y-4">
-          <%!-- Right Panel 1 --%>
-          <div class="glass-panel p-4 h-28">
-            <div class="flex items-center space-x-2 mb-2">
-              <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-              <h3 class="text-xs font-bold text-white">Performance</h3>
-            </div>
-            <div class="text-xs text-gray-300"><%= @metrics.thundergrid.performance_ops || "OFFLINE" %></div>
-          </div>
-          
-          <%!-- Right Panel 2 --%>
-          <div class="glass-panel p-4 h-28">
-            <div class="flex items-center space-x-2 mb-2">
-              <div class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-              <h3 class="text-xs font-bold text-white">Gate Auth</h3>
-            </div>
-            <div class="text-[10px] leading-tight text-gray-300 space-y-1">
-              <%= if @gate_auth_stats.total > 0 do %>
-                <div>
-                  <span class="text-green-400">✔</span>
-                  <span> <%= Map.get(@gate_auth_stats, :success, 0) %> / <%= @gate_auth_stats.total %> (<%= @gate_auth_stats.success_rate %>%)</span>
+
+            <%!-- Middle Row - Left side panels, Center panel, Right side panels --%>
+            <div class="flex gap-4 mb-4 h-64">
+              <%!-- Left Column --%>
+              <div class="w-48 space-y-4">
+                <%!-- Left Panel 1 --%>
+                <div class="glass-panel p-4 h-28">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                    <h3 class="text-xs font-bold text-white">Thunderlane</h3>
+                  </div>
+                  <div class="text-xs text-gray-300">Learning</div>
                 </div>
-                <div class="flex flex-wrap gap-x-2 gap-y-0.5">
-                  <span class="text-yellow-300">miss:<%= Map.get(@gate_auth_stats, :missing, 0) %></span>
-                  <span class="text-orange-300">exp:<%= Map.get(@gate_auth_stats, :expired, 0) %></span>
-                  <span class="text-pink-300">inv:<%= Map.get(@gate_auth_stats, :invalid, 0) %></span>
-                  <span class="text-red-300">deny:<%= Map.get(@gate_auth_stats, :deny, 0) %></span>
+
+                <%!-- Left Panel 2 --%>
+                <div class="glass-panel p-4 h-28">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <h3 class="text-xs font-bold text-white">Network</h3>
+                  </div>
+                  <div class="text-xs text-gray-300">
+                    {@metrics.thunderlane.total_nodes || "OFFLINE"}
+                  </div>
                 </div>
-              <% else %>
-                <div class="text-gray-400">no auth events</div>
-              <% end %>
+              </div>
+
+              <%!-- Center Column - 3D Thundergrid View --%>
+              <div class="flex-1">
+                <div class="glass-panel p-6 h-full relative overflow-hidden">
+                  <h2 class="text-xl font-bold text-white mb-4 text-center">Thundergrid 3D</h2>
+
+                  <%!-- 3D Grid Container --%>
+                  <div class="absolute inset-4 perspective-1000">
+                    <div
+                      class="grid-3d transform-3d"
+                      style="transform: rotateX(60deg) rotateY(30deg);"
+                    >
+                      <%!-- Grid Layers --%>
+                      <div
+                        class="grid grid-cols-8 gap-1 absolute"
+                        style="transform: translateZ(0px);"
+                      >
+                        <%= for i <- 1..64 do %>
+                          <div class="w-3 h-3 border border-cyan-400/30 bg-cyan-400/20 animate-pulse">
+                          </div>
+                        <% end %>
+                      </div>
+
+                      <div
+                        class="grid grid-cols-8 gap-1 absolute"
+                        style="transform: translateZ(20px);"
+                      >
+                        <%= for i <- 1..64 do %>
+                          <div class="w-3 h-3 border border-purple-400/30 bg-purple-400/20 animate-pulse">
+                          </div>
+                        <% end %>
+                      </div>
+
+                      <div
+                        class="grid grid-cols-8 gap-1 absolute"
+                        style="transform: translateZ(40px);"
+                      >
+                        <%= for i <- 1..64 do %>
+                          <div class="w-3 h-3 border border-pink-400/30 bg-pink-400/20 animate-pulse">
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+
+                  <%!-- Grid Stats Overlay --%>
+                  <div class="absolute bottom-4 left-4 right-4 flex justify-between text-xs">
+                    <span class="text-cyan-400">
+                      Nodes: {@metrics.thundergrid.total_nodes || "OFFLINE"}
+                    </span>
+                    <span class="text-purple-400">
+                      Active: {@metrics.thundergrid.active_nodes || "OFFLINE"}
+                    </span>
+                    <span class="text-pink-400">
+                      Load: {@metrics.thundergrid.current_load || "OFFLINE"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Right Column --%>
+              <div class="w-48 space-y-4">
+                <%!-- Right Panel 1 --%>
+                <div class="glass-panel p-4 h-28">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                    <h3 class="text-xs font-bold text-white">Performance</h3>
+                  </div>
+                  <div class="text-xs text-gray-300">
+                    {@metrics.thundergrid.performance_ops || "OFFLINE"}
+                  </div>
+                </div>
+
+                <%!-- Right Panel 2 --%>
+                <div class="glass-panel p-4 h-28">
+                  <div class="flex items-center space-x-2 mb-2">
+                    <div class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                    <h3 class="text-xs font-bold text-white">Gate Auth</h3>
+                  </div>
+                  <div class="text-[10px] leading-tight text-gray-300 space-y-1">
+                    <%= if @gate_auth_stats.total > 0 do %>
+                      <div>
+                        <span class="text-green-400">✔</span>
+                        <span>
+                          {Map.get(@gate_auth_stats, :success, 0)} / {@gate_auth_stats.total} ({@gate_auth_stats.success_rate}%)
+                        </span>
+                      </div>
+                      <div class="flex flex-wrap gap-x-2 gap-y-0.5">
+                        <span class="text-yellow-300">
+                          miss:{Map.get(@gate_auth_stats, :missing, 0)}
+                        </span>
+                        <span class="text-orange-300">
+                          exp:{Map.get(@gate_auth_stats, :expired, 0)}
+                        </span>
+                        <span class="text-pink-300">
+                          inv:{Map.get(@gate_auth_stats, :invalid, 0)}
+                        </span>
+                        <span class="text-red-300">
+                          deny:{Map.get(@gate_auth_stats, :deny, 0)}
+                        </span>
+                      </div>
+                    <% else %>
+                      <div class="text-gray-400">no auth events</div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-  <%!-- Bottom Row - 4 panels --%>
-  <div class="grid grid-cols-4 gap-4">
+            <%!-- Bottom Row - 4 panels --%>
+            <div class="grid grid-cols-4 gap-4">
+              <%!-- Bottom Panel 1 --%>
+              <div class="glass-panel p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <div class="w-2 h-2 bg-teal-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Data Stream</h3>
+                </div>
+                <div class="text-xs text-gray-300">
+                  {@metrics.thundergrid.data_stream_rate || "OFFLINE"}
+                </div>
+              </div>
 
-        <%!-- Bottom Panel 1 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-teal-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Data Stream</h3>
-          </div>
-          <div class="text-xs text-gray-300"><%= @metrics.thundergrid.data_stream_rate || "OFFLINE" %></div>
-        </div>
+              <%!-- Bottom Panel 2 --%>
+              <div class="glass-panel p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <div class="w-2 h-2 bg-violet-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Storage</h3>
+                </div>
+                <div class="text-xs text-gray-300">
+                  {@metrics.thundergrid.storage_rate || "OFFLINE"}
+                </div>
+              </div>
 
-        <%!-- Bottom Panel 2 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-violet-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Storage</h3>
-          </div>
-          <div class="text-xs text-gray-300"><%= @metrics.thundergrid.storage_rate || "OFFLINE" %></div>
-        </div>
+              <%!-- Bottom Panel 3 --%>
+              <div class="glass-panel p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Metrics</h3>
+                </div>
+                <div class="text-xs text-gray-300">
+                  {@metrics.thundercore.uptime_percent || "OFFLINE"}
+                </div>
+              </div>
 
-        <%!-- Bottom Panel 3 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Metrics</h3>
-          </div>
-          <div class="text-xs text-gray-300"><%= @metrics.thundercore.uptime_percent || "OFFLINE" %></div>
-        </div>
+              <%!-- Bottom Panel 4 --%>
+              <div class="glass-panel p-4">
+                <div class="flex items-center space-x-2 mb-2">
+                  <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Analytics</h3>
+                </div>
+                <div class="text-xs text-gray-300">Real-time</div>
+              </div>
 
-        <%!-- Bottom Panel 4 --%>
-        <div class="glass-panel p-4">
-          <div class="flex items-center space-x-2 mb-2">
-            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <h3 class="text-sm font-bold text-white">Analytics</h3>
-          </div>
-          <div class="text-xs text-gray-300">Real-time</div>
-        </div>
-
-          <%!-- ML Pipeline Panel --%>
-          <div class="glass-panel p-4 col-span-4">
-            <div class="flex items-center space-x-2 mb-3">
-              <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-              <h3 class="text-sm font-bold text-white">Event→Model Flywheel</h3>
-              <span class="text-[10px] uppercase tracking-widest text-cyan-200/70">High Command</span>
-            </div>
-            <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
-              <%= for step <- @ml_pipeline_status[:order] || [] do %>
-                <div class="flex flex-col gap-1">
-                  <span class="text-[11px] font-semibold tracking-wide text-gray-200 uppercase">
-                    {step |> Atom.to_string() |> String.replace("_", " ")}
+              <%!-- ML Pipeline Panel --%>
+              <div class="glass-panel p-4 col-span-4">
+                <div class="flex items-center space-x-2 mb-3">
+                  <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                  <h3 class="text-sm font-bold text-white">Event→Model Flywheel</h3>
+                  <span class="text-[10px] uppercase tracking-widest text-cyan-200/70">
+                    High Command
                   </span>
-                  <span class={["px-2 py-1 rounded border text-[11px] font-mono", pipeline_status_class(@ml_pipeline_status[step])]}>
-                    {pipeline_status_label(@ml_pipeline_status[step])}
-                  </span>
                 </div>
-              <% end %>
-            </div>
-            <% trial_metrics = Map.get(@ml_pipeline_status, :trial_metrics, %{}) %>
-            <% parzen_metrics = Map.get(@ml_pipeline_status, :parzen_metrics, %{}) %>
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-gray-200">
-              <div class="rounded border border-cyan-500/30 bg-cyan-500/10 p-3">
-                <p class="text-[10px] uppercase tracking-wide text-cyan-200/80 font-semibold">Trial Activity</p>
-                <div class="mt-2 grid grid-cols-3 gap-2">
-                  <span>Allowed <span class="font-mono text-cyan-200">{Map.get(trial_metrics, :allowed, 0)}</span></span>
-                  <span>Enqueued <span class="font-mono text-cyan-200">{Map.get(trial_metrics, :enqueued, 0)}</span></span>
-                  <span>Denied <span class="font-mono text-amber-200">{Map.get(trial_metrics, :denied, 0)}</span></span>
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  <%= for step <- @ml_pipeline_status[:order] || [] do %>
+                    <div class="flex flex-col gap-1">
+                      <span class="text-[11px] font-semibold tracking-wide text-gray-200 uppercase">
+                        {step |> Atom.to_string() |> String.replace("_", " ")}
+                      </span>
+                      <span class={[
+                        "px-2 py-1 rounded border text-[11px] font-mono",
+                        pipeline_status_class(@ml_pipeline_status[step])
+                      ]}>
+                        {pipeline_status_label(@ml_pipeline_status[step])}
+                      </span>
+                    </div>
+                  <% end %>
                 </div>
-                <div class="mt-2 text-[10px] text-cyan-100/70">
-                  Last event: {format_trial_last_event(Map.get(trial_metrics, :last_event))}
+                <% trial_metrics = Map.get(@ml_pipeline_status, :trial_metrics, %{}) %>
+                <% parzen_metrics = Map.get(@ml_pipeline_status, :parzen_metrics, %{}) %>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-gray-200">
+                  <div class="rounded border border-cyan-500/30 bg-cyan-500/10 p-3">
+                    <p class="text-[10px] uppercase tracking-wide text-cyan-200/80 font-semibold">
+                      Trial Activity
+                    </p>
+                    <div class="mt-2 grid grid-cols-3 gap-2">
+                      <span>
+                        Allowed
+                        <span class="font-mono text-cyan-200">
+                          {Map.get(trial_metrics, :allowed, 0)}
+                        </span>
+                      </span>
+                      <span>
+                        Enqueued
+                        <span class="font-mono text-cyan-200">
+                          {Map.get(trial_metrics, :enqueued, 0)}
+                        </span>
+                      </span>
+                      <span>
+                        Denied
+                        <span class="font-mono text-amber-200">
+                          {Map.get(trial_metrics, :denied, 0)}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="mt-2 text-[10px] text-cyan-100/70">
+                      Last event: {format_trial_last_event(Map.get(trial_metrics, :last_event))}
+                    </div>
+                  </div>
+                  <div class="rounded border border-sky-500/30 bg-sky-500/10 p-3">
+                    <p class="text-[10px] uppercase tracking-wide text-sky-200/80 font-semibold">
+                      Parzen Observer
+                    </p>
+                    <div class="mt-2 flex flex-wrap gap-3">
+                      <span>
+                        Observations
+                        <span class="font-mono text-sky-200">
+                          {Map.get(parzen_metrics, :observations, 0)}
+                        </span>
+                      </span>
+                      <span>
+                        Best
+                        <span class="font-mono text-sky-200">
+                          {format_metric(Map.get(parzen_metrics, :best_metric))}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="mt-2 text-[10px] text-sky-100/70">
+                      Last update: {format_parzen_last_observation(parzen_metrics)}
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 text-[10px] text-gray-400 italic">
+                  {@ml_pipeline_status[:notes] || "Directive staged"}
                 </div>
               </div>
-              <div class="rounded border border-sky-500/30 bg-sky-500/10 p-3">
-                <p class="text-[10px] uppercase tracking-wide text-sky-200/80 font-semibold">Parzen Observer</p>
-                <div class="mt-2 flex flex-wrap gap-3">
-                  <span>Observations <span class="font-mono text-sky-200">{Map.get(parzen_metrics, :observations, 0)}</span></span>
-                  <span>Best <span class="font-mono text-sky-200">{format_metric(Map.get(parzen_metrics, :best_metric))}</span></span>
-                </div>
-                <div class="mt-2 text-[10px] text-sky-100/70">
-                  Last update: {format_parzen_last_observation(parzen_metrics)}
+            </div>
+          <% "system" -> %>
+            <div
+              id="panel-system"
+              role="tabpanel"
+              aria-labelledby="tab-system-link"
+              class="space-y-4"
+              tabindex="0"
+            >
+              <div class="glass-panel p-4">
+                <h3 class="text-sm font-bold text-white mb-2">System Health</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-300">
+                  <div>
+                    Nodes: <span class="text-cyan-300">{@system_metrics.connected_nodes}</span>
+                  </div>
+                  <div>
+                    Active Agents:
+                    <span class="text-cyan-300">{@system_metrics.active_agents}</span>
+                  </div>
+                  <div>
+                    Chunks: <span class="text-cyan-300">{@system_metrics.total_chunks}</span>
+                  </div>
+                  <div>
+                    Memory: <span class="text-cyan-300">{@system_metrics.memory_usage}</span>
+                  </div>
                 </div>
               </div>
+              <div class="glass-panel p-4">
+                <.system_health_panel data={@system_health} />
+              </div>
             </div>
-            <div class="mt-3 text-[10px] text-gray-400 italic">
-              {@ml_pipeline_status[:notes] || "Directive staged"}
+          <% "events" -> %>
+            <div
+              id="panel-events"
+              role="tabpanel"
+              aria-labelledby="tab-events-link"
+              class="glass-panel p-0 overflow-hidden"
+              tabindex="0"
+            >
+              <div class="px-4 pt-3">
+                <h3 class="text-sm font-bold text-white">Event Flow</h3>
+              </div>
+              <div class="px-2 pb-2 pt-1">
+                <ThunderlineWeb.DashboardComponents.EventFlow.event_flow_panel
+                  events={@events}
+                  streams={@streams}
+                />
+              </div>
             </div>
-          </div>
+          <% "controls" -> %>
+            <div
+              id="panel-controls"
+              role="tabpanel"
+              aria-labelledby="tab-controls-link"
+              class="glass-panel p-4"
+              tabindex="0"
+            >
+              <h3 class="text-sm font-bold text-white mb-3">System Controls</h3>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <button
+                  class="px-3 py-2 rounded bg-red-600/80 hover:bg-red-600 text-white"
+                  phx-click="system_control"
+                  phx-value-action="emergency_stop"
+                >
+                  Emergency Stop
+                </button>
+                <button
+                  class="px-3 py-2 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white"
+                  phx-click="system_control"
+                  phx-value-action="system_restart"
+                >
+                  Restart
+                </button>
+                <button
+                  class="px-3 py-2 rounded bg-yellow-600/80 hover:bg-yellow-600 text-white"
+                  phx-click="system_control"
+                  phx-value-action="safe_mode"
+                >
+                  Safe Mode
+                </button>
+                <button
+                  class="px-3 py-2 rounded bg-amber-600/80 hover:bg-amber-600 text-white"
+                  phx-click="system_control"
+                  phx-value-action="maintenance_mode"
+                >
+                  Maintenance
+                </button>
+              </div>
+            </div>
+          <% "thunderwatch" -> %>
+            <div
+              id="panel-thunderwatch"
+              role="tabpanel"
+              aria-labelledby="tab-thunderwatch-link"
+              class="glass-panel p-3"
+              tabindex="0"
+            >
+              <.thunderwatch_panel stats={@thunderwatch_stats} />
+            </div>
+          <% _ -> %>
+            <div class="text-gray-300">Unknown tab</div>
+        <% end %>
       </div>
-
-        <% "system" -> %>
-          <div id="panel-system" role="tabpanel" aria-labelledby="tab-system-link" class="space-y-4" tabindex="0">
-            <div class="glass-panel p-4">
-              <h3 class="text-sm font-bold text-white mb-2">System Health</h3>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-300">
-                <div>Nodes: <span class="text-cyan-300"><%= @system_metrics.connected_nodes %></span></div>
-                <div>Active Agents: <span class="text-cyan-300"><%= @system_metrics.active_agents %></span></div>
-                <div>Chunks: <span class="text-cyan-300"><%= @system_metrics.total_chunks %></span></div>
-                <div>Memory: <span class="text-cyan-300"><%= @system_metrics.memory_usage %></span></div>
-              </div>
-            </div>
-            <div class="glass-panel p-4">
-              <.system_health_panel data={@system_health} />
-            </div>
-          </div>
-
-        <% "events" -> %>
-          <div id="panel-events" role="tabpanel" aria-labelledby="tab-events-link" class="glass-panel p-0 overflow-hidden" tabindex="0">
-            <div class="px-4 pt-3">
-              <h3 class="text-sm font-bold text-white">Event Flow</h3>
-            </div>
-            <div class="px-2 pb-2 pt-1">
-              <ThunderlineWeb.DashboardComponents.EventFlow.event_flow_panel events={@events} streams={@streams} />
-            </div>
-          </div>
-
-        <% "controls" -> %>
-          <div id="panel-controls" role="tabpanel" aria-labelledby="tab-controls-link" class="glass-panel p-4" tabindex="0">
-            <h3 class="text-sm font-bold text-white mb-3">System Controls</h3>
-            <div class="flex flex-wrap gap-2 text-xs">
-              <button class="px-3 py-2 rounded bg-red-600/80 hover:bg-red-600 text-white" phx-click="system_control" phx-value-action="emergency_stop">Emergency Stop</button>
-              <button class="px-3 py-2 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white" phx-click="system_control" phx-value-action="system_restart">Restart</button>
-              <button class="px-3 py-2 rounded bg-yellow-600/80 hover:bg-yellow-600 text-white" phx-click="system_control" phx-value-action="safe_mode">Safe Mode</button>
-              <button class="px-3 py-2 rounded bg-amber-600/80 hover:bg-amber-600 text-white" phx-click="system_control" phx-value-action="maintenance_mode">Maintenance</button>
-            </div>
-          </div>
-
-        <% "thunderwatch" -> %>
-          <div id="panel-thunderwatch" role="tabpanel" aria-labelledby="tab-thunderwatch-link" class="glass-panel p-3" tabindex="0">
-            <.thunderwatch_panel stats={@thunderwatch_stats} />
-          </div>
-
-        <% _ -> %>
-          <div class="text-gray-300">Unknown tab</div>
-      <% end %>
     </div>
-
   </div>
-</div>
-
-
 </Layouts.app>

@@ -26,7 +26,9 @@ defmodule Thunderline.Repo.Migrations.CreateCerebrosModelRunsAndArtifacts do
       add :spec, :map, null: false, default: %{}
       add :path, :text
       add :metadata, :map, null: false, default: %{}
-      add :model_run_id, references(:cerebros_model_runs, type: :uuid, on_delete: :delete_all), null: false
+
+      add :model_run_id, references(:cerebros_model_runs, type: :uuid, on_delete: :delete_all),
+        null: false
 
       timestamps(type: :utc_datetime_usec)
     end

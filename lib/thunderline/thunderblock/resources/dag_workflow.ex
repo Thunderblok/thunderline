@@ -16,34 +16,6 @@ defmodule Thunderline.Thunderblock.Resources.DAGWorkflow do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :source_domain, :atom, allow_nil?: false, description: "Originating domain of root action"
-    attribute :root_event_name, :string, allow_nil?: false
-    attribute :correlation_id, :string, allow_nil?: false
-    attribute :causation_id, :string, allow_nil?: true
-    attribute :status, :atom, allow_nil?: false, default: :building, constraints: [one_of: [:building, :sealed]]
-    attribute :metadata, :map, allow_nil?: false, default: %{}
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  relationships do
-    has_many :nodes, Thunderline.Thunderblock.Resources.DAGNode do
-      destination_attribute :workflow_id
-    end
-    has_many :edges, Thunderline.Thunderblock.Resources.DAGEdge do
-      destination_attribute :workflow_id
-    end
-    has_many :snapshots, Thunderline.Thunderblock.Resources.DAGSnapshot do
-      destination_attribute :workflow_id
-    end
-  end
-
-  identities do
-    identity :unique_correlation, [:correlation_id]
-  end
-
   actions do
     defaults [:read]
 
@@ -66,8 +38,48 @@ defmodule Thunderline.Thunderblock.Resources.DAGWorkflow do
     policy action([:start, :seal]) do
       authorize_if expr(not is_nil(actor(:id)))
     end
+
     policy action(:read) do
       authorize_if expr(true)
     end
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :source_domain, :atom,
+      allow_nil?: false,
+      description: "Originating domain of root action"
+
+    attribute :root_event_name, :string, allow_nil?: false
+    attribute :correlation_id, :string, allow_nil?: false
+    attribute :causation_id, :string, allow_nil?: true
+
+    attribute :status, :atom,
+      allow_nil?: false,
+      default: :building,
+      constraints: [one_of: [:building, :sealed]]
+
+    attribute :metadata, :map, allow_nil?: false, default: %{}
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  relationships do
+    has_many :nodes, Thunderline.Thunderblock.Resources.DAGNode do
+      destination_attribute :workflow_id
+    end
+
+    has_many :edges, Thunderline.Thunderblock.Resources.DAGEdge do
+      destination_attribute :workflow_id
+    end
+
+    has_many :snapshots, Thunderline.Thunderblock.Resources.DAGSnapshot do
+      destination_attribute :workflow_id
+    end
+  end
+
+  identities do
+    identity :unique_correlation, [:correlation_id]
   end
 end

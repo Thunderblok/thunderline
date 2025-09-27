@@ -17,8 +17,10 @@ defmodule ThunderlineWeb.Plugs.DemoSecurity do
 
   @impl true
   def init(opts) do
-    limit = Keyword.get(opts, :limit, 120)          # requests
-    interval = Keyword.get(opts, :interval, 60_000) # ms window
+    # requests
+    limit = Keyword.get(opts, :limit, 120)
+    # ms window
+    interval = Keyword.get(opts, :interval, 60_000)
     ensure_table()
     %{limit: limit, interval: interval}
   end
@@ -45,6 +47,7 @@ defmodule ThunderlineWeb.Plugs.DemoSecurity do
   defp basic_auth(conn) do
     user = System.get_env("DEMO_BASIC_AUTH_USER")
     pass = System.get_env("DEMO_BASIC_AUTH_PASS")
+
     if user && pass do
       with [auth] <- get_req_header(conn, "authorization"),
            true <- valid_basic?(auth, user, pass) do
@@ -67,12 +70,14 @@ defmodule ThunderlineWeb.Plugs.DemoSecurity do
       _ -> false
     end
   end
+
   defp valid_basic?(_, _, _), do: false
 
   defp rate_limit(conn, limit, interval) do
     {ip, _port} = conn.peer
     key = {ip, bucket(interval)}
     count = :ets.update_counter(@table, key, {2, 1}, {key, 0})
+
     if count > limit do
       send_resp(conn, 429, "Rate limit exceeded") |> halt()
     else
@@ -83,11 +88,13 @@ defmodule ThunderlineWeb.Plugs.DemoSecurity do
   defp bucket(interval), do: System.system_time(:millisecond) |> div(interval)
 
   defp csp do
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "<>
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " <>
       "style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss:;"
   end
 
   defp robots do
-    if System.get_env("DEMO_ALLOW_INDEX") in ["1","true","TRUE"], do: "index,follow", else: "noindex,nofollow"
+    if System.get_env("DEMO_ALLOW_INDEX") in ["1", "true", "TRUE"],
+      do: "index,follow",
+      else: "noindex,nofollow"
   end
 end

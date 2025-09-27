@@ -7,13 +7,16 @@ if Code.ensure_loaded?(Thunderline.Thunderflow.Blackboard) do
     @moduletag :blackboard
 
     test "facade delegates and emits telemetry" do
-      ref = :telemetry_test.attach_event_handlers(self(), [[:thunderline, :blackboard, :legacy_use]])
+      ref =
+        :telemetry_test.attach_event_handlers(self(), [[:thunderline, :blackboard, :legacy_use]])
 
       try do
         assert :ok == Blackboard.put({:automata, :test_key}, 42)
         assert 42 == Blackboard.get({:automata, :test_key})
 
-        assert_receive {[:thunderline, :blackboard, :legacy_use], ^ref, %{count: 1}, %{fun: :put}}, 1_000
+        assert_receive {[:thunderline, :blackboard, :legacy_use], ^ref, %{count: 1},
+                        %{fun: :put}},
+                       1_000
       after
         :telemetry.detach(ref)
       end

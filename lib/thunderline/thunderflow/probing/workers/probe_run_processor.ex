@@ -8,10 +8,15 @@ defmodule Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"run_id" => run_id}}) do
     Logger.info("[ProbeRunProcessor] Starting probe run #{run_id}")
+
     case Ash.get(ProbeRun, run_id) do
-      {:ok, run} -> execute(run)
-      {:error, err} -> Logger.error("[ProbeRunProcessor] Run not found #{run_id} err=#{inspect(err)}")
+      {:ok, run} ->
+        execute(run)
+
+      {:error, err} ->
+        Logger.error("[ProbeRunProcessor] Run not found #{run_id} err=#{inspect(err)}")
     end
+
     :ok
   end
 
@@ -20,7 +25,7 @@ defmodule Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor do
       provider: run.provider,
       model: run.model,
       prompt_path: run.prompt_path,
-  laps: run.laps,
+      laps: run.laps,
       samples: run.samples,
       embedding_dim: run.embedding_dim,
       embedding_ngram: run.embedding_ngram,
@@ -47,11 +52,19 @@ defmodule Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor do
       })
     end)
 
-  Ash.update!(run, %{status: :completed, completed_at: DateTime.utc_now()}, action: :update_status)
-  # Enqueue attractor summary computation
-  %{run_id: run.id, m: run.attractor_m, tau: run.attractor_tau, min_points: run.attractor_min_points}
-  |> Thunderline.Thunderflow.Probing.Workers.ProbeAttractorSummaryWorker.new()
-  |> Oban.insert()
+    Ash.update!(run, %{status: :completed, completed_at: DateTime.utc_now()},
+      action: :update_status
+    )
+
+    # Enqueue attractor summary computation
+    %{
+      run_id: run.id,
+      m: run.attractor_m,
+      tau: run.attractor_tau,
+      min_points: run.attractor_min_points
+    }
+    |> Thunderline.Thunderflow.Probing.Workers.ProbeAttractorSummaryWorker.new()
+    |> Oban.insert()
   rescue
     error ->
       Logger.error("[ProbeRunProcessor] failure run=#{run.id} error=#{Exception.message(error)}")

@@ -12,6 +12,12 @@ defmodule Thunderline.Thunderbolt.ML.TrainingDataset do
     repo Thunderline.Repo
   end
 
+  code_interface do
+    define :read
+    define :create
+    define :seal
+  end
+
   actions do
     defaults [:read, :destroy]
 
@@ -40,6 +46,12 @@ defmodule Thunderline.Thunderbolt.ML.TrainingDataset do
     end
   end
 
+  policies do
+    policy action(:*) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+    end
+  end
+
   attributes do
     uuid_primary_key :id
     attribute :dataset_id, :string, allow_nil?: false
@@ -58,19 +70,9 @@ defmodule Thunderline.Thunderbolt.ML.TrainingDataset do
   end
 
   relationships do
-    has_many :feature_views, Thunderline.Thunderbolt.ML.FeatureView, destination_attribute: :dataset_id
+    has_many :feature_views, Thunderline.Thunderbolt.ML.FeatureView,
+      destination_attribute: :dataset_id
+
     has_many :runs, Thunderline.Thunderbolt.ML.TrainingRun, destination_attribute: :dataset_id
-  end
-
-  policies do
-    policy action(:*) do
-  authorize_if expr(tenant_id == ^actor(:tenant_id))
-    end
-  end
-
-  code_interface do
-    define :read
-    define :create
-    define :seal
   end
 end

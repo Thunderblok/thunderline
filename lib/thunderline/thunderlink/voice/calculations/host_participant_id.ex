@@ -30,6 +30,7 @@ defmodule Thunderline.Thunderlink.Voice.Calculations.HostParticipantId do
       end
     end)
   end
+
   @impl true
   def load(_calc, _opts, _query), do: {:ok, [:participants]}
 end

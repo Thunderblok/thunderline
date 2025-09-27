@@ -241,7 +241,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
 
       run fn input, context ->
         # Get the PAC home
-  pac_home = Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id)
+        pac_home = Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id)
 
         reason = input.arguments.reason
         duration = input.arguments.duration_hours
@@ -284,7 +284,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
       end
 
       run fn input, _context ->
-  case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
           nil ->
             {:error, "PAC home not found"}
 
@@ -340,7 +340,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
       end
 
       run fn input, _context ->
-  case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
           nil ->
             {:error, "PAC home not found"}
 
@@ -408,7 +408,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
       end
 
       run fn input, _context ->
-  case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
           nil ->
             {:error, "PAC home not found"}
 
@@ -457,7 +457,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
       argument :last_activity, :utc_datetime
 
       run fn input, _context ->
-  case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.PACHome, input.arguments.id) do
           nil ->
             {:error, "PAC home not found"}
 
@@ -495,7 +495,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
 
     action :health_check, :struct do
       description "Perform comprehensive health check"
-  constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
+      constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
 
       run fn input, _context ->
         # Basic health check logic - return the PAC home with updated health status
@@ -505,7 +505,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
 
     action :backup_now, :struct do
       description "Trigger immediate backup"
-  constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
+      constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
 
       run fn input, _context ->
         # Basic backup logic - return the PAC home with backup triggered
@@ -607,7 +607,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     # Cleanup actions
     action :cleanup_terminated, {:array, :struct} do
       description "Remove terminated PAC homes"
-  constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
+      constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
 
       run fn _input, _context ->
         # Find terminated PAC homes older than 7 days
@@ -619,7 +619,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     # Auto-unsuspend expired suspensions
     action :auto_unsuspend, {:array, :struct} do
       description "Auto-unsuspend expired suspensions"
-  constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
+      constraints instance_of: Thunderline.Thunderblock.Resources.PACHome
 
       run fn _input, _context ->
         # Find and unsuspend expired suspended PAC homes

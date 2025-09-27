@@ -10,6 +10,11 @@ defmodule Thunderline.Integrations.EventOps do
 
   use Ash.Resource, data_layer: :embedded
 
+  # Optional convenience interface
+  code_interface do
+    define :process_event, action: :process_event
+  end
+
   actions do
     defaults []
 
@@ -37,10 +42,6 @@ defmodule Thunderline.Integrations.EventOps do
         end
       end
     end
-  end
-  # Optional convenience interface
-  code_interface do
-    define :process_event, action: :process_event
   end
 
   defp reactor_enabled? do

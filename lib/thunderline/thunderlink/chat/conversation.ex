@@ -36,7 +36,7 @@ defmodule Thunderline.Thunderlink.Chat.Conversation do
       accept []
       transaction? false
       require_atomic? false
-  change Thunderline.Thunderlink.Chat.Conversation.Changes.GenerateName
+      change Thunderline.Thunderlink.Chat.Conversation.Changes.GenerateName
     end
   end
 

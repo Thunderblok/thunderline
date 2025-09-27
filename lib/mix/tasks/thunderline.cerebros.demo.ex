@@ -65,7 +65,8 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
         is_binary(opts[:mlflow]) and opts[:mlflow] != "" ->
           opts[:mlflow]
 
-        is_binary(System.get_env("MLFLOW_TRACKING_URI")) and System.get_env("MLFLOW_TRACKING_URI") != "" ->
+        is_binary(System.get_env("MLFLOW_TRACKING_URI")) and
+            System.get_env("MLFLOW_TRACKING_URI") != "" ->
           System.get_env("MLFLOW_TRACKING_URI")
 
         true ->
@@ -83,6 +84,7 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
 
     # Friendly checks for Python deps (non-fatal)
     req = Path.join(repo, "requirements.txt")
+
     if File.exists?(req) do
       Mix.shell().info("[hint] Ensure Cerebros requirements are installed:")
       Mix.shell().info("       pip install -r #{req}")
@@ -177,7 +179,9 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
       Task.async(fn ->
         try do
           {_, exit_code} =
-            System.cmd(cmd, args,
+            System.cmd(
+              cmd,
+              args,
               Keyword.merge(opts,
                 into: IO.stream(:stdio, :line),
                 stderr_to_stdout: true

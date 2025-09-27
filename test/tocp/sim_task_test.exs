@@ -9,10 +9,10 @@ defmodule Thunderline.TOCP.SimTaskTest do
     assert File.exists?(path), "report file missing"
     {:ok, json} = File.read(path)
     {:ok, decoded} = Jason.decode(json)
-  assert decoded["version"] == 1
-  assert decoded["nodes"] == 0
-  assert decoded["security"]["sig_fail"] == 0
-  assert decoded["pass"]["sybil_swarm"]
+    assert decoded["version"] == 1
+    assert decoded["nodes"] == 0
+    assert decoded["security"]["sig_fail"] == 0
+    assert decoded["pass"]["sybil_swarm"]
     assert output =~ "[TOCP][SIM] Wrote report"
   end
 end

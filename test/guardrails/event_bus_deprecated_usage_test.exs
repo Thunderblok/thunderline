@@ -10,40 +10,13 @@ defmodule Thunderline.Guardrails.EventBusDeprecatedUsageTest do
   and `Thunderline.EventBus.publish_event/1`.
   """
 
-  @deprecated_patterns [
-    "Thunderline.EventBus.emit_realtime(",
-    "Thunderline.EventBus.emit_cross_domain(",
-    "Thunderline.EventBus.emit(",
-    "Thunderline.EventBus.broadcast_via_eventbus(",
-    "Thunderline.EventBus.legacy_broadcast(",
-    "EventBus.emit_realtime(",
-    "EventBus.emit_cross_domain(",
-    "EventBus.emit(",
-    "legacy_broadcast(",
-    "broadcast_via_eventbus("
-  ]
-
   test "no deprecated EventBus emit* calls outside allowlist" do
-    root = Path.expand("../../../", __DIR__)
-    lib_path = Path.join(root, "lib/thunderline")
+    case Thunderline.Dev.EventBusLint.check() do
+      :ok ->
+        assert true
 
-    files =
-      lib_path
-      |> Path.join("**/*.ex")
-      |> Path.wildcard()
-      |> Enum.reject(&String.ends_with?(&1, "_test.exs"))
-
-    offenders =
-      for file <- files, reduce: [] do
-        acc ->
-          content = File.read!(file)
-          if Enum.any?(@deprecated_patterns, &String.contains?(content, &1)) do
-            [{file, :deprecated_calls_found} | acc]
-          else
-            acc
-          end
-      end
-
-    assert offenders == [], "Deprecated EventBus emit* usage detected in: #{inspect(offenders)}"
+      {:error, offenders} ->
+        flunk("Deprecated EventBus emit* usage detected in: #{inspect(offenders)}")
+    end
   end
 end

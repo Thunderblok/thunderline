@@ -13,24 +13,33 @@ defmodule Thunderline.Feature do
 
   @compile {:no_warn_undefined, Application}
   # Compile-time snapshot (default baseline)
-  @features (
-    fn v ->
-      cond do
-        is_map(v) -> v
-        is_list(v) ->
-          cond do
-            v == [] -> %{}
-            Enum.all?(v, &is_atom/1) -> Map.new(v, &{&1, true})
-            Enum.all?(v, fn
-              {k, _} when is_atom(k) -> true
-              _ -> false
-            end) -> Map.new(v)
-            true -> %{}
-          end
-        true -> %{}
-      end
-    end
-  ).(Application.compile_env(:thunderline, :features, []))
+  @features (fn v ->
+               cond do
+                 is_map(v) ->
+                   v
+
+                 is_list(v) ->
+                   cond do
+                     v == [] ->
+                       %{}
+
+                     Enum.all?(v, &is_atom/1) ->
+                       Map.new(v, &{&1, true})
+
+                     Enum.all?(v, fn
+                       {k, _} when is_atom(k) -> true
+                       _ -> false
+                     end) ->
+                       Map.new(v)
+
+                     true ->
+                       %{}
+                   end
+
+                 true ->
+                   %{}
+               end
+             end).(Application.compile_env(:thunderline, :features, []))
 
   @doc """
   Return true if the feature `flag` is enabled.
@@ -45,7 +54,9 @@ defmodule Thunderline.Feature do
         # Allow runtime application env overrides (so demo/prod can enable flags without recompiling)
         runtime_map = normalize_features(Application.get_env(:thunderline, :features, []))
         Map.get(runtime_map, flag, Map.get(@features, flag, Keyword.get(opts, :default, false)))
-      override -> override
+
+      override ->
+        override
     end
   end
 
@@ -76,19 +87,30 @@ defmodule Thunderline.Feature do
   # Internal helpers
   defp normalize_features(v) do
     cond do
-      is_map(v) -> v
+      is_map(v) ->
+        v
+
       is_list(v) ->
         # Support either keyword list or plain list of atoms
         cond do
-          v == [] -> %{}
-          Enum.all?(v, &is_atom/1) -> Map.new(v, &{&1, true})
+          v == [] ->
+            %{}
+
+          Enum.all?(v, &is_atom/1) ->
+            Map.new(v, &{&1, true})
+
           Enum.all?(v, fn
             {k, _} when is_atom(k) -> true
             _ -> false
-          end) -> Map.new(v)
-          true -> %{}
+          end) ->
+            Map.new(v)
+
+          true ->
+            %{}
         end
-      true -> %{}
+
+      true ->
+        %{}
     end
   end
 end

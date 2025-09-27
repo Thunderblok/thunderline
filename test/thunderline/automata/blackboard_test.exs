@@ -28,7 +28,8 @@ if Code.ensure_loaded?(Thunderline.Thunderflow.Blackboard) do
       :ok = Blackboard.put(:node_metric, :ok, scope: :node)
       Process.sleep(5)
       assert {:ok, :ok} = Blackboard.fetch(:node_metric, scope: :node)
-      refute :node_metric in Blackboard.keys() # different scope
+      # different scope
+      refute :node_metric in Blackboard.keys()
       assert :node_metric in Blackboard.keys(scope: :node)
     end
   end

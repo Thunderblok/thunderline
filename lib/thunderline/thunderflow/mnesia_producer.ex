@@ -77,13 +77,13 @@ defmodule Thunderflow.MnesiaProducer do
   def handle_demand(incoming_demand, %State{demand: pending_demand} = state) do
     new_demand = incoming_demand + pending_demand
 
-  case fetch_and_claim_events(state.table, min(new_demand, state.max_batch_size)) do
+    case fetch_and_claim_events(state.table, min(new_demand, state.max_batch_size)) do
       {:ok, []} ->
         # No events available, update demand and wait for next poll
         {:noreply, [], %{state | demand: new_demand}}
 
       {:ok, events} ->
-    messages = convert_events_to_messages(events, state.ack_ref, state.table)
+        messages = convert_events_to_messages(events, state.ack_ref, state.table)
         remaining_demand = max(0, new_demand - length(messages))
 
         Logger.debug("MnesiaProducer: Delivering #{length(messages)} events")
@@ -103,12 +103,12 @@ defmodule Thunderflow.MnesiaProducer do
 
     # If there's demand and no recent activity, try to fetch events
     if state.demand > 0 do
-    case fetch_and_claim_events(state.table, min(state.demand, state.max_batch_size)) do
+      case fetch_and_claim_events(state.table, min(state.demand, state.max_batch_size)) do
         {:ok, []} ->
           {:noreply, [], state}
 
         {:ok, events} ->
-      messages = convert_events_to_messages(events, state.ack_ref, state.table)
+          messages = convert_events_to_messages(events, state.ack_ref, state.table)
           remaining_demand = max(0, state.demand - length(messages))
 
           {:noreply, messages, %{state | demand: remaining_demand}}
@@ -140,7 +140,7 @@ defmodule Thunderflow.MnesiaProducer do
     # Mark any in-flight events as failed so they can be retried
     Transaction.execute(fn ->
       # Use dynamic pattern matching based on table structure
-  revert_processing_to_failed(state.table)
+      revert_processing_to_failed(state.table)
     end)
 
     {:noreply, [], state}
@@ -157,15 +157,16 @@ defmodule Thunderflow.MnesiaProducer do
 
     ensure_table_exists(table)
 
-    record_tuple = build_record_tuple(table, data, %{
-      id: generate_event_id(),
-      data: data,
-      created_at: DateTime.utc_now(),
-      status: :pending,
-      attempts: 0,
-      pipeline_type: pipeline_type,
-      priority: priority
-    })
+    record_tuple =
+      build_record_tuple(table, data, %{
+        id: generate_event_id(),
+        data: data,
+        created_at: DateTime.utc_now(),
+        status: :pending,
+        attempts: 0,
+        pipeline_type: pipeline_type,
+        priority: priority
+      })
 
     case :mnesia.transaction(fn -> :mnesia.write(record_tuple) end) do
       {:atomic, :ok} ->
@@ -215,26 +216,37 @@ defmodule Thunderflow.MnesiaProducer do
   Get queue statistics for monitoring.
   """
   def queue_stats(table \\ __MODULE__) do
-    with {:atomic, stats} <- :mnesia.transaction(fn ->
-           attrs = :mnesia.table_info(table, :attributes)
-           status_index = Enum.find_index(attrs, &(&1 == :status))
-           _dead_letter_index = status_index # we just reuse for guard building
+    with {:atomic, stats} <-
+           :mnesia.transaction(fn ->
+             attrs = :mnesia.table_info(table, :attributes)
+             status_index = Enum.find_index(attrs, &(&1 == :status))
+             # we just reuse for guard building
+             _dead_letter_index = status_index
 
-           {pending, processing, failed, dead_letter} =
-             Enum.reduce([:pending, :processing, :failed, :dead_letter], {0, 0, 0, 0}, fn status,
-                                                                                    {p, pr, f, dl} ->
-               count = select_count_by_status(table, status, status_index, length(attrs))
+             {pending, processing, failed, dead_letter} =
+               Enum.reduce(
+                 [:pending, :processing, :failed, :dead_letter],
+                 {0, 0, 0, 0},
+                 fn status, {p, pr, f, dl} ->
+                   count = select_count_by_status(table, status, status_index, length(attrs))
 
-               case status do
-                 :pending -> {count, pr, f, dl}
-                 :processing -> {p, count, f, dl}
-                 :failed -> {p, pr, count, dl}
-                 :dead_letter -> {p, pr, f, count}
-               end
-             end)
+                   case status do
+                     :pending -> {count, pr, f, dl}
+                     :processing -> {p, count, f, dl}
+                     :failed -> {p, pr, count, dl}
+                     :dead_letter -> {p, pr, f, count}
+                   end
+                 end
+               )
 
-           %{pending: pending, processing: processing, failed: failed, dead_letter: dead_letter, total: pending + processing + failed + dead_letter}
-         end) do
+             %{
+               pending: pending,
+               processing: processing,
+               failed: failed,
+               dead_letter: dead_letter,
+               total: pending + processing + failed + dead_letter
+             }
+           end) do
       stats
     else
       _ -> %{pending: 0, processing: 0, failed: 0, dead_letter: 0, total: 0}
@@ -248,13 +260,17 @@ defmodule Thunderflow.MnesiaProducer do
       {:atomic, :ok} ->
         Logger.info("MnesiaProducer: Created table #{table}")
         :ok
+
       :ok ->
         Logger.info("MnesiaProducer: Created table #{table}")
         :ok
+
       {:error, {:already_exists, _}} ->
         :ok
+
       {:aborted, {:already_exists, _}} ->
         :ok
+
       other ->
         Logger.error("MnesiaProducer: Failed to create table #{table}: #{inspect(other)}")
         {:error, other}
@@ -270,7 +286,7 @@ defmodule Thunderflow.MnesiaProducer do
     try do
       attrs = :mnesia.table_info(table, :attributes)
       status_index = Enum.find_index(attrs, &(&1 == :status))
-  _attempts_index = Enum.find_index(attrs, &(&1 == :attempts))
+      _attempts_index = Enum.find_index(attrs, &(&1 == :attempts))
 
       case :mnesia.transaction(fn ->
              pending = select_raw_records(table, :pending, status_index, length(attrs), limit)
@@ -318,10 +334,10 @@ defmodule Thunderflow.MnesiaProducer do
         metadata: %{
           event_id: Map.get(attr_map, :id),
           created_at: Map.get(attr_map, :created_at),
-            attempts: Map.get(attr_map, :attempts),
-            pipeline_type: Map.get(attr_map, :pipeline_type),
-            priority: Map.get(attr_map, :priority),
-            table: table
+          attempts: Map.get(attr_map, :attempts),
+          pipeline_type: Map.get(attr_map, :pipeline_type),
+          priority: Map.get(attr_map, :priority),
+          table: table
         },
         acknowledger: {__MODULE__, ack_ref, %{event_id: Map.get(attr_map, :id), table: table}}
       }
@@ -338,11 +354,15 @@ defmodule Thunderflow.MnesiaProducer do
   def ack(_ack_ref, successful, failed) do
     # Broadway passes back the same tuple we set on the message: {mod, ack_ref, metadata_map}
     # Avoid get_in/Access on a tuple (was raising FunctionClauseError). Pattern match instead.
-    Enum.each(successful, fn %{acknowledger: {__MODULE__, _ref, %{event_id: event_id, table: table}}} ->
+    Enum.each(successful, fn %{
+                               acknowledger:
+                                 {__MODULE__, _ref, %{event_id: event_id, table: table}}
+                             } ->
       delete_event(table, event_id)
     end)
 
-    Enum.each(failed, fn %{acknowledger: {__MODULE__, _ref, %{event_id: event_id, table: table}}} = msg ->
+    Enum.each(failed, fn %{acknowledger: {__MODULE__, _ref, %{event_id: event_id, table: table}}} =
+                           msg ->
       handle_failed_event(table, event_id, msg.status)
     end)
 
@@ -361,7 +381,9 @@ defmodule Thunderflow.MnesiaProducer do
   defp handle_failed_event(table, event_id, _status) do
     :mnesia.transaction(fn ->
       case :mnesia.read(table, event_id) do
-        [] -> :ok
+        [] ->
+          :ok
+
         [record] ->
           attrs = :mnesia.table_info(table, :attributes)
           values = Tuple.to_list(record) |> tl()
@@ -369,15 +391,15 @@ defmodule Thunderflow.MnesiaProducer do
           attempts = attr_map.attempts + 1
           new_status = if attempts >= 3, do: :dead_letter, else: :failed
 
-            updated_attr_vals =
-              attrs
-              |> Enum.map(fn attr ->
-                case attr do
-                  :attempts -> attempts
-                  :status -> new_status
-                  _ -> Map.get(attr_map, attr)
-                end
-              end)
+          updated_attr_vals =
+            attrs
+            |> Enum.map(fn attr ->
+              case attr do
+                :attempts -> attempts
+                :status -> new_status
+                _ -> Map.get(attr_map, attr)
+              end
+            end)
 
           new_record = List.to_tuple([table | updated_attr_vals])
           :mnesia.write(new_record)
@@ -395,7 +417,8 @@ defmodule Thunderflow.MnesiaProducer do
       case table do
         Thunderflow.CrossDomainEvents ->
           %{
-            from_domain: Map.get(incoming_data, :from_domain) || Map.get(incoming_data, "from_domain"),
+            from_domain:
+              Map.get(incoming_data, :from_domain) || Map.get(incoming_data, "from_domain"),
             to_domain: Map.get(incoming_data, :to_domain) || Map.get(incoming_data, "to_domain")
           }
 
@@ -405,7 +428,8 @@ defmodule Thunderflow.MnesiaProducer do
             latency_requirement: Map.get(incoming_data, :latency_requirement) || :normal
           }
 
-        _ -> %{}
+        _ ->
+          %{}
       end
 
     full_values = Map.merge(base_values, extended_values)
@@ -419,11 +443,11 @@ defmodule Thunderflow.MnesiaProducer do
     vars = for i <- 1..attr_len, do: String.to_atom("$#{i}")
     status_var = Enum.at(vars, status_index)
     pattern = List.to_tuple([table | vars])
-    spec = [{pattern, [{:==, status_var, status}], [:'$_']}]
+    spec = [{pattern, [{:==, status_var, status}], [:"$_"]}]
 
     case :mnesia.select(table, spec, limit, :read) do
       {records, _cont} when is_list(records) -> records
-      :'$end_of_table' -> []
+      :"$end_of_table" -> []
       other when is_list(other) -> other
       _ -> []
     end
@@ -434,6 +458,7 @@ defmodule Thunderflow.MnesiaProducer do
     status_var = Enum.at(vars, status_index)
     pattern = List.to_tuple([table | vars])
     spec = [{pattern, [{:==, status_var, status}], [true]}]
+
     case :mnesia.select(table, spec) do
       list when is_list(list) -> length(list)
       _ -> 0
@@ -447,13 +472,14 @@ defmodule Thunderflow.MnesiaProducer do
       vars = for i <- 1..length(attrs), do: String.to_atom("$#{i}")
       status_var = Enum.at(vars, status_index)
       pattern = List.to_tuple([table | vars])
-      spec = [{pattern, [{:==, status_var, :processing}], [:'$_']}]
+      spec = [{pattern, [{:==, status_var, :processing}], [:"$_"]}]
 
       case :mnesia.select(table, spec) do
         list when is_list(list) ->
           Enum.each(list, fn record ->
             values = Tuple.to_list(record) |> tl()
             attr_map = Enum.zip(attrs, values) |> Map.new()
+
             updated_attr_vals =
               attrs
               |> Enum.map(fn attr ->
@@ -467,7 +493,8 @@ defmodule Thunderflow.MnesiaProducer do
             :mnesia.write(List.to_tuple([table | updated_attr_vals]))
           end)
 
-        _ -> :ok
+        _ ->
+          :ok
       end
     end)
   end

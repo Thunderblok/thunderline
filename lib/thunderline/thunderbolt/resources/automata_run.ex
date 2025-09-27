@@ -28,7 +28,13 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
       run fn _input, %{arguments: args} ->
         run_id = Thunderline.UUID.v7()
         _ = RunnerSupervisor.start_run(run_id, size: args.size, tick_ms: args.tick_ms)
-        emit_event("system.ca.run.started", %{run_id: run_id, size: args.size, tick_ms: args.tick_ms})
+
+        emit_event("system.ca.run.started", %{
+          run_id: run_id,
+          size: args.size,
+          tick_ms: args.tick_ms
+        })
+
         {:ok, %{run_id: run_id}}
       end
     end
@@ -64,12 +70,6 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :run_id, :string, public?: true
-    attribute :snapshot_id, :string, public?: true
-  end
-
   policies do
     policy action(:*) do
       authorize_if expr(actor(:role) in [:owner, :steward, :system])
@@ -77,14 +77,24 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
     end
   end
 
+  attributes do
+    uuid_primary_key :id
+    attribute :run_id, :string, public?: true
+    attribute :snapshot_id, :string, public?: true
+  end
+
   defp emit_event(name, payload) do
     with {:ok, ev} <- Thunderline.Event.new(name: name, source: :bolt, payload: payload) do
-      _ = Task.start(fn ->
-        case Thunderline.EventBus.publish_event(ev) do
-          {:ok, _} -> :ok
-          {:error, reason} -> Logger.warning("[AutomataRun] publish failed: #{inspect(reason)} name=#{name}")
-        end
-      end)
+      _ =
+        Task.start(fn ->
+          case Thunderline.EventBus.publish_event(ev) do
+            {:ok, _} ->
+              :ok
+
+            {:error, reason} ->
+              Logger.warning("[AutomataRun] publish failed: #{inspect(reason)} name=#{name}")
+          end
+        end)
     end
   end
 end

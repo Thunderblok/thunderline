@@ -37,6 +37,7 @@ defmodule Mix.Tasks.Thunderline.Sweep do
 
   defp scan_resources do
     pattern = Path.join([File.cwd!(), "lib", "**", "*.ex"])
+
     for file <- Path.wildcard(pattern, match_dot: true),
         {:ok, bin} = File.read(file),
         String.contains?(bin, "use Ash.Resource"),
@@ -71,6 +72,7 @@ defmodule Mix.Tasks.Thunderline.Sweep do
 
   defp other_opt_modules do
     pattern = Path.join([File.cwd!(), "lib", "thunderline", "thunderbolt", "**", "*.ex"])
+
     Path.wildcard(pattern)
     |> Enum.filter(fn path ->
       name = Path.basename(path)
@@ -85,6 +87,7 @@ defmodule Mix.Tasks.Thunderline.Sweep do
       Mix.shell().info("No duplicate Ash resources found by basename.")
     else
       Mix.shell().info("Duplicate Ash resources detected:")
+
       Enum.each(dupes, fn %{basename: base, files: files} ->
         Mix.shell().info("  - #{base}:")
         Enum.each(files, &Mix.shell().info("      * #{&1}"))

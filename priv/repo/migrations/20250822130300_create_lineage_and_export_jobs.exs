@@ -10,6 +10,7 @@ defmodule Thunderline.Repo.Migrations.CreateLineageAndExportJobs do
       add :day_bucket, :date, null: false, default: fragment("CURRENT_DATE")
       timestamps(type: :utc_datetime)
     end
+
     create index(:lineage_edges, [:from_id])
     create index(:lineage_edges, [:to_id])
     create index(:lineage_edges, [:day_bucket])
@@ -24,6 +25,7 @@ defmodule Thunderline.Repo.Migrations.CreateLineageAndExportJobs do
       add :completed_at, :utc_datetime
       timestamps(type: :utc_datetime)
     end
+
     create index(:export_jobs, [:tenant_id, :status])
   end
 end

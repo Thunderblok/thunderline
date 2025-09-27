@@ -13,7 +13,14 @@ defmodule Thunderline.Thunderflow.Telemetry.LegacyBlackboardWatch do
       Process.flag(:trap_exit, true)
       ensure_table()
       handler_id = {:legacy_blackboard_watch, self()}
-      :telemetry.attach(handler_id, [:thunderline, :blackboard, :legacy_call], &__MODULE__.handle_event/4, %{})
+
+      :telemetry.attach(
+        handler_id,
+        [:thunderline, :blackboard, :legacy_call],
+        &__MODULE__.handle_event/4,
+        %{}
+      )
+
       # Keep process alive
       receive do
         :shutdown -> :ok
@@ -40,6 +47,7 @@ defmodule Thunderline.Thunderflow.Telemetry.LegacyBlackboardWatch do
 
   def count do
     ensure_table()
+
     case :ets.lookup(@table, :count) do
       [{:count, c}] -> c
       _ -> 0
@@ -47,13 +55,19 @@ defmodule Thunderline.Thunderflow.Telemetry.LegacyBlackboardWatch do
   end
 
   def reset do
-    ensure_table(); :ets.insert(@table, {:count, 0}); :ok
+    ensure_table()
+    :ets.insert(@table, {:count, 0})
+    :ok
   end
 
   defp ensure_table do
     case :ets.whereis(@table) do
-      :undefined -> :ets.new(@table, [:named_table, :public, read_concurrency: true]); :ok
-      _ -> :ok
+      :undefined ->
+        :ets.new(@table, [:named_table, :public, read_concurrency: true])
+        :ok
+
+      _ ->
+        :ok
     end
   end
 end

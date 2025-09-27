@@ -23,9 +23,10 @@ defmodule Mix.Tasks.Thunderline.Gc do
   def run(args) do
     Mix.Task.run("app.start")
 
-    {opts, _rest, _invalid} = OptionParser.parse(args,
-      strict: [category: :string, age: :string, force: :boolean]
-    )
+    {opts, _rest, _invalid} =
+      OptionParser.parse(args,
+        strict: [category: :string, age: :string, force: :boolean]
+      )
 
     category =
       case Keyword.get(opts, :category, "all") do
@@ -41,7 +42,10 @@ defmodule Mix.Tasks.Thunderline.Gc do
     candidates = Thunderline.Maintenance.Cleanup.list_candidates(category, cutoff)
 
     total_bytes = candidates |> Enum.map(fn {_, s, _} -> s end) |> Enum.sum()
-    Mix.shell().info("Found #{length(candidates)} candidates (#{format_bytes(total_bytes)}) older than #{age}")
+
+    Mix.shell().info(
+      "Found #{length(candidates)} candidates (#{format_bytes(total_bytes)}) older than #{age}"
+    )
 
     Enum.each(candidates, fn {path, size, mtime} ->
       Mix.shell().info("  - #{path} (#{format_bytes(size)}; mtime=#{DateTime.to_iso8601(mtime)})")
@@ -61,7 +65,13 @@ defmodule Mix.Tasks.Thunderline.Gc do
   end
 
   defp format_bytes(n) when n < 1024, do: "#{n} B"
-  defp format_bytes(n) when n < 1024 * 1024, do: :io_lib.format("~.1f KB", [n / 1024]) |> IO.iodata_to_binary()
-  defp format_bytes(n) when n < 1024 * 1024 * 1024, do: :io_lib.format("~.1f MB", [n / (1024 * 1024)]) |> IO.iodata_to_binary()
-  defp format_bytes(n), do: :io_lib.format("~.1f GB", [n / (1024 * 1024 * 1024)]) |> IO.iodata_to_binary()
+
+  defp format_bytes(n) when n < 1024 * 1024,
+    do: :io_lib.format("~.1f KB", [n / 1024]) |> IO.iodata_to_binary()
+
+  defp format_bytes(n) when n < 1024 * 1024 * 1024,
+    do: :io_lib.format("~.1f MB", [n / (1024 * 1024)]) |> IO.iodata_to_binary()
+
+  defp format_bytes(n),
+    do: :io_lib.format("~.1f GB", [n / (1024 * 1024 * 1024)]) |> IO.iodata_to_binary()
 end

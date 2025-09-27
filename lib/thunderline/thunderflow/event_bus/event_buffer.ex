@@ -19,6 +19,7 @@ defmodule Thunderline.EventBus.EventBuffer do
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
   def put(raw_event), do: GenServer.cast(__MODULE__, {:put, raw_event})
+
   def snapshot(limit \\ 100) do
     case :ets.lookup(@table, :events) do
       [{:events, list}] -> Enum.take(list, limit)
@@ -63,19 +64,28 @@ defmodule Thunderline.EventBus.EventBuffer do
   # Normalization pipeline
   defp normalize(%{__struct__: _} = struct), do: struct |> Map.from_struct() |> normalize()
   defp normalize(%{type: :status_update} = m), do: base(m, :domain_event)
+
   defp normalize({:domain_event, domain, payload}) when is_map(payload) do
     payload
     |> Map.put(:domain, domain)
     |> base(:domain_event)
   end
-  defp normalize({:agent_event, payload}) when is_map(payload), do: base(Map.put(payload, :domain, :thunderbit), :agent_event)
-  defp normalize({:chunk_event, payload}) when is_map(payload), do: base(Map.put(payload, :domain, :thunderbolt), :chunk_event)
-  defp normalize({:ash_telemetry, data}) when is_map(data), do: base(Map.put(data, :domain, data.domain || :ash_core), :telemetry)
+
+  defp normalize({:agent_event, payload}) when is_map(payload),
+    do: base(Map.put(payload, :domain, :thunderbit), :agent_event)
+
+  defp normalize({:chunk_event, payload}) when is_map(payload),
+    do: base(Map.put(payload, :domain, :thunderbolt), :chunk_event)
+
+  defp normalize({:ash_telemetry, data}) when is_map(data),
+    do: base(Map.put(data, :domain, data.domain || :ash_core), :telemetry)
+
   defp normalize(map) when is_map(map), do: base(map, Map.get(map, :kind, :generic))
   defp normalize(other), do: base(%{message: inspect(other)}, :unknown)
 
   defp base(map, kind) do
     ts = map[:timestamp] || System.system_time(:microsecond)
+
     %{
       id: System.unique_integer([:positive, :monotonic]),
       kind: kind,

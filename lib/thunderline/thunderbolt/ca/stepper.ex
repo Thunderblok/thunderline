@@ -17,6 +17,7 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   def next(%{size: size} = grid, _ruleset) do
     # Produce a small random sample of changed cells to keep payload tight.
     changes = Enum.random(5..18)
+
     deltas =
       for _ <- 1..changes do
         row = :rand.uniform(size) - 1

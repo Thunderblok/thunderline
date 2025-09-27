@@ -19,36 +19,6 @@ defmodule Thunderline.Thunderlink.Domain do
 
   use Ash.Domain, extensions: [AshOban.Domain, AshGraphql.Domain, AshTypescript.Rpc]
 
-  resources do
-    # Support → ThunderLink (social/community features)
-    resource Thunderline.Thunderlink.Resources.Ticket
-
-    # ThunderCom → ThunderLink (communication)
-    resource Thunderline.Thunderlink.Resources.Channel
-    resource Thunderline.Thunderlink.Resources.Community
-    resource Thunderline.Thunderlink.Resources.FederationSocket
-    resource Thunderline.Thunderlink.Resources.Message
-    resource Thunderline.Thunderlink.Resources.Role
-
-  # Voice/WebRTC (migrated from Thundercom – Phase A)
-  resource Thunderline.Thunderlink.Voice.Room
-  resource Thunderline.Thunderlink.Voice.Participant
-  resource Thunderline.Thunderlink.Voice.Device
-
-    # Commented out until WebRTC implementation is available
-    # resource Thunderlink.Resources.PeerConnection
-    # resource Thunderlink.Resources.MediaStream
-    # resource Thunderlink.Resources.SignalingChannel
-    # resource Thunderlink.Resources.CallSession
-    # resource Thunderlink.Resources.MediaDevice
-    # resource Thunderlink.Resources.StreamRecording
-  end
-
-  authorization do
-    # Enable authorization by default
-    authorize :by_default
-  end
-
   graphql do
     queries do
       # Create a field called `get_ticket` that uses the `read` action to fetch a single ticket
@@ -78,9 +48,39 @@ defmodule Thunderline.Thunderlink.Domain do
   typescript_rpc do
     resource Thunderline.Thunderlink.Resources.Ticket do
       # Read a list of tickets (no pagination/sort beyond what's supported by the action)
-      rpc_action :list_tickets, :read
+      rpc_action(:list_tickets, :read)
       # Open a new ticket
-      rpc_action :create_ticket, :open
+      rpc_action(:create_ticket, :open)
     end
+  end
+
+  resources do
+    # Support → ThunderLink (social/community features)
+    resource Thunderline.Thunderlink.Resources.Ticket
+
+    # ThunderCom → ThunderLink (communication)
+    resource Thunderline.Thunderlink.Resources.Channel
+    resource Thunderline.Thunderlink.Resources.Community
+    resource Thunderline.Thunderlink.Resources.FederationSocket
+    resource Thunderline.Thunderlink.Resources.Message
+    resource Thunderline.Thunderlink.Resources.Role
+
+    # Voice/WebRTC (migrated from Thundercom – Phase A)
+    resource Thunderline.Thunderlink.Voice.Room
+    resource Thunderline.Thunderlink.Voice.Participant
+    resource Thunderline.Thunderlink.Voice.Device
+
+    # Commented out until WebRTC implementation is available
+    # resource Thunderlink.Resources.PeerConnection
+    # resource Thunderlink.Resources.MediaStream
+    # resource Thunderlink.Resources.SignalingChannel
+    # resource Thunderlink.Resources.CallSession
+    # resource Thunderlink.Resources.MediaDevice
+    # resource Thunderlink.Resources.StreamRecording
+  end
+
+  authorization do
+    # Enable authorization by default
+    authorize :by_default
   end
 end

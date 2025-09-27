@@ -13,6 +13,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
   postgres do
     table "probe_runs"
     repo Thunderline.Repo
+
     custom_indexes do
       index [:status]
       index [:provider]
@@ -25,6 +26,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
 
     create :create do
       primary? true
+
       accept [
         :provider,
         :model,
@@ -38,18 +40,22 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
         :attractor_tau,
         :attractor_min_points
       ]
+
       change set_attribute(:status, :pending)
+
       change after_action(fn changeset, result, _ctx ->
-        # Enqueue processor job unless running in test (sandbox ownership issues with async Oban)
-        if Mix.env() != :test do
-          %{id: id} = result
-          %{run_id: id}
-          |> Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor.new()
-          |> Oban.insert()
-        end
-        {:ok, result, changeset}
-      end)
-  end
+               # Enqueue processor job unless running in test (sandbox ownership issues with async Oban)
+               if Mix.env() != :test do
+                 %{id: id} = result
+
+                 %{run_id: id}
+                 |> Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor.new()
+                 |> Oban.insert()
+               end
+
+               {:ok, result, changeset}
+             end)
+    end
 
     update :update_status do
       accept [:status, :started_at, :completed_at, :error_message]

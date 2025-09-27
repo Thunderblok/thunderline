@@ -11,7 +11,6 @@ defmodule Thunderline.Thundergate.Resources.RealmIdentity do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource]
 
-
   postgres do
     table "thundercom_realm_identities"
     repo Thunderline.Repo

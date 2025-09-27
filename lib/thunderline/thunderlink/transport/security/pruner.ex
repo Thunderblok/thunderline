@@ -22,6 +22,7 @@ defmodule Thunderline.Thunderlink.Transport.Security.Pruner do
     rescue
       e -> Logger.error("[Thunderlink][Security.Pruner] prune error: #{inspect(e)}")
     end
+
     schedule()
     {:noreply, state}
   end

@@ -20,12 +20,23 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
          {:ok, artifact} <- build_artifact(run),
          {:ok, _version} <- record_version(run, artifact),
          {:ok, _} <- mark_completed(run, artifact) do
-      :telemetry.execute(@tele_base ++ [:completed], %{artifact_bytes: artifact.bytes}, Map.merge(meta, %{artifact_id: artifact.id}))
+      :telemetry.execute(
+        @tele_base ++ [:completed],
+        %{artifact_bytes: artifact.bytes},
+        Map.merge(meta, %{artifact_id: artifact.id})
+      )
+
       :ok
     else
       {:error, reason} ->
         _ = mark_failed(run_id, reason)
-        :telemetry.execute(@tele_base ++ [:failed], %{}, Map.merge(meta, %{error: format_error(reason)}))
+
+        :telemetry.execute(
+          @tele_base ++ [:failed],
+          %{},
+          Map.merge(meta, %{error: format_error(reason)})
+        )
+
         {:error, format_error(reason)}
     end
   rescue
@@ -89,8 +100,10 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
     |> Domain.create()
   end
 
-  defp record_version(%TrainingRun{spec_id: spec_id, dataset_id: dataset_id}, %ModelArtifact{id: artifact_id}) do
-    metrics = %{accuracy: 0.75 + (:rand.uniform() * 0.2) |> Float.round(4)}
+  defp record_version(%TrainingRun{spec_id: spec_id, dataset_id: dataset_id}, %ModelArtifact{
+         id: artifact_id
+       }) do
+    metrics = %{accuracy: (0.75 + :rand.uniform() * 0.2) |> Float.round(4)}
 
     %{
       spec_id: spec_id,

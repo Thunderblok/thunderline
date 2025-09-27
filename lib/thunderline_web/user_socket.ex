@@ -21,12 +21,16 @@ defmodule ThunderlineWeb.UserSocket do
   @impl true
   def connect(params, socket, connect_info) do
     with {:session, %{} = session} <- {:session, session_from_connect(params, connect_info)},
-         {:actor, %{} = actor} <- {:actor, Actor.from_session(session, allow_demo?: true, default: :generate)} do
+         {:actor, %{} = actor} <-
+           {:actor, Actor.from_session(session, allow_demo?: true, default: :generate)} do
       {:ok,
        socket
        |> assign(:session, session)
        |> assign(:actor, actor)
-       |> assign(:current_user, Map.get(session, "current_user") || Map.get(session, :current_user))}
+       |> assign(
+         :current_user,
+         Map.get(session, "current_user") || Map.get(session, :current_user)
+       )}
     else
       {:session, _} -> :error
       {:actor, _} -> :error
@@ -40,10 +44,10 @@ defmodule ThunderlineWeb.UserSocket do
   defp session_from_connect(params, connect_info) do
     token =
       params["token"] ||
-        (connect_info
-         |> Map.get(:x_headers, [])
-         |> Enum.find_value(fn {k, v} -> if String.downcase(k) == "authorization", do: v end)
-         |> maybe_strip_bearer())
+        connect_info
+        |> Map.get(:x_headers, [])
+        |> Enum.find_value(fn {k, v} -> if String.downcase(k) == "authorization", do: v end)
+        |> maybe_strip_bearer()
 
     case {token, Map.get(connect_info, :session)} do
       {token, _} when is_binary(token) ->
@@ -52,8 +56,11 @@ defmodule ThunderlineWeb.UserSocket do
           _ -> Map.get(connect_info, :session, %{})
         end
 
-      {_, session} when is_map(session) -> session
-      _ -> %{}
+      {_, session} when is_map(session) ->
+        session
+
+      _ ->
+        %{}
     end
   end
 

@@ -50,8 +50,8 @@ defmodule Thunderline.DashboardMetrics do
 
   @doc "Get real-time dashboard data"
   def get_dashboard_data do
-  data = GenServer.call(__MODULE__, :get_dashboard_data)
-  normalize_domain_keys(data)
+    data = GenServer.call(__MODULE__, :get_dashboard_data)
+    normalize_domain_keys(data)
   end
 
   @doc "Subscribe to real-time metrics updates"
@@ -75,7 +75,10 @@ defmodule Thunderline.DashboardMetrics do
 
     status_map
     |> Map.put(:order, @pipeline_steps)
-    |> Map.put(:notes, current_pipeline_note() || "HC directive staged — awaiting live pipeline telemetry")
+    |> Map.put(
+      :notes,
+      current_pipeline_note() || "HC directive staged — awaiting live pipeline telemetry"
+    )
     |> Map.put(:trial_metrics, current_trial_metrics())
     |> Map.put(:parzen_metrics, current_parzen_metrics())
   end
@@ -235,6 +238,7 @@ defmodule Thunderline.DashboardMetrics do
       {val, rest} -> Map.put(rest, new, val)
     end
   end
+
   defp rename_key(other, _o, _n), do: other
 
   @doc "Get ThunderCom metrics"
@@ -285,9 +289,10 @@ defmodule Thunderline.DashboardMetrics do
   defp get_oban_stats do
     # Get current Oban queue statistics
     try do
-  name = oban_instance_name()
-  pid = Oban.whereis(name)
-  if pid do
+      name = oban_instance_name()
+      pid = Oban.whereis(name)
+
+      if pid do
         # Try to get queue stats using a more robust approach
         default_stats = get_queue_stats(:default)
         cross_domain_stats = get_queue_stats(:cross_domain)
@@ -302,7 +307,10 @@ defmodule Thunderline.DashboardMetrics do
           avg_completion_time: "OFFLINE"
         }
       else
-        log_once(:oban_not_running, fn -> Logger.info("Oban not detected (name=#{inspect(name)}) yet; using default stats") end)
+        log_once(:oban_not_running, fn ->
+          Logger.info("Oban not detected (name=#{inspect(name)}) yet; using default stats")
+        end)
+
         get_default_oban_stats()
       end
     rescue
@@ -320,18 +328,21 @@ defmodule Thunderline.DashboardMetrics do
   # Simple once-only logger keyed by atom using persistent_term
   defp log_once(key, fun) do
     marker = {:dashboard_metrics_once, key}
+
     case :persistent_term.get(marker, :none) do
       :none ->
         fun.()
         :persistent_term.put(marker, :logged)
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 
   defp get_queue_stats(queue_name) do
-  # Never call Oban.drain_queue in metrics collection (it mutates/empties queues).
-  # Prefer Oban.peek/2 style inspection if available, else fall back to DB counts (stub 0 for now).
-  inspect_queue_directly(queue_name)
+    # Never call Oban.drain_queue in metrics collection (it mutates/empties queues).
+    # Prefer Oban.peek/2 style inspection if available, else fall back to DB counts (stub 0 for now).
+    inspect_queue_directly(queue_name)
   end
 
   defp inspect_queue_directly(queue_name) do
@@ -1087,6 +1098,7 @@ defmodule Thunderline.DashboardMetrics do
       _ -> 0
     end
   end
+
   defp get_telemetry_counter(_), do: 0
 
   defp telemetry_counter_key(event_path) do
@@ -1109,7 +1121,14 @@ defmodule Thunderline.DashboardMetrics do
   defp ensure_table(name) do
     case :ets.info(name) do
       :undefined ->
-        :ets.new(name, [:named_table, :public, :set, {:read_concurrency, true}, {:write_concurrency, true}])
+        :ets.new(name, [
+          :named_table,
+          :public,
+          :set,
+          {:read_concurrency, true},
+          {:write_concurrency, true}
+        ])
+
       _ ->
         :ok
     end
@@ -1156,12 +1175,22 @@ defmodule Thunderline.DashboardMetrics do
     ArgumentError -> :ok
   end
 
-  def handle_pipeline_telemetry([:thunderline, :pipeline, :dlq] = event, measurements, metadata, _config) do
+  def handle_pipeline_telemetry(
+        [:thunderline, :pipeline, :dlq] = event,
+        measurements,
+        metadata,
+        _config
+      ) do
     increment_telemetry_counter(event, measurement_count(measurements))
     update_pipeline_from_stage(:domain_events, :dlq, metadata)
   end
 
-  def handle_pipeline_telemetry([:thunderline, :pipeline, pipeline, stage] = event, measurements, metadata, _config) do
+  def handle_pipeline_telemetry(
+        [:thunderline, :pipeline, pipeline, stage] = event,
+        measurements,
+        metadata,
+        _config
+      ) do
     increment_telemetry_counter(event, measurement_count(measurements))
     update_pipeline_from_stage(pipeline, stage, metadata)
   end
@@ -1170,40 +1199,75 @@ defmodule Thunderline.DashboardMetrics do
     increment_telemetry_counter(event, measurement_count(measurements))
   end
 
-  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :trial, status], measurements, metadata, _config)
+  def handle_trial_telemetry(
+        [:thunderline, :domain_processor, :ml, :trial, status],
+        measurements,
+        metadata,
+        _config
+      )
       when status in [:allowed, :enqueued, :denied, :completed] do
-    increment_telemetry_counter([:thunderline, :domain_processor, :ml, :trial, status], measurement_count(measurements))
+    increment_telemetry_counter(
+      [:thunderline, :domain_processor, :ml, :trial, status],
+      measurement_count(measurements)
+    )
+
     update_trial_metric(status, metadata)
 
     case status do
-      :allowed -> maybe_set_status(:propose, :online, metadata)
-      :enqueued -> maybe_set_status(:train, :online, metadata)
-      :completed -> maybe_set_status(:train, :online, metadata)
+      :allowed ->
+        maybe_set_status(:propose, :online, metadata)
+
+      :enqueued ->
+        maybe_set_status(:train, :online, metadata)
+
+      :completed ->
+        maybe_set_status(:train, :online, metadata)
+
       :denied ->
         maybe_set_status(:propose, :degraded, metadata)
         append_pipeline_note("trial denied #{format_trial_identifier(metadata)}")
     end
   end
 
-  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :run, :metrics] = event, measurements, metadata, _config) do
+  def handle_trial_telemetry(
+        [:thunderline, :domain_processor, :ml, :run, :metrics] = event,
+        measurements,
+        metadata,
+        _config
+      ) do
     increment_telemetry_counter(event, measurement_count(measurements))
     update_parzen_metrics(measurements, metadata)
     maybe_set_status(:curate, :online, metadata)
   end
 
-  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :run, :completed] = event, measurements, metadata, _config) do
+  def handle_trial_telemetry(
+        [:thunderline, :domain_processor, :ml, :run, :completed] = event,
+        measurements,
+        metadata,
+        _config
+      ) do
     increment_telemetry_counter(event, measurement_count(measurements))
     update_trial_metric(:completed, metadata)
     maybe_set_status(:train, :online, metadata)
   end
 
-  def handle_trial_telemetry([:thunderline, :domain_processor, :ml, :artifact, :created] = event, measurements, metadata, _config) do
+  def handle_trial_telemetry(
+        [:thunderline, :domain_processor, :ml, :artifact, :created] = event,
+        measurements,
+        metadata,
+        _config
+      ) do
     increment_telemetry_counter(event, measurement_count(measurements))
     update_parzen_metrics(measurements, metadata)
     maybe_set_status(:serve, :online, metadata)
   end
 
-  def handle_trial_telemetry([:thunderline, :domain_processor, :error] = event, measurements, metadata, _config) do
+  def handle_trial_telemetry(
+        [:thunderline, :domain_processor, :error] = event,
+        measurements,
+        metadata,
+        _config
+      ) do
     increment_telemetry_counter(event, measurement_count(measurements))
     maybe_set_status(:train, :degraded, metadata)
     append_pipeline_note("domain processor error #{inspect(meta_get(metadata, :error))}")
@@ -1235,6 +1299,7 @@ defmodule Thunderline.DashboardMetrics do
       true -> 1
     end
   end
+
   defp measurement_count(_), do: 1
 
   defp update_pipeline_from_stage(pipeline, :start, metadata) do
@@ -1263,6 +1328,7 @@ defmodule Thunderline.DashboardMetrics do
   defp pipeline_to_step(_), do: nil
 
   defp maybe_set_status(nil, _status, _metadata), do: :ok
+
   defp maybe_set_status(step, status, metadata) do
     set_pipeline_status(step, status, metadata)
   end
@@ -1316,6 +1382,7 @@ defmodule Thunderline.DashboardMetrics do
   rescue
     _ -> message
   end
+
   defp format_note(%{message: message}) when is_binary(message), do: message
   defp format_note(_), do: nil
 
@@ -1410,6 +1477,7 @@ defmodule Thunderline.DashboardMetrics do
       values -> Enum.max(values)
     end
   end
+
   defp best_metric_from(_), do: nil
 
   defp sanitize_metadata(metadata) when is_map(metadata) do
@@ -1424,6 +1492,7 @@ defmodule Thunderline.DashboardMetrics do
       Map.put(acc, key, v)
     end)
   end
+
   defp sanitize_metadata(_), do: %{}
 
   defp safe_existing_atom(value) when is_binary(value) do
@@ -1433,6 +1502,7 @@ defmodule Thunderline.DashboardMetrics do
       ArgumentError -> value
     end
   end
+
   defp safe_existing_atom(value), do: value
 
   defp meta_get(metadata, key) when is_map(metadata) and is_atom(key) do
@@ -1442,6 +1512,7 @@ defmodule Thunderline.DashboardMetrics do
       true -> nil
     end
   end
+
   defp meta_get(_metadata, _key), do: nil
 
   defp format_reason(metadata) do
@@ -1449,6 +1520,7 @@ defmodule Thunderline.DashboardMetrics do
   end
 
   defp format_pipeline_step(nil), do: "pipeline"
+
   defp format_pipeline_step(step) when is_atom(step) do
     step |> Atom.to_string() |> String.upcase()
   end
@@ -1509,12 +1581,17 @@ defmodule Thunderline.DashboardMetrics do
         []
     end
   end
+
   # Agent metrics helper functions (consolidated here)
   defp calculate_average_performance(agents) do
     if agents == [] do
       0
     else
-      total = Enum.reduce(agents, 0, fn a, acc -> acc + max(0, 100 - DateTime.diff(DateTime.utc_now(), a.updated_at, :second)) end)
+      total =
+        Enum.reduce(agents, 0, fn a, acc ->
+          acc + max(0, 100 - DateTime.diff(DateTime.utc_now(), a.updated_at, :second))
+        end)
+
       total / length(agents)
     end
   end
@@ -1524,11 +1601,19 @@ defmodule Thunderline.DashboardMetrics do
     |> Enum.filter(&(&1.status == :active))
     |> Enum.sort_by(fn a -> DateTime.diff(DateTime.utc_now(), a.updated_at, :second) end)
     |> Enum.take(5)
-    |> Enum.map(&%{id: &1.id, performance_score: max(0, 100 - DateTime.diff(DateTime.utc_now(), &1.updated_at, :second)), last_activity: &1.updated_at})
+    |> Enum.map(
+      &%{
+        id: &1.id,
+        performance_score:
+          max(0, 100 - DateTime.diff(DateTime.utc_now(), &1.updated_at, :second)),
+        last_activity: &1.updated_at
+      }
+    )
   end
 
   defp get_recent_spawns(agents) do
     cutoff = DateTime.add(DateTime.utc_now(), -3600, :second)
+
     agents
     |> Enum.filter(&(DateTime.compare(&1.created_at, cutoff) == :gt))
     |> Enum.sort_by(& &1.created_at, {:desc, DateTime})
@@ -1549,6 +1634,7 @@ defmodule Thunderline.DashboardMetrics do
       ml_pipeline: state.ml_pipeline,
       timestamp: state.last_update
     }
+
     PubSub.broadcast(Thunderline.PubSub, @pubsub_topic, {:metrics_update, metrics_data})
   end
 

@@ -29,19 +29,25 @@ defmodule Thunderline.Thunderlink.Transport.Telemetry.Aggregator do
   def handle_cast(:reset, _state), do: {:noreply, %{sig_fail: 0, replay_drop: 0}}
 
   @impl true
-  def handle_info({:telemetry_event, :security_sig_fail, _m, _meta}, s), do: {:noreply, %{s | sig_fail: s.sig_fail + 1}}
-  def handle_info({:telemetry_event, :security_replay_drop, _m, _meta}, s), do: {:noreply, %{s | replay_drop: s.replay_drop + 1}}
+  def handle_info({:telemetry_event, :security_sig_fail, _m, _meta}, s),
+    do: {:noreply, %{s | sig_fail: s.sig_fail + 1}}
+
+  def handle_info({:telemetry_event, :security_replay_drop, _m, _meta}, s),
+    do: {:noreply, %{s | replay_drop: s.replay_drop + 1}}
+
   def handle_info(_, s), do: {:noreply, s}
 
   defp attach do
     Enum.each(@events, fn ev ->
       id = {__MODULE__, ev}
+
       try do
         :telemetry.attach(id, ev, &__MODULE__.dispatch/4, %{})
       rescue
         _ -> :ok
       end
     end)
+
     :ok
   end
 

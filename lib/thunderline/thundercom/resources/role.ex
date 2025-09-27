@@ -22,222 +22,110 @@ defmodule Thunderline.Thundercom.Resources.Role do
   """
 
   use Ash.Resource,
-  domain: Thunderline.Thundercom.Domain,
+    domain: Thunderline.Thundercom.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban]
+
   import Ash.Resource.Change.Builtins
 
+  # ===== POSTGRES CONFIGURATION =====
+  postgres do
+    table "thunderblock_roles"
+    repo Thunderline.Repo
 
-  # ===== ATTRIBUTES =====
-  attributes do
-    uuid_primary_key :id
-
-    attribute :role_name, :string do
-      allow_nil? false
-      description "Human-readable role name"
-      constraints min_length: 1, max_length: 100
+    references do
+      reference :community, on_delete: :delete, on_update: :update
+      reference :system_events, on_delete: :delete, on_update: :update
     end
 
-    attribute :role_slug, :string do
-      allow_nil? false
-      description "URL-safe role identifier"
-      constraints min_length: 1, max_length: 50, match: ~r/^[a-z0-9\-_]+$/
+    custom_indexes do
+      index [:role_slug, :community_id], unique: true, name: "roles_slug_community_idx"
+      index [:community_id, :position], name: "roles_community_position_idx"
+      index [:community_id, :role_type], name: "roles_community_type_idx"
+      index [:position, :role_type], name: "roles_hierarchy_idx"
+      index [:auto_assign, :community_id], name: "roles_auto_assign_idx"
+      index [:mentionable], name: "roles_mentionable_idx"
+      index "USING GIN (member_ids)", name: "roles_members_idx"
+      index "USING GIN (permissions)", name: "roles_permissions_idx"
+      index "USING GIN (channel_overrides)", name: "roles_overrides_idx"
+      index "USING GIN (role_flags)", name: "roles_flags_idx"
+      index "USING GIN (tags)", name: "roles_tags_idx"
     end
 
-    attribute :role_type, :atom do
-      allow_nil? false
-      description "Type of role functionality"
-      default :member
-      constraints one_of: [:owner, :admin, :moderator, :member, :guest, :bot, :system]
+    check_constraints do
+      check_constraint :valid_position, "position >= 0 AND position <= 1000"
+      check_constraint :valid_member_count, "member_count >= 0"
+      check_constraint :valid_color_format, "color IS NULL OR color ~ '^#[0-9A-Fa-f]{6}$'"
     end
-
-    attribute :position, :integer do
-      allow_nil? false
-      description "Role hierarchy position (higher = more authority)"
-      default 0
-      constraints min: 0, max: 1000
-    end
-
-    attribute :color, :string do
-      allow_nil? true
-      description "Role display color (hex code)"
-      constraints match: ~r/^#[0-9A-Fa-f]{6}$/
-    end
-
-    attribute :hoist, :boolean do
-      allow_nil? false
-      description "Display role separately in member list"
-      default false
-    end
-
-    attribute :mentionable, :boolean do
-      allow_nil? false
-      description "Allow role to be mentioned (@role)"
-      default true
-    end
-
-    attribute :permissions, :map do
-      allow_nil? false
-      description "Base role permissions"
-      default %{
-        # Community permissions
-        "view_community" => true,
-        "send_messages" => true,
-        "read_message_history" => true,
-        "use_voice_activity" => false,
-        "priority_speaker" => false,
-
-        # Channel management
-        "manage_channels" => false,
-        "manage_messages" => false,
-        "manage_roles" => false,
-
-        # Member management
-        "kick_members" => false,
-        "ban_members" => false,
-        "manage_members" => false,
-
-        # Community management
-        "manage_community" => false,
-        "view_audit_log" => false,
-        "administrator" => false,
-
-        # AI and PAC permissions
-        "use_ai_agents" => true,
-        "manage_ai_agents" => false,
-        "use_pac_home" => true,
-        "manage_pac_homes" => false,
-
-        # Federation permissions
-        "federation_messaging" => true,
-        "manage_federation" => false
-      }
-    end
-
-    attribute :channel_overrides, :map do
-      allow_nil? false
-      description "Channel-specific permission overrides"
-      default %{}
-      # Format: %{channel_id => %{permission => allow/deny/inherit}}
-    end
-
-    attribute :restrictions, :map do
-      allow_nil? false
-      description "Role restrictions and limitations"
-      default %{
-        "timeout_until" => nil,
-        "rate_limit_factor" => 1.0,
-        "max_message_length" => nil,
-        "allowed_channels" => [],
-        "denied_channels" => []
-      }
-    end
-
-    attribute :member_count, :integer do
-      allow_nil? false
-      description "Number of members with this role"
-      default 0
-      constraints min: 0
-    end
-
-    attribute :member_ids, {:array, :uuid} do
-      allow_nil? false
-      description "List of member IDs with this role"
-      default []
-    end
-
-    attribute :auto_assign, :boolean do
-      allow_nil? false
-      description "Automatically assign to new members"
-      default false
-    end
-
-    attribute :requires_approval, :boolean do
-      allow_nil? false
-      description "Role assignment requires approval"
-      default false
-    end
-
-    attribute :created_by, :uuid do
-      allow_nil? false
-      description "ID of user who created the role"
-    end
-
-    attribute :moderation_config, :map do
-      allow_nil? false
-      description "Moderation-specific configuration"
-      default %{
-        "can_timeout" => false,
-        "can_delete_messages" => false,
-        "can_manage_reactions" => false,
-        "can_manage_threads" => false,
-        "timeout_duration_max" => 3600, # seconds
-        "bulk_delete_limit" => 0
-      }
-    end
-
-    attribute :federation_config, :map do
-      allow_nil? false
-      description "Federation-specific role configuration"
-      default %{
-        "cross_realm_visibility" => false,
-        "external_role_sync" => false,
-        "federation_authority" => "none", # none, basic, elevated, sovereign
-        "trust_level" => "local"
-      }
-    end
-
-    attribute :role_flags, {:array, :atom} do
-      allow_nil? false
-      description "Special role flags and properties"
-      default []
-      # Possible flags: :system, :protected, :everyone, :verified, :premium, :beta_tester
-    end
-
-    attribute :expiry_config, :map do
-      allow_nil? false
-      description "Role expiration and renewal settings"
-      default %{
-        "expires" => false,
-        "duration_days" => nil,
-        "auto_renew" => false,
-        "renewal_conditions" => []
-      }
-    end
-
-    attribute :tags, {:array, :string} do
-      allow_nil? false
-      description "Role categorization tags"
-      default []
-    end
-
-    attribute :metadata, :map do
-      allow_nil? false
-      description "Additional role metadata"
-      default %{}
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
   end
 
-  # ===== RELATIONSHIPS =====
-  relationships do
-  belongs_to :community, Thunderline.Thundercom.Resources.Community do
-      attribute_writable? true
-      source_attribute :community_id
-      destination_attribute :id
-    end
+  # ===== JSON API CONFIGURATION =====
+  json_api do
+    type "role"
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
-      destination_attribute :target_resource_id
-      filter expr(target_resource_type == :role)
-    end
+    routes do
+      base("/roles")
+      get(:read)
+      index :read
+      post(:create)
+      patch(:update)
+      delete(:destroy)
 
-    # Note: In a full implementation, would have many-to-many with users
-    # many_to_many :users, Thunderbit.Resources.User do
-    #   through Thunderblock.Resources.UserRole
-    # end
+      # Role management endpoints
+      post(:assign_to_member, route: "/:id/assign")
+      post(:remove_from_member, route: "/:id/remove")
+      post(:update_permissions, route: "/:id/update_permissions")
+      post(:set_channel_override, route: "/:id/channel_override")
+      post(:timeout_role, route: "/:id/timeout")
+      post(:clear_timeout, route: "/:id/clear_timeout")
+
+      # Query endpoints
+      get :by_community, route: "/community/:community_id"
+      get :by_type, route: "/type/:role_type"
+      get :by_member, route: "/member/:user_id"
+      get :with_permission, route: "/permission/:permission"
+      get :mentionable_roles, route: "/mentionable"
+      get :auto_assign_roles, route: "/auto_assign"
+      get :moderation_roles, route: "/moderation"
+      get :federation_roles, route: "/federation"
+      get :expiring_roles, route: "/expiring/:days_ahead"
+
+      # Cleanup endpoints
+      delete(:cleanup_expired, route: "/cleanup_expired")
+    end
+  end
+
+  # ===== POLICIES =====
+  # policies do
+  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+  #     authorize_if always()
+  #   end
+  #
+  #   policy always() do
+  #     authorize_if always()
+  #   end
+  # end
+
+  # ===== CODE INTERFACE =====
+  code_interface do
+    define :create
+    define :update
+    define :assign_to_member, args: [:user_id, :assigned_by]
+    define :remove_from_member, args: [:user_id, :removed_by]
+    define :update_permissions, args: [:permissions, :updated_by]
+    define :set_channel_override, args: [:channel_id, :permission, :value]
+    define :timeout_role, args: [:timeout_until, :reason]
+    define :clear_timeout, args: []
+    define :by_community, args: [:community_id]
+    define :by_type, args: [:role_type]
+    define :by_member, args: [:user_id]
+    define :with_permission, args: [:permission]
+    define :mentionable_roles, action: :mentionable_roles
+    define :auto_assign_roles, action: :auto_assign_roles
+    define :moderation_roles, action: :moderation_roles
+    define :federation_roles, action: :federation_roles
+    define :expiring_roles, args: [:days_ahead]
+    define :cleanup_expired, action: :cleanup_expired
   end
 
   # ===== ACTIONS =====
@@ -246,12 +134,31 @@ defmodule Thunderline.Thundercom.Resources.Role do
 
     create :create do
       description "Create a new role in community"
-      accept [:role_name, :role_slug, :role_type, :position, :color, :hoist, :mentionable,
-              :permissions, :channel_overrides, :restrictions, :auto_assign, :requires_approval,
-              :created_by, :moderation_config, :federation_config, :role_flags, :expiry_config,
-              :tags, :metadata, :community_id]
 
-      change fn changeset, _context ->\
+      accept [
+        :role_name,
+        :role_slug,
+        :role_type,
+        :position,
+        :color,
+        :hoist,
+        :mentionable,
+        :permissions,
+        :channel_overrides,
+        :restrictions,
+        :auto_assign,
+        :requires_approval,
+        :created_by,
+        :moderation_config,
+        :federation_config,
+        :role_flags,
+        :expiry_config,
+        :tags,
+        :metadata,
+        :community_id
+      ]
+
+      change fn changeset, _context ->
         # Ensure role position doesn't conflict
         position = Ash.Changeset.get_attribute(changeset, :position) || 0
         community_id = Ash.Changeset.get_attribute(changeset, :community_id)
@@ -264,39 +171,55 @@ defmodule Thunderline.Thundercom.Resources.Role do
       end
 
       change after_action(fn _changeset, role, _context ->
-        # Create default channel overrides if needed
-        initialize_channel_overrides(role)
+               # Create default channel overrides if needed
+               initialize_channel_overrides(role)
 
-        # Set up auto-assignment if enabled
-        if role.auto_assign do
-          setup_auto_assignment(role)
-        end
+               # Set up auto-assignment if enabled
+               if role.auto_assign do
+                 setup_auto_assignment(role)
+               end
 
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "thunderblock:communities:#{role.community_id}",
-          {:role_created, %{
-            role_id: role.id,
-            role_name: role.role_name,
-            role_type: role.role_type,
-            position: role.position
-          }}
-        )
+               Phoenix.PubSub.broadcast(
+                 Thunderline.PubSub,
+                 "thunderblock:communities:#{role.community_id}",
+                 {:role_created,
+                  %{
+                    role_id: role.id,
+                    role_name: role.role_name,
+                    role_type: role.role_type,
+                    position: role.position
+                  }}
+               )
 
-        {:ok, role}
-      end)
+               {:ok, role}
+             end)
     end
 
     update :update do
       description "Update role configuration"
-      accept [:role_name, :role_type, :position, :color, :hoist, :mentionable, :permissions,
-              :channel_overrides, :restrictions, :moderation_config, :federation_config,
-              :role_flags, :expiry_config, :tags, :metadata]
+
+      accept [
+        :role_name,
+        :role_type,
+        :position,
+        :color,
+        :hoist,
+        :mentionable,
+        :permissions,
+        :channel_overrides,
+        :restrictions,
+        :moderation_config,
+        :federation_config,
+        :role_flags,
+        :expiry_config,
+        :tags,
+        :metadata
+      ]
     end
 
     action :assign_to_member, :struct do
       description "Assign role to community member"
-  constraints instance_of: Thunderline.Thundercom.Resources.Role
+      constraints instance_of: Thunderline.Thundercom.Resources.Role
 
       argument :user_id, :uuid do
         allow_nil? false
@@ -314,18 +237,20 @@ defmodule Thunderline.Thundercom.Resources.Role do
         current_members = role.member_ids || []
 
         # Add to members if not already present
-        updated_members = if user_id in current_members do
-          current_members
-        else
-          [user_id | current_members]
-        end
+        updated_members =
+          if user_id in current_members do
+            current_members
+          else
+            [user_id | current_members]
+          end
 
-        updated_role = role
-        |> Ash.Changeset.for_update(:update, %{
-          member_ids: updated_members,
-          member_count: length(updated_members)
-        })
-        |> Ash.update!()
+        updated_role =
+          role
+          |> Ash.Changeset.for_update(:update, %{
+            member_ids: updated_members,
+            member_count: length(updated_members)
+          })
+          |> Ash.update!()
 
         # Log role assignment
         create_role_assignment_event(updated_role, user_id, assigned_by, :assigned)
@@ -336,11 +261,12 @@ defmodule Thunderline.Thundercom.Resources.Role do
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
           "thunderblock:communities:#{updated_role.community_id}",
-          {:role_assigned, %{
-            role_id: updated_role.id,
-            user_id: user_id,
-            assigned_by: assigned_by
-          }}
+          {:role_assigned,
+           %{
+             role_id: updated_role.id,
+             user_id: user_id,
+             assigned_by: assigned_by
+           }}
         )
 
         {:ok, updated_role}
@@ -349,7 +275,7 @@ defmodule Thunderline.Thundercom.Resources.Role do
 
     action :remove_from_member, :struct do
       description "Remove role from community member"
-  constraints instance_of: Thunderline.Thundercom.Resources.Role
+      constraints instance_of: Thunderline.Thundercom.Resources.Role
 
       argument :user_id, :uuid do
         allow_nil? false
@@ -367,12 +293,13 @@ defmodule Thunderline.Thundercom.Resources.Role do
         current_members = role.member_ids || []
         updated_members = List.delete(current_members, user_id)
 
-        updated_role = role
-        |> Ash.Changeset.for_update(:update, %{
-          member_ids: updated_members,
-          member_count: length(updated_members)
-        })
-        |> Ash.update!()
+        updated_role =
+          role
+          |> Ash.Changeset.for_update(:update, %{
+            member_ids: updated_members,
+            member_count: length(updated_members)
+          })
+          |> Ash.update!()
 
         # Log role removal
         create_role_assignment_event(updated_role, user_id, removed_by, :removed)
@@ -383,11 +310,12 @@ defmodule Thunderline.Thundercom.Resources.Role do
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
           "thunderblock:communities:#{updated_role.community_id}",
-          {:role_removed, %{
-            role_id: updated_role.id,
-            user_id: user_id,
-            removed_by: removed_by
-          }}
+          {:role_removed,
+           %{
+             role_id: updated_role.id,
+             user_id: user_id,
+             removed_by: removed_by
+           }}
         )
 
         {:ok, updated_role}
@@ -396,7 +324,7 @@ defmodule Thunderline.Thundercom.Resources.Role do
 
     action :update_permissions, :struct do
       description "Update role permissions"
-  constraints instance_of: Thunderline.Thundercom.Resources.Role
+      constraints instance_of: Thunderline.Thundercom.Resources.Role
 
       argument :permissions, :map do
         allow_nil? false
@@ -411,9 +339,10 @@ defmodule Thunderline.Thundercom.Resources.Role do
         permissions = input.arguments.permissions
         updated_by = input.arguments.updated_by
 
-        updated_role = role
-        |> Ash.Changeset.for_update(:update, %{permissions: permissions})
-        |> Ash.update!()
+        updated_role =
+          role
+          |> Ash.Changeset.for_update(:update, %{permissions: permissions})
+          |> Ash.update!()
 
         # Log permission changes
         create_permission_change_event(updated_role, updated_by)
@@ -424,10 +353,11 @@ defmodule Thunderline.Thundercom.Resources.Role do
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
           "thunderblock:communities:#{updated_role.community_id}",
-          {:role_permissions_updated, %{
-            role_id: updated_role.id,
-            updated_by: updated_by
-          }}
+          {:role_permissions_updated,
+           %{
+             role_id: updated_role.id,
+             updated_by: updated_by
+           }}
         )
 
         {:ok, updated_role}
@@ -436,7 +366,7 @@ defmodule Thunderline.Thundercom.Resources.Role do
 
     action :set_channel_override, :struct do
       description "Set channel-specific permission override"
-  constraints instance_of: Thunderline.Thundercom.Resources.Role
+      constraints instance_of: Thunderline.Thundercom.Resources.Role
 
       argument :channel_id, :uuid do
         allow_nil? false
@@ -463,9 +393,10 @@ defmodule Thunderline.Thundercom.Resources.Role do
         updated_channel_overrides = Map.put(channel_overrides, permission, value)
         updated_overrides = Map.put(current_overrides, channel_id, updated_channel_overrides)
 
-        updated_role = role
-        |> Ash.Changeset.for_update(:update, %{channel_overrides: updated_overrides})
-        |> Ash.update!()
+        updated_role =
+          role
+          |> Ash.Changeset.for_update(:update, %{channel_overrides: updated_overrides})
+          |> Ash.update!()
 
         {:ok, updated_role}
       end
@@ -473,7 +404,7 @@ defmodule Thunderline.Thundercom.Resources.Role do
 
     action :timeout_role, :struct do
       description "Apply timeout restrictions to role"
-  constraints instance_of: Thunderline.Thundercom.Resources.Role
+      constraints instance_of: Thunderline.Thundercom.Resources.Role
 
       argument :timeout_until, :utc_datetime do
         allow_nil? false
@@ -489,9 +420,10 @@ defmodule Thunderline.Thundercom.Resources.Role do
         current_restrictions = role.restrictions || %{}
         updated_restrictions = Map.put(current_restrictions, "timeout_until", timeout_until)
 
-        updated_role = role
-        |> Ash.Changeset.for_update(:update, %{restrictions: updated_restrictions})
-        |> Ash.update!()
+        updated_role =
+          role
+          |> Ash.Changeset.for_update(:update, %{restrictions: updated_restrictions})
+          |> Ash.update!()
 
         # Apply timeout to all role members
         apply_timeout_to_members(updated_role, timeout_until, reason)
@@ -502,16 +434,17 @@ defmodule Thunderline.Thundercom.Resources.Role do
 
     action :clear_timeout, :struct do
       description "Clear timeout restrictions from role"
-  constraints instance_of: Thunderline.Thundercom.Resources.Role
+      constraints instance_of: Thunderline.Thundercom.Resources.Role
 
       run fn input, context ->
         role = input
         current_restrictions = role.restrictions || %{}
         updated_restrictions = Map.put(current_restrictions, "timeout_until", nil)
 
-        updated_role = role
-        |> Ash.Changeset.for_update(:update, %{restrictions: updated_restrictions})
-        |> Ash.update!()
+        updated_role =
+          role
+          |> Ash.Changeset.for_update(:update, %{restrictions: updated_restrictions})
+          |> Ash.update!()
 
         {:ok, updated_role}
       end
@@ -526,6 +459,7 @@ defmodule Thunderline.Thundercom.Resources.Role do
       end
 
       filter expr(community_id == ^arg(:community_id))
+
       # sort [position: :desc, role_name: :asc]  # TODO: Remove sort from filter - not supported in Ash 3.x
     end
 
@@ -592,7 +526,7 @@ defmodule Thunderline.Thundercom.Resources.Role do
       # TODO: Fix fragment expression for federation_config checking
       prepare fn query, _context ->
         query
-        |> Ash.Query.sort([position: :desc])
+        |> Ash.Query.sort(position: :desc)
       end
     end
 
@@ -620,117 +554,254 @@ defmodule Thunderline.Thundercom.Resources.Role do
       # )
 
       change after_action(fn _changeset, roles, _context ->
-        # Broadcast role expiration cleanup
-        for role <- roles do
-          Phoenix.PubSub.broadcast(
-            Thunderline.PubSub,
-            "thunderblock:communities:#{role.community_id}",
-            {:role_expired, %{role_id: role.id, role_name: role.role_name}}
-          )
-        end
-        {:ok, roles}
-      end)
+               # Broadcast role expiration cleanup
+               for role <- roles do
+                 Phoenix.PubSub.broadcast(
+                   Thunderline.PubSub,
+                   "thunderblock:communities:#{role.community_id}",
+                   {:role_expired, %{role_id: role.id, role_name: role.role_name}}
+                 )
+               end
+
+               {:ok, roles}
+             end)
     end
   end
 
-  # ===== POLICIES =====
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-  #
-  #   policy always() do
-  #     authorize_if always()
-  #   end
-  # end
-
-  # ===== CODE INTERFACE =====
-  code_interface do
-    define :create
-    define :update
-    define :assign_to_member, args: [:user_id, :assigned_by]
-    define :remove_from_member, args: [:user_id, :removed_by]
-    define :update_permissions, args: [:permissions, :updated_by]
-    define :set_channel_override, args: [:channel_id, :permission, :value]
-    define :timeout_role, args: [:timeout_until, :reason]
-    define :clear_timeout, args: []
-    define :by_community, args: [:community_id]
-    define :by_type, args: [:role_type]
-    define :by_member, args: [:user_id]
-    define :with_permission, args: [:permission]
-    define :mentionable_roles, action: :mentionable_roles
-    define :auto_assign_roles, action: :auto_assign_roles
-    define :moderation_roles, action: :moderation_roles
-    define :federation_roles, action: :federation_roles
-    define :expiring_roles, args: [:days_ahead]
-    define :cleanup_expired, action: :cleanup_expired
+  # ===== PREPARATIONS =====
+  preparations do
+    prepare build(load: [:community, :system_events])
   end
 
-  # ===== POSTGRES CONFIGURATION =====
-  postgres do
-    table "thunderblock_roles"
-    repo Thunderline.Repo
-
-    references do
-      reference :community, on_delete: :delete, on_update: :update
-      reference :system_events, on_delete: :delete, on_update: :update
-    end
-
-    custom_indexes do
-      index [:role_slug, :community_id], unique: true, name: "roles_slug_community_idx"
-      index [:community_id, :position], name: "roles_community_position_idx"
-      index [:community_id, :role_type], name: "roles_community_type_idx"
-      index [:position, :role_type], name: "roles_hierarchy_idx"
-      index [:auto_assign, :community_id], name: "roles_auto_assign_idx"
-      index [:mentionable], name: "roles_mentionable_idx"
-      index "USING GIN (member_ids)", name: "roles_members_idx"
-      index "USING GIN (permissions)", name: "roles_permissions_idx"
-      index "USING GIN (channel_overrides)", name: "roles_overrides_idx"
-      index "USING GIN (role_flags)", name: "roles_flags_idx"
-      index "USING GIN (tags)", name: "roles_tags_idx"
-    end
-
-    check_constraints do
-      check_constraint :valid_position, "position >= 0 AND position <= 1000"
-      check_constraint :valid_member_count, "member_count >= 0"
-      check_constraint :valid_color_format, "color IS NULL OR color ~ '^#[0-9A-Fa-f]{6}$'"
-    end
+  # ===== VALIDATIONS =====
+  validations do
+    validate present([:role_name, :role_slug, :community_id, :created_by])
+    # TODO: Fix validation syntax for Ash 3.x
+    # validate {Thunderblock.Validations, :valid_role_slug}, on: [:create, :update]
+    # validate {Thunderblock.Validations, :permissions_structure}, on: [:create, :update]
+    # validate {Thunderblock.Validations, :channel_overrides_structure}, on: [:create, :update]
+    # validate {Thunderblock.Validations, :role_hierarchy_valid}, on: [:create, :update]
   end
 
-  # ===== JSON API CONFIGURATION =====
-  json_api do
-    type "role"
+  # ===== ATTRIBUTES =====
+  attributes do
+    uuid_primary_key :id
 
-    routes do
-      base "/roles"
-      get :read
-      index :read
-      post :create
-      patch :update
-      delete :destroy
-
-      # Role management endpoints
-      post :assign_to_member, route: "/:id/assign"
-      post :remove_from_member, route: "/:id/remove"
-      post :update_permissions, route: "/:id/update_permissions"
-      post :set_channel_override, route: "/:id/channel_override"
-      post :timeout_role, route: "/:id/timeout"
-      post :clear_timeout, route: "/:id/clear_timeout"
-
-      # Query endpoints
-      get :by_community, route: "/community/:community_id"
-      get :by_type, route: "/type/:role_type"
-      get :by_member, route: "/member/:user_id"
-      get :with_permission, route: "/permission/:permission"
-      get :mentionable_roles, route: "/mentionable"
-      get :auto_assign_roles, route: "/auto_assign"
-      get :moderation_roles, route: "/moderation"
-      get :federation_roles, route: "/federation"
-      get :expiring_roles, route: "/expiring/:days_ahead"
-
-      # Cleanup endpoints
-      delete :cleanup_expired, route: "/cleanup_expired"
+    attribute :role_name, :string do
+      allow_nil? false
+      description "Human-readable role name"
+      constraints min_length: 1, max_length: 100
     end
+
+    attribute :role_slug, :string do
+      allow_nil? false
+      description "URL-safe role identifier"
+      constraints min_length: 1, max_length: 50, match: ~r/^[a-z0-9\-_]+$/
+    end
+
+    attribute :role_type, :atom do
+      allow_nil? false
+      description "Type of role functionality"
+      default :member
+      constraints one_of: [:owner, :admin, :moderator, :member, :guest, :bot, :system]
+    end
+
+    attribute :position, :integer do
+      allow_nil? false
+      description "Role hierarchy position (higher = more authority)"
+      default 0
+      constraints min: 0, max: 1000
+    end
+
+    attribute :color, :string do
+      allow_nil? true
+      description "Role display color (hex code)"
+      constraints match: ~r/^#[0-9A-Fa-f]{6}$/
+    end
+
+    attribute :hoist, :boolean do
+      allow_nil? false
+      description "Display role separately in member list"
+      default false
+    end
+
+    attribute :mentionable, :boolean do
+      allow_nil? false
+      description "Allow role to be mentioned (@role)"
+      default true
+    end
+
+    attribute :permissions, :map do
+      allow_nil? false
+      description "Base role permissions"
+
+      default %{
+        # Community permissions
+        "view_community" => true,
+        "send_messages" => true,
+        "read_message_history" => true,
+        "use_voice_activity" => false,
+        "priority_speaker" => false,
+
+        # Channel management
+        "manage_channels" => false,
+        "manage_messages" => false,
+        "manage_roles" => false,
+
+        # Member management
+        "kick_members" => false,
+        "ban_members" => false,
+        "manage_members" => false,
+
+        # Community management
+        "manage_community" => false,
+        "view_audit_log" => false,
+        "administrator" => false,
+
+        # AI and PAC permissions
+        "use_ai_agents" => true,
+        "manage_ai_agents" => false,
+        "use_pac_home" => true,
+        "manage_pac_homes" => false,
+
+        # Federation permissions
+        "federation_messaging" => true,
+        "manage_federation" => false
+      }
+    end
+
+    attribute :channel_overrides, :map do
+      allow_nil? false
+      description "Channel-specific permission overrides"
+      default %{}
+      # Format: %{channel_id => %{permission => allow/deny/inherit}}
+    end
+
+    attribute :restrictions, :map do
+      allow_nil? false
+      description "Role restrictions and limitations"
+
+      default %{
+        "timeout_until" => nil,
+        "rate_limit_factor" => 1.0,
+        "max_message_length" => nil,
+        "allowed_channels" => [],
+        "denied_channels" => []
+      }
+    end
+
+    attribute :member_count, :integer do
+      allow_nil? false
+      description "Number of members with this role"
+      default 0
+      constraints min: 0
+    end
+
+    attribute :member_ids, {:array, :uuid} do
+      allow_nil? false
+      description "List of member IDs with this role"
+      default []
+    end
+
+    attribute :auto_assign, :boolean do
+      allow_nil? false
+      description "Automatically assign to new members"
+      default false
+    end
+
+    attribute :requires_approval, :boolean do
+      allow_nil? false
+      description "Role assignment requires approval"
+      default false
+    end
+
+    attribute :created_by, :uuid do
+      allow_nil? false
+      description "ID of user who created the role"
+    end
+
+    attribute :moderation_config, :map do
+      allow_nil? false
+      description "Moderation-specific configuration"
+
+      default %{
+        "can_timeout" => false,
+        "can_delete_messages" => false,
+        "can_manage_reactions" => false,
+        "can_manage_threads" => false,
+
+        # seconds
+        "timeout_duration_max" => 3600,
+        "bulk_delete_limit" => 0
+      }
+    end
+
+    attribute :federation_config, :map do
+      allow_nil? false
+      description "Federation-specific role configuration"
+
+      default %{
+        "cross_realm_visibility" => false,
+        "external_role_sync" => false,
+
+        # none, basic, elevated, sovereign
+        "federation_authority" => "none",
+        "trust_level" => "local"
+      }
+    end
+
+    attribute :role_flags, {:array, :atom} do
+      allow_nil? false
+      description "Special role flags and properties"
+      default []
+      # Possible flags: :system, :protected, :everyone, :verified, :premium, :beta_tester
+    end
+
+    attribute :expiry_config, :map do
+      allow_nil? false
+      description "Role expiration and renewal settings"
+
+      default %{
+        "expires" => false,
+        "duration_days" => nil,
+        "auto_renew" => false,
+        "renewal_conditions" => []
+      }
+    end
+
+    attribute :tags, {:array, :string} do
+      allow_nil? false
+      description "Role categorization tags"
+      default []
+    end
+
+    attribute :metadata, :map do
+      allow_nil? false
+      description "Additional role metadata"
+      default %{}
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  # ===== RELATIONSHIPS =====
+  relationships do
+    belongs_to :community, Thunderline.Thundercom.Resources.Community do
+      attribute_writable? true
+      source_attribute :community_id
+      destination_attribute :id
+    end
+
+    has_many :system_events, Thunderblock.Resources.SystemEvent do
+      destination_attribute :target_resource_id
+      filter expr(target_resource_type == :role)
+    end
+
+    # Note: In a full implementation, would have many-to-many with users
+    # many_to_many :users, Thunderbit.Resources.User do
+    #   through Thunderblock.Resources.UserRole
+    # end
   end
 
   # ===== OBAN CONFIGURATION =====
@@ -759,21 +830,6 @@ defmodule Thunderline.Thundercom.Resources.Role do
   # ===== IDENTITIES =====
   identities do
     identity :unique_role_in_community, [:role_slug, :community_id]
-  end
-
-  # ===== VALIDATIONS =====
-  validations do
-    validate present([:role_name, :role_slug, :community_id, :created_by])
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :valid_role_slug}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :permissions_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :channel_overrides_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :role_hierarchy_valid}, on: [:create, :update]
-  end
-
-  # ===== PREPARATIONS =====
-  preparations do
-    prepare build(load: [:community, :system_events])
   end
 
   # ===== PRIVATE FUNCTIONS =====

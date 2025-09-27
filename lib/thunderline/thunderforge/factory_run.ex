@@ -8,7 +8,12 @@ defmodule Thunderline.Thunderforge.FactoryRun do
   @spec run(Blueprint.t()) :: {:ok, map()} | {:error, term()}
   def run(%Blueprint{} = bp) do
     start = System.monotonic_time()
-    :telemetry.execute([:thunderline, :thunderforge, :factory, :run, :start], %{count: 1}, %{kind: bp.kind, name: bp.name})
+
+    :telemetry.execute([:thunderline, :thunderforge, :factory, :run, :start], %{count: 1}, %{
+      kind: bp.kind,
+      name: bp.name
+    })
+
     try do
       case bp.kind do
         "TrialSpec" -> {:ok, %{resource: :trial_spec, name: bp.name, spec: bp.spec}}
@@ -16,7 +21,12 @@ defmodule Thunderline.Thunderforge.FactoryRun do
       end
     after
       dur = System.monotonic_time() - start
-      :telemetry.execute([:thunderline, :thunderforge, :factory, :run, :stop], %{duration: dur}, %{kind: bp.kind, name: bp.name})
+
+      :telemetry.execute(
+        [:thunderline, :thunderforge, :factory, :run, :stop],
+        %{duration: dur},
+        %{kind: bp.kind, name: bp.name}
+      )
     end
   end
 end

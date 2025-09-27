@@ -25,6 +25,7 @@ defmodule ThunderlineWeb.RpcController do
 
   defp maybe_set_actor(conn) do
     actor = conn.assigns[:current_user]
+
     if actor do
       Ash.PlugHelpers.set_actor(conn, actor)
     else

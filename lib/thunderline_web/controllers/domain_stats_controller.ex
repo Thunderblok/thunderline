@@ -143,8 +143,8 @@ defmodule ThunderlineWeb.DomainStatsController do
     base_metrics = DashboardMetrics.thunderblock_vault_metrics()
 
     Map.merge(base_metrics, %{
-  domain: "thunderblock_vault",
-  description: "ThunderBlock Vault (persistence, security, access control)",
+      domain: "thunderblock_vault",
+      description: "ThunderBlock Vault (persistence, security, access control)",
       capabilities: [
         "Policy enforcement",
         "Access control",

@@ -9,8 +9,9 @@ defmodule Mix.Tasks.Thunder.Diag do
     Mix.Task.run("app.start")
     IO.puts("STDOUT OK")
     IO.warn("STDERR OK")
-    case Thunderline.Repo.query("SELECT now()") do
-      {:ok, _} -> IO.puts("Repo OK")
+
+    case Thunderline.Thunderblock.Health.now() do
+      {:ok, _ts} -> IO.puts("Repo OK")
       {:error, err} -> IO.puts("Repo ERROR: #{inspect(err)}")
     end
   end

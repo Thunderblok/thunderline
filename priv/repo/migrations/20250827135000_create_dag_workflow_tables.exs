@@ -48,7 +48,10 @@ defmodule Thunderline.Repo.Migrations.CreateDagWorkflowTables do
       add :inserted_at, :utc_datetime_usec, null: false
     end
 
-    create unique_index(:dag_edges, [:workflow_id, :from_node_id, :to_node_id, :edge_type], name: :dag_edges_unique_edge)
+    create unique_index(:dag_edges, [:workflow_id, :from_node_id, :to_node_id, :edge_type],
+             name: :dag_edges_unique_edge
+           )
+
     create index(:dag_edges, [:workflow_id])
 
     # Snapshot table

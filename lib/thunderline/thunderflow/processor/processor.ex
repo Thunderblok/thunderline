@@ -16,7 +16,9 @@ defmodule Thunderline.Thunderflow.Processor do
          :ok <- ack_event(claim_id) do
       {:ok, :acked}
     else
-      error -> _ = safe_cleanup(error); {:error, error}
+      error ->
+        _ = safe_cleanup(error)
+        {:error, error}
     end
   end
 
@@ -31,53 +33,77 @@ defmodule Thunderline.Thunderflow.Processor do
       "source_domain" => Map.get(event, "source_domain", "unknown"),
       "target_domain" => Map.get(event, "target_domain", "broadcast")
     }
+
     {:ok, normalized}
   end
 
   defp emit_parallel(event) do
     t0 = System.monotonic_time()
+
     tasks = [
       Task.async(fn ->
-        with {:ok, ev} <- Thunderline.Event.new(%{
-               name: "system.flow.event_processed",
-               source: :flow,
-               payload: event,
-               type: :event_processed,
-               meta: %{pipeline: :realtime}
-             }) do
+        with {:ok, ev} <-
+               Thunderline.Event.new(%{
+                 name: "system.flow.event_processed",
+                 source: :flow,
+                 payload: event,
+                 type: :event_processed,
+                 meta: %{pipeline: :realtime}
+               }) do
           case EventBus.publish_event(ev) do
-            {:ok, res} -> {:ok, res}
-            {:error, reason} -> Logger.warning("[Processor] publish event_processed failed: #{inspect(reason)}"); {:error, reason}
+            {:ok, res} ->
+              {:ok, res}
+
+            {:error, reason} ->
+              Logger.warning("[Processor] publish event_processed failed: #{inspect(reason)}")
+              {:error, reason}
           end
         end
       end),
       Task.async(fn ->
-        with {:ok, ev} <- Thunderline.Event.new(%{
-               name: "system.flow.cross_domain_event",
-               source: :flow,
-               payload: event,
-               type: :cross_domain_event
-             }) do
+        with {:ok, ev} <-
+               Thunderline.Event.new(%{
+                 name: "system.flow.cross_domain_event",
+                 source: :flow,
+                 payload: event,
+                 type: :cross_domain_event
+               }) do
           case EventBus.publish_event(ev) do
-            {:ok, res} -> {:ok, res}
-            {:error, reason} -> Logger.warning("[Processor] publish cross_domain_event failed: #{inspect(reason)}"); {:error, reason}
+            {:ok, res} ->
+              {:ok, res}
+
+            {:error, reason} ->
+              Logger.warning("[Processor] publish cross_domain_event failed: #{inspect(reason)}")
+              {:error, reason}
           end
         end
       end)
     ]
+
     results = Task.yield_many(tasks, 5_000)
     duration = System.monotonic_time() - t0
-    :telemetry.execute([:thunderline, :event_processor, :emit], %{duration: duration, count: 1}, %{source_domain: event["source_domain"], target_domain: event["target_domain"]})
-    success = Enum.all?(results, fn
-      {_, {:ok, {:ok, %Thunderline.Event{}}}} -> true
-      {_, {:ok, {:ok, _}}} -> true
-      _ -> false
-    end)
-    if success, do: :ok, else: (
-      Logger.warning("Event emit tasks did not complete successfully: #{inspect(results)}");
-      Enum.each(tasks, &Task.shutdown(&1, :brutal_kill));
-      {:error, :emit_failed}
+
+    :telemetry.execute(
+      [:thunderline, :event_processor, :emit],
+      %{duration: duration, count: 1},
+      %{source_domain: event["source_domain"], target_domain: event["target_domain"]}
     )
+
+    success =
+      Enum.all?(results, fn
+        {_, {:ok, {:ok, %Thunderline.Event{}}}} -> true
+        {_, {:ok, {:ok, _}}} -> true
+        _ -> false
+      end)
+
+    if success,
+      do: :ok,
+      else:
+        (
+          Logger.warning("Event emit tasks did not complete successfully: #{inspect(results)}")
+          Enum.each(tasks, &Task.shutdown(&1, :brutal_kill))
+          {:error, :emit_failed}
+        )
   end
 
   defp safe_cleanup({:ok, claim_id}) when is_binary(claim_id), do: ack_event(claim_id)

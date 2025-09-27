@@ -64,7 +64,8 @@ defmodule Thunderline.ErlangBridge do
   end
 
   @deprecated "Use apply_neural_connections/2 instead"
-  def inject_neural_patterns(bolt_id, connections), do: apply_neural_connections(bolt_id, connections)
+  def inject_neural_patterns(bolt_id, connections),
+    do: apply_neural_connections(bolt_id, connections)
 
   @doc "Create a new ThunderBolt cube using Erlang team's API"
   def create_thunderbolt(bolt_config) do
@@ -681,7 +682,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_call({:optimize_connectivity, strategy}, _from, state) do
     case call_erlang_safe(:thunderbolt_neural, :optimize_connectivity, [strategy]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.info("🧠 Optimized neural connectivity using strategy: #{strategy}")
         {:reply, :ok, state}
 
@@ -744,7 +745,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_call({:enable_stdp, neuron_id}, _from, state) do
     case call_erlang_safe(:thunderbit_neuron, :enable_spike_timing_plasticity, [neuron_id]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.info("🧠 Enabled STDP for neuron #{neuron_id}")
         {:reply, :ok, state}
 
@@ -829,7 +830,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_call({:enable_cross_scale_learning, hierarchy_id}, _from, state) do
     case call_erlang_safe(:thunderbolt_multiscale, :enable_cross_scale_learning, [hierarchy_id]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.info("🏗️ Enabled cross-scale learning for hierarchy #{hierarchy_id}")
         {:reply, :ok, state}
 
@@ -849,7 +850,7 @@ defmodule Thunderline.ErlangBridge do
            signal,
            timestamp
          ]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.debug("🔄 Propagated neural signal from level #{source_level}")
 
       {:error, reason} ->
@@ -861,7 +862,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_cast({:fire_neuron, neuron_id, intensity}, state) do
     case call_erlang_safe(:thunderbit_neuron, :fire_neuron, [neuron_id, intensity]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.debug("⚡ Fired neuron #{neuron_id} with intensity #{intensity}")
 
       {:error, reason} ->
@@ -873,7 +874,7 @@ defmodule Thunderline.ErlangBridge do
 
   def handle_cast({:simulate_neural_step, bolt_id}, state) do
     case call_erlang_safe(:thunderbit_neuron, :simulate_neural_step, [bolt_id]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.debug("🧠 Simulated neural step for bolt #{bolt_id}")
 
       {:error, reason} ->
@@ -889,7 +890,7 @@ defmodule Thunderline.ErlangBridge do
            source_scale,
            data
          ]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.debug("🔼 Propagated upward from scale #{source_scale}")
 
       {:error, reason} ->
@@ -905,7 +906,7 @@ defmodule Thunderline.ErlangBridge do
            source_scale,
            data
          ]) do
-  {:ok, _} ->
+      {:ok, _} ->
         Logger.debug("🔽 Propagated downward from scale #{source_scale}")
 
       {:error, reason} ->
@@ -981,10 +982,16 @@ defmodule Thunderline.ErlangBridge do
       payload: Map.merge(payload, %{topic: topic, timestamp: DateTime.utc_now()}),
       meta: %{pipeline: infer_pipeline_from_topic(topic)}
     }
+
     with {:ok, ev} <- Thunderline.Event.new(attrs) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[ErlangBridge] publish failed: #{inspect(reason)} topic=#{topic} type=#{type}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "[ErlangBridge] publish failed: #{inspect(reason)} topic=#{topic} type=#{type}"
+          )
       end
     end
   end

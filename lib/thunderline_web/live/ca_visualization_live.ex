@@ -74,9 +74,8 @@ defmodule ThunderlineWeb.CaVisualizationLive do
             <option value="points">Points</option>
           </select>
         </div>
-
       </div>
-
+      
     <!-- Performance Stats -->
       <div
         class="performance-stats"
@@ -190,7 +189,6 @@ defmodule ThunderlineWeb.CaVisualizationLive do
         {:noreply, socket}
     end
   end
-
 
   # Private helper functions
   defp generate_random_grid(width, height, depth) do

@@ -26,7 +26,10 @@ defmodule Thunderline.Thunderlink.Transport.Routing.HysteresisManager do
 
   @impl true
   def handle_info({:set_temp, pct}, state) do
-    Logger.warning("[Thunderlink][Hysteresis] Elevating hysteresis to #{pct}% for #{@revert_ms}ms (prev #{state.current}%)")
+    Logger.warning(
+      "[Thunderlink][Hysteresis] Elevating hysteresis to #{pct}% for #{@revert_ms}ms (prev #{state.current}%)"
+    )
+
     timer = Process.send_after(self(), :revert, @revert_ms)
     {:noreply, %{state | current: pct, timer: timer}}
   end
@@ -53,6 +56,7 @@ defmodule Thunderline.Thunderlink.Transport.Routing.HysteresisManager do
     if rate > 5.0 do
       send(__MODULE__, {:set_temp, @default_up_pct})
     end
+
     :ok
   end
 end

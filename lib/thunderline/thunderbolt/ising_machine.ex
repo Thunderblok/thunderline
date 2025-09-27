@@ -154,6 +154,7 @@ defmodule Thunderline.Thunderbolt.IsingMachine do
 
       :graph ->
         {_rows, _cols, _weights} = lattice.edges
+
         _field_tensor =
           if is_number(field) do
             Nx.broadcast(field, Nx.shape(spins))

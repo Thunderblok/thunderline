@@ -17,7 +17,12 @@ defmodule Thunderline.Thundercrown.Policy do
   require Logger
 
   @type decision :: {:allow, map()} | {:deny, term()} | {:allow_with, map()}
-  @type action_descriptor :: %{required(:domain) => atom(), required(:resource) => atom(), required(:action) => atom(), optional(:scopes) => [String.t()]}
+  @type action_descriptor :: %{
+          required(:domain) => atom(),
+          required(:resource) => atom(),
+          required(:action) => atom(),
+          optional(:scopes) => [String.t()]
+        }
 
   @spec decide(ActorContext.t(), action_descriptor()) :: decision()
   def decide(%ActorContext{} = ctx, %{domain: _d, resource: _r, action: _a} = descriptor) do
@@ -28,13 +33,15 @@ defmodule Thunderline.Thundercrown.Policy do
     signed
   end
 
-  defp eval(ctx, %{scopes: required_scopes} = _desc) when is_list(required_scopes) and required_scopes != [] do
+  defp eval(ctx, %{scopes: required_scopes} = _desc)
+       when is_list(required_scopes) and required_scopes != [] do
     if Enum.any?(required_scopes, &scope_allows?(ctx.scopes, &1)) do
       {{:allow, %{rule: :scope_match}}, %{rule_id: :scope_match}}
     else
       {{:deny, :insufficient_scope}, %{rule_id: :scope_match}}
     end
   end
+
   defp eval(_ctx, _), do: {{:deny, :no_scope_specified}, %{rule_id: :no_scope_specified}}
 
   defp scope_allows?(scopes, required) do
@@ -50,6 +57,7 @@ defmodule Thunderline.Thundercrown.Policy do
 
   defp emit(ctx, descriptor, result, start) do
     duration = System.monotonic_time() - start
+
     meta = %{
       actor: ctx.actor_id,
       tenant: ctx.tenant,
@@ -59,6 +67,7 @@ defmodule Thunderline.Thundercrown.Policy do
       action: descriptor[:action],
       verdict_id: verdict_id(result)
     }
+
     :telemetry.execute([:thunderline, :policy, :decision], %{duration: duration}, meta)
   end
 
@@ -83,6 +92,7 @@ defmodule Thunderline.Thundercrown.Policy do
       action: descriptor.action,
       ts: System.system_time(:millisecond)
     }
+
     :crypto.hash(:sha256, :erlang.term_to_binary(base)) |> Base.encode16(case: :lower)
   end
 end

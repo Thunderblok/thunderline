@@ -34,8 +34,13 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
     else
       config = Keyword.get(opts, :config, Client.config())
       backoff = Keyword.get(opts, :retry_backoff_ms, config.invoke.retry_backoff_ms)
-      max_retries = Keyword.get(opts, :max_retries, config.invoke.max_retries || @default_max_retries)
-      timeout_ms = Keyword.get(opts, :timeout_ms, config.invoke.default_timeout_ms || @default_timeout_ms)
+
+      max_retries =
+        Keyword.get(opts, :max_retries, config.invoke.max_retries || @default_max_retries)
+
+      timeout_ms =
+        Keyword.get(opts, :timeout_ms, config.invoke.default_timeout_ms || @default_timeout_ms)
+
       meta = Keyword.get(opts, :meta, %{}) |> Map.merge(Map.get(call_spec, :meta, %{}))
 
       attempts = Enum.to_list(0..max_retries)
@@ -64,11 +69,18 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
 
       case result do
         {:ok, decoded} ->
-          :telemetry.execute(@telemetry_base ++ [:stop], %{duration_ms: duration_ms}, Map.put(invocation_meta, :ok, true))
+          :telemetry.execute(
+            @telemetry_base ++ [:stop],
+            %{duration_ms: duration_ms},
+            Map.put(invocation_meta, :ok, true)
+          )
+
           {:halt, {:ok, Map.put(decoded, :duration_ms, duration_ms)}}
 
         {:error, error} ->
-          telemetry_error = Map.merge(invocation_meta, %{error: Map.from_struct(error), duration_ms: duration_ms})
+          telemetry_error =
+            Map.merge(invocation_meta, %{error: Map.from_struct(error), duration_ms: duration_ms})
+
           :telemetry.execute(@telemetry_base ++ [:exception], %{}, telemetry_error)
 
           if attempt < List.last(opts[:attempts]) do
@@ -188,6 +200,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
 
   defp maybe_backoff(nil, _attempt), do: :ok
   defp maybe_backoff(backoff_ms, _attempt) when backoff_ms <= 0, do: :ok
+
   defp maybe_backoff(backoff_ms, attempt) do
     scaled = trunc(backoff_ms * backoff_multiplier(attempt))
     Process.sleep(scaled)
@@ -276,6 +289,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
   end
 
   defp excerpt(nil), do: nil
+
   defp excerpt(text) when is_binary(text) do
     text |> String.slice(0, 1024) |> String.trim()
   end
@@ -295,5 +309,4 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
-
 end

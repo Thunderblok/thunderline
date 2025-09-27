@@ -6,7 +6,12 @@ defmodule Thunderline.Thunderbolt.Cerebros.SimpleSearch do
   alias Thunderline.Thunderbolt.Cerebros.Utils.ParamCount
   alias Thunderline.Thunderbolt.Cerebros.Data.{Dataset, TabularDataset}
 
-  @type search_opts :: [dataset: TabularDataset.t() | {:rows, [map()], features: [atom()], target: atom()}, trials: pos_integer(), max_params: pos_integer(), seed: non_neg_integer()]
+  @type search_opts :: [
+          dataset: TabularDataset.t() | {:rows, [map()], features: [atom()], target: atom()},
+          trials: pos_integer(),
+          max_params: pos_integer(),
+          seed: non_neg_integer()
+        ]
   @default_trials 3
   @max_trials 100
 
@@ -15,8 +20,15 @@ defmodule Thunderline.Thunderbolt.Cerebros.SimpleSearch do
     if seed, do: :rand.seed(:exsss, {seed, seed * 2 + 1, seed * 3 + 2})
     ds_info = Dataset.info(dataset)
 
-    Logger.info("[Cerebros] Starting simple search: task=#{ds_info.task} shape=#{inspect(ds_info.input_shape)} trials=#{trials}")
-    :telemetry.execute([:thunderline, :thunderbolt, :cerebros, :search, :start], %{trials: trials}, %{task: ds_info.task})
+    Logger.info(
+      "[Cerebros] Starting simple search: task=#{ds_info.task} shape=#{inspect(ds_info.input_shape)} trials=#{trials}"
+    )
+
+    :telemetry.execute(
+      [:thunderline, :thunderbolt, :cerebros, :search, :start],
+      %{trials: trials},
+      %{task: ds_info.task}
+    )
 
     trials_results =
       1..trials
@@ -25,20 +37,30 @@ defmodule Thunderline.Thunderbolt.Cerebros.SimpleSearch do
         model = build_stub_model(ds_info)
         param_info = ParamCount.count(model)
         metric = derive_metric(param_info.total)
-        :telemetry.execute([:thunderline, :thunderbolt, :cerebros, :search, :trial, :stop], %{metric: metric}, %{trial: idx})
+
+        :telemetry.execute(
+          [:thunderline, :thunderbolt, :cerebros, :search, :trial, :stop],
+          %{metric: metric},
+          %{trial: idx}
+        )
+
         %{spec: spec, metric: metric, params: param_info.total, param_info: param_info}
       end)
 
     best = Enum.min_by(trials_results, & &1.metric)
     artifact_path = persist_artifact(best)
 
-    :telemetry.execute([
-      :thunderline,
-      :thunderbolt,
-      :cerebros,
-      :search,
-      :complete
-    ], %{best_metric: best.metric}, %{trials: length(trials_results)})
+    :telemetry.execute(
+      [
+        :thunderline,
+        :thunderbolt,
+        :cerebros,
+        :search,
+        :complete
+      ],
+      %{best_metric: best.metric},
+      %{trials: length(trials_results)}
+    )
 
     {:ok,
      %{
@@ -56,11 +78,13 @@ defmodule Thunderline.Thunderbolt.Cerebros.SimpleSearch do
     trials = opts |> Keyword.get(:trials, @default_trials) |> min(@max_trials)
     max_params = Keyword.get(opts, :max_params, 2_000_000)
     seed = Keyword.get(opts, :seed, nil)
+
     dataset =
       case Keyword.fetch!(opts, :dataset) do
         %TabularDataset{} = ds -> ds
         {:rows, rows, features: feats, target: tgt} -> TabularDataset.new(rows, feats, tgt)
       end
+
     {dataset, trials, max_params, seed}
   end
 
@@ -91,6 +115,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.SimpleSearch do
   defp median(list) do
     sorted = Enum.sort(list)
     len = length(sorted)
+
     if rem(len, 2) == 1 do
       Enum.at(sorted, div(len, 2))
     else
@@ -105,12 +130,14 @@ defmodule Thunderline.Thunderbolt.Cerebros.SimpleSearch do
     File.mkdir_p!(dir)
     spec_hash = :erlang.phash2(best.spec) |> Integer.to_string(36)
     file = Path.join(dir, "trial_#{best.spec.id}_#{spec_hash}.json")
+
     artifact = %{
       spec: best.spec,
       metric: best.metric,
       params: best.params,
       total_parameters: best.param_info.total
     }
+
     File.write!(file, Jason.encode!(artifact, pretty: true))
     file
   rescue

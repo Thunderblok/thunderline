@@ -66,8 +66,10 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
         case message.data do
           bin when is_binary(bin) ->
             bin |> Jason.decode!() |> Event.normalize!()
+
           data when is_map(data) ->
             Event.normalize!(data)
+
           other ->
             Event.normalize!(%{"type" => "unknown", "payload" => other})
         end
@@ -182,7 +184,8 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     Enum.each(events, fn event ->
       :telemetry.execute(
         [:thunderline, :cross_domain, :fanout],
-        %{target_count: 3},  # broadcast_targets length
+        # broadcast_targets length
+        %{target_count: 3},
         %{event_type: to_string(event.type), source_domain: event.source_domain}
       )
     end)
@@ -211,7 +214,10 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   defp apply_transformation_rules(%Event{} = event), do: event
 
-  defp apply_transformation_rule(%{"type" => "field_mapping", "mappings" => mappings}, %Event{} = event) do
+  defp apply_transformation_rule(
+         %{"type" => "field_mapping", "mappings" => mappings},
+         %Event{} = event
+       ) do
     # Apply field mappings for cross-domain compatibility in payload
     updated_payload =
       Enum.reduce(mappings, event.payload, fn {old_field, new_field}, acc ->
@@ -224,7 +230,10 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
     %{event | payload: updated_payload}
   end
 
-  defp apply_transformation_rule(%{"type" => "data_enrichment", "source" => source}, %Event{} = event) do
+  defp apply_transformation_rule(
+         %{"type" => "data_enrichment", "source" => source},
+         %Event{} = event
+       ) do
     # Enrich event data from external sources
     enrichment_data = fetch_enrichment_data(source, event)
     Event.put_metadata(event, "enrichment", enrichment_data)
@@ -315,12 +324,19 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
 
   defp create_domain_job(domain, params) do
     # Protect domain job creation with circuit breaker
-  Thunderline.Thunderflow.Support.CircuitBreaker.call({:domain, domain}, fn ->
+    Thunderline.Thunderflow.Support.CircuitBreaker.call({:domain, domain}, fn ->
       case domain do
-        "thunderbolt" -> Thunderline.Thunderflow.Jobs.ThunderBoltProcessor.new(params) |> Oban.insert()
-        "thunderblock" -> Thunderline.Thunderflow.Jobs.ThunderBlockProcessor.new(params) |> Oban.insert()
-        "thundercrown" -> Thunderline.Thunderflow.Jobs.ThunderCrownProcessor.new(params) |> Oban.insert()
-        _ -> {:error, :unknown_domain}
+        "thunderbolt" ->
+          Thunderline.Thunderflow.Jobs.ThunderBoltProcessor.new(params) |> Oban.insert()
+
+        "thunderblock" ->
+          Thunderline.Thunderflow.Jobs.ThunderBlockProcessor.new(params) |> Oban.insert()
+
+        "thundercrown" ->
+          Thunderline.Thunderflow.Jobs.ThunderCrownProcessor.new(params) |> Oban.insert()
+
+        _ ->
+          {:error, :unknown_domain}
       end
     end)
   end

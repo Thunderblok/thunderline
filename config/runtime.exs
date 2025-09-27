@@ -104,11 +104,12 @@ if System.get_env("DEMO_MODE") in ["1", "true", "TRUE"] do
 
   config :thunderline, :features, demo |> Enum.into([])
 end
-  # Accept legacy env names for backwards compat (README drift)
-  legacy_overrides = [
-    {:enable_ndjson, System.get_env("ENABLE_NDJSON") in ["1", "true", "TRUE"]},
-    {:enable_ups, System.get_env("ENABLE_UPS") in ["1", "true", "TRUE"]}
-  ]
+
+# Accept legacy env names for backwards compat (README drift)
+legacy_overrides = [
+  {:enable_ndjson, System.get_env("ENABLE_NDJSON") in ["1", "true", "TRUE"]},
+  {:enable_ups, System.get_env("ENABLE_UPS") in ["1", "true", "TRUE"]}
+]
 
 runtime_feature_overrides = [
   {:ca_viz, "FEATURE_CA_VIZ"},
@@ -131,12 +132,12 @@ runtime_enabled =
     end
   end)
 
-  enabled_list = runtime_enabled |> Enum.into([])
-  config :thunderline, :features, enabled_list
+enabled_list = runtime_enabled |> Enum.into([])
+config :thunderline, :features, enabled_list
 
-  # Log enabled features on boot for observability
-  enabled = enabled_list |> Enum.filter(fn {_k, v} -> v end) |> Enum.map(&elem(&1, 0))
-  IO.puts("[features] enabled: #{inspect(enabled)}")
+# Log enabled features on boot for observability
+enabled = enabled_list |> Enum.filter(fn {_k, v} -> v end) |> Enum.map(&elem(&1, 0))
+IO.puts("[features] enabled: #{inspect(enabled)}")
 
 if config_env() == :prod do
   database_url =

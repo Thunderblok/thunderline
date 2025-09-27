@@ -23,16 +23,23 @@ defmodule ThunderlineWeb.AutomataControlLive do
     if run_id = socket.assigns[:run_id] do
       _ = AutomataRun.stop(%{run_id: run_id}, actor: actor(socket))
     end
+
     {:noreply, assign(socket, :running, false)}
   end
 
   def handle_event("snapshot", _params, socket) do
-    {:ok, %{snapshot_id: snap_id}} = AutomataRun.snapshot(%{run_id: socket.assigns[:run_id]}, actor: actor(socket))
+    {:ok, %{snapshot_id: snap_id}} =
+      AutomataRun.snapshot(%{run_id: socket.assigns[:run_id]}, actor: actor(socket))
+
     {:noreply, assign(socket, :snapshot_id, snap_id)}
   end
 
   def handle_event("restore", %{"_id" => id}, socket) do
-    _ = AutomataRun.restore(%{run_id: socket.assigns[:run_id], snapshot_id: id}, actor: actor(socket))
+    _ =
+      AutomataRun.restore(%{run_id: socket.assigns[:run_id], snapshot_id: id},
+        actor: actor(socket)
+      )
+
     {:noreply, assign(socket, :message, "restore requested for #{id}")}
   end
 
@@ -47,7 +54,7 @@ defmodule ThunderlineWeb.AutomataControlLive do
           <button phx-click="stop" class="btn" disabled={!@running}>Stop</button>
           <button phx-click="snapshot" class="btn">Snapshot</button>
           <form phx-submit="restore" class="flex gap-2">
-            <input name="_id" placeholder="snapshot id" class="input"/>
+            <input name="_id" placeholder="snapshot id" class="input" />
             <button class="btn">Restore</button>
           </form>
         </div>
@@ -60,11 +67,17 @@ defmodule ThunderlineWeb.AutomataControlLive do
 
   defp actor(socket) do
     cond do
-      is_map(socket.assigns[:actor]) -> socket.assigns[:actor]
+      is_map(socket.assigns[:actor]) ->
+        socket.assigns[:actor]
+
       match?(%{actor: actor_map} when is_map(actor_map), socket.assigns[:actor_ctx]) ->
         socket.assigns.actor_ctx.actor
-      is_map(socket.assigns[:current_user]) -> Actor.build_actor(socket.assigns[:current_user], %{})
-      true -> nil
+
+      is_map(socket.assigns[:current_user]) ->
+        Actor.build_actor(socket.assigns[:current_user], %{})
+
+      true ->
+        nil
     end
   end
 end

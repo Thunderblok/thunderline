@@ -25,10 +25,12 @@ defmodule Mix.Tasks.Thunderline.Ml.AuditArtifacts do
     if path = Keyword.get(opts, :export) do
       rows = fetch_all(repo, "cerebros_model_artifacts")
       {:ok, dev} = File.open(path, [:write])
+
       Enum.each(rows, fn row ->
         IO.write(dev, Jason.encode!(row))
         IO.write(dev, "\n")
       end)
+
       File.close(dev)
       IO.puts("Exported #{length(rows)} legacy rows to #{path}")
     end
@@ -40,7 +42,9 @@ defmodule Mix.Tasks.Thunderline.Ml.AuditArtifacts do
   end
 
   defp fetch_all(repo, table) do
-    %{columns: cols, rows: rows} = Ecto.Adapters.SQL.query!(repo, "SELECT * FROM #{table} ORDER BY inserted_at")
+    %{columns: cols, rows: rows} =
+      Ecto.Adapters.SQL.query!(repo, "SELECT * FROM #{table} ORDER BY inserted_at")
+
     Enum.map(rows, fn row -> Enum.zip(cols, row) |> Map.new() end)
   end
 end

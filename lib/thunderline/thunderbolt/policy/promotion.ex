@@ -14,5 +14,6 @@ defmodule Thunderline.Thunderbolt.Policy.Promotion do
       _ -> false
     end
   end
+
   def promote?(_), do: false
 end

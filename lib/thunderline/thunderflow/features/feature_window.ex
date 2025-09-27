@@ -17,36 +17,33 @@ defmodule Thunderline.Features.FeatureWindow do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :tenant_id, :uuid, allow_nil?: false
-  attribute :kind, :atom, allow_nil?: false
-    attribute :key, :string, allow_nil?: false
-    attribute :window_start, :utc_datetime, allow_nil?: false
-    attribute :window_end, :utc_datetime, allow_nil?: false
-    attribute :status, :atom, allow_nil?: false, default: :open, constraints: [one_of: [:open, :filled, :superseded]]
-    attribute :features, :map, allow_nil?: false, default: %{}
-    attribute :label_spec, :map, allow_nil?: false, default: %{}
-    attribute :labels, :map, allow_nil?: true
-    attribute :feature_schema_version, :integer, allow_nil?: false
-    attribute :provenance, :map, allow_nil?: false, default: %{}
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  calculations do
-    calculate :label_filled?, :boolean, expr(not is_nil(labels))
+  code_interface do
+    define :ingest_window
+    define :fill_labels
+    define :supersede
+    define :read
   end
 
   actions do
     defaults [:read]
 
     create :ingest_window do
-      accept [:tenant_id, :kind, :key, :window_start, :window_end, :features, :label_spec, :feature_schema_version, :provenance]
+      accept [
+        :tenant_id,
+        :kind,
+        :key,
+        :window_start,
+        :window_end,
+        :features,
+        :label_spec,
+        :feature_schema_version,
+        :provenance
+      ]
     end
 
     update :fill_labels do
       accept [:labels, :status, :provenance]
+
       change fn changeset, _ ->
         case Ash.Changeset.get_attribute(changeset, :status) do
           :filled -> changeset
@@ -59,12 +56,6 @@ defmodule Thunderline.Features.FeatureWindow do
       accept [:status]
       change fn cs, _ -> Ash.Changeset.change_attribute(cs, :status, :superseded) end
     end
-  end
-
-  multitenancy do
-    strategy :attribute
-    attribute :tenant_id
-    global? false
   end
 
   policies do
@@ -81,10 +72,35 @@ defmodule Thunderline.Features.FeatureWindow do
     end
   end
 
-  code_interface do
-    define :ingest_window
-    define :fill_labels
-    define :supersede
-    define :read
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :tenant_id, :uuid, allow_nil?: false
+    attribute :kind, :atom, allow_nil?: false
+    attribute :key, :string, allow_nil?: false
+    attribute :window_start, :utc_datetime, allow_nil?: false
+    attribute :window_end, :utc_datetime, allow_nil?: false
+
+    attribute :status, :atom,
+      allow_nil?: false,
+      default: :open,
+      constraints: [one_of: [:open, :filled, :superseded]]
+
+    attribute :features, :map, allow_nil?: false, default: %{}
+    attribute :label_spec, :map, allow_nil?: false, default: %{}
+    attribute :labels, :map, allow_nil?: true
+    attribute :feature_schema_version, :integer, allow_nil?: false
+    attribute :provenance, :map, allow_nil?: false, default: %{}
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  calculations do
+    calculate :label_filled?, :boolean, expr(not is_nil(labels))
   end
 end

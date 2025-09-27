@@ -89,8 +89,13 @@ defmodule Thundergate.ThunderBridge do
     build_and_publish = fn attrs ->
       with {:ok, ev} <- Thunderline.Event.new(attrs) do
         case Thunderline.EventBus.publish_event(ev) do
-          {:ok, _} -> :ok
-          {:error, reason} -> Logger.warning("[ThunderBridge] publish failed: #{inspect(reason)} name=#{attrs.name}")
+          {:ok, _} ->
+            :ok
+
+          {:error, reason} ->
+            Logger.warning(
+              "[ThunderBridge] publish failed: #{inspect(reason)} name=#{attrs.name}"
+            )
         end
       end
     end
@@ -382,6 +387,7 @@ defmodule Thundergate.ThunderBridge do
 
   defp broadcast_event_internal(topic, event) do
     pipeline = infer_pipeline_from_topic(topic)
+
     attrs = %{
       name: "system.bridge.thunder_bridge_event",
       type: :thunder_bridge_event,
@@ -389,10 +395,16 @@ defmodule Thundergate.ThunderBridge do
       payload: %{topic: topic, event: event, timestamp: DateTime.utc_now()},
       meta: %{pipeline: pipeline}
     }
+
     with {:ok, ev} <- Thunderline.Event.new(attrs) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[ThunderBridge] publish internal failed: #{inspect(reason)} topic=#{topic}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "[ThunderBridge] publish internal failed: #{inspect(reason)} topic=#{topic}"
+          )
       end
     end
   end

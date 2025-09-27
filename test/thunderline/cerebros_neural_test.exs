@@ -1,5 +1,6 @@
 defmodule Thunderline.CerebrosNeuralTest do
   use ExUnit.Case, async: false
+
   @moduledoc """
   Legacy Cerebros neural integration tests disabled; ErlangBridge removed.
   Retained as skipped placeholders to preserve test names.

@@ -16,10 +16,13 @@ defmodule Thunderline.Thunderflow.Observability.Drift do
     iex> ingest_embedding([0.1, 0.2, 0.3])
     :ok
   """
-  def ingest_embedding(%{embedding: _}=map), do: publish(map)
-  def ingest_embedding(%{"embedding" => _}=map), do: publish(map)
+  def ingest_embedding(%{embedding: _} = map), do: publish(map)
+  def ingest_embedding(%{"embedding" => _} = map), do: publish(map)
   def ingest_embedding(list) when is_list(list), do: publish(%{embedding: list})
-  def ingest_embedding(tuple) when is_tuple(tuple), do: publish(%{embedding: Tuple.to_list(tuple)})
+
+  def ingest_embedding(tuple) when is_tuple(tuple),
+    do: publish(%{embedding: Tuple.to_list(tuple)})
+
   def ingest_embedding(_other), do: :ignored
 
   @doc """

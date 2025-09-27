@@ -18,7 +18,8 @@ defmodule Thunderline.Thunderflow.Blackboard do
   alias Phoenix.PubSub
 
   @pubsub Thunderline.PubSub
-  @topic "automata:blackboard" # retained topic for compatibility
+  # retained topic for compatibility
+  @topic "automata:blackboard"
 
   @typedoc "Blackboard key"
   @type key :: term()
@@ -69,8 +70,12 @@ defmodule Thunderline.Thunderflow.Blackboard do
   # --- GenServer callbacks ---
   @impl true
   def init(_opts) do
-    global = :ets.new(:thunderflow_blackboard_global, [:named_table, :public, read_concurrency: true])
-    local = :ets.new(:thunderflow_blackboard_node, [:named_table, :public, read_concurrency: true])
+    global =
+      :ets.new(:thunderflow_blackboard_global, [:named_table, :public, read_concurrency: true])
+
+    local =
+      :ets.new(:thunderflow_blackboard_node, [:named_table, :public, read_concurrency: true])
+
     state = %{data: %{global: %{}, node: %{}}, tables: %{global: global, node: local}}
     {:ok, state}
   end
@@ -89,10 +94,19 @@ defmodule Thunderline.Thunderflow.Blackboard do
   def handle_call({:fetch, scope, key}, _from, state) do
     case :ets.lookup(state.tables[scope], key) do
       [{^key, value}] ->
-        :telemetry.execute([:thunderline, :blackboard, :fetch], %{count: 1}, %{scope: scope, outcome: :hit})
+        :telemetry.execute([:thunderline, :blackboard, :fetch], %{count: 1}, %{
+          scope: scope,
+          outcome: :hit
+        })
+
         {:reply, {:ok, value}, state}
+
       [] ->
-        :telemetry.execute([:thunderline, :blackboard, :fetch], %{count: 1}, %{scope: scope, outcome: :miss})
+        :telemetry.execute([:thunderline, :blackboard, :fetch], %{count: 1}, %{
+          scope: scope,
+          outcome: :miss
+        })
+
         {:reply, :error, state}
     end
   end
@@ -107,6 +121,10 @@ defmodule Thunderline.Thunderflow.Blackboard do
   end
 
   defp notify(scope, key, value, ts) do
-    PubSub.broadcast(@pubsub, @topic, {:blackboard_update, %{scope: scope, key: key, value: value, ts: ts}})
+    PubSub.broadcast(
+      @pubsub,
+      @topic,
+      {:blackboard_update, %{scope: scope, key: key, value: value, ts: ts}}
+    )
   end
 end

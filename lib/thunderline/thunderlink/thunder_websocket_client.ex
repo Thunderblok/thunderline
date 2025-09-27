@@ -84,8 +84,10 @@ defmodule Thunderlink.ThunderWebsocketClient do
     case ThunderBridge.get_system_state() do
       {:ok, system_state} when is_map(system_state) ->
         {:reply, {:ok, system_state}, state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
+
       other ->
         # Unexpected shape; log for visibility and treat as error
         Logger.debug("Unexpected system state response: #{inspect(other)}")
@@ -157,8 +159,10 @@ defmodule Thunderlink.ThunderWebsocketClient do
     case ThunderBridge.get_system_state() do
       {:ok, system_state} when is_map(system_state) ->
         broadcast_update(:system_state, system_state)
+
       {:error, reason} ->
         Logger.debug("Failed to fetch system state: #{inspect(reason)}")
+
       other ->
         Logger.debug("Unexpected system state response: #{inspect(other)}")
     end

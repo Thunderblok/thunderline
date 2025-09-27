@@ -42,6 +42,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
   """
   @spec encode(atom(), term(), map(), keyword()) :: encoded_call
   def encode(op, payload, config, opts \\ [])
+
   def encode(:start_run, %Contracts.RunStartedV1{} = contract, config, opts) do
     payload = contract_to_map(contract)
 
@@ -113,7 +114,15 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
   def decode(_op, _payload, raw, _config, _opts \\ []) do
     base =
       raw
-      |> Map.take([:returncode, :stdout, :stderr, :stdout_excerpt, :stderr_excerpt, :attempts, :duration_ms])
+      |> Map.take([
+        :returncode,
+        :stdout,
+        :stderr,
+        :stdout_excerpt,
+        :stderr_excerpt,
+        :attempts,
+        :duration_ms
+      ])
       |> Enum.into(%{})
 
     result =
@@ -180,16 +189,19 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
     parser =
       Keyword.get(opts, :parser)
 
-    payload_json = Jason.encode!(%{
-      op: Atom.to_string(op),
-      payload: payload
-    })
+    payload_json =
+      Jason.encode!(%{
+        op: Atom.to_string(op),
+        payload: payload
+      })
 
     %{
       command: command,
       args: Enum.map(args, &to_string/1),
       env: merged_env |> Map.put_new("CEREBROS_BRIDGE_PAYLOAD", payload_json),
-      working_dir: Keyword.get(opts, :working_dir) || Map.get(config, :working_dir) || Map.get(config, :repo_path),
+      working_dir:
+        Keyword.get(opts, :working_dir) || Map.get(config, :working_dir) ||
+          Map.get(config, :repo_path),
       input: Keyword.get(opts, :input) || payload_json,
       timeout_ms: timeout_ms,
       cache_key: cache_key,
@@ -210,7 +222,10 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
   defp normalize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp normalize_value(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
   defp normalize_value(%struct{} = value), do: contract_to_map(value)
-  defp normalize_value(%{} = value), do: Enum.into(value, %{}, fn {k, v} -> {k, normalize_value(v)} end)
+
+  defp normalize_value(%{} = value),
+    do: Enum.into(value, %{}, fn {k, v} -> {k, normalize_value(v)} end)
+
   defp normalize_value(list) when is_list(list), do: Enum.map(list, &normalize_value/1)
   defp normalize_value(value), do: value
 

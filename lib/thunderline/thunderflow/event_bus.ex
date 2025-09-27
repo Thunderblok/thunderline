@@ -31,11 +31,13 @@ defmodule Thunderline.Thunderflow.EventBus do
   @spec publish_event(Thunderline.Event.t()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def publish_event(%Thunderline.Event{} = ev) do
     start = System.monotonic_time()
+
     case EventValidator.validate(ev) do
       :ok -> do_publish(ev, start)
       {:error, reason} -> on_invalid(ev, reason, start)
     end
   end
+
   def publish_event(other), do: {:error, {:unsupported_event, other}}
 
   @spec publish_event!(Thunderline.Event.t()) :: Thunderline.Event.t() | no_return()
@@ -114,15 +116,28 @@ defmodule Thunderline.Thunderflow.EventBus do
   defp do_publish(%Thunderline.Event{} = ev, start) do
     pipeline = pipeline_for(ev)
     {table, priority} = table_and_priority(pipeline, ev.priority)
+
     try do
-      Thunderflow.MnesiaProducer.enqueue_event(table, ev, pipeline_type: pipeline, priority: priority)
-      :telemetry.execute([:thunderline, :event, :enqueue], %{count: 1}, %{pipeline: pipeline, name: ev.name, priority: priority})
+      Thunderflow.MnesiaProducer.enqueue_event(table, ev,
+        pipeline_type: pipeline,
+        priority: priority
+      )
+
+      :telemetry.execute([:thunderline, :event, :enqueue], %{count: 1}, %{
+        pipeline: pipeline,
+        name: ev.name,
+        priority: priority
+      })
+
       telemetry_publish(start, ev, :ok, pipeline)
       maybe_tap(ev, pipeline, :enqueue)
       {:ok, ev}
     rescue
       error ->
-        Logger.warning("MnesiaProducer unavailable (#{pipeline}) fallback PubSub: #{inspect(error)}")
+        Logger.warning(
+          "MnesiaProducer unavailable (#{pipeline}) fallback PubSub: #{inspect(error)}"
+        )
+
         PubSub.broadcast(@pubsub, "events:" <> to_string(ev.type || :unknown), ev)
         telemetry_publish(start, ev, :ok, :fallback_pubsub)
         maybe_tap(ev, pipeline, :fallback_pubsub)
@@ -131,17 +146,32 @@ defmodule Thunderline.Thunderflow.EventBus do
   end
 
   defp telemetry_publish(start, ev, status, pipeline) do
-    :telemetry.execute([:thunderline, :event, :publish], %{duration: System.monotonic_time() - start}, %{status: status, name: ev.name, pipeline: pipeline})
+    :telemetry.execute(
+      [:thunderline, :event, :publish],
+      %{duration: System.monotonic_time() - start},
+      %{status: status, name: ev.name, pipeline: pipeline}
+    )
   end
 
   defp pipeline_for(%Thunderline.Event{} = ev) do
     cond do
-      match?(%{meta: %{pipeline: p}} when p in [:realtime, :cross_domain, :general], ev) -> ev.meta.pipeline
-      is_binary(ev.name) and String.starts_with?(ev.name, "ai.") -> :realtime
-      is_binary(ev.name) and String.starts_with?(ev.name, "grid.") -> :realtime
-      ev.target_domain && ev.target_domain != "broadcast" -> :cross_domain
-      ev.priority == :high -> :realtime
-      true -> :general
+      match?(%{meta: %{pipeline: p}} when p in [:realtime, :cross_domain, :general], ev) ->
+        ev.meta.pipeline
+
+      is_binary(ev.name) and String.starts_with?(ev.name, "ai.") ->
+        :realtime
+
+      is_binary(ev.name) and String.starts_with?(ev.name, "grid.") ->
+        :realtime
+
+      ev.target_domain && ev.target_domain != "broadcast" ->
+        :cross_domain
+
+      ev.priority == :high ->
+        :realtime
+
+      true ->
+        :general
     end
   end
 
@@ -160,6 +190,7 @@ defmodule Thunderline.Thunderflow.EventBus do
     if feature?(:debug_event_tap) do
       safe_put = fn ->
         msg = ev.name || to_string(ev.type || :event)
+
         Thunderline.Thunderflow.EventBuffer.put(%{
           kind: :tap,
           domain: pipeline,
@@ -167,6 +198,7 @@ defmodule Thunderline.Thunderflow.EventBus do
           source: "eventbus"
         })
       end
+
       try do
         safe_put.()
       rescue

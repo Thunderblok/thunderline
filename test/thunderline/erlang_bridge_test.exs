@@ -1,5 +1,6 @@
 defmodule Thunderline.ErlangBridgeTest do
   use ExUnit.Case, async: false
+
   @moduledoc """
   Legacy ErlangBridge test suite disabled; bridge removed.
   Placeholder kept so historical test references don't break tooling.

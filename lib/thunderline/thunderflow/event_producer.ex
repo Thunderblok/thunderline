@@ -20,14 +20,14 @@ defmodule Thunderflow.EventProducer do
     "thunderline:metrics",
     "thunderline:dashboard",
     "thunderline:websocket",
-  # Canonical realtime comms topics
-  "thunderline:channels",
-  "thunderline:communities",
+    # Canonical realtime comms topics
+    "thunderline:channels",
+    "thunderline:communities",
     "thunderbolt:events",
     "thunderbolt:alerts",
-  # Legacy comm topics (scheduled for removal after migration window)
-  "thunderblock:channels",
-  "thunderblock:communities",
+    # Legacy comm topics (scheduled for removal after migration window)
+    "thunderblock:channels",
+    "thunderblock:communities",
     "thundergrid:zones",
     "thundergrid:resources",
     "thunderblock:memory",

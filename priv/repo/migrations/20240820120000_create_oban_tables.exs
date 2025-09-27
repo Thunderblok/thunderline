@@ -28,9 +28,9 @@ defmodule Thunderline.Repo.Migrations.CreateObanTables do
       timestamps(updated_at: false)
     end
 
-  create_if_not_exists index(:oban_jobs, [:queue, :state])
-  create_if_not_exists index(:oban_jobs, [:scheduled_at])
-  create_if_not_exists index(:oban_jobs, [:attempted_at])
+    create_if_not_exists index(:oban_jobs, [:queue, :state])
+    create_if_not_exists index(:oban_jobs, [:scheduled_at])
+    create_if_not_exists index(:oban_jobs, [:attempted_at])
 
     create_if_not_exists table(:oban_peers, primary_key: false) do
       add :name, :text, primary_key: true

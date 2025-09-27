@@ -76,7 +76,11 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
     unexpected_domains = existing_domains -- @valid_domains
 
     %{
-      status: if(length(missing_domains) == 0 and length(unexpected_domains) == 0, do: :valid, else: :warning),
+      status:
+        if(length(missing_domains) == 0 and length(unexpected_domains) == 0,
+          do: :valid,
+          else: :warning
+        ),
       existing_domains: existing_domains,
       missing_domains: missing_domains,
       unexpected_domains: unexpected_domains,
@@ -109,7 +113,11 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
     duplicate_ownership = find_duplicate_ownership(resources_by_domain)
 
     %{
-      status: if(length(orphaned_resources) == 0 and length(duplicate_ownership) == 0, do: :valid, else: :error),
+      status:
+        if(length(orphaned_resources) == 0 and length(duplicate_ownership) == 0,
+          do: :valid,
+          else: :error
+        ),
       resources_by_domain: resources_by_domain,
       orphaned_resources: orphaned_resources,
       duplicate_ownership: duplicate_ownership,
@@ -154,13 +162,14 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
         length(results.interaction_matrix.issues),
         length(results.resource_ownership.issues),
         length(results.unknown_edges)
-      ] |> Enum.sum()
+      ]
+      |> Enum.sum()
 
     summary = %{
-      results.summary |
-      total_resources: total_resources,
-      total_interactions: total_interactions,
-      violation_count: violation_count
+      results.summary
+      | total_resources: total_resources,
+        total_interactions: total_interactions,
+        violation_count: violation_count
     }
 
     %{results | summary: summary}
@@ -216,24 +225,27 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
   defp format_domain_section(domain_structure) do
     sections = []
 
-    sections = if length(domain_structure.missing_domains) > 0 do
-      [sections, "  Missing: #{Enum.join(domain_structure.missing_domains, ", ")}"]
-    else
-      sections
-    end
+    sections =
+      if length(domain_structure.missing_domains) > 0 do
+        [sections, "  Missing: #{Enum.join(domain_structure.missing_domains, ", ")}"]
+      else
+        sections
+      end
 
-    sections = if length(domain_structure.unexpected_domains) > 0 do
-      [sections, "  Unexpected: #{Enum.join(domain_structure.unexpected_domains, ", ")}"]
-    else
-      sections
-    end
+    sections =
+      if length(domain_structure.unexpected_domains) > 0 do
+        [sections, "  Unexpected: #{Enum.join(domain_structure.unexpected_domains, ", ")}"]
+      else
+        sections
+      end
 
-    sections = if length(domain_structure.issues) > 0 do
-      issue_text = Enum.map(domain_structure.issues, &"    ⚠️  #{&1}") |> Enum.join("\n")
-      [sections, "  Issues:\n#{issue_text}"]
-    else
-      sections
-    end
+    sections =
+      if length(domain_structure.issues) > 0 do
+        issue_text = Enum.map(domain_structure.issues, &"    ⚠️  #{&1}") |> Enum.join("\n")
+        [sections, "  Issues:\n#{issue_text}"]
+      else
+        sections
+      end
 
     List.flatten(sections) |> Enum.join("\n")
   end
@@ -244,7 +256,8 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
       Actual: #{length(interactions.actual_interactions)}
       Undocumented: #{length(interactions.undocumented_interactions)}
       Obsolete: #{length(interactions.obsolete_interactions)}
-    """ |> String.trim()
+    """
+    |> String.trim()
   end
 
   defp format_ownership_section(ownership) do
@@ -274,20 +287,22 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
   defp format_next_steps(results) do
     steps = ["Next Steps:"]
 
-    steps = if results.summary.violation_count > 0 do
-      [steps, "  - Address violations before deployment"]
-    else
-      steps
-    end
+    steps =
+      if results.summary.violation_count > 0 do
+        [steps, "  - Address violations before deployment"]
+      else
+        steps
+      end
 
-    steps = if length(results.unknown_edges) > 0 do
-      [steps, "  - Document unknown cross-domain edges in interaction matrix"]
-    else
-      steps
-    end
+    steps =
+      if length(results.unknown_edges) > 0 do
+        [steps, "  - Document unknown cross-domain edges in interaction matrix"]
+      else
+        steps
+      end
 
-  steps = [steps, "  - Run `mix thunderline.brg.check` for operational readiness"]
-  steps = [steps, "  - Update domain catalog documentation"]
+    steps = [steps, "  - Run `mix thunderline.brg.check` for operational readiness"]
+    steps = [steps, "  - Update domain catalog documentation"]
 
     List.flatten(steps) |> Enum.join("\n")
   end
@@ -302,7 +317,9 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
         |> Enum.filter(&File.dir?("lib/thunderline/#{&1}"))
         |> Enum.filter(&String.starts_with?(&1, "thunder"))
         |> Enum.sort()
-      _ -> []
+
+      _ ->
+        []
     end
   end
 
@@ -338,17 +355,19 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
   defp build_domain_issues(missing, unexpected) do
     issues = []
 
-    issues = if length(missing) > 0 do
-      [issues, "Missing domain directories: #{Enum.join(missing, ", ")}"]
-    else
-      issues
-    end
+    issues =
+      if length(missing) > 0 do
+        [issues, "Missing domain directories: #{Enum.join(missing, ", ")}"]
+      else
+        issues
+      end
 
-    issues = if length(unexpected) > 0 do
-      [issues, "Unexpected domain directories: #{Enum.join(unexpected, ", ")}"]
-    else
-      issues
-    end
+    issues =
+      if length(unexpected) > 0 do
+        [issues, "Unexpected domain directories: #{Enum.join(unexpected, ", ")}"]
+      else
+        issues
+      end
 
     List.flatten(issues)
   end
@@ -356,17 +375,19 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
   defp build_interaction_issues(undocumented, obsolete) do
     issues = []
 
-    issues = if length(undocumented) > 0 do
-      [issues, "Undocumented interactions found - update interaction matrix"]
-    else
-      issues
-    end
+    issues =
+      if length(undocumented) > 0 do
+        [issues, "Undocumented interactions found - update interaction matrix"]
+      else
+        issues
+      end
 
-    issues = if length(obsolete) > 0 do
-      [issues, "Obsolete interactions in matrix - clean up documentation"]
-    else
-      issues
-    end
+    issues =
+      if length(obsolete) > 0 do
+        [issues, "Obsolete interactions in matrix - clean up documentation"]
+      else
+        issues
+      end
 
     List.flatten(issues)
   end
@@ -374,17 +395,19 @@ defmodule Mix.Tasks.Thunderline.Catalog.Validate do
   defp build_ownership_issues(orphaned, duplicates) do
     issues = []
 
-    issues = if length(orphaned) > 0 do
-      [issues, "Orphaned resources need domain assignment"]
-    else
-      issues
-    end
+    issues =
+      if length(orphaned) > 0 do
+        [issues, "Orphaned resources need domain assignment"]
+      else
+        issues
+      end
 
-    issues = if length(duplicates) > 0 do
-      [issues, "Duplicate resource ownership detected"]
-    else
-      issues
-    end
+    issues =
+      if length(duplicates) > 0 do
+        [issues, "Duplicate resource ownership detected"]
+      else
+        issues
+      end
 
     List.flatten(issues)
   end

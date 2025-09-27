@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshGraphql.Resource, AshEvents.Events]
+
   require Logger
 
   postgres do
@@ -333,14 +334,24 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
 
   defp deploy_to_thundercells(_changeset, ruleset) do
     # Broadcast ruleset to all active ThunderCells
-    with {:ok, ev} <- Thunderline.Event.new(name: "system.ruleset.deployed", source: :bolt, type: :ruleset_deployed, payload: %{
-      ruleset_id: ruleset.id,
-      version: ruleset.version,
-      ruleset: serialize_for_deployment(ruleset)
-    }, meta: %{pipeline: :realtime}) do
+    with {:ok, ev} <-
+           Thunderline.Event.new(
+             name: "system.ruleset.deployed",
+             source: :bolt,
+             type: :ruleset_deployed,
+             payload: %{
+               ruleset_id: ruleset.id,
+               version: ruleset.version,
+               ruleset: serialize_for_deployment(ruleset)
+             },
+             meta: %{pipeline: :realtime}
+           ) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[RuleSet] publish deployed failed: #{inspect(reason)}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("[RuleSet] publish deployed failed: #{inspect(reason)}")
       end
     end
 
@@ -361,14 +372,24 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
       alpha_zy: ruleset.alpha_zy
     }
 
-    with {:ok, ev} <- Thunderline.Event.new(name: "system.ruleset.alpha_gains_updated", source: :bolt, type: :alpha_gains_updated, payload: %{
-      ruleset_id: ruleset.id,
-      version: ruleset.version,
-      alpha_deltas: alpha_deltas
-    }, meta: %{pipeline: :realtime}) do
+    with {:ok, ev} <-
+           Thunderline.Event.new(
+             name: "system.ruleset.alpha_gains_updated",
+             source: :bolt,
+             type: :alpha_gains_updated,
+             payload: %{
+               ruleset_id: ruleset.id,
+               version: ruleset.version,
+               alpha_deltas: alpha_deltas
+             },
+             meta: %{pipeline: :realtime}
+           ) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[RuleSet] publish alpha_gains_updated failed: #{inspect(reason)}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("[RuleSet] publish alpha_gains_updated failed: #{inspect(reason)}")
       end
     end
 

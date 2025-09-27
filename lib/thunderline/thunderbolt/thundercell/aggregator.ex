@@ -72,10 +72,13 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Aggregator do
 
   defp fetch_telemetry do
     case Telemetry.get_compute_metrics() do
-      {:ok, metrics} -> {:ok, unwrap_metrics(metrics)}
+      {:ok, metrics} ->
+        {:ok, unwrap_metrics(metrics)}
+
       {:error, reason} ->
         # If telemetry server not started yet, provide minimal structure
         Logger.warning("Telemetry unavailable: #{inspect(reason)}")
+
         {:ok,
          %{
            generation_stats: %{},

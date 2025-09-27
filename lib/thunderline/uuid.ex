@@ -18,18 +18,27 @@ defmodule Thunderline.UUID do
     rand_a_12 = :crypto.strong_rand_bytes(2) |> :binary.decode_unsigned() &&& 0x0FFF
     rand_b_62 = :crypto.strong_rand_bytes(8) |> :binary.decode_unsigned() &&& 0x3FFFFFFFFFFFFFFF
 
-    version_and_rand_a = (0x7 <<< 12) ||| rand_a_12
-    high14 = (rand_b_62 >>> 48) &&& 0x3FFF
-    variant_and_rand_b_high = (0b10 <<< 14) ||| high14
+    version_and_rand_a = 0x7 <<< 12 ||| rand_a_12
+    high14 = rand_b_62 >>> 48 &&& 0x3FFF
+    variant_and_rand_b_high = 0b10 <<< 14 ||| high14
     rand_b_low_48 = rand_b_62 &&& 0xFFFFFFFFFFFF
-    rand_b_mid_16 = (rand_b_low_48 >>> 32) &&& 0xFFFF
+    rand_b_mid_16 = rand_b_low_48 >>> 32 &&& 0xFFFF
     rand_b_low_32 = rand_b_low_48 &&& 0xFFFFFFFF
 
-    binary = <<unix_ms::unsigned-big-48, version_and_rand_a::unsigned-big-16, variant_and_rand_b_high::unsigned-big-16, rand_b_mid_16::unsigned-big-16, rand_b_low_32::unsigned-big-32>>
-    <<p0::unsigned-big-32, p1::unsigned-big-16, p2::unsigned-big-16, p3::unsigned-big-16, p4::unsigned-big-48>> = binary
-    to_hex(p0, 8) <> "-" <> to_hex(p1, 4) <> "-" <> to_hex(p2, 4) <> "-" <> to_hex(p3, 4) <> "-" <> to_hex(p4, 12)
+    binary =
+      <<unix_ms::unsigned-big-48, version_and_rand_a::unsigned-big-16,
+        variant_and_rand_b_high::unsigned-big-16, rand_b_mid_16::unsigned-big-16,
+        rand_b_low_32::unsigned-big-32>>
+
+    <<p0::unsigned-big-32, p1::unsigned-big-16, p2::unsigned-big-16, p3::unsigned-big-16,
+      p4::unsigned-big-48>> = binary
+
+    to_hex(p0, 8) <>
+      "-" <>
+      to_hex(p1, 4) <> "-" <> to_hex(p2, 4) <> "-" <> to_hex(p3, 4) <> "-" <> to_hex(p4, 12)
   rescue
-    _ -> UUID.uuid4() # fallback
+    # fallback
+    _ -> UUID.uuid4()
   end
 
   defp to_hex(int, digits) do

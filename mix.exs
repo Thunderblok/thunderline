@@ -204,6 +204,7 @@ defmodule Thunderline.MixProject do
       ],
       # WARHORSE lint bundle (Phase1 advisory)
       lint: ["format --check-formatted", "credo --strict"],
+      precommit: ["lint", "thunderline.events.lint", "test"],
       test: ["ash.setup --quiet", "test"]
     ]
   end

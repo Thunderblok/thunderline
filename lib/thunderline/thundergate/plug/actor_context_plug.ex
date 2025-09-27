@@ -23,12 +23,15 @@ defmodule Thunderline.Thundergate.Plug.ActorContextPlug do
       {:ok, ctx} ->
         telemetry(:success, %{actor: ctx.actor_id, tenant: ctx.tenant})
         assign(conn, :actor_ctx, ctx)
+
       {:error, :missing} ->
         telemetry(:missing)
         maybe_halt(assign(conn, :actor_ctx, nil), require?)
+
       {:error, :expired} ->
         telemetry(:expired)
         maybe_halt(assign(conn, :actor_ctx, nil), require?)
+
       {:error, _} ->
         telemetry(:deny)
         maybe_halt(assign(conn, :actor_ctx, nil), require?)
@@ -36,10 +39,15 @@ defmodule Thunderline.Thundergate.Plug.ActorContextPlug do
   end
 
   defp telemetry(result, meta \\ %{}) do
-    :telemetry.execute([:thunderline, :gate, :auth, :result], %{count: 1}, Map.put(meta, :result, result))
+    :telemetry.execute(
+      [:thunderline, :gate, :auth, :result],
+      %{count: 1},
+      Map.put(meta, :result, result)
+    )
   end
 
   defp maybe_halt(conn, false), do: conn
+
   defp maybe_halt(conn, true) do
     conn |> send_resp(401, "unauthorized") |> halt()
   end
@@ -56,8 +64,11 @@ defmodule Thunderline.Thundergate.Plug.ActorContextPlug do
           {:error, _} -> {:error, :invalid}
         end
 
-      [] -> {:error, :missing}
-      _ -> {:error, :invalid}
+      [] ->
+        {:error, :missing}
+
+      _ ->
+        {:error, :invalid}
     end
   end
 end

@@ -41,7 +41,14 @@ defmodule Thunderline.Thundercrown.Action do
     correlation_id = opts[:correlation_id] || uuid()
     causation_id = opts[:causation_id]
     actor = opts[:actor]
-    meta = %{resource: resource, action: action, correlation_id: correlation_id, causation_id: causation_id}
+
+    meta = %{
+      resource: resource,
+      action: action,
+      correlation_id: correlation_id,
+      causation_id: causation_id
+    }
+
     start_time = System.monotonic_time()
 
     measurements = %{system_time: System.system_time()}
@@ -63,11 +70,22 @@ defmodule Thunderline.Thundercrown.Action do
 
     case result do
       {:ok, value} ->
-        :telemetry.execute(telemetry_prefix ++ [:stop], %{duration: duration_us}, Map.put(meta, :result, :ok))
+        :telemetry.execute(
+          telemetry_prefix ++ [:stop],
+          %{duration: duration_us},
+          Map.put(meta, :result, :ok)
+        )
+
         emit? and emit_success(event_name, value, correlation_id, causation_id, opts)
         {:ok, value}
+
       {:error, error} ->
-        :telemetry.execute(telemetry_prefix ++ [:exception], %{duration: duration_us}, Map.put(meta, :error, error))
+        :telemetry.execute(
+          telemetry_prefix ++ [:exception],
+          %{duration: duration_us},
+          Map.put(meta, :error, error)
+        )
+
         emit? and emit_error(event_name, error, correlation_id, causation_id, opts)
         {:error, error}
     end
@@ -84,7 +102,8 @@ defmodule Thunderline.Thundercrown.Action do
         {:error, err} -> raise err
       end
     else
-      raise ArgumentError, "Unsupported resource module #{inspect(resource)} for Thunderline.Thundercrown.Action.call/4"
+      raise ArgumentError,
+            "Unsupported resource module #{inspect(resource)} for Thunderline.Thundercrown.Action.call/4"
     end
   end
 
@@ -95,6 +114,7 @@ defmodule Thunderline.Thundercrown.Action do
     base = resource |> Module.split() |> List.last() |> Macro.underscore()
     "system." <> base <> "." <> to_string(action)
   end
+
   defp default_event_name(resource, action, {:error, _}) do
     base = resource |> Module.split() |> List.last() |> Macro.underscore()
     "system." <> base <> "." <> to_string(action)
@@ -108,11 +128,13 @@ defmodule Thunderline.Thundercrown.Action do
 
   defp emit_error(event_name, error, correlation_id, causation_id, opts) do
     envelope = base_envelope(event_name, correlation_id, causation_id, opts)
+
     class =
       case error do
         %{__exception__: true} -> error.__struct__ |> to_string()
         _ -> inspect(error)
       end
+
     payload = %{error: Exception.message(error), class: class}
     publish(envelope, payload)
   end
@@ -141,13 +163,19 @@ defmodule Thunderline.Thundercrown.Action do
 
   defp publish(envelope, payload) do
     attrs = Map.merge(envelope, %{payload: payload, type: :action_event, source: envelope.source})
+
     case Thunderline.Event.new(attrs) do
       {:ok, ev} ->
         case Thunderline.Thunderflow.EventBus.publish_event(ev) do
-          {:ok, _} -> :ok
-          {:error, reason} -> Logger.warning("Failed to publish action event #{envelope.name}: #{inspect(reason)}")
+          {:ok, _} ->
+            :ok
+
+          {:error, reason} ->
+            Logger.warning("Failed to publish action event #{envelope.name}: #{inspect(reason)}")
         end
-      {:error, errs} -> Logger.warning("Failed to construct action event #{envelope.name}: #{inspect(errs)}")
+
+      {:error, errs} ->
+        Logger.warning("Failed to construct action event #{envelope.name}: #{inspect(errs)}")
     end
   rescue
     e -> Logger.warning("Failed to emit action event #{envelope.name}: #{inspect(e)}")

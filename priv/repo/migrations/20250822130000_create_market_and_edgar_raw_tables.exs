@@ -6,10 +6,12 @@ defmodule Thunderline.Repo.Migrations.CreateMarketAndEdgarRawTables do
       add :id, :uuid, primary_key: true
       add :tenant_id, :uuid, null: false
       add :symbol, :text, null: false
-      add :ts, :bigint, null: false # monotonic microsecond timestamp
+      # monotonic microsecond timestamp
+      add :ts, :bigint, null: false
       add :vendor_seq, :bigint
       add :payload, :map, null: false
     end
+
     create index(:raw_market_ticks, [:tenant_id, :symbol, :ts])
 
     create table(:raw_edgar_docs, primary_key: false) do
@@ -27,6 +29,9 @@ defmodule Thunderline.Repo.Migrations.CreateMarketAndEdgarRawTables do
     end
 
     create index(:raw_edgar_docs, [:tenant_id, :cik, :filing_time])
-    create unique_index(:raw_edgar_docs, [:cik, :form, :filing_time, :hash], name: :raw_edgar_docs_unique_filing)
+
+    create unique_index(:raw_edgar_docs, [:cik, :form, :filing_time, :hash],
+             name: :raw_edgar_docs_unique_filing
+           )
   end
 end

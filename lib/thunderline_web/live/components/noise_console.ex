@@ -13,7 +13,9 @@ defmodule ThunderlineWeb.Live.Components.NoiseConsole do
   end
 
   defp load(limit) do
-    entries = Thunderline.Thunderflow.Observability.RingBuffer.recent(limit, Thunderline.NoiseBuffer)
+    entries =
+      Thunderline.Thunderflow.Observability.RingBuffer.recent(limit, Thunderline.NoiseBuffer)
+
     %{entries: entries, limit: limit}
   end
 
@@ -21,17 +23,24 @@ defmodule ThunderlineWeb.Live.Components.NoiseConsole do
     ~H"""
     <div class="noise-console">
       <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-semibold">Noise Buffer (last <%= @limit %>)</h3>
-        <button phx-click="refresh" phx-target={@myself} class="text-xs px-2 py-1 bg-slate-700 rounded">Refresh</button>
+        <h3 class="text-sm font-semibold">Noise Buffer (last {@limit})</h3>
+        <button
+          phx-click="refresh"
+          phx-target={@myself}
+          class="text-xs px-2 py-1 bg-slate-700 rounded"
+        >
+          Refresh
+        </button>
       </div>
       <ul class="text-xs space-y-1 max-h-64 overflow-y-auto font-mono">
         <%= for {ts, msg} <- @entries do %>
-          <li><span class="text-slate-500"><%= format_ts(ts) %></span> <%= inspect(msg) %></li>
+          <li><span class="text-slate-500">{format_ts(ts)}</span> {inspect(msg)}</li>
         <% end %>
       </ul>
     </div>
     """
   end
 
-  defp format_ts(ms), do: DateTime.from_unix!(ms, :millisecond) |> Calendar.strftime("%H:%M:%S.%f")
+  defp format_ts(ms),
+    do: DateTime.from_unix!(ms, :millisecond) |> Calendar.strftime("%H:%M:%S.%f")
 end

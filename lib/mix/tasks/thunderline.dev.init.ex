@@ -20,7 +20,6 @@ defmodule Mix.Tasks.Thunderline.Dev.Init do
   """
   use Mix.Task
 
-
   @impl true
   def run(_args) do
     Mix.Task.run("app.start")
@@ -31,11 +30,15 @@ defmodule Mix.Tasks.Thunderline.Dev.Init do
     maybe_seed()
 
     Mix.shell().info("\n✅ Dev bootstrap complete. Start server with: mix phx.server")
-    Mix.shell().info("If LiveView UI still shows DB errors, ensure Postgres is actually running and port matches config.")
+
+    Mix.shell().info(
+      "If LiveView UI still shows DB errors, ensure Postgres is actually running and port matches config."
+    )
   end
 
   defp ensure_db_created do
     Mix.shell().info("Creating database (if missing)...")
+
     try do
       run_task("ash_postgres.create")
     rescue
@@ -50,6 +53,7 @@ defmodule Mix.Tasks.Thunderline.Dev.Init do
 
   defp maybe_seed do
     owner_id = System.get_env("OWNER_USER_ID")
+
     if owner_id do
       community_slug = System.get_env("COMMUNITY_SLUG") || "general"
       channel_slug = System.get_env("CHANNEL_SLUG") || "lobby"
@@ -57,7 +61,9 @@ defmodule Mix.Tasks.Thunderline.Dev.Init do
       seed_results = seed_comm_channel(owner_id, community_slug, channel_slug)
       Mix.shell().info("Seed results: #{inspect(seed_results)}")
     else
-      Mix.shell().info("Skipping seed (set OWNER_USER_ID env var to seed baseline community & channel)")
+      Mix.shell().info(
+        "Skipping seed (set OWNER_USER_ID env var to seed baseline community & channel)"
+      )
     end
   end
 

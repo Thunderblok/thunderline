@@ -52,19 +52,28 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
       queues: check_queue_health(),
       circuit_breakers: check_circuit_breaker_health(),
       warnings: check_warning_budget(),
-      overall_status: :pending  # Will be calculated
+      # Will be calculated
+      overall_status: :pending
     }
     |> calculate_overall_status()
   end
 
   defp check_domain_health do
-    domains = ["thunderblock", "thunderbolt", "thundercrown", "thunderflow",
-               "thundergate", "thundergrid", "thunderlink"]
+    domains = [
+      "thunderblock",
+      "thunderbolt",
+      "thundercrown",
+      "thunderflow",
+      "thundergate",
+      "thundergrid",
+      "thunderlink"
+    ]
 
     Enum.map(domains, fn domain ->
       %{
         name: domain,
-        status: :healthy,  # Placeholder - would check actual domain health
+        # Placeholder - would check actual domain health
+        status: :healthy,
         resources_count: count_domain_resources(domain),
         last_activity: DateTime.utc_now(),
         issues: []
@@ -76,8 +85,19 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
     fanout_stats = get_fanout_stats()
 
     issues = []
-    issues = if fanout_stats.p95_fanout > 5, do: ["High fanout detected (P95: #{fanout_stats.p95_fanout})" | issues], else: issues
-    issues = if fanout_stats.coupling_score > 7.0, do: ["High coupling score: #{:erlang.float_to_binary(fanout_stats.coupling_score, decimals: 1)}" | issues], else: issues
+
+    issues =
+      if fanout_stats.p95_fanout > 5,
+        do: ["High fanout detected (P95: #{fanout_stats.p95_fanout})" | issues],
+        else: issues
+
+    issues =
+      if fanout_stats.coupling_score > 7.0,
+        do: [
+          "High coupling score: #{:erlang.float_to_binary(fanout_stats.coupling_score, decimals: 1)}"
+          | issues
+        ],
+        else: issues
 
     status = if length(issues) > 0, do: :warning, else: :healthy
 
@@ -98,21 +118,30 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
     saturation_check = check_queue_saturation()
 
     issues = []
-    issues = if queue_stats.p95_depth > 100, do: ["High queue depth (P95: #{queue_stats.p95_depth})" | issues], else: issues
-    issues = case saturation_check do
-      {:warning, details} ->
-        saturated = length(details.saturated_queues)
-        ["#{saturated} queue(s) approaching saturation" | issues]
-      :ok -> issues
-    end
+
+    issues =
+      if queue_stats.p95_depth > 100,
+        do: ["High queue depth (P95: #{queue_stats.p95_depth})" | issues],
+        else: issues
+
+    issues =
+      case saturation_check do
+        {:warning, details} ->
+          saturated = length(details.saturated_queues)
+          ["#{saturated} queue(s) approaching saturation" | issues]
+
+        :ok ->
+          issues
+      end
 
     # Determine status with critical threshold first so it isn't masked by saturation warnings
-    status = cond do
-      queue_stats.p95_depth > 200 -> :critical
-      match?({:warning, _details}, saturation_check) -> :warning
-      queue_stats.p95_depth > 100 -> :warning
-      true -> :healthy
-    end
+    status =
+      cond do
+        queue_stats.p95_depth > 200 -> :critical
+        match?({:warning, _details}, saturation_check) -> :warning
+        queue_stats.p95_depth > 100 -> :warning
+        true -> :healthy
+      end
 
     %{
       status: status,
@@ -150,25 +179,32 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
   end
 
   defp calculate_overall_status(results) do
-    all_statuses = [
-      results.domains |> Enum.map(& &1.status),
-      [results.metrics.status, results.queues.status,
-       results.circuit_breakers.status, results.warnings.status]
-    ] |> List.flatten()
+    all_statuses =
+      [
+        results.domains |> Enum.map(& &1.status),
+        [
+          results.metrics.status,
+          results.queues.status,
+          results.circuit_breakers.status,
+          results.warnings.status
+        ]
+      ]
+      |> List.flatten()
 
-    overall = cond do
-      :critical in all_statuses -> :critical
-      :warning in all_statuses -> :warning
-      :unknown in all_statuses -> :warning
-      true -> :healthy
-    end
+    overall =
+      cond do
+        :critical in all_statuses -> :critical
+        :warning in all_statuses -> :warning
+        :unknown in all_statuses -> :warning
+        true -> :healthy
+      end
 
     %{results | overall_status: overall}
   end
 
   defp output_text(results, threshold, verbose) do
-  IO.puts("\n🛡️  Thunderline Balance Readiness Gate Check")
-  IO.puts(String.duplicate("=", 50))
+    IO.puts("\n🛡️  Thunderline Balance Readiness Gate Check")
+    IO.puts(String.duplicate("=", 50))
     IO.puts("Timestamp: #{DateTime.to_iso8601(results.timestamp)}")
     IO.puts("Overall Status: #{format_status(results.overall_status)}")
     IO.puts("")
@@ -202,12 +238,17 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
 
   defp output_domain_section(domains) do
     IO.puts("📋 Domain Health:")
+
     Enum.each(domains, fn domain ->
-      IO.puts("  #{domain.name}: #{format_status(domain.status)} (#{domain.resources_count} resources)")
+      IO.puts(
+        "  #{domain.name}: #{format_status(domain.status)} (#{domain.resources_count} resources)"
+      )
+
       if length(domain.issues) > 0 do
         Enum.each(domain.issues, &IO.puts("    ⚠️  #{&1}"))
       end
     end)
+
     IO.puts("")
   end
 
@@ -215,12 +256,18 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
     IO.puts("📊 Metrics Health: #{format_status(metrics.status)}")
     IO.puts("  Telemetry Active: #{metrics.telemetry_active}")
     IO.puts("  Fanout P95: #{metrics.fanout_p95}")
-    IO.puts("  Coupling Score: #{:erlang.float_to_binary(metrics.coupling_score, decimals: 1)}/10")
+
+    IO.puts(
+      "  Coupling Score: #{:erlang.float_to_binary(metrics.coupling_score, decimals: 1)}/10"
+    )
+
     IO.puts("  Event Samples: #{metrics.event_samples}")
     IO.puts("  Missing Metrics: #{length(metrics.missing_metrics)}")
+
     if length(metrics.issues) > 0 do
       Enum.each(metrics.issues, &IO.puts("  ⚠️  #{&1}"))
     end
+
     IO.puts("")
   end
 
@@ -235,15 +282,20 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
     # Show queue trends if available
     if map_size(queues.trend_analysis) > 0 do
       IO.puts("  Queue Trends:")
+
       Enum.each(queues.trend_analysis, fn {queue, trend} ->
         direction = if trend.is_growing, do: "↗️", else: "↘️"
-        IO.puts("    #{queue}: #{direction} P95=#{trend.recent_p95}, Δ=#{:erlang.float_to_binary(trend.avg_delta, decimals: 2)}")
+
+        IO.puts(
+          "    #{queue}: #{direction} P95=#{trend.recent_p95}, Δ=#{:erlang.float_to_binary(trend.avg_delta, decimals: 2)}"
+        )
       end)
     end
 
     if length(queues.issues) > 0 do
       Enum.each(queues.issues, &IO.puts("  ⚠️  #{&1}"))
     end
+
     IO.puts("")
   end
 
@@ -251,9 +303,11 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
     IO.puts("🔌 Circuit Breakers: #{format_status(breakers.status)}")
     IO.puts("  Active Breakers: #{breakers.active_breakers}")
     IO.puts("  Open Circuits: #{length(breakers.open_circuits)}")
+
     if length(breakers.issues) > 0 do
       Enum.each(breakers.issues, &IO.puts("  ⚠️  #{&1}"))
     end
+
     IO.puts("")
   end
 
@@ -261,9 +315,11 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
     IO.puts("⚠️  Warning Budget: #{format_status(warnings.status)}")
     IO.puts("  Current Warnings: #{warnings.current_warnings}")
     IO.puts("  Budget Limit: #{warnings.budget_limit || "Not set"}")
+
     if length(warnings.issues) > 0 do
       Enum.each(warnings.issues, &IO.puts("  ⚠️  #{&1}"))
     end
+
     IO.puts("")
   end
 
@@ -273,13 +329,16 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
     case results.overall_status do
       :healthy ->
         IO.puts("  ✅ System is balanced and ready for deployment")
+
       :warning ->
         IO.puts("  ⚠️  System has warnings - review recommended before deployment")
+
       :critical ->
         IO.puts("  ❌ System has critical issues - deployment not recommended")
     end
 
     total_issues = count_total_issues(results)
+
     if total_issues > 0 do
       IO.puts("  Total Issues: #{total_issues}")
     end
@@ -303,7 +362,8 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
   end
 
   defp telemetry_running?, do: true
-  defp find_missing_metrics, do: ["resource.churn"]  # fanout.distribution now implemented
+  # fanout.distribution now implemented
+  defp find_missing_metrics, do: ["resource.churn"]
   defp find_stale_metrics, do: []
 
   defp get_fanout_stats do
@@ -331,6 +391,7 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
       _ -> :ok
     end
   end
+
   defp find_stuck_jobs, do: []
   defp get_retry_rates, do: %{last_hour: 0.02, last_day: 0.015}
 
@@ -360,6 +421,7 @@ defmodule Mix.Tasks.Thunderline.Brg.Check do
       length(results.queues.issues),
       length(results.circuit_breakers.issues),
       length(results.warnings.issues)
-    ] |> Enum.sum()
+    ]
+    |> Enum.sum()
   end
 end

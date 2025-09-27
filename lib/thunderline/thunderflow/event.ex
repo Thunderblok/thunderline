@@ -84,19 +84,20 @@ defmodule Thunderline.Event do
   """
   @spec new(keyword() | map()) :: {:ok, t()} | {:error, [term()]}
   def new(attrs) when is_list(attrs), do: new(Map.new(attrs))
+
   def new(%{} = attrs) do
-  errors = []
-  name = attrs[:name] || infer_name_from_type(attrs[:type])
+    errors = []
+    name = attrs[:name] || infer_name_from_type(attrs[:type])
     payload = attrs[:payload]
     source = attrs[:source] || infer_source(attrs[:source_domain])
     actor = attrs[:actor]
-  correlation_id = attrs[:correlation_id] || gen_corr()
+    correlation_id = attrs[:correlation_id] || gen_corr()
     causation_id = attrs[:causation_id]
     taxonomy_version = attrs[:taxonomy_version] || 1
     event_version = attrs[:event_version] || 1
     priority = attrs[:priority] || :normal
-  # If name is nil we still build meta with default reliability; validator will add error
-  meta = Map.merge(%{reliability: infer_reliability(name)}, Map.get(attrs, :meta, %{}))
+    # If name is nil we still build meta with default reliability; validator will add error
+    meta = Map.merge(%{reliability: infer_reliability(name)}, Map.get(attrs, :meta, %{}))
 
     errors =
       errors
@@ -108,6 +109,7 @@ defmodule Thunderline.Event do
 
     if errors == [] do
       now = DateTime.utc_now()
+
       event = %__MODULE__{
         id: gen_uuid(),
         at: now,
@@ -129,6 +131,7 @@ defmodule Thunderline.Event do
         priority: priority,
         metadata: Map.get(attrs, :metadata, %{})
       }
+
       {:ok, event}
     else
       {:error, errors}
@@ -188,7 +191,8 @@ defmodule Thunderline.Event do
         source: source,
         actor: Map.get(event, :actor) || Map.get(event, "actor"),
         causation_id: Map.get(event, :causation_id) || Map.get(event, "causation_id"),
-        taxonomy_version: Map.get(event, :taxonomy_version) || Map.get(event, "taxonomy_version") || 1,
+        taxonomy_version:
+          Map.get(event, :taxonomy_version) || Map.get(event, "taxonomy_version") || 1,
         event_version: Map.get(event, :event_version) || Map.get(event, "event_version") || 1,
         meta: Map.get(event, :meta) || Map.get(event, "meta") || %{},
         # legacy & common
@@ -272,7 +276,9 @@ defmodule Thunderline.Event do
   Check if an event is high priority (high or critical).
   """
   @spec high_priority?(t()) :: boolean()
-  def high_priority?(%__MODULE__{priority: priority}) when priority in [:high, :critical], do: true
+  def high_priority?(%__MODULE__{priority: priority}) when priority in [:high, :critical],
+    do: true
+
   def high_priority?(_), do: false
 
   # Private extraction functions
@@ -286,13 +292,29 @@ defmodule Thunderline.Event do
   defp extract_payload(%{payload: payload}) when is_map(payload), do: payload
   defp extract_payload(%{"data" => data}) when is_map(data), do: data
   defp extract_payload(%{data: data}) when is_map(data), do: data
+
   defp extract_payload(event) when is_map(event) do
     # If no explicit payload, use the entire event minus known fields
     event
-    |> Map.drop(["type", "event_type", :type, "source_domain", :source_domain,
-                 "target_domain", :target_domain, "timestamp", :timestamp,
-                 "correlation_id", :correlation_id, "hop_count", :hop_count,
-                 "priority", :priority, "metadata", :metadata])
+    |> Map.drop([
+      "type",
+      "event_type",
+      :type,
+      "source_domain",
+      :source_domain,
+      "target_domain",
+      :target_domain,
+      "timestamp",
+      :timestamp,
+      "correlation_id",
+      :correlation_id,
+      "hop_count",
+      :hop_count,
+      "priority",
+      :priority,
+      "metadata",
+      :metadata
+    ])
   end
 
   defp extract_source_domain(%{"source_domain" => domain}) when is_binary(domain), do: domain
@@ -317,6 +339,7 @@ defmodule Thunderline.Event do
       _ -> DateTime.utc_now()
     end
   end
+
   defp extract_timestamp(%{timestamp: %DateTime{} = dt}), do: dt
   defp extract_timestamp(%{"timestamp" => %DateTime{} = dt}), do: dt
   defp extract_timestamp(_), do: DateTime.utc_now()
@@ -333,7 +356,10 @@ defmodule Thunderline.Event do
   defp extract_priority(%{"priority" => "normal"}), do: :normal
   defp extract_priority(%{"priority" => "high"}), do: :high
   defp extract_priority(%{"priority" => "critical"}), do: :critical
-  defp extract_priority(%{priority: priority}) when priority in [:low, :normal, :high, :critical], do: priority
+
+  defp extract_priority(%{priority: priority}) when priority in [:low, :normal, :high, :critical],
+    do: priority
+
   defp extract_priority(_), do: :normal
 
   defp extract_metadata(%{"metadata" => meta}) when is_map(meta), do: meta
@@ -342,7 +368,7 @@ defmodule Thunderline.Event do
 
   defp generate_correlation_id do
     # UUID v7 provides sortable time component aiding ingestion ordering & tracing cohesion.
-  Thunderline.UUID.v7()
+    Thunderline.UUID.v7()
   end
 
   # Smart constructor helpers
@@ -355,6 +381,7 @@ defmodule Thunderline.Event do
   defp valid_name?(name) when is_binary(name) do
     String.split(name, ".") |> length() >= 2
   end
+
   defp valid_name?(_), do: false
 
   @allowed_categories_by_domain %{
@@ -363,8 +390,8 @@ defmodule Thunderline.Event do
     bolt: ["ml.run", "ml.trial", "system", "ai"],
     link: ["ui.command", "system", "ai"],
     crown: ["ai.intent", "system", "ai"],
-  # Block domain intentionally cannot emit ai.intent.* directly
-  block: ["system"],
+    # Block domain intentionally cannot emit ai.intent.* directly
+    block: ["system"],
     bridge: ["system", "ui.command", "ai"],
     unknown: ["system", "ai"],
     # Custom evt.* experimental namespaces (tight, explicit allow-list)
@@ -384,15 +411,24 @@ defmodule Thunderline.Event do
     # Support experimental evt.* taxonomy: treat source :bolt plus evt.* as allowed via bolt_evt mapping
     allowed =
       case {source, String.starts_with?(name, "evt.")} do
-        {:bolt, true} -> (Map.get(@allowed_categories_by_domain, :bolt_evt, [])) ++ Map.get(@allowed_categories_by_domain, source, ["system"])
-        _ -> Map.get(@allowed_categories_by_domain, source, ["system"])
+        {:bolt, true} ->
+          Map.get(@allowed_categories_by_domain, :bolt_evt, []) ++
+            Map.get(@allowed_categories_by_domain, source, ["system"])
+
+        _ ->
+          Map.get(@allowed_categories_by_domain, source, ["system"])
       end
+
     # Allow prefix match and exact single category tokens (e.g. "system")
-    Enum.any?(allowed, fn cat -> cat == prefix or String.starts_with?(prefix, cat) or String.starts_with?(name, cat) end)
+    Enum.any?(allowed, fn cat ->
+      cat == prefix or String.starts_with?(prefix, cat) or String.starts_with?(name, cat)
+    end)
   end
+
   defp category_allowed?(_, _), do: true
 
   defp infer_reliability(nil), do: :transient
+
   defp infer_reliability(name) when is_binary(name) do
     cond do
       String.starts_with?(name, "system.") -> :persistent

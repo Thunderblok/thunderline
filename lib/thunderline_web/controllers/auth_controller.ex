@@ -19,7 +19,9 @@ defmodule ThunderlineWeb.AuthController do
     conn = conn |> store_in_session(user) |> assign(:current_user, user)
 
     {community_slug, channel_slug} = default_channel_slugs()
-    target = if community_slug && channel_slug, do: ~p"/c/#{community_slug}/#{channel_slug}", else: ~p"/"
+
+    target =
+      if community_slug && channel_slug, do: ~p"/c/#{community_slug}/#{channel_slug}", else: ~p"/"
 
     conn
     |> put_flash(:info, "Signed in successfully")
@@ -30,6 +32,7 @@ defmodule ThunderlineWeb.AuthController do
   @impl true
   def failure(conn, {strategy, phase}, reason) do
     msg = "Auth #{strategy}:#{phase} failed"
+
     conn
     |> put_flash(:error, msg)
     |> put_status(:unauthorized)
@@ -57,8 +60,8 @@ defmodule ThunderlineWeb.AuthController do
       channel =
         Channel
         # Filter community channels by community id & active status. Using expression atoms directly (no pin).
-  # Use Ash.Query.filter macro (requires Ash.Query) with pinned community id
-  |> Ash.Query.filter(community_id == ^community.id and status == :active)
+        # Use Ash.Query.filter macro (requires Ash.Query) with pinned community id
+        |> Ash.Query.filter(community_id == ^community.id and status == :active)
         |> Ash.Query.sort(inserted_at: :asc)
         |> Ash.Query.limit(1)
         |> Ash.read_one(domain: Domain)

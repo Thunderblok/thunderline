@@ -8,7 +8,12 @@ defmodule Thunderline.Thunderflow.Probing.Embedding do
     dim = Keyword.get(opts, :dim, @default_dim)
     n = Keyword.get(opts, :ngram, @default_ngram)
     text = to_string(text)
-    text = if String.length(text) < n, do: text <> String.duplicate(" ", n - String.length(text)), else: text
+
+    text =
+      if String.length(text) < n,
+        do: text <> String.duplicate(" ", n - String.length(text)),
+        else: text
+
     vec = :array.new(dim, default: 0.0)
     final = do_slide(text, n, dim, vec)
     list = :array.to_list(final)
@@ -19,6 +24,7 @@ defmodule Thunderline.Thunderflow.Probing.Embedding do
 
   defp do_slide(text, n, dim, vec) do
     limit = String.length(text) - n
+
     Enum.reduce(0..limit, vec, fn i, acc ->
       ngram = binary_part(text, i, n)
       h = :crypto.hash(:md5, ngram) |> :binary.decode_unsigned()

@@ -12,13 +12,13 @@ defmodule ThunderlineWeb.Router do
     plug :put_secure_browser_headers
     # Populate current_user for non-LiveView requests (e.g. AshAdmin forward)
     plug ThunderlineWeb.Plugs.LoadCurrentUser
-  # NOTE: Removed AshAuthentication.Plug invocation because current
-  # authentication flow relies on live_session on_mount hooks
-  # (AshAuthentication.Phoenix.LiveSession + ThunderlineWeb.Live.Auth)
-  # and the plug module emitted warnings (no init/call). If we later
-  # need per-request user loading for non-LiveView controllers, we can
-  # introduce a custom plug that verifies the session token and assigns
-  # current_user.
+    # NOTE: Removed AshAuthentication.Plug invocation because current
+    # authentication flow relies on live_session on_mount hooks
+    # (AshAuthentication.Phoenix.LiveSession + ThunderlineWeb.Live.Auth)
+    # and the plug module emitted warnings (no init/call). If we later
+    # need per-request user loading for non-LiveView controllers, we can
+    # introduce a custom plug that verifies the session token and assigns
+    # current_user.
   end
 
   # Demo security pipeline (rate limiting, basic auth, security headers)
@@ -68,10 +68,11 @@ defmodule ThunderlineWeb.Router do
   # token loading occurs consistently (previously it only had the :dashboard pipeline,
   # which did not include AshAuthentication.Phoenix.LiveSession). This ensures the
   # dashboard has a proper actor for any Ash AI / authorization dependent actions.
-  live_session :dashboard_root, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do
+  live_session :dashboard_root,
+    on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do
     scope "/", ThunderlineWeb do
       # Preserve original dashboards pipeline (layout & security) while adding auth on_mount.
-      if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
+      if System.get_env("DEMO_MODE") in ["1", "true", "TRUE"] do
         pipe_through [:demo_security, :dashboard]
       else
         pipe_through :dashboard
@@ -84,53 +85,55 @@ defmodule ThunderlineWeb.Router do
     end
   end
 
-  live_session :default, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do
+  live_session :default,
+    on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth] do
     scope "/", ThunderlineWeb do
-      if System.get_env("DEMO_MODE") in ["1","true","TRUE"] do
+      if System.get_env("DEMO_MODE") in ["1", "true", "TRUE"] do
         pipe_through [:demo_security, :browser]
       else
         pipe_through :browser
       end
 
-    # Individual domain dashboards
-  live "/thundercore", DashboardLive, :thundercore
-    live "/thunderbit", DashboardLive, :thunderbit
-    live "/thunderbolt", DashboardLive, :thunderbolt
-    live "/thunderblock", DashboardLive, :thunderblock
-    live "/thundergrid", DashboardLive, :thundergrid
-  # Removed legacy /thundervault route (vault now part of thunderblock domain metrics)
-    live "/thundercom", DashboardLive, :thundercom
-    live "/thundereye", DashboardLive, :thundereye
-    live "/thunderchief", DashboardLive, :thunderchief
-    live "/thunderflow", DashboardLive, :thunderflow
-    live "/thunderstone", DashboardLive, :thunderstone
-    live "/thunderlink", DashboardLive, :thunderlink
-  live "/thundercrown", DashboardLive, :thundercrown
-  # Cerebros & Raincatcher (drift lab) interface
-  if System.get_env("ENABLE_CEREBROS") == "true" do
-    live "/cerebros", CerebrosLive, :index
-  end
-  # Interactive neural network playground (inspired by external visualizer)
-  if System.get_env("ENABLE_NN_PLAYGROUND") == "true" do
-    live "/nn", NNPlaygroundLive, :index
-  end
+      # Individual domain dashboards
+      live "/thundercore", DashboardLive, :thundercore
+      live "/thunderbit", DashboardLive, :thunderbit
+      live "/thunderbolt", DashboardLive, :thunderbolt
+      live "/thunderblock", DashboardLive, :thunderblock
+      live "/thundergrid", DashboardLive, :thundergrid
+      # Removed legacy /thundervault route (vault now part of thunderblock domain metrics)
+      live "/thundercom", DashboardLive, :thundercom
+      live "/thundereye", DashboardLive, :thundereye
+      live "/thunderchief", DashboardLive, :thunderchief
+      live "/thunderflow", DashboardLive, :thunderflow
+      live "/thunderstone", DashboardLive, :thunderstone
+      live "/thunderlink", DashboardLive, :thunderlink
+      live "/thundercrown", DashboardLive, :thundercrown
+      # Cerebros & Raincatcher (drift lab) interface
+      if System.get_env("ENABLE_CEREBROS") == "true" do
+        live "/cerebros", CerebrosLive, :index
+      end
 
-  # Discord-style community & channel navigation
-  # /c/:community_slug -> community overview (channel list, description)
-  # /c/:community_slug/:channel_slug -> specific channel chat view
-  live "/c/:community_slug", CommunityLive, :show
-  live "/c/:community_slug/:channel_slug", ChannelLive, :show
+      # Interactive neural network playground (inspired by external visualizer)
+      if System.get_env("ENABLE_NN_PLAYGROUND") == "true" do
+        live "/nn", NNPlaygroundLive, :index
+      end
 
-    # Thunderlane Specialized Dashboard
-  live "/dashboard/thunderlane", ThunderlineDashboard, :index
+      # Discord-style community & channel navigation
+      # /c/:community_slug -> community overview (channel list, description)
+      # /c/:community_slug/:channel_slug -> specific channel chat view
+      live "/c/:community_slug", CommunityLive, :show
+      live "/c/:community_slug/:channel_slug", ChannelLive, :show
 
-    # 3D Cellular Automata View
-  live "/automata", AutomataLive, :index
+      # Thunderlane Specialized Dashboard
+      live "/dashboard/thunderlane", ThunderlineDashboard, :index
 
-    # Hologram 3D CA Visualization
-  live "/ca-3d", CaVisualizationLive, :index
+      # 3D Cellular Automata View
+      live "/automata", AutomataLive, :index
 
-    # Admin and monitoring
+      # Hologram 3D CA Visualization
+      live "/ca-3d", CaVisualizationLive, :index
+
+      # Admin and monitoring
       live "/metrics", MetricsLive, :index
       # Chat interface (conversations & messages)
       live "/chat", ChatLive, :index
@@ -149,10 +152,12 @@ defmodule ThunderlineWeb.Router do
     reset_route(auth_routes_prefix: "/auth")
 
     # Strategy/router endpoints for our User resource
-    auth_routes(ThunderlineWeb.AuthController, Thunderline.Thundergate.Resources.User, path: "/auth")
+    auth_routes(ThunderlineWeb.AuthController, Thunderline.Thundergate.Resources.User,
+      path: "/auth"
+    )
 
     # Optional sign-out endpoint (controller sign_out action)
-    sign_out_route ThunderlineWeb.AuthController, "/sign-out"
+    sign_out_route(ThunderlineWeb.AuthController, "/sign-out")
   end
 
   # API routes for external integrations
@@ -195,8 +200,8 @@ defmodule ThunderlineWeb.Router do
             interface: :playground
 
     forward "/",
-      Absinthe.Plug,
-      schema: Module.concat(["ThunderlineWeb.GraphqlSchema"])
+            Absinthe.Plug,
+            schema: Module.concat(["ThunderlineWeb.GraphqlSchema"])
   end
 
   # LiveDashboard for development

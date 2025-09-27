@@ -26,20 +26,30 @@ defmodule Thunderline.Thunderflow.Heartbeat do
     now = System.monotonic_time()
     drift = now - last - ms_to_native(interval)
     payload = %{sequence: seq + 1, drift_native: drift, interval_ms: interval}
-    with {:ok, ev} <- Thunderline.Event.new(%{
-           name: "system.flow.tick",
-           source: :flow,
-           payload: payload,
-           meta: %{pipeline: :realtime},
-           priority: :high,
-           type: :system_tick
-         }) do
+
+    with {:ok, ev} <-
+           Thunderline.Event.new(%{
+             name: "system.flow.tick",
+             source: :flow,
+             payload: payload,
+             meta: %{pipeline: :realtime},
+             priority: :high,
+             type: :system_tick
+           }) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[Heartbeat] publish tick failed: #{inspect(reason)} seq=#{seq + 1}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("[Heartbeat] publish tick failed: #{inspect(reason)} seq=#{seq + 1}")
       end
     end
-    :telemetry.execute([:thunderline, :heartbeat, :tick], %{seq: seq + 1}, %{interval: interval, drift_native: drift})
+
+    :telemetry.execute([:thunderline, :heartbeat, :tick], %{seq: seq + 1}, %{
+      interval: interval,
+      drift_native: drift
+    })
+
     schedule(interval)
     {:noreply, %{state | seq: seq + 1, last_emit: now}}
   end

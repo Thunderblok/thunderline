@@ -12,8 +12,14 @@ defmodule Thunderline.Repo.Migrations.AddAiChat do
     create table(:conversations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
       add :title, :text
-      add :inserted_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
-      add :updated_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :inserted_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :updated_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
     create table(:messages, primary_key: false) do
@@ -23,10 +29,25 @@ defmodule Thunderline.Repo.Migrations.AddAiChat do
       add :tool_results, {:array, :map}
       add :source, :text, null: false, default: "user"
       add :complete, :boolean, null: false, default: true
-      add :inserted_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
-      add :updated_at, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
-      add :conversation_id, references(:conversations, column: :id, name: "messages_conversation_id_fkey", type: :uuid), null: false
-      add :response_to_id, references(:messages, column: :id, name: "messages_response_to_id_fkey", type: :uuid)
+
+      add :inserted_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :updated_at, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :conversation_id,
+          references(:conversations,
+            column: :id,
+            name: "messages_conversation_id_fkey",
+            type: :uuid
+          ),
+          null: false
+
+      add :response_to_id,
+          references(:messages, column: :id, name: "messages_response_to_id_fkey", type: :uuid)
     end
 
     create index(:messages, [:conversation_id, :inserted_at])

@@ -11,7 +11,7 @@ defmodule Thunderline.Repo.Migrations.CreateProbeTables do
       add :samples, :integer, null: false, default: 1
       add :embedding_dim, :integer, null: false, default: 512
       add :embedding_ngram, :integer, null: false, default: 3
-    add :condition, :string
+      add :condition, :string
       add :status, :string, null: false
       add :error_message, :text
       add :started_at, :utc_datetime

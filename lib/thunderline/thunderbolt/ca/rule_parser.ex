@@ -45,7 +45,7 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
     |> optional(ws)
     |> eos()
 
-  defparsec :parse_line, parser
+  defparsec(:parse_line, parser)
 
   @doc "High-level parse returning struct or {:error, reason}"
   def parse(str) when is_binary(str) do
@@ -61,11 +61,40 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
   end
 
   defp build(parts) do
-    born_seq = parts |> Enum.find_value([], fn {:born, seq} -> digits(seq); _ -> nil end)
-    survive_seq = parts |> Enum.find_value([], fn {:survive, seq} -> digits(seq); _ -> nil end)
-    rate = parts |> Enum.find_value(nil, fn {:rate, v} -> unwrap1(v); _ -> nil end)
-    seed = parts |> Enum.find_value(nil, fn {:seed, v} -> unwrap1(v); _ -> nil end)
-    zone = parts |> Enum.find_value(nil, fn {:zone, v} -> unwrap1(v); _ -> nil end)
+    born_seq =
+      parts
+      |> Enum.find_value([], fn
+        {:born, seq} -> digits(seq)
+        _ -> nil
+      end)
+
+    survive_seq =
+      parts
+      |> Enum.find_value([], fn
+        {:survive, seq} -> digits(seq)
+        _ -> nil
+      end)
+
+    rate =
+      parts
+      |> Enum.find_value(nil, fn
+        {:rate, v} -> unwrap1(v)
+        _ -> nil
+      end)
+
+    seed =
+      parts
+      |> Enum.find_value(nil, fn
+        {:seed, v} -> unwrap1(v)
+        _ -> nil
+      end)
+
+    zone =
+      parts
+      |> Enum.find_value(nil, fn
+        {:zone, v} -> unwrap1(v)
+        _ -> nil
+      end)
 
     %__MODULE__{born: born_seq, survive: survive_seq, rate_hz: rate || 30, seed: seed, zone: zone}
   end
@@ -73,7 +102,9 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
   defp unwrap1([x]), do: x
   defp unwrap1(x), do: x
 
-  defp digits(seq) when is_binary(seq), do: seq |> String.graphemes() |> Enum.map(&String.to_integer/1)
+  defp digits(seq) when is_binary(seq),
+    do: seq |> String.graphemes() |> Enum.map(&String.to_integer/1)
+
   defp digits(seq) when is_list(seq), do: seq |> Enum.join() |> digits()
 
   defp emit_parse_event(original, %__MODULE__{} = rule) do
@@ -88,14 +119,24 @@ defmodule Thunderline.Thunderbolt.CA.RuleParser do
 
     case Thunderline.Event.new(name: "evt.action.ca.rule_parsed", source: :bolt, payload: payload) do
       {:ok, ev} ->
-        _ = Task.start(fn ->
-          case Thunderline.EventBus.publish_event(ev) do
-            {:ok, _} -> :ok
-            {:error, reason} -> Logger.warning("[RuleParser] publish failed: #{inspect(reason)} original=#{String.slice(original,0,64)}")
-          end
-        end)
+        _ =
+          Task.start(fn ->
+            case Thunderline.EventBus.publish_event(ev) do
+              {:ok, _} ->
+                :ok
+
+              {:error, reason} ->
+                Logger.warning(
+                  "[RuleParser] publish failed: #{inspect(reason)} original=#{String.slice(original, 0, 64)}"
+                )
+            end
+          end)
+
         :ok
-      {:error, errs} -> Logger.warning("[RuleParser] build event failed: #{inspect(errs)}"); :error
+
+      {:error, errs} ->
+        Logger.warning("[RuleParser] build event failed: #{inspect(errs)}")
+        :error
     end
   rescue
     _ -> :ok

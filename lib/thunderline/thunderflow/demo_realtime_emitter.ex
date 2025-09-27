@@ -43,10 +43,12 @@ defmodule Thunderline.Thunderflow.DemoRealtimeEmitter do
         {:ok, ev} ->
           # Force realtime pipeline via meta + high priority so dashboard sees it fast
           ev = %{ev | meta: Map.put(ev.meta, :pipeline, :realtime), priority: :high}
+
           case Thunderline.EventBus.publish_event(ev) do
             {:ok, _} -> :ok
             {:error, reason} -> Logger.debug("[DemoRealtimeEmitter] drop #{inspect(reason)}")
           end
+
         {:error, errs} ->
           Logger.debug("[DemoRealtimeEmitter] invalid attrs #{inspect(errs)}")
       end

@@ -15,34 +15,31 @@ defmodule Thunderline.MoE.Expert do
     repo Thunderline.Repo
   end
 
-  attributes do
-    uuid_primary_key :id
-    attribute :tenant_id, :uuid, allow_nil?: false, description: "Owning tenant for isolation"
-    attribute :name, :string, allow_nil?: false
-    attribute :version, :string, allow_nil?: false
-    attribute :status, :atom, allow_nil?: false, default: :active, constraints: [one_of: [:active, :shadow, :retired, :error]]
-    attribute :latency_budget_ms, :integer
-    attribute :metrics, :map, allow_nil?: false, default: %{}
-    attribute :model_artifact_ref, :string
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
+  code_interface do
+    define :register
+    define :update_metrics
+    define :read
   end
 
   actions do
     defaults [:read]
+
     create :register do
       # Include :tenant_id to satisfy allow_nil?: false constraint on tenant-scoped resource
-      accept [:tenant_id, :name, :version, :status, :latency_budget_ms, :metrics, :model_artifact_ref]
+      accept [
+        :tenant_id,
+        :name,
+        :version,
+        :status,
+        :latency_budget_ms,
+        :metrics,
+        :model_artifact_ref
+      ]
     end
+
     update :update_metrics do
       accept [:metrics, :status]
     end
-  end
-
-  multitenancy do
-    strategy :attribute
-    attribute :tenant_id
-    global? false
   end
 
   policies do
@@ -59,9 +56,27 @@ defmodule Thunderline.MoE.Expert do
     end
   end
 
-  code_interface do
-    define :register
-    define :update_metrics
-    define :read
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+    global? false
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :tenant_id, :uuid, allow_nil?: false, description: "Owning tenant for isolation"
+    attribute :name, :string, allow_nil?: false
+    attribute :version, :string, allow_nil?: false
+
+    attribute :status, :atom,
+      allow_nil?: false,
+      default: :active,
+      constraints: [one_of: [:active, :shadow, :retired, :error]]
+
+    attribute :latency_budget_ms, :integer
+    attribute :metrics, :map, allow_nil?: false, default: %{}
+    attribute :model_artifact_ref, :string
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 end

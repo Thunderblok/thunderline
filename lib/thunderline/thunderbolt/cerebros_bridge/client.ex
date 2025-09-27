@@ -40,8 +40,16 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
           python_executable: String.t(),
           working_dir: Path.t() | nil,
           env: map(),
-          invoke: %{default_timeout_ms: pos_integer(), max_retries: non_neg_integer(), retry_backoff_ms: non_neg_integer()},
-          cache: %{enabled?: boolean(), ttl_ms: non_neg_integer(), max_entries: non_neg_integer() | nil}
+          invoke: %{
+            default_timeout_ms: pos_integer(),
+            max_retries: non_neg_integer(),
+            retry_backoff_ms: non_neg_integer()
+          },
+          cache: %{
+            enabled?: boolean(),
+            ttl_ms: non_neg_integer(),
+            max_entries: non_neg_integer() | nil
+          }
         }
   def config do
     raw = Application.get_env(@app, :cerebros_bridge, [])
@@ -104,7 +112,12 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
 
       case result do
         {:ok, decoded} ->
-          emit_run_event(:stop, contract, Map.merge(meta, Map.take(decoded, [:returncode, :stdout_excerpt, :duration_ms])))
+          emit_run_event(
+            :stop,
+            contract,
+            Map.merge(meta, Map.take(decoded, [:returncode, :stdout_excerpt, :duration_ms]))
+          )
+
           {:ok, decoded}
 
         {:error, error} ->
@@ -133,7 +146,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
 
       case result do
         {:ok, decoded} ->
-          emit_trial_event(contract, Map.merge(meta, Map.take(decoded, [:returncode, :stdout_excerpt, :duration_ms])))
+          emit_trial_event(
+            contract,
+            Map.merge(meta, Map.take(decoded, [:returncode, :stdout_excerpt, :duration_ms]))
+          )
+
           {:ok, decoded}
 
         {:error, error} ->
@@ -162,7 +179,12 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
 
       case result do
         {:ok, decoded} ->
-          emit_run_event(:stop, contract, Map.merge(meta, Map.take(decoded, [:returncode, :stdout_excerpt, :duration_ms])))
+          emit_run_event(
+            :stop,
+            contract,
+            Map.merge(meta, Map.take(decoded, [:returncode, :stdout_excerpt, :duration_ms]))
+          )
+
           {:ok, decoded}
 
         {:error, error} ->
@@ -274,7 +296,10 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
         :ok
 
       {:error, reason} ->
-        Logger.warning("[CerebrosBridge.Client] failed to publish #{name} event: #{inspect(reason)}")
+        Logger.warning(
+          "[CerebrosBridge.Client] failed to publish #{name} event: #{inspect(reason)}"
+        )
+
         :ok
     end
   end

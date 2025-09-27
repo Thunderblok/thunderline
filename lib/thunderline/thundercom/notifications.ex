@@ -22,23 +22,41 @@ defmodule Thunderline.Thundercom.Notifications do
 
     case notification.resource do
       # Community-related notifications
-      Thunderblock.Resources.Community -> handle_community_notification(notification)
-      Thunderblock.Resources.Channel -> handle_channel_notification(notification)
-      Thunderblock.Resources.Message -> handle_message_notification(notification)
-      Thunderblock.Resources.Member -> handle_member_notification(notification)
-      Thunderblock.Resources.Role -> handle_role_notification(notification)
+      Thunderblock.Resources.Community ->
+        handle_community_notification(notification)
+
+      Thunderblock.Resources.Channel ->
+        handle_channel_notification(notification)
+
+      Thunderblock.Resources.Message ->
+        handle_message_notification(notification)
+
+      Thunderblock.Resources.Member ->
+        handle_member_notification(notification)
+
+      Thunderblock.Resources.Role ->
+        handle_role_notification(notification)
 
       # Agent and automation notifications
-      Thunderbolt.Resources.Chunk -> handle_chunk_notification(notification)
-      Thunderbolt.Resources.ChunkHealth -> handle_chunk_health_notification(notification)
-      Thunderbit.Resources.Agent -> handle_agent_notification(notification)
+      Thunderbolt.Resources.Chunk ->
+        handle_chunk_notification(notification)
+
+      Thunderbolt.Resources.ChunkHealth ->
+        handle_chunk_health_notification(notification)
+
+      Thunderbit.Resources.Agent ->
+        handle_agent_notification(notification)
 
       # Federation notifications
-      Thunderblock.Resources.FederationSocket -> handle_federation_notification(notification)
+      Thunderblock.Resources.FederationSocket ->
+        handle_federation_notification(notification)
 
       # Grid and spatial notifications
-      Thunderline.Thundergrid.Resources.GridZone -> handle_grid_notification(notification)
-      Thunderline.Thundergrid.Resources.GridResource -> handle_resource_notification(notification)
+      Thunderline.Thundergrid.Resources.GridZone ->
+        handle_grid_notification(notification)
+
+      Thunderline.Thundergrid.Resources.GridResource ->
+        handle_resource_notification(notification)
 
       _ ->
         Logger.debug("Unhandled notification for resource: #{notification.resource}")
@@ -109,7 +127,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -149,7 +168,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -178,7 +198,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -207,7 +228,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -255,7 +277,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -287,7 +310,8 @@ defmodule Thunderline.Thundercom.Notifications do
           })
         end
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -332,7 +356,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -373,7 +398,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -404,7 +430,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -427,7 +454,8 @@ defmodule Thunderline.Thundercom.Notifications do
           timestamp: DateTime.utc_now()
         })
 
-      _ -> :ok
+      _ ->
+        :ok
     end
 
     :ok
@@ -437,10 +465,12 @@ defmodule Thunderline.Thundercom.Notifications do
 
   defp broadcast_to_topic(topic, event, payload) do
     pipeline = infer_pipeline_from_topic(topic)
+
     attrs = %{
       name: "system.notifications." <> event,
       type: String.to_atom(event),
-      source: :link, # or a dedicated :notifications atom if added to taxonomy
+      # or a dedicated :notifications atom if added to taxonomy
+      source: :link,
       payload: %{
         topic: topic,
         payload: payload,
@@ -448,10 +478,16 @@ defmodule Thunderline.Thundercom.Notifications do
       },
       meta: %{pipeline: pipeline}
     }
+
     with {:ok, ev} <- Thunderline.Event.new(attrs) do
       case Thunderline.EventBus.publish_event(ev) do
-        {:ok, _} -> :ok
-        {:error, reason} -> Logger.warning("[Notifications] publish failed: #{inspect(reason)} attrs=#{inspect(Map.take(attrs, [:name, :type]))}")
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning(
+            "[Notifications] publish failed: #{inspect(reason)} attrs=#{inspect(Map.take(attrs, [:name, :type]))}"
+          )
       end
     end
   end

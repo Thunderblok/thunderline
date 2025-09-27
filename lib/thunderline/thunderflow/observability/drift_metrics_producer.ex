@@ -28,7 +28,8 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
   @pubsub Thunderline.PubSub
   @topic "drift:demo"
   @embedding_topic "drift:embedding"
-  @tick 3_000 # periodic recompute cadence (ms)
+  # periodic recompute cadence (ms)
+  @tick 3_000
   @window_size 300
   @radii [0.05, 0.1, 0.2, 0.4]
 
@@ -84,7 +85,10 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
     coherence = recompute_coherence(lambda, d2)
     now = DateTime.utc_now()
     new_state = %{state | lambda: lambda, corr_dim: d2, coherence: coherence, updated_at: now}
-    payload = Map.take(new_state, [:lambda, :corr_dim, :sample, :coherence]) |> Map.put(:updated_at, now)
+
+    payload =
+      Map.take(new_state, [:lambda, :corr_dim, :sample, :coherence]) |> Map.put(:updated_at, now)
+
     PubSub.broadcast(@pubsub, @topic, {:drift_update, payload})
     {:noreply, new_state}
   end
@@ -115,6 +119,7 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
   # ----- Embedding Window Management -----
   defp enqueue_embedding(queue, vector) do
     q2 = :queue.in(vector, queue)
+
     if :queue.len(q2) > @window_size do
       {{:value, _dropped}, q3} = :queue.out(q2)
       {q3, :queue.len(q3)}
@@ -134,8 +139,11 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
   # Compute λ and correlation dimension approximations
   defp compute_metrics(queue, last_vector) do
     embeddings = :queue.to_list(queue)
+
     cond do
-      length(embeddings) < 5 -> {0.0, 0.0}
+      length(embeddings) < 5 ->
+        {0.0, 0.0}
+
       true ->
         lambda = estimate_lambda(embeddings)
         d2 = estimate_corr_dim(embeddings)
@@ -147,6 +155,7 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
 
   defp estimate_lambda([]), do: 0.0
   defp estimate_lambda([_]), do: 0.0
+
   defp estimate_lambda(list) do
     diffs =
       list
@@ -155,28 +164,41 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
       |> Enum.reject(&(&1 <= 0.0))
 
     case diffs do
-      [] -> 0.0
-      [_] -> 0.0
+      [] ->
+        0.0
+
+      [_] ->
+        0.0
+
       _ ->
         ratios =
           diffs
           |> Enum.chunk_every(2, 1, :discard)
           |> Enum.map(fn [d1, d2] -> if d1 > 0.0, do: d2 / d1, else: 1.0 end)
           |> Enum.reject(&(&1 <= 0.0))
-        if ratios == [], do: 0.0, else: ratios |> Enum.map(&:math.log/1) |> average() |> clamp(-0.05, 0.6)
+
+        if ratios == [],
+          do: 0.0,
+          else: ratios |> Enum.map(&:math.log/1) |> average() |> clamp(-0.05, 0.6)
     end
   end
 
   defp estimate_corr_dim(list) do
     points = list
     n = length(points)
+
     if n < 10 do
       0.0
     else
       # Sample subset for O(n^2) control
       sample = if n > 120, do: Enum.take(points, 120), else: points
-      pair_dists = for i <- 0..(length(sample)-2), j <- (i+1)..(length(sample)-1), do: distance(Enum.at(sample, i), Enum.at(sample, j))
-      counts = Enum.map(@radii, fn r -> Enum.count(pair_dists, & &1 <= r) end)
+
+      pair_dists =
+        for i <- 0..(length(sample) - 2),
+            j <- (i + 1)..(length(sample) - 1),
+            do: distance(Enum.at(sample, i), Enum.at(sample, j))
+
+      counts = Enum.map(@radii, fn r -> Enum.count(pair_dists, &(&1 <= r)) end)
       # Avoid log(0); shift counts minimally
       log_r = Enum.map(@radii, &:math.log/1)
       log_c = counts |> Enum.map(&:math.log(max(&1, 1)))
@@ -186,22 +208,29 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
 
   defp distance({}, _), do: 0.0
   defp distance(_, {}), do: 0.0
+
   defp distance(a, b) when tuple_size(a) == tuple_size(b) do
     size = tuple_size(a)
-    0..(size-1)
+
+    0..(size - 1)
     |> Enum.reduce(0.0, fn i, acc ->
       da = elem(a, i) - elem(b, i)
       acc + da * da
     end)
     |> :math.sqrt()
   end
+
   defp distance(_, _), do: 0.0
 
   defp slope(xs, ys) do
     n = length(xs)
     mean_x = average(xs)
     mean_y = average(ys)
-    num = Enum.zip(xs, ys) |> Enum.reduce(0.0, fn {x, y}, acc -> acc + (x - mean_x) * (y - mean_y) end)
+
+    num =
+      Enum.zip(xs, ys)
+      |> Enum.reduce(0.0, fn {x, y}, acc -> acc + (x - mean_x) * (y - mean_y) end)
+
     den = Enum.reduce(xs, 0.0, fn x, acc -> acc + :math.pow(x - mean_x, 2) end)
     if den == 0.0, do: 0.0, else: num / den
   end
@@ -209,6 +238,7 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
   defp average(list) when is_list(list) and list != [] do
     Enum.sum(list) / length(list)
   end
+
   defp average(_), do: 0.0
 
   defp clamp(v, min_v, max_v) when v < min_v, do: min_v

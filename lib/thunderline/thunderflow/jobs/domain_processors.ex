@@ -10,7 +10,7 @@ defmodule Thunderline.Thunderflow.Jobs.ThunderBoltProcessor do
   @impl Oban.Worker
   def backoff(%Oban.Job{attempt: attempt}) do
     JobTelemetry.emit_job_retry(:heavy_compute, __MODULE__, attempt)
-  Thunderline.Thunderflow.Support.Backoff.exp(attempt)
+    Thunderline.Thunderflow.Support.Backoff.exp(attempt)
   end
 
   @impl Oban.Worker
@@ -45,7 +45,7 @@ defmodule Thunderline.Thunderflow.Jobs.ThunderBlockProcessor do
   @impl Oban.Worker
   def backoff(%Oban.Job{attempt: attempt}) do
     JobTelemetry.emit_job_retry(:default, __MODULE__, attempt)
-  Thunderline.Thunderflow.Support.Backoff.exp(attempt)
+    Thunderline.Thunderflow.Support.Backoff.exp(attempt)
   end
 
   @impl Oban.Worker
@@ -90,7 +90,7 @@ defmodule Thunderline.Thunderflow.Jobs.ThunderCrownProcessor do
   @impl Oban.Worker
   def backoff(%Oban.Job{attempt: attempt}) do
     JobTelemetry.emit_job_retry(:cross_domain, __MODULE__, attempt)
-  Thunderline.Thunderflow.Support.Backoff.exp(attempt)
+    Thunderline.Thunderflow.Support.Backoff.exp(attempt)
   end
 
   @impl Oban.Worker
@@ -127,7 +127,7 @@ defmodule Thunderline.Thunderflow.Jobs.RetryProcessor do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"original_job" => job_data, "retry_count" => count}}) do
     case retry_job(job_data, count) do
-  {:ok, result} -> {:ok, result}
+      {:ok, result} -> {:ok, result}
     end
   end
 

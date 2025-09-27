@@ -20,7 +20,11 @@ defmodule Thunderline.Thunderbolt.ML.ModelSpec do
     uuid_primary_key :id
     attribute :tenant_id, :string, allow_nil?: false
     attribute :base_model, :string, allow_nil?: false
-    attribute :task, :atom, constraints: [one_of: [:classification, :generation, :embedding]], allow_nil?: false
+
+    attribute :task, :atom,
+      constraints: [one_of: [:classification, :generation, :embedding]],
+      allow_nil?: false
+
     attribute :adapter, :atom, constraints: [one_of: [:lora, :prefix, :qlora]], allow_nil?: false
     attribute :framework, :atom, constraints: [one_of: [:pytorch, :mlx, :gguf]], allow_nil?: false
     attribute :params, :map, default: %{}

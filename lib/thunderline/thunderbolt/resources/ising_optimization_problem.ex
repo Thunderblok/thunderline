@@ -171,6 +171,7 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
           end
 
         lattice_mod = Module.concat([Thunderline, ThunderIsing, Lattice])
+
         if Code.ensure_loaded?(lattice_mod) do
           apply(lattice_mod, :grid_2d, [height, width, coupling_opts])
         else
@@ -188,6 +189,7 @@ defmodule Thunderline.Thunderbolt.Resources.IsingOptimizationProblem do
           end)
 
         lattice_mod = Module.concat([Thunderline, ThunderIsing, Lattice])
+
         if Code.ensure_loaded?(lattice_mod) do
           apply(lattice_mod, :max_cut_problem, [edge_tuples, num_vertices])
         else

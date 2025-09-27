@@ -1,11 +1,12 @@
 defmodule Thunderline.Guardrails.RepoOnlyTest do
   use ExUnit.Case, async: true
+
   test "no direct Repo calls outside Block (allowing resource repo declarations & application supervision)" do
     offenders =
       "lib/thunderline"
       |> Path.join("**/*.ex")
       |> Path.wildcard()
-  |> Enum.reject(&String.contains?(&1, "/thunderblock/"))
+      |> Enum.reject(&String.contains?(&1, "/thunderblock/"))
       |> Enum.flat_map(fn path ->
         File.read!(path)
         |> String.split("\n")

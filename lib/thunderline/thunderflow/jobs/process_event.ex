@@ -13,7 +13,7 @@ defmodule Thunderline.Thunderflow.Jobs.ProcessEvent do
 
   @impl Oban.Worker
   def backoff(%Oban.Job{attempt: attempt}) do
-  delay = Thunderline.Thunderflow.Support.Backoff.exp(attempt)
+    delay = Thunderline.Thunderflow.Support.Backoff.exp(attempt)
 
     # Emit retry telemetry
     JobTelemetry.emit_job_retry(:realtime, __MODULE__, attempt)
@@ -38,6 +38,7 @@ defmodule Thunderline.Thunderflow.Jobs.ProcessEvent do
           {error_kind, error_tag} = Thunderline.Thunderflow.Support.ErrorKinds.classify(reason)
           JobTelemetry.emit_job_failure(:realtime, __MODULE__, error_tag)
           JobTelemetry.emit_event_failed("job_worker", error_tag)
+
           case error_kind do
             :permanent -> {:discard, reason}
             _ -> {:error, reason}
@@ -48,11 +49,10 @@ defmodule Thunderline.Thunderflow.Jobs.ProcessEvent do
           Logger.warning("Unexpected EventOps result shape: #{inspect(other)}")
           {:ok, other}
       end
-
     rescue
       error ->
         # Classify exception and record telemetry
-  {error_kind, error_tag} = Thunderline.Thunderflow.Support.ErrorKinds.classify(error)
+        {error_kind, error_tag} = Thunderline.Thunderflow.Support.ErrorKinds.classify(error)
         JobTelemetry.emit_job_failure(:realtime, __MODULE__, error_tag)
 
         Logger.error("ProcessEvent job exception (#{error_kind}): #{inspect(error)}")
@@ -66,5 +66,4 @@ defmodule Thunderline.Thunderflow.Jobs.ProcessEvent do
     JobTelemetry.emit_job_failure(:realtime, __MODULE__, :missing_event)
     {:discard, :missing_event}
   end
-
 end

@@ -37,7 +37,9 @@ defmodule ThunderlineWeb.AutomataLiveTest do
 
     center = div(80, 2)
     # Initial row should have a single 1 in the center, others 0
-    ones_positions = Enum.with_index(row) |> Enum.filter(fn {v, _i} -> v == 1 end) |> Enum.map(&elem(&1, 1))
+    ones_positions =
+      Enum.with_index(row) |> Enum.filter(fn {v, _i} -> v == 1 end) |> Enum.map(&elem(&1, 1))
+
     assert ones_positions == [center]
 
     # Trigger a second generation
@@ -52,7 +54,11 @@ defmodule ThunderlineWeb.AutomataLiveTest do
     assert first_row == row
 
     # Rule 30 applied to a single center 1 should produce three adjacent 1s centered (positions center-1, center, center+1)
-    ones_positions_second = Enum.with_index(second_row) |> Enum.filter(fn {v, _i} -> v == 1 end) |> Enum.map(&elem(&1, 1))
+    ones_positions_second =
+      Enum.with_index(second_row)
+      |> Enum.filter(fn {v, _i} -> v == 1 end)
+      |> Enum.map(&elem(&1, 1))
+
     assert ones_positions_second == [center - 1, center, center + 1]
   end
 end

@@ -11,6 +11,10 @@ defmodule Thunderline.Thunderbolt.Numerics do
   end
 
   defp adapter do
-    Application.get_env(:thunderline, :numerics_adapter, Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback)
+    Application.get_env(
+      :thunderline,
+      :numerics_adapter,
+      Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback
+    )
   end
 end
