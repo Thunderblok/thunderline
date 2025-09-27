@@ -1,0 +1,78 @@
+{{- if .Values.cerebrosRunner.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-cerebros
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cerebros
+spec:
+  replicas: {{ .Values.cerebrosRunner.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "thunderhelm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: cerebros
+  template:
+    metadata:
+      labels:
+        {{- include "thunderhelm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: cerebros
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: cerebros-runner
+          image: "{{ .Values.cerebrosRunner.image.repository }}:{{ .Values.cerebrosRunner.image.tag }}"
+          imagePullPolicy: {{ .Values.cerebrosRunner.image.pullPolicy | default "IfNotPresent" }}
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              {{ if .Values.cerebrosRunner.pipPackages }}
+              pip install --no-cache-dir{{- range $pkg := .Values.cerebrosRunner.pipPackages }} '{{ $pkg }}'{{- end }} &&
+              {{ end }}
+              python /app/cerebros_runner.py
+          env:
+            {{- $runnerEnv := (default (dict) .Values.cerebrosRunner.env) -}}
+            {{- range $k, $v := $runnerEnv }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            - name: PORT
+              value: {{ .Values.cerebrosRunner.port | quote }}
+            {{- if not (hasKey $runnerEnv "MLFLOW_TRACKING_URI") }}
+            - name: MLFLOW_TRACKING_URI
+              value: {{ printf "http://%s-mlflow:5000" (include "thunderhelm.fullname" $) | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.cerebrosRunner.port }}
+          volumeMounts:
+            - name: cerebros-runner-script
+              mountPath: /app/cerebros_runner.py
+              subPath: cerebros_runner.py
+          {{- with .Values.cerebrosRunner.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: cerebros-runner-script
+          configMap:
+            name: {{ include "thunderhelm.fullname" . }}-cerebros-runner
+            defaultMode: 0555
+      {{- with .Values.cerebrosRunner.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cerebrosRunner.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.cerebrosRunner.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

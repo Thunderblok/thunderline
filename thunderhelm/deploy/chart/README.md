@@ -1,12 +1,14 @@
-# Thunderhelm — Helm chart for Thunderline + optional Flower federation
+# Thunderhelm — Helm chart for Thunderline + ML/NAS demo stack
 
-This chart deploys Thunderline’s control plane (web) and workers, with an optional Python-based Flower federation runtime for federated learning demos and experiments.
+This chart deploys Thunderline’s control plane (web) and workers, and now ships optional building blocks for the Cerebros HPO/NAS demo loop: an MLflow tracking server, a lightweight Cerebros runner API, a Livebook workspace, and the prior Flower federation runtime.
 
 Contents
-- Deployments: web (Phoenix endpoint), worker (pipelines/Oban), optional federation (Flower server)
-- Services: web ClusterIP, optional federation ClusterIP
-- Optional Ingress for web
-- ConfigMap/Secret for shared environment and secrets
+- Deployments: web (Phoenix endpoint), worker (pipelines/Oban)
+- Optional Deployments/Services: Flower federation server, Cerebros runner, MLflow tracker, Livebook workspace
+- Services: web ClusterIP plus optional services for each component
+- Optional Ingress for web and Livebook
+- ConfigMaps/Secrets for shared environment and secrets (global + component-specific)
+- Optional PersistentVolumeClaims for MLflow and Livebook state
 - ServiceAccount (optional)
 
 Prerequisites
@@ -29,6 +31,10 @@ helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thund
   --set env.secrets.MINIO_ACCESS_KEY="minio" \
   --set env.secrets.MINIO_SECRET_KEY="minio123"
 
+# Launch the full ML/NAS demo stack (Postgres/MinIO subcharts + Cerebros runner, MLflow, Livebook)
+helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thunder \
+  -f Thunderline/thunderhelm/deploy/chart/examples/values-hpo-demo.yaml
+
 # Enable optional Flower federation demo server
 helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thunder \
   --set federation.enabled=true \
@@ -37,6 +43,19 @@ helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thund
 # Enable web ingress (edit hosts/TLS in values.yaml)
 helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thunder \
   --set web.ingress.enabled=true
+
+# Expose Livebook via ingress (password required when ingress is enabled)
+helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thunder \
+  --set livebook.enabled=true \
+  --set livebook.secrets.password="<choose-a-strong-password>" \
+  --set livebook.ingress.enabled=true \
+  --set livebook.ingress.hosts[0].host=livebook.example.com \
+  --set livebook.ingress.hosts[0].paths[0].path="/" \
+  --set livebook.ingress.hosts[0].paths[0].pathType=Prefix
+
+# Add cert-manager TLS for Livebook ingress
+helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thunder \
+  -f Thunderline/thunderhelm/deploy/chart/examples/values-livebook-tls.yaml
 
 Structure
 - Chart.yaml
@@ -48,6 +67,9 @@ Structure
   - serviceaccount.yaml
   - web-deployment.yaml, web-service.yaml, web-ingress.yaml
   - worker-deployment.yaml
+  - cerebros-runner-{configmap,deployment,service}.yaml
+  - mlflow-{deployment,service,pvc}.yaml
+  - livebook-{secret,deployment,service,ingress,pvc}.yaml
   - federation-deployment.yaml, federation-service.yaml
 
 Key values (partial)
@@ -60,6 +82,10 @@ env:
   MINIO_BUCKET: "thunderline-artifacts"
   SERVICE_NAME: "thunderline"
   LOG_LEVEL: "info"
+  CEREBROS_MODE: "remote"          # default to remote runner
+  CEREBROS_URL: ""                # auto-populated to http://<release>-cerebros:8088 if blank
+  CEREBROS_REMOTE_URL: ""         # auto-populated, drives the bridge stub
+  MLFLOW_TRACKING_URI: ""         # auto-populated to http://<release>-mlflow:5000 if blank
   FEATURES: ""                     # optional feature flags
 
 env.secrets:
@@ -101,6 +127,32 @@ worker:
     START_COMPUTE: "false"
     START_OBAN: "true"
 
+mlflow:
+  enabled: false                   # enable to run an in-cluster MLflow tracker
+  backendStoreUri: "sqlite:////data/mlflow.db"
+  artifactRoot: "s3://thunderline-artifacts/mlflow"
+  persistence:
+    enabled: false                 # set true + storage class for durable metadata/artifacts
+
+cerebrosRunner:
+  enabled: false                   # enable to expose /propose + /train endpoints
+  env:
+    MLFLOW_EXPERIMENT_NAME: "thunderline-demo"
+
+livebook:
+  enabled: false                   # enable for interactive orchestration
+  secrets:
+    password: ""                 # MUST override in non-dev environments (required when ingress=true)
+  persistence:
+    enabled: false
+
+  ingress:
+    enabled: false               # set true to publish Livebook via Kubernetes ingress
+    certManager:
+      enabled: false             # flip to true to request cert-manager certificate
+      clusterIssuer: "letsencrypt-prod"
+      secretName: "livebook-tls" # secret used by the ingress TLS stanza
+
 federation:
   enabled: false
   replicas: 1
@@ -130,11 +182,15 @@ Operational notes
 - For production, replace the demo federation container with a hardened image containing your strategy and pinned dependencies; set federation.image.* and override command/args accordingly.
 - Configure imagePullSecrets, resources, affinity, and tolerations per your cluster standards.
 - The web Deployment expects a Phoenix release that binds to the port declared in web.service.port (default 4000).
+- The chart ships a stub Python script (`priv/cerebros_bridge_stub.py`) and wires `CEREBROS_SCRIPT` to it by default; set `env.CEREBROS_REMOTE_URL` to point the bridge at an external runner if you replace the included FastAPI service.
+- When enabling `livebook.ingress`, provide `livebook.secrets.password` and configure TLS via `livebook.ingress.tls` and `livebook.ingress.certManager` (see `examples/values-livebook-tls.yaml`).
 
 Examples
 See examples/ in this chart for:
 - values-dev.yaml: simple dev config
 - values-federation-demo.yaml: federation enabled for demo
+- values-hpo-demo.yaml: full MLflow + Cerebros runner + Livebook stack
+- values-livebook-tls.yaml: overlay that enables Livebook ingress with cert-manager TLS
 
 Lint and template
 helm lint Thunderline/thunderhelm/deploy/chart

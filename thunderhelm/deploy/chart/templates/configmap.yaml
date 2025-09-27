@@ -5,8 +5,15 @@ metadata:
   labels:
     {{- include "thunderhelm.labels" . | nindent 4 }}
 data:
-  {{- range $k, $v := .Values.env }}
-  {{- if ne $k "secrets" }}
+  {{- $fullname := include "thunderhelm.fullname" . -}}
+  {{- $defaults := dict 
+        "CEREBROS_URL" (printf "http://%s-cerebros:8088" $fullname)
+        "CEREBROS_REMOTE_URL" (printf "http://%s-cerebros:8088" $fullname)
+        "CEREBROS_SCRIPT" "/app/priv/cerebros_bridge_stub.py"
+        "MLFLOW_TRACKING_URI" (printf "http://%s-mlflow:5000" $fullname)
+    -}}
+  {{- $userEnv := omit (default (dict) .Values.env) "secrets" -}}
+  {{- $env := merge $defaults $userEnv -}}
+  {{- range $k, $v := $env }}
   {{ $k }}: {{ $v | quote }}
-  {{- end }}
   {{- end }}

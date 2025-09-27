@@ -15,6 +15,14 @@ env:
   MINIO_BUCKET: "thunderline-artifacts"
   SERVICE_NAME: "thunderline"
   LOG_LEVEL: "info"
+  # Points to the Elixir release configuration used during bootstrapping
+  RELEASE_CONFIG_FILE: "/app/config/releases.exs"
+  # Cerebros + MLflow integration defaults (override per environment)
+  CEREBROS_MODE: "remote"
+  CEREBROS_URL: "http://thunderline-cerebros:8088"
+  CEREBROS_SCRIPT: "/app/priv/cerebros_bridge_stub.py"
+  CEREBROS_REMOTE_URL: "http://thunderline-cerebros:8088"
+  MLFLOW_TRACKING_URI: "http://thunderline-mlflow:5000"
   # Optional: feature flags (comma separated or individual env per feature)
   FEATURES: ""  # e.g. "enable_ndjson,thundervine_lineage"
 
@@ -130,6 +138,126 @@ federation:
     enabled: true
     type: ClusterIP
 
+# Optional Cerebros proposal/training runner (FastAPI) for remote mode demos
+cerebrosRunner:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: python
+    tag: "3.11-slim"
+    pullPolicy: IfNotPresent
+
+  port: 8088
+
+  # Additional pip packages to install before launching the runner
+  pipPackages:
+    - "fastapi==0.111.0"
+    - "uvicorn[standard]==0.30.0"
+    - "mlflow==2.14.1"
+    - "numpy==1.26.4"
+    - "pandas==2.2.2"
+    - "pydantic==2.7.4"
+    - "requests==2.32.3"
+
+  env: {}
+
+  podAnnotations: {}
+
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8088
+
+# Optional MLflow tracking server
+mlflow:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: ghcr.io/mlflow/mlflow
+    tag: "2.14.1"
+    pullPolicy: IfNotPresent
+
+  port: 5000
+
+  backendStoreUri: "sqlite:////data/mlflow.db"
+  artifactRoot: "s3://thunderline-artifacts/mlflow"
+
+  env: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  persistence:
+    enabled: false
+    size: 10Gi
+    storageClass: ""
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 5000
+
+# Optional Livebook workspace for interactive orchestration
+livebook:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: ghcr.io/livebook-dev/livebook
+    tag: "0.12.1"
+    pullPolicy: IfNotPresent
+
+  port: 8080
+
+  env: {}
+  secrets:
+    password: ""
+    secretKeyBase: ""
+    cookie: ""
+
+  podAnnotations: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  persistence:
+    enabled: false
+    size: 5Gi
+    storageClass: ""
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8080
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: livebook.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    certManager:
+      enabled: false
+      clusterIssuer: ""
+      issuerKind: "ClusterIssuer"
+      secretName: ""
+      dnsNames: []
+      duration: ""
+      renewBefore: ""
+
 # Optional subcharts (set enabled=true to bring dependencies)
 postgresql:
   enabled: false
@@ -172,3 +300,4 @@ probes:
 
 # Image pull secrets
 imagePullSecrets: []
+

@@ -22,6 +22,25 @@ env:
     MINIO_SECRET_KEY: "minio123"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""   # e.g. http://otel-collector:4317
     OTEL_HEADERS: ""
+    # Provide MinIO credentials to MLflow via env when enabling the tracker
+    AWS_ACCESS_KEY_ID: "minio"
+    AWS_SECRET_ACCESS_KEY: "minio123"
+    MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
+
+livebook:
+  enabled: false
+  secrets:
+    password: "changeme"
+
+mlflow:
+  enabled: false
+  backendStoreUri: "sqlite:////data/mlflow.db"
+  artifactRoot: "s3://thunderline-artifacts/mlflow"
+
+cerebrosRunner:
+  enabled: false
+  env:
+    MLFLOW_EXPERIMENT_NAME: "thunderline-demo"
 
 web:
   enabled: true

@@ -8,17 +8,9 @@ defmodule Thunderline.Thundergate.Resources.User do
 
   authentication do
     strategies do
-      password :password do
+      magic_link :magic_link do
         identity_field :email
-        hashed_password_field :hashed_password
-        password_field :password
-        confirmation_required? true
-      end
-    end
-
-    add_ons do
-      log_out_everywhere do
-        apply_on_password_change? true
+        sender Thunderline.Thundergate.Authentication.MagicLinkSender
       end
     end
 
@@ -27,7 +19,6 @@ defmodule Thunderline.Thundergate.Resources.User do
       token_resource Thunderline.Thundergate.Resources.Token
       signing_secret Thunderline.Secrets
       store_all_tokens? true
-      require_token_presence_for_authentication? true
     end
   end
 
@@ -68,18 +59,18 @@ defmodule Thunderline.Thundergate.Resources.User do
 
     # Virtual password field for input only
     attribute :password, :string do
-      allow_nil? false
-      sensitive? true
-      public? true
-      writable? true
-    end
-
-    # Stored hashed password managed by password strategy
-    attribute :hashed_password, :string do
       allow_nil? true
       sensitive? true
       public? false
       writable? true
+    end
+
+    # Legacy hashed password field (retained for existing rows, unused by magic link)
+    attribute :hashed_password, :string do
+      allow_nil? true
+      sensitive? true
+      public? false
+      writable? false
     end
 
     attribute :confirmed_at, :utc_datetime do

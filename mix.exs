@@ -90,6 +90,7 @@ defmodule Thunderline.MixProject do
       {:ash_state_machine, "~> 0.2.12"},
       {:ash_admin, "~> 0.11"},
       {:ash_ai, "~> 0.2"},
+
       # Type-safe TS client & RPC bridge
       {:ash_typescript, github: "ash-project/ash_typescript", ref: "main"},
       # Additional deps

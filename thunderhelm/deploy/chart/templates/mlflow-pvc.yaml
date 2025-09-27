@@ -1,0 +1,17 @@
+{{- if and .Values.mlflow.enabled .Values.mlflow.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-mlflow
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mlflow.persistence.size | default "10Gi" }}
+  {{- if .Values.mlflow.persistence.storageClass }}
+  storageClassName: {{ .Values.mlflow.persistence.storageClass }}
+  {{- end }}
+{{- end }}

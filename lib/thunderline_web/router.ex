@@ -50,10 +50,6 @@ defmodule ThunderlineWeb.Router do
   # MCP tool access pipeline (AshAI). API key auth optional initially; tighten later.
   pipeline :mcp do
     plug :accepts, ["json"]
-    # TODO (FLAG-G1 follow-up): flip required?: true once API keys issued.
-    plug AshAuthentication.Strategy.ApiKey.Plug,
-      resource: Thunderline.Thundergate.Resources.User,
-      required?: false
   end
 
   pipeline :graphql do
