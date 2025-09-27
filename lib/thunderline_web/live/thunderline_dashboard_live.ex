@@ -71,6 +71,39 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       %{id: 5, name: "Neo",            status: :offline, latency: nil}
     ]
 
+    agent_insights = [
+      %{
+        id: "stability",
+        name: "Stability Sentinel",
+        status: :active,
+        depth: "5 playbooks",
+        summary: "Watching cluster posture and maintaining redundancy",
+        description: "Runs proactive failover drills and verifies quorum health across Thunderblock nodes.",
+        next_action: "Validate replica sync for Thunderbolt edge region",
+        signals: ["Replica lag trending 12%", "Event jitter within tolerance", "No lost heartbeats"]
+      },
+      %{
+        id: "recovery",
+        name: "Recovery Operator",
+        status: :preparing,
+        depth: "3 playbooks",
+        summary: "Stages incident responses for degraded agents domain",
+        description: "Coordinates with Thunderflow to queue remediation steps for any domain flagged as critical.",
+        next_action: "Draft restart plan for Agents domain",
+        signals: ["Agent queue depth high", "Last drill 42m ago", "Fallback cache warm"]
+      },
+      %{
+        id: "insight",
+        name: "Insight Cartographer",
+        status: :idle,
+        depth: "7 playbooks",
+        summary: "Maps telemetry streams into operator-ready narratives",
+        description: "Aggregates KPI deltas, clusters anomalies, and prepares summaries for command briefings.",
+        next_action: "Awaiting new KPI drift beyond threshold",
+        signals: ["NDJSON stream stable", "No open annotations", "Dashboard baselines aligned"]
+      }
+    ]
+
    socket =
     socket
     |> assign(:domains, @sample_domains)
@@ -86,16 +119,36 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     |> assign(:selected_map_node, nil)
     |> assign(:friends, friends)
     |> assign(:active_friend, friends |> hd() |> Map.get(:id))
+    |> assign(:agent_insights, agent_insights)
+    |> assign(:active_agent, agent_insights |> hd() |> Map.get(:id))
     |> assign(:ups_status, nil)
     |> assign(:ndjson, false)
     |> assign(:ai_messages, [])
     |> assign(:ai_busy, false)
     |> assign_new(:admin_tab_open, fn -> false end)
 
-   Logger.debug("[DashboardLive] mount end assigns_keys=#{socket.assigns |> map_size()}")
-   {:ok, socket}
+    Logger.debug("[DashboardLive] mount end assigns_keys=#{socket.assigns |> map_size()}")
+    {:ok, socket}
   end
 
+  defp current_agent(agents, active_id) do
+    Enum.find(agents, &(&1.id == active_id))
+  end
+
+  defp agent_button_classes(agent, active_id) do
+    base = "border-white/10 hover:border-white/20 hover:bg-white/10"
+
+    if agent.id == active_id do
+      base <> " bg-white/10 border-white/20 shadow-md text-surface-strong"
+    else
+      base <> " bg-black/20 text-surface-subtle"
+    end
+  end
+
+  defp agent_status_badge(:active), do: "badge-success"
+  defp agent_status_badge(:preparing), do: "badge-warning"
+  defp agent_status_badge(:idle), do: "badge-ghost"
+  defp agent_status_badge(_), do: "badge-ghost"
   @max_domain_map_nodes 250
 
   @impl true
@@ -121,8 +174,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     <div class="max-w-7xl mx-auto px-4 py-6 relative">
       <header class="flex items-center gap-3 mb-5">
         <h1 class="text-lg font-semibold tracking-wide">Thunderline Dashboard</h1>
-        <span class="text-[11px] opacity-50">realtime systems view</span>
-        <a href="#" class="ml-auto link text-xs opacity-70 hover:opacity-100">docs</a>
+        <span class="text-[11px] text-surface-muted">realtime systems view</span>
+        <a href="#" class="ml-auto link text-xs text-surface-subtle hover:text-surface-strong">docs</a>
         <%= if can_admin?(@current_user) do %>
           <a href="/admin" class="btn btn-xs ml-2">Admin</a>
           <button class="btn btn-ghost btn-xs" phx-click="toggle_admin_tab"><%= if @admin_tab_open, do: "Hide", else: "Tab" %></button>
@@ -150,7 +203,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
           <div class="flex items-center gap-2 mb-2">
             <div class="w-2 h-2 rounded-full bg-cyan-400" />
             <h3 class="font-semibold">Domain Map</h3>
-            <span class="ml-auto text-xs text-white/50">interactive</span>
+            <span class="ml-auto text-xs text-surface-muted">interactive</span>
           </div>
           <div class="relative w-full flex-1 rounded-lg overflow-hidden bg-neutral-900/40">
             <svg viewBox="0 0 760 420" class="w-full h-full select-none" preserveAspectRatio="xMinYMin meet">
@@ -199,7 +252,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
           <div class="flex items-center gap-2 mb-2">
             <div class="w-2 h-2 rounded-full bg-emerald-400" />
             <h3 class="font-semibold">Inspector</h3>
-            <span class="ml-auto text-xs text-white/50"><%= if @selected_map_node, do: @selected_map_node, else: "select a node" %></span>
+            <span class="ml-auto text-xs text-surface-muted"><%= if @selected_map_node, do: @selected_map_node, else: "select a node" %></span>
           </div>
           <div class="flex-1 overflow-y-auto">
             <%= if @selected_map_node do %>
@@ -211,9 +264,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
                   <button class="btn btn-ghost btn-xs ml-auto" phx-click="select_map_node" phx-value-id="">x</button>
                 </div>
                 <div class="grid grid-cols-3 gap-2 text-sm">
-                  <div class="p-2 rounded-lg bg-white/5 border border-white/10"><div class="text-xs opacity-60">Ops/min</div><div class="text-base"><%= h.ops %></div></div>
-                  <div class="p-2 rounded-lg bg-white/5 border border-white/10"><div class="text-xs opacity-60">CPU%</div><div class="text-base"><%= h.cpu %></div></div>
-                  <div class="p-2 rounded-lg bg-white/5 border border-white/10"><div class="text-xs opacity-60">p95</div><div class="text-base"><%= h.p95 %>ms</div></div>
+                  <div class="p-2 rounded-lg bg-white/5 border border-white/10"><div class="text-xs text-surface-soft">Ops/min</div><div class="text-base text-surface-strong"><%= h.ops %></div></div>
+                  <div class="p-2 rounded-lg bg-white/5 border border-white/10"><div class="text-xs text-surface-soft">CPU%</div><div class="text-base text-surface-strong"><%= h.cpu %></div></div>
+                  <div class="p-2 rounded-lg bg-white/5 border border-white/10"><div class="text-xs text-surface-soft">p95</div><div class="text-base text-surface-strong"><%= h.p95 %>ms</div></div>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                   <button class="btn btn-sm btn-outline">Open Logs</button>
@@ -221,10 +274,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
                   <button class="btn btn-sm btn-outline">Tail Metrics</button>
                   <button class="btn btn-sm btn-outline">Quarantine</button>
                 </div>
-                <p class="text-[10px] opacity-50">Errors: <%= h.errors %></p>
+                <p class="text-[10px] text-surface-soft">Errors: <%= h.errors %></p>
               </div>
             <% else %>
-              <div class="text-sm text-white/60">Click a node to inspect health, metrics and actions.</div>
+              <div class="text-sm text-surface-subtle">Click a node to inspect health, metrics and actions.</div>
             <% end %>
           </div>
           </section>
@@ -262,21 +315,21 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             <div class="flex items-center gap-2 mb-2">
               <div class="w-2 h-2 rounded-full bg-violet-400" />
               <h3 class="font-semibold">Event Flow</h3>
-              <span class="ml-2 text-xs text-white/50">last <%= length(@events) %></span>
+              <span class="ml-2 text-xs text-surface-muted">last <%= length(@events) %></span>
               <button class="btn btn-ghost btn-xs" phx-click="select_domain" phx-value-id={@active_domain}>refresh</button>
               <button class={"btn btn-ghost btn-xs ml-2 " <> if @ndjson, do: "text-emerald-400", else: "opacity-60"} phx-click="toggle_ndjson">NDJSON</button>
             </div>
             <div id="eventFeed" class="mt-1 flex-1 feed-scroll thin-scrollbar space-y-2 text-xs pr-1">
               <%= for e <- @events do %>
                 <div class="p-2 rounded-lg bg-white/5 border border-white/10">
-                  <div class="flex items-center gap-2 text-[10px] mb-0.5 opacity-80">
+                  <div class="flex items-center gap-2 text-[10px] mb-0.5 text-surface-subtle">
                     <span class="badge badge-ghost badge-xs"><%= e.source %></span>
                     <%= if Map.get(e, :anomaly) do %>
                       <span class="badge badge-error badge-xs">anomaly</span>
                     <% end %>
-                    <time class="opacity-40"><%= e.time %></time>
+                    <time class="text-surface-soft"><%= e.time %></time>
                   </div>
-                  <div class="text-[11px] leading-snug"><%= e.message %></div>
+                  <div class="text-[11px] leading-snug text-surface-strong"><%= e.message %></div>
                 </div>
               <% end %>
             </div>
@@ -294,7 +347,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             <button class="btn btn-outline btn-sm">Restart</button>
             <button class="btn btn-primary btn-sm col-span-2" phx-click="inject_demo">Inject Demo Event</button>
           </div>
-          <p class="mt-3 text-[10px] opacity-40">actions affect selected node (future)</p>
+          <p class="mt-3 text-[10px] text-surface-soft">actions affect selected node (future)</p>
           </section>
         </div>
 
@@ -313,7 +366,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
                         class={"w-full text-left px-3 py-2 rounded-xl transition border border-white/5 hover:bg-white/5 flex items-center gap-3 " <> (if @active_friend == f.id, do: "bg-white/10", else: "") }>
                   <span class={"w-2 h-2 rounded-full " <> friend_dot(f.status)}></span>
                   <span class="truncate flex-1"><%= f.name %></span>
-                  <span class="ml-auto text-xs text-white/50 uppercase"><%= f.status %></span>
+                  <span class="ml-auto text-xs text-surface-muted uppercase"><%= f.status %></span>
                   <%= if f.latency do %><span class="text-[10px] ml-2 text-primary"><%= f.latency %>ms</span><% end %>
                 </button>
               </li>
@@ -323,14 +376,64 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             <button class="btn btn-sm btn-ghost border border-white/10">New Chat</button>
             <button class="btn btn-sm btn-ghost border border-white/10">Create Room</button>
           </div>
-          <p class="mt-4 text-[10px] opacity-40">peer status reflects last heartbeat</p>
+          <p class="mt-4 text-[10px] text-surface-soft">peer status reflects last heartbeat</p>
+          </section>
+          <!-- 8. Agent Ops -->
+          <section class="panel p-4 flex flex-col">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-amber-400" />
+              <h3 class="font-semibold">Agent Ops</h3>
+              <span class="ml-auto text-xs text-surface-muted">autonomy</span>
+            </div>
+            <div class="grid gap-3 lg:grid-cols-2">
+              <div class="space-y-2">
+                <%= for agent <- @agent_insights do %>
+                  <button phx-click="select_agent" phx-value-id={agent.id}
+                          class={"w-full text-left px-3 py-2 rounded-lg border transition-colors duration-200 " <>
+                                  agent_button_classes(agent, @active_agent)}>
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold text-surface-strong"><%= agent.name %></span>
+                      <span class={"badge badge-xs " <> agent_status_badge(agent.status)}><%= agent.status %></span>
+                    </div>
+                    <p class="text-[11px] text-surface-muted"><%= agent.summary %></p>
+                  </button>
+                <% end %>
+              </div>
+              <div class="rounded-lg border border-white/10 bg-white/5 p-3 space-y-3">
+                <% active_agent = current_agent(@agent_insights, @active_agent) %>
+                <%= if active_agent do %>
+                  <div class="flex items-center gap-2">
+                    <span class={"badge badge-sm " <> agent_status_badge(active_agent.status)}><%= active_agent.status %></span>
+                    <span class="panel-subtitle"><%= active_agent.depth %></span>
+                  </div>
+                  <p class="text-sm text-surface-strong"><%= active_agent.description %></p>
+                  <div>
+                    <h4 class="text-xs panel-subtitle mb-1">Next action</h4>
+                    <p class="text-[11px] text-surface-subtle"><%= active_agent.next_action %></p>
+                  </div>
+                  <div>
+                    <h4 class="text-xs panel-subtitle mb-1">Signals</h4>
+                    <ul class="space-y-1 text-[11px] text-surface-muted">
+                      <%= for sig <- active_agent.signals do %>
+                        <li class="flex items-center gap-2">
+                          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                          <span><%= sig %></span>
+                        </li>
+                      <% end %>
+                    </ul>
+                  </div>
+                <% else %>
+                  <p class="text-sm text-surface-subtle">Select an agent to inspect its current mission.</p>
+                <% end %>
+              </div>
+            </div>
           </section>
           <!-- 7. Trends / Sparkline -->
           <section class="panel p-4 flex flex-col">
           <div class="flex items-center gap-2 mb-2">
             <div class="w-2 h-2 rounded-full bg-cyan-400" />
             <h3 class="font-semibold">Trends</h3>
-            <span class="ml-auto text-xs opacity-50">preview</span>
+            <span class="ml-auto text-xs text-surface-muted">preview</span>
           </div>
           <div class="flex-1 flex items-center justify-center">
             <svg viewBox="0 0 200 60" class="w-full h-16">
@@ -338,27 +441,27 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
                 points={sparkline_points(@kpis)} />
             </svg>
           </div>
-          <p class="text-[10px] opacity-40 mt-2">derived sample sparkline of KPI values</p>
+          <p class="text-[10px] text-surface-soft mt-2">derived sample sparkline of KPI values</p>
           </section>
           <%= if feature_enabled?(:ai_chat_panel) do %>
-          <!-- 8. AI Chat Panel (experimental) -->
+          <!-- 9. AI Chat Panel (experimental) -->
           <section class="panel p-4 flex flex-col h-[420px]">
             <div class="flex items-center gap-2 mb-2">
               <div class="w-2 h-2 rounded-full bg-fuchsia-400" />
               <h3 class="font-semibold">AI Assistant</h3>
-              <span class="ml-auto text-xs text-white/50">experimental</span>
+              <span class="ml-auto text-xs text-surface-muted">experimental</span>
             </div>
             <div id="aiChatFeed" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
               <%= if @ai_messages == [] do %>
-                <div class="p-2 rounded bg-white/5 border border-white/10 opacity-60">No messages yet. Ask the system about recent events or type /help.</div>
+                <div class="p-2 rounded bg-white/5 border border-white/10 text-surface-subtle">No messages yet. Ask the system about recent events or type /help.</div>
               <% end %>
               <%= for m <- (@ai_messages || []) |> Enum.reverse() do %>
                 <div class={"p-2 rounded-lg border text-[11px] leading-snug " <> (if m.role == :user, do: "bg-sky-500/10 border-sky-500/30", else: "bg-fuchsia-500/10 border-fuchsia-500/30")}>
-                  <div class="flex items-center gap-2 mb-0.5 opacity-70">
+                  <div class="flex items-center gap-2 mb-0.5 text-surface-subtle">
                     <span class="badge badge-ghost badge-xs"><%= m.role %></span>
-                    <time class="opacity-40"><%= m.time %></time>
+                    <time class="text-surface-soft"><%= m.time %></time>
                   </div>
-                  <div><%= m.text %></div>
+                  <div class="text-surface-strong"><%= m.text %></div>
                 </div>
               <% end %>
             </div>
@@ -368,7 +471,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
                 <%= if @ai_busy, do: "...", else: "Send" %>
               </button>
             </form>
-            <p class="mt-2 text-[10px] opacity-40">Backed by Ash AI (stub). Commands: /help, /kpis, /events [n]</p>
+            <p class="mt-2 text-[10px] text-surface-soft">Backed by Ash AI (stub). Commands: /help, /kpis, /events [n]</p>
           </section>
           <% end %>
         </div>
@@ -409,11 +512,20 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
 
   @impl true
   def handle_event("select_friend", %{"id" => id}, socket) do
-    active_friend = case Integer.parse(to_string(id)) do
-      {i, _} -> i
-      :error -> socket.assigns.active_friend
+    with {int_id, _} <- Integer.parse(to_string(id)),
+         true <- Enum.any?(socket.assigns.friends, &(&1.id == int_id)) do
+      {:noreply, assign(socket, :active_friend, int_id)}
+    else
+      _ -> {:noreply, socket}
     end
-    {:noreply, assign(socket, :active_friend, active_friend)}
+  end
+
+  @impl true
+  def handle_event("select_agent", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.agent_insights, &(&1.id == id)) do
+      nil -> {:noreply, socket}
+      _ -> {:noreply, assign(socket, :active_agent, id)}
+    end
   end
 
   # Defensive catch-all so unexpected events never crash the LiveView.

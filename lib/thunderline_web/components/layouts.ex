@@ -155,7 +155,7 @@ defmodule ThunderlineWeb.Layouts do
           <!-- DASHBOARD_LAYOUT_SENTINEL -->
           <!-- Canary badge (remove after verification) -->
           <div class="fixed top-2 left-2 text-[10px] px-2 py-1 rounded bg-emerald-600/80">bundle:compiled</div>
-          <%= render_slot(@inner_block) %>
+          {@inner_content}
         </div>
       </body>
     </html>

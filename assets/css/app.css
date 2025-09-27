@@ -1,11 +1,12 @@
 /* See the Tailwind configuration guide for advanced usage
    https://tailwindcss.com/docs/configuration */
 
-/* Tailwind v4 entrypoint */
+/* Tailwind entrypoint: ensure component layer is present so daisyUI emits styles */
 @import "tailwindcss/preflight";
+@import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* Fallback: build chain doesn't yet support Tailwind v4 @plugin at-rules. Using vendor daisyui.js require via (removed) tailwind.config.js no longer works, so we keep CSS variables to approximate theme. */
+/* Fallback: we still expose dashboard theme tokens in case daisyUI is unavailable at runtime. */
 :root[data-theme='thunderline'] {
   --color-base-100: #0f1115;
   --color-base-200: #161a21;
@@ -19,6 +20,10 @@
   --color-accent-content: #16060f;
   --color-neutral: #1f2937;
   --color-neutral-content: #e5e7eb;
+  --color-surface-strong: #f8fafc;
+  --color-surface-subtle: rgba(226, 232, 240, 0.85);
+  --color-surface-muted: rgba(186, 197, 215, 0.78);
+  --color-surface-soft: rgba(148, 163, 184, 0.68);
   --color-info: #0ea5e9;
   --color-info-content: #031d26;
   --color-success: #10b981;
@@ -394,6 +399,7 @@
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0.75rem;
+    color: var(--color-surface-strong);
   }
 
   /* Thin scrollbar utility for scrollable panels (Event Flow) */
@@ -491,6 +497,25 @@
   .panel-420 { height: 420px; max-height: 420px; }
   /* Scrollable content helper inside fixed-height flex column */
   .feed-scroll { min-height: 0; overflow-y: auto; }
+
+  .text-surface-strong { color: var(--color-surface-strong); }
+  .text-surface-subtle { color: var(--color-surface-subtle); }
+  .text-surface-muted { color: var(--color-surface-muted); }
+  .text-surface-soft { color: var(--color-surface-soft); }
+
+  .panel-subtitle {
+    color: var(--color-surface-subtle);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .panel-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    color: var(--color-surface-strong);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
 }
 
 /* OKO Dashboard chat helpers (ported from React prototype note) */
