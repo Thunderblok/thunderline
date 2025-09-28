@@ -35,5 +35,4 @@ defmodule Thunderline.Thunderflow.Resources.EventOps do
       end
     end
   end
-
 end

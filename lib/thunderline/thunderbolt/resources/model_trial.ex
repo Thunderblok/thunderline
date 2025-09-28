@@ -53,6 +53,12 @@ defmodule Thunderline.Thunderbolt.Resources.ModelTrial do
     end
   end
 
+  policies do
+    policy always() do
+      authorize_if always()
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -96,12 +102,6 @@ defmodule Thunderline.Thunderbolt.Resources.ModelTrial do
   relationships do
     belongs_to :model_run, Thunderline.Thunderbolt.Resources.ModelRun do
       allow_nil? false
-    end
-  end
-
-  policies do
-    policy always() do
-      authorize_if always()
     end
   end
 end

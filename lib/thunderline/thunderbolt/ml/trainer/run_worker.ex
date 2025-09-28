@@ -4,6 +4,7 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
 
   require Ash.Query
   import Ash.Expr, only: [expr: 1]
+  alias Ash
   alias Thunderline.Thunderbolt.Domain
   alias Thunderline.Thunderbolt.ML.{TrainingRun, ModelArtifact, ModelVersion}
 
@@ -55,7 +56,7 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
       |> Ash.Query.filter(expr(run_id == ^rid))
       |> Ash.Query.limit(1)
 
-    case Domain.read_one(query) do
+    case Ash.read_one(query) do
       {:ok, %TrainingRun{} = run} -> {:ok, run}
       {:ok, nil} -> {:error, :not_found}
       {:error, err} -> {:error, err}

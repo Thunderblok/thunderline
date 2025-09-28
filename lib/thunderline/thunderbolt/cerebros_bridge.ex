@@ -12,9 +12,15 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge do
   alias Thunderline.Thunderbolt.CerebrosBridge.{Client, RunWorker}
 
   @type run_spec :: map()
-  @type enqueue_option :: {:run_id, String.t()} | {:meta, map()} | {:pulse_id, String.t()} |
-                          {:budget, map()} | {:parameters, map()} | {:tau, term()} |
-                          {:correlation_id, String.t()} | {:extra, map()}
+  @type enqueue_option ::
+          {:run_id, String.t()}
+          | {:meta, map()}
+          | {:pulse_id, String.t()}
+          | {:budget, map()}
+          | {:parameters, map()}
+          | {:tau, term()}
+          | {:correlation_id, String.t()}
+          | {:extra, map()}
 
   @doc """
   Enqueue a NAS run. Returns `{:ok, Oban.Job}` on success or `{:error, term}` when
@@ -47,8 +53,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge do
       "budget" => Keyword.get(opts, :budget) || Map.get(spec, "budget", %{}),
       "parameters" => Keyword.get(opts, :parameters) || Map.get(spec, "parameters", %{}),
       "tau" => Keyword.get(opts, :tau) || Map.get(spec, "tau"),
-      "correlation_id" =>
-        Keyword.get(opts, :correlation_id) || Map.get(spec, "correlation_id"),
+      "correlation_id" => Keyword.get(opts, :correlation_id) || Map.get(spec, "correlation_id"),
       "meta" => Keyword.get(opts, :meta, %{}),
       "extra" => Keyword.get(opts, :extra) || Map.get(spec, "extra", %{})
     }

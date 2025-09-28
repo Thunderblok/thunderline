@@ -10,9 +10,10 @@ defmodule ThunderlineWeb.CerebrosLive do
   """
   use ThunderlineWeb, :live_view
 
+  alias Ecto.Changeset
   alias Phoenix.PubSub
-  alias Thunderline.Thunderbolt.CerebrosBridge.Client, as: CerebrosBridge
-  alias Thunderline.Thunderbolt.CerebrosBridge.{RunWorker, Validator}
+  alias Thunderline.Thunderbolt.CerebrosBridge
+  alias Thunderline.Thunderbolt.CerebrosBridge.Validator
   alias Thunderline.UUID
   alias Oban
 
@@ -127,9 +128,10 @@ defmodule ThunderlineWeb.CerebrosLive do
 
       true ->
         run_id = UUID.v7()
-        args = build_job_args(run_id, result.spec)
+        spec = Map.put(result.spec, "run_id", run_id)
+        enqueue_opts = build_enqueue_opts(run_id, spec)
 
-        case RunWorker.new(args) |> Oban.insert() do
+        case CerebrosBridge.enqueue_run(spec, enqueue_opts) do
           {:ok, %Oban.Job{} = job} ->
             update = %{
               run_id: run_id,
@@ -145,7 +147,7 @@ defmodule ThunderlineWeb.CerebrosLive do
             {:noreply,
              socket
              |> assign(:spec_form, build_spec_form(result.json))
-             |> assign(:spec_payload, result.spec)
+             |> assign(:spec_payload, spec)
              |> assign(:spec_errors, result.errors)
              |> assign(:spec_warnings, result.warnings)
              |> assign(:spec_status, result.status)
@@ -156,10 +158,20 @@ defmodule ThunderlineWeb.CerebrosLive do
              |> update(:run_history, &add_history(&1, update))
              |> put_flash(:info, "Queued NAS run #{short_id(run_id)}")}
 
-          {:error, changeset} ->
+          {:error, :bridge_disabled} ->
+            {:noreply,
+             socket
+             |> put_flash(:error, "Cerebros bridge disabled at enqueue time")}
+
+          {:error, %Changeset{} = changeset} ->
             {:noreply,
              socket
              |> put_flash(:error, "Failed to enqueue NAS run: #{inspect(changeset.errors)}")}
+
+          {:error, reason} ->
+            {:noreply,
+             socket
+             |> put_flash(:error, "Failed to enqueue NAS run: #{inspect(reason)}")}
         end
     end
   end
@@ -258,7 +270,11 @@ defmodule ThunderlineWeb.CerebrosLive do
 
   def handle_info({:run_update, update}, socket) do
     history = add_history(socket.assigns.run_history, update)
-    current_run = if update.run_id == socket.assigns.current_run_id, do: update, else: socket.assigns.current_run
+
+    current_run =
+      if update.run_id == socket.assigns.current_run_id,
+        do: update,
+        else: socket.assigns.current_run
 
     running =
       case update.stage do
@@ -316,7 +332,10 @@ defmodule ThunderlineWeb.CerebrosLive do
                 class="font-mono text-xs"
               />
               <%= if @spec_errors != [] do %>
-                <div data-role="spec-errors" class="rounded border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 space-y-2">
+                <div
+                  data-role="spec-errors"
+                  class="rounded border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 space-y-2"
+                >
                   <div class="tracking-wide uppercase font-semibold text-rose-600 text-[0.7rem]">
                     Spec errors ({length(@spec_errors)})
                   </div>
@@ -327,7 +346,10 @@ defmodule ThunderlineWeb.CerebrosLive do
               <% end %>
 
               <%= if @spec_errors == [] and @spec_warnings != [] do %>
-                <div data-role="spec-warnings" class="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 space-y-2">
+                <div
+                  data-role="spec-warnings"
+                  class="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 space-y-2"
+                >
                   <div class="tracking-wide uppercase font-semibold text-amber-600 text-[0.7rem]">
                     Spec warnings ({length(@spec_warnings)})
                   </div>
@@ -368,7 +390,9 @@ defmodule ThunderlineWeb.CerebrosLive do
             <div class="border-t pt-4 space-y-3 text-sm text-gray-700">
               <div class="flex items-center justify-between">
                 <div class="font-medium">Status</div>
-                <div class="font-mono text-xs text-gray-500">{@current_run && short_id(@current_run.run_id)}</div>
+                <div class="font-mono text-xs text-gray-500">
+                  {@current_run && short_id(@current_run.run_id)}
+                </div>
               </div>
               <div class="rounded border border-slate-200 bg-slate-50 p-3 text-xs font-mono min-h-[3rem]">
                 {@status_msg}
@@ -397,7 +421,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               <% end %>
             </div>
           </div>
-
+          
     <!-- Benchmarks -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Benchmarks</h2>
@@ -429,7 +453,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               </div>
             <% end %>
           </div>
-
+          
     <!-- Drift Metrics -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Drift Metrics (Preview)</h2>
@@ -480,8 +504,8 @@ defmodule ThunderlineWeb.CerebrosLive do
           <div data-role="current-run-card" class="bg-white rounded-lg shadow p-6 space-y-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-800">Current Run</h2>
-              <span class={[stage_badge_class(@current_run && @current_run.stage || :idle)]}>
-                {format_stage(@current_run && @current_run.stage || :idle)}
+              <span class={[stage_badge_class((@current_run && @current_run.stage) || :idle)]}>
+                {format_stage((@current_run && @current_run.stage) || :idle)}
               </span>
             </div>
             <%= if @current_run do %>
@@ -492,7 +516,10 @@ defmodule ThunderlineWeb.CerebrosLive do
               <div class="rounded border border-slate-200 bg-slate-50 p-3 text-xs font-mono text-gray-700">
                 {run_status_message(@current_run)}
               </div>
-              <div :if={metadata_pairs(@current_run.metadata) != []} class="space-y-2 text-xs text-gray-600">
+              <div
+                :if={metadata_pairs(@current_run.metadata) != []}
+                class="space-y-2 text-xs text-gray-600"
+              >
                 <div class="tracking-wide uppercase text-[0.65rem] text-gray-500">Metadata</div>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                   <div :for={{label, value} <- metadata_pairs(@current_run.metadata)} class="truncate">
@@ -501,7 +528,10 @@ defmodule ThunderlineWeb.CerebrosLive do
                   </div>
                 </dl>
               </div>
-              <div :if={measurement_pairs(@current_run.measurements) != []} class="space-y-2 text-xs text-gray-600">
+              <div
+                :if={measurement_pairs(@current_run.measurements) != []}
+                class="space-y-2 text-xs text-gray-600"
+              >
                 <div class="tracking-wide uppercase text-[0.65rem] text-gray-500">Measurements</div>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                   <div :for={{label, value} <- measurement_pairs(@current_run.measurements)}>
@@ -510,10 +540,16 @@ defmodule ThunderlineWeb.CerebrosLive do
                   </div>
                 </dl>
               </div>
-              <div :if={matching_trials(@trial_updates, @current_run.run_id) != []} class="space-y-2 text-xs">
+              <div
+                :if={matching_trials(@trial_updates, @current_run.run_id) != []}
+                class="space-y-2 text-xs"
+              >
                 <div class="tracking-wide uppercase text-[0.65rem] text-gray-500">Latest trials</div>
                 <ul class="space-y-1">
-                  <li :for={trial <- matching_trials(@trial_updates, @current_run.run_id)} class="border border-slate-200 rounded px-2 py-1">
+                  <li
+                    :for={trial <- matching_trials(@trial_updates, @current_run.run_id)}
+                    class="border border-slate-200 rounded px-2 py-1"
+                  >
                     <div class="flex justify-between text-[0.7rem] uppercase text-gray-500">
                       <span>{trial.trial_id}</span>
                       <span>{format_stage(trial.stage)}</span>
@@ -546,7 +582,10 @@ defmodule ThunderlineWeb.CerebrosLive do
             <div :if={Enum.empty?(@run_history)} class="text-sm text-gray-500">
               Queue a NAS run to see lifecycle activity.
             </div>
-            <div :for={entry <- @run_history} class="border border-slate-200 rounded mb-3 last:mb-0 overflow-hidden">
+            <div
+              :for={entry <- @run_history}
+              class="border border-slate-200 rounded mb-3 last:mb-0 overflow-hidden"
+            >
               <div class="flex items-center justify-between bg-slate-50 px-3 py-2">
                 <div class="flex items-center gap-2 text-xs uppercase tracking-wide">
                   <span class={[stage_badge_class(entry.stage)]}>{format_stage(entry.stage)}</span>
@@ -556,14 +595,26 @@ defmodule ThunderlineWeb.CerebrosLive do
               </div>
               <div class="px-3 py-2 text-xs space-y-2 text-gray-700">
                 <div class="font-mono">{run_status_message(entry)}</div>
-                <div :if={metadata_pairs(entry.metadata) != []} class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                  <div :for={{label, value} <- metadata_pairs(entry.metadata)} class="text-[0.7rem] text-gray-500">
+                <div
+                  :if={metadata_pairs(entry.metadata) != []}
+                  class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1"
+                >
+                  <div
+                    :for={{label, value} <- metadata_pairs(entry.metadata)}
+                    class="text-[0.7rem] text-gray-500"
+                  >
                     <span class="font-semibold uppercase">{label}:</span>
                     <span class="font-mono text-gray-700 ml-1">{value}</span>
                   </div>
                 </div>
-                <div :if={measurement_pairs(entry.measurements) != []} class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                  <div :for={{label, value} <- measurement_pairs(entry.measurements)} class="text-[0.7rem] text-gray-500">
+                <div
+                  :if={measurement_pairs(entry.measurements) != []}
+                  class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1"
+                >
+                  <div
+                    :for={{label, value} <- measurement_pairs(entry.measurements)}
+                    class="text-[0.7rem] text-gray-500"
+                  >
                     <span class="font-semibold uppercase">{label}:</span>
                     <span class="font-mono text-gray-700 ml-1">{value}</span>
                   </div>
@@ -580,7 +631,9 @@ defmodule ThunderlineWeb.CerebrosLive do
                     <span>{format_stage(trial.stage)}</span>
                   </div>
                   <div class="font-mono text-gray-700">Metric: {format_metric(trial)}</div>
-                  <div class="text-[0.65rem] text-gray-400">{format_timestamp(trial.published_at)}</div>
+                  <div class="text-[0.65rem] text-gray-400">
+                    {format_timestamp(trial.published_at)}
+                  </div>
                 </li>
               </ul>
             </div>
@@ -632,29 +685,27 @@ defmodule ThunderlineWeb.CerebrosLive do
     to_form(%{"spec" => json}, as: :nas)
   end
 
-  defp build_job_args(run_id, spec) do
-    budget = Map.get(spec, "budget", %{})
-    params = Map.get(spec, "parameters", %{})
-    pulse = Map.get(spec, "pulse", %{})
-
-    %{
-      "run_id" => run_id,
-      "spec" => spec,
-      "budget" => budget,
-      "parameters" => params,
-      "tau" => Map.get(pulse, "tau"),
-      "meta" => %{
+  defp build_enqueue_opts(run_id, spec) do
+    meta =
+      Map.get(spec, "metadata", %{})
+      |> Map.merge(%{
         "source" => "cerebros_live",
         "operator" => "manual",
         "submitted_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-      }
-    }
-    |> maybe_put("pulse_id", Map.get(pulse, "id"))
-    |> maybe_put("extra", Map.get(spec, "extra"))
-  end
+      })
 
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+    [
+      {:run_id, run_id},
+      {:pulse_id, Map.get(spec, "pulse_id") || get_in(spec, ["pulse", "id"])},
+      {:budget, Map.get(spec, "budget", %{})},
+      {:parameters, Map.get(spec, "parameters", %{})},
+      {:tau, Map.get(spec, "tau") || get_in(spec, ["pulse", "tau"])},
+      {:correlation_id, Map.get(spec, "correlation_id") || run_id},
+      {:extra, Map.get(spec, "extra")}
+    ]
+    |> Enum.reject(fn {key, value} -> key != :run_id and is_nil(value) end)
+    |> Kernel.++([{:meta, meta}])
+  end
 
   defp add_history(history, update) do
     entry = Map.put_new(update, :published_at, DateTime.utc_now())
@@ -718,7 +769,10 @@ defmodule ThunderlineWeb.CerebrosLive do
   defp spec_feedback_summary(errors, warnings) do
     parts = []
     parts = if errors != [], do: parts ++ [count_label(length(errors), "error")], else: parts
-    parts = if warnings != [], do: parts ++ [count_label(length(warnings), "warning")], else: parts
+
+    parts =
+      if warnings != [], do: parts ++ [count_label(length(warnings), "warning")], else: parts
+
     Enum.join(parts, " · ")
   end
 
@@ -794,10 +848,17 @@ defmodule ThunderlineWeb.CerebrosLive do
   defp format_metric(%{measurements: measurements}) do
     metric =
       cond do
-        is_map(measurements) && Map.has_key?(measurements, :metric) -> Map.get(measurements, :metric)
-        is_map(measurements) && Map.has_key?(measurements, "metric") -> Map.get(measurements, "metric")
-        is_list(measurements) -> Keyword.get(measurements, :metric) || Keyword.get(measurements, "metric")
-        true -> nil
+        is_map(measurements) && Map.has_key?(measurements, :metric) ->
+          Map.get(measurements, :metric)
+
+        is_map(measurements) && Map.has_key?(measurements, "metric") ->
+          Map.get(measurements, "metric")
+
+        is_list(measurements) ->
+          Keyword.get(measurements, :metric) || Keyword.get(measurements, "metric")
+
+        true ->
+          nil
       end
 
     metric

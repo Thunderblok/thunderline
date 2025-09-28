@@ -131,18 +131,45 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Validator do
 
     errors =
       []
-      |> maybe_spec_error(missing_string?(normalized, "dataset"), "dataset must be a non-empty string")
-      |> maybe_spec_error(missing_string?(normalized, "model"), "model must be a non-empty string")
-      |> maybe_spec_error(invalid_integer?(normalized, "requested_trials", min: 1), "requested_trials must be >= 1 when present")
-      |> maybe_spec_error(invalid_integer?(normalized, "search_space_version", min: 1), "search_space_version must be >= 1 when present")
-      |> maybe_spec_error(invalid_max_params?(normalized), "max_params must be a positive integer")
-      |> maybe_spec_error(invalid_map?(normalized, "parameters"), "parameters must be a map of hyperparameters")
-      |> maybe_spec_error(invalid_budget?(normalized), "budget must be a map with positive numeric limits")
+      |> maybe_spec_error(
+        missing_string?(normalized, "dataset"),
+        "dataset must be a non-empty string"
+      )
+      |> maybe_spec_error(
+        missing_string?(normalized, "model"),
+        "model must be a non-empty string"
+      )
+      |> maybe_spec_error(
+        invalid_integer?(normalized, "requested_trials", min: 1),
+        "requested_trials must be >= 1 when present"
+      )
+      |> maybe_spec_error(
+        invalid_integer?(normalized, "search_space_version", min: 1),
+        "search_space_version must be >= 1 when present"
+      )
+      |> maybe_spec_error(
+        invalid_max_params?(normalized),
+        "max_params must be a positive integer"
+      )
+      |> maybe_spec_error(
+        invalid_map?(normalized, "parameters"),
+        "parameters must be a map of hyperparameters"
+      )
+      |> maybe_spec_error(
+        invalid_budget?(normalized),
+        "budget must be a map with positive numeric limits"
+      )
 
     warnings =
       []
-      |> maybe_spec_warning(Map.get(normalized, "requested_trials", 0) == 0, "requested_trials is 0; run will finish immediately unless overrides supplied")
-      |> maybe_spec_warning(Map.get(normalized, "parameters") in [%{}, nil], "parameters map is empty; Cerebros will use defaults")
+      |> maybe_spec_warning(
+        Map.get(normalized, "requested_trials", 0) == 0,
+        "requested_trials is 0; run will finish immediately unless overrides supplied"
+      )
+      |> maybe_spec_warning(
+        Map.get(normalized, "parameters") in [%{}, nil],
+        "parameters map is empty; Cerebros will use defaults"
+      )
 
     status =
       cond do
@@ -201,7 +228,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Validator do
           name: :config_enabled,
           status: :error,
           message: "Cerebros bridge config disabled (set enabled: true)",
-          metadata: %{remediation: "Update config :thunderline, :cerebros_bridge -> enabled: true"}
+          metadata: %{
+            remediation: "Update config :thunderline, :cerebros_bridge -> enabled: true"
+          }
         }
 
       {false, false} ->
@@ -495,16 +524,20 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Validator do
 
   defp invalid_budget?(map) do
     case Map.get(map, "budget") do
-      nil -> false
+      nil ->
+        false
+
       budget when is_map(budget) ->
         Enum.any?(budget, fn {_k, v} -> not valid_budget_value?(v) end)
 
-      _ -> true
+      _ ->
+        true
     end
   end
 
   defp valid_budget_value?(v) when is_integer(v) and v >= 0, do: true
   defp valid_budget_value?(v) when is_float(v) and v >= 0.0, do: true
+
   defp valid_budget_value?(v) when is_binary(v) do
     case Integer.parse(v) do
       {val, _} when val >= 0 -> true
