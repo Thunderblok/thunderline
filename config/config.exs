@@ -278,7 +278,8 @@ config :ash, :compatible_foreign_key_types, [
 
 config :thunderline, Thunderline.Thunderblock.Retention.Sweeper,
   dry_run: false,
-  batch_size: 5_000
+  batch_size: 5_000,
+  targets: []
 
 # Configure Mnesia database location
 config :mnesia,
@@ -309,10 +310,21 @@ compactor_cron =
     []
   end
 
+retention_cron =
+  if System.get_env("DISABLE_RETENTION_SWEEPER_CRON") in ["1", "true", "TRUE"] do
+    []
+  else
+    schedule = System.get_env("RETENTION_SWEEPER_CRON", "0 * * * *")
+
+    [
+      {schedule, Thunderline.Thunderblock.Jobs.RetentionSweepWorker}
+    ]
+  end
+
 config :thunderline, Oban,
   repo: Thunderline.Repo,
   plugins: [
-    {Oban.Plugins.Cron, crontab: compactor_cron},
+    {Oban.Plugins.Cron, crontab: compactor_cron ++ retention_cron},
     Oban.Plugins.Pruner
   ],
   queues: [
@@ -322,7 +334,8 @@ config :thunderline, Oban,
     heavy_compute: 2,
     probe: 2,
     chat_responses: [limit: 10],
-    conversations: [limit: 10]
+    conversations: [limit: 10],
+    retention: [limit: 2]
   ]
 
 # --- AshOban Trigger Usage Reference ---------------------------------------

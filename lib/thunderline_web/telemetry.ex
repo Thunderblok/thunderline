@@ -60,6 +60,27 @@ defmodule ThunderlineWeb.Telemetry do
       counter("thunderline.grid.zone.conflict",
         tags: [:zone, :owner, :attempted_owner],
         measurement: :count
+      ),
+      summary("thunderline.retention.sweep.duration",
+        event_name: [:thunderline, :retention, :sweep],
+        measurement: :duration_ms,
+        unit: :millisecond,
+        tags: [:resource, :dry_run?]
+      ),
+      last_value("thunderline.retention.sweep.expired",
+        event_name: [:thunderline, :retention, :sweep],
+        measurement: :expired,
+        tags: [:resource]
+      ),
+      last_value("thunderline.retention.sweep.deleted",
+        event_name: [:thunderline, :retention, :sweep],
+        measurement: :deleted,
+        tags: [:resource]
+      ),
+      last_value("thunderline.retention.sweep.kept",
+        event_name: [:thunderline, :retention, :sweep],
+        measurement: :kept,
+        tags: [:resource]
       )
     ] ++ Thunderline.Thunderflow.Telemetry.Jobs.metrics()
   end

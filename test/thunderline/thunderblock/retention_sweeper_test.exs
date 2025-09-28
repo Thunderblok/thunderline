@@ -68,10 +68,26 @@ defmodule Thunderline.Thunderblock.RetentionSweeperTest do
       {:ok, store} =
         Agent.start_link(fn ->
           [
-            %{id: "global_keep", scope: :global, inserted_at: DateTime.add(now, -2 * 86_400, :second)},
-            %{id: "global_expire", scope: :global, inserted_at: DateTime.add(now, -12 * 86_400, :second)},
-            %{id: "tenant_keep", scope: {:tenant, tenant_id}, inserted_at: DateTime.add(now, -3 * 86_400, :second)},
-            %{id: "tenant_expire", scope: {:tenant, tenant_id}, inserted_at: DateTime.add(now, -6 * 86_400, :second)}
+            %{
+              id: "global_keep",
+              scope: :global,
+              inserted_at: DateTime.add(now, -2 * 86_400, :second)
+            },
+            %{
+              id: "global_expire",
+              scope: :global,
+              inserted_at: DateTime.add(now, -12 * 86_400, :second)
+            },
+            %{
+              id: "tenant_keep",
+              scope: {:tenant, tenant_id},
+              inserted_at: DateTime.add(now, -3 * 86_400, :second)
+            },
+            %{
+              id: "tenant_expire",
+              scope: {:tenant, tenant_id},
+              inserted_at: DateTime.add(now, -6 * 86_400, :second)
+            }
           ]
         end)
 
@@ -87,7 +103,7 @@ defmodule Thunderline.Thunderblock.RetentionSweeperTest do
         ids = MapSet.new(Enum.map(entries, & &1.id))
 
         Agent.update(store, fn current ->
-          Enum.reject(current, &(MapSet.member?(ids, &1.id)))
+          Enum.reject(current, &MapSet.member?(ids, &1.id))
         end)
 
         {:ok, length(entries)}

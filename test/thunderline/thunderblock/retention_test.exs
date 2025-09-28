@@ -19,7 +19,7 @@ defmodule Thunderline.Thunderblock.RetentionTest do
     test "creates baseline policies" do
       :ok = Retention.ensure_defaults!()
 
-  {:ok, %RetentionPolicy{} = policy} = Retention.get(:event_log)
+      {:ok, %RetentionPolicy{} = policy} = Retention.get(:event_log)
       assert policy.scope_type == :global
       assert policy.action == :delete
       assert policy.ttl_seconds == 30 * 86_400
@@ -85,7 +85,9 @@ defmodule Thunderline.Thunderblock.RetentionTest do
         })
         |> Ash.create()
 
-      assert {:ok, %RetentionPolicy{} = policy} = Retention.get(:event_log, scope: {:tenant, tenant_id})
+      assert {:ok, %RetentionPolicy{} = policy} =
+               Retention.get(:event_log, scope: {:tenant, tenant_id})
+
       assert policy.id == scoped.id
       assert policy.scope_type == :tenant
       assert policy.scope_id == tenant_id

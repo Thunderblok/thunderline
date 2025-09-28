@@ -78,9 +78,13 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
          :ok <- persist_artifacts(updated, contract, spec) do
       :ok
     else
-      {:ok, nil} -> {:error, :run_missing}
+      {:ok, nil} ->
+        {:error, :run_missing}
+
       {:error,
-       %Ash.Error.Invalid{errors: [%NoMatchingTransition{target: :succeeded, action: :complete} | _]}} ->
+       %Ash.Error.Invalid{
+         errors: [%NoMatchingTransition{target: :succeeded, action: :complete} | _]
+       }} ->
         with {:ok, %ModelRun{} = run} <- fetch_run(contract.run_id) do
           persist_artifacts(run, contract, spec)
         end
@@ -128,17 +132,21 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
 
   defp extract_artifact_refs(contract) do
     cond do
-      is_list(contract.artifact_refs) -> contract.artifact_refs
+      is_list(contract.artifact_refs) ->
+        contract.artifact_refs
+
       is_map(contract.payload) ->
         contract.payload
-        |> Map.get(:result) || contract.payload |> Map.get("result")
-        |> case do
-          %{} = result ->
-            Map.get(result, :artifact_refs) || Map.get(result, "artifact_refs") || []
+        |> Map.get(:result) ||
+          contract.payload
+          |> Map.get("result")
+          |> case do
+            %{} = result ->
+              Map.get(result, :artifact_refs) || Map.get(result, "artifact_refs") || []
 
-          _ ->
-            []
-        end
+            _ ->
+              []
+          end
 
       true ->
         []

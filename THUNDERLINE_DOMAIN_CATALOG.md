@@ -153,6 +153,8 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 - **resources/retention_policy.ex** – Declarative Ash registry describing TTL, grace, and action semantics per resource/scope.
 - **retention.ex** – Helper module for seeding defaults, resolving effective policies, and normalizing interval metadata.
 - **retention/sweeper.ex** – Batch-aware sweeper with dry-run guardrails, telemetry emission (`[:thunderline, :retention, :sweep]`), and policy caching to prune expired rows safely.
+- **telemetry/retention.ex** – Named telemetry handler that aggregates sweep results, publishes PubSub updates, and exposes stats for dashboards/tests.
+- **jobs/retention_sweep_worker.ex** – Oban worker scheduled via `RETENTION_SWEEPER_CRON` (hourly by default) that fans out across configured sweep targets.
 
 **Total**: **23 Resources** - Complete infrastructure and memory foundation
 

@@ -116,26 +116,36 @@ defmodule Thunderline.Thunderblock.Retention do
     ensure_defaults!()
 
     case fetch_policy(resource, scope, opts) do
-      {:ok, %RetentionPolicy{} = policy} -> {:ok, {policy, :exact}}
+      {:ok, %RetentionPolicy{} = policy} ->
+        {:ok, {policy, :exact}}
+
       {:ok, nil} ->
         case fetch_policy(resource, {:global, nil}, opts) do
           {:ok, %RetentionPolicy{} = global} -> {:ok, {global, :fallback}}
           other -> other
         end
 
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
   defp fetch_policy(resource, scope, opts \\ [])
+
   defp fetch_policy(resource, {scope_type, scope_id}, opts) do
     query =
       if is_nil(scope_id) do
         RetentionPolicy
-        |> Query.filter(Ash.Expr.expr(resource == ^resource and scope_type == ^scope_type and is_nil(scope_id)))
+        |> Query.filter(
+          Ash.Expr.expr(resource == ^resource and scope_type == ^scope_type and is_nil(scope_id))
+        )
       else
         RetentionPolicy
-        |> Query.filter(Ash.Expr.expr(resource == ^resource and scope_type == ^scope_type and scope_id == ^scope_id))
+        |> Query.filter(
+          Ash.Expr.expr(
+            resource == ^resource and scope_type == ^scope_type and scope_id == ^scope_id
+          )
+        )
       end
 
     query
@@ -158,13 +168,17 @@ defmodule Thunderline.Thunderblock.Retention do
       Enum.each(@defaults, fn attrs ->
         try do
           case upsert_policy(attrs) do
-            {:ok, _policy} -> :ok
+            {:ok, _policy} ->
+              :ok
+
             {:error, reason} ->
               Logger.warning("[Retention] default upsert failed: #{inspect(reason)}")
           end
         rescue
           exception ->
-            Logger.warning("[Retention] default upsert crashed for #{inspect(attrs)}: #{Exception.format(:error, exception, __STACKTRACE__)}")
+            Logger.warning(
+              "[Retention] default upsert crashed for #{inspect(attrs)}: #{Exception.format(:error, exception, __STACKTRACE__)}"
+            )
         end
       end)
 
@@ -181,6 +195,7 @@ defmodule Thunderline.Thunderblock.Retention do
 
   defp upsert_policy(attrs) do
     {scope_type, scope_id} = normalize_scope(Map.get(attrs, :scope, :global))
+
     with {:ok, ttl_seconds} <- resolve_interval(attrs, :ttl, required: true),
          {:ok, grace_seconds} <- resolve_interval(attrs, :grace, default: 0) do
       input = %{
@@ -197,13 +212,16 @@ defmodule Thunderline.Thunderblock.Retention do
       }
 
       case fetch_policy(input.resource, {scope_type, scope_id}) do
-        {:ok, %RetentionPolicy{} = policy} -> maybe_update(policy, input)
+        {:ok, %RetentionPolicy{} = policy} ->
+          maybe_update(policy, input)
+
         {:ok, nil} ->
           RetentionPolicy
           |> Changeset.for_create(:define, input)
           |> Ash.create()
 
-        {:error, reason} -> {:error, reason}
+        {:error, reason} ->
+          {:error, reason}
       end
     end
   end

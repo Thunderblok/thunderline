@@ -194,7 +194,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PersistenceTest do
           spec
         )
 
-  {:ok, artifacts} = ModelArtifact |> Ash.read()
+      {:ok, artifacts} = ModelArtifact |> Ash.read()
       assert Enum.count(artifacts) == 1
     end
   end

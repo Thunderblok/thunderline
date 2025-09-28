@@ -17,7 +17,7 @@ defmodule Thunderline.Thunderblock.Retention.Sweeper do
   @default_batch 5_000
 
   @type sweep_option ::
-          {:load, (() -> Enumerable.t())}
+          {:load, (-> Enumerable.t())}
           | {:delete, ([map()] -> {:ok, non_neg_integer()} | {:error, term()})}
           | {:now, DateTime.t()}
           | {:dry_run, boolean()}
@@ -51,10 +51,10 @@ defmodule Thunderline.Thunderblock.Retention.Sweeper do
         batch_size: batch_size
       })
 
-  start = System.monotonic_time()
+    start = System.monotonic_time()
 
     with {:ok, candidates} <- collect_candidates(load_fun),
-      {:ok, classified, kept, _cache} <- classify(resource, candidates, now) do
+         {:ok, classified, kept, _cache} <- classify(resource, candidates, now) do
       expired_entries = Enum.reverse(classified)
       expired_count = length(expired_entries)
 
@@ -89,8 +89,12 @@ defmodule Thunderline.Thunderblock.Retention.Sweeper do
 
   defp collect_candidates(load_fun) do
     case load_fun.() do
-      candidates when is_list(candidates) -> {:ok, candidates}
-      %Stream{} = stream -> {:ok, Enum.to_list(stream)}
+      candidates when is_list(candidates) ->
+        {:ok, candidates}
+
+      %Stream{} = stream ->
+        {:ok, Enum.to_list(stream)}
+
       other ->
         try do
           {:ok, Enum.to_list(other)}
@@ -126,7 +130,8 @@ defmodule Thunderline.Thunderblock.Retention.Sweeper do
     end
   end
 
-  defp normalize_entry(%{id: id, inserted_at: %DateTime{} = inserted_at} = entry) when not is_nil(id) do
+  defp normalize_entry(%{id: id, inserted_at: %DateTime{} = inserted_at} = entry)
+       when not is_nil(id) do
     scope = Map.get(entry, :scope, :global)
     {:ok, %{entry | scope: scope, inserted_at: inserted_at}}
   end
@@ -135,7 +140,9 @@ defmodule Thunderline.Thunderblock.Retention.Sweeper do
 
   defp fetch_policy(resource, scope, cache) do
     case cache do
-      %{^scope => policy} -> {:ok, policy, cache}
+      %{^scope => policy} ->
+        {:ok, policy, cache}
+
       _ ->
         case Retention.effective(resource, scope) do
           {:ok, {%RetentionPolicy{} = policy, _context}} ->
@@ -174,7 +181,9 @@ defmodule Thunderline.Thunderblock.Retention.Sweeper do
     end)
   end
 
-  defp maybe_put_deleted(measurements, {:ok, deleted}), do: Map.put(measurements, :deleted, deleted)
+  defp maybe_put_deleted(measurements, {:ok, deleted}),
+    do: Map.put(measurements, :deleted, deleted)
+
   defp maybe_put_deleted(measurements, {:error, _reason}), do: measurements
 
   defp maybe_emit_telemetry(measurements, metadata) do

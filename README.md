@@ -177,6 +177,8 @@ These environment variables gate optional subsystems or alter setup heuristics:
 | `ENABLE_UPS` | `1` | Start UPS watcher process (publishes power status to status bus) | disabled |
 | `ENABLE_SIGNAL_STACK` | `1` | Start experimental signal‑processing stack (PLL/Hilbert etc.) | disabled |
 | `FEATURES_AI_CHAT_PANEL` | `1` | Enable experimental Ash AI backed chat assistant panel on dashboard | disabled |
+| `RETENTION_SWEEPER_CRON` | cron expression | Override the Oban retention sweep schedule (default hourly) | `0 * * * *` |
+| `DISABLE_RETENTION_SWEEPER_CRON` | `1`, `true` | Disable scheduling of the retention sweeper cron entirely | disabled |
 | `TL_ENABLE_REACTOR` | `true/false` | Switch between simple EventProcessor path and Reactor orchestration | false |
 | `SKIP_DEPS_GET` | `true/false` | Skip automatic deps fetch during `mix setup` heuristic | false |
 | `SKIP_ASH_SETUP` | `true/false` | Skip Ash migrations in test alias for DB‑less unit tests | false |
@@ -189,6 +191,10 @@ Set in your shell or `.envrc`:
 export ENABLE_NDJSON=1
 export ENABLE_UPS=1
 ```
+
+#### Retention sweeper configuration
+
+The hourly retention job (`Thunderline.Thunderblock.Jobs.RetentionSweepWorker`) pulls its targets from `config :thunderline, Thunderline.Thunderblock.Retention.Sweeper, targets: [...]`. Each target entry should provide a `:resource` atom plus loader/deleter functions (zero-arity loader, unary deleter). Use the `RETENTION_SWEEPER_CRON` variable to adjust the schedule or `DISABLE_RETENTION_SWEEPER_CRON` to suspend the cron while keeping manual `RetentionSweepWorker.enqueue/1` available. Telemetry is published to the `"retention:sweeps"` PubSub topic and surfaced via `Thunderline.Thunderblock.Telemetry.Retention.stats/0`.
 
 ### Secret & MCP Token Handling
 

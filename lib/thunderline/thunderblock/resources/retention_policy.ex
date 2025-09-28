@@ -28,12 +28,33 @@ defmodule Thunderline.Thunderblock.Resources.RetentionPolicy do
     create :define do
       description "Define or upsert a retention policy"
       primary? true
-      accept [:resource, :scope_type, :scope_id, :ttl_seconds, :keep_versions, :action, :grace_seconds, :metadata, :is_active, :notes]
+
+      accept [
+        :resource,
+        :scope_type,
+        :scope_id,
+        :ttl_seconds,
+        :keep_versions,
+        :action,
+        :grace_seconds,
+        :metadata,
+        :is_active,
+        :notes
+      ]
     end
 
     update :configure do
       description "Update retention policy parameters"
-      accept [:ttl_seconds, :keep_versions, :action, :grace_seconds, :metadata, :is_active, :notes]
+
+      accept [
+        :ttl_seconds,
+        :keep_versions,
+        :action,
+        :grace_seconds,
+        :metadata,
+        :is_active,
+        :notes
+      ]
     end
 
     read :active do
@@ -47,7 +68,10 @@ defmodule Thunderline.Thunderblock.Resources.RetentionPolicy do
       argument :scope_type, :atom, default: :global
       argument :scope_id, :uuid
 
-      filter expr(resource == ^arg(:resource) and scope_type == ^arg(:scope_type) and scope_id == ^arg(:scope_id))
+      filter expr(
+               resource == ^arg(:resource) and scope_type == ^arg(:scope_type) and
+                 scope_id == ^arg(:scope_id)
+             )
     end
   end
 
@@ -57,7 +81,10 @@ defmodule Thunderline.Thunderblock.Resources.RetentionPolicy do
       scope_id = Changeset.get_attribute(changeset, :scope_id)
 
       if scope_type != :global and is_nil(scope_id) do
-        Changeset.add_error(changeset, field: :scope_id, message: "scope_id required for scoped policies")
+        Changeset.add_error(changeset,
+          field: :scope_id,
+          message: "scope_id required for scoped policies"
+        )
       else
         changeset
       end
@@ -81,7 +108,6 @@ defmodule Thunderline.Thunderblock.Resources.RetentionPolicy do
       where present(:keep_versions)
       message "keep_versions cannot be negative"
     end
-
   end
 
   attributes do

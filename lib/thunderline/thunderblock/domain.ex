@@ -42,7 +42,7 @@ defmodule Thunderline.Thunderblock.Domain do
     resource Thunderblock.Resources.LoadBalancingRule
     resource Thunderblock.Resources.RateLimitPolicy
     resource Thunderblock.Resources.SystemEvent
-  resource Thunderline.Thunderblock.Resources.RetentionPolicy
+    resource Thunderline.Thunderblock.Resources.RetentionPolicy
 
     # ThunderChief Orchestration (integrated into ThunderBlock)
     resource Thunderline.Thunderblock.Resources.WorkflowTracker
