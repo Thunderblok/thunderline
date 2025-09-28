@@ -11,6 +11,8 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
     extensions: [AshStateMachine, AshJsonApi.Resource],
     authorizers: [Ash.Policy.Authorizer]
 
+  alias Thunderline.UUID
+
   postgres do
     table "cerebros_model_runs"
     repo Thunderline.Repo
@@ -45,26 +47,30 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
     defaults [:read]
 
     create :create do
-      accept [:search_space_version, :max_params, :requested_trials, :metadata]
+      accept [:run_id, :search_space_version, :max_params, :requested_trials, :metadata]
       change set_attribute(:state, :initialized)
+      change {__MODULE__, :ensure_run_id, []}
     end
 
     update :start do
-      accept []
+      accept [:bridge_payload]
       change transition_state(:running)
       change set_attribute(:started_at, &DateTime.utc_now/0)
+      change {__MODULE__, :merge_bridge_payload, []}
     end
 
     update :complete do
-      accept [:best_metric, :completed_trials, :metadata]
+      accept [:best_metric, :completed_trials, :metadata, :bridge_result]
       change transition_state(:succeeded)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
+      change {__MODULE__, :merge_bridge_result, []}
     end
 
     update :fail do
-      accept [:error_message]
+      accept [:error_message, :bridge_result]
       change transition_state(:failed)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
+      change {__MODULE__, :merge_bridge_result, []}
     end
 
     update :cancel do
@@ -82,6 +88,11 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
 
   attributes do
     uuid_primary_key :id
+
+    attribute :run_id, :string do
+      allow_nil? false
+      description "External Cerebros run identifier"
+    end
 
     # State attribute managed by AshStateMachine transitions.
     attribute :state, :atom do
@@ -122,6 +133,14 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
       default %{}
     end
 
+    attribute :bridge_payload, :map do
+      default %{}
+    end
+
+    attribute :bridge_result, :map do
+      default %{}
+    end
+
     attribute :started_at, :utc_datetime_usec
     attribute :finished_at, :utc_datetime_usec
 
@@ -132,5 +151,28 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
     has_many :artifacts, Thunderline.Thunderbolt.ML.ModelArtifact do
       destination_attribute :model_run_id
     end
+
+    has_many :trials, Thunderline.Thunderbolt.Resources.ModelTrial do
+      destination_attribute :model_run_id
+    end
+  end
+
+  def ensure_run_id(changeset, _context) do
+    case Ash.Changeset.get_attribute(changeset, :run_id) do
+      nil -> Ash.Changeset.set_attribute(changeset, :run_id, UUID.v7())
+      _ -> changeset
+    end
+  end
+
+  def merge_bridge_payload(changeset, _context) do
+    payload = Ash.Changeset.get_attribute(changeset, :bridge_payload) || %{}
+    existing = (Ash.Changeset.get_data(changeset).bridge_payload || %{}) |> Map.new()
+    Ash.Changeset.set_attribute(changeset, :bridge_payload, Map.merge(existing, payload))
+  end
+
+  def merge_bridge_result(changeset, _context) do
+    result = Ash.Changeset.get_attribute(changeset, :bridge_result) || %{}
+    existing = (Ash.Changeset.get_data(changeset).bridge_result || %{}) |> Map.new()
+    Ash.Changeset.set_attribute(changeset, :bridge_result, Map.merge(existing, result))
   end
 end

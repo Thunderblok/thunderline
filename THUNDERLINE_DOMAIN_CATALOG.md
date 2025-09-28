@@ -153,72 +153,75 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 
 ---
 
-### ⚡ **ThunderBolt** - Resource & Lane Management Powerhouse
+### ⚡ **ThunderBolt** – Orchestration, Optimization & ML Control Plane
 **Path**: `lib/thunderline/thunderbolt/`  
-**Purpose**: Unified resource management, multi-dimensional coordination, and optimization  
-**Integration**: Mega-domain consolidating Core, Lanes, Ising, and Mag functionality  
-**🔥 MAJOR UPDATE**: **THUNDERCELL ERLANG → ELIXIR CONVERSION COMPLETE** - All cellular automata processing now in native Elixir GenServers
+**Purpose**: Coordinate computational lanes, numerical solvers, and ML experimentation while enforcing domain boundaries.  
+**Integration**: Hosts core workflow DAGs, lane automation, Ising/VIM numerics, and the full Cerebros NAS bridge + model ledger.
 
-#### **Core System Resources** (5 resources)
-- **core_agent.ex** - Core agent management and lifecycle coordination
-- **core_system_policy.ex** - System-wide policies and governance rules
-- **core_task_node.ex** - Individual workflow task nodes with dependencies
-- **core_timing_event.ex** - Time-based events and system synchronization
-- **core_workflow_dag.ex** - Directed Acyclic Graph workflow definitions
+#### 🔁 Core Orchestration Resources
+- `core_agent.ex`, `core_workflow_dag.ex`, `core_task_node.ex`, `core_system_policy.ex`, `core_timing_event.ex`
+    - Drive long-running orchestrations, enforce invariant policies, and timestamp execution phases.
+- `activation_rule.ex`, `orchestration_event.ex`, `resource_allocation.ex`
+    - Govern resource activation signals and persistence of orchestration milestones.
+- `chunk.ex`, `chunk_health.ex`
+    - Track compute substrate slices and their health metrics.
 
-#### **Lane Management Resources** (10 resources)
-- **lane_cell_topology.ex** - Cellular automata topology for lane coordination
-- **lane_consensus_run.ex** - Consensus algorithm execution and tracking
-- **lane_cross_lane_coupling.ex** - Inter-lane coordination and coupling policies
-- **lane_lane_configuration.ex** - Lane setup and configuration management
-- **lane_lane_coordinator.ex** - Lane family coordination and orchestration
-- **lane_lane_metrics.ex** - Lane-specific performance monitoring
-- **lane_performance_metric.ex** - Detailed performance measurement and analysis
-- **lane_rule_oracle.ex** - Neural rule evaluation and decision making
-- **lane_rule_set.ex** - Rule management and policy enforcement
-- **lane_telemetry_snapshot.ex** - Real-time telemetry capture and analysis
+#### 🛤 Lane Automation & Cellular Systems
+- `lane_cell_topology.ex`, `lane_consensus_run.ex`, `lane_cross_lane_coupling.ex`, `lane_lane_configuration.ex`, `lane_lane_coordinator.ex`
+    - Declare topology, configuration, and coordination primitives for adaptive lanes.
+- `lane_lane_metrics.ex`, `lane_performance_metric.ex`, `lane_rule_oracle.ex`, `lane_rule_set.ex`, `lane_telemetry_snapshot.ex`
+    - Persist metrics, rule evaluations, and telemetry snapshots for downstream analytics.
+- `mag_macro_command.ex`, `mag_task_assignment.ex`, `mag_task_execution.ex`
+    - Run macro task batches and coordinate execution assignment for humans/agents.
+- `ca/` + `thundercell/`
+    - ThunderCell cellular automata engine (Elixir-native) with supervisors, teleport bridge, and telemetry wrappers powering distributed lane simulations.
 
-#### **Resource Management Resources** (5 resources)
-- **activation_rule.ex** - Rules for dynamic resource activation and scaling
-- **chunk.ex** - Core chunk entities for resource allocation and management
-- **chunk_health.ex** - Health monitoring and diagnostics for system chunks
-- **orchestration_event.ex** - Resource orchestration events and coordination
-- **resource_allocation.ex** - Dynamic resource allocation and optimization
+#### 🧠 Numerical Optimization & VIM Surface
+- `ising_optimization_problem.ex`, `ising_optimization_run.ex`, `ising_performance_metric.ex`
+    - State Ising energy problems, capture execution runs, and score performance for Virtual Ising Machine (VIM) workloads.
+- `numerics/`, `ising_machine/`, `vim/`
+    - Provide solver kernels, topology partitioners, and VIM control surfaces used by higher-level orchestration.
 
-#### **Optimization Resources** (3 resources)
-- **ising_optimization_problem.ex** - Ising model problem definitions and constraints
-- **ising_optimization_run.ex** - Optimization execution and result tracking
-- **ising_performance_metric.ex** - Optimization performance measurement
+#### 🤖 ML Experiment Ledger & Registry
+- `model_run.ex`, `model_artifact.ex` under `resources/`
+    - Canonical Ash resources capturing NAS pulse lifecycle and serialized artifacts.
+- `ml/` namespace (`model_spec.ex`, `model_version.ex`, `training_run.ex`, `training_dataset.ex`, `feature_view.ex`, `consent_record.ex`, `emitter.ex`, `types.ex`)
+    - Higher-level ML registry, dataset descriptors, telemetry emitters, and Axon trainer integrations.
+- `changes/` & `export/`
+    - Contain change-logging helpers and export pipelines for promoting artifacts beyond the domain boundary.
 
-#### **ThunderCell Cellular Automata Engine** (7 resources) - **🔥 NEWLY CONVERTED FROM ERLANG**
-- **thundercell/bridge.ex** - Communication bridge between CA engine and orchestration layer
-- **thundercell/ca_cell.ex** - Individual cellular automaton cell with process-per-cell architecture
-- **thundercell/ca_engine.ex** - Core CA computation engine and rule processing
-- **thundercell/cluster.ex** - CA cluster management with 3D cellular automata grid processing
-- **thundercell/cluster_supervisor.ex** - Supervision tree for CA cluster management
-- **thundercell/supervisor.ex** - Top-level supervisor for ThunderCell infrastructure
-- **thundercell/telemetry.ex** - Performance monitoring and metrics collection for CA operations
+#### 🛰 Cerebros Bridge & Event Surface
+- `cerebros/adapter.ex`, `cerebros/artifacts.ex`, `cerebros/simple_search.ex`, `cerebros/telemetry.ex`
+    - Adapter between Ash model ledger and bridge, artifact hydration, placeholder search strategy, and telemetry helpers.
+- `cerebros_bridge/client.ex`, `translator.ex`, `invoker.ex`, `cache.ex`, `contracts.ex`
+    - Anti-corruption boundary for executing Python Cerebros runners with feature gating, structured contracts, retries, and ETS-backed caching.
+- Emits canonical events (`ml.run.start|stop|exception`, `ml.run.trial`) through `Thunderline.Thunderflow.EventBus` and telemetry spans under `[:cerebros, :bridge, ...]`.
 
-**Key Capabilities**:
-- **3D Cellular Automata**: Process-per-cell architecture for massive concurrency
-- **Native Elixir Performance**: Full conversion from Erlang for better integration
-- **Real-time CA Evolution**: Live cellular automata processing with configurable rules
-- **Distributed Processing**: CA clusters can span multiple nodes for scalability
-- **Performance Monitoring**: Comprehensive telemetry for CA operations
+##### Activation Guardrails & Feature Flags
+- **Feature switch:** The Cerebros bridge is protected by the `:ml_nas` feature flag. Keep it disabled until validation passes, then enable via `config :thunderline, :features, [:ml_nas, ...]` or runtime toggles. The validator marks the flag as an error when missing.
+- **Config gating:** Runtime config under `:thunderline, :cerebros_bridge` must set `enabled: true`, point `repo_path`/`script_path` at the cloned Cerebros repository, and provide a usable `python_executable`. Leave it `false` for cold installs; use the validator with `--require-enabled` before flipping it on.
 
-#### **Task Management Resources** (3 resources)
-- **mag_macro_command.ex** - Macro command processing and batch operations
-- **mag_task_assignment.ex** - Task delegation and ownership management
-- **mag_task_execution.ex** - Task execution tracking and result collection
+##### Cerebros Bridge Validator CLI
+Use the Mix task to exercise the guardrails without booting the full NAS loop:
 
-#### **Legacy Lane Resources** (5 resources - Being Phased Out)
-- **tlane_consensus_run.ex** - Legacy consensus run implementation
-- **tlane_lane_configuration.ex** - Legacy lane configuration
-- **tlane_performance_metric.ex** - Legacy performance metrics
-- **tlane_rule_oracle.ex** - Legacy rule oracle
-- **tlane_telemetry_snapshot.ex** - Legacy telemetry snapshot
+```bash
+mix thunderline.ml.validate
+```
 
-**Total**: **41 Resources** - Comprehensive resource and coordination management (expanded with ThunderCell)
+Key switches:
+- `--require-enabled` – fail if `:cerebros_bridge` is still disabled (default is warning).
+- `--json` – emit the check report as prettified JSON for automation.
+
+The task returns exit code 1 when any check errors, ensuring CI/CD or ops scripts can gate deployments. Run it locally with `SKIP_JIDO=true` when the agent stack is unavailable.
+
+**Key Capabilities**
+- Declarative orchestration DAGs with Ash persistence and policy hooks.
+- Adaptive lane topology + ThunderCell CA simulations to test coordination strategies.
+- Virtual Ising Machine workflows feeding both human and automated solvers.
+- First-class ML experiment ledger wired to Cerebros NAS, including artifact tracking and Axon trainers.
+- Hardened bridge boundary with caching, retries, structured error classes, and canonical event emission.
+
+**Total**: **30 resources + supporting modules** (Ash resources under `resources/` and ML registry modules under `ml/`) – the command center for orchestration, numerics, and Cerebros-driven model experimentation.
 
 ---
 

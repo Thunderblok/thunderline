@@ -14,15 +14,17 @@ defmodule Thunderline.Application do
   def start(_type, _args) do
     children =
       [
-        ThunderlineWeb.Telemetry,
-        maybe_repo_child(),
-        maybe_vault_child(),
-        {Phoenix.PubSub, name: Thunderline.PubSub},
-  Thunderline.Thunderflow.EventBuffer,
-  Thunderline.Thunderflow.Blackboard,
-        ThunderlineWeb.Presence,
-        maybe_oban_child(),
-        ThunderlineWeb.Endpoint
+    ThunderlineWeb.Telemetry,
+    maybe_repo_child(),
+    maybe_vault_child(),
+    {Phoenix.PubSub, name: Thunderline.PubSub},
+    {Task.Supervisor, name: Thunderline.TaskSupervisor},
+    Thunderline.Thunderbolt.CerebrosBridge.Cache,
+    Thunderline.Thunderflow.EventBuffer,
+    Thunderline.Thunderflow.Blackboard,
+    ThunderlineWeb.Presence,
+    maybe_oban_child(),
+    ThunderlineWeb.Endpoint
       ]
       |> Enum.reject(&is_nil/1)
 

@@ -154,6 +154,16 @@ OWNER_USER_ID=<uuid> COMMUNITY_SLUG=general CHANNEL_SLUG=lobby mix thunderline.d
 
 Entrypoint script `scripts/docker/dev_entrypoint.sh` waits for DB readiness and runs migrations idempotently before launching Phoenix.
 
+### Cerebros Bridge Readiness Check
+
+Before enabling the Cerebros NAS bridge in a shared environment, run the validator mix task to confirm the feature flag, configuration, and Python tooling are wired correctly:
+
+```bash
+SKIP_JIDO=true mix thunderline.ml.validate
+```
+
+Add `--require-enabled` to fail if `config :thunderline, :cerebros_bridge, enabled: false` is still set, and `--json` when you want machine-readable output for pipelines. The command exits non-zero on any failed check, making it suitable for CI/CD gates. Re-run it whenever you change the Cerebros checkout, Python virtualenv, or bridge configuration.
+
 ### Feature Flags & Environment Toggles
 
 These environment variables gate optional subsystems or alter setup heuristics:
@@ -167,6 +177,8 @@ These environment variables gate optional subsystems or alter setup heuristics:
 | `TL_ENABLE_REACTOR` | `true/false` | Switch between simple EventProcessor path and Reactor orchestration | false |
 | `SKIP_DEPS_GET` | `true/false` | Skip automatic deps fetch during `mix setup` heuristic | false |
 | `SKIP_ASH_SETUP` | `true/false` | Skip Ash migrations in test alias for DB‑less unit tests | false |
+
+> **Cerebros NAS feature flag** – The bridge remains inactive until `:ml_nas` is present in `config :thunderline, :features` (or toggled at runtime). Keep it disabled by default, run `mix thunderline.ml.validate --require-enabled`, then flip the flag once every check passes.
 
 Set in your shell or `.envrc`:
 

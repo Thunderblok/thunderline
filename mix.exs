@@ -153,14 +153,21 @@ defmodule Thunderline.MixProject do
     # We source them directly from GitHub. Pin to tags where possible for reproducibility.
     # If tags ever change, fall back to :ref => "main" but expect occasional breakage.
     # TODO(fork): Repoint these to organization forks (Thunderblok/*) to persist local patches.
-    jido_git_deps = [
-      # Use latest available pre-release tag for jido (v1.1.0-rc.1)
-      {:jido, github: "agentjido/jido", tag: "v1.1.0-rc.1", override: true},
-      {:jido_action, github: "agentjido/jido_action", ref: "main", override: true},
-      # Keep jido_signal on main until a matching release tag supports rc.1 struct shape
-      {:jido_signal, github: "agentjido/jido_signal", ref: "main", override: true},
-      {:jido_behaviortree, github: "agentjido/jido_behaviortree", ref: "main", override: true}
-    ]
+    jido_enabled? = System.get_env("SKIP_JIDO") not in ["1", "true", "TRUE"]
+
+    jido_git_deps =
+      if jido_enabled? do
+        [
+          # Use latest available pre-release tag for jido (v1.1.0-rc.1)
+          {:jido, github: "agentjido/jido", tag: "v1.1.0-rc.1", override: true},
+          {:jido_action, github: "agentjido/jido_action", ref: "main", override: true},
+          # Keep jido_signal on main until a matching release tag supports rc.1 struct shape
+          {:jido_signal, github: "agentjido/jido_signal", ref: "main", override: true},
+          {:jido_behaviortree, github: "agentjido/jido_behaviortree", ref: "main", override: true}
+        ]
+      else
+        []
+      end
 
     # ash_jido currently targets newer Ash & Elixir; include only if the
     # running compiler version satisfies its stated requirement (>= 1.18) to avoid
@@ -173,7 +180,7 @@ defmodule Thunderline.MixProject do
         []
       end
 
-    base ++ jido_git_deps ++ ash_jido_dep
+  base ++ jido_git_deps ++ ash_jido_dep
   end
 
   defp aliases do

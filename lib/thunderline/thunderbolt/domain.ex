@@ -63,6 +63,7 @@ defmodule Thunderline.Thunderbolt.Domain do
 
     # Cerebros (ML search & training)
     resource Thunderline.Thunderbolt.Resources.ModelRun
+  resource Thunderline.Thunderbolt.Resources.ModelTrial
     # New ML stack resources
     resource Thunderline.Thunderbolt.ML.TrainingDataset
     resource Thunderline.Thunderbolt.ML.FeatureView

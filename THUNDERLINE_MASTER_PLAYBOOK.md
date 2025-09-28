@@ -90,6 +90,33 @@ Success Metrics (Week 2 Targets):
 
 ---
 
+## 🤖 Cerebros NAS Integration Snapshot (Sep 2025)
+
+Status summary for the ThunderBolt ML ledger, Cerebros bridge boundary, and NAS orchestration.
+
+**Bridge & Feature Flag**
+- `Thunderline.Thunderbolt.CerebrosBridge.Client` guards execution with `features.ml_nas` and runtime config (`config :thunderline, :cerebros_bridge`).
+- Translator + Invoker pair (`translator.ex`, `invoker.ex`) marshal contracts to Python subprocesses with retries, exponential backoff, and structured `%Thunderline.Thunderflow.ErrorClass{}` errors.
+- ETS-backed cache (`cache.ex`) provides optional response memoization; telemetry emitted under `[:cerebros, :bridge, :cache, *]`.
+
+**Contracts & Canonical Events**
+- Versioned contracts (`Contracts.RunStartedV1`, `TrialReportedV1`, `RunFinalizedV1`) describe lifecycle payloads.
+- Client publishes canonical Thunderflow events `ml.run.start|stop|exception` and `ml.run.trial` through `Thunderline.Thunderflow.EventBus` with normalized metadata.
+
+**Ash Resources & Ledger**
+- `Thunderline.Thunderbolt.Resources.ModelRun` + `ModelArtifact` persist NAS pulses and produced artifacts.
+- ML registry namespace (`lib/thunderline/thunderbolt/ml/`) stores specs, versions, datasets, Axon trainer metadata, and consent records.
+- Adapter & artifact helpers (`cerebros/adapter.ex`, `cerebros/artifacts.ex`) hydrate bridge responses into Ash actions and ensure artifact persistence.
+
+**Outstanding Gaps / Actions**
+1. HC-04: Run pending migrations + wire lifecycle state machine on `ModelRun` (current status: In Progress).
+2. HC-20: Author bridge boundary doc + DIP, publish configuration recipe, and surface cache/telemetry tuning guidance.
+3. Implement resilient search/exploration strategy (replace `simple_search.ex` stub) and feed outcomes back into trials queue.
+4. Publish walkthrough for executing NAS loop via Thunderhelm (Livebook → Cerebros runner → MLflow) including feature flag prerequisites.
+5. Add `mix thunderline.ml.validate` (planned) to verify bridge config, dataset availability, and event emission paths before enabling flag.
+
+---
+
 ## 🛡 Wave 0 "Secure & Breathe" Recap (Sep 26 2025)
 
 Rapid stabilization slice delivered ahead of HC-08/HC-03 efforts:
