@@ -12,11 +12,21 @@ defmodule ThunderlineWeb.CerebrosLive do
 
   alias Phoenix.PubSub
   alias Thunderline.Thunderbolt.CerebrosBridge.Client, as: CerebrosBridge
+  alias Thunderline.Thunderbolt.CerebrosBridge.{RunWorker, Validator}
+  alias Thunderline.UUID
+  alias Oban
+
   @tick_interval 1_000
+  @run_topic "cerebros:runs"
+  @trial_topic "cerebros:trials"
+  @history_limit 12
+  @default_spec Validator.default_spec()
 
   @impl true
   def mount(_params, _session, socket) do
     enabled? = cerebros_enabled?()
+    spec_result = Validator.validate_spec(@default_spec)
+    spec_form = build_spec_form(spec_result.json)
 
     socket =
       socket
@@ -25,6 +35,16 @@ defmodule ThunderlineWeb.CerebrosLive do
       |> assign(:running_nas, false)
       |> assign(:nas_results, [])
       |> assign(:status_msg, "Idle")
+      |> assign(:spec_form, spec_form)
+      |> assign(:spec_json, spec_result.json)
+      |> assign(:spec_payload, spec_result.spec)
+      |> assign(:spec_errors, spec_result.errors)
+      |> assign(:spec_warnings, spec_result.warnings)
+      |> assign(:spec_status, spec_result.status)
+      |> assign(:run_history, [])
+      |> assign(:trial_updates, [])
+      |> assign(:current_run, nil)
+      |> assign(:current_run_id, nil)
       |> assign(:drift_stats, %{
         lambda: 0.0,
         corr_dim: 0.0,
@@ -41,6 +61,8 @@ defmodule ThunderlineWeb.CerebrosLive do
       if connected?(socket) do
         :timer.send_interval(@tick_interval, :tick)
         PubSub.subscribe(Thunderline.PubSub, "drift:demo")
+        PubSub.subscribe(Thunderline.PubSub, @run_topic)
+        PubSub.subscribe(Thunderline.PubSub, @trial_topic)
       end
 
       {:ok, socket}
@@ -56,6 +78,90 @@ defmodule ThunderlineWeb.CerebrosLive do
     {:noreply,
      socket
      |> put_flash(:error, "Cerebros integration is disabled")}
+  end
+
+  def handle_event("validate_spec", %{"nas" => %{"spec" => spec_json}}, socket) do
+    result = Validator.validate_spec(spec_json || "")
+
+    {:noreply,
+     socket
+     |> assign(:spec_form, build_spec_form(result.json || spec_json))
+     |> assign(:spec_json, result.json || spec_json)
+     |> assign(:spec_payload, result.spec)
+     |> assign(:spec_errors, result.errors)
+     |> assign(:spec_warnings, result.warnings)
+     |> assign(:spec_status, result.status)}
+  end
+
+  def handle_event("reset_spec", _params, socket) do
+    result = Validator.validate_spec(@default_spec)
+
+    {:noreply,
+     socket
+     |> assign(:spec_form, build_spec_form(result.json))
+     |> assign(:spec_json, result.json)
+     |> assign(:spec_payload, result.spec)
+     |> assign(:spec_errors, result.errors)
+     |> assign(:spec_warnings, result.warnings)
+     |> assign(:spec_status, result.status)}
+  end
+
+  def handle_event("start_run", %{"nas" => %{"spec" => spec_json}}, socket) do
+    result = Validator.validate_spec(spec_json || "")
+
+    cond do
+      result.status == :error ->
+        {:noreply,
+         socket
+         |> assign(:spec_form, build_spec_form(result.json || spec_json))
+         |> assign(:spec_errors, result.errors)
+         |> assign(:spec_warnings, result.warnings)
+         |> assign(:spec_payload, nil)
+         |> assign(:spec_status, :error)
+         |> put_flash(:error, "Fix spec errors before launching a run")}
+
+      not cerebros_enabled?() ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Cerebros integration is disabled")}
+
+      true ->
+        run_id = UUID.v7()
+        args = build_job_args(run_id, result.spec)
+
+        case RunWorker.new(args) |> Oban.insert() do
+          {:ok, %Oban.Job{} = job} ->
+            update = %{
+              run_id: run_id,
+              stage: :queued,
+              metadata: %{job_id: job.id, queue: job.queue, priority: job.priority},
+              measurements: %{queue_time_ms: 0},
+              published_at: DateTime.utc_now(),
+              source: :liveview
+            }
+
+            broadcast_run_update(update)
+
+            {:noreply,
+             socket
+             |> assign(:spec_form, build_spec_form(result.json))
+             |> assign(:spec_payload, result.spec)
+             |> assign(:spec_errors, result.errors)
+             |> assign(:spec_warnings, result.warnings)
+             |> assign(:spec_status, result.status)
+             |> assign(:current_run_id, run_id)
+             |> assign(:current_run, update)
+             |> assign(:running_nas, true)
+             |> assign(:status_msg, "Queued NAS run #{short_id(run_id)}")
+             |> update(:run_history, &add_history(&1, update))
+             |> put_flash(:info, "Queued NAS run #{short_id(run_id)}")}
+
+          {:error, changeset} ->
+            {:noreply,
+             socket
+             |> put_flash(:error, "Failed to enqueue NAS run: #{inspect(changeset.errors)}")}
+        end
+    end
   end
 
   def handle_event("start_haus", _params, socket) do
@@ -150,6 +256,37 @@ defmodule ThunderlineWeb.CerebrosLive do
     {:noreply, assign(socket, :drift_stats, stats)}
   end
 
+  def handle_info({:run_update, update}, socket) do
+    history = add_history(socket.assigns.run_history, update)
+    current_run = if update.run_id == socket.assigns.current_run_id, do: update, else: socket.assigns.current_run
+
+    running =
+      case update.stage do
+        :queued -> true
+        :started -> true
+        _ -> false
+      end
+
+    status_msg = run_status_message(update)
+
+    {:noreply,
+     socket
+     |> assign(:run_history, history)
+     |> assign(:current_run, current_run)
+     |> assign(:running_nas, running)
+     |> assign(:status_msg, status_msg)}
+  end
+
+  def handle_info({:trial_update, update}, socket) do
+    {:noreply,
+     socket
+     |> update(:trial_updates, fn list ->
+       list
+       |> List.insert_at(0, Map.put_new(update, :published_at, DateTime.utc_now()))
+       |> Enum.take(@history_limit)
+     end)}
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -158,30 +295,107 @@ defmodule ThunderlineWeb.CerebrosLive do
 
       <%= if @cerebros_enabled? do %>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Cerebros Actions -->
+          <!-- NAS Run Control -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Neural Architecture Search</h2>
-            <div class="flex space-x-2">
-              <button
-                phx-click="start_haus"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-              >
-                Run haus demo
-              </button>
-              <button
-                phx-click="demo_positronic"
-                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded"
-              >
-                Positronic
-              </button>
-            </div>
-            <div class="text-sm text-gray-600">Status: {@status_msg}</div>
-            <%= if @positronic do %>
-              <div class="mt-2 text-xs font-mono bg-gray-50 p-2 rounded">
-                <div>Params: {@positronic.params}</div>
-                <div>Spec: {@positronic.summary}</div>
+            <.form
+              for={@spec_form}
+              id="nas-run-form"
+              phx-change="validate_spec"
+              phx-submit="start_run"
+              class="space-y-3"
+            >
+              <.input
+                field={@spec_form[:spec]}
+                id={@spec_form[:spec].id}
+                name={@spec_form[:spec].name}
+                value={@spec_form[:spec].value}
+                type="textarea"
+                label="Run specification (JSON)"
+                rows="14"
+                class="font-mono text-xs"
+              />
+              <%= if @spec_errors != [] do %>
+                <div data-role="spec-errors" class="rounded border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 space-y-2">
+                  <div class="tracking-wide uppercase font-semibold text-rose-600 text-[0.7rem]">
+                    Spec errors ({length(@spec_errors)})
+                  </div>
+                  <ul class="list-disc space-y-1 pl-4">
+                    <li :for={msg <- Enum.reverse(@spec_errors)}>{msg}</li>
+                  </ul>
+                </div>
+              <% end %>
+
+              <%= if @spec_errors == [] and @spec_warnings != [] do %>
+                <div data-role="spec-warnings" class="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 space-y-2">
+                  <div class="tracking-wide uppercase font-semibold text-amber-600 text-[0.7rem]">
+                    Spec warnings ({length(@spec_warnings)})
+                  </div>
+                  <ul class="list-disc space-y-1 pl-4">
+                    <li :for={msg <- Enum.reverse(@spec_warnings)}>{msg}</li>
+                  </ul>
+                </div>
+              <% end %>
+              <div class="flex items-center justify-between text-xs text-gray-500">
+                <div>
+                  <span class={[status_badge_class(@spec_status)]}>
+                    {String.upcase(to_string(@spec_status))}
+                  </span>
+                  <span class="ml-2 text-gray-500">
+                    {spec_feedback_summary(@spec_errors, @spec_warnings)}
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    phx-click="reset_spec"
+                    class="px-3 py-1 border border-slate-300 rounded hover:bg-slate-50"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="submit"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-40"
+                    disabled={@spec_status == :error}
+                    phx-disable-with="Queueing..."
+                  >
+                    Queue NAS Run
+                  </button>
+                </div>
               </div>
-            <% end %>
+            </.form>
+
+            <div class="border-t pt-4 space-y-3 text-sm text-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="font-medium">Status</div>
+                <div class="font-mono text-xs text-gray-500">{@current_run && short_id(@current_run.run_id)}</div>
+              </div>
+              <div class="rounded border border-slate-200 bg-slate-50 p-3 text-xs font-mono min-h-[3rem]">
+                {@status_msg}
+              </div>
+              <div class="flex gap-2 text-xs">
+                <button
+                  phx-click="start_haus"
+                  type="button"
+                  class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                >
+                  haus demo
+                </button>
+                <button
+                  phx-click="demo_positronic"
+                  type="button"
+                  class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
+                >
+                  Positronic
+                </button>
+              </div>
+              <%= if @positronic do %>
+                <div class="mt-2 text-xs font-mono bg-gray-50 border border-slate-200 p-2 rounded">
+                  <div>Params: {@positronic.params}</div>
+                  <div>Spec: {@positronic.summary}</div>
+                </div>
+              <% end %>
+            </div>
           </div>
 
     <!-- Benchmarks -->
@@ -260,6 +474,119 @@ defmodule ThunderlineWeb.CerebrosLive do
           </p>
         </div>
       <% end %>
+
+      <%= if @cerebros_enabled? do %>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div data-role="current-run-card" class="bg-white rounded-lg shadow p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-gray-800">Current Run</h2>
+              <span class={[stage_badge_class(@current_run && @current_run.stage || :idle)]}>
+                {format_stage(@current_run && @current_run.stage || :idle)}
+              </span>
+            </div>
+            <%= if @current_run do %>
+              <div class="flex items-center justify-between text-xs text-gray-500">
+                <span class="font-mono text-gray-600">{short_id(@current_run.run_id)}</span>
+                <span>{format_timestamp(@current_run.published_at)}</span>
+              </div>
+              <div class="rounded border border-slate-200 bg-slate-50 p-3 text-xs font-mono text-gray-700">
+                {run_status_message(@current_run)}
+              </div>
+              <div :if={metadata_pairs(@current_run.metadata) != []} class="space-y-2 text-xs text-gray-600">
+                <div class="tracking-wide uppercase text-[0.65rem] text-gray-500">Metadata</div>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  <div :for={{label, value} <- metadata_pairs(@current_run.metadata)} class="truncate">
+                    <dt class="text-[0.65rem] uppercase text-gray-400">{label}</dt>
+                    <dd class="font-mono text-gray-700 break-all">{value}</dd>
+                  </div>
+                </dl>
+              </div>
+              <div :if={measurement_pairs(@current_run.measurements) != []} class="space-y-2 text-xs text-gray-600">
+                <div class="tracking-wide uppercase text-[0.65rem] text-gray-500">Measurements</div>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  <div :for={{label, value} <- measurement_pairs(@current_run.measurements)}>
+                    <dt class="text-[0.65rem] uppercase text-gray-400">{label}</dt>
+                    <dd class="font-mono text-gray-700">{value}</dd>
+                  </div>
+                </dl>
+              </div>
+              <div :if={matching_trials(@trial_updates, @current_run.run_id) != []} class="space-y-2 text-xs">
+                <div class="tracking-wide uppercase text-[0.65rem] text-gray-500">Latest trials</div>
+                <ul class="space-y-1">
+                  <li :for={trial <- matching_trials(@trial_updates, @current_run.run_id)} class="border border-slate-200 rounded px-2 py-1">
+                    <div class="flex justify-between text-[0.7rem] uppercase text-gray-500">
+                      <span>{trial.trial_id}</span>
+                      <span>{format_stage(trial.stage)}</span>
+                    </div>
+                    <div class="text-xs font-mono text-gray-700">Metric: {format_metric(trial)}</div>
+                  </li>
+                </ul>
+              </div>
+            <% else %>
+              <div class="text-sm text-gray-500">
+                Queue a NAS run to see live telemetry updates. Specs are validated locally before dispatch.
+              </div>
+            <% end %>
+            <div class="flex flex-wrap gap-2 text-xs text-gray-500">
+              <a
+                href="/api/cerebros/metrics"
+                target="_blank"
+                class="inline-flex items-center gap-1 px-3 py-1 border border-slate-300 rounded hover:bg-slate-50"
+              >
+                Metrics JSON
+              </a>
+              <span class="inline-flex items-center px-3 py-1 rounded bg-slate-100">
+                {run_count_label(length(@run_history))}
+              </span>
+            </div>
+          </div>
+
+          <div data-role="run-activity" class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Run Activity</h2>
+            <div :if={Enum.empty?(@run_history)} class="text-sm text-gray-500">
+              Queue a NAS run to see lifecycle activity.
+            </div>
+            <div :for={entry <- @run_history} class="border border-slate-200 rounded mb-3 last:mb-0 overflow-hidden">
+              <div class="flex items-center justify-between bg-slate-50 px-3 py-2">
+                <div class="flex items-center gap-2 text-xs uppercase tracking-wide">
+                  <span class={[stage_badge_class(entry.stage)]}>{format_stage(entry.stage)}</span>
+                  <span class="font-mono text-gray-500">{short_id(entry.run_id)}</span>
+                </div>
+                <div class="text-xs text-gray-500">{format_timestamp(entry.published_at)}</div>
+              </div>
+              <div class="px-3 py-2 text-xs space-y-2 text-gray-700">
+                <div class="font-mono">{run_status_message(entry)}</div>
+                <div :if={metadata_pairs(entry.metadata) != []} class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  <div :for={{label, value} <- metadata_pairs(entry.metadata)} class="text-[0.7rem] text-gray-500">
+                    <span class="font-semibold uppercase">{label}:</span>
+                    <span class="font-mono text-gray-700 ml-1">{value}</span>
+                  </div>
+                </div>
+                <div :if={measurement_pairs(entry.measurements) != []} class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  <div :for={{label, value} <- measurement_pairs(entry.measurements)} class="text-[0.7rem] text-gray-500">
+                    <span class="font-semibold uppercase">{label}:</span>
+                    <span class="font-mono text-gray-700 ml-1">{value}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div :if={@trial_updates != []} class="mt-6">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">Recent Trials</h3>
+              <ul class="space-y-2 text-xs text-gray-600">
+                <li :for={trial <- @trial_updates} class="border border-slate-200 rounded px-3 py-2">
+                  <div class="flex justify-between text-[0.7rem] uppercase text-gray-500">
+                    <span>{short_id(trial.run_id)} · {trial.trial_id}</span>
+                    <span>{format_stage(trial.stage)}</span>
+                  </div>
+                  <div class="font-mono text-gray-700">Metric: {format_metric(trial)}</div>
+                  <div class="text-[0.65rem] text-gray-400">{format_timestamp(trial.published_at)}</div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end
@@ -300,4 +627,194 @@ defmodule ThunderlineWeb.CerebrosLive do
 
   defp parse_int(v, _) when is_integer(v), do: v
   defp cerebros_enabled?, do: CerebrosBridge.enabled?()
+
+  defp build_spec_form(json) do
+    to_form(%{"spec" => json}, as: :nas)
+  end
+
+  defp build_job_args(run_id, spec) do
+    budget = Map.get(spec, "budget", %{})
+    params = Map.get(spec, "parameters", %{})
+    pulse = Map.get(spec, "pulse", %{})
+
+    %{
+      "run_id" => run_id,
+      "spec" => spec,
+      "budget" => budget,
+      "parameters" => params,
+      "tau" => Map.get(pulse, "tau"),
+      "meta" => %{
+        "source" => "cerebros_live",
+        "operator" => "manual",
+        "submitted_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+      }
+    }
+    |> maybe_put("pulse_id", Map.get(pulse, "id"))
+    |> maybe_put("extra", Map.get(spec, "extra"))
+  end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
+
+  defp add_history(history, update) do
+    entry = Map.put_new(update, :published_at, DateTime.utc_now())
+
+    history
+    |> Enum.reject(&(&1.run_id == entry.run_id and &1.stage == entry.stage))
+    |> List.insert_at(0, entry)
+    |> Enum.take(@history_limit)
+  end
+
+  defp run_status_message(%{stage: :queued, run_id: run_id, metadata: meta}) do
+    "Queued #{short_id(run_id)} (priority=#{meta[:priority] || :normal})"
+  end
+
+  defp run_status_message(%{stage: :started, run_id: run_id, metadata: meta}) do
+    model = meta[:model] || "unknown"
+    "Run #{short_id(run_id)} started · model=#{model}"
+  end
+
+  defp run_status_message(%{stage: :stopped, run_id: run_id, metadata: meta, measurements: meas}) do
+    metric = meas[:best_metric] || "n/a"
+    status = meta[:status] || :ok
+    "Run #{short_id(run_id)} completed (status=#{status}, metric=#{metric})"
+  end
+
+  defp run_status_message(%{stage: :failed, run_id: run_id, metadata: meta}) do
+    reason = meta[:reason] || "unknown"
+    "Run #{short_id(run_id)} failed: #{reason}"
+  end
+
+  defp run_status_message(_entry), do: "Awaiting signal"
+
+  defp short_id(nil), do: "n/a"
+  defp short_id(id) when is_binary(id), do: String.slice(id, 0, 8)
+  defp short_id(id), do: inspect(id)
+
+  defp format_stage(stage) when is_atom(stage), do: stage |> Atom.to_string() |> String.upcase()
+  defp format_stage(stage), do: to_string(stage)
+
+  defp format_timestamp(nil), do: "-"
+
+  defp format_timestamp(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%H:%M:%S")
+  rescue
+    _ -> DateTime.to_iso8601(dt)
+  end
+
+  defp stage_badge_class(:queued), do: "px-2 py-0.5 bg-blue-50 text-blue-700 rounded"
+  defp stage_badge_class(:started), do: "px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded"
+  defp stage_badge_class(:stopped), do: "px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded"
+  defp stage_badge_class(:failed), do: "px-2 py-0.5 bg-rose-50 text-rose-700 rounded"
+  defp stage_badge_class(_), do: "px-2 py-0.5 bg-slate-100 text-slate-600 rounded"
+
+  defp status_badge_class(:ok), do: "px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded"
+  defp status_badge_class(:warning), do: "px-2 py-1 text-xs bg-amber-100 text-amber-700 rounded"
+  defp status_badge_class(:error), do: "px-2 py-1 text-xs bg-rose-100 text-rose-700 rounded"
+  defp status_badge_class(_), do: "px-2 py-1 text-xs bg-slate-100 text-slate-600 rounded"
+
+  defp spec_feedback_summary([], []), do: "Spec ready"
+
+  defp spec_feedback_summary(errors, warnings) do
+    parts = []
+    parts = if errors != [], do: parts ++ [count_label(length(errors), "error")], else: parts
+    parts = if warnings != [], do: parts ++ [count_label(length(warnings), "warning")], else: parts
+    Enum.join(parts, " · ")
+  end
+
+  defp count_label(1, noun), do: "1 #{noun}"
+  defp count_label(count, noun), do: "#{count} #{noun}s"
+
+  defp metadata_pairs(nil), do: []
+
+  defp metadata_pairs(meta) when is_map(meta) do
+    meta
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} -> {format_label(k), format_value(v)} end)
+    |> Enum.sort_by(&elem(&1, 0))
+  end
+
+  defp metadata_pairs(meta) when is_list(meta) do
+    meta
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} -> {format_label(k), format_value(v)} end)
+    |> Enum.sort_by(&elem(&1, 0))
+  end
+
+  defp metadata_pairs(_), do: []
+
+  defp measurement_pairs(nil), do: []
+
+  defp measurement_pairs(measurements) when is_map(measurements) do
+    measurements
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} -> {format_label(k), format_value(v)} end)
+    |> Enum.sort_by(&elem(&1, 0))
+  end
+
+  defp measurement_pairs(measurements) when is_list(measurements) do
+    measurements
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.map(fn {k, v} -> {format_label(k), format_value(v)} end)
+    |> Enum.sort_by(&elem(&1, 0))
+  end
+
+  defp measurement_pairs(_), do: []
+
+  defp format_label(key) when is_atom(key) do
+    key
+    |> Atom.to_string()
+    |> String.replace("_", " ")
+    |> String.upcase()
+  end
+
+  defp format_label(key) when is_binary(key) do
+    key
+    |> String.replace("_", " ")
+    |> String.upcase()
+  end
+
+  defp format_label(key), do: inspect(key)
+
+  defp format_value(%DateTime{} = dt), do: format_timestamp(dt)
+  defp format_value(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
+  defp format_value(value) when is_float(value), do: :erlang.float_to_binary(value, decimals: 3)
+  defp format_value(value) when is_integer(value), do: Integer.to_string(value)
+  defp format_value(value) when is_binary(value), do: value
+  defp format_value(value), do: inspect(value)
+
+  defp matching_trials(trials, run_id) when is_list(trials) and is_binary(run_id) do
+    trials
+    |> Enum.filter(&(&1.run_id == run_id))
+    |> Enum.take(3)
+  end
+
+  defp matching_trials(_, _), do: []
+
+  defp format_metric(%{measurements: measurements}) do
+    metric =
+      cond do
+        is_map(measurements) && Map.has_key?(measurements, :metric) -> Map.get(measurements, :metric)
+        is_map(measurements) && Map.has_key?(measurements, "metric") -> Map.get(measurements, "metric")
+        is_list(measurements) -> Keyword.get(measurements, :metric) || Keyword.get(measurements, "metric")
+        true -> nil
+      end
+
+    metric
+    |> case do
+      nil -> "n/a"
+      value -> format_value(value)
+    end
+  end
+
+  defp format_metric(_), do: "n/a"
+
+  defp run_count_label(0), do: "No past runs"
+  defp run_count_label(1), do: "1 past run"
+  defp run_count_label(count) when is_integer(count), do: "#{count} past runs"
+  defp run_count_label(_), do: "Past runs"
+
+  defp broadcast_run_update(update) do
+    PubSub.broadcast(Thunderline.PubSub, @run_topic, {:run_update, update})
+  end
 end

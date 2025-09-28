@@ -66,6 +66,7 @@ defmodule Thunderline.Application do
   defp cerebros_children do
     if cerebros_enabled?() do
       [
+        Thunderline.Thunderbolt.Cerebros.EventPublisher,
         Thunderline.Thunderbolt.Cerebros.Metrics,
         Thunderline.Thunderbolt.CerebrosBridge.Cache
       ]

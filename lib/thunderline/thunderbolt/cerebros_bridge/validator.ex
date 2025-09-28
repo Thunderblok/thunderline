@@ -19,6 +19,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Validator do
   alias Thunderline.Feature
   alias Thunderline.Thunderbolt.CerebrosBridge.Client
 
+  @type spec_validation_result :: %{
+          status: check_status(),
+          errors: [String.t()],
+          warnings: [String.t()],
+          spec: map() | nil,
+          json: String.t() | nil
+        }
+
   @type check_status :: :ok | :warning | :error
 
   @type check_result :: %{
@@ -67,6 +75,99 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Validator do
       end
 
     %{status: status, checks: checks}
+  end
+
+  @doc """
+  Provide a default NAS specification template for operators.
+  """
+  @spec default_spec() :: map()
+  def default_spec do
+    %{
+      "dataset" => "cifar10",
+      "model" => "resnet18",
+      "search_space_version" => 1,
+      "requested_trials" => 4,
+      "max_params" => 2_000_000,
+      "budget" => %{"trials" => 4, "max_duration_min" => 45},
+      "parameters" => %{
+        "learning_rate" => %{"type" => "float", "min" => 0.0001, "max" => 0.1, "default" => 0.01},
+        "momentum" => %{"type" => "choice", "values" => [0.8, 0.9, 0.95]},
+        "weight_decay" => %{"type" => "float", "min" => 0.0, "max" => 0.001, "default" => 0.0001},
+        "depth" => %{"type" => "choice", "values" => [18, 34]},
+        "width_multiplier" => %{"type" => "float", "min" => 0.5, "max" => 2.0, "default" => 1.0}
+      },
+      "pulse" => %{"tau" => 0.25},
+      "metadata" => %{"notes" => "Generated from CerebrosLive"}
+    }
+  end
+
+  @doc """
+  Validate an operator-provided NAS spec JSON or map.
+
+  Returns a map with :status, :errors, :warnings, :spec (normalized) and :json (pretty string).
+  """
+  @spec validate_spec(map() | binary()) :: spec_validation_result()
+  def validate_spec(spec) when is_binary(spec) do
+    case Jason.decode(spec) do
+      {:ok, decoded} ->
+        result = validate_spec(decoded)
+        Map.put(result, :json, pretty_json(decoded))
+
+      {:error, %Jason.DecodeError{} = error} ->
+        message = Exception.message(error)
+
+        %{
+          status: :error,
+          errors: ["invalid_json: #{message}"],
+          warnings: [],
+          spec: nil,
+          json: spec
+        }
+    end
+  end
+
+  def validate_spec(%{} = spec) do
+    normalized = normalize_spec(spec)
+
+    errors =
+      []
+      |> maybe_spec_error(missing_string?(normalized, "dataset"), "dataset must be a non-empty string")
+      |> maybe_spec_error(missing_string?(normalized, "model"), "model must be a non-empty string")
+      |> maybe_spec_error(invalid_integer?(normalized, "requested_trials", min: 1), "requested_trials must be >= 1 when present")
+      |> maybe_spec_error(invalid_integer?(normalized, "search_space_version", min: 1), "search_space_version must be >= 1 when present")
+      |> maybe_spec_error(invalid_max_params?(normalized), "max_params must be a positive integer")
+      |> maybe_spec_error(invalid_map?(normalized, "parameters"), "parameters must be a map of hyperparameters")
+      |> maybe_spec_error(invalid_budget?(normalized), "budget must be a map with positive numeric limits")
+
+    warnings =
+      []
+      |> maybe_spec_warning(Map.get(normalized, "requested_trials", 0) == 0, "requested_trials is 0; run will finish immediately unless overrides supplied")
+      |> maybe_spec_warning(Map.get(normalized, "parameters") in [%{}, nil], "parameters map is empty; Cerebros will use defaults")
+
+    status =
+      cond do
+        errors != [] -> :error
+        warnings != [] -> :warning
+        true -> :ok
+      end
+
+    %{
+      status: status,
+      errors: errors,
+      warnings: warnings,
+      spec: normalized,
+      json: pretty_json(normalized)
+    }
+  end
+
+  def validate_spec(_other) do
+    %{
+      status: :error,
+      errors: ["spec must be a JSON object"],
+      warnings: [],
+      spec: nil,
+      json: nil
+    }
   end
 
   defp feature_flag_check do
@@ -328,4 +429,94 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Validator do
       _ -> false
     end
   end
+
+  defp pretty_json(%{} = map) do
+    Jason.encode!(map, pretty: true)
+  rescue
+    _ -> Jason.encode!(map)
+  end
+
+  defp pretty_json(value), do: to_string(value)
+
+  defp normalize_spec(spec) do
+    spec
+    |> deep_stringify_keys()
+    |> Map.update("budget", %{}, &deep_stringify_keys/1)
+    |> Map.update("parameters", %{}, &deep_stringify_keys/1)
+    |> Map.update("metadata", %{}, &deep_stringify_keys/1)
+  end
+
+  defp deep_stringify_keys(value) when is_map(value) do
+    value
+    |> Enum.reduce(%{}, fn {k, v}, acc ->
+      Map.put(acc, normalize_key(k), deep_stringify_keys(v))
+    end)
+  end
+
+  defp deep_stringify_keys(list) when is_list(list), do: Enum.map(list, &deep_stringify_keys/1)
+  defp deep_stringify_keys(other), do: other
+
+  defp normalize_key(key) when is_binary(key), do: key
+  defp normalize_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp normalize_key(key), do: to_string(key)
+
+  defp missing_string?(map, key) do
+    value = Map.get(map, key)
+    not (is_binary(value) and String.trim(value) != "")
+  end
+
+  defp invalid_integer?(map, key, opts) do
+    min = Keyword.get(opts, :min, 0)
+
+    case Map.get(map, key) do
+      nil -> false
+      value when is_integer(value) and value >= min -> false
+      value when is_integer(value) -> true
+      _ -> true
+    end
+  end
+
+  defp invalid_max_params?(map) do
+    case Map.get(map, "max_params") do
+      nil -> false
+      value when is_integer(value) and value > 0 -> false
+      value when is_float(value) and value > 0 -> false
+      _ -> true
+    end
+  end
+
+  defp invalid_map?(map, key) do
+    case Map.get(map, key) do
+      nil -> false
+      value when is_map(value) -> false
+      _ -> true
+    end
+  end
+
+  defp invalid_budget?(map) do
+    case Map.get(map, "budget") do
+      nil -> false
+      budget when is_map(budget) ->
+        Enum.any?(budget, fn {_k, v} -> not valid_budget_value?(v) end)
+
+      _ -> true
+    end
+  end
+
+  defp valid_budget_value?(v) when is_integer(v) and v >= 0, do: true
+  defp valid_budget_value?(v) when is_float(v) and v >= 0.0, do: true
+  defp valid_budget_value?(v) when is_binary(v) do
+    case Integer.parse(v) do
+      {val, _} when val >= 0 -> true
+      _ -> false
+    end
+  end
+
+  defp valid_budget_value?(_), do: false
+
+  defp maybe_spec_error(list, true, message), do: [message | list]
+  defp maybe_spec_error(list, false, _message), do: list
+
+  defp maybe_spec_warning(list, true, message), do: [message | list]
+  defp maybe_spec_warning(list, false, _message), do: list
 end

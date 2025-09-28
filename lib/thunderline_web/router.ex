@@ -159,6 +159,7 @@ defmodule ThunderlineWeb.Router do
     pipe_through :api
 
     get "/metrics", MetricsController, :index
+    get "/cerebros/metrics", CerebrosMetricsController, :show
     get "/health", HealthController, :check
     get "/domains/:domain/stats", DomainStatsController, :show
   end

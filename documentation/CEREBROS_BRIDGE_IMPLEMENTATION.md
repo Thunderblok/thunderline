@@ -12,6 +12,9 @@ This note captures the concrete code that currently powers the Cerebros bridge i
 * **Error semantics:** All failures are normalized into `%Thunderline.Thunderflow.ErrorClass{}` structures so upstream callers can distinguish timeouts, dependency issues, exit codes, and parser failures.
 * **Telemetry + events:** Every call emits `[:cerebros, :bridge, :invoke, *_]` telemetry and publishes `ml.run.*` events on the Thunderflow bus, allowing observability dashboards to light up without dashboard coupling.
 * **Cache subsystem:** An ETS-backed cache module runs under the OTP supervision tree and respects runtime config toggles, enabling opt-in response caching.
+* **LiveView orchestration:** `ThunderlineWeb.CerebrosLive` exposes a JSON spec editor, validates specs via `Validator.validate_spec/1`, and enqueues `CerebrosBridge.RunWorker` jobs through Oban while streaming run/trial status updates over PubSub.
+* **Telemetry fan-out:** `Thunderline.Thunderbolt.Cerebros.EventPublisher` mirrors worker telemetry into Thunderflow `ml.run.*` / `ml.trial.*` events and PubSub topics so dashboards and automations stay in sync without scraping internals.
+* **Metrics API:** `/api/cerebros/metrics` surfaces the latest `Cerebros.Metrics.snapshot/0`, gated by the feature flag and runtime toggle for lightweight health probes.
 
 ## Module map (lib/thunderline/thunderbolt/cerebros_bridge)
 
@@ -88,6 +91,8 @@ env:
 * `[:cerebros, :bridge, :invoke, :start|:stop|:exception]` – emitted for every attempt with metadata `{op, attempt, run_id, …}` and measurements `%{duration_ms: …}` on success.
 * `[:cerebros, :bridge, :cache, :hit|:miss|:store|:evict|:purge]` – prepared but currently dormant until the cache server is supervised.
 * Thunderflow events produced by the client (`ml.run.*`) land on the shared `Thunderline.Thunderflow.EventBus` with source `:bolt`. These feed any subscriber listening for NAS telemetry, including LiveDashboard panels.
+* `Thunderline.Thunderbolt.Cerebros.EventPublisher` subscribes to worker telemetry (`run.queued|started|stopped|failed`, `trial.started|stopped|exception`) and republishes it to both EventBus consumers and PubSub topics (`cerebros:runs`, `cerebros:trials`).
+* `Thunderline.Thunderbolt.Cerebros.Metrics` aggregates Telemetry into counters and exposes `snapshot/0`, which now backs `/api/cerebros/metrics` for external dashboards.
 
 ## Validation + tooling
 
@@ -112,13 +117,50 @@ The validator already powers our CI smoke test (`mix test test/thunderline/thund
 
 ## Current gaps and risks
 
-* **No production caller yet.** Nothing in the codebase instantiates the contracts or calls `Thunderline.Thunderbolt.CerebrosBridge.Client`. The NAS façade (`Thunderline.Thunderbolt.Cerebros.Adapter`) still delegates to the in-process stub / CLI fallback and never touches the bridge.
+* **Adapter still bypasses the bridge.** The dashboard LiveView now instantiates specs and enqueues `CerebrosBridge.RunWorker`, but `Thunderline.Thunderbolt.Cerebros.Adapter` continues to delegate to the in-process stub / CLI fallback. We need parity for non-UI call sites.
 * **Error propagation consumers TBD.** We classify failures into `ErrorClass` structs, but no service consumes them to trigger retries or surfaced UI messages.
 * **Contracts unused downstream.** `Contracts.TrialReportedV1` and `RunFinalizedV1` are not stored in Ash resources or displayed in the dashboard, so trial metrics would currently drop on the floor.
 
+## Cluster smoke test blueprint
+
+Use this runbook to validate a Thunderhelm deployment end to end:
+
+1. **Prepare values:** Start from `thunderhelm/deploy/chart/examples/values-hpo-demo.yaml`, then ensure
+  * `env.CEREBROS_ENABLED="true"`
+  * `env.FEATURES` includes `ml_nas,cerebros_bridge`
+  * Cerebros repo/script paths are mounted and referenced (`CEREBROS_REPO`, `CEREBROS_SCRIPT`, `CEREBROS_PYTHON`)
+  * Oban queues cover `ml_runs` (or your chosen worker queue)
+2. **Deploy chart:**
+  ```bash
+  helm upgrade --install thunderline ./thunderhelm/deploy/chart \
+    -f thunderhelm/deploy/chart/examples/values-hpo-demo.yaml \
+    --set image.tag=$(git rev-parse --short HEAD)
+  ```
+3. **Run validator in-cluster:**
+  ```bash
+  kubectl exec deploy/thunderline-worker -- \
+    mix thunderline.ml.validate --require-enabled
+  ```
+4. **Queue a NAS run:**
+  ```bash
+  kubectl exec deploy/thunderline-worker -- \
+    iex --remsh thunderline@$(hostname) --eval '
+     alias Thunderline.Thunderbolt.CerebrosBridge.{RunWorker, Validator}
+     RunWorker.new(%{"run_id" => Thunderline.UUID.v7(), "spec" => Validator.default_spec()})
+     |> Oban.insert()
+    '
+  ```
+5. **Verify observability:**
+  * Follow worker logs: `kubectl logs deploy/thunderline-worker -f`
+  * Port-forward `thunderline-web` and load `/cerebros` plus `/api/cerebros/metrics`
+  * Inspect metrics directly: `kubectl exec deploy/thunderline-worker -- iex --remsh … --eval 'Thunderline.Thunderbolt.Cerebros.Metrics.snapshot()'`
+6. **Confirm persistence:** Use AshAdmin (`/admin`) or direct `ModelRun`/`ModelTrial` Ash queries to ensure the run id propagated.
+
+Capture gaps (missing env, MLflow artifact paths, bridge stderr) in follow-up issues before promoting beyond smoke testing.
+
 ## Questions for leadership
 
-1. **Ownership of the call site:** Which component (dashboard LiveView, Oban job, or external agent) should instantiate contracts and drive `start_run/record_trial/finalize_run`? We need a clear orchestration owner before wiring the facade.
+1. **Agent vs. adapter ownership:** Dashboard LiveView now queues runs; should `Thunderline.Thunderbolt.Cerebros.Adapter` and external agents delegate to the same worker path or retain bespoke logic?
 2. **Task supervisor location:** Do we add a global `Task.Supervisor` to the OTP tree or should the bridge own a dedicated supervisor (with restart strategy) to isolate subprocess crashes?
 3. **Cache strategy:** Should bridge responses be cached at all once trials become stateful? If so, what invalidation triggers (new pulse, contract hash) do we require?
 4. **Artifact persistence:** When the bridge returns artifact references, should we extend `Thunderline.Thunderbolt.Cerebros.Artifacts` to ingest them, or rely on the existing adapter persistence path?
@@ -126,6 +168,6 @@ The validator already powers our CI smoke test (`mix test test/thunderline/thund
 
 ## Next implementation steps
 
-1. Extend `Thunderline.Thunderbolt.Cerebros.Adapter` (or a dedicated Oban worker) to call the bridge client when the `:ml_nas` flag is active.
+1. Route `Thunderline.Thunderbolt.Cerebros.Adapter` (and any agent workflows) through `CerebrosBridge.RunWorker` so CLI and automated paths match the dashboard surface.
 2. Persist contract outputs to Ash resources (e.g., `ModelRun` state updates, per-trial metrics) so dashboards and APIs can display NAS progress.
-3. Build LiveView or agent flows that surface validator results and allow enabling the feature once the environment passes checks.
+3. Automate the cluster smoke test (Helm deploy → validator → run → metrics check) and codify the runbook in CI / Ops docs.
