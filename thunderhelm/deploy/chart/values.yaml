@@ -22,6 +22,7 @@ env:
   CEREBROS_URL: "http://thunderline-cerebros:8088"
   CEREBROS_SCRIPT: "/app/priv/cerebros_bridge_stub.py"
   CEREBROS_REMOTE_URL: "http://thunderline-cerebros:8088"
+  CEREBROS_ENABLED: "false"
   MLFLOW_TRACKING_URI: "http://thunderline-mlflow:5000"
   # Optional: feature flags (comma separated or individual env per feature)
   FEATURES: ""  # e.g. "enable_ndjson,thundervine_lineage"

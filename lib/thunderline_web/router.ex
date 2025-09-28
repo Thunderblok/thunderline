@@ -104,10 +104,8 @@ defmodule ThunderlineWeb.Router do
       live "/thunderstone", DashboardLive, :thunderstone
       live "/thunderlink", DashboardLive, :thunderlink
       live "/thundercrown", DashboardLive, :thundercrown
-      # Cerebros & Raincatcher (drift lab) interface
-      if System.get_env("ENABLE_CEREBROS") == "true" do
-        live "/cerebros", CerebrosLive, :index
-      end
+      # Cerebros & Raincatcher (drift lab) interface (runtime feature-gated inside LiveView)
+      live "/cerebros", CerebrosLive, :index
 
       # Interactive neural network playground (inspired by external visualizer)
       if System.get_env("ENABLE_NN_PLAYGROUND") == "true" do

@@ -141,10 +141,10 @@ defmodule Thunderline.MixProject do
       {:excoveralls, "~> 0.18", only: [:test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:git_ops, "~> 2.6.1", only: [:dev]}
-      # Optional Cerebros local toolkit (enable with ENABLE_CEREBROS=1 if available)
+  # Optional Cerebros local toolkit (enable with CEREBROS_ENABLED=1 if available)
       # If you do not have the local path or hex package, leave this commented or remove.
       # Using a runtime flag so it won't start unless explicitly enabled.
-      # {:cerebros, "~> 0.1", only: [:dev], runtime: System.get_env("ENABLE_CEREBROS") in ["1","true","TRUE"]}
+    # {:cerebros, "~> 0.1", only: [:dev], runtime: System.get_env("CEREBROS_ENABLED") in ["1","true","TRUE"]}
       # igniter:deps-end
     ]
 

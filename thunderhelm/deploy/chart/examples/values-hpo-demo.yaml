@@ -10,6 +10,7 @@ env:
   SERVICE_NAME: "thunderline"
   LOG_LEVEL: "info"
   CEREBROS_MODE: "remote"
+  CEREBROS_ENABLED: "true"
   FEATURES: "ml_nas,cerebros_bridge"
 
   secrets:

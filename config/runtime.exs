@@ -117,7 +117,9 @@ runtime_feature_overrides = [
   {:ai_chat_panel, "FEATURE_AI_CHAT_PANEL"},
   {:enable_ndjson, "FEATURE_ENABLE_NDJSON"},
   {:enable_ups, "FEATURE_ENABLE_UPS"},
-  {:tocp, "FEATURE_TOCP"}
+  {:tocp, "FEATURE_TOCP"},
+  {:ml_nas, "CEREBROS_ENABLED"},
+  {:cerebros_bridge, "CEREBROS_ENABLED"}
 ]
 
 runtime_enabled =
@@ -138,6 +140,18 @@ config :thunderline, :features, enabled_list
 # Log enabled features on boot for observability
 enabled = enabled_list |> Enum.filter(fn {_k, v} -> v end) |> Enum.map(&elem(&1, 0))
 IO.puts("[features] enabled: #{inspect(enabled)}")
+
+cerebros_toggle =
+  case System.get_env("CEREBROS_ENABLED") do
+    val when val in ["1", "true", "TRUE"] -> true
+    val when val in ["0", "false", "FALSE"] -> false
+    _ -> nil
+  end
+
+if not is_nil(cerebros_toggle) do
+  base_bridge = Application.get_env(:thunderline, :cerebros_bridge, [])
+  config :thunderline, :cerebros_bridge, Keyword.put(base_bridge, :enabled, cerebros_toggle)
+end
 
 if config_env() == :prod do
   database_url =

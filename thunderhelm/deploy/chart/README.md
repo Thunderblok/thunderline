@@ -82,6 +82,7 @@ env:
   MINIO_BUCKET: "thunderline-artifacts"
   SERVICE_NAME: "thunderline"
   LOG_LEVEL: "info"
+  CEREBROS_ENABLED: "false"     # set to true to flip runtime config + ml_nas feature
   CEREBROS_MODE: "remote"          # default to remote runner
   CEREBROS_URL: ""                # auto-populated to http://<release>-cerebros:8088 if blank
   CEREBROS_REMOTE_URL: ""         # auto-populated, drives the bridge stub

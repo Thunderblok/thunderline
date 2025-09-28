@@ -11,7 +11,7 @@ This note captures the concrete code that currently powers the Cerebros bridge i
 * **External process execution:** Contracts are JSON encoded and sent to a Python script via `System.cmd/3` with an isolated environment. The default script shipped in-repo is `generative-proof-of-concept-CPU-preprocessing-in-memory.py`.
 * **Error semantics:** All failures are normalized into `%Thunderline.Thunderflow.ErrorClass{}` structures so upstream callers can distinguish timeouts, dependency issues, exit codes, and parser failures.
 * **Telemetry + events:** Every call emits `[:cerebros, :bridge, :invoke, *_]` telemetry and publishes `ml.run.*` events on the Thunderflow bus, allowing observability dashboards to light up without dashboard coupling.
-* **Cache stub:** An ETS-backed cache module exists but is not yet wired into the supervision tree, so caching is effectively disabled.
+* **Cache subsystem:** An ETS-backed cache module runs under the OTP supervision tree and respects runtime config toggles, enabling opt-in response caching.
 
 ## Module map (lib/thunderline/thunderbolt/cerebros_bridge)
 
@@ -21,7 +21,7 @@ This note captures the concrete code that currently powers the Cerebros bridge i
 | `Contracts` | Versioned structs (`RunStartedV1`, `TrialReportedV1`, `RunFinalizedV1`) encoding the payloads exchanged with the bridge and Thunderflow events. |
 | `Translator` | Converts contracts/payloads into executable call specs (command, args, env, JSON stdin) and back into decoded results. Adds metadata, cache keys, and environment variables such as `CEREBROS_BRIDGE_OP`, `CEREBROS_BRIDGE_RUN_ID`, and `CEREBROS_BRIDGE_PAYLOAD`. |
 | `Invoker` | Executes the subprocess via `Task.Supervisor.async_nolink/2` (expects a supervisor named `Thunderline.TaskSupervisor`), applies retry/backoff logic, enforces per-attempt timeouts, parses stdout (JSON by default), and emits telemetry (`start`, `stop`, `exception`). |
-| `Cache` | Intended ETS cache for bridge responses with TTL and max-entry enforcement. Currently **not started** anywhere, so cache hits never happen. |
+| `Cache` | ETS cache for bridge responses with TTL and max-entry enforcement; supervised via `Thunderline.Application` when the feature is enabled. |
 | `Validator` | Runs readiness checks for feature flag, config enabled, repo/script paths, Python executable, working directory, VERSION file, and cache sizing. Powers `mix thunderline.ml.validate`. |
 
 ## Runtime configuration quick reference
@@ -48,8 +48,8 @@ config :thunderline, :cerebros_bridge,
 
 To actually execute the bridge you must:
 
-1. Enable the feature flag (`config :thunderline, features: [:ml_nas, …]` or `FEATURES=ml_nas` in deployments).
-2. Set `enabled: true` under `:cerebros_bridge` (or export `CEREBROS_ENABLED=1` once we add that env switch).
+1. Enable the feature flag (`config :thunderline, features: [:ml_nas, …]` or set `CEREBROS_ENABLED=1` to flip it at runtime).
+2. Set `enabled: true` under `:cerebros_bridge` (or export `CEREBROS_ENABLED=1` to toggle it without recompiling).
 3. Provide a resolvable repo and script path (the validator enforces these).
 4. Ensure Python dependencies for the Cerebros script are installed in the same environment as the Thunderline release / pod.
 
@@ -57,6 +57,7 @@ Helm values example (`thunderhelm/deploy/chart/examples/values-hpo-demo.yaml`):
 
 ```yaml
 env:
+  CEREBROS_ENABLED: "true"
   FEATURES: "ml_nas,cerebros_bridge"
   CEREBROS_REPO: "/opt/cerebros-core"
   CEREBROS_SCRIPT: "/opt/cerebros-core/generative-proof-of-concept-CPU-preprocessing-in-memory.py"
@@ -112,10 +113,6 @@ The validator already powers our CI smoke test (`mix test test/thunderline/thund
 ## Current gaps and risks
 
 * **No production caller yet.** Nothing in the codebase instantiates the contracts or calls `Thunderline.Thunderbolt.CerebrosBridge.Client`. The NAS façade (`Thunderline.Thunderbolt.Cerebros.Adapter`) still delegates to the in-process stub / CLI fallback and never touches the bridge.
-* **Supervisor wiring missing.**
-  * `Task.Supervisor` named `Thunderline.TaskSupervisor` is not started in `Thunderline.Application`, so `Invoker` will crash unless another boot path adds it.
-  * `CerebrosBridge.Cache` is not part of any supervision tree, leaving caching disabled.
-* **Deployment toggles incomplete.** There is no dedicated `CEREBROS_ENABLED` env yet; enabling the bridge still requires editing config or using runtime overrides.
 * **Error propagation consumers TBD.** We classify failures into `ErrorClass` structs, but no service consumes them to trigger retries or surfaced UI messages.
 * **Contracts unused downstream.** `Contracts.TrialReportedV1` and `RunFinalizedV1` are not stored in Ash resources or displayed in the dashboard, so trial metrics would currently drop on the floor.
 
@@ -129,8 +126,6 @@ The validator already powers our CI smoke test (`mix test test/thunderline/thund
 
 ## Next implementation steps
 
-1. Add a supervised `{Task.Supervisor, name: Thunderline.TaskSupervisor}` child and register `CerebrosBridge.Cache` under the application tree.
-2. Extend `Thunderline.Thunderbolt.Cerebros.Adapter` (or a dedicated Oban worker) to call the bridge client when the `:ml_nas` flag is active.
-3. Persist contract outputs to Ash resources (e.g., `ModelRun` state updates, per-trial metrics) so dashboards and APIs can display NAS progress.
-4. Expose runtime toggle via env (`CEREBROS_ENABLED`) and ensure Helm chart templates propagate it.
-5. Build LiveView or agent flows that surface validator results and allow enabling the feature once the environment passes checks.
+1. Extend `Thunderline.Thunderbolt.Cerebros.Adapter` (or a dedicated Oban worker) to call the bridge client when the `:ml_nas` flag is active.
+2. Persist contract outputs to Ash resources (e.g., `ModelRun` state updates, per-trial metrics) so dashboards and APIs can display NAS progress.
+3. Build LiveView or agent flows that surface validator results and allow enabling the feature once the environment passes checks.

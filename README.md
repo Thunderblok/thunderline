@@ -164,12 +164,15 @@ SKIP_JIDO=true mix thunderline.ml.validate
 
 Add `--require-enabled` to fail if `config :thunderline, :cerebros_bridge, enabled: false` is still set, and `--json` when you want machine-readable output for pipelines. The command exits non-zero on any failed check, making it suitable for CI/CD gates. Re-run it whenever you change the Cerebros checkout, Python virtualenv, or bridge configuration.
 
+When the validator passes, export `CEREBROS_ENABLED=1` (or set it via Helm) so the runtime config flips `:cerebros_bridge` on and the `:ml_nas` feature flag becomes active without recompiling.
+
 ### Feature Flags & Environment Toggles
 
 These environment variables gate optional subsystems or alter setup heuristics:
 
 | Variable | Values | Purpose | Default |
 |----------|--------|---------|---------|
+| `CEREBROS_ENABLED` | `1`, `true` | Enable Cerebros bridge runtime (`:cerebros_bridge.enabled`) and turn on the `ml_nas` feature | disabled |
 | `ENABLE_NDJSON` | `1` | Enable NDJSON structured event logging writer (UI toggle present) | disabled |
 | `ENABLE_UPS` | `1` | Start UPS watcher process (publishes power status to status bus) | disabled |
 | `ENABLE_SIGNAL_STACK` | `1` | Start experimental signal‑processing stack (PLL/Hilbert etc.) | disabled |
@@ -178,7 +181,7 @@ These environment variables gate optional subsystems or alter setup heuristics:
 | `SKIP_DEPS_GET` | `true/false` | Skip automatic deps fetch during `mix setup` heuristic | false |
 | `SKIP_ASH_SETUP` | `true/false` | Skip Ash migrations in test alias for DB‑less unit tests | false |
 
-> **Cerebros NAS feature flag** – The bridge remains inactive until `:ml_nas` is present in `config :thunderline, :features` (or toggled at runtime). Keep it disabled by default, run `mix thunderline.ml.validate --require-enabled`, then flip the flag once every check passes.
+> **Cerebros NAS toggle** – Set `CEREBROS_ENABLED=1` to flip the runtime config (`config :thunderline, :cerebros_bridge, enabled: true`) and automatically enable the `:ml_nas` feature flag. Keep it disabled by default, run `mix thunderline.ml.validate --require-enabled`, then export the toggle once every check passes.
 
 Set in your shell or `.envrc`:
 

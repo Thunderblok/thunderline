@@ -9,24 +9,26 @@ defmodule Thunderline.Application do
   """
 
   use Application
+  alias Thunderline.Feature
 
   @impl Application
   def start(_type, _args) do
     children =
-      [
-    ThunderlineWeb.Telemetry,
-    maybe_repo_child(),
-    maybe_vault_child(),
-    {Phoenix.PubSub, name: Thunderline.PubSub},
-    {Task.Supervisor, name: Thunderline.TaskSupervisor},
-  Thunderline.Thunderbolt.Cerebros.Metrics,
-    Thunderline.Thunderbolt.CerebrosBridge.Cache,
-    Thunderline.Thunderflow.EventBuffer,
-    Thunderline.Thunderflow.Blackboard,
-    ThunderlineWeb.Presence,
-    maybe_oban_child(),
-    ThunderlineWeb.Endpoint
-      ]
+      ([
+         ThunderlineWeb.Telemetry,
+         maybe_repo_child(),
+         maybe_vault_child(),
+         {Phoenix.PubSub, name: Thunderline.PubSub},
+         {Task.Supervisor, name: Thunderline.TaskSupervisor}
+       ] ++
+         cerebros_children() ++
+         [
+           Thunderline.Thunderflow.EventBuffer,
+           Thunderline.Thunderflow.Blackboard,
+           ThunderlineWeb.Presence,
+           maybe_oban_child(),
+           ThunderlineWeb.Endpoint
+         ])
       |> Enum.reject(&is_nil/1)
 
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
@@ -58,6 +60,29 @@ defmodule Thunderline.Application do
     case Application.get_env(:thunderline, Thunderline.Vault) do
       nil -> nil
       _config -> Thunderline.Vault
+    end
+  end
+
+  defp cerebros_children do
+    if cerebros_enabled?() do
+      [
+        Thunderline.Thunderbolt.Cerebros.Metrics,
+        Thunderline.Thunderbolt.CerebrosBridge.Cache
+      ]
+    else
+      []
+    end
+  end
+
+  defp cerebros_enabled? do
+    Feature.enabled?(:ml_nas, default: false) and
+      bridge_enabled?(Application.get_env(:thunderline, :cerebros_bridge, []))
+  end
+
+  defp bridge_enabled?(config) do
+    case Keyword.get(config, :enabled, false) do
+      val when val in [true, "true", "TRUE", 1, "1"] -> true
+      _ -> false
     end
   end
 end

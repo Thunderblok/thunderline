@@ -198,8 +198,8 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 - Emits canonical events (`ml.run.start|stop|exception`, `ml.run.trial`) through `Thunderline.Thunderflow.EventBus` and telemetry spans under `[:cerebros, :bridge, ...]`.
 
 ##### Activation Guardrails & Feature Flags
-- **Feature switch:** The Cerebros bridge is protected by the `:ml_nas` feature flag. Keep it disabled until validation passes, then enable via `config :thunderline, :features, [:ml_nas, ...]` or runtime toggles. The validator marks the flag as an error when missing.
-- **Config gating:** Runtime config under `:thunderline, :cerebros_bridge` must set `enabled: true`, point `repo_path`/`script_path` at the cloned Cerebros repository, and provide a usable `python_executable`. Leave it `false` for cold installs; use the validator with `--require-enabled` before flipping it on.
+- **Feature switch:** The Cerebros bridge is protected by the `:ml_nas` feature flag. Keep it disabled until validation passes; setting `CEREBROS_ENABLED=1` (or `true`) flips the runtime feature map automatically, or you can hardcode `config :thunderline, :features, [:ml_nas, ...]` if you prefer static config. The validator marks the flag as an error when missing.
+- **Config gating:** Runtime config under `:thunderline, :cerebros_bridge` must set `enabled: true`, point `repo_path`/`script_path` at the cloned Cerebros repository, and provide a usable `python_executable`. Export `CEREBROS_ENABLED=1` once validation passes to toggle this at runtime; leave it `false` for cold installs.
 
 ##### Cerebros Bridge Validator CLI
 Use the Mix task to exercise the guardrails without booting the full NAS loop:
