@@ -276,6 +276,10 @@ config :ash, :compatible_foreign_key_types, [
   {Ash.Type.UUID, Ash.Type.String}
 ]
 
+config :thunderline, Thunderline.Thunderblock.Retention.Sweeper,
+  dry_run: false,
+  batch_size: 5_000
+
 # Configure Mnesia database location
 config :mnesia,
   # Using ~c for charlist

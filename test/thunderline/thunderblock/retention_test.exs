@@ -1,5 +1,6 @@
 defmodule Thunderline.Thunderblock.RetentionTest do
   use Thunderline.DataCase, async: false
+  doctest Thunderline.Thunderblock.Retention
 
   alias Ash
   alias Thunderline.Repo
@@ -18,7 +19,7 @@ defmodule Thunderline.Thunderblock.RetentionTest do
     test "creates baseline policies" do
       :ok = Retention.ensure_defaults!()
 
-      {:ok, %RetentionPolicy{} = policy} = Retention.get(:event_log)
+  {:ok, %RetentionPolicy{} = policy} = Retention.get(:event_log)
       assert policy.scope_type == :global
       assert policy.action == :delete
       assert policy.ttl_seconds == 30 * 86_400
@@ -29,10 +30,16 @@ defmodule Thunderline.Thunderblock.RetentionTest do
     end
   end
 
-  describe "effective/2" do
+  describe "scope semantics" do
     setup do
       Retention.ensure_defaults!()
       :ok
+    end
+
+    test "global lookups return policies with nil scope_id" do
+      assert {:ok, %RetentionPolicy{} = policy} = Retention.get(:event_log, scope: :global)
+      assert policy.scope_type == :global
+      assert is_nil(policy.scope_id)
     end
 
     test "returns scoped override when present" do
@@ -61,6 +68,27 @@ defmodule Thunderline.Thunderblock.RetentionTest do
       assert {:ok, {policy, :fallback}} = Retention.effective(:vector, {:dataset, dataset_id})
       assert policy.scope_type == :global
       refute policy.scope_id
+    end
+
+    test "matches org scoped policies when defined" do
+      tenant_id = Ecto.UUID.generate()
+
+      {:ok, %RetentionPolicy{} = scoped} =
+        RetentionPolicy
+        |> Ash.Changeset.for_create(:define, %{
+          resource: :event_log,
+          scope_type: :tenant,
+          scope_id: tenant_id,
+          ttl_seconds: 604_800,
+          action: :delete,
+          grace_seconds: 0
+        })
+        |> Ash.create()
+
+      assert {:ok, %RetentionPolicy{} = policy} = Retention.get(:event_log, scope: {:tenant, tenant_id})
+      assert policy.id == scoped.id
+      assert policy.scope_type == :tenant
+      assert policy.scope_id == tenant_id
     end
   end
 

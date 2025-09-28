@@ -149,6 +149,11 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 #### **Supporting Infrastructure**
 - **thunder_memory.ex** - Core memory operations and distributed coordination
 
+#### ♻️ Retention Registry & Lifecycle Jobs
+- **resources/retention_policy.ex** – Declarative Ash registry describing TTL, grace, and action semantics per resource/scope.
+- **retention.ex** – Helper module for seeding defaults, resolving effective policies, and normalizing interval metadata.
+- **retention/sweeper.ex** – Batch-aware sweeper with dry-run guardrails, telemetry emission (`[:thunderline, :retention, :sweep]`), and policy caching to prune expired rows safely.
+
 **Total**: **23 Resources** - Complete infrastructure and memory foundation
 
 ---

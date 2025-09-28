@@ -181,30 +181,30 @@ defmodule Thunderline.Thunderblock.Retention do
 
   defp upsert_policy(attrs) do
     {scope_type, scope_id} = normalize_scope(Map.get(attrs, :scope, :global))
+    with {:ok, ttl_seconds} <- resolve_interval(attrs, :ttl, required: true),
+         {:ok, grace_seconds} <- resolve_interval(attrs, :grace, default: 0) do
+      input = %{
+        resource: Map.fetch!(attrs, :resource),
+        scope_type: scope_type,
+        scope_id: scope_id,
+        ttl_seconds: ttl_seconds,
+        keep_versions: Map.get(attrs, :keep_versions),
+        action: Map.get(attrs, :action, :delete),
+        grace_seconds: grace_seconds,
+        metadata: normalize_metadata(Map.get(attrs, :metadata, %{})),
+        notes: Map.get(attrs, :notes),
+        is_active: Map.get(attrs, :is_active, true)
+      }
 
-    grace_seconds = maybe_interval_to_seconds(Map.get(attrs, :grace)) || 0
+      case fetch_policy(input.resource, {scope_type, scope_id}) do
+        {:ok, %RetentionPolicy{} = policy} -> maybe_update(policy, input)
+        {:ok, nil} ->
+          RetentionPolicy
+          |> Changeset.for_create(:define, input)
+          |> Ash.create()
 
-    input = %{
-      resource: Map.fetch!(attrs, :resource),
-      scope_type: scope_type,
-      scope_id: scope_id,
-      ttl_seconds: maybe_interval_to_seconds(Map.get(attrs, :ttl)),
-      keep_versions: Map.get(attrs, :keep_versions),
-      action: Map.get(attrs, :action, :delete),
-      grace_seconds: grace_seconds,
-      metadata: normalize_metadata(Map.get(attrs, :metadata, %{})),
-      notes: Map.get(attrs, :notes),
-      is_active: Map.get(attrs, :is_active, true)
-    }
-
-    case fetch_policy(input.resource, {scope_type, scope_id}) do
-      {:ok, %RetentionPolicy{} = policy} -> maybe_update(policy, input)
-      {:ok, nil} ->
-        RetentionPolicy
-        |> Changeset.for_create(:define, input)
-        |> Ash.create()
-
-      {:error, reason} -> {:error, reason}
+        {:error, reason} -> {:error, reason}
+      end
     end
   end
 
@@ -256,52 +256,120 @@ defmodule Thunderline.Thunderblock.Retention do
 
   defp normalize_scope_type(_), do: nil
 
-  defp maybe_interval_to_seconds(nil), do: nil
-  defp maybe_interval_to_seconds(value) when is_integer(value) and value >= 0, do: value
-  defp maybe_interval_to_seconds({unit, value}) when is_integer(value) and value >= 0 do
-    case normalize_unit(unit) do
-      :seconds -> value
-      :minutes -> value * 60
-      :hours -> value * 3_600
-      :days -> value * 86_400
-      :weeks -> value * 604_800
-      _ -> nil
+  defp resolve_interval(attrs, key, opts \\ []) do
+    required? = Keyword.get(opts, :required, false)
+    default = Keyword.get(opts, :default)
+    raw_value = Map.get(attrs, key, default)
+
+    case interval_to_seconds(raw_value) do
+      {:ok, nil} when required? -> {:error, {:missing_interval, key}}
+      {:ok, value} -> {:ok, value}
+      {:error, reason} -> {:error, {key, reason}}
     end
   end
 
-  defp maybe_interval_to_seconds(_), do: nil
+  @doc """
+  Normalize a retention time unit into its second multiplier.
 
-  @interval_units %{
-    "seconds" => :seconds,
-    "second" => :seconds,
-    "secs" => :seconds,
-    "sec" => :seconds,
-    "minutes" => :minutes,
-    "minute" => :minutes,
-    "mins" => :minutes,
-    "min" => :minutes,
-    "hours" => :hours,
-    "hour" => :hours,
-    "days" => :days,
-    "day" => :days,
-    "weeks" => :weeks,
-    "week" => :weeks
+  Accepts atoms or strings with arbitrary casing/whitespace. Returns
+  `{:ok, seconds}` for known units or `{:error, :unknown_unit}` otherwise.
+
+  ## Examples
+
+      iex> #{__MODULE__}.normalize_unit(" HoUrS ")
+      {:ok, 3_600}
+
+      iex> #{__MODULE__}.normalize_unit(:days)
+      {:ok, 86_400}
+
+      iex> #{__MODULE__}.normalize_unit("parsecs")
+      {:error, :unknown_unit}
+
+  """
+  @spec normalize_unit(term()) :: {:ok, pos_integer()} | {:error, :unknown_unit}
+  def normalize_unit(unit)
+
+  @unit_seconds %{
+    "s" => 1,
+    "sec" => 1,
+    "secs" => 1,
+    "second" => 1,
+    "seconds" => 1,
+    "m" => 60,
+    "min" => 60,
+    "mins" => 60,
+    "minute" => 60,
+    "minutes" => 60,
+    "h" => 3_600,
+    "hr" => 3_600,
+    "hrs" => 3_600,
+    "hour" => 3_600,
+    "hours" => 3_600,
+    "d" => 86_400,
+    "day" => 86_400,
+    "days" => 86_400,
+    "w" => 604_800,
+    "week" => 604_800,
+    "weeks" => 604_800
   }
 
-  defp normalize_unit(unit) when is_atom(unit) do
+  def normalize_unit(unit) when is_atom(unit) do
     unit
     |> Atom.to_string()
     |> normalize_unit()
   end
 
-  defp normalize_unit(unit) when is_binary(unit) do
-    unit
-    |> String.trim()
-    |> String.downcase()
-    |> then(&Map.get(@interval_units, &1))
+  def normalize_unit(unit) when is_binary(unit) do
+    sanitized =
+      unit
+      |> String.trim()
+      |> String.downcase()
+
+    case Map.fetch(@unit_seconds, sanitized) do
+      {:ok, seconds} -> {:ok, seconds}
+      :error -> {:error, :unknown_unit}
+    end
   end
 
-  defp normalize_unit(_), do: nil
+  def normalize_unit(_), do: {:error, :unknown_unit}
+
+  @spec interval_to_seconds(nil | integer() | {term(), term()}) ::
+          {:ok, non_neg_integer() | nil} | {:error, term()}
+  defp interval_to_seconds(nil), do: {:ok, nil}
+
+  defp interval_to_seconds(value) when is_integer(value) do
+    if value >= 0 do
+      {:ok, value}
+    else
+      {:error, :negative_interval}
+    end
+  end
+
+  defp interval_to_seconds({unit, value}) when is_integer(value) do
+    if value < 0 do
+      {:error, :negative_interval}
+    else
+      with {:ok, seconds_per_unit} <- normalize_unit(unit) do
+        {:ok, value * seconds_per_unit}
+      end
+    end
+  end
+
+  defp interval_to_seconds({unit, value}) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, ""} -> interval_to_seconds({unit, int})
+      _ -> {:error, :invalid_interval}
+    end
+  end
+
+  defp interval_to_seconds(value) when is_binary(value) do
+    case Integer.parse(String.trim(value)) do
+      {int, ""} -> interval_to_seconds(int)
+      _ -> {:error, :invalid_interval}
+    end
+  end
+
+  defp interval_to_seconds(_), do: {:error, :invalid_interval}
 
   defp normalize_metadata(nil), do: %{}
   defp normalize_metadata(%{} = map), do: map
