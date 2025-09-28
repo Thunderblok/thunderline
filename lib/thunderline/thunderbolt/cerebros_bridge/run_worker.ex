@@ -23,22 +23,31 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
   """
   use Oban.Worker, queue: :ml, max_attempts: 1
 
+  alias Thunderline.Thunderbolt.Cerebros.Telemetry
   alias Thunderline.Thunderbolt.CerebrosBridge.{Client, Contracts, Persistence}
   alias Thunderline.Thunderflow.ErrorClass
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args}) when is_map(args) do
-    if Client.enabled?() do
-      do_perform(args)
-    else
-      {:discard, :bridge_disabled}
+  def perform(%Oban.Job{} = job) do
+    case job.args do
+      %{} = args ->
+        run_id = Map.get(args, "run_id") || default_run_id()
+
+        emit_run_queued(run_id, job)
+
+        if Client.enabled?() do
+          args = Map.put_new(args, "run_id", run_id)
+          do_perform(run_id, args, job)
+        else
+          {:discard, :bridge_disabled}
+        end
+
+      _ ->
+        {:discard, :invalid_args}
     end
   end
 
-  def perform(_job), do: {:discard, :invalid_args}
-
-  defp do_perform(args) do
-    run_id = Map.get(args, "run_id") || default_run_id()
+  defp do_perform(run_id, args, job) do
     meta = Map.get(args, "meta", %{}) |> normalize_string_keys()
     spec = Map.get(args, "spec", %{}) |> normalize_string_keys()
     budget = Map.get(args, "budget", %{}) |> normalize_string_keys()
@@ -59,47 +68,139 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
       extra: extra
     }
 
-    with {:ok, _run_record} <- Persistence.ensure_run_record(start_contract, spec),
-         {:ok, start_resp} <- Client.start_run(start_contract, meta: meta),
-         :ok <- Persistence.record_run_started(start_contract, start_resp, spec),
-         :ok <- process_trials(run_id, start_resp, meta, spec),
-         finalize_contract <- build_finalize_contract(run_id, start_contract, start_resp, spec),
-         {:ok, finalize_resp} <- Client.finalize_run(finalize_contract, meta: meta),
-         :ok <- Persistence.record_run_finalized(finalize_contract, finalize_resp, spec) do
-      :ok
-    else
+    run_start_mono = System.monotonic_time()
+
+    case Persistence.ensure_run_record(start_contract, spec) do
+      {:ok, _run_record} ->
+        Telemetry.emit_run_started(%{
+          run_id: run_id,
+          t0_mono: run_start_mono,
+          model: spec_model(spec),
+          dataset: spec_dataset(spec),
+          budget: budget_snapshot(budget, spec),
+          attempts: job.attempt,
+          correlation_id: correlation_id
+        })
+
+        with {:ok, start_resp} <- Client.start_run(start_contract, meta: meta),
+             :ok <- Persistence.record_run_started(start_contract, start_resp, spec),
+             {:ok, trial_count} <- process_trials(run_id, start_resp, meta, spec, correlation_id),
+             finalize_contract <-
+               build_finalize_contract(run_id, start_contract, start_resp, spec),
+             {:ok, finalize_resp} <- Client.finalize_run(finalize_contract, meta: meta),
+             :ok <- Persistence.record_run_finalized(finalize_contract, finalize_resp, spec) do
+          Telemetry.emit_run_stopped(%{
+            run_id: run_id,
+            duration_ms: duration_ms(run_start_mono),
+            best_metric: select_metric(finalize_contract.metrics),
+            trials: trial_count,
+            best_trial_id: finalize_contract.best_trial_id,
+            artifact_id: artifact_id(finalize_contract.artifact_refs),
+            status: finalize_contract.status,
+            correlation_id: correlation_id
+          })
+
+          :ok
+        else
+          {:error, %ErrorClass{} = error} = err ->
+            on_run_failure(run_id, spec, correlation_id, run_start_mono, error)
+            err
+
+          {:error, reason} = err ->
+            error = unexpected_error(run_id, reason)
+            on_run_failure(run_id, spec, correlation_id, run_start_mono, error)
+            err
+        end
+
       {:error, %ErrorClass{} = error} = err ->
-        Persistence.record_run_failed(run_id, error, spec)
+        on_run_failure(run_id, spec, correlation_id, run_start_mono, error)
         err
 
       {:error, reason} = err ->
         error = unexpected_error(run_id, reason)
-        Persistence.record_run_failed(run_id, error, spec)
+        on_run_failure(run_id, spec, correlation_id, run_start_mono, error)
         err
     end
   end
 
-  defp process_trials(run_id, start_resp, meta, spec) do
-    trials = extract_trials(start_resp)
-
-    Enum.reduce_while(trials, :ok, fn trial_map, _acc ->
+  defp process_trials(run_id, start_resp, meta, spec, correlation_id) do
+    start_resp
+    |> extract_trials()
+    |> Enum.reduce_while({:ok, 0}, fn trial_map, {:ok, count} ->
       contract = build_trial_contract(run_id, trial_map)
+      spec_hash = trial_spec_hash(trial_map, spec)
+      trial_start_mono = System.monotonic_time()
+
+      Telemetry.emit_trial_started(%{
+        run_id: run_id,
+        trial_id: contract.trial_id,
+        spec_hash: spec_hash,
+        t0_mono: trial_start_mono,
+        correlation_id: correlation_id
+      })
 
       case Client.record_trial(contract, meta: meta) do
         {:ok, trial_resp} ->
-          :ok = Persistence.record_trial_reported(contract, trial_resp, spec)
-          {:cont, :ok}
+          case Persistence.record_trial_reported(contract, trial_resp, spec) do
+            :ok ->
+              Telemetry.emit_trial_stopped(%{
+                run_id: run_id,
+                trial_id: contract.trial_id,
+                spec_hash: spec_hash,
+                duration_ms: duration_ms(trial_start_mono),
+                metric: trial_metric(trial_resp, contract),
+                val_loss: trial_val_loss(trial_resp, contract),
+                status: contract.status,
+                correlation_id: correlation_id
+              })
+
+              {:cont, {:ok, count + 1}}
+
+            {:error, reason} ->
+              Telemetry.emit_trial_exception(%{
+                run_id: run_id,
+                trial_id: contract.trial_id,
+                spec_hash: spec_hash,
+                duration_ms: duration_ms(trial_start_mono),
+                class: :persistence_error,
+                reason: inspect(reason),
+                correlation_id: correlation_id
+              })
+
+              {:halt, {:error, reason}}
+          end
 
         {:error, %ErrorClass{} = error} ->
-          Persistence.record_run_failed(run_id, error, spec)
+          Telemetry.emit_trial_exception(%{
+            run_id: run_id,
+            trial_id: contract.trial_id,
+            spec_hash: spec_hash,
+            duration_ms: duration_ms(trial_start_mono),
+            class: error.class,
+            reason: error_reason(error),
+            correlation_id: correlation_id
+          })
+
           {:halt, {:error, error}}
 
         {:error, reason} ->
-          error = unexpected_error(run_id, reason)
-          Persistence.record_run_failed(run_id, error, spec)
-          {:halt, {:error, error}}
+          Telemetry.emit_trial_exception(%{
+            run_id: run_id,
+            trial_id: contract.trial_id,
+            spec_hash: spec_hash,
+            duration_ms: duration_ms(trial_start_mono),
+            class: :exception,
+            reason: inspect(reason),
+            correlation_id: correlation_id
+          })
+
+          {:halt, {:error, reason}}
       end
     end)
+    |> case do
+      {:ok, count} -> {:ok, count}
+      other -> other
+    end
   end
 
   defp build_trial_contract(run_id, trial_map) do
@@ -176,7 +277,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
 
   defp do_fetch(map, key) when is_binary(key) do
     case Map.fetch(map, key) do
-      {:ok, value} -> value
+      {:ok, value} ->
+        value
+
       :error ->
         case key_to_existing_atom(key) do
           nil -> nil
@@ -199,8 +302,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
     |> normalize_status(default)
   end
 
-  defp normalize_status(value, _default) when value in [:succeeded, :failed, :cancelled, :timeout],
-    do: value
+  defp normalize_status(value, _default)
+       when value in [:succeeded, :failed, :cancelled, :timeout],
+       do: value
 
   defp normalize_status(value, default) when is_atom(value), do: default
 
@@ -276,4 +380,90 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
       context: %{run_id: run_id, reason: inspect(reason)}
     }
   end
+
+  defp emit_run_queued(run_id, %Oban.Job{} = job) do
+    Telemetry.emit_run_queued(%{
+      run_id: run_id,
+      queue_time_ms: queue_time_ms(job),
+      priority: job.priority,
+      queue: job.queue,
+      attempts: job.attempt
+    })
+  end
+
+  defp on_run_failure(run_id, spec, correlation_id, run_start_mono, %ErrorClass{} = error) do
+    Telemetry.emit_run_failed(%{
+      run_id: run_id,
+      duration_ms: duration_ms(run_start_mono),
+      class: error.class,
+      reason: error_reason(error),
+      correlation_id: correlation_id
+    })
+
+    Persistence.record_run_failed(run_id, error, spec)
+  end
+
+  defp duration_ms(nil), do: 0
+
+  defp duration_ms(start_mono) when is_integer(start_mono) do
+    diff = System.monotonic_time() - start_mono
+    diff = if diff < 0, do: 0, else: diff
+    System.convert_time_unit(diff, :native, :millisecond)
+  end
+
+  defp queue_time_ms(%Oban.Job{} = job) do
+    started_at = DateTime.utc_now()
+    scheduled_at = job.scheduled_at || job.inserted_at || started_at
+    max(DateTime.diff(started_at, scheduled_at, :millisecond), 0)
+  end
+
+  defp spec_model(spec), do: Map.get(spec, "model") || Map.get(spec, "architecture")
+
+  defp spec_dataset(spec), do: Map.get(spec, "dataset") || Map.get(spec, "data")
+
+  defp budget_snapshot(budget, spec) do
+    cond do
+      is_map(budget) and map_size(budget) > 0 -> budget
+      is_map(spec) -> Map.take(spec, ["requested_trials", "max_params", "budget"])
+      true -> %{}
+    end
+  end
+
+  defp artifact_id(list) when is_list(list), do: List.first(list)
+  defp artifact_id(_), do: nil
+
+  defp trial_spec_hash(trial_map, spec) do
+    source =
+      %{
+        trial: Map.take(trial_map, ["trial_id", "parameters", "rank", "candidate_id"]),
+        spec: spec
+      }
+
+    :erlang.phash2(source)
+  end
+
+  defp trial_metric(trial_resp, contract) do
+    metrics = Map.get(trial_resp, :metrics) || Map.get(trial_resp, "metrics") || contract.metrics
+    select_metric(metrics)
+  end
+
+  defp trial_val_loss(trial_resp, contract) do
+    metrics = Map.get(trial_resp, :metrics) || Map.get(trial_resp, "metrics") || contract.metrics
+    fetch(metrics || %{}, :val_loss)
+  end
+
+  defp select_metric(metrics) when is_map(metrics) do
+    metrics
+    |> Enum.find_value(fn
+      {_key, value} when is_number(value) -> value
+      {_key, %{} = nested} -> select_metric(nested)
+      _ -> nil
+    end)
+  end
+
+  defp select_metric(_), do: nil
+
+  defp error_reason(%ErrorClass{context: %{reason: reason}}) when is_binary(reason), do: reason
+  defp error_reason(%ErrorClass{context: %{reason: reason}}), do: inspect(reason)
+  defp error_reason(%ErrorClass{} = error), do: inspect(Map.from_struct(error))
 end

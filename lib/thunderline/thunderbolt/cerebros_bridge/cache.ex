@@ -129,13 +129,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Cache do
     raw = Application.get_env(:thunderline, :cerebros_bridge, [])
     cache = Keyword.get(raw, :cache, [])
 
-    %{
-      state
-      | table: table,
-        enabled?: truthy?(Keyword.get(cache, :enabled, true)),
-        ttl_ms: Keyword.get(cache, :ttl_ms, 30_000),
-        max_entries: Keyword.get(cache, :max_entries, 512)
-    }
+    state
+    |> Map.put(:table, table)
+    |> Map.put(:enabled?, truthy?(Keyword.get(cache, :enabled, true)))
+    |> Map.put(:ttl_ms, Keyword.get(cache, :ttl_ms, 30_000))
+    |> Map.put(:max_entries, Keyword.get(cache, :max_entries, 512))
   end
 
   defp maybe_evict(%{max_entries: max, table: table}) when is_integer(max) and max > 0 do

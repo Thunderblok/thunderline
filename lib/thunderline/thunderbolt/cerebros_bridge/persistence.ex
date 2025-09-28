@@ -7,6 +7,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
 
   alias Ash.Changeset
   alias Ash.Query
+  require Ash.Query
   alias Thunderline.Thunderbolt.CerebrosBridge.Contracts
   alias Thunderline.Thunderbolt.Domain
   alias Thunderline.Thunderbolt.Resources.{ModelRun, ModelTrial}

@@ -49,28 +49,28 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
     create :create do
       accept [:run_id, :search_space_version, :max_params, :requested_trials, :metadata]
       change set_attribute(:state, :initialized)
-      change {__MODULE__, :ensure_run_id, []}
+      change fn changeset, context -> ensure_run_id(changeset, context) end
     end
 
     update :start do
       accept [:bridge_payload]
       change transition_state(:running)
       change set_attribute(:started_at, &DateTime.utc_now/0)
-      change {__MODULE__, :merge_bridge_payload, []}
+      change fn changeset, context -> merge_bridge_payload(changeset, context) end
     end
 
     update :complete do
       accept [:best_metric, :completed_trials, :metadata, :bridge_result]
       change transition_state(:succeeded)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
-      change {__MODULE__, :merge_bridge_result, []}
+      change fn changeset, context -> merge_bridge_result(changeset, context) end
     end
 
     update :fail do
       accept [:error_message, :bridge_result]
       change transition_state(:failed)
       change set_attribute(:finished_at, &DateTime.utc_now/0)
-      change {__MODULE__, :merge_bridge_result, []}
+      change fn changeset, context -> merge_bridge_result(changeset, context) end
     end
 
     update :cancel do
@@ -158,21 +158,32 @@ defmodule Thunderline.Thunderbolt.Resources.ModelRun do
   end
 
   def ensure_run_id(changeset, _context) do
-    case Ash.Changeset.get_attribute(changeset, :run_id) do
-      nil -> Ash.Changeset.set_attribute(changeset, :run_id, UUID.v7())
-      _ -> changeset
-    end
+    updated =
+      case Ash.Changeset.get_attribute(changeset, :run_id) do
+        nil -> Ash.Changeset.set_attribute(changeset, :run_id, UUID.v7())
+        _ -> changeset
+      end
+
+    {:ok, updated}
   end
 
   def merge_bridge_payload(changeset, _context) do
     payload = Ash.Changeset.get_attribute(changeset, :bridge_payload) || %{}
     existing = (Ash.Changeset.get_data(changeset).bridge_payload || %{}) |> Map.new()
-    Ash.Changeset.set_attribute(changeset, :bridge_payload, Map.merge(existing, payload))
+
+    updated =
+      Ash.Changeset.set_attribute(changeset, :bridge_payload, Map.merge(existing, payload))
+
+    {:ok, updated}
   end
 
   def merge_bridge_result(changeset, _context) do
     result = Ash.Changeset.get_attribute(changeset, :bridge_result) || %{}
     existing = (Ash.Changeset.get_data(changeset).bridge_result || %{}) |> Map.new()
-    Ash.Changeset.set_attribute(changeset, :bridge_result, Map.merge(existing, result))
+
+    updated =
+      Ash.Changeset.set_attribute(changeset, :bridge_result, Map.merge(existing, result))
+
+    {:ok, updated}
   end
 end

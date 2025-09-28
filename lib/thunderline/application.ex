@@ -19,6 +19,7 @@ defmodule Thunderline.Application do
     maybe_vault_child(),
     {Phoenix.PubSub, name: Thunderline.PubSub},
     {Task.Supervisor, name: Thunderline.TaskSupervisor},
+  Thunderline.Thunderbolt.Cerebros.Metrics,
     Thunderline.Thunderbolt.CerebrosBridge.Cache,
     Thunderline.Thunderflow.EventBuffer,
     Thunderline.Thunderflow.Blackboard,
