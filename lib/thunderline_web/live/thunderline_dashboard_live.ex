@@ -17,6 +17,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   alias Thunderline.EventBus
   alias Thunderline.Thunderflow.Observability.NDJSON
   alias Thunderline.Thunderblock.Checkpoint
+  alias Thunderline.Thunderbolt.Cerebros.Summary, as: CerebrosSummary
+  alias Thunderline.Thunderbolt.CerebrosBridge
+  alias Thunderline.Thunderbolt.CerebrosBridge.{RunOptions, Validator}
+  alias Thunderline.UUID
 
   # Domain tree used by helper functions (was removed earlier; re-added).
   @sample_domains [
@@ -32,6 +36,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       ]
     }
   ]
+
+  @cerebros_run_topic "cerebros:runs"
+  @cerebros_trial_topic "cerebros:trials"
 
   @impl true
   def mount(_params, _session, socket) do
@@ -49,6 +56,9 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       for t <- ["thunderline:metrics:update", "thunderline:agents:batch_update"] do
         safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, t) end)
       end
+
+      safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, @cerebros_run_topic) end)
+      safe_try(fn -> PubSub.subscribe(Thunderline.PubSub, @cerebros_trial_topic) end)
 
       :timer.send_interval(5_000, self(), :refresh_kpis)
       :timer.send_interval(3_000, self(), :refresh_events)
@@ -133,6 +143,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       |> assign(:ai_messages, [])
       |> assign(:ai_busy, false)
       |> assign_new(:admin_tab_open, fn -> false end)
+      |> assign_cerebros_summary()
 
     Logger.debug("[DashboardLive] mount end assigns_keys=#{socket.assigns |> map_size()}")
     {:ok, socket}
@@ -363,7 +374,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             </div>
           </section>
         </div>
-        
+
     <!-- Column 2: KPIs + Event Flow + Controls -->
         <div class="space-y-6">
           <!-- 3. KPIs -->
@@ -448,9 +459,128 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
               </button>
             </div>
             <p class="mt-3 text-[10px] text-surface-soft">actions affect selected node (future)</p>
+            <% summary = @cerebros_summary || %{} %>
+            <div class="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 space-y-4 text-sm">
+              <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-sky-400" />
+                <h4 class="font-semibold">Cerebros NAS</h4>
+                <span class="badge badge-outline badge-xs ml-auto">
+                  {if Map.get(summary, :enabled?, false), do: "enabled", else: "disabled"}
+                </span>
+              </div>
+              <%= if Map.get(summary, :enabled?, false) do %>
+                <% active_run = Map.get(summary, :active_run) %>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-surface-muted">Active run</span>
+                    <%= if Map.get(summary, :mlflow_tracking_uri) do %>
+                      <a
+                        href={Map.get(summary, :mlflow_tracking_uri)}
+                        target="_blank"
+                        rel="noopener"
+                        class="link text-[11px]"
+                      >
+                        MLflow
+                      </a>
+                    <% end %>
+                  </div>
+                  <%= if active_run do %>
+                    <div class="rounded-lg border border-white/10 bg-black/20 p-3 text-xs">
+                      <div class="flex items-center gap-2">
+                        <span class="font-semibold text-surface-strong">
+                          {cerebros_short_id(Map.get(active_run, :run_id))}
+                        </span>
+                        <span class={cerebros_badge_class(Map.get(active_run, :state))}>
+                          {format_cerebros_state(Map.get(active_run, :state))}
+                        </span>
+                        <span class="ml-auto text-[10px] text-surface-muted">
+                          started {format_cerebros_timestamp(Map.get(active_run, :started_at))}
+                        </span>
+                      </div>
+                      <div class="mt-1 flex items-center justify-between text-[11px] text-surface-subtle">
+                        <span>Trials {Map.get(active_run, :completed_trials, 0)}</span>
+                        <span>Best {format_cerebros_metric(Map.get(active_run, :best_metric))}</span>
+                      </div>
+                      <%= if msg = Map.get(active_run, :error_message) do %>
+                        <p class="mt-2 text-[11px] text-error">{msg}</p>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <p class="text-xs text-surface-subtle">
+                      No active run. Launch one to populate live metrics.
+                    </p>
+                  <% end %>
+                </div>
+                <% runs = Map.get(summary, :runs, []) |> Enum.take(3) %>
+                <div class="space-y-2">
+                  <div class="text-xs font-semibold text-surface-strong">Recent runs</div>
+                  <%= if runs == [] do %>
+                    <p class="text-[11px] text-surface-subtle">No runs recorded yet.</p>
+                  <% else %>
+                    <ul class="space-y-2 text-[11px]">
+                      <%= for run <- runs do %>
+                        <li class="flex items-center gap-2">
+                          <span class="font-medium text-surface-strong">
+                            {cerebros_short_id(Map.get(run, :run_id))}
+                          </span>
+                          <span class={cerebros_badge_class(Map.get(run, :state))}>
+                            {format_cerebros_state(Map.get(run, :state))}
+                          </span>
+                          <span class="ml-auto text-surface-muted">
+                            best {format_cerebros_metric(Map.get(run, :best_metric))}
+                          </span>
+                        </li>
+                      <% end %>
+                    </ul>
+                  <% end %>
+                </div>
+                <% trials = Map.get(summary, :trials, []) |> Enum.take(3) %>
+                <%= if trials != [] do %>
+                  <div class="space-y-2">
+                    <div class="text-xs font-semibold text-surface-strong">Latest trials</div>
+                    <ul class="space-y-2 text-[11px]">
+                      <%= for trial <- trials do %>
+                        <li class="flex items-center gap-2">
+                          <span class="font-medium text-surface-strong">
+                            {cerebros_short_id(Map.get(trial, :trial_id))}
+                          </span>
+                          <span class={cerebros_badge_class(Map.get(trial, :status))}>
+                            {format_cerebros_state(Map.get(trial, :status))}
+                          </span>
+                          <span class="text-surface-muted">
+                            {format_cerebros_metric(Map.get(trial, :metric))}
+                          </span>
+                          <span class="ml-auto text-[10px] text-surface-soft">
+                            {format_cerebros_timestamp(Map.get(trial, :inserted_at))}
+                          </span>
+                        </li>
+                      <% end %>
+                    </ul>
+                  </div>
+                <% end %>
+                <button
+                  class={[
+                    "btn btn-accent btn-sm w-full",
+                    not Map.get(summary, :enabled?, false) && "btn-disabled opacity-50"
+                  ]}
+                  phx-click="launch_cerebros_run"
+                  disabled={!Map.get(summary, :enabled?, false)}
+                >
+                  Launch quick NAS run
+                </button>
+                <p class="text-[10px] text-surface-soft">
+                  Uses default spec via Cerebros bridge; switch to MLflow for deeper analytics.
+                </p>
+              <% else %>
+                <p class="text-xs text-surface-subtle">
+                  Cerebros bridge is disabled. Export <code>CEREBROS_ENABLED=1</code> and rerun the
+                  dashboard to enable NAS orchestration.
+                </p>
+              <% end %>
+            </div>
           </section>
         </div>
-        
+
     <!-- Column 3: Peers + Trends (+ AI assistant) -->
         <div class="space-y-6">
           <!-- 4. Peers -->
@@ -616,6 +746,40 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   end
 
   @impl true
+  def handle_event("launch_cerebros_run", _params, socket) do
+    summary = socket.assigns[:cerebros_summary] || CerebrosSummary.snapshot()
+
+    if Map.get(summary, :enabled?, false) do
+      operator = dashboard_operator(socket.assigns[:current_user])
+      meta_override = %{"trigger" => "dashboard_quick_run"}
+      spec = Validator.default_spec()
+
+      case RunOptions.prepare(spec, source: "dashboard", operator: operator, meta: meta_override) do
+        {:error, :invalid_spec} ->
+          {:noreply, put_flash(socket, :error, "Unable to prepare NAS spec")}
+
+        {run_id, prepared_spec, enqueue_opts} ->
+          case CerebrosBridge.enqueue_run(prepared_spec, enqueue_opts) do
+            {:ok, _job} ->
+              {:noreply,
+               socket
+               |> put_flash(:info, "Queued NAS run #{cerebros_short_id(run_id)}")
+               |> refresh_cerebros_summary()}
+
+            {:error, :bridge_disabled} ->
+              {:noreply, put_flash(socket, :error, "Cerebros bridge disabled")}
+
+            {:error, reason} ->
+              {:noreply,
+               put_flash(socket, :error, "Failed to enqueue NAS run: #{inspect(reason)}")}
+          end
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Enable the ml_nas feature flag to run Cerebros")}
+    end
+  end
+
+  @impl true
   def handle_event("select_map_node", %{"id" => id}, socket) do
     # Blank id clears selection. Ignore unknown ids gracefully.
     id = empty_to_nil(id)
@@ -683,6 +847,13 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     |> assign(:edge_counts, edge_counts)
     |> assign(:domain_map_health, health)
   end
+
+  defp assign_cerebros_summary(socket) do
+    summary = CerebrosSummary.snapshot()
+    assign(socket, :cerebros_summary, summary)
+  end
+
+  defp refresh_cerebros_summary(socket), do: assign_cerebros_summary(socket)
 
   # ---- Data & formatting helpers ------------------------------------------------
   defp compute_kpis do
@@ -1210,6 +1381,16 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   end
 
   @impl true
+  def handle_info({:run_update, _update}, socket) do
+    {:noreply, refresh_cerebros_summary(socket)}
+  end
+
+  @impl true
+  def handle_info({:trial_update, _update}, socket) do
+    {:noreply, refresh_cerebros_summary(socket)}
+  end
+
+  @impl true
   def handle_info({:dashboard_batch_update, %{"updates" => updates} = payload}, socket) do
     # Convert realtime pipeline updates to UI-friendly events and append to feed
     Logger.debug(
@@ -1372,6 +1553,53 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     keys = data |> Map.delete("component") |> Map.delete(:component) |> Map.keys() |> Enum.take(3)
     (comp && to_string(comp) <> ": ") <> Enum.join(Enum.map(keys, &to_string/1), ",")
   end
+
+  defp dashboard_operator(%{email: email}) when is_binary(email) and email != "", do: email
+  defp dashboard_operator(%{name: name}) when is_binary(name) and name != "", do: name
+  defp dashboard_operator(%{"email" => email}) when is_binary(email) and email != "", do: email
+  defp dashboard_operator(%{"name" => name}) when is_binary(name) and name != "", do: name
+  defp dashboard_operator(_), do: "dashboard"
+
+  defp cerebros_short_id(nil), do: "n/a"
+  defp cerebros_short_id(id) when is_binary(id), do: String.slice(id, 0, 8)
+  defp cerebros_short_id(id), do: to_string(id)
+
+  defp cerebros_badge_class(:running), do: "badge badge-info badge-sm"
+  defp cerebros_badge_class(:succeeded), do: "badge badge-success badge-sm"
+  defp cerebros_badge_class(:failed), do: "badge badge-error badge-sm"
+  defp cerebros_badge_class(:cancelled), do: "badge badge-ghost badge-sm"
+  defp cerebros_badge_class(:initialized), do: "badge badge-outline badge-sm"
+  defp cerebros_badge_class(_), do: "badge badge-outline badge-sm"
+
+  defp format_cerebros_state(state) when is_atom(state),
+    do: state |> Atom.to_string() |> String.upcase()
+
+  defp format_cerebros_state(state) when is_binary(state), do: String.upcase(state)
+  defp format_cerebros_state(state), do: state |> to_string() |> String.upcase()
+
+  defp format_cerebros_metric(nil), do: "n/a"
+
+  defp format_cerebros_metric(value) when is_float(value) do
+    :erlang.float_to_binary(value, decimals: 4)
+  end
+
+  defp format_cerebros_metric(value) when is_integer(value), do: Integer.to_string(value)
+  defp format_cerebros_metric(value), do: to_string(value)
+
+  defp format_cerebros_timestamp(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%H:%M:%S")
+  rescue
+    _ -> DateTime.to_iso8601(dt)
+  end
+
+  defp format_cerebros_timestamp(%NaiveDateTime{} = dt) do
+    Calendar.strftime(dt, "%H:%M:%S")
+  rescue
+    _ -> NaiveDateTime.to_iso8601(dt)
+  end
+
+  defp format_cerebros_timestamp(nil), do: "-"
+  defp format_cerebros_timestamp(other), do: to_string(other)
 
   # Role-gated helper for Admin visibility
   defp can_admin?(%{role: role}) when role in [:owner, :steward, :system], do: true
