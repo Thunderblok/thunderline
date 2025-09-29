@@ -48,15 +48,15 @@ defmodule Thunderline.Thundercrown.AgentRunnerTest do
     end
 
     test "unknown tool returns error" do
-  assert {:error, %Ash.Error.Unknown{} = error} =
-       AgentRunner.run("invalid_tool", "{}", actor: @actor)
+      assert {:error, %Ash.Error.Unknown{} = error} =
+               AgentRunner.run("invalid_tool", "{}", actor: @actor)
 
-  assert Exception.message(error) =~ "unknown_tool"
+      assert Exception.message(error) =~ "unknown_tool"
     end
 
     test "malformed prompt returns error" do
-  assert {:error, reason} = AgentRunner.run("list_available_zones", "not-json", actor: @actor)
-  assert Exception.message(reason) =~ "Unable to decode prompt"
+      assert {:error, reason} = AgentRunner.run("list_available_zones", "not-json", actor: @actor)
+      assert Exception.message(reason) =~ "Unable to decode prompt"
     end
   end
 end

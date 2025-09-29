@@ -96,6 +96,10 @@ env:
 
 ## Validation + tooling
 
+`mix thunderline.ml.prepare` aggregates feature flag checks, Oban queue coverage, and
+delegates to the validator so you can fix issues before scheduling a run. Use
+`--require-enabled` to hard-fail when the bridge config is still disabled.
+
 `mix thunderline.ml.validate` runs the validator checks. Options:
 
 * `--require-enabled` – treat a disabled `enabled: false` config as an error.
@@ -125,23 +129,25 @@ The validator already powers our CI smoke test (`mix test test/thunderline/thund
 
 Use this runbook to validate a Thunderhelm deployment end to end:
 
-1. **Prepare values:** Start from `thunderhelm/deploy/chart/examples/values-hpo-demo.yaml`, then ensure
+1. **Run local readiness check:** `mix thunderline.ml.prepare --require-enabled` should report
+   everything green before you deploy.
+2. **Prepare values:** Start from `thunderhelm/deploy/chart/examples/values-hpo-demo.yaml`, then ensure
   * `env.CEREBROS_ENABLED="true"`
   * `env.FEATURES` includes `ml_nas,cerebros_bridge`
   * Cerebros repo/script paths are mounted and referenced (`CEREBROS_REPO`, `CEREBROS_SCRIPT`, `CEREBROS_PYTHON`)
-  * Oban queues cover `ml_runs` (or your chosen worker queue)
-2. **Deploy chart:**
+  * Oban queues include `ml` (or change `RunWorker`'s queue to match your chosen name)
+3. **Deploy chart:**
   ```bash
   helm upgrade --install thunderline ./thunderhelm/deploy/chart \
     -f thunderhelm/deploy/chart/examples/values-hpo-demo.yaml \
     --set image.tag=$(git rev-parse --short HEAD)
   ```
-3. **Run validator in-cluster:**
+4. **Run validator in-cluster:**
   ```bash
   kubectl exec deploy/thunderline-worker -- \
     mix thunderline.ml.validate --require-enabled
   ```
-4. **Queue a NAS run:**
+5. **Queue a NAS run:**
   ```bash
   kubectl exec deploy/thunderline-worker -- \
     iex --remsh thunderline@$(hostname) --eval '
@@ -150,11 +156,11 @@ Use this runbook to validate a Thunderhelm deployment end to end:
      |> Oban.insert()
     '
   ```
-5. **Verify observability:**
+6. **Verify observability:**
   * Follow worker logs: `kubectl logs deploy/thunderline-worker -f`
   * Port-forward `thunderline-web` and load `/cerebros` plus `/api/cerebros/metrics`
   * Inspect metrics directly: `kubectl exec deploy/thunderline-worker -- iex --remsh … --eval 'Thunderline.Thunderbolt.Cerebros.Metrics.snapshot()'`
-6. **Confirm persistence:** Use AshAdmin (`/admin`) or direct `ModelRun`/`ModelTrial` Ash queries to ensure the run id propagated.
+7. **Confirm persistence:** Use AshAdmin (`/admin`) or direct `ModelRun`/`ModelTrial` Ash queries to ensure the run id propagated.
 
 Capture gaps (missing env, MLflow artifact paths, bridge stderr) in follow-up issues before promoting beyond smoke testing.
 

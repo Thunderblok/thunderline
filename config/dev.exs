@@ -59,7 +59,18 @@ config :thunderline, ThunderlineWeb.Endpoint,
   ]
 
 # Development feature flags (compile-time for Feature module)
-config :thunderline, :features, ca_viz: true, ai_chat_panel: true, tocp: false
+config :thunderline, :features,
+  ca_viz: true,
+  ai_chat_panel: true,
+  tocp: false,
+  ml_nas: true,
+  cerebros_bridge: true
+
+dev_cerebros_bridge_config =
+  Application.compile_env(:thunderline, :cerebros_bridge, [])
+  |> Keyword.put(:enabled, true)
+
+config :thunderline, :cerebros_bridge, dev_cerebros_bridge_config
 
 # ## SSL Support
 #

@@ -9,11 +9,16 @@ defmodule Thunderline.Repo.Migrations.CreateThundercoreAgents do
       add :status, :text, null: false, default: "starting"
       add :capabilities, :map, null: false, default: %{}
       add :current_task, :text
-      add :last_heartbeat, :utc_datetime_usec, null: false, default: fragment("(now() AT TIME ZONE 'utc')")
+
+      add :last_heartbeat, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
 
       timestamps(type: :utc_datetime_usec)
     end
 
-    create unique_index(:thundercore_agents, [:agent_name], name: :thundercore_agents_unique_agent_name_index)
+    create unique_index(:thundercore_agents, [:agent_name],
+             name: :thundercore_agents_unique_agent_name_index
+           )
   end
 end

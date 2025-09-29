@@ -144,6 +144,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
   defp atomize_keys(map) when is_map(map) do
     Enum.reduce(map, %{}, fn {key, val}, acc ->
       normalized_key = normalize_key(key)
+
       normalized_value =
         cond do
           is_map(val) -> atomize_keys(val)

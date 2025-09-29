@@ -131,6 +131,7 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
              )
     end
   end
+
   validations do
     validate present([:q, :r, :aspect])
     validate numericality(:entropy, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)

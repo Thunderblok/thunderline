@@ -30,9 +30,7 @@ defmodule Thunderline.Repo.Migrations.EnsureCerebrosModelRunBridgeColumns do
     execute("ALTER TABLE cerebros_model_runs ALTER COLUMN bridge_result SET NOT NULL")
     execute("ALTER TABLE cerebros_model_runs ALTER COLUMN bridge_result SET DEFAULT '{}'::jsonb")
 
-    execute(
-      "CREATE UNIQUE INDEX IF NOT EXISTS #{@run_id_index} ON cerebros_model_runs (run_id)"
-    )
+    execute("CREATE UNIQUE INDEX IF NOT EXISTS #{@run_id_index} ON cerebros_model_runs (run_id)")
   end
 
   def down do

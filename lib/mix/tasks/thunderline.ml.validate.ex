@@ -47,7 +47,11 @@ defmodule Mix.Tasks.Thunderline.Ml.Validate do
   defp emit_table(%{status: status, checks: checks}) do
     Mix.shell().info(["\n", color_status(status), " Cerebros Bridge Validation", :reset])
 
-    Enum.each(checks, fn %{name: name, status: check_status, message: message, metadata: meta} ->
+    Enum.each(checks, fn check ->
+      name = Map.fetch!(check, :name)
+      check_status = Map.fetch!(check, :status)
+      message = Map.fetch!(check, :message)
+      meta = Map.get(check, :metadata)
       indicator = status_indicator(check_status)
       Mix.shell().info(["  ", indicator, " ", format_name(name), ": ", message])
 
