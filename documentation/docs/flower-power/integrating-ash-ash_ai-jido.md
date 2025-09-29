@@ -197,6 +197,8 @@ end
 
 - A runner (Oban job or Jido plan) reads DatasetSpec, creates a ModelRun, spawns Trials, records results, and finalizes.
 
+> ℹ️ **Implementation delta (Sep 2025):** The production `ModelRun` resource now enforces a non-null, unique `run_id` and persists bridge context in JSON columns (`bridge_payload`, `bridge_result`) so the Cerebros bridge can replay requests idempotently. Any new persistence logic or migrations must respect these defaults and avoid inserting runs without a stable `run_id`.
+
 ## 5) Jido cognitive loop under Ash policies
 
 Wrap the agent cycle with Ash actions. Each step invokes Jido workflows but is policy-guarded.
