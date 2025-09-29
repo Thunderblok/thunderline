@@ -66,6 +66,9 @@ jobs:
       - name: Event Taxonomy Lint
         run: mix thunderline.events.lint --format=json
 
+      - name: EventBus Telemetry Assertions
+        run: SKIP_ASH_SETUP=true mix test test/thunderflow/event_bus_telemetry_test.exs
+
       - name: DB Setup
         run: mix ash.setup
 
