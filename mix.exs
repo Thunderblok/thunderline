@@ -94,7 +94,6 @@ defmodule Thunderline.MixProject do
       # Type-safe TS client & RPC bridge
       {:ash_typescript, github: "ash-project/ash_typescript", ref: "main"},
       # Additional deps
-      {:uuid, "~> 1.1"},
       {:broadway, "~> 1.0"},
       {:picosat_elixir, "~> 0.2"},
       {:sourceror, "~> 1.10"},
@@ -158,12 +157,19 @@ defmodule Thunderline.MixProject do
     jido_git_deps =
       if jido_enabled? do
         [
-          # Use latest available pre-release tag for jido (v1.1.0-rc.1)
-          {:jido, github: "agentjido/jido", tag: "v1.1.0-rc.1", override: true},
-          {:jido_action, github: "agentjido/jido_action", ref: "main", override: true},
-          # Keep jido_signal on main until a matching release tag supports rc.1 struct shape
-          {:jido_signal, github: "agentjido/jido_signal", ref: "main", override: true},
-          {:jido_behaviortree, github: "agentjido/jido_behaviortree", ref: "main", override: true}
+          # Pin post-refactor commits so Action/Instruction live in jido_action package.
+          {:jido,
+           github: "agentjido/jido",
+           ref: "627dd2f0fc38b8258fe2e342544cbde5a6429a8d",
+           override: true},
+          {:jido_behaviortree,
+           github: "agentjido/jido_behaviortree",
+           ref: "4fb8ed1a11ba8d57f6bdde77d550ee32b78a1a32",
+           override: true},
+          {:jido_action,
+           github: "agentjido/jido_action",
+           ref: "68775d806d45218ea58ae0fa097478c246c21f78",
+           override: true}
         ]
       else
         []

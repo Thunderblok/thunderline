@@ -7,8 +7,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
 
   require Logger
 
-  alias Jido.Error
-  alias Jido.Workflow
+  alias Jido.Exec
   alias Thunderline.Thundercrown.Jido.ActionRegistry
 
   code_interface do
@@ -179,7 +178,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
       |> Enum.reject(fn {_k, v} -> is_nil(v) end)
       |> Enum.into(%{})
 
-    case Workflow.run(module, params, context, timeout: 15_000) do
+  case Exec.run(module, params, context, timeout: 15_000) do
       {:ok, %{} = result} ->
         {:ok, result}
 
@@ -191,9 +190,6 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
 
       {:ok, result, extras} ->
         {:ok, %{value: result, extras: extras}}
-
-      {:error, %Error{} = error} ->
-        {:error, error}
 
       {:error, reason} ->
         {:error, reason}
@@ -217,7 +213,13 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
 
   defp truncate_result(other), do: other
 
-  defp format_error(%Error{} = error), do: error.message
+  defp format_error(%struct{} = error) when is_struct(error) do
+    if function_exported?(struct, :message, 1) do
+      Exception.message(error)
+    else
+      inspect(error)
+    end
+  end
   defp format_error(%{message: message}) when is_binary(message), do: message
   defp format_error({:error, reason}), do: format_error(reason)
   defp format_error(reason) when is_binary(reason), do: reason

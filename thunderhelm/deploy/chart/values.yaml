@@ -182,7 +182,7 @@ mlflow:
 
   image:
     repository: ghcr.io/mlflow/mlflow
-    tag: "2.14.1"
+    tag: "v2.14.1"
     pullPolicy: IfNotPresent
 
   port: 5000

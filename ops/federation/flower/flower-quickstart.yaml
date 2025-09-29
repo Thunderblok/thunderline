@@ -1,0 +1,272 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flower-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower-superlink
+  labels:
+    app: flower-superlink
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower-superlink
+  template:
+    metadata:
+      labels:
+        app: flower-superlink
+    spec:
+      containers:
+        - name: superlink
+          image: flwr/superlink:1.22.0
+          args:
+            - "--insecure"
+            - "--isolation"
+            - "process"
+          ports:
+            - name: serverapp-io
+              containerPort: 9091
+            - name: superlink
+              containerPort: 9092
+            - name: monitoring
+              containerPort: 9093
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flower-superlink
+  labels:
+    app: flower-superlink
+spec:
+  selector:
+    app: flower-superlink
+  ports:
+    - name: serverapp-io
+      port: 9091
+      targetPort: serverapp-io
+    - name: superlink
+      port: 9092
+      targetPort: superlink
+    - name: monitoring
+      port: 9093
+      targetPort: monitoring
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower-supernode-0
+  labels:
+    app: flower-supernode-0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower-supernode-0
+  template:
+    metadata:
+      labels:
+        app: flower-supernode-0
+    spec:
+      containers:
+        - name: supernode
+          image: flwr/supernode:1.22.0
+          args:
+            - "--insecure"
+            - "--superlink"
+            - "flower-superlink:9092"
+            - "--node-config"
+            - "partition-id=0 num-partitions=2"
+            - "--clientappio-api-address"
+            - "0.0.0.0:9094"
+            - "--isolation"
+            - "process"
+          ports:
+            - name: clientapp-io
+              containerPort: 9094
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flower-supernode-0
+  labels:
+    app: flower-supernode-0
+spec:
+  selector:
+    app: flower-supernode-0
+  ports:
+    - name: clientapp-io
+      port: 9094
+      targetPort: clientapp-io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower-supernode-1
+  labels:
+    app: flower-supernode-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower-supernode-1
+  template:
+    metadata:
+      labels:
+        app: flower-supernode-1
+    spec:
+      containers:
+        - name: supernode
+          image: flwr/supernode:1.22.0
+          args:
+            - "--insecure"
+            - "--superlink"
+            - "flower-superlink:9092"
+            - "--node-config"
+            - "partition-id=1 num-partitions=2"
+            - "--clientappio-api-address"
+            - "0.0.0.0:9095"
+            - "--isolation"
+            - "process"
+          ports:
+            - name: clientapp-io
+              containerPort: 9095
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flower-supernode-1
+  labels:
+    app: flower-supernode-1
+spec:
+  selector:
+    app: flower-supernode-1
+  ports:
+    - name: clientapp-io
+      port: 9095
+      targetPort: clientapp-io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower-superexec-serverapp
+  labels:
+    app: flower-superexec-serverapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower-superexec-serverapp
+  template:
+    metadata:
+      labels:
+        app: flower-superexec-serverapp
+    spec:
+      containers:
+        - name: superexec
+          image: ghcr.io/thunderblok/flower-superexec:0.0.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--insecure"
+            - "--plugin-type"
+            - "serverapp"
+            - "--appio-api-address"
+            - "flower-superlink:9091"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower-superexec-clientapp-0
+  labels:
+    app: flower-superexec-clientapp-0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower-superexec-clientapp-0
+  template:
+    metadata:
+      labels:
+        app: flower-superexec-clientapp-0
+    spec:
+      containers:
+        - name: superexec
+          image: ghcr.io/thunderblok/flower-superexec:0.0.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--insecure"
+            - "--plugin-type"
+            - "clientapp"
+            - "--appio-api-address"
+            - "flower-supernode-0:9094"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower-superexec-clientapp-1
+  labels:
+    app: flower-superexec-clientapp-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower-superexec-clientapp-1
+  template:
+    metadata:
+      labels:
+        app: flower-superexec-clientapp-1
+    spec:
+      containers:
+        - name: superexec
+          image: ghcr.io/thunderblok/flower-superexec:0.0.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--insecure"
+            - "--plugin-type"
+            - "clientapp"
+            - "--appio-api-address"
+            - "flower-supernode-1:9095"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"

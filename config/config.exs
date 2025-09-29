@@ -254,7 +254,7 @@ config :esbuild,
 
 # Configure tailwind (the version is required)
 config :tailwind,
-  version: "4.1.7",
+  version: "3.4.15",
   thunderline: [
     args: ~w(
       --input=assets/css/app.css
@@ -337,6 +337,17 @@ config :thunderline, Oban,
     chat_responses: [limit: 10],
     conversations: [limit: 10],
     retention: [limit: 2]
+  ]
+
+config :jido_action,
+  default_registry: System.get_env("JIDO_DEFAULT_REGISTRY", "agentjido.catalog"),
+  router: [
+    base_url: System.get_env("JIDO_ACTION_ROUTER_URL", "https://registry.jido.ai"),
+    request_timeout_ms:
+      case System.get_env("JIDO_ACTION_ROUTER_TIMEOUT_MS") do
+        nil -> 60_000
+        value -> String.to_integer(value)
+      end
   ]
 
 # --- AshOban Trigger Usage Reference ---------------------------------------
