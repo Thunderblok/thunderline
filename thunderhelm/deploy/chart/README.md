@@ -191,6 +191,7 @@ See examples/ in this chart for:
 - values-dev.yaml: simple dev config
 - values-federation-demo.yaml: federation enabled for demo
 - values-hpo-demo.yaml: full MLflow + Cerebros runner + Livebook stack
+- values-dashboard-run.yaml: dashboard-ready stack (Postgres + MinIO + MLflow + Cerebros)
 - values-livebook-tls.yaml: overlay that enables Livebook ingress with cert-manager TLS
 
 Lint and template
