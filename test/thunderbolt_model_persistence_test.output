@@ -1,0 +1,24 @@
+Getting extensions in current project...
+Running setup for AshPostgres.DataLayer...
+[features] enabled: []
+07:53:29.715 [debug] Starting MDNS Resolver
+07:53:29.918 [info] Started Snake Manager
+07:53:29.919 [info] Started Pet Snake Manager
+07:53:30.449 [debug] Loading Initial Jobs from Config
+07:53:30.521 [info] [EventBuffer] started (limit=500) domain=thunderflow
+Running ExUnit with seed: 0, max_cases: 40
+
+07:53:31.035 [debug] QUERY ERROR source="cerebros_model_runs" db=0.0ms queue=26.8ms
+INSERT INTO "cerebros_model_runs" ("id","state","metadata","inserted_at","updated_at","run_id","search_space_version","max_params","requested_trials","completed_trials","bridge_payload","bridge_result") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING "updated_at","inserted_at","finished_at","started_at","bridge_result","bridge_payload","metadata","error_message","best_metric","completed_trials","requested_trials","max_params","search_space_version","state","run_id","id" ["0f4d3ae4-dd8c-4481-96b6-c4f01c8e1a6c", :initialized, %{purpose: "test"}, ~U[2025-09-29 11:53:30.973665Z], ~U[2025-09-29 11:53:30.973665Z], "01999552-1e1e-70eb-89ff-5b6118759e52", 1, 1000, 2, 0, %{}, %{}]
+
+
+  1) test create model run and artifact (Thunderline.ThunderboltModelPersistenceTest)
+     [1m[30mtest/thunderbolt_model_persistence_test.exs:7[0m
+     [31m** (MatchError) no match of right hand side value: {:error, %Ash.Error.Unknown{bread_crumbs: ["Error returned from: Thunderline.Thunderbolt.Resources.ModelRun.create"],  changeset: "#Changeset<>",  errors: [%Ash.Error.Unknown.UnknownError{error: "** (Postgrex.Error) ERROR 42703 (undefined_column) column \"bridge_payload\" of relation \"cerebros_model_runs\" does not exist\n\n    query: INSERT INTO \"cerebros_model_runs\" (\"id\",\"state\",\"metadata\",\"inserted_at\",\"updated_at\",\"run_id\",\"search_space_version\",\"max_params\",\"requested_trials\",\"completed_trials\",\"bridge_payload\",\"bridge_result\") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING \"updated_at\",\"inserted_at\",\"finished_at\",\"started_at\",\"bridge_result\",\"bridge_payload\",\"metadata\",\"error_message\",\"best_metric\",\"completed_trials\",\"requested_trials\",\"max_params\",\"search_space_version\",\"state\",\"run_id\",\"id\"", field: nil, value: nil, splode: Ash.Error, bread_crumbs: ["Error returned from: Thunderline.Thunderbolt.Resources.ModelRun.create"], vars: [], path: [], stacktrace: #Splode.Stacktrace<>, class: :unknown}]}}[0m
+     [36mcode: [0m{:ok, run} =
+     [36mstacktrace:[0m
+       test/thunderbolt_model_persistence_test.exs:8: (test)
+
+
+Finished in 0.2 seconds (0.00s async, 0.2s sync)
+[31m1 test, 1 failure[0m

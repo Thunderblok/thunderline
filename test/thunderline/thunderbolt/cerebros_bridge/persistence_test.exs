@@ -194,7 +194,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PersistenceTest do
           spec
         )
 
-      {:ok, artifacts} = ModelArtifact |> Ash.read()
+      {:ok, artifacts} =
+        ModelArtifact
+        |> Query.filter(model_run_id == ^run.id)
+        |> Ash.read()
+
       assert Enum.count(artifacts) == 1
     end
   end
