@@ -8,13 +8,18 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
 
   use Ash.Resource,
     domain: Thunderline.Thundergrid.Domain,
-    data_layer: AshPostgres.DataLayer
-
-  import Ash.Resource.Change.Builtins
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshGraphql.Resource]
 
   postgres do
     table "zones"
     repo Thunderline.Repo
+  end
+
+  import Ash.Resource.Change.Builtins
+
+  graphql do
+    type :zone
   end
 
   actions do
@@ -126,11 +131,6 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
              )
     end
   end
-
-  preparations do
-    prepare build(load: [:agents])
-  end
-
   validations do
     validate present([:q, :r, :aspect])
     validate numericality(:entropy, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
@@ -164,11 +164,13 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
     attribute :q, :integer do
       allow_nil? false
       description "Q coordinate (horizontal)"
+      public? true
     end
 
     attribute :r, :integer do
       allow_nil? false
       description "R coordinate (diagonal)"
+      public? true
     end
 
     # Zone properties
@@ -176,6 +178,7 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
       allow_nil? false
       default :neutral
       description "Zone classification type"
+      public? true
     end
 
     attribute :entropy, :decimal do
@@ -183,6 +186,7 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
       default Decimal.new("0.0")
       constraints min: 0, max: 1
       description "Chaos level in zone (0.0 to 1.0)"
+      public? true
     end
 
     attribute :energy_level, :decimal do
@@ -190,6 +194,7 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
       default Decimal.new("0.5")
       constraints min: 0, max: 1
       description "Available energy in zone"
+      public? true
     end
 
     attribute :agent_count, :integer do
@@ -197,6 +202,7 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
       default 0
       constraints min: 0
       description "Number of agents currently in zone"
+      public? true
     end
 
     attribute :max_agents, :integer do
@@ -204,18 +210,21 @@ defmodule Thunderline.Thundergrid.Resources.Zone do
       default 10
       constraints min: 1
       description "Maximum agents allowed in zone"
+      public? true
     end
 
     attribute :properties, :map do
       allow_nil? false
       default %{}
       description "Zone-specific properties and metadata"
+      public? true
     end
 
     attribute :is_active, :boolean do
       allow_nil? false
       default true
       description "Whether zone is active for agent deployment"
+      public? true
     end
 
     timestamps()

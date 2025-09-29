@@ -26,6 +26,16 @@ defmodule Thunderline.Thunderbolt.Domain do
 
   graphql do
     authorize? false
+
+    queries do
+      list Thunderline.Thunderbolt.Resources.CoreAgent, :core_agents, :read
+      list Thunderline.Thunderbolt.Resources.CoreAgent, :active_core_agents, :active_agents
+    end
+
+    mutations do
+      create Thunderline.Thunderbolt.Resources.CoreAgent, :register_core_agent, :register
+      update Thunderline.Thunderbolt.Resources.CoreAgent, :heartbeat_core_agent, :heartbeat
+    end
   end
 
   resources do

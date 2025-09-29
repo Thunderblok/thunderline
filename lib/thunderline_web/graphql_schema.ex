@@ -2,19 +2,19 @@ defmodule ThunderlineWeb.GraphqlSchema do
   use Absinthe.Schema
 
   use AshGraphql,
-    domains: [Thunderline.Thunderlink.Domain]
+    domains: [
+      Thunderline.Thunderlink.Domain,
+      Thunderline.Thundergrid.Domain,
+      Thunderline.Thunderbolt.Domain
+    ]
 
   import_types Absinthe.Plug.Types
 
   query do
-    # Custom Absinthe queries can be placed here
-    @desc """
-    Hello! This is a sample query to verify that AshGraphql has been set up correctly.
-    Remove me once you have a query of your own!
-    """
-    field :say_hello, :string do
+    @desc "Simple health probe for GraphQL wiring"
+    field :graphql_ready, :boolean do
       resolve fn _, _, _ ->
-        {:ok, "Hello from AshGraphql!"}
+        {:ok, true}
       end
     end
   end

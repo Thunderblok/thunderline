@@ -13,9 +13,14 @@ defmodule Thunderflow.EventBusTelemetryTest do
     parent = self()
     handler_id = "eventbus-telemetry-test-#{System.unique_integer([:positive])}"
 
-    :telemetry.attach_many(handler_id, @telemetry_events, fn event, measurements, metadata, _cfg ->
-      send(parent, {:telemetry_event, event, measurements, metadata})
-    end, nil)
+    :telemetry.attach_many(
+      handler_id,
+      @telemetry_events,
+      fn event, measurements, metadata, _cfg ->
+        send(parent, {:telemetry_event, event, measurements, metadata})
+      end,
+      nil
+    )
 
     on_exit(fn -> :telemetry.detach(handler_id) end)
 
@@ -59,6 +64,7 @@ defmodule Thunderflow.EventBusTelemetryTest do
 
   test "emits dropped telemetry when validation fails" do
     prev_mode = Application.get_env(:thunderline, :event_validator_mode)
+
     on_exit(fn ->
       if prev_mode do
         Application.put_env(:thunderline, :event_validator_mode, prev_mode)

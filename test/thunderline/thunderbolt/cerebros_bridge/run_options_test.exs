@@ -22,11 +22,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunOptionsTest do
       assert Keyword.get(opts, :parameters) == %{"learning_rate" => 0.01}
       assert Keyword.get(opts, :extra) == %{foo: "bar"}
 
-  metadata = Keyword.fetch!(opts, :meta)
-  assert metadata["operator"] == "alice"
-  assert metadata["source"] == "dashboard"
-  assert metadata["note"] == "initial"
-  assert is_binary(metadata["submitted_at"])
+      metadata = Keyword.fetch!(opts, :meta)
+      assert metadata["operator"] == "alice"
+      assert metadata["source"] == "dashboard"
+      assert metadata["note"] == "initial"
+      assert is_binary(metadata["submitted_at"])
     end
 
     test "reuses supplied run_id, pulls pulse data, and strips nil values" do
@@ -47,9 +47,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunOptionsTest do
       assert Keyword.get(opts, :pulse_id) == "pulse-1"
       assert Keyword.get(opts, :tau) == 42
 
-  metadata = Keyword.fetch!(opts, :meta)
-  assert metadata["operator"] == "system"
-  assert metadata["source"] == :cli
+      metadata = Keyword.fetch!(opts, :meta)
+      assert metadata["operator"] == "system"
+      assert metadata["source"] == :cli
 
       refute Keyword.has_key?(opts, :extra)
     end

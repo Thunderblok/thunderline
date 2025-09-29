@@ -5,13 +5,18 @@ defmodule Thunderline.Thunderbolt.Resources.CoreAgent do
 
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshGraphql.Resource]
 
   import Ash.Resource.Change.Builtins
 
   postgres do
     table "thundercore_agents"
     repo Thunderline.Repo
+  end
+
+  graphql do
+    type :core_agent
   end
 
   actions do
@@ -42,30 +47,36 @@ defmodule Thunderline.Thunderbolt.Resources.CoreAgent do
     attribute :agent_name, :string do
       description "Agent identifier"
       allow_nil? false
+      public? true
     end
 
     attribute :agent_type, :atom do
       description "Type of system agent"
       allow_nil? false
+      public? true
     end
 
     attribute :status, :atom do
       description "Current agent status"
       default :starting
+      public? true
     end
 
     attribute :capabilities, :map do
       description "Agent capabilities and configuration"
       default %{}
+      public? true
     end
 
     attribute :current_task, :string do
       description "Currently executing task"
+      public? true
     end
 
     attribute :last_heartbeat, :utc_datetime_usec do
       description "Last heartbeat timestamp"
       default &DateTime.utc_now/0
+      public? true
     end
 
     create_timestamp :inserted_at

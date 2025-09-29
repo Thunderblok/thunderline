@@ -19,6 +19,19 @@ defmodule Thunderline.Thundergrid.Domain do
 
   graphql do
     authorize? false
+
+    queries do
+      list Thunderline.Thundergrid.Resources.Zone, :zones, :read
+      list Thunderline.Thundergrid.Resources.Zone, :available_zones, :available_zones
+      get Thunderline.Thundergrid.Resources.Zone, :zone_by_coordinates, :by_coordinates
+    end
+
+    mutations do
+      create Thunderline.Thundergrid.Resources.Zone, :spawn_zone, :spawn_zone
+      update Thunderline.Thundergrid.Resources.Zone, :adjust_zone_entropy, :adjust_entropy
+      update Thunderline.Thundergrid.Resources.Zone, :activate_zone, :activate
+      update Thunderline.Thundergrid.Resources.Zone, :deactivate_zone, :deactivate
+    end
   end
 
   json_api do

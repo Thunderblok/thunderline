@@ -92,19 +92,19 @@ defmodule Thunderline.Thundercrown.Action do
   end
 
   defp run_ash(resource, action, input, actor) do
-    if Code.ensure_loaded?(resource) and function_exported?(resource, :__ash_resource__, 0) do
-      # Prefer non-bang variant to capture {:error, ...} patterns cleanly
-      resource
-      |> Ash.Changeset.for_create(action, normalize_input(input), actor: actor)
-      |> Ash.create()
-      |> case do
-        {:ok, result} -> result
-        {:error, err} -> raise err
-      end
-    else
+    _ = Code.ensure_compiled(resource)
+
+    resource
+    |> Ash.Changeset.for_create(action, normalize_input(input), actor: actor)
+    |> Ash.create()
+    |> case do
+      {:ok, result} -> result
+      {:error, err} -> raise err
+    end
+  rescue
+    UndefinedFunctionError ->
       raise ArgumentError,
             "Unsupported resource module #{inspect(resource)} for Thunderline.Thundercrown.Action.call/4"
-    end
   end
 
   defp normalize_input(input) when is_map(input), do: input
