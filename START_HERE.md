@@ -1,4 +1,4 @@
-# START HERE — Thunderline NAS Smoke-Test Run Playbook
+# START HERE — Thunderline NAS + Flower Keras Smoke-Test Playbook
 
 Use this checklist to spin up the full Thunderline + Cerebros NAS stack, verify the cluster, and launch a run from the dashboard. Each section lists the exact steps and the files or commands to reference.
 
@@ -12,6 +12,10 @@ Use this checklist to spin up the full Thunderline + Cerebros NAS stack, verify 
   - Docker registry access for the Thunderline release image (`image.repository` / `image.tag`).
   - Kubernetes cluster credentials (`kubectl` configured for the target context).
 - **Helm:** version 3.10+ available locally.
+- **Flower runtime image:**
+  - Ensure the Flower superexec image you plan to deploy includes the `flwr` runtime and this repository's `python/cerebros/keras` package. The new client/server wiring lives in `cerebros.keras.flower_app` and removes the PyTorch requirement.
+  - If you are packaging a custom superexec image, copy the repo into `/workspace/app` and set the entry point to `flwr client-app cerebros.keras.flower_app:client_app` (see Section 5).
+  - Required environment variables are documented below; at a minimum set `CEREBROS_MODEL_NAME=simple_cnn` and `CEREBROS_DATASET_NAME=mnist` for CPU demos.
 
 ---
 
@@ -40,6 +44,16 @@ Use this checklist to spin up the full Thunderline + Cerebros NAS stack, verify 
    ```
    - This overlay enables Postgres, MinIO, MLflow, and the Cerebros runner.
    - Feature flags `ml_nas`, `cerebros_bridge`, and `ai_chat_panel` are turned on via chart values.
+   - To attach a Flower control plane, merge in the federation example values:
+     ```sh
+     helm upgrade --install thunderline thunderhelm/deploy/chart \
+       -n thunder --create-namespace \
+       -f thunderhelm/deploy/chart/examples/values-dashboard-run.yaml \
+       -f thunderhelm/deploy/chart/examples/values-federation-demo.yaml \
+       --set thunderFederation.image.repository=ghcr.io/<your-org>/flower-superexec \
+       --set thunderFederation.image.tag=<tag>
+     ```
+     Update the example command to point at your hardened Flower superexec image that bundles the Keras backend module.
 
 ---
 
@@ -79,14 +93,42 @@ Use this checklist to spin up the full Thunderline + Cerebros NAS stack, verify 
 
 ---
 
-## 6. Monitor telemetry & artifacts
+## 6. Launch the Flower Keras federation (optional)
+- **Server (inside the SuperExec image or locally):**
+  ```sh
+  flwr server-app cerebros.keras.flower_app:server_app \
+    --insecure-allow-loopback \
+    --rest-server 0.0.0.0:8081
+  ```
+  Environment variables:
+  - `FLOWER_NUM_ROUNDS` – number of rounds (default `3`).
+  - `FLOWER_FRACTION_FIT` / `FLOWER_FRACTION_EVAL` / `FLOWER_MIN_AVAILABLE` – FedAvg tunables.
+- **Clients (one per SuperExec or local process):**
+  ```sh
+  flwr client-app cerebros.keras.flower_app:client_app \
+    --rest-server <server-host>:8081
+  ```
+  Recommended configuration variables:
+  - `CEREBROS_MODEL_NAME` – `simple_cnn`, `mlp`, etc.
+  - `CEREBROS_DATASET_NAME` – `mnist`, `fashion_mnist`, or `cifar10`.
+  - `CEREBROS_DATASET_CFG` – JSON string for additional dataset arguments (`{"limit": 1000}` for smoke tests).
+  - `CEREBROS_TRAIN_PARAMETERS` / `CEREBROS_TRAIN_OVERRIDES` – JSON specs fed into `resolve_training_config`.
+  - `FLOWER_PARTITION_ID`, `FLOWER_NUM_PARTITIONS` – split the dataset across clients.
+  - `CEREBROS_USE_MIXED_PRECISION` – set to `true` for GPU clients.
+  Metrics emitted by the client aggregate to the server via weighted averaging.
+
+Once the Flower round completes, run `kubectl logs -f deploy/thunderline-worker -n thunder` to confirm the bridge consumed the aggregated weights if you are integrating the control plane.
+
+---
+
+## 7. Monitor telemetry & artifacts
 - **MLflow UI:** check trial metrics, parameters, and artifacts for the run ID.
 - **MinIO bucket:** confirm bridge payloads and artifacts land under `thunderline-artifacts/`.
 - **Phoenix dashboard:** watch real-time status updates and ensure the run transitions to `succeeded` (or inspect errors if the status differs).
 
 ---
 
-## 7. Clean up (optional)
+## 8. Clean up (optional)
 - Remove the release: `helm uninstall thunderline -n thunder`.
 - Delete the namespace if no longer needed: `kubectl delete ns thunder`.
 - Clear any local port-forward sessions.
@@ -95,7 +137,8 @@ Use this checklist to spin up the full Thunderline + Cerebros NAS stack, verify 
 
 ## References
 - Helm chart documentation: `thunderhelm/deploy/chart/README.md`
-- Cerebros bridge implementation notes: `documentation/CEREBROS_BRIDGE_IMPLEMENTATION.md`
+- Flower federation quickstart: `ops/federation/flower/README.md`
+- Cerebros Keras backend & Flower wiring: `python/cerebros/keras/`
 - Mix validators: `mix thunderline.ml.prepare`, `mix thunderline.ml.validate`
 
 Keep this playbook updated as dependencies or feature flags change.

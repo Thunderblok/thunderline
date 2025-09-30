@@ -111,7 +111,8 @@ Status summary for the ThunderBolt ML ledger, Cerebros bridge boundary, and NAS 
 **Outstanding Gaps / Actions**
 1. HC-04: Run pending migrations + wire lifecycle state machine on `ModelRun` (current status: In Progress).
 2. HC-20: Author bridge boundary doc + DIP, publish configuration recipe, and surface cache/telemetry tuning guidance.
-3. Implement resilient search/exploration strategy (replace `simple_search.ex` stub) and feed outcomes back into trials queue.
+3. Flower control plane now consumes the Keras backend (`python/cerebros/keras/flower_app.py`) removing the PyTorch dependency; ensure SuperExec images embed the module and publish CPU baseline values for Ops.
+4. Implement resilient search/exploration strategy (replace `simple_search.ex` stub) and feed outcomes back into trials queue.
 4. Publish walkthrough for executing NAS loop via Thunderhelm (Livebook → Cerebros runner → MLflow) including feature flag prerequisites.
 5. Add `mix thunderline.ml.validate` (planned) to verify bridge config, dataset availability, and event emission paths before enabling flag.
 

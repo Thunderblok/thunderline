@@ -17,7 +17,8 @@ WORKDIR ${APP_DIR}
 COPY ${APP_SRC}/pyproject.toml ./
 
 # Remove the flwr dependency from pyproject (already part of base image) and
-# install remaining deps
+# install remaining deps. The Thunderline repo’s `python/cerebros/keras` package
+# will be installed as part of this step so the Keras backend is available.
 RUN sed -i '/flwr\[[^]]*\]/d' pyproject.toml \
     && python -m pip install --no-cache-dir -U .
 

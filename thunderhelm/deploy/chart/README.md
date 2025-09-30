@@ -161,19 +161,13 @@ federation:
     repository: python
     tag: "3.11-slim"
   port: 8081
-  # Demo command installs flwr[simulation] and runs a basic FedAvg server
+  # Demo command installs flwr[simulation], the Thunderline Keras backend, and runs the Flower server app
   command: ["/bin/sh","-c"]
   args:
     - |
       pip install --no-cache-dir "flwr[simulation]" && \
-      python - <<'PY'
-      from flwr.server import ServerApp, start_server
-      from flwr.server.strategy import FedAvg
-      def app() -> ServerApp:
-          return ServerApp(FedAvg())
-      if __name__ == "__main__":
-          start_server(server_app=app(), server_address="0.0.0.0:8081")
-      PY
+      pip install --no-cache-dir -e /workspace/app/python && \
+      flwr server-app cerebros.keras.flower_app:server_app --rest-server 0.0.0.0:8081
   service:
     enabled: true
     type: ClusterIP

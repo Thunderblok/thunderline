@@ -113,21 +113,15 @@ federation:
   # Port Flower server will bind to
   port: 8081
 
-  # Command/args to start a demo Flower server (override in prod with a baked image)
+  # Command/args to start the Thunderline Keras Flower server (override in prod with a baked image)
   command:
     - /bin/sh
     - -c
   args:
     - |
       pip install --no-cache-dir "flwr[simulation]" && \
-      python - <<'PY'
-      from flwr.server import ServerApp, start_server
-      from flwr.server.strategy import FedAvg
-      def app() -> ServerApp:
-          return ServerApp(FedAvg())
-      if __name__ == "__main__":
-          start_server(server_app=app(), server_address="0.0.0.0:8081")
-      PY
+      pip install --no-cache-dir -e /workspace/app/python && \
+      flwr server-app cerebros.keras.flower_app:server_app --rest-server 0.0.0.0:8081
 
   env: {}
   resources: {}

@@ -15,14 +15,16 @@ The manifests are intentionally vanilla so they can be dropped into existing Git
 
 ## Deploying the Flower topology
 
-1. **Create/build your Flower application** (one repo can host both the server and clients):
+1. **Create/build your Flower application** (one repo can host both the server and clients). Thunderline’s baseline ships a Keras-only implementation in `python/cerebros/keras/flower_app.py`, so you can reuse this repository directly:
 
    ```bash
-   flwr new thunderline-demo --framework PyTorch --username thunderline
-   cd thunderline-demo
-   pip install -e .
-   # run locally with `flwr run . local-deployment --stream` if desired
+   # inside this repo (Thunderline)
+   pip install -e python  # installs the cerebros.keras package for local runs
+   # optional sanity check
+   flwr server-app cerebros.keras.flower_app:server_app --rest-server 0.0.0.0:8081
    ```
+
+   If you need a standalone Flower project, generate it with `flwr new` and then copy `python/cerebros/keras/` into that repository; update the entrypoints to reference `cerebros.keras.flower_app` so no PyTorch dependency is pulled in.
 
 2. **Bake the SuperExec image** so the runtime has access to your Flower app code. From the root of your Flower project:
 
@@ -35,7 +37,7 @@ The manifests are intentionally vanilla so they can be dropped into existing Git
    docker push ghcr.io/thunderblok/flower-superexec:0.0.1
    ```
 
-   Adjust the tag/registry to match your infra. The Dockerfile copies the project into `/workspace/app` and strips any duplicate `flwr[...]` dependency before installing the remaining Python requirements (Flower ships inside the base image already).
+   Adjust the tag/registry to match your infra. The Dockerfile copies the project into `/workspace/app`, strips any duplicate `flwr[...]` dependency, and leaves the base image’s Flower install in place. Ensure the image bundles this repository’s `python/cerebros/keras` package so the new Keras backend is available to the runtime.
 
 3. **Create the Flower namespace in your cluster**:
 
@@ -58,7 +60,12 @@ The manifests are intentionally vanilla so they can be dropped into existing Git
 
    You should see the `flower-superlink`, `flower-supernode-{0,1}` and `flower-superexec-*` workloads running. The SuperLink exposes ports 9091/9092/9093 via the internal service `flower-superlink`. Each SuperNode exposes its ClientAppIO port (`flower-supernode-0:9094`, `flower-supernode-1:9095`).
 
-5. **Wire Thunderline to the Flower services** by pointing the federation configs (Helm values or env vars) at the in-cluster DNS entries above. The Thunderline control plane will publish federated jobs to the SuperLink endpoint and register clients against the SuperNode services.
+5. **Wire Thunderline to the Flower services** by pointing the federation configs (Helm values or env vars) at the in-cluster DNS entries above. The Thunderline control plane will publish federated jobs to the SuperLink endpoint and register clients against the SuperNode services. For Keras-based CPU smoke tests set:
+
+   - `FLOWER_NUM_ROUNDS`, `FLOWER_FRACTION_FIT`, `FLOWER_FRACTION_EVAL`, `FLOWER_MIN_AVAILABLE`
+   - `CEREBROS_MODEL_NAME` (e.g. `simple_cnn`), `CEREBROS_DATASET_NAME` (`mnist`, `fashion_mnist`, `cifar10`)
+   - `CEREBROS_DATASET_CFG` for shard limits (`{"limit": 1000}`) and optional `partition_id`/`num_partitions`
+   - `CEREBROS_TRAIN_PARAMETERS` / `CEREBROS_TRAIN_OVERRIDES` mirroring the NAS parameter spec when executing real trials
 
 6. **Tear down** when done:
 

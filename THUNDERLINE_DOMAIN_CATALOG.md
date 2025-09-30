@@ -227,6 +227,7 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - Virtual Ising Machine workflows feeding both human and automated solvers.
 - First-class ML experiment ledger wired to Cerebros NAS, including artifact tracking and Axon trainers.
 - Hardened bridge boundary with caching, retries, structured error classes, and canonical event emission.
+- Flower federation wiring lives in `python/cerebros/keras/flower_app.py`, providing a Keras-only client/server for Flower Deployment Engine and eliminating PyTorch from the baseline superexec images.
 
 **Total**: **30 resources + supporting modules** (Ash resources under `resources/` and ML registry modules under `ml/`) – the command center for orchestration, numerics, and Cerebros-driven model experimentation.
 

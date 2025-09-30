@@ -55,9 +55,10 @@ Common issues
     kubectl logs deploy/{{ include "thunderhelm.fullname" . }}-worker -n {{ .Release.Namespace }} -c worker
 
 - Flower federation not starting
-  The default demo container installs flwr[simulation] at runtime. For production, build a hardened image with pinned dependencies and set:
+  The default demo container installs flwr[simulation] and the Thunderline Keras backend at runtime. For production, build a hardened image with pinned dependencies and set:
     federation.image.repository, federation.image.tag
     federation.command / federation.args (if needed)
+    Bundled code must expose `cerebros.keras.flower_app` for Flower to import.
 
 - Ingress not reachable
   Verify your ingress controller (className), DNS, and TLS secrets.

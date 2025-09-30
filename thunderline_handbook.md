@@ -81,6 +81,7 @@
 
 - ThunderCell CA engine, Lane orchestrators, expert clusters, Cerebros bridges.
 - Phased rollout for market → MoE → NAS pipeline documented in [`architecture/market_moe_pipeline.md`](Thunderline/documentation/architecture/market_moe_pipeline.md).
+- Flower federation now runs through the Keras backend (`python/cerebros/keras/flower_app.py`), so PyTorch is no longer required on the SuperExec path.
 - Active feature flags: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active`.
 
 ### 3.5 ThunderCrown (Governance)
