@@ -142,3 +142,65 @@ Once the Flower round completes, run `kubectl logs -f deploy/thunderline-worker 
 - Mix validators: `mix thunderline.ml.prepare`, `mix thunderline.ml.validate`
 
 Keep this playbook updated as dependencies or feature flags change.
+
+lets proceed with Wire the StreamManager child into the Bolt supervision tree, set up the PubSub topic, and drop telemetry counters into JSON dashboards.
+
+update thunderhelm/deploy/chart
+ mo@ataro      Thunderline  main  helm upgrade --install thunderline ./thunderhelm/deploy/chart
+-n thunder --create-namespace
+-f thunderhelm/deploy/chart/examples/values-dashboard-run.yaml
+--set image.repository=ghcr.io/<your-org>/thunderline
+--set image.tag=<release-tag>
+bash: syntax error near unexpected token newline'  mo@ataro      Thunderline  main  USAGE  helm upgrade --install thunderline ./thunderhelm/deploy/chart \   -n thunder --create-namespace \   -f thunderhelm/deploy/chart/examples/values-dashboard-run.yaml \   --set image.repository=ghcr.io/<your-org>/thunderline \   --set image.tag=<release-tag> bash: syntax error near unexpected token newline'
+ mo@ataro      Thunderline  main  USAGE  helm upgrade --install thunderline ./thunderhelm/deploy/chart
+-n thunder --create-namespace
+-f thunderhelm/deploy/chart/examples/values-dashboard-run.yaml
+--set image.repository=ghcr.io/<your-org>/thunderline
+--set image.tag=<release-tag>
+bash: syntax error near unexpected token `newline'
+ mo@ataro      Thunderline  main  USAGE 
+
+Providing shell command guidance
+The bash errors are just from how the command was wrapped—your prompt copies the snippet including the line breaks, but the trailing backslashes aren’t escaping the newline cleanly (even one stray space after \ will do this). Run it either on a single line or re-enter it carefully. Example using placeholders:
+
+
+lets proceed with Wire the StreamManager child into the Bolt supervision tree, set up the PubSub topic, and drop telemetry counters into JSON dashboards.
+
+update thunderhelm/deploy/chart
+ mo@ataro      Thunderline  main  helm upgrade --install thunderline ./thunderhelm/deploy/chart
+-n thunder --create-namespace
+-f thunderhelm/deploy/chart/examples/values-dashboard-run.yaml
+--set image.repository=ghcr.io/<your-org>/thunderline
+--set image.tag=<release-tag>
+bash: syntax error near unexpected token newline'  mo@ataro      Thunderline  main  USAGE  helm upgrade --install thunderline ./thunderhelm/deploy/chart \   -n thunder --create-namespace \   -f thunderhelm/deploy/chart/examples/values-dashboard-run.yaml \   --set image.repository=ghcr.io/<your-org>/thunderline \   --set image.tag=<release-tag> bash: syntax error near unexpected token newline'
+ mo@ataro      Thunderline  main  USAGE  helm upgrade --install thunderline ./thunderhelm/deploy/chart
+-n thunder --create-namespace
+-f thunderhelm/deploy/chart/examples/values-dashboard-run.yaml
+--set image.repository=ghcr.io/<your-org>/thunderline
+--set image.tag=<release-tag>
+bash: syntax error near unexpected token `newline'
+ mo@ataro      Thunderline  main  USAGE 
+
+Providing shell command guidance
+The bash errors are just from how the command was wrapped—your prompt copies the snippet including the line breaks, but the trailing backslashes aren’t escaping the newline cleanly (even one stray space after \ will do this). Run it either on a single line or re-enter it carefully. Example using placeholders:
+
+Make sure each line ending in \ has no trailing spaces, and replace <your-org> / <release-tag> with your actual repo/tag (or drop those --set entries if the defaults already point where you need).
+
+If the multi-line form keeps fighting you, just paste it as a single line:
+
+Before running it, confirm the thunder namespace holds your runtime secret (DATABASE_URL, SECRET_KEY_BASE, TOKEN_SIGNING_SECRET, etc.). Once this command succeeds, watch rollout with kubectl get pods -n thunder -w.
+lets proceed with Wire the StreamManager child into the Bolt supervision tree, set up the PubSub topic, and drop telemetry counters into JSON dashboards.
+
+yeah no bro ive tried writing it every which way just give it to me line by line i guess and how do i verify the namespace holds databse url, secret key base and token signing secret, also the only secret i have is the one generated from mix, how do i get the other one?
+
+Detailing step-by-step secret creation
+Here’s a clean step-by-step so you can copy/paste each command without fighting the shell, plus a quick run-through on secrets.
+
+1. Generate the two secrets you need locally
+
+Save both outputs; you’ll paste them into the Kubernetes secret in a moment. Your Postgres URL is the third value (DATABASE_URL), e.g. ecto://postgres:postgres@postgres-service/thunderline_prod.
+
+2. Create (or replace) the runtime secret in Kubernetes
+
+3. Verify the secret holds the keys
+

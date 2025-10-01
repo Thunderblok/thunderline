@@ -65,17 +65,23 @@ prod_docker = Path("deps/prod_docker")
 if prod_docker.exists():
     shutil.rmtree(prod_docker)
 
-# Patch Jido InMemory adapter to tolerate missing metadata
+# Patch Jido InMemory adapter to tolerate missing metadata. Some builds skip the
+# Jido stack entirely (e.g. SKIP_JIDO=true), so guard against the adapter file
+# being absent to keep the image build resilient in those cases.
 target = Path("deps/jido/lib/jido/bus/adapters/in_memory.ex")
-original = """    %Signal{\n      id: correlation_id,\n      source: causation_id,\n      type: type,\n      data: data,\n      jido_metadata: jido_metadata\n    } = signal\n\n    %RecordedSignal{\n      signal_id: Jido.Util.generate_id(),\n      signal_number: signal_number,\n      stream_id: stream_id,\n      stream_version: stream_version,\n      causation_id: causation_id,\n      correlation_id: correlation_id,\n      type: type,\n      data: data,\n      jido_metadata: jido_metadata,\n      created_at: now\n    }\n"""
 
-replacement = """    %Signal{\n      id: correlation_id,\n      source: causation_id,\n      type: type,\n      data: data\n    } = signal\n\n    jido_metadata = Map.get(signal, :jido_metadata, %{})\n\n    %RecordedSignal{\n      signal_id: Jido.Util.generate_id(),\n      signal_number: signal_number,\n      stream_id: stream_id,\n      stream_version: stream_version,\n      causation_id: causation_id,\n      correlation_id: correlation_id,\n      type: type,\n      data: data,\n      jido_metadata: jido_metadata || %{},\n      created_at: now\n    }\n"""
+if target.exists():
+    original = """    %Signal{\n      id: correlation_id,\n      source: causation_id,\n      type: type,\n      data: data,\n      jido_metadata: jido_metadata\n    } = signal\n\n    %RecordedSignal{\n      signal_id: Jido.Util.generate_id(),\n      signal_number: signal_number,\n      stream_id: stream_id,\n      stream_version: stream_version,\n      causation_id: causation_id,\n      correlation_id: correlation_id,\n      type: type,\n      data: data,\n      jido_metadata: jido_metadata,\n      created_at: now\n    }\n"""
 
-text = target.read_text()
-if original not in text:
-    raise SystemExit("expected snippet not found in jido in_memory adapter")
+    replacement = """    %Signal{\n      id: correlation_id,\n      source: causation_id,\n      type: type,\n      data: data\n    } = signal\n\n    jido_metadata = Map.get(signal, :jido_metadata, %{})\n\n    %RecordedSignal{\n      signal_id: Jido.Util.generate_id(),\n      signal_number: signal_number,\n      stream_id: stream_id,\n      stream_version: stream_version,\n      causation_id: causation_id,\n      correlation_id: correlation_id,\n      type: type,\n      data: data,\n      jido_metadata: jido_metadata || %{},\n      created_at: now\n    }\n"""
 
-target.write_text(text.replace(original, replacement))
+    text = target.read_text()
+    if original not in text:
+        raise SystemExit("expected snippet not found in jido in_memory adapter")
+
+    target.write_text(text.replace(original, replacement))
+else:
+    print("[docker] skipping Jido in_memory adapter patch; dependency not present")
 
 PY
 RUN mix deps.compile
@@ -126,8 +132,13 @@ ENV MIX_ENV=prod \
 COPY --from=build /app/_build/prod/rel/${APP_NAME} ./
 
 # Create non-root user and set ownership (for writable dirs like var/log)
-RUN addgroup -S app && adduser -S app -G app && \
+RUN addgroup --system app && adduser --system --ingroup app app && \
     mkdir -p /app/var && chown -R app:app /app
+
+# Entrypoint wrapper: run migrations (unless SKIP_ASH_SETUP) then start release
+COPY scripts/docker/dev_entrypoint.sh ./bin/dev_entrypoint.sh
+RUN chmod +x ./bin/dev_entrypoint.sh
+
 USER app
 
 # Expose Phoenix port
@@ -135,10 +146,6 @@ EXPOSE 4000
 
 # HEALTHCHECK (simple TCP check)
 HEALTHCHECK --interval=30s --timeout=3s --retries=5 CMD nc -z localhost 4000 || exit 1
-
-# Entrypoint wrapper: run migrations (unless SKIP_ASH_SETUP) then start release
-COPY scripts/docker/dev_entrypoint.sh ./bin/dev_entrypoint.sh
-RUN chmod +x ./bin/dev_entrypoint.sh
 
 # Use exec form; expand app name at build time
 ENTRYPOINT ["/app/bin/thunderline"]

@@ -12,10 +12,16 @@ import math
 import os
 import random
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+
+try:  # Pydantic v2+
+    from pydantic import BaseModel, Field, RootModel  # type: ignore
+except ImportError:  # pragma: no cover - fallback for pydantic v1
+    from pydantic import BaseModel, Field  # type: ignore
+
+    RootModel = None  # type: ignore
 
 try:
     import mlflow  # type: ignore
@@ -42,13 +48,28 @@ if mlflow and MLFLOW_TRACKING_URI:
 # Request models
 
 
-class SearchSpace(BaseModel):
-    __root__: Dict[str, Dict[str, List[float] | List[str]]]
+SpaceSpec = Dict[str, Dict[str, List[float] | List[str]]]
+
+
+class _SearchSpaceMixin:
+    def _space(self) -> SpaceSpec:
+        data: Any
+
+        if hasattr(self, "__root__"):
+            data = getattr(self, "__root__")
+        elif hasattr(self, "root"):
+            data = getattr(self, "root")
+        elif hasattr(self, "model_dump"):
+            data = self.model_dump()  # type: ignore[call-arg]
+        else:
+            data = self.dict()  # type: ignore[attr-defined]
+
+        return cast(SpaceSpec, data)
 
     def sample(self) -> Dict[str, Any]:
         params: Dict[str, Any] = {}
 
-        for name, spec in self.__root__.items():
+        for name, spec in self._space().items():
             if "choice" in spec:
                 params[name] = random.choice(spec["choice"])  # type: ignore[arg-type]
             elif "uniform" in spec:
@@ -61,6 +82,18 @@ class SearchSpace(BaseModel):
                 params[name] = None
 
         return params
+
+
+if RootModel:
+
+    class SearchSpace(_SearchSpaceMixin, RootModel[SpaceSpec]):  # type: ignore[misc]
+        pass
+
+
+else:
+
+    class SearchSpace(_SearchSpaceMixin, BaseModel):
+        __root__: SpaceSpec
 
 
 class ProposeRequest(BaseModel):

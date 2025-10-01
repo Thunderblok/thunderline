@@ -120,7 +120,7 @@ end
 
 ## 12. Example Feature Helper (Sketch)
 ```elixir
-defmodule Thunderline.Feature do
+defmodule Thunderline.Feature do`
   @moduledoc "Runtime feature flag evaluation"
   @features Application.compile_env(:thunderline, :features, []) |> Map.new()
   @doc """Return true if flag enabled. Supports per-process override for tests."""
