@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
   """
 
   alias Thunderline.Thunderbolt.CerebrosBridge.Contracts
+  alias __MODULE__.Overrides
 
   @type encoded_call :: %{
           required(:command) => String.t(),
