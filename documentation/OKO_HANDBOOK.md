@@ -1,13 +1,19 @@
 # 🌩️ OKO HANDBOOK: The Thunderline Technical Bible
 
-> **LIVING DOCUMENT** - Last Updated: August 30, 2025  
+> **LIVING DOCUMENT** - Last Updated: October 3, 2025  
 > **Status**: � **ATLAS HANDOVER COMPLETE - PRODUCTION READY DOCUMENTATION**  
 > **Purpose**: Comprehensive guide to Thunderline's Personal Autonomous Construct (PAC) platform & distributed AI orchestration system
 
 ---
 
 ## � Executive Overview (Curated Entry Point)
-This curated front section was added during WARHORSE stewardship to shorten ramp time. The full historical narrative remains intact below (see “Archive Narrative”). Use this top block for: domain orientation, guardrails, onboarding sequence, and active risk posture.
+This curated front section now centers on the Unified Persistent Model (UPM) program—the cross-domain model that is continuously trained from ThunderFlow telemetry and Thunderline pipelines, and projected back into every ThunderBlock agent. The historical narrative remains intact below (see “Archive Narrative”). Use this top block for: domain orientation, guardrails, onboarding sequence, and active risk posture.
+
+### Unified Persistent Model (UPM) Snapshot
+- **Mission**: Maintain a single, sovereign model that learns in real time from ThunderFlow event firehose and feeds behavior embeddings into ThunderBlock agents across the platform.
+- **Training Loop**: Event Bus → ThunderFlow feature windows → UPM trainer (online updates) → ThunderBlock adapter sync.
+- **Activation Path**: ThunderBlock agents subscribe to UPM snapshots through Bolt orchestrators; ThunderCrown policies gate rollout based on telemetry.
+- **Guardrails**: Drift monitors, replay-safe training buffers, and feature flag `:unified_model` gate staged rollout.
 
 ### Domain Doctrine (One-Screen Summary)
 | Domain | Role | Owns | Must Not |
@@ -33,16 +39,18 @@ Intentional overlaps: Gate↔Crown (capabilities→policy), Link↔Gate (session
 | Blackboard Unification | `Thunderline.Thunderflow.Blackboard` | Migrated (legacy delegator only) |
 | Repo Isolation | Credo custom check (advisory) | Escalate Week 3 |
 | Link Policy Purge | Credo NoPolicyInLink | Audit queued |
+| Unified Model Drift | `Thunderline.Thunderbolt.UPM.DriftMonitor` on UPM snapshots | dev: warn, test/prod: raise + quarantine |
 
 ### Onboarding Path (New Engineer – 90 Minute Ramp)
 1. Read this Executive Overview & Domain Doctrine (5m).
 2. Skim `EVENT_TAXONOMY.md` & `ERROR_CLASSES.md` (10m) – understand canonical shapes & drop semantics.
-3. Open `lib/thunderline/thunderflow/event_bus.ex` – review `emit/emit_realtime/emit_cross_domain`, batch & AI helpers (15m).
-4. Inspect `Thundergate.ActorContext` & `Thundercrown.Policy` for capability→policy flow (10m).
-5. Run grep pack (below) locally; note zero/warn infractions (10m).
-6. Subscribe to `system.tick` & one realtime event in IEx to see pulse (10m).
-7. Claim a zone via `Thunderline.Thundergrid.API.claim_zone/2` in IEx; observe telemetry (5m).
-8. Review Active Risks table (Unified Gap & Risk) and pick one P0 to shadow (15m).
+3. Review `documentation/unified_persistent_model.md` draft + `lib/thunderline/thunderbolt/upm/*` (15m) to understand online training loop and agent adapters.
+4. Open `lib/thunderline/thunderflow/event_bus.ex` – review `emit/emit_realtime/emit_cross_domain`, batch & AI helpers (10m).
+5. Inspect `Thundergate.ActorContext` & `Thundercrown.Policy` for capability→policy flow and UPM rollout gating (10m).
+6. Run grep pack (below) locally; note zero/warn infractions (10m).
+7. Subscribe to `system.tick` & one realtime event in IEx to see pulse (10m).
+8. Claim a zone via `Thunderline.Thundergrid.API.claim_zone/2` in IEx; observe telemetry (5m).
+9. Review Active Risks table (Unified Gap & Risk) and pick one P0 to shadow (15m).
 
 ### Grep Pack (Current Canon)
 ```
@@ -60,13 +68,15 @@ grep -R "EventBus\.emit" lib/thunderline | grep -v "thunderflow"
 | Direct Repo call in non-Block | Credo advisory | Replace with Ash action or Block API |
 | Multiple heartbeats | Conflicting timers | Remove ad-hoc timer; subscribe to `system.tick` |
 | Legacy blackboard access | Telemetry `:blackboard, :legacy_use` | Route through `Thunderflow.Blackboard` |
+| Unbounded UPM updates | Drift monitor quarantine | Batch updates via replay buffers or throttle adapter sync |
 
 ### Current P0 (Execution Focus)
-1. Finish blackboard caller migration (metric: remaining legacy usage <5%).
-2. Link policy audit & purge.
-3. Validator mode tests + CI gating.
-4. RepoOnly escalation path defined (allowlist & docs) ahead of Week 3.
-5. Event taxonomy linter task stub (`mix thunderline.events.lint`).
+1. Ship Unified Persistent Model online trainer + replay-safe buffer (HC-22).
+2. Finish blackboard caller migration (metric: remaining legacy usage <5%).
+3. Link policy audit & purge.
+4. Validator mode tests + CI gating.
+5. RepoOnly escalation path defined (allowlist & docs) ahead of Week 3.
+6. Event taxonomy linter task stub (`mix thunderline.events.lint`).
 
 ### WARHORSE Steward Metrics (Target SLO Seeds)
 | Metric | Rationale | Draft SLO |
@@ -77,6 +87,8 @@ grep -R "EventBus\.emit" lib/thunderline | grep -v "thunderflow"
 | gate.auth.denied.rate | Auth drift / config misfires | <2% daily |
 | legacy.blackboard.calls | Migration progress | Trend → 0 by Week 2 end (add counter + dashboard) |
 | blackboard.fetch.hit_rate | Cache efficiency & misuse detection | >85% (node scope excluded) |
+| upm.snapshot.freshness_ms | Ensure agents receive timely model updates | <30000ms (shadow), <10000ms (active) |
+| upm.drift_score.p95 | Detect quality regression | <0.2 per drift window |
 
 ### Quick IEx Recipes
 ```elixir
@@ -94,11 +106,35 @@ Thunderline.Thundergrid.API.claim_zone("alpha", "default")
 
 ### Reading Order (If You Have 1 Day)
 1. This Executive Overview
-2. OKO Playbook & Domain Catalog
-3. Event & Error Taxonomy docs
-4. Source dive: EventBus → Validator → Policy → Grid API → Blackboard facade
-5. Risk Assessment Table (prioritize an issue)
-6. Handbook Archive narrative (context & historical decisions)
+2. Unified Persistent Model overview (this doc §UPM) + trainer source
+3. OKO Playbook & Domain Catalog
+4. Event & Error Taxonomy docs
+5. Source dive: EventBus → Validator → Policy → Grid API → Blackboard facade → `Thunderline.Thunderbolt.UPM` adapters
+6. Risk Assessment Table (prioritize an issue)
+7. Handbook Archive narrative (context & historical decisions)
+
+---
+
+## 🧠 Unified Persistent Model (UPM) Initiative
+
+- **Scope**: Create a continuously trained model that ingests ThunderFlow feature windows, performs online updates, and serves embeddings/actions to every ThunderBlock agent.
+- **Data Path**: EventBus → `feature_windows` Ash resources → `Thunderline.Thunderbolt.UPM.Trainer` (online SGD) → versioned snapshots in ThunderBlock vault → `Thunderline.Thunderbolt.UPM.Adapter` pushes to agents.
+- **Rollout Phases**:
+  - *Shadow*: Train in real time, no agent activation; compare agent decisions vs UPM recommendations, log `upm.shadow_delta` events.
+  - *Canary*: Activate for opt-in tenants via feature flag `:unified_model`; ThunderCrown policies enforce actor-level gating.
+  - *Global*: Replace per-agent bespoke models once drift score and SLOs hold for 30 days.
+- **Safety Nets**: Replay-safe buffer for late-arriving events, drift monitor with automatic rollback, snapshot escrow to revert to known-good versions.
+- **Ownership**: Bolt steward maintains trainer + adapters; Crown steward governs policy gating; Block steward ensures snapshot persistence + retention.
+
+Key Artifacts (WIP):
+- `documentation/unified_persistent_model.md` – implementation spec & operational runbook.
+- `mix thunderline.upm.shadow` – task to replay historical windows into trainer for local experiments (planned).
+- Grafana dashboard `UPM-001` – freshness, drift score, agent adoption.
+
+Open Risks:
+1. Feature schema drift between domains → mitigate via schema registry handshake in ThunderFlow before training.
+2. Agent overfitting to global model → enforce per-tenant adapters with regularization hooks.
+3. Storage churn from high-frequency snapshots → coordinate with ThunderBlock retention to archive after 7 days.
 
 ---
 

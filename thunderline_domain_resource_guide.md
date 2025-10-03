@@ -86,6 +86,14 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 - **Status**: Frozen per Honey Badger Phase A; new writes funneled through ThunderLink voice resources.
 - **Risks**: Residual dependencies on `Thundercom.Voice.*`; monitor deprecation telemetry and plan removal after grace period.
 
+### 1.10 Unified Persistent Model — Cross-Domain Intelligence Fabric
+
+- **Mission**: Maintain a single, continuously trained model that ingests ThunderFlow feature windows and synchronizes embeddings/actions to every ThunderBlock agent.
+- **Primary resources**: `upm_trainer`, `upm_snapshot`, `upm_adapter`, `upm_drift_window` (Ash resources under `Thunderline.Thunderbolt.UPM`).
+- **Event responsibilities**: Emit `ai.upm.snapshot.created`, `ai.upm.shadow_delta`, and drift telemetry via EventBus; consume `feature_window` events from ThunderFlow.
+- **Operational hooks**: Trainer runs inside ThunderBolt orchestrators, snapshots persisted through ThunderBlock vault policies, rollout gated by ThunderCrown policies and feature flag `:unified_model`.
+- **Key KPIs**: Snapshot freshness, drift score, agent adoption percentage, rollback invocation count.
+
 ## 2. Resource Reference Tables
 
 | Domain | Representative Resources | Status | Notes |
@@ -99,6 +107,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 | ThunderGrid | `grid_zone`, `spatial_coordinate`, `chunk_state`, `zone_event` | Active | Provide placement metadata to Link/Bolt |
 | ThunderChief | `domain_processor`, `scheduled_workflow_processor`, `export_job` | Active | Export jobs feed Cerebros NAS loop |
 | ThunderCom | `channel`, `community`, `message` (legacy) | Deprecated | Monitor telemetry and plan removal |
+| Unified Persistent Model | `upm_trainer`, `upm_snapshot`, `upm_adapter`, `upm_drift_window` | In flight | Cross-domain model trained online from ThunderFlow |
 
 **Feature flag crosswalk** (see [`FEATURE_FLAGS.md`](Thunderline/documentation/FEATURE_FLAGS.md)):
 
@@ -110,6 +119,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 | `:tocp` | Thunderline Open Circuit Protocol runtime | false | Scaffold |
 | `:tocp_presence_insecure` | Controlled insecure mode for TOCP perf tests | false | Debug |
 | `:ai_chat_panel` | Dashboard AI assistant experience | false | Experimental |
+| `:unified_model` | Unified Persistent Model rollout (shadow/canary/global) | false | Preview |
 
 ## 3. Event and Telemetry Contracts
 
@@ -156,6 +166,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 | Bridge alias audit | ThunderGate/Link | Honey Badger A10 | Arch guild | TODO |
 | AI governance hooks | ThunderCrown | Honey Badger C3 | Crown steward | Planned |
 | NAS export loop Phase 5 | ThunderChief/Bolt | Market MoE plan Section 10 | Bolt steward | Planned |
+| Unified Persistent Model trainer + adapters | Bolt/Block/Crown | High Command HC-22 | Bolt steward | Not Started |
 
 - **Risk register**: Table rename migrations risk (Honey Badger mitigation plan), event taxonomy churn risk (versioning strategy), policy centralization regression risk (contract tests), orchestration refactor stall (feature flags), lingering deprecation wrappers (telemetry thresholds).
 

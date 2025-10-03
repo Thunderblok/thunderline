@@ -62,8 +62,12 @@ defmodule Jido.Bus.Adapters.InMemory.Subscription do
 
   def child_spec(module) when is_atom(module) do
     cond do
-      function_exported?(module, :child_spec, 1) -> module.child_spec([])
-      function_exported?(module, :child_spec, 0) -> module.child_spec()
+      function_exported?(module, :child_spec, 1) ->
+        module.child_spec([])
+
+      function_exported?(module, :child_spec, 0) ->
+        module.child_spec()
+
       function_exported?(module, :start_link, 1) ->
         %{
           id: module,
@@ -119,7 +123,11 @@ defmodule Jido.Bus.Adapters.InMemory.PersistentSubscription do
     @enforce_keys [:pid]
     defstruct pid: nil, in_flight: MapSet.new(), checkpoint: 0
 
-    @type t :: %__MODULE__{pid: pid(), in_flight: MapSet.t(non_neg_integer()), checkpoint: non_neg_integer()}
+    @type t :: %__MODULE__{
+            pid: pid(),
+            in_flight: MapSet.t(non_neg_integer()),
+            checkpoint: non_neg_integer()
+          }
   end
 
   @doc false
@@ -136,7 +144,8 @@ defmodule Jido.Bus.Adapters.InMemory.PersistentSubscription do
   end
 
   @doc false
-  @spec publish(t(), Jido.Bus.RecordedSignal.t()) :: {:ok, t()} | {:error, :no_subscriber_available}
+  @spec publish(t(), Jido.Bus.RecordedSignal.t()) ::
+          {:ok, t()} | {:error, :no_subscriber_available}
   def publish(%__MODULE__{} = subscription, signal) do
     subscription = prune_dead_subscribers(subscription)
 
@@ -190,13 +199,18 @@ defmodule Jido.Bus.Adapters.InMemory.PersistentSubscription do
   @doc false
   @spec unsubscribe(t(), pid()) :: t()
   def unsubscribe(%__MODULE__{} = subscription, pid) do
-    %__MODULE__{subscription | subscribers: Enum.reject(subscription.subscribers, &(&1.pid == pid))}
+    %__MODULE__{
+      subscription
+      | subscribers: Enum.reject(subscription.subscribers, &(&1.pid == pid))
+    }
   end
 
   @doc false
   @spec has_subscriber?(t(), pid()) :: boolean()
   def has_subscriber?(%__MODULE__{} = subscription, pid) do
-    Enum.any?(subscription.subscribers, fn %Subscriber{pid: existing_pid} -> existing_pid == pid end)
+    Enum.any?(subscription.subscribers, fn %Subscriber{pid: existing_pid} ->
+      existing_pid == pid
+    end)
   end
 
   defp prune_dead_subscribers(%__MODULE__{} = subscription) do

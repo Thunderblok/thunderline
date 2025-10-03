@@ -83,6 +83,12 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.ML.ModelVersion
     resource Thunderline.Thunderbolt.ML.TrainingRun
 
+    # Unified Persistent Model (UPM)
+    resource Thunderline.Thunderbolt.Resources.UpmTrainer
+    resource Thunderline.Thunderbolt.Resources.UpmSnapshot
+    resource Thunderline.Thunderbolt.Resources.UpmAdapter
+    resource Thunderline.Thunderbolt.Resources.UpmDriftWindow
+
     # Phase 0 MoE + Decision trace resources
     resource Thunderline.MoE.Expert
     resource Thunderline.MoE.DecisionTrace

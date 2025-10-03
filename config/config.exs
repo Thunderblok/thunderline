@@ -213,7 +213,9 @@ config :thunderline,
     Thunderline.Thundercrown.Domain,
     # Auth/security domain now enabled for AshAuthentication integration
     Thunderline.Thundergate.Domain,
-    Thunderline.Thundercom.Domain
+    Thunderline.Thundercom.Domain,
+    # Heavy compute & UPM resources now active
+    Thunderline.Thunderbolt.Domain
   ]
 
 # OPTIONAL (disabled right now):
@@ -401,5 +403,6 @@ config :ash_admin, AshAdmin,
     Thunderline.Thunderlink.Domain,
     Thunderline.Thundercrown.Domain,
     Thunderline.Thundergate.Domain,
-    Thunderline.Thundercom.Domain
+    Thunderline.Thundercom.Domain,
+    Thunderline.Thunderbolt.Domain
   ]

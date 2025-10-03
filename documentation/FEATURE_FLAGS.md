@@ -21,6 +21,7 @@ Environment variables map where applicable (e.g. `ENABLE_UPS=true`). Prefer expl
 | `:enable_ups` | ENABLE_UPS | false | boolean | Infra | Enable UPS watcher process & status events | stable |
 | `:enable_ndjson` | ENABLE_NDJSON | false | boolean | Logging | Start NDJSON logging writer | stable |
 | `:ml_nas` | FEATURES_ML_NAS | false | boolean | ML | Expose experimental NAS / search APIs | experimental |
+| `:unified_model` | FEATURES_UNIFIED_MODEL | false | boolean | AI | Enable Unified Persistent Model trainer + agent adapters (shadow → canary → global) | preview |
 | `:voice_input` | FEATURES_VOICE | false | boolean | UX | Enable voice/WebRTC ingestion pipeline (HC-13) | planned |
 | `:email_mvp` | FEATURES_EMAIL_MVP | true | boolean | Product | Gate email automation surfaces (UI + events) | preview |
 | `:presence_debug` | FEATURES_PRESENCE_DEBUG | false | boolean | Debug | Extra presence event logging | debug |
@@ -109,6 +110,7 @@ end
 - [ ] Wire NDJSON & UPS processes to use unified feature lookup (if not already)
 - [ ] Add telemetry emission (sampled) for evaluations
 - [ ] Add quarterly review script (list flags by lifecycle & age)
+- [ ] Document staged rollout policy for `:unified_model` (shadow/canary/global) and link to UPM runbook
 
 ## 11. Future Enhancements
 - Per-tenant dynamic store (Ash resource + caching)

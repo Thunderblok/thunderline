@@ -18,6 +18,7 @@
 | HC-08 | P0 | CI/CD Depth | Missing release pipeline, PLT cache, audit | Extend GH Actions (release, dialyzer cache, hex.audit) | Platform | Planned |
 | HC-09 | P0 | Error Handling | No classifier & DLQ policy | Central error classifier + Broadway DLQ + metrics | Flow Steward | Not Started |
 | HC-10 | P0 | Feature Flags | Flags undocumented | `FEATURE_FLAGS.md` (ENABLE_UPS, ENABLE_NDJSON, features.ml_nas, etc.) | Platform | Planned |
+| HC-22 | P0 | Unified Model | No persistent cross-agent model | Stand up Unified Persistent Model (UPM) online trainer + ThunderBlock adapters + rollout policy | Bolt + Flow + Crown Stewards | Not Started |
 | HC-11 | P1 | ThunderBridge | Missing ingest bridge layer | DIP + scaffold `Thunderline.ThunderBridge` | Gate Steward | Not Started |
 | HC-12 | P1 | DomainProcessor | Repeated consumer boilerplate | Introduce behaviour + generators + telemetry | Flow Steward | Not Started |
 | HC-13 | P1 | Voice/WebRTC | Unused media libs | MVP voice → intent pipeline (`voice.intent.detected`) | Link+Crown | Not Started |
@@ -33,18 +34,21 @@
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
 ### Consolidated P0 Launch Backlog (Definitive Order)
-1. HC-01 Event publish API
-2. HC-02 Bus codemod consolidation
-3. HC-03 Event & Error taxonomy docs
-4. HC-04 ML migrations live
-5. HC-05 Email MVP (resources + flow)
-6. HC-06 Presence & membership policies
-7. HC-07 Deployment scripts & containerization
-8. HC-08 CI/CD enhancements (release, audit, PLT caching)
-9. HC-09 Error classification + DLQ
-10. HC-10 Feature flags documentation
+1. HC-22 Unified Persistent Model (online trainer + adapters)
+2. HC-01 Event publish API
+3. HC-02 Bus codemod consolidation
+4. HC-03 Event & Error taxonomy docs
+5. HC-04 ML migrations live
+6. HC-05 Email MVP (resources + flow)
+7. HC-06 Presence & membership policies
+8. HC-07 Deployment scripts & containerization
+9. HC-08 CI/CD enhancements (release, audit, PLT caching)
+10. HC-09 Error classification + DLQ
+11. HC-10 Feature flags documentation
 
-Post-P0 Near-Term (Governance): HC-20 (Cerebros Bridge), HC-21 (VIM Rollout) prioritized after M1 gating items.
+Post-P0 Near-Term (Governance): HC-20 (Cerebros Bridge), HC-21 (VIM Rollout) prioritized after M1 gating items once HC-22 exits canary.
+
+UPM is the connective tissue between ThunderFlow telemetry and ThunderBlock agents; its readiness is now considered the primary blocker for platform-wide intelligence rollout.
 
 Gate: All above = Milestone `M1-EMAIL-AUTOMATION` ✔
 

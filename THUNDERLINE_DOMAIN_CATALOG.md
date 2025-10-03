@@ -2,7 +2,7 @@
 
 > **SYSTEMS THEORY AUGMENT (2025)** – Domain ecology & governance layers integrated. See added sections: Interaction Matrix, Event Taxonomy, Anti-Corruption, Stewardship.
 
-> **UNIFIED ARCHITECTURE** - Last Updated: August 23 2025  
+> **UNIFIED ARCHITECTURE** - Last Updated: October 3 2025  
 > **Status**: 🔥 **7-DOMAIN ARCHITECTURE OPERATIONAL (Auth + Realtime Chat Baseline Added)**  
 > **Compilation**: ✅ **CLEAN BUILD SUCCESSFUL**  
 > **Purpose**: Complete catalog of consolidated domain architecture with all resources
@@ -11,9 +11,10 @@
 
 ## ⚡ **ARCHITECTURE OVERVIEW: 7 UNIFIED DOMAINS**
 
-### 🆕 Recent Delta (Aug 2025)
+### 🆕 Recent Delta (Oct 2025)
 | Change | Domains | Impact |
 |--------|---------|--------|
+| Unified Persistent Model (UPM) charter ratified | ThunderBolt, ThunderBlock, ThunderFlow, ThunderCrown | Establishes real-time shared model fed by pipelines; agents gain unified embeddings |
 | AshAuthentication (password strategy) integrated with Phoenix | ThunderGate, ThunderLink | Enables session auth, actor context for policies |
 | AuthController + Live on_mount (`ThunderlineWeb.Live.Auth`) | Cross Web Layer | Centralized current_user assignment & Ash actor set |
 | Discord-style Community & Channel LiveViews | ThunderLink | Real-time navigation & messaging surface established |
@@ -25,7 +26,7 @@
 | Attractor recompute + canonical Lyapunov selection | ThunderFlow | Supports parameterized recomputation & stability metrics |
 | Dependabot + CI workflow introduced | Cross | Automated dependency/security drift management & quality gates |
 
-Planned Next: Replace AI stub with AshAI actions, authenticated presence, channel policy enforcement, email automation slice DIP.
+Planned Next: Stand up UPM trainer/adapters (HC-22), replace AI stub with AshAI actions, authenticated presence, channel policy enforcement, email automation slice DIP.
 
 ### 🧬 Domain Interaction Matrix (Allowed Directions)
 
@@ -73,6 +74,10 @@ Reserved type prefixes: `reactor.`, `system.`, `audit.`, `ui.` (see Handbook for
 
 VIM Telemetry Names (planned; see DIP-VIM-001):
 `[:vim,:router,:solve,:start|:stop|:error]`, `[:vim,:persona,:solve,:start|:stop|:error]` – shadow & active differentiation via metadata `mode`.
+
+UPM Event & Telemetry Names:
+- Events: `ai.upm.snapshot.created`, `ai.upm.snapshot.activated`, `ai.upm.shadow_delta`, `ai.upm.rollback` (all gated by taxonomy registry).
+- Telemetry: `[:upm,:trainer,:update]`, `[:upm,:snapshot,:freshness]`, `[:upm,:drift,:score]`, `[:upm,:adapter,:sync]` with metadata `mode`, `tenant`, `version`.
 
 Bridge Telemetry (Phase-1 scaffold):
 `[:cerebros,:bridge,:invoke,:start|:stop|:exception]` — invocation lifecycle (timeout & exception coverage). Future cache events: `[:cerebros,:bridge,:cache,:hit|:miss]`.
@@ -196,6 +201,18 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
     - Higher-level ML registry, dataset descriptors, telemetry emitters, and Axon trainer integrations.
 - `changes/` & `export/`
     - Contain change-logging helpers and export pipelines for promoting artifacts beyond the domain boundary.
+
+#### 🌐 Unified Persistent Model (UPM)
+- `upm_trainer.ex`, `upm_snapshot.ex`, `upm_adapter.ex`, `upm_drift_window.ex` under `upm/`
+    - Trainer performs online SGD against ThunderFlow feature windows; snapshots persist to ThunderBlock vault; adapters stream embeddings/actions to ThunderBlock agents.
+- `upm/shadow_supervisor.ex`
+    - Supervises shadow-mode training & drift monitors, emits telemetry (`[:upm, :trainer, :update]`).
+- `upm/policy.ex`
+    - Provides Ash actions for ThunderCrown policies to gate activation (`:unified_model` feature flag aware).
+- `upm/telemetry.ex`
+    - Aggregates freshness, drift score, adoption metrics, and surfaces them to Observability dashboards.
+- Event Outputs: `ai.upm.snapshot.created`, `ai.upm.snapshot.activated`, `ai.upm.shadow_delta`, with correlation back to originating command/event.
+- Dependencies: Consumes ThunderFlow `feature_window` resources, persists snapshots via ThunderBlock retention policies, coordinates rollout with ThunderCrown policy verdicts.
 
 #### 🛰 Cerebros Bridge & Event Surface
 - `cerebros/adapter.ex`, `cerebros/artifacts.ex`, `cerebros/simple_search.ex`, `cerebros/telemetry.ex`

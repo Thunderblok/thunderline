@@ -30,16 +30,23 @@ defmodule Thunderline.Thundercrown.Jido.Actions.DefaultConversation do
     actor = Map.get(context, :actor)
     llm_override = Map.get(context, :llm)
 
+    context_overrides =
+      %{}
+      |> maybe_put(:llm, llm_override)
+      |> maybe_put(:adapter, Map.get(context, :adapter))
+      |> maybe_put(:llm_adapter, Map.get(context, :llm_adapter))
+      |> maybe_put(:persona, Map.get(params, :persona))
+
     opts =
       [
         actor: actor,
         authorize?: true,
-        context: %{
-          llm: llm_override,
-          persona: Map.get(params, :persona)
-        }
+        context: context_overrides
       ]
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Enum.reject(fn
+        {:context, overrides} -> overrides == %{}
+        {_k, v} -> is_nil(v)
+      end)
 
     args = %{
       prompt: Map.get(params, :prompt),
@@ -64,4 +71,7 @@ defmodule Thunderline.Thundercrown.Jido.Actions.DefaultConversation do
         {:error, reason}
     end
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end
