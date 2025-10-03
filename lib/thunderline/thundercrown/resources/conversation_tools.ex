@@ -56,7 +56,7 @@ defmodule Thunderline.Thundercrown.Resources.ConversationTools do
     end
 
     action :run_digest, :map do
-      argument :limit, :pos_integer, default: 3, constraints: [min: 1, max: 10]
+      argument :limit, :integer, default: 3, constraints: [min: 1, max: 10]
 
       run fn %{arguments: %{limit: limit}}, _context ->
         snapshot = Summary.snapshot(run_limit: limit, trial_limit: 0)

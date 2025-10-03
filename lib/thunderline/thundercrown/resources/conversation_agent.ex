@@ -13,7 +13,8 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgent do
     data_layer: Ash.DataLayer.Ets,
     authorizers: [Ash.Policy.Authorizer]
 
-  import AshAi.Actions
+  alias AshAi.Actions.Prompt
+  alias Ash.Resource.Actions.Implementation.Context, as: ImplContext
 
   alias LangChain.ChatModels.ChatOpenAI
   alias LangChain.Message
@@ -35,11 +36,27 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgent do
       argument :hints, {:array, :string}, default: []
       argument :persona, :string, allow_nil?: true
 
-      run prompt(
-            &__MODULE__.select_llm/2,
+      run fn input, context ->
+        runtime_context = combined_context(input, context)
+
+        llm = select_llm(input, runtime_context)
+        adapter = select_adapter(llm, runtime_context)
+
+        prompt_opts =
+          [
+            llm: llm,
             tools: @default_tools,
             prompt: &__MODULE__.build_prompt_messages/2
-          )
+          ]
+          |> maybe_put_adapter(adapter)
+
+        adjusted_context =
+          context
+          |> ensure_source_context()
+          |> merge_source_context(runtime_context)
+
+        Prompt.run(input, prompt_opts, adjusted_context)
+      end
     end
   end
 
@@ -56,7 +73,16 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgent do
 
   @doc false
   @spec select_llm(Ash.ActionInput.t(), map()) :: LangChain.ChatModels.ChatModel.t()
+  def select_llm(%Ash.ActionInput{context: %{llm: override}}, _context) when not is_nil(override),
+    do: override
+
   def select_llm(_input, %{llm: override}) when not is_nil(override), do: override
+
+  @doc false
+  @spec select_adapter(term(), map()) :: nil | module() | {module(), Keyword.t()}
+  def select_adapter(_llm, %{adapter: adapter}) when not is_nil(adapter), do: adapter
+  def select_adapter(_llm, %{llm_adapter: adapter}) when not is_nil(adapter), do: adapter
+  def select_adapter(_llm, _context), do: nil
 
   def select_llm(_input, _context) do
     model = Application.get_env(:thunderline, :conversation_llm, %{})
@@ -75,7 +101,10 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgent do
     prompt = Map.get(args, :prompt)
     history = Map.get(args, :history, [])
     hints = Map.get(args, :hints, [])
-    persona = Map.get(args, :persona) || Map.get(context, :persona)
+
+    persona =
+      Map.get(args, :persona) ||
+        context_persona(context)
 
     system_prompt =
       persona
@@ -92,6 +121,31 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgent do
 
     [system_prompt | history_messages] ++ [user_message]
   end
+
+  defp combined_context(%Ash.ActionInput{context: ctx}, %ImplContext{source_context: source}) do
+    Map.new(source || %{})
+    |> Map.merge(Map.new(ctx || %{}))
+  end
+
+  defp ensure_source_context(%ImplContext{source_context: nil} = context),
+    do: %{context | source_context: %{}}
+
+  defp ensure_source_context(context), do: context
+
+  defp merge_source_context(%ImplContext{} = context, runtime_context) do
+    passthrough_context = Map.drop(Map.new(runtime_context), [:llm, :adapter, :llm_adapter])
+    merged_source = Map.merge(context.source_context, passthrough_context)
+    %{context | source_context: merged_source}
+  end
+
+  defp maybe_put_adapter(opts, nil), do: opts
+  defp maybe_put_adapter(opts, adapter), do: Keyword.put(opts, :adapter, adapter)
+
+  defp context_persona(%ImplContext{source_context: source}) when is_map(source),
+    do: Map.get(source, :persona)
+
+  defp context_persona(context) when is_map(context), do: Map.get(context, :persona)
+  defp context_persona(_), do: nil
 
   @doc false
   @spec system_prompt(nil | String.t()) :: String.t()

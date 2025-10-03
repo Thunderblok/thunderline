@@ -5,7 +5,7 @@ defmodule Thunderline.Test.Support.FixedLLM do
 
   @behaviour LangChain.ChatModels.ChatModel
 
-  defstruct response: "Test response"
+  defstruct response: "Test response", callbacks: []
 
   alias LangChain.Message
 

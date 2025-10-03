@@ -3,6 +3,7 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgentTest do
 
   alias Thunderline.Test.Support.FixedLLM
   alias Thunderline.Thundercrown.Resources.ConversationAgent
+  alias AshAi.Actions.Prompt.Adapter.Raw, as: RawAdapter
 
   @actor %{role: :owner, tenant_id: "tenant-1"}
 
@@ -43,7 +44,7 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgentTest do
       ConversationAgent
       |> Ash.ActionInput.for_action(:respond, %{prompt: "hello"},
         actor: @actor,
-        context: %{llm: llm}
+        context: %{llm: llm, adapter: RawAdapter}
       )
 
     assert {:ok, "Test reply"} = Ash.run_action(input)
