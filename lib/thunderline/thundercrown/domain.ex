@@ -49,6 +49,16 @@ defmodule Thunderline.Thundercrown.Domain do
   tools do
     # Run an approved agent/tool with a prompt under governance.
     tool :run_agent, Thunderline.Thundercrown.Resources.AgentRunner, :run
+
+    tool :conversation_context,
+         Thunderline.Thundercrown.Resources.ConversationTools,
+         :context_snapshot
+
+    tool :conversation_run_digest,
+         Thunderline.Thundercrown.Resources.ConversationTools,
+         :run_digest
+
+    tool :conversation_reply, Thunderline.Thundercrown.Resources.ConversationAgent, :respond
   end
 
   resources do
@@ -56,6 +66,8 @@ defmodule Thunderline.Thundercrown.Domain do
     resource Thunderline.Thundercrown.Resources.OrchestrationUI
     # Agent runner for AI/Jido tools
     resource Thunderline.Thundercrown.Resources.AgentRunner
+    resource Thunderline.Thundercrown.Resources.ConversationTools
+    resource Thunderline.Thundercrown.Resources.ConversationAgent
 
     # TODO: Add other resources when implemented:
     # resource Thunderline.Thundercrown.Resources.AiPolicy

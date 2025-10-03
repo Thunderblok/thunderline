@@ -178,7 +178,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
       |> Enum.reject(fn {_k, v} -> is_nil(v) end)
       |> Enum.into(%{})
 
-  case Exec.run(module, params, context, timeout: 15_000) do
+    case Exec.run(module, params, context, timeout: 15_000) do
       {:ok, %{} = result} ->
         {:ok, result}
 
@@ -220,6 +220,7 @@ defmodule Thunderline.Thundercrown.Resources.AgentRunner do
       inspect(error)
     end
   end
+
   defp format_error(%{message: message}) when is_binary(message), do: message
   defp format_error({:error, reason}), do: format_error(reason)
   defp format_error(reason) when is_binary(reason), do: reason

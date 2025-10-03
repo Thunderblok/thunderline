@@ -11,6 +11,7 @@ defmodule Thunderline.Thundercrown.Jido.ActionRegistry do
   @type action_module :: module()
 
   @registry %{
+    "default_conversation" => Thunderline.Thundercrown.Jido.Actions.DefaultConversation,
     "list_available_zones" => Thunderline.Thundercrown.Jido.Actions.ListAvailableZones,
     "register_core_agent" => Thunderline.Thundercrown.Jido.Actions.RegisterCoreAgent
   }
