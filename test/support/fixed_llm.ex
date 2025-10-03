@@ -1,31 +1,21 @@
 defmodule Thunderline.Test.Support.FixedLLM do
   @moduledoc """
-  Deterministic LangChain chat model used for unit tests.
+  Deprecated alias kept for older tests. Prefer
+  `Thunderline.Thundercrown.LLM.FixedLLM` directly.
   """
 
-  @behaviour LangChain.ChatModels.ChatModel
+  @deprecated "Use Thunderline.Thundercrown.LLM.FixedLLM instead"
+  def new(opts \\ []), do: Thunderline.Thundercrown.LLM.FixedLLM.new(opts)
 
-  defstruct response: "Test response", callbacks: []
+  @deprecated "Use Thunderline.Thundercrown.LLM.FixedLLM instead"
+  defdelegate call(model, messages, tools),
+    to: Thunderline.Thundercrown.LLM.FixedLLM
 
-  alias LangChain.Message
+  @deprecated "Use Thunderline.Thundercrown.LLM.FixedLLM instead"
+  defdelegate serialize_config(model),
+    to: Thunderline.Thundercrown.LLM.FixedLLM
 
-  @impl true
-  def call(%__MODULE__{response: response}, _messages, _tools) do
-    {:ok, Message.new_assistant!(response)}
-  end
-
-  @impl true
-  def serialize_config(%__MODULE__{} = model) do
-    %{
-      "module" => __MODULE__ |> Atom.to_string(),
-      "response" => model.response
-    }
-  end
-
-  @impl true
-  def restore_from_map(%{"response" => response}) do
-    {:ok, %__MODULE__{response: response}}
-  end
-
-  def restore_from_map(_), do: {:error, "Missing response"}
+  @deprecated "Use Thunderline.Thundercrown.LLM.FixedLLM instead"
+  defdelegate restore_from_map(map),
+    to: Thunderline.Thundercrown.LLM.FixedLLM
 end

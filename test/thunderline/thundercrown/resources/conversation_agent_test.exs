@@ -1,7 +1,7 @@
 defmodule Thunderline.Thundercrown.Resources.ConversationAgentTest do
   use Thunderline.DataCase, async: true
 
-  alias Thunderline.Test.Support.FixedLLM
+  alias Thunderline.Thundercrown.LLM.FixedLLM
   alias Thunderline.Thundercrown.Resources.ConversationAgent
   alias AshAi.Actions.Prompt.Adapter.Raw, as: RawAdapter
 

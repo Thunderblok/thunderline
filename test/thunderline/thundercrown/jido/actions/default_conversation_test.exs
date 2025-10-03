@@ -1,7 +1,7 @@
 defmodule Thunderline.Thundercrown.Jido.Actions.DefaultConversationTest do
   use Thunderline.DataCase, async: true
 
-  alias Thunderline.Test.Support.FixedLLM
+  alias Thunderline.Thundercrown.LLM.FixedLLM
   alias Thunderline.Thundercrown.Jido.Actions.DefaultConversation
 
   @actor %{role: :owner, tenant_id: "tenant-1"}
