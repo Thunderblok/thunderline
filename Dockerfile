@@ -14,9 +14,11 @@ ARG MIX_ENV=prod
 FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_BUILD_REVISION} AS build
 ARG MIX_ENV
 ARG APP_NAME
+ARG FEATURES=""
 
 ENV DEBIAN_FRONTEND=noninteractive \
     MIX_ENV=${MIX_ENV} \
+    FEATURES=${FEATURES} \
     HEX_UNSAFE_HTTPS=1 \
     LANG=C.UTF-8 \
     TAILWIND_VERSION=3.4.14
@@ -96,8 +98,8 @@ RUN npm ci --prefix assets
 
 # Precompile assets (Tailwind+esbuild) and release
 RUN mix assets.deploy
-RUN mix compile
-RUN mix release
+RUN FEATURES=${FEATURES} mix compile
+RUN FEATURES=${FEATURES} mix release
 
 ############################################################
 FROM debian:${DEBIAN_RUNTIME} AS runtime

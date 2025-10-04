@@ -187,7 +187,7 @@ runtime_enabled =
     end
   end)
 
-enabled_list = runtime_enabled |> Enum.into([])
+enabled_list = runtime_enabled |> Enum.into([]) |> Enum.sort()
 config :thunderline, :features, enabled_list
 
 # Log enabled features on boot for observability

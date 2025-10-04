@@ -89,9 +89,16 @@ config :thunderline,
   ecto_repos: [Thunderline.Repo],
   generators: [timestamp_type: :utc_datetime],
   # Feature flags list (see FEATURE_FLAGS.md). Add flags here to enable.
-  features: [
-    # :vim, :vim_active, :cerebros_bridge
-  ],
+  # Read from FEATURES env var at compile time: "feature1,feature2"
+  # Returns sorted keyword list like [cerebros_bridge: true, ml_nas: true]
+  features: (
+    (System.get_env("FEATURES") || "")
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.sort()
+    |> Enum.map(&{String.to_atom(&1), true})
+  ),
   # Numerics adapter defaults (fallback; switch to :sidecar or :nif via env/config)
   numerics_adapter: Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback,
   numerics_sidecar_url:
