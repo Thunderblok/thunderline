@@ -21,7 +21,7 @@ env:
     MINIO_ACCESS_KEY: "minio"
     MINIO_SECRET_KEY: "minio123"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""   # e.g. http://otel-collector:4317
-    OTEL_HEADERS: ""
+    OTEL_EXPORTER_OTLP_HEADERS: ""
     # Provide MinIO credentials to MLflow via env when enabling the tracker
     AWS_ACCESS_KEY_ID: "minio"
     AWS_SECRET_ACCESS_KEY: "minio123"

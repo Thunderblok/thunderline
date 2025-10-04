@@ -1,4 +1,48 @@
 import Config
+
+defmodule Thunderline.RuntimeOTelHelpers do
+  def maybe_put(opts, _key, nil), do: opts
+  def maybe_put(opts, _key, ""), do: opts
+  def maybe_put(opts, _key, []), do: opts
+  def maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
+
+  def parse_otlp_headers(nil), do: nil
+  def parse_otlp_headers(""), do: nil
+
+  def parse_otlp_headers(headers) do
+    headers
+    |> String.split(",", trim: true)
+    |> Enum.reduce([], fn pair, acc ->
+      case String.split(pair, "=", parts: 2) do
+        [k, v] ->
+          key = k |> String.trim() |> String.downcase() |> String.to_charlist()
+          value = v |> String.trim() |> String.to_charlist()
+          [{key, value} | acc]
+
+        _ ->
+          acc
+      end
+    end)
+    |> Enum.reverse()
+    |> case do
+      [] -> nil
+      list -> list
+    end
+  end
+
+  def parse_compression(nil), do: nil
+  def parse_compression(""), do: nil
+
+  def parse_compression(value) do
+    case value |> String.trim() |> String.downcase() do
+      "" -> nil
+      "none" -> nil
+      other -> String.to_atom(other)
+    end
+  end
+end
+
+alias Thunderline.RuntimeOTelHelpers, as: RuntimeOTel
 config :langchain, openai_key: fn -> System.fetch_env!("OPENAI_API_KEY") end
 
 # config/runtime.exs is executed for all environments, including
@@ -55,12 +99,21 @@ if System.get_env("OTEL_DISABLED") not in ["1", "true", "TRUE"] do
     ]
 
   exporter_opts =
-    case {System.get_env("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"),
-          System.get_env("OTEL_EXPORTER_OTLP_ENDPOINT")} do
-      {traces_ep, _} when is_binary(traces_ep) and traces_ep != "" -> [traces_endpoint: traces_ep]
-      {_, endpoint} when is_binary(endpoint) and endpoint != "" -> [endpoint: endpoint]
-      _ -> []
-    end
+    []
+    |> RuntimeOTel.maybe_put(
+      :traces_endpoint,
+      System.get_env("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+    )
+    |> RuntimeOTel.maybe_put(:endpoint, System.get_env("OTEL_EXPORTER_OTLP_ENDPOINT"))
+    |> RuntimeOTel.maybe_put(
+      :headers,
+      RuntimeOTel.parse_otlp_headers(System.get_env("OTEL_EXPORTER_OTLP_HEADERS"))
+    )
+    |> RuntimeOTel.maybe_put(:certificate, System.get_env("OTEL_EXPORTER_OTLP_CERTIFICATE"))
+    |> RuntimeOTel.maybe_put(
+      :compression,
+      RuntimeOTel.parse_compression(System.get_env("OTEL_EXPORTER_OTLP_COMPRESSION"))
+    )
 
   exporter_available? =
     Code.ensure_loaded?(:opentelemetry_exporter) and

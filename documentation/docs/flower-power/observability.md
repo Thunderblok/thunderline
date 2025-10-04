@@ -15,7 +15,7 @@ Stack
 Configuration
 - Thunderline env (set via Helm values):
   - OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-  - OTEL_HEADERS: (optional) authorization=Bearer <token>
+  - OTEL_EXPORTER_OTLP_HEADERS: (optional) authorization=Bearer <token>
 - Labels/attributes (use consistently):
   - federation_id, round_num, client_id, tenant
 

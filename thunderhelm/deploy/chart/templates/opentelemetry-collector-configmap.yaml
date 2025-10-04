@@ -1,0 +1,12 @@
+{{- if .Values.opentelemetryCollector.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-otelcol
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: otelcol
+data:
+  collector-config.yaml: |
+    {{- toYaml .Values.opentelemetryCollector.config | nindent 4 }}
+{{- end }}

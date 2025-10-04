@@ -21,6 +21,7 @@ env:
     AWS_ACCESS_KEY_ID: "minio"
     AWS_SECRET_ACCESS_KEY: "minio123"
     MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://thunderline-otelcol:4317"
 
 web:
   env:
@@ -56,6 +57,9 @@ mlflow:
     AWS_ACCESS_KEY_ID: "minio"
     AWS_SECRET_ACCESS_KEY: "minio123"
     MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
+
+opentelemetryCollector:
+  enabled: true
 
 cerebrosRunner:
   enabled: true

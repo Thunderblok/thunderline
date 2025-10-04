@@ -39,7 +39,7 @@ env:
     MINIO_ACCESS_KEY: "<set by Secret manager>"
     MINIO_SECRET_KEY: "<set by Secret manager>"
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability:4317"
-    OTEL_HEADERS: ""
+  OTEL_EXPORTER_OTLP_HEADERS: ""
 
 web:
   replicas: 2

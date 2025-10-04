@@ -4,7 +4,7 @@ This chart deploys Thunderline’s control plane (web) and workers, and now ship
 
 Contents
 - Deployments: web (Phoenix endpoint), worker (pipelines/Oban)
-- Optional Deployments/Services: Flower federation server, Cerebros runner, MLflow tracker, Livebook workspace
+- Optional Deployments/Services: Flower federation server, Cerebros runner, MLflow tracker, Livebook workspace, OpenTelemetry collector
 - Services: web ClusterIP plus optional services for each component
 - Optional Ingress for web and Livebook
 - ConfigMaps/Secrets for shared environment and secrets (global + component-specific)
@@ -31,7 +31,7 @@ helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thund
   --set env.secrets.MINIO_ACCESS_KEY="minio" \
   --set env.secrets.MINIO_SECRET_KEY="minio123"
 
-# Launch the full ML/NAS demo stack (Postgres/MinIO subcharts + Cerebros runner, MLflow, Livebook)
+# Launch the full ML/NAS demo stack (Postgres/MinIO subcharts + Cerebros runner, MLflow, Livebook, OpenTelemetry collector)
 helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thunder \
   -f Thunderline/thunderhelm/deploy/chart/examples/values-hpo-demo.yaml
 
@@ -71,6 +71,7 @@ Structure
   - mlflow-{deployment,service,pvc}.yaml
   - livebook-{secret,deployment,service,ingress,pvc}.yaml
   - federation-deployment.yaml, federation-service.yaml
+   - opentelemetry-collector-{configmap,deployment,service}.yaml
 
 Key values (partial)
 image:
@@ -95,7 +96,7 @@ env.secrets:
   MINIO_ACCESS_KEY: ""
   MINIO_SECRET_KEY: ""
   OTEL_EXPORTER_OTLP_ENDPOINT: ""  # http://otel-collector:4317
-  OTEL_HEADERS: ""                 # optional
+  OTEL_EXPORTER_OTLP_HEADERS: ""   # optional header string ("authorization=Bearer <token>")
 
 web:
   enabled: true
@@ -172,6 +173,17 @@ federation:
     enabled: true
     type: ClusterIP
 
+opentelemetryCollector:
+  enabled: false
+  replicas: 1
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.106.0"
+  service:
+    type: ClusterIP
+    grpcPort: 4317
+    httpPort: 4318
+
 Operational notes
 - Provide DATABASE_URL and MinIO credentials via values.env.secrets.*
 - For production, replace the demo federation container with a hardened image containing your strategy and pinned dependencies; set federation.image.* and override command/args accordingly.
@@ -179,12 +191,14 @@ Operational notes
 - The web Deployment expects a Phoenix release that binds to the port declared in web.service.port (default 4000).
 - The chart ships a stub Python script (`priv/cerebros_bridge_stub.py`) and wires `CEREBROS_SCRIPT` to it by default; set `env.CEREBROS_REMOTE_URL` to point the bridge at an external runner if you replace the included FastAPI service.
 - When enabling `livebook.ingress`, provide `livebook.secrets.password` and configure TLS via `livebook.ingress.tls` and `livebook.ingress.certManager` (see `examples/values-livebook-tls.yaml`).
+- When enabling the collector, update `env.secrets.OTEL_EXPORTER_OTLP_ENDPOINT` (or `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`) to point at the collector service and set any headers via `OTEL_EXPORTER_OTLP_HEADERS`.
 
 Examples
 See examples/ in this chart for:
 - values-dev.yaml: simple dev config
 - values-federation-demo.yaml: federation enabled for demo
 - values-hpo-demo.yaml: full MLflow + Cerebros runner + Livebook stack
+- values-otel.yaml: overlay for enabling the OpenTelemetry collector
 - values-dashboard-run.yaml: dashboard-ready stack (Postgres + MinIO + MLflow + Cerebros)
 - values-livebook-tls.yaml: overlay that enables Livebook ingress with cert-manager TLS
 

@@ -1,0 +1,21 @@
+{{- if and .Values.opentelemetryCollector.enabled (.Values.opentelemetryCollector.service.enabled | default true) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-otelcol
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: otelcol
+spec:
+  type: {{ .Values.opentelemetryCollector.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "thunderhelm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: otelcol
+  ports:
+    - name: otlp-grpc
+      port: {{ .Values.opentelemetryCollector.service.grpcPort | default 4317 }}
+      targetPort: otlp-grpc
+    - name: otlp-http
+      port: {{ .Values.opentelemetryCollector.service.httpPort | default 4318 }}
+      targetPort: otlp-http
+{{- end }}

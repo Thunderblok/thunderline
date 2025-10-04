@@ -42,8 +42,8 @@ Next steps
 
 5) Observability
   - If you have an OTLP collector, set:
-      env.secrets.OTEL_EXPORTER_OTLP_ENDPOINT
-      env.secrets.OTEL_HEADERS (optional)
+    env.secrets.OTEL_EXPORTER_OTLP_ENDPOINT
+    env.secrets.OTEL_EXPORTER_OTLP_HEADERS (optional)
   - Expose Prometheus/Grafana separately (or add as optional dependencies in a fork).
 
 Common issues

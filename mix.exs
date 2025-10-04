@@ -66,7 +66,7 @@ defmodule Thunderline.MixProject do
       {:telemetry_poller, "~> 1.0"},
       # OpenTelemetry (align versions to avoid conflicts)
       {:opentelemetry, "~> 1.4"},
-      {:opentelemetry_exporter, "~> 1.8", only: :prod},
+      {:opentelemetry_exporter, "~> 1.8"},
       {:opentelemetry_phoenix, "~> 1.2"},
       {:opentelemetry_ecto, "~> 1.2"},
       {:opentelemetry_oban, "~> 1.0"},

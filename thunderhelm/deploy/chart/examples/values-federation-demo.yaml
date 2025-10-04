@@ -21,7 +21,7 @@ env:
     MINIO_ACCESS_KEY: "minio"
     MINIO_SECRET_KEY: "minio123"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""   # e.g. http://otel-collector:4317
-    OTEL_HEADERS: ""
+  OTEL_EXPORTER_OTLP_HEADERS: ""
 
 web:
   enabled: true

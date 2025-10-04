@@ -34,7 +34,7 @@ env:
     MINIO_ACCESS_KEY: ""
     MINIO_SECRET_KEY: ""
     OTEL_EXPORTER_OTLP_ENDPOINT: ""  # e.g. http://otel-collector:4317
-    OTEL_HEADERS: ""                 # optional: "authorization=Bearer <token>"
+    OTEL_EXPORTER_OTLP_HEADERS: ""   # optional: "authorization=Bearer <token>"
 
 serviceAccount:
   create: true
@@ -270,6 +270,44 @@ minio:
 
 opentelemetryCollector:
   enabled: false
+  replicas: 1
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.106.0"
+    pullPolicy: IfNotPresent
+  service:
+    enabled: true
+    type: ClusterIP
+    grpcPort: 4317
+    httpPort: 4318
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch: {}
+    exporters:
+      logging:
+        loglevel: info
+    service:
+      telemetry:
+        logs:
+          level: "info"
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
 
 kubePrometheusStack:
   enabled: false

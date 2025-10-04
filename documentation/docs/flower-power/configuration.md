@@ -18,7 +18,7 @@ Environment variables (Thunderline)
   - Default: thunderline-artifacts
 - OTEL_EXPORTER_OTLP_ENDPOINT (optional)
   - Example: http://otel-collector:4317
-- OTEL_HEADERS (optional)
+- OTEL_EXPORTER_OTLP_HEADERS (optional)
   - Example: authorization=Bearer <token>
 - LOG_LEVEL
   - Default: info (set debug in dev)
@@ -35,7 +35,7 @@ Helm values (Thunderhelm)
 - env (non-secrets)
   - MINIO_BUCKET, SERVICE_NAME, LOG_LEVEL, FEATURES
 - env.secrets
-  - DATABASE_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_HEADERS
+  - DATABASE_URL, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS
 - web
   - enabled, replicas
   - env: ROLE=web, START_ENDPOINT=true, START_COMPUTE=false, START_OBAN=true
@@ -123,7 +123,7 @@ env:
     MINIO_ACCESS_KEY: "minio"
     MINIO_SECRET_KEY: "minio123"
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
-    OTEL_HEADERS: ""
+  OTEL_EXPORTER_OTLP_HEADERS: ""
 
 web:
   enabled: true
