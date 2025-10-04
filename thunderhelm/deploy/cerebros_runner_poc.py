@@ -5,20 +5,23 @@ from datetime import datetime
 from subprocess import run
 from warnings import warn
 
-MLFLOW_PORT = 5000
-
-answer = run(f"mlflow server --host 127.0.0.1 --port {MLFLOW_PORT} &",
-   shell=True,
-)
-print(answer.stdout)
-
+# Use external MLflow service in Kubernetes if available, otherwise start local
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
+if MLFLOW_TRACKING_URI:
+    print(f"Using external MLflow tracking server at: {MLFLOW_TRACKING_URI}")
+    mlflow.set_tracking_uri(uri=MLFLOW_TRACKING_URI)
+else:
+    # Fallback to local MLflow server for development
+    MLFLOW_PORT = 5000
+    answer = run(f"mlflow server --host 127.0.0.1 --port {MLFLOW_PORT} &",
+       shell=True,
+    )
+    print(answer.stdout)
+    mlflow.set_tracking_uri(uri=f"http://127.0.0.1:{MLFLOW_PORT}")
 
 EXPERIMENT_ITERATION = "0002"
 
 N_TRIALS = 40
-
-
-mlflow.set_tracking_uri(uri=f"http://127.0.0.1:{MLFLOW_PORT}")
 
 mlflow.set_experiment(f"single-worker-1st-pass-tuning-{EXPERIMENT_ITERATION}-a")
 
