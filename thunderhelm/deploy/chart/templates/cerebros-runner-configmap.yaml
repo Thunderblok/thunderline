@@ -1,4 +1,4 @@
-{{- if .Values.cerebrosRunner.enabled }}
+{{- if and .Values.cerebrosRunner.enabled .Values.cerebrosRunner.pipPackages }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

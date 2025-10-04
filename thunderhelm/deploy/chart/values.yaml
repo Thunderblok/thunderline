@@ -145,10 +145,17 @@ cerebrosRunner:
 
   port: 8088
 
-  # Additional pip packages to install before launching the runner
+  # Additional pip packages to install before launching the runner (full Cerebros POC)
   pipPackages:
-    - "fastapi==0.111.0"
-    - "uvicorn[standard]==0.30.0"
+    - "tensorflow>=2.15.0"
+    - "transformers"
+    - "scikit-learn"
+    - "pandas"
+    - "numpy"
+    - "mlflow"
+    - "optuna"
+    - "pendulum"
+    - "cerebros-python"
     - "mlflow==2.14.1"
     - "numpy==1.26.4"
     - "pandas==2.2.2"

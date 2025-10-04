@@ -26,15 +26,16 @@ spec:
         - name: cerebros-runner
           image: "{{ .Values.cerebrosRunner.image.repository }}:{{ .Values.cerebrosRunner.image.tag }}"
           imagePullPolicy: {{ .Values.cerebrosRunner.image.pullPolicy | default "IfNotPresent" }}
+          {{- if .Values.cerebrosRunner.pipPackages }}
           command:
             - /bin/sh
             - -c
           args:
             - |
-              {{ if .Values.cerebrosRunner.pipPackages }}
+              cd /app &&
               pip install --no-cache-dir{{- range $pkg := .Values.cerebrosRunner.pipPackages }} '{{ $pkg }}'{{- end }} &&
-              {{ end }}
-              python /app/cerebros_runner.py
+              python cerebros_runner.py
+          {{- end }}
           env:
             {{- $runnerEnv := (default (dict) .Values.cerebrosRunner.env) -}}
             {{- range $k, $v := $runnerEnv }}
@@ -50,19 +51,23 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.cerebrosRunner.port }}
+          {{- if .Values.cerebrosRunner.pipPackages }}
           volumeMounts:
             - name: cerebros-runner-script
               mountPath: /app/cerebros_runner.py
               subPath: cerebros_runner.py
+          {{- end }}
           {{- with .Values.cerebrosRunner.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      {{- if .Values.cerebrosRunner.pipPackages }}
       volumes:
         - name: cerebros-runner-script
           configMap:
             name: {{ include "thunderhelm.fullname" . }}-cerebros-runner
             defaultMode: 0555
+      {{- end }}
       {{- with .Values.cerebrosRunner.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

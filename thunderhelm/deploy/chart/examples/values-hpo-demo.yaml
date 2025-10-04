@@ -22,6 +22,9 @@ env:
     AWS_SECRET_ACCESS_KEY: "minio123"
     MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://thunderline-otelcol:4317"
+    SECRET_KEY_BASE: "thunderline-secret-key-base-for-phoenix-sessions-must-be-at-least-64-chars-long"
+    TOKEN_SIGNING_SECRET: "thunderline-token-signing-secret-for-jwt-tokens-must-be-secure-value"
+    LIVEBOOK_PASSWORD: "thunderline123"
 
 web:
   env:
@@ -57,14 +60,30 @@ mlflow:
     AWS_ACCESS_KEY_ID: "minio"
     AWS_SECRET_ACCESS_KEY: "minio123"
     MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
+  persistence:
+    enabled: true
+    size: 10Gi
 
 opentelemetryCollector:
   enabled: true
 
 cerebrosRunner:
   enabled: true
+  image:
+    repository: thunderline/cerebros-runner
+    tag: latest
+    pullPolicy: IfNotPresent
   env:
     MLFLOW_EXPERIMENT_NAME: "thunderline-livebook"
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "4"
+    limits:
+      memory: "16Gi"
+      cpu: "8"
+  # Clear pipPackages since they're baked into the image
+  pipPackages: []
 
 livebook:
   enabled: true
