@@ -162,6 +162,15 @@ defmodule ThunderlineWeb.Router do
     get "/cerebros/metrics", CerebrosMetricsController, :show
     get "/health", HealthController, :check
     get "/domains/:domain/stats", DomainStatsController, :show
+
+    # Auto-ML HPO API
+    post "/hpo/studies", AutoMLController, :create_study
+    post "/hpo/trials/tell", AutoMLController, :tell_result
+    get "/hpo/studies/:id/status", AutoMLController, :get_study_status
+
+    # Dataset management API
+    post "/datasets/register", AutoMLController, :register_dataset
+    post "/datasets/clean", AutoMLController, :clean_samples
   end
 
   # AshTypescript HTTP RPC endpoints (typed TS client uses these by default)

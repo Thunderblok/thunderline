@@ -70,7 +70,8 @@ defmodule Thunderline.Application do
       [
         Thunderline.Thunderbolt.Cerebros.EventPublisher,
         Thunderline.Thunderbolt.Cerebros.Metrics,
-        Thunderline.Thunderbolt.CerebrosBridge.Cache
+        Thunderline.Thunderbolt.CerebrosBridge.Cache,
+        Thunderline.Thunderbolt.AutoMLDriver
       ]
     else
       []
