@@ -43,6 +43,7 @@ defmodule Thunderline.MixProject do
 
   defp deps do
     base = [
+      {:tidewave, "~> 0.5", only: [:dev]},
       {:mdex, "~> 0.7"},
       {:usage_rules, "~> 0.1", only: [:dev]},
       # igniter:deps-start
