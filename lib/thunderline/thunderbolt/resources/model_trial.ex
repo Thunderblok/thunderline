@@ -27,6 +27,8 @@ defmodule Thunderline.Thunderbolt.Resources.ModelTrial do
         :status,
         :metrics,
         :parameters,
+        :spectral_norm,
+        :mlflow_run_id,
         :artifact_uri,
         :duration_ms,
         :rank,
@@ -42,6 +44,8 @@ defmodule Thunderline.Thunderbolt.Resources.ModelTrial do
         :status,
         :metrics,
         :parameters,
+        :spectral_norm,
+        :mlflow_run_id,
         :artifact_uri,
         :duration_ms,
         :rank,
@@ -78,6 +82,18 @@ defmodule Thunderline.Thunderbolt.Resources.ModelTrial do
 
     attribute :parameters, :map do
       default %{}
+    end
+
+    # 🔥 SPECTRAL NORM INTEGRATION - Phase 1
+    attribute :spectral_norm, :boolean do
+      allow_nil? false
+      default false
+      description "Whether spectral normalization constraint was applied to linear layers"
+    end
+
+    # MLflow cross-reference for bidirectional lookup
+    attribute :mlflow_run_id, :string do
+      description "MLflow run ID for cross-referencing with experiment tracking"
     end
 
     attribute :artifact_uri, :string
