@@ -50,53 +50,30 @@ test/thunderline/thunderbolt/trial_test.exs       # Modified
 
 ---
 
-## 📡 Phase 2: Event Infrastructure (Next Week)
+## Phase 2: Event Infrastructure (Week 2) ✅ IN PROGRESS
 
-### Event Definitions
+### Week 2 Goals
+- [x] Define ThunderFlow ML event schemas ✅
+- [ ] Create ThunderGate API endpoint for event ingestion
+- [ ] Validate event payloads against schemas
+- [ ] Integrate with Broadway pipeline
 
-- [ ] **Create MLEvents module**
-  ```bash
-  # File: lib/thunderline/thunderflow/ml_events.ex
-  touch lib/thunderline/thunderflow/ml_events.ex
-  ```
+### Tasks
 
-- [ ] **Define event schemas**
-  - `[:thunderline, :ml, :run, :start]`
-  - `[:thunderline, :ml, :run, :stop]`
-  - `[:thunderline, :ml, :run, :metric]`
-
-- [ ] **Add to event catalog**
-  ```bash
-  # Update: documentation/thunderflow_event_catalog.md
-  ```
-
-### ThunderGate API
-
-- [ ] **Create events controller**
-  ```bash
-  # File: lib/thunderline_web/controllers/events_controller.ex
-  mix phx.gen.context Events Event events --no-schema
-  ```
-
-- [ ] **Add route**
-  ```elixir
-  # In router.ex
-  scope "/api", ThunderlineWeb do
-    pipe_through :api
-    post "/events/ml", EventsController, :create_ml_event
-  end
-  ```
-
-- [ ] **Test event ingestion**
-  ```bash
-  curl -X POST http://localhost:4000/api/events/ml \
-    -H "Content-Type: application/json" \
-    -d '{
-      "event": "ml.run.start",
-      "trial_id": "test-123",
-      "metadata": {"spectral_norm": true}
-    }'
-  ```
+**Event Schema Definition** ✅ COMPLETE
+- [x] Create `lib/thunderline/thunderflow/ml_events.ex` ✅
+- [x] Define canonical event structs: ✅
+  - [x] `ml.run.start` - Training run initiated ✅
+  - [x] `ml.run.stop` - Training run completed ✅
+  - [x] `ml.run.metric` - Intermediate metric update ✅
+  - [x] `ml.trial.start` - Trial started ✅
+  - [x] `ml.trial.complete` - Trial completed (PRIMARY EVENT) ✅
+  - [x] `ml.trial.failed` - Trial failed ✅
+- [x] Include `spectral_norm` boolean in all trial events ✅
+- [x] Include `mlflow_run_id` for cross-referencing ✅
+- [x] Add comprehensive documentation with examples ✅
+- [x] Validation helpers for required fields ✅
+- [x] Smoke test confirmed working ✅
 
 ---
 

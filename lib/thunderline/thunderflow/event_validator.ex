@@ -7,7 +7,7 @@ defmodule Thunderline.Thunderflow.EventValidator do
   - Allowed category for source domain (delegates to Event.category_allowed?/2 via construction)
   - correlation_id present (UUID v7 shape – best-effort check)
   - taxonomy_version & event_version positive integers
-  - Reserved prefixes: system., reactor., ui., audit. — must not collide with forbidden domain-specific disallowed list (future)
+  - Reserved prefixes: system., reactor., ui., audit., ml. — must not collide with forbidden domain-specific disallowed list (future)
 
   Modes (configurable via :thunderline, :event_validator_mode):
     :warn  (dev)   -> log + telemetry only
@@ -17,7 +17,7 @@ defmodule Thunderline.Thunderflow.EventValidator do
   require Logger
   alias Thunderline.Event
 
-  @reserved_prefixes ~w(system. reactor. ui. audit. evt.)
+  @reserved_prefixes ~w(system. reactor. ui. audit. evt. ml. ai. flow. grid.)
   @uuid_v7_regex ~r/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
   @spec validate(Event.t()) :: :ok | {:error, term()}

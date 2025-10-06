@@ -67,42 +67,47 @@ layer = torch.nn.utils.spectral_norm(nn.Linear(in_feat, out_feat))
 
 ## Event Quick Reference
 
-### ml.run.start
+## Event Schemas (Phase 2) ✅ IMPLEMENTED
+
+### Using MLEvents Module
+
 ```elixir
-%Event{
-  name: [:thunderline, :ml, :run, :start],
-  metadata: %{
-    trial_id: "abc-123",
-    model_run_id: "run-456",
-    spectral_norm: true,  # ← THE KEY FLAG
-    hyperparams: %{...}
-  }
-}
+alias Thunderline.Thunderflow.MLEvents
+
+# Training run start
+{:ok, event} = MLEvents.emit_run_start(%{
+  model_run_id: "uuid",
+  requested_trials: 10,
+  search_space_version: 2,
+  max_params: 2_000_000
+})
+
+# Trial complete (PRIMARY EVENT)
+{:ok, event} = MLEvents.emit_trial_complete(%{
+  model_run_id: "uuid",
+  trial_id: "trial_001",
+  spectral_norm: true,
+  mlflow_run_id: "mlflow_abc123",
+  metrics: %{accuracy: 0.95, loss: 0.05},
+  parameters: %{hidden_size: 128, num_layers: 3},
+  duration_ms: 45000,
+  artifact_uri: "s3://models/trial_001"
+})
+
+# Publish to ThunderFlow
+Thunderline.Thunderflow.EventBus.publish_event(event)
 ```
 
-### ml.run.stop
-```elixir
-%Event{
-  name: [:thunderline, :ml, :run, :stop],
-  metadata: %{trial_id: "abc-123", success: true},
-  measurements: %{
-    duration_ms: 45000,
-    final_val_accuracy: 0.91
-  }
-}
-```
+### Available Events
 
-### ml.run.metric (optional, periodic)
-```elixir
-%Event{
-  name: [:thunderline, :ml, :run, :metric],
-  metadata: %{trial_id: "abc-123", epoch: 10},
-  measurements: %{
-    train_loss: 0.123,
-    val_accuracy: 0.87
-  }
-}
-```
+- `emit_run_start/1` - Training run initiated
+- `emit_run_stop/1` - Training run completed
+- `emit_run_metric/1` - Intermediate metric update
+- `emit_trial_start/1` - Trial started
+- `emit_trial_complete/1` - Trial completed ⭐ PRIMARY
+- `emit_trial_failed/1` - Trial failed
+
+All trial events include `spectral_norm` and `mlflow_run_id` fields.
 
 ---
 
