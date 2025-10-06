@@ -163,6 +163,9 @@ defmodule ThunderlineWeb.Router do
     get "/health", HealthController, :check
     get "/domains/:domain/stats", DomainStatsController, :show
 
+    # ML Events API (Phase 2B: Spectral Norm Integration)
+    post "/events/ml", MLEventsController, :create
+
     # Auto-ML HPO API
     post "/hpo/studies", AutoMLController, :create_study
     post "/hpo/trials/tell", AutoMLController, :tell_result
