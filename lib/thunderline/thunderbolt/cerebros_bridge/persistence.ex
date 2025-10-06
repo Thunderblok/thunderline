@@ -15,6 +15,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
   alias Thunderline.Thunderbolt.ML.ModelArtifact
   alias Thunderline.Thunderbolt.Resources.{ModelRun, ModelTrial}
   alias Thunderline.Thunderflow.ErrorClass
+  alias Thunderline.Thunderflow.MLEvents
 
   @spec ensure_run_record(Contracts.RunStartedV1.t(), map()) ::
           {:ok, ModelRun.t()} | {:error, term()}
@@ -47,7 +48,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
           :ok | {:error, term()}
   def record_trial_reported(%Contracts.TrialReportedV1{} = contract, response, spec) do
     with {:ok, %ModelRun{} = run} <- fetch_run(contract.run_id),
-         {:ok, _trial} <- upsert_trial(run, contract, response, spec) do
+         {:ok, trial} <- upsert_trial(run, contract, response, spec),
+         :ok <- emit_trial_event(contract, trial) do
       :ok
     else
       {:ok, nil} -> {:error, :run_missing}
@@ -369,6 +371,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
       warnings: contract.warnings,
       candidate_id: contract.candidate_id,
       pulse_id: contract.pulse_id,
+      spectral_norm: contract.spectral_norm,
+      mlflow_run_id: contract.mlflow_run_id,
       bridge_payload: %{
         "response" => summarize_response(response),
         "spec" => spec
@@ -433,4 +437,61 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
       _ -> inspect(error)
     end
   end
+
+  defp emit_trial_event(%Contracts.TrialReportedV1{} = contract, %ModelTrial{} = trial) do
+    case contract.status do
+      :succeeded ->
+        emit_trial_complete_event(contract, trial)
+
+      :failed ->
+        emit_trial_failed_event(contract, trial)
+
+      _ ->
+        # For :skipped, :cancelled - no event emission needed yet
+        :ok
+    end
+  end
+
+  defp emit_trial_complete_event(contract, trial) do
+    case MLEvents.emit_trial_complete(%{
+           model_run_id: contract.run_id,
+           trial_id: contract.trial_id,
+           spectral_norm: contract.spectral_norm,
+           mlflow_run_id: contract.mlflow_run_id,
+           metrics: contract.metrics,
+           parameters: contract.parameters,
+           duration_ms: contract.duration_ms,
+           status: "completed"
+         }) do
+      {:ok, _event} ->
+        :ok
+
+      {:error, reason} ->
+        # Log but don't fail the trial persistence
+        require Logger
+        Logger.warning("Failed to emit ml.trial.complete event: #{inspect(reason)}")
+        :ok
+    end
+  end
+
+  defp emit_trial_failed_event(contract, _trial) do
+    case MLEvents.emit_trial_failed(%{
+           model_run_id: contract.run_id,
+           trial_id: contract.trial_id,
+           error_message: format_warnings(contract.warnings),
+           error_type: "trial_failed"
+         }) do
+      {:ok, _event} ->
+        :ok
+
+      {:error, reason} ->
+        require Logger
+        Logger.warning("Failed to emit ml.trial.failed event: #{inspect(reason)}")
+        :ok
+    end
+  end
+
+  defp format_warnings([]), do: "Trial failed"
+  defp format_warnings([first | _rest]), do: first
+  defp format_warnings(_), do: "Trial failed"
 end

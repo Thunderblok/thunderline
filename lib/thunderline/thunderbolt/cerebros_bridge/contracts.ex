@@ -60,6 +60,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Contracts do
     * `duration_ms` – wall clock time spent evaluating the trial
     * `rank` – optional ranking within the pulse
     * `warnings` – array of non-fatal warning strings
+    * `spectral_norm` – boolean flag indicating if spectral normalization was used
+    * `mlflow_run_id` – optional MLflow run identifier for tracking
     """
     @enforce_keys [:trial_id, :run_id, :status]
     defstruct trial_id: nil,
@@ -72,7 +74,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Contracts do
               artifact_uri: nil,
               duration_ms: nil,
               rank: nil,
-              warnings: []
+              warnings: [],
+              spectral_norm: false,
+              mlflow_run_id: nil
 
     @type status :: :succeeded | :failed | :skipped | :cancelled
 
@@ -87,7 +91,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Contracts do
             artifact_uri: String.t() | nil,
             duration_ms: non_neg_integer() | nil,
             rank: non_neg_integer() | nil,
-            warnings: [String.t()]
+            warnings: [String.t()],
+            spectral_norm: boolean(),
+            mlflow_run_id: String.t() | nil
           }
   end
 

@@ -217,7 +217,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
       artifact_uri: fetch(rest, :artifact_uri),
       duration_ms: fetch(rest, :duration_ms),
       rank: fetch(rest, :rank),
-      warnings: normalize_warnings(warnings)
+      warnings: normalize_warnings(warnings),
+      spectral_norm: fetch_boolean(rest, :spectral_norm, false),
+      mlflow_run_id: fetch(rest, :mlflow_run_id)
     }
   end
 
@@ -301,6 +303,21 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
     |> fetch(key, default)
     |> normalize_status(default)
   end
+
+  defp fetch_boolean(map, key, default) when is_map(map) do
+    case fetch(map, key) do
+      nil -> default
+      true -> true
+      false -> false
+      "true" -> true
+      "false" -> false
+      1 -> true
+      0 -> false
+      _ -> default
+    end
+  end
+
+  defp fetch_boolean(_map, _key, default), do: default
 
   defp normalize_status(value, _default)
        when value in [:succeeded, :failed, :cancelled, :timeout],
