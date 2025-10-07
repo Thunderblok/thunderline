@@ -82,6 +82,9 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.ML.ModelArtifact
     resource Thunderline.Thunderbolt.ML.ModelVersion
     resource Thunderline.Thunderbolt.ML.TrainingRun
+    # MLflow integration resources
+    resource Thunderline.Thunderbolt.MLflow.Experiment
+    resource Thunderline.Thunderbolt.MLflow.Run
 
     # Unified Persistent Model (UPM)
     resource Thunderline.Thunderbolt.Resources.UpmTrainer
