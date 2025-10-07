@@ -19,7 +19,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
         max_params: 1000,
         requested_trials: 1
       })
-      
+
       {:ok, trial} = ModelTrial
         |> Changeset.for_create(:log, %{
           model_run_id: model_run.id,
@@ -110,7 +110,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
         max_params: 1000,
         requested_trials: 1
       })
-      
+
       {:ok, trial} = ModelTrial
         |> Changeset.for_create(:log, %{
           model_run_id: model_run.id,
@@ -215,7 +215,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
         max_params: 1000,
         requested_trials: 1
       })
-      
+
       {:ok, trial} = ModelTrial
         |> Changeset.for_create(:log, %{
           model_run_id: model_run.id,
@@ -243,7 +243,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
         max_params: 1000,
         requested_trials: 1
       })
-      
+
       {:ok, trial} = ModelTrial
         |> Changeset.for_create(:log, %{
           model_run_id: model_run.id,
