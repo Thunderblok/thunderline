@@ -130,6 +130,10 @@ defmodule ThunderlineWeb.Router do
       # Dev Collaboration Whiteboard
       live "/dev/whiteboard", WhiteboardLive, :index
 
+      # ML Trial Dashboard (Real-time metrics visualization)
+      live "/dashboard/trials", TrialDashboardLive, :index
+      live "/dashboard/trials/:run_id", TrialDashboardLive, :show
+
       # Admin and monitoring
       live "/metrics", MetricsLive, :index
       # Chat interface (conversations & messages)

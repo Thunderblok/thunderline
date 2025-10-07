@@ -8,6 +8,7 @@ import topbar from "../vendor/topbar"
 // Import hooks
 import { CAVisualization } from "./hooks/ca_visualization"
 import { Whiteboard } from "./hooks/whiteboard"
+import { MetricsChart } from "./hooks/metrics_chart"
 
 // Simple auto-scroll hook for chat & event flow streams
 // TODO: Enhance with user scroll lock (pause autoscroll while user hovering / scrolled up)
@@ -26,6 +27,7 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 let Hooks = {
   CAVisualization,
   Whiteboard,
+  MetricsChart,
   AutoScroll,
   Tabs: {
     mounted() {
