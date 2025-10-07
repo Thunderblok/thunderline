@@ -1,7 +1,7 @@
 defmodule ThunderlineWeb.WhiteboardLive do
   @moduledoc """
   Real-time collaborative whiteboard with chat for dev team collaboration.
-  
+
   Features:
   - Canvas drawing with mouse/touch support
   - Real-time stroke broadcasting via PubSub
@@ -19,7 +19,7 @@ defmodule ThunderlineWeb.WhiteboardLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       ThunderlineWeb.Endpoint.subscribe(@topic)
-      
+
       # Track presence
       {:ok, _} = Presence.track_global(
         self(),
