@@ -134,6 +134,9 @@ defmodule ThunderlineWeb.Router do
       live "/dashboard/trials", TrialDashboardLive, :index
       live "/dashboard/trials/:run_id", TrialDashboardLive, :show
 
+      # ThunderFlow Event Monitoring Dashboard
+      live "/dashboard/events", EventDashboardLive, :index
+
       # Admin and monitoring
       live "/metrics", MetricsLive, :index
       # Chat interface (conversations & messages)
