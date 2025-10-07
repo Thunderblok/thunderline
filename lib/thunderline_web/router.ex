@@ -127,6 +127,9 @@ defmodule ThunderlineWeb.Router do
       # Hologram 3D CA Visualization
       live "/ca-3d", CaVisualizationLive, :index
 
+      # Dev Collaboration Whiteboard
+      live "/dev/whiteboard", WhiteboardLive, :index
+
       # Admin and monitoring
       live "/metrics", MetricsLive, :index
       # Chat interface (conversations & messages)

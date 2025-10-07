@@ -1,0 +1,198 @@
+<Layouts.app flash={@flash} current_principal={@current_principal} current_scope={@current_scope}>
+  <div class="h-screen flex flex-col bg-gray-900">
+    <!-- Header -->
+    <div class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <h1 class="text-xl font-bold text-white flex items-center">
+          <.icon name="hero-paint-brush" class="w-6 h-6 mr-2" />
+          Dev Whiteboard
+        </h1>
+        
+        <!-- Tool selector -->
+        <div class="flex items-center space-x-2 bg-gray-700 rounded-lg p-1">
+          <button
+            phx-click="change_tool"
+            phx-value-tool="pen"
+            class={[
+              "px-3 py-1 rounded text-sm font-medium transition-colors",
+              @tool == :pen && "bg-blue-600 text-white",
+              @tool != :pen && "text-gray-300 hover:bg-gray-600"
+            ]}
+          >
+            Pen
+          </button>
+          <button
+            phx-click="change_tool"
+            phx-value-tool="eraser"
+            class={[
+              "px-3 py-1 rounded text-sm font-medium transition-colors",
+              @tool == :eraser && "bg-blue-600 text-white",
+              @tool != :eraser && "text-gray-300 hover:bg-gray-600"
+            ]}
+          >
+            Eraser
+          </button>
+        </div>
+
+        <!-- Color picker -->
+        <div class="flex items-center space-x-2">
+          <label for="color-picker" class="text-sm text-gray-300">Color:</label>
+          <input
+            type="color"
+            id="color-picker"
+            value={@current_color}
+            phx-change="change_color"
+            name="color"
+            class="w-10 h-10 rounded cursor-pointer"
+          />
+        </div>
+
+        <!-- Line width -->
+        <div class="flex items-center space-x-2">
+          <label for="width-slider" class="text-sm text-gray-300">Width:</label>
+          <input
+            type="range"
+            id="width-slider"
+            min="1"
+            max="20"
+            value={@line_width}
+            phx-change="change_width"
+            name="width"
+            class="w-24"
+          />
+          <span class="text-sm text-gray-300 w-8">{@line_width}px</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <!-- User count -->
+        <div class="flex items-center space-x-2 text-gray-300">
+          <.icon name="hero-user-group" class="w-5 h-5" />
+          <span class="text-sm">{length(@streams.users)} online</span>
+        </div>
+
+        <!-- Clear button -->
+        <button
+          phx-click="clear_canvas"
+          data-confirm="Clear entire canvas? This cannot be undone."
+          class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          <.icon name="hero-trash" class="w-4 h-4 inline mr-1" />
+          Clear Canvas
+        </button>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Canvas area -->
+      <div class="flex-1 relative bg-white">
+        <canvas
+          id="whiteboard-canvas"
+          phx-hook="Whiteboard"
+          data-color={@current_color}
+          data-width={@line_width}
+          data-tool={@tool}
+          class="absolute inset-0 w-full h-full cursor-crosshair"
+        >
+        </canvas>
+
+        <!-- Remote cursors overlay -->
+        <div id="cursors-overlay" class="absolute inset-0 pointer-events-none">
+          <div
+            :for={{id, user} <- @streams.users}
+            :if={user.cursor && user.id != @current_principal.id}
+            class="absolute w-4 h-4 bg-blue-500 rounded-full shadow-lg transition-all duration-100"
+            style={"left: #{user.cursor.x}px; top: #{user.cursor.y}px;"}
+          >
+            <div class="absolute left-6 top-0 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+              {user.name}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <!-- Users list -->
+        <div class="p-4 border-b border-gray-700">
+          <h3 class="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+            <.icon name="hero-user-group" class="w-4 h-4 mr-2" />
+            Online Users ({length(@streams.users)})
+          </h3>
+          <div class="space-y-2" id="users-list" phx-update="stream">
+            <div
+              :for={{id, user} <- @streams.users}
+              id={id}
+              class="flex items-center space-x-2 text-sm"
+            >
+              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span class={[
+                "flex-1",
+                user.id == @current_principal.id && "font-semibold text-blue-400",
+                user.id != @current_principal.id && "text-gray-300"
+              ]}>
+                {user.name}
+                {user.id == @current_principal.id && "(you)"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+          <div class="p-4 border-b border-gray-700">
+            <h3 class="text-sm font-semibold text-gray-300 flex items-center">
+              <.icon name="hero-chat-bubble-left-right" class="w-4 h-4 mr-2" />
+              Chat
+            </h3>
+          </div>
+
+          <!-- Messages -->
+          <div
+            id="chat-messages"
+            class="flex-1 overflow-y-auto p-4 space-y-3"
+            phx-update="ignore"
+          >
+            <div :for={message <- Enum.reverse(@messages)} class="text-sm">
+              <div class="flex items-baseline space-x-2">
+                <span class={[
+                  "font-medium",
+                  message.user_id == @current_principal.id && "text-blue-400",
+                  message.user_id != @current_principal.id && "text-gray-300"
+                ]}>
+                  {message.user_name}
+                </span>
+                <span class="text-xs text-gray-500">
+                  {format_time(message.timestamp)}
+                </span>
+              </div>
+              <p class="text-gray-200 mt-1 break-words">
+                {message.text}
+              </p>
+            </div>
+          </div>
+
+          <!-- Message input -->
+          <div class="p-4 border-t border-gray-700">
+            <form phx-submit="send_message" class="flex space-x-2">
+              <input
+                type="text"
+                name="message"
+                placeholder="Type a message..."
+                autocomplete="off"
+                class="flex-1 bg-gray-700 text-white placeholder-gray-400 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                <.icon name="hero-paper-airplane" class="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>
