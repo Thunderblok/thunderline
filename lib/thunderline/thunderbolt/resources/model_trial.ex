@@ -119,5 +119,11 @@ defmodule Thunderline.Thunderbolt.Resources.ModelTrial do
     belongs_to :model_run, Thunderline.Thunderbolt.Resources.ModelRun do
       allow_nil? false
     end
+
+    # MLflow relationship - one trial can have one MLflow run
+    has_one :mlflow_run, Thunderline.Thunderbolt.MLflow.Run do
+      destination_attribute :model_trial_id
+      description "Associated MLflow run for experiment tracking"
+    end
   end
 end
