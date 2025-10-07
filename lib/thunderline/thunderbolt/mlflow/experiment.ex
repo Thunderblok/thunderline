@@ -1,7 +1,7 @@
 defmodule Thunderline.Thunderbolt.MLflow.Experiment do
   @moduledoc """
   Represents an MLflow experiment that groups related runs.
-  
+
   An experiment corresponds to a ModelRun in Thunderline, providing
   bidirectional linkage between Thunderline trials and MLflow tracking.
   """
@@ -49,7 +49,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Experiment do
 
   attributes do
     uuid_primary_key :id
-    
+
     attribute :mlflow_experiment_id, :string do
       allow_nil? false
       constraints [match: ~r/^[0-9]+$/]
@@ -57,13 +57,13 @@ defmodule Thunderline.Thunderbolt.MLflow.Experiment do
 
     attribute :name, :string, allow_nil?: false
     attribute :artifact_location, :string
-    
+
     attribute :lifecycle_stage, :atom,
       constraints: [one_of: [:active, :deleted]],
       default: :active
 
     attribute :tags, :map, default: %{}
-    
+
     # Linkage to Thunderline ModelRun
     attribute :model_run_id, :uuid
 

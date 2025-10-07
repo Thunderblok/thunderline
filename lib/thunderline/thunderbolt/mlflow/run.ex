@@ -1,7 +1,7 @@
 defmodule Thunderline.Thunderbolt.MLflow.Run do
   @moduledoc """
   Represents an MLflow run that tracks a single trial execution.
-  
+
   Links MLflow run IDs to Thunderline ModelTrial records, enabling
   bidirectional navigation and synchronization of metrics, parameters,
   and artifacts between MLflow and Thunderline.
@@ -87,14 +87,14 @@ defmodule Thunderline.Thunderbolt.MLflow.Run do
     attribute :mlflow_experiment_id, :string, allow_nil?: false
 
     attribute :run_name, :string
-    
+
     attribute :status, :atom,
       constraints: [one_of: [:running, :scheduled, :finished, :failed, :killed]],
       default: :running
 
     attribute :start_time, :integer
     attribute :end_time, :integer
-    
+
     attribute :lifecycle_stage, :atom,
       constraints: [one_of: [:active, :deleted]],
       default: :active

@@ -1,13 +1,13 @@
 defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
   @moduledoc """
   Oban worker for synchronizing trial data with MLflow tracking server.
-  
+
   Handles:
   - Creating MLflow runs from Thunderline trials
   - Syncing trial metrics/params to MLflow
   - Pulling MLflow run data back to Thunderline
   - Batch syncing entire experiments
-  
+
   ## Job Types
   - `:sync_trial_to_mlflow` - Push trial data to MLflow
   - `:sync_mlflow_to_trial` - Pull MLflow run data to trial
