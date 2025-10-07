@@ -13,6 +13,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
   alias Thunderline.Thunderbolt.CerebrosBridge.Contracts
   alias Thunderline.Thunderbolt.Domain
   alias Thunderline.Thunderbolt.ML.ModelArtifact
+  alias Thunderline.Thunderbolt.MLflow.{Config, SyncWorker}
   alias Thunderline.Thunderbolt.Resources.{ModelRun, ModelTrial}
   alias Thunderline.Thunderflow.ErrorClass
   alias Thunderline.Thunderflow.MLEvents
@@ -464,6 +465,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
            status: "completed"
          }) do
       {:ok, _event} ->
+        # Queue MLflow sync if enabled and auto-sync is on
+        maybe_sync_to_mlflow(trial)
         :ok
 
       {:error, reason} ->
@@ -494,4 +497,27 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
   defp format_warnings([]), do: "Trial failed"
   defp format_warnings([first | _rest]), do: first
   defp format_warnings(_), do: "Trial failed"
+
+  defp maybe_sync_to_mlflow(%ModelTrial{} = trial) do
+    if Config.enabled?() and Config.auto_sync?() and trial.mlflow_run_id do
+      case SyncWorker.sync_trial_to_mlflow(trial.id) do
+        {:ok, _job} ->
+          require Logger
+          Logger.debug("Queued MLflow sync for trial #{trial.id}")
+          :ok
+
+        {:error, reason} ->
+          if Config.fail_silently?() do
+            require Logger
+            Logger.warning("Failed to queue MLflow sync for trial #{trial.id}: #{inspect(reason)}")
+            :ok
+          else
+            {:error, reason}
+          end
+      end
+    else
+      # MLflow disabled or auto-sync off or no mlflow_run_id
+      :ok
+    end
+  end
 end

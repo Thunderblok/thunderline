@@ -1,37 +1,37 @@
 defmodule Thunderline.Thunderbolt.MLflow.Client do
   @moduledoc """
   HTTP client for MLflow REST API.
-  
+
   Provides functions to interact with MLflow tracking server for:
   - Creating and managing experiments
   - Creating and updating runs
   - Logging metrics, parameters, and tags
   - Retrieving run and experiment metadata
-  
+
   Uses Req for HTTP requests with automatic JSON encoding/decoding.
   """
 
   require Logger
 
+  alias Thunderline.Thunderbolt.MLflow.Config
+
   @type mlflow_error :: {:error, :network_error | :invalid_response | :not_found | atom()}
 
   @doc """
   Get the MLflow tracking URI from configuration or environment.
+
+  Delegates to Config.tracking_uri/0.
   """
-  def tracking_uri do
-    Application.get_env(:thunderline, :mlflow_tracking_uri) ||
-      System.get_env("MLFLOW_TRACKING_URI") ||
-      "http://localhost:5000"
-  end
+  def tracking_uri, do: Config.tracking_uri()
 
   @doc """
   Create a new experiment in MLflow.
-  
+
   ## Parameters
   - name: Experiment name (required)
   - artifact_location: S3/local path for artifacts (optional)
   - tags: Map of experiment tags (optional)
-  
+
   ## Returns
   - {:ok, %{experiment_id: string}}
   - {:error, reason}
@@ -59,7 +59,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Get experiment by ID.
-  
+
   ## Returns
   - {:ok, experiment_map}
   - {:error, :not_found | reason}
@@ -84,11 +84,11 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Create a new run within an experiment.
-  
+
   ## Parameters
   - experiment_id: MLflow experiment ID
   - opts: Keyword list with :run_name, :start_time, :tags
-  
+
   ## Returns
   - {:ok, %{run_id: string, run_uuid: string}}
   - {:error, reason}
@@ -117,7 +117,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Get run by ID.
-  
+
   ## Returns
   - {:ok, run_map}
   - {:error, :not_found | reason}
@@ -142,7 +142,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Update run status.
-  
+
   ## Parameters
   - run_id: MLflow run ID
   - status: One of "RUNNING", "SCHEDULED", "FINISHED", "FAILED", "KILLED"
@@ -171,7 +171,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Log a single metric value for a run.
-  
+
   ## Parameters
   - run_id: MLflow run ID
   - key: Metric name
@@ -194,7 +194,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Log multiple metrics for a run in batch.
-  
+
   ## Parameters
   - run_id: MLflow run ID
   - metrics: Map of %{key => value} or list of maps with :key, :value, :timestamp, :step
@@ -219,7 +219,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Log a single parameter for a run.
-  
+
   ## Parameters
   - run_id: MLflow run ID
   - key: Parameter name
@@ -238,7 +238,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Log multiple parameters for a run in batch.
-  
+
   ## Parameters
   - run_id: MLflow run ID
   - params: Map of %{key => value}
@@ -254,7 +254,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Set a tag on a run.
-  
+
   ## Parameters
   - run_id: MLflow run ID
   - key: Tag key
@@ -273,7 +273,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   @doc """
   Log metrics, parameters, and tags in a single batch request.
-  
+
   ## Parameters
   - run_id: MLflow run ID
   - opts: Keyword list with :metrics, :params, :tags (all lists of maps)
@@ -295,7 +295,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
   defp get(path, params \\ []) do
     url = tracking_uri() <> path
 
-    Req.get(url, params: params, receive_timeout: 30_000)
+    Req.get(url, params: params, receive_timeout: Config.request_timeout())
     |> case do
       {:ok, response} -> {:ok, response}
       {:error, %Req.TransportError{reason: reason}} -> {:error, {:network_error, reason}}
@@ -310,7 +310,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
   defp post(path, body) do
     url = tracking_uri() <> path
 
-    Req.post(url, json: body, receive_timeout: 30_000)
+    Req.post(url, json: body, receive_timeout: Config.request_timeout())
     |> case do
       {:ok, response} -> {:ok, response}
       {:error, %Req.TransportError{reason: reason}} -> {:error, {:network_error, reason}}
