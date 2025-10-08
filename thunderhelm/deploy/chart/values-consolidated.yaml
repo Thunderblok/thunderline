@@ -1,0 +1,156 @@
+# Consolidated Thunderline Helm Values
+# Single namespace deployment with all services
+
+# Image configuration
+image:
+  repository: thunderline/app
+  tag: "2.1.0"  # Use stable tag
+  pullPolicy: IfNotPresent
+
+# Global environment variables
+env:
+  CEREBROS_ENABLED: "true"
+  CEREBROS_MODE: "remote"
+  FEATURES: "ml_nas,cerebros_bridge,ai_chat_panel"
+  LOG_LEVEL: "info"
+  MINIO_BUCKET: "thunderline-artifacts"
+  SERVICE_NAME: "thunderline"
+  
+  # Secrets
+  secrets:
+    DATABASE_URL: "ecto://postgres:postgres@thunderline-thunderhelm-postgresql:5432/thunderline"
+    MINIO_ENDPOINT: "http://thunderline-thunderhelm-minio:9000"
+    MINIO_ACCESS_KEY: "minio"
+    MINIO_SECRET_KEY: "minio123"
+    AWS_ACCESS_KEY_ID: "minio"
+    AWS_SECRET_ACCESS_KEY: "minio123"
+    MLFLOW_S3_ENDPOINT_URL: "http://thunderline-thunderhelm-minio:9000"
+    SECRET_KEY_BASE: "/58yS77lZ8f3u4mZrFA5aJfGt5geKZAZj1WTmRLGxeSc4JO9+Jf/+aI8E94sTp5U"
+    TOKEN_SIGNING_SECRET: "VMeHlsMnD3XIAQlUkGTLfzGZjYGGZMSKV5ndtI3DFIBV3cecSD2lfM0rJVGREPgA"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://thunderline-thunderhelm-otelcol:4317"
+
+# Web service (Phoenix LiveView)
+web:
+  enabled: true
+  replicas: 1
+  env:
+    ROLE: "web"
+    START_ENDPOINT: "true"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 4000
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+# Worker service (Oban background jobs)
+worker:
+  enabled: true
+  replicas: 1
+  env:
+    ROLE: "worker"
+    START_ENDPOINT: "false"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+
+# MLflow tracking server
+mlflow:
+  enabled: true
+  backendStoreUri: "sqlite:////data/mlflow.db"
+  artifactRoot: "s3://thunderline-artifacts/mlflow"
+  persistence:
+    enabled: true
+    size: 10Gi
+  env:
+    AWS_ACCESS_KEY_ID: "minio"
+    AWS_SECRET_ACCESS_KEY: "minio123"
+    MLFLOW_S3_ENDPOINT_URL: "http://thunderline-thunderhelm-minio:9000"
+  service:
+    port: 5000
+    type: ClusterIP
+
+# Cerebros Runner (ML training)
+cerebrosRunner:
+  enabled: true
+  image:
+    repository: thunderline/cerebros-runner
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  pipPackages: []  # All deps already in image
+  env:
+    MLFLOW_EXPERIMENT_NAME: "thunderline-consolidated"
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "4Gi"
+    limits:
+      cpu: "2000m"
+      memory: "8Gi"  # Increased for TensorFlow
+
+# Livebook (interactive notebooks)
+livebook:
+  enabled: true
+  env:
+    LIVEBOOK_DEFAULT_RUNTIME: "attached:thunderline"
+    LIVEBOOK_TOKEN_ENABLED: "false"
+  secrets:
+    password: "supersecret"
+  ingress:
+    enabled: false
+  persistence:
+    enabled: true
+    size: 5Gi
+
+# OpenTelemetry Collector (observability)
+opentelemetryCollector:
+  enabled: true
+  replicas: 1
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.106.0"
+  service:
+    type: ClusterIP
+    grpcPort: 4317
+    httpPort: 4318
+
+# PostgreSQL (database)
+postgresql:
+  enabled: true
+  external: false  # Deploy PostgreSQL in-cluster
+  auth:
+    username: "postgres"
+    password: "postgres"
+    database: "thunderline"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# MinIO (S3-compatible storage subchart)
+minio:
+  enabled: true
+  auth:
+    rootUser: "minio"
+    rootPassword: "minio123"
+  defaultBuckets: "thunderline-artifacts"
+  persistence:
+    enabled: true
+    size: 20Gi
+
+# Federation (Flower) - disabled by default
+federation:
+  enabled: false

@@ -118,7 +118,7 @@
             phx-hook="Tabs"
             data-active-tab={@active_tab}
           >
-            <%= for {tab_key, label} <- [{"overview", "Overview"}, {"system", "System"}, {"events", "Events"}, {"controls", "Controls"}, {"thunderwatch", "Thunderwatch"}] do %>
+            <%= for {tab_key, label} <- [{"overview", "Overview"}, {"system", "System"}, {"events", "Events"}, {"metrics", "Metrics"}, {"controls", "Controls"}, {"thunderwatch", "Thunderwatch"}] do %>
               <.link
                 patch={"?tab=#{tab_key}"}
                 class={[
@@ -513,48 +513,52 @@
               id="panel-controls"
               role="tabpanel"
               aria-labelledby="tab-controls-link"
-              class="glass-panel p-4 relative z-50"
-              style="pointer-events: auto;"
+              class="glass-panel p-4"
               tabindex="0"
             >
               <h3 class="text-sm font-bold text-white mb-3">System Controls</h3>
-              <div class="flex flex-wrap gap-2 text-xs relative z-50" style="pointer-events: auto;">
+              <div class="flex flex-wrap gap-2 text-xs">
                 <button
-                  class="px-3 py-2 rounded bg-red-600/80 hover:bg-red-600 text-white relative z-50 cursor-pointer"
-                  style="pointer-events: auto;"
+                  id="emergency-stop-btn"
+                  class="px-3 py-2 rounded bg-red-600/80 hover:bg-red-600 text-white cursor-pointer transition-colors"
                   phx-click="system_control"
                   phx-value-action="emergency_stop"
+                  type="button"
                 >
                   Emergency Stop
                 </button>
                 <button
-                  class="px-3 py-2 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white relative z-50 cursor-pointer"
-                  style="pointer-events: auto;"
+                  id="system-restart-btn"
+                  class="px-3 py-2 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white cursor-pointer transition-colors"
                   phx-click="system_control"
                   phx-value-action="system_restart"
+                  type="button"
                 >
                   Restart
                 </button>
                 <button
-                  class="px-3 py-2 rounded bg-yellow-600/80 hover:bg-yellow-600 text-white relative z-50 cursor-pointer"
-                  style="pointer-events: auto;"
+                  id="safe-mode-btn"
+                  class="px-3 py-2 rounded bg-yellow-600/80 hover:bg-yellow-600 text-white cursor-pointer transition-colors"
                   phx-click="system_control"
                   phx-value-action="safe_mode"
+                  type="button"
                 >
                   Safe Mode
                 </button>
                 <button
-                  class="px-3 py-2 rounded bg-amber-600/80 hover:bg-amber-600 text-white relative z-50 cursor-pointer"
-                  style="pointer-events: auto;"
+                  id="maintenance-mode-btn"
+                  class="px-3 py-2 rounded bg-amber-600/80 hover:bg-amber-600 text-white cursor-pointer transition-colors"
                   phx-click="system_control"
                   phx-value-action="maintenance_mode"
+                  type="button"
                 >
                   Maintenance
                 </button>
                 <button
-                  class="px-3 py-2 rounded bg-green-600/80 hover:bg-green-600 text-white relative z-50 cursor-pointer"
+                  id="create-room-btn"
+                  class="px-3 py-2 rounded bg-green-600/80 hover:bg-green-600 text-white cursor-pointer transition-colors"
                   phx-click="create_room"
-                  style="pointer-events: auto;"
+                  type="button"
                 >
                   Create Room
                 </button>

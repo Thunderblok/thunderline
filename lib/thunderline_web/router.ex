@@ -135,10 +135,12 @@ defmodule ThunderlineWeb.Router do
       live "/dashboard/trials/:run_id", TrialDashboardLive, :show
 
       # ThunderFlow Event Monitoring Dashboard
-      live "/dashboard/events", EventDashboardLive, :index
+      # Consolidated into main dashboard - redirect to events tab
+      live "/dashboard/events", Redirect, to: "/dashboard?tab=events"
 
       # Admin and monitoring
-      live "/metrics", MetricsLive, :index
+      # Consolidated into main dashboard - redirect to metrics tab
+      live "/metrics", Redirect, to: "/dashboard?tab=metrics"
       # Chat interface (conversations & messages)
       live "/chat", ChatLive, :index
       live "/chat/:conversation_id", ChatLive, :show

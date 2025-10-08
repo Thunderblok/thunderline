@@ -817,12 +817,14 @@ defmodule ThunderlineWeb.DashboardLive do
       {:noreply, socket}
     end
 
-    def handle_event("create_room", _params, socket) do
+    def handle_event("create_room", params, socket) do
       # Room creation logic (stub: replace with actual implementation)
+      Logger.info("[DashboardLive] create_room event received with params: #{inspect(params)}")
+
       # For now, just flash a message and reload metrics
       socket =
         socket
-        |> put_flash(:info, "Room created successfully!")
+        |> put_flash(:info, "🎉 Room created successfully! This is a test message.")
         |> load_all_metrics()
 
       {:noreply, socket}
