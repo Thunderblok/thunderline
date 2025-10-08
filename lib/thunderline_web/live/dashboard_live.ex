@@ -102,35 +102,38 @@ defmodule ThunderlineWeb.DashboardLive do
         %{dashboard_pid: self()}
       )
 
-      # Attach gate auth telemetry listener (idempotent attempt)
-      :telemetry.attach(
-        "thunderline-dashboard-gate-auth",
-        [:thunderline, :gate, :auth, :result],
-        &__MODULE__.telemetry_gate_auth/4,
-        %{dashboard_pid: self()}
-      )
-
-      # Start CA streaming for real-time data
+      # Attach gate auth telemetry listener (conditional, with error handling)
       try do
-        case ThunderBridge.start_ca_streaming(interval: 1000) do
-          :ok ->
-            Logger.info("Started CA streaming for dashboard")
-
-          {:error, reason} ->
-            Logger.warning("Failed to start CA streaming: #{inspect(reason)}")
-            # Continue without CA streaming for now
-        end
+        :telemetry.attach(
+          "thunderline-dashboard-gate-auth",
+          [:thunderline, :gate, :auth, :result],
+          &__MODULE__.telemetry_gate_auth/4,
+          %{dashboard_pid: self()}
+        )
       rescue
-        error ->
-          Logger.warning("ThunderBridge not available, using fallback mode: #{inspect(error)}")
+        error -> Logger.warning("Failed to attach gate auth telemetry: #{inspect(error)}")
       end
 
-      # Set up periodic refresh for slower-changing metrics
-      :timer.send_interval(5000, self(), :refresh_metrics)
+      # Disable CA streaming to prevent memory issues
+      # try do
+      #   case ThunderBridge.start_ca_streaming(interval: 5000) do
+      #     :ok ->
+      #       Logger.info("Started CA streaming for dashboard")
+      #     {:error, reason} ->
+      #       Logger.warning("Failed to start CA streaming: #{inspect(reason)}")
+      #   end
+      # rescue
+      #   error ->
+      #     Logger.warning("ThunderBridge not available, using fallback mode: #{inspect(error)}")
+      # end
+      Logger.info("CA streaming disabled to prevent memory issues")
 
-      # Set up real-time telemetry publishing for demo
-      :timer.send_interval(1000, self(), :publish_telemetry)
-      :timer.send_interval(2000, self(), :publish_events)
+      # Set up periodic refresh for slower-changing metrics (reduced frequency)
+      :timer.send_interval(10000, self(), :refresh_metrics)
+
+      # Set up real-time telemetry publishing for demo (reduced frequency)
+      :timer.send_interval(5000, self(), :publish_telemetry)
+      :timer.send_interval(8000, self(), :publish_events)
 
       # Set up Ash telemetry simulation
       setup_ash_telemetry_handlers()
@@ -779,39 +782,51 @@ defmodule ThunderlineWeb.DashboardLive do
     {:noreply, socket}
   end
 
-  def handle_event("system_control", %{"action" => action}, socket) do
-    Logger.info("Executing system control action: #{action}")
 
-    result =
-      case action do
-        "emergency_stop" -> execute_emergency_stop()
-        "system_restart" -> execute_system_restart()
-        "safe_mode" -> execute_safe_mode()
-        "maintenance_mode" -> execute_maintenance_mode()
-        _ -> {:error, :unknown_action}
-      end
+    def handle_event("system_control", %{"action" => action}, socket) do
+      Logger.info("Executing system control action: #{action}")
 
-    socket =
-      case result do
-        :ok ->
-          flash_message =
-            case action do
-              "emergency_stop" -> "🚨 Emergency stop activated - All systems halted"
-              "system_restart" -> "🔄 System restart initiated - Please wait..."
-              "safe_mode" -> "🛡️ Safe mode activated - Limited functionality enabled"
-              "maintenance_mode" -> "🔧 Maintenance mode activated - System operations paused"
-              _ -> "System control #{action} executed successfully"
-            end
+      result =
+        case action do
+          "emergency_stop" -> execute_emergency_stop()
+          "system_restart" -> execute_system_restart()
+          "safe_mode" -> execute_safe_mode()
+          "maintenance_mode" -> execute_maintenance_mode()
+          _ -> {:error, :unknown_action}
+        end
 
-          socket = put_flash(socket, :info, flash_message)
-          load_all_metrics(socket)
+      socket =
+        case result do
+          :ok ->
+            flash_message =
+              case action do
+                "emergency_stop" -> "🚨 Emergency stop activated - All systems halted"
+                "system_restart" -> "🔄 System restart initiated - Please wait..."
+                "safe_mode" -> "🛡️ Safe mode activated - Limited functionality enabled"
+                "maintenance_mode" -> "🔧 Maintenance mode activated - System operations paused"
+                _ -> "System control #{action} executed successfully"
+              end
 
-        {:error, reason} ->
-          put_flash(socket, :error, "System control #{action} failed: #{inspect(reason)}")
-      end
+            socket = put_flash(socket, :info, flash_message)
+            load_all_metrics(socket)
 
-    {:noreply, socket}
-  end
+          {:error, reason} ->
+            put_flash(socket, :error, "System control #{action} failed: #{inspect(reason)}")
+        end
+
+      {:noreply, socket}
+    end
+
+    def handle_event("create_room", _params, socket) do
+      # Room creation logic (stub: replace with actual implementation)
+      # For now, just flash a message and reload metrics
+      socket =
+        socket
+        |> put_flash(:info, "Room created successfully!")
+        |> load_all_metrics()
+
+      {:noreply, socket}
+    end
 
   # Private Functions
 
