@@ -513,34 +513,39 @@
               id="panel-controls"
               role="tabpanel"
               aria-labelledby="tab-controls-link"
-              class="glass-panel p-4"
+              class="glass-panel p-4 relative z-50"
+              style="pointer-events: auto;"
               tabindex="0"
             >
               <h3 class="text-sm font-bold text-white mb-3">System Controls</h3>
-              <div class="flex flex-wrap gap-2 text-xs">
+              <div class="flex flex-wrap gap-2 text-xs relative z-50" style="pointer-events: auto;">
                 <button
-                  class="px-3 py-2 rounded bg-red-600/80 hover:bg-red-600 text-white"
+                  class="px-3 py-2 rounded bg-red-600/80 hover:bg-red-600 text-white relative z-50 cursor-pointer"
+                  style="pointer-events: auto;"
                   phx-click="system_control"
                   phx-value-action="emergency_stop"
                 >
                   Emergency Stop
                 </button>
                 <button
-                  class="px-3 py-2 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white"
+                  class="px-3 py-2 rounded bg-cyan-600/80 hover:bg-cyan-600 text-white relative z-50 cursor-pointer"
+                  style="pointer-events: auto;"
                   phx-click="system_control"
                   phx-value-action="system_restart"
                 >
                   Restart
                 </button>
                 <button
-                  class="px-3 py-2 rounded bg-yellow-600/80 hover:bg-yellow-600 text-white"
+                  class="px-3 py-2 rounded bg-yellow-600/80 hover:bg-yellow-600 text-white relative z-50 cursor-pointer"
+                  style="pointer-events: auto;"
                   phx-click="system_control"
                   phx-value-action="safe_mode"
                 >
                   Safe Mode
                 </button>
                 <button
-                  class="px-3 py-2 rounded bg-amber-600/80 hover:bg-amber-600 text-white"
+                  class="px-3 py-2 rounded bg-amber-600/80 hover:bg-amber-600 text-white relative z-50 cursor-pointer"
+                  style="pointer-events: auto;"
                   phx-click="system_control"
                   phx-value-action="maintenance_mode"
                 >
