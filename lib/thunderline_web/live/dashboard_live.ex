@@ -830,6 +830,20 @@ defmodule ThunderlineWeb.DashboardLive do
       {:noreply, socket}
     end
 
+    # Metrics Tab Event Handlers
+    def handle_event("select_domain", %{"domain" => domain}, socket) do
+      {:noreply, assign(socket, :selected_domain, domain)}
+    end
+
+    def handle_event("change_time_range", %{"range" => range}, socket) do
+      {:noreply, assign(socket, :time_range, range)}
+    end
+
+    def handle_event("adjust_refresh_rate", %{"rate" => rate}, socket) do
+      rate_value = String.to_integer(rate)
+      {:noreply, assign(socket, :refresh_rate, rate_value)}
+    end
+
   # Private Functions
 
   defp assign_initial_state(socket, params) do
@@ -914,6 +928,15 @@ defmodule ThunderlineWeb.DashboardLive do
       utilization: 0,
       domain_counts: %{}
     })
+    # Consolidated Metrics tab assigns
+    |> assign(:metrics_data, %{})
+    |> assign(:selected_domain, "thundercore")
+    |> assign(:time_range, "1h")
+    |> assign(:refresh_rate, 5)
+    # Consolidated Events tab assigns
+    |> assign(:event_rate, %{per_minute: 0, per_second: 0})
+    |> assign(:pipeline_stats, %{realtime: 0, cross_domain: 0, general: 0, total: 0})
+    |> assign(:validation_stats, %{passed: 0, dropped: 0, invalid: 0})
     |> assign(:ml_pipeline_status, get_ml_pipeline_status())
   end
 
@@ -923,6 +946,7 @@ defmodule ThunderlineWeb.DashboardLive do
       "overview",
       "system",
       "events",
+      "metrics",
       "controls",
       "thunderwatch"
     ]
@@ -1809,4 +1833,16 @@ defmodule ThunderlineWeb.DashboardLive do
 
   defp blank?(value) when value in [nil, ""], do: true
   defp blank?(value), do: false
+
+  # Metrics helpers
+  defp format_bytes(bytes) when is_integer(bytes) do
+    cond do
+      bytes >= 1_073_741_824 -> "#{Float.round(bytes / 1_073_741_824, 1)} GB"
+      bytes >= 1_048_576 -> "#{Float.round(bytes / 1_048_576, 1)} MB"
+      bytes >= 1_024 -> "#{Float.round(bytes / 1_024, 1)} KB"
+      true -> "#{bytes} B"
+    end
+  end
+
+  defp format_bytes(_), do: "0 B"
 end

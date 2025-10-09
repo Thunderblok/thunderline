@@ -688,51 +688,67 @@ defmodule Thunderline.DashboardMetrics do
 
   defp get_thundercell_elixir_stats do
     # Use ThunderCell Elixir modules directly
+    # Return early if ClusterSupervisor is not running to avoid crashes
+    {:error, :cluster_supervisor_not_running}
+  end
+
+  defp get_thundercell_elixir_stats_disabled do
+    # DISABLED: ClusterSupervisor causes crashes when not running
+    # Use ThunderCell Elixir modules directly
     try do
-      clusters = Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor.list_clusters()
-      cluster_count = length(clusters)
+      # Check if the supervisor process is alive first
+      supervisor_name = Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor
 
-      # Aggregate stats from all clusters
-      total_stats =
-        Enum.reduce(
-          clusters,
-          %{
-            total_generations: 0,
-            total_cells: 0,
-            alive_cells: 0,
-            active_rules: []
-          },
-          fn cluster, acc ->
-            generation = Map.get(cluster, :generation, 0)
-            cell_count = Map.get(cluster, :cell_count, 0)
-            # Assume 10% of cells are alive on average
-            alive_count = round(cell_count * 0.1)
+      case Process.whereis(supervisor_name) do
+        nil ->
+          {:error, :cluster_supervisor_not_running}
 
-            %{
-              total_generations: acc.total_generations + generation,
-              total_cells: acc.total_cells + cell_count,
-              alive_cells: acc.alive_cells + alive_count,
-              active_rules: acc.active_rules ++ extract_cluster_rules(cluster)
-            }
-          end
-        )
+        _pid ->
+          clusters = supervisor_name.list_clusters()
+          cluster_count = length(clusters)
 
-      {:ok,
-       %{
-         active_rules: Enum.uniq(total_stats.active_rules),
-         total_generations: total_stats.total_generations,
-         cluster_count: cluster_count,
-         total_cells: total_stats.total_cells,
-         alive_cells: total_stats.alive_cells,
-         neural_learning_rate: 0.001,
-         neural_convergence: 0.5,
-         adaptation_cycles: 0,
-         emergence_patterns: 0,
-         quantum_entanglement: 0.0,
-         superposition_count: 0,
-         decoherence_ms: 0,
-         quantum_speedup: 1.0
-       }}
+          # Aggregate stats from all clusters
+          total_stats =
+            Enum.reduce(
+              clusters,
+              %{
+                total_generations: 0,
+                total_cells: 0,
+                alive_cells: 0,
+                active_rules: []
+              },
+              fn cluster, acc ->
+                generation = Map.get(cluster, :generation, 0)
+                cell_count = Map.get(cluster, :cell_count, 0)
+                # Assume 10% of cells are alive on average
+                alive_count = round(cell_count * 0.1)
+
+                %{
+                  total_generations: acc.total_generations + generation,
+                  total_cells: acc.total_cells + cell_count,
+                  alive_cells: acc.alive_cells + alive_count,
+                  active_rules: acc.active_rules ++ extract_cluster_rules(cluster)
+                }
+              end
+            )
+
+          {:ok,
+           %{
+             active_rules: Enum.uniq(total_stats.active_rules),
+             total_generations: total_stats.total_generations,
+             cluster_count: cluster_count,
+             total_cells: total_stats.total_cells,
+             alive_cells: total_stats.alive_cells,
+             neural_learning_rate: 0.001,
+             neural_convergence: 0.5,
+             adaptation_cycles: 0,
+             emergence_patterns: 0,
+             quantum_entanglement: 0.0,
+             superposition_count: 0,
+             decoherence_ms: 0,
+             quantum_speedup: 1.0
+           }}
+      end
     rescue
       error -> {:error, error}
     end
