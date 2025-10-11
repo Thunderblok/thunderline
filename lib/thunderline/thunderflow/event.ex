@@ -398,7 +398,11 @@ defmodule Thunderline.Event do
     bolt_evt: ["evt.action.ca"]
   }
 
-  defp category_allowed?(source, name) when is_atom(source) and is_binary(name) do
+  @doc """
+  Returns true if the given `source` domain is allowed to emit an event with the
+  provided `name` according to the taxonomy domain matrix.
+  """
+  def category_allowed?(source, name) when is_atom(source) and is_binary(name) do
     prefix =
       name
       |> String.split(".")
@@ -425,7 +429,7 @@ defmodule Thunderline.Event do
     end)
   end
 
-  defp category_allowed?(_, _), do: true
+  def category_allowed?(_, _), do: true
 
   defp infer_reliability(nil), do: :transient
 

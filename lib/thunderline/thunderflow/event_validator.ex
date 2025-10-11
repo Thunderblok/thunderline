@@ -38,6 +38,7 @@ defmodule Thunderline.Thunderflow.EventValidator do
 
   defp do_validate(%Event{
          name: name,
+         source: source,
          correlation_id: cid,
          taxonomy_version: tv,
          event_version: evv,
@@ -67,6 +68,9 @@ defmodule Thunderline.Thunderflow.EventValidator do
 
       not is_map(meta) ->
         {:error, :invalid_meta}
+
+      not Event.category_allowed?(source, name) ->
+        {:error, :forbidden_category}
 
       true ->
         :ok

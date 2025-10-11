@@ -86,6 +86,17 @@ alias Thunderline.Thunderflow.MLEvents
 Thunderline.Thunderflow.EventBus.publish_event(event)
 ```
 
+**Telemetry emitted on publish:**
+
+- `[:thunderline, :eventbus, :publish, :start]`
+- `[:thunderline, :eventbus, :publish, :stop]`
+- `[:thunderline, :eventbus, :publish, :exception]` (only when validation/processing fails)
+- `[:thunderline, :event, :enqueue]`
+- `[:thunderline, :event, :publish]`
+- `[:thunderline, :event, :dropped]`
+
+Each span includes rich metadata: `event_name`, category prefix, `source`, `priority`, `correlation_id`, `taxonomy_version`, and `event_version`, ensuring guardrails and observability requirements for HC-01.
+
 ### Real-Time Metric Update
 
 ```elixir

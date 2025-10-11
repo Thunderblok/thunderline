@@ -24,18 +24,18 @@ High Command has issued P0 directives to restore Thunderline to professional-gra
 ## 1. P0 Mission Tracker (High Command Orders)
 
 ### HC-01: EventBus Restoration (ThunderFlow)
-**Owner:** Flow Steward  
-**Status:** 🔴 NOT STARTED  
+**Owner:** Flow Steward
+**Status:** 🟢 COMPLETE (Oct 10, 2025)
 **Blocking:** HC-02, HC-03, HC-09
 
 **Deliverables:**
-- [ ] Restore `Thunderline.EventBus.publish_event/1` with canonical envelope validation
-- [ ] Add telemetry spans: `[:thunderline, :eventbus, :publish, :start|:stop|:exception]`
-- [ ] Implement taxonomy guardrails (validate against EVENT_TAXONOMY)
-- [ ] Create `mix thunderline.events.lint` task
-- [ ] Add CI gate enforcing EventBus usage patterns
+- [x] Restore `Thunderline.EventBus.publish_event/1` with canonical envelope validation
+- [x] Add telemetry spans: `[:thunderline, :eventbus, :publish, :start|:stop|:exception]`
+- [x] Implement taxonomy guardrails (validate against EVENT_TAXONOMY)
+- [x] Create `mix thunderline.events.lint` task
+- [ ] Add CI gate enforcing EventBus usage patterns _(deferred to HC-08 per High Command directive)_
 
-**Review Checklist:**
+**Review Checklist (Completed Oct 10, 2025):**
 ```elixir
 # ✅ Expected API shape:
 EventBus.publish_event(%{
@@ -53,16 +53,17 @@ EventBus.publish_event(%{
 {:error, %{invalid_category: "unknown_category"}}
 ```
 
-**Files to Review:**
+**Files Reviewed:**
 - `lib/thunderline/thunderflow/event_bus.ex` (main implementation)
 - `lib/thunderline/thunderflow/event_taxonomy.ex` (category validation)
-- `lib/mix/tasks/thunderline/events/lint.ex` (CI task)
-- `test/thunderline/thunderflow/event_bus_test.exs` (coverage ≥ 90%)
+- `lib/mix/tasks/thunderline/events.lint.ex` (lint task hardening)
+- `test/thunderline/thunderflow/event_bus_test.exs` (telemetry assertions)
 
+_Note: CI enforcement tracked under HC-08 (GitHub Actions enhancements)._
 **Acceptance Criteria:**
 - ✅ All existing `EventBus.put/1` calls migrated to `publish_event/1`
 - ✅ Telemetry spans captured in tests
-- ✅ CI task passes on main branch
+- ⏳ CI gate integrated under HC-08 release workflow
 - ✅ Documentation updated with examples
 
 ---

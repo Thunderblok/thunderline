@@ -27,14 +27,24 @@ defmodule Thunderline.Thunderflow.EventBus do
 
   @pubsub Thunderline.PubSub
   @telemetry_drop [:thunderline, :event, :dropped]
+  @telemetry_start [:thunderline, :eventbus, :publish, :start]
+  @telemetry_stop [:thunderline, :eventbus, :publish, :stop]
+  @telemetry_exception [:thunderline, :eventbus, :publish, :exception]
 
   @spec publish_event(Thunderline.Event.t()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def publish_event(%Thunderline.Event{} = ev) do
     start = System.monotonic_time()
+    telemetry_start(ev)
 
-    case EventValidator.validate(ev) do
-      :ok -> do_publish(ev, start)
-      {:error, reason} -> on_invalid(ev, reason, start)
+    try do
+      case EventValidator.validate(ev) do
+        :ok -> do_publish(ev, start)
+        {:error, reason} -> on_invalid(ev, reason, start)
+      end
+    rescue
+      exception ->
+        telemetry_exception(start, ev, exception, kind: :raised, pipeline: :exception)
+        reraise(exception, __STACKTRACE__)
     end
   end
 
@@ -50,6 +60,9 @@ defmodule Thunderline.Thunderflow.EventBus do
 
   defp on_invalid(ev, reason, start) do
     :telemetry.execute(@telemetry_drop, %{count: 1}, %{reason: reason, name: ev.name})
+
+    telemetry_exception(start, ev, reason, kind: :validation_failed, pipeline: :invalid)
+    telemetry_stop(start, ev, :error, :invalid)
     telemetry_publish(start, ev, :error, :invalid)
     {:error, reason}
   end
@@ -129,6 +142,7 @@ defmodule Thunderline.Thunderflow.EventBus do
         priority: priority
       })
 
+      telemetry_stop(start, ev, :ok, pipeline)
       telemetry_publish(start, ev, :ok, pipeline)
       maybe_tap(ev, pipeline, :enqueue)
       {:ok, ev}
@@ -138,7 +152,10 @@ defmodule Thunderline.Thunderflow.EventBus do
           "MnesiaProducer unavailable (#{pipeline}) fallback PubSub: #{inspect(error)}"
         )
 
+        telemetry_exception(start, ev, error, kind: :enqueue_failed, pipeline: pipeline)
+
         PubSub.broadcast(@pubsub, "events:" <> to_string(ev.type || :unknown), ev)
+        telemetry_stop(start, ev, :ok, :fallback_pubsub)
         telemetry_publish(start, ev, :ok, :fallback_pubsub)
         maybe_tap(ev, pipeline, :fallback_pubsub)
         {:ok, ev}
@@ -208,6 +225,65 @@ defmodule Thunderline.Thunderflow.EventBus do
   end
 
   defp feature?(flag), do: flag in Application.get_env(:thunderline, :features, [])
+
+  defp telemetry_start(ev) do
+    :telemetry.execute(@telemetry_start, %{system_time: System.system_time()}, telemetry_metadata(ev))
+  end
+
+  defp telemetry_stop(start, ev, status, pipeline) do
+    measurements = telemetry_duration(start)
+
+    metadata =
+      telemetry_metadata(ev)
+      |> Map.put(:status, status)
+      |> Map.put(:pipeline, pipeline)
+
+    :telemetry.execute(@telemetry_stop, measurements, metadata)
+  end
+
+  defp telemetry_exception(start, ev, reason, opts) do
+    measurements = telemetry_duration(start)
+
+    metadata =
+      telemetry_metadata(ev)
+      |> Map.put(:error, inspect(reason))
+      |> Map.put(:kind, Keyword.get(opts, :kind, :exception))
+      |> maybe_put(:pipeline, Keyword.get(opts, :pipeline))
+
+    :telemetry.execute(@telemetry_exception, measurements, metadata)
+  end
+
+  defp telemetry_duration(start) do
+    %{
+      duration: System.monotonic_time() - start,
+      system_time: System.system_time()
+    }
+  end
+
+  defp telemetry_metadata(%Thunderline.Event{} = ev) do
+    [
+      event_name: ev.name,
+      category: event_category(ev.name),
+      priority: ev.priority,
+      source: ev.source,
+      correlation_id: ev.correlation_id,
+      taxonomy_version: ev.taxonomy_version,
+      event_version: ev.event_version
+    ]
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+  end
+
+  defp event_category(name) when is_binary(name) do
+    name
+    |> String.split(".")
+    |> List.first()
+  end
+
+  defp event_category(_), do: nil
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   # Legacy validation/transform helpers removed (enforced upstream via EventValidator).
 end

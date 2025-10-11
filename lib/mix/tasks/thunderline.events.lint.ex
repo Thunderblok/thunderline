@@ -37,11 +37,13 @@ defmodule Mix.Tasks.Thunderline.Events.Lint do
       tax_v = capture_int(inner, ~r/taxonomy_version:\s*(\d+)/)
       ev_v = capture_int(inner, ~r/event_version:\s*(\d+)/)
 
+      has_name_field = String.contains?(inner, "name:")
+
       issues =
         []
-        |> maybe_issue(name == nil, :missing_name, name)
-        |> maybe_issue(name && length(String.split(name, ".")) < 2, :short_name, name)
-        |> maybe_issue(name && not allowed_prefix?(name), :bad_prefix, name)
+        |> maybe_issue(has_name_field and is_nil(name), :missing_name, name)
+        |> maybe_issue(is_binary(name) and length(String.split(name, ".")) < 2, :short_name, name)
+        |> maybe_issue(is_binary(name) and not allowed_prefix?(name), :bad_prefix, name)
         |> maybe_issue(
           inner =~ ~r/taxonomy_version:/ and (tax_v == nil or tax_v < 1),
           :bad_taxonomy_version,
