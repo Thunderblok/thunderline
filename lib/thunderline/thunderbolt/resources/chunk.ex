@@ -10,7 +10,11 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: :embedded,
-    extensions: [AshJsonApi.Resource, AshOban.Resource, AshGraphql.Resource]
+    extensions: [AshStateMachine, AshJsonApi.Resource, AshOban, AshGraphql.Resource],
+    notifiers: [Ash.Notifier.PubSub]
+
+  alias Ash.Changeset
+  alias Thunderline.Thunderbolt.Domain
 
   # IN-MEMORY CONFIGURATION (sqlite removed)
   # Using :embedded data layer
@@ -76,29 +80,20 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     # Initialization actions
     create :create_for_region do
       accept [:start_q, :start_r, :end_q, :end_r, :z_level, :total_capacity]
-
-      # TODO: Fix function reference escaping
-      # change before_action(&calculate_chunk_boundaries/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&initialize_chunk_supervisor/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&subscribe_to_thundercore_pulse/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&calculate_chunk_boundaries/1)
+      change after_action(&initialize_chunk_supervisor/2)
+      change after_action(&subscribe_to_thundercore_pulse/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :initialize do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:dormant)
-      # TODO: Fix function reference escaping
-      # change before_action(&validate_initialization_requirements/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&complete_chunk_initialization/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&validate_initialization_requirements/1)
+      change transition_state(:dormant)
+      change after_action(&complete_chunk_initialization/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Core operational state transitions
@@ -106,38 +101,30 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept [:active_count, :resource_allocation]
 
-      # TODO: Fix state machine integration
-      # change transition_state(:active)
-      # TODO: Fix function reference escaping
-      # change after_action(&finalize_activation/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&prepare_activation/1)
+      change transition_state(:active)
+      change after_action(&start_activation_process/2)
+      change after_action(&finalize_activation/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :deactivate do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:deactivating)
-      # TODO: Fix function reference escaping
-      # change before_action(&prepare_deactivation/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&start_deactivation_process/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&prepare_deactivation/1)
+      change transition_state(:deactivating)
+      change after_action(&start_deactivation_process/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :deactivation_complete do
       require_atomic? false
       accept [:active_count]
 
-      # TODO: Fix state machine integration
-      # change transition_state(:dormant)
-      # TODO: Fix function reference escaping
-      # change after_action(&finalize_deactivation/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change transition_state(:dormant)
+      change after_action(&finalize_deactivation/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Optimization state transitions
@@ -146,34 +133,20 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       description "Begin chunk optimization"
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:optimizing)
-      # TODO: Fix function reference escaping
-      # change before_action(&prepare_optimization/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&start_optimization_process/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&prepare_optimization/1)
+      change transition_state(:optimizing)
+      change after_action(&start_optimization_process/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :optimization_complete do
       require_atomic? false
       accept [:optimization_score, :resource_allocation]
 
-      # TODO: Fix state machine integration
-      # change transition_state(fn changeset, context ->
-      #   # Transition back to original state or stay optimized based on conditions
-      #   case get_change(changeset, :optimization_score) do
-      #     score when is_nil(score) or score < Decimal.new("0.8") -> :active
-      #     _ -> :dormant
-      #   end
-      # end)
-      # TODO: Fix DateTime.utc_now function reference
-      # change set_attribute(:last_optimization, &DateTime.utc_now/0)
-      # TODO: Fix function reference escaping
-      # change after_action(&apply_optimization_changes/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change transition_state(&__MODULE__.determine_optimization_target_state/2)
+      change set_attribute(:last_optimization, &DateTime.utc_now/0)
+      change after_action(&apply_optimization_changes/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Maintenance state transitions
@@ -181,26 +154,19 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:maintenance)
-      # TODO: Fix function reference escaping
-      # change before_action(&prepare_maintenance_mode/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&start_maintenance_procedures/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&prepare_maintenance_mode/1)
+      change transition_state(:maintenance)
+      change after_action(&start_maintenance_procedures/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :exit_maintenance do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:dormant)
-      # TODO: Fix function reference escaping
-      # change after_action(&complete_maintenance_procedures/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change transition_state(:dormant)
+      change after_action(&complete_maintenance_procedures/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Scaling state transitions
@@ -208,32 +174,19 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept [:total_capacity]
 
-      # TODO: Fix state machine integration
-      # change transition_state(:scaling)
-      # TODO: Fix function reference escaping
-      # change before_action(&prepare_scaling_operation/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&start_scaling_process/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&prepare_scaling_operation/1)
+      change transition_state(:scaling)
+      change after_action(&start_scaling_process/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :scaling_complete do
       require_atomic? false
       accept [:total_capacity, :resource_allocation]
 
-      # TODO: Fix state machine integration
-      # change transition_state(fn changeset, context ->
-      #   # Return to active if was active, otherwise dormant
-      #   case Map.get(context, :previous_state, :dormant) do
-      #     :active -> :active
-      #     _ -> :dormant
-      #   end
-      # end)
-      # TODO: Fix function reference escaping
-      # change after_action(&finalize_scaling_operation/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change transition_state(&__MODULE__.determine_scaling_target_state/2)
+      change after_action(&finalize_scaling_operation/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Failure and recovery
@@ -241,28 +194,20 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:dormant)
-      # TODO: Fix function reference escaping
-      # change before_action(&validate_recovery_conditions/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&complete_recovery_process/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&validate_recovery_conditions/1)
+      change transition_state(:dormant)
+      change after_action(&complete_recovery_process/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :force_reset do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:initializing)
-      # TODO: Fix function reference escaping
-      # change before_action(&prepare_force_reset/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&complete_force_reset/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&prepare_force_reset/1)
+      change transition_state(:initializing)
+      change after_action(&complete_force_reset/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Emergency operations
@@ -270,24 +215,18 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:emergency_stopped)
-      # TODO: Fix function reference escaping
-      # change after_action(&execute_emergency_stop/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change transition_state(:emergency_stopped)
+      change after_action(&execute_emergency_stop/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :emergency_recover do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:dormant)
-      # TODO: Fix function reference escaping
-      # change after_action(&complete_emergency_recovery/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change transition_state(:dormant)
+      change after_action(&complete_emergency_recovery/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Shutdown operations
@@ -295,33 +234,25 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:shutting_down)
-      # TODO: Fix function reference escaping
-      # change before_action(&prepare_shutdown/1)
-      # TODO: Fix function reference escaping
-      # change after_action(&start_shutdown_process/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change before_action(&prepare_shutdown/1)
+      change transition_state(:shutting_down)
+      change after_action(&start_shutdown_process/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     update :shutdown_complete do
       require_atomic? false
       accept []
 
-      # TODO: Fix state machine integration
-      # change transition_state(:destroyed)
-      # TODO: Fix function reference escaping
-      # change after_action(&finalize_shutdown/2)
-      # TODO: Fix function reference escaping
-      # change after_action(&create_orchestration_event/2)
+      change transition_state(:destroyed)
+      change after_action(&finalize_shutdown/2)
+      change after_action(&create_orchestration_event/2)
     end
 
     # Health and status updates (non-state-changing)
     update :update_health do
       accept [:health_status, :resource_allocation]
-      # TODO: Fix function reference escaping
-      # change after_action(&broadcast_health_update/2)
+      change after_action(&broadcast_health_update/2)
     end
 
     read :chunk_status do
@@ -376,6 +307,24 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     attribute :end_r, :integer, allow_nil?: false
     attribute :z_level, :integer, default: 0
 
+    attribute :state, :atom do
+      allow_nil? false
+      default :initializing
+      constraints one_of: [
+        :initializing,
+        :dormant,
+        :active,
+        :optimizing,
+        :maintenance,
+        :scaling,
+        :deactivating,
+        :failed,
+        :emergency_stopped,
+        :shutting_down,
+        :destroyed
+      ]
+    end
+
     # Chunk statistics
     attribute :active_count, :integer, default: 0
     attribute :dormant_count, :integer, default: 0
@@ -420,46 +369,29 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   # ============================================================================
   # STATE MACHINE - CHUNK LIFECYCLE ORCHESTRATION
   # ============================================================================
-  # TODO: Fix AshStateMachine DSL syntax
-  # state_machine do
-  #   initial_states [:initializing]
-  #   default_initial_state :initializing
-  #
-  #   transitions do
-  #     # Initialization flow
-  #     transition :initialize, from: :initializing, to: [:dormant, :failed]
-  #
-  #     # Core operational transitions
-  #     transition :activate, from: [:dormant, :optimizing], to: [:active, :activating]
-  #     transition :activation_complete, from: :activating, to: [:active, :failed]
-  #     transition :deactivate, from: :active, to: [:dormant, :deactivating]
-  #     transition :deactivation_complete, from: :deactivating, to: [:dormant, :failed]
-  #
-  #     # Optimization flow
-  #     transition :begin_optimization, from: [:active, :dormant], to: [:optimizing, :failed]
-  #     transition :optimization_complete, from: :optimizing, to: [:active, :dormant, :failed]
-  #
-  #     # Maintenance and recovery
-  #     transition :enter_maintenance, from: [:active, :dormant, :optimizing], to: [:maintenance, :failed]
-  #     transition :exit_maintenance, from: :maintenance, to: [:dormant, :failed]
-  #
-  #     # Scaling operations
-  #     transition :begin_scaling, from: [:active, :dormant], to: [:scaling, :failed]
-  #     transition :scaling_complete, from: :scaling, to: [:active, :dormant, :failed]
-  #
-  #     # Failure handling
-  #     transition :recover, from: :failed, to: [:dormant, :failed]
-  #     transition :force_reset, from: [:failed, :maintenance], to: :initializing
-  #
-  #     # Shutdown flow
-  #     transition :begin_shutdown, from: [:dormant, :active, :optimizing, :maintenance, :failed], to: [:shutting_down, :failed]
-  #     transition :shutdown_complete, from: :shutting_down, to: :destroyed
-  #
-  #     # Emergency transitions
-  #     transition :emergency_stop, from: :any, to: :emergency_stopped
-  #     transition :emergency_recover, from: :emergency_stopped, to: [:dormant, :failed]
-  #   end
-  # end
+  state_machine do
+    initial_states([:initializing])
+    default_initial_state(:initializing)
+
+    transitions do
+      transition(:initialize, from: [:initializing], to: [:dormant, :failed])
+      transition(:activate, from: [:dormant, :optimizing, :maintenance], to: [:active])
+      transition(:deactivate, from: [:active], to: [:deactivating])
+      transition(:deactivation_complete, from: [:deactivating], to: [:dormant, :failed])
+      transition(:begin_optimization, from: [:active, :dormant], to: [:optimizing])
+      transition(:optimization_complete, from: [:optimizing], to: [:active, :dormant, :failed])
+      transition(:enter_maintenance, from: [:active, :dormant, :optimizing], to: [:maintenance])
+      transition(:exit_maintenance, from: [:maintenance], to: [:dormant, :failed])
+      transition(:begin_scaling, from: [:active, :dormant], to: [:scaling])
+      transition(:scaling_complete, from: [:scaling], to: [:active, :dormant, :failed])
+      transition(:recover, from: [:failed, :emergency_stopped], to: [:dormant])
+      transition(:force_reset, from: [:failed, :maintenance, :emergency_stopped], to: [:initializing])
+      transition(:begin_shutdown, from: [:dormant, :active, :optimizing, :maintenance, :failed, :scaling, :deactivating, :emergency_stopped], to: [:shutting_down])
+      transition(:shutdown_complete, from: [:shutting_down], to: [:destroyed])
+      transition(:emergency_stop, from: :*, to: [:emergency_stopped])
+      transition(:emergency_recover, from: [:emergency_stopped], to: [:dormant, :failed])
+    end
+  end
 
   relationships do
     has_many :chunk_health_records, Thunderline.Thunderbolt.Resources.ChunkHealth
@@ -485,24 +417,26 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
               )
   end
 
-  # TODO: Fix Oban trigger configuration
-  # oban do
-  #   triggers do
-  #     trigger :chunk_health_check do
-  #       action :update_health
-  #       schedule "*/1 * * * *"  # Every minute
-  #       where expr(status in [:active, :degraded])
-  #     end
-  #   end
-  # end
+  oban do
+    triggers do
+      trigger :chunk_health_check do
+        action :update_health
+        scheduler_cron("*/1 * * * *")
+        where expr(state in [:active, :optimizing, :maintenance, :scaling])
+      end
+    end
+  end
 
-  # TODO: Fix notifications configuration
-  # notifications do
-  #   publish :chunk_created, ["thunderbolt:chunk:created", :id]
-  #   publish :chunk_activated, ["thunderbolt:chunk:activated", :id]
-  #   publish :chunk_optimized, ["thunderbolt:chunk:optimized", :id]
-  #   publish :chunk_health_updated, ["thunderbolt:chunk:health", :id]
-  # end
+  pub_sub do
+    module Thunderline.PubSub
+    prefix "thunderbolt:chunk"
+
+    publish :create, ["created", :id]
+    publish :create_for_region, ["created", :id]
+    publish :activate, ["activated", :id]
+    publish :optimization_complete, ["optimized", :id]
+    publish :update_health, ["health_updated", :id]
+  end
 
   # ============================================================================
   # STATE MACHINE ACTION IMPLEMENTATIONS
@@ -582,6 +516,11 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Optimization implementations
+  defp prepare_optimization(changeset) do
+    # Placeholder for ML-driven pre-optimization heuristics
+    changeset
+  end
+
   defp start_optimization_process(_changeset, chunk) do
     # Begin optimization procedures
     Phoenix.PubSub.broadcast(
@@ -783,7 +722,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
         source: "chunk_resource",
         node_name: node()
       })
-      |> Ash.create!(domain: Thunderbolt.Domain)
+      |> Ash.create!(domain: Domain)
     rescue
       # Gracefully handle event creation failures
       _error -> :ok
@@ -808,6 +747,29 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     )
 
     {:ok, chunk}
+  end
+
+  # State transition decision functions (must be named for Spark DSL)
+  defp determine_optimization_target_state(changeset, _context) do
+    score = Ash.Changeset.get_attribute(changeset, :optimization_score)
+
+    cond do
+      is_nil(score) ->
+        :active
+
+      Decimal.compare(score, Decimal.new("0.8")) == :lt ->
+        :active
+
+      true ->
+        :dormant
+    end
+  end
+
+  defp determine_scaling_target_state(changeset, _context) do
+    case Ash.Changeset.get_attribute(changeset, :active_count) do
+      count when is_integer(count) and count > 0 -> :active
+      _ -> :dormant
+    end
   end
 
   # Keep list of strategic private hooks (names only to avoid compile capture ordering)
@@ -835,6 +797,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       &prepare_deactivation/1,
       &start_deactivation_process/2,
       &finalize_deactivation/2,
+      &prepare_optimization/1,
       &start_optimization_process/2,
       &apply_optimization_changes/2,
       &prepare_maintenance_mode/1,
@@ -857,7 +820,9 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       &subscribe_to_thundercore_pulse/2,
       &create_orchestration_event/2,
       &calculate_optimization_score/1,
-      &broadcast_health_update/2
+      &broadcast_health_update/2,
+      &determine_optimization_target_state/2,
+      &determine_scaling_target_state/2
     ]
 
     :ok
