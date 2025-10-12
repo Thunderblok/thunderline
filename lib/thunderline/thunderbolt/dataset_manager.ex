@@ -135,12 +135,10 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     |> String.replace(~r/https?:\/\/[^\s]+/, @url_token)
     |> String.replace(~r/\[[^\]]+\]/, @citation_token)
     |> String.replace(~r/[^\x00-\x7F]/, "")
-    |> String.replace(~r/\r\n?/, "\n")
-    |> String.replace(~r/\s+/, " ")
-    |> String.trim()
+    |> String.replace(~r/\r\n?/, " ")
     |> String.replace(@url_token, "")
     |> String.replace(@citation_token, "")
-    |> String.trim()
+    |> normalize_spacing()
   end
 
   defp strip_non_prose(_), do: nil
