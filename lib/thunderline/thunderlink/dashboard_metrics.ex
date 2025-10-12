@@ -23,12 +23,14 @@ defmodule Thunderline.DashboardMetrics do
   @pubsub_topic "dashboard:metrics"
   # 5 seconds
   @metrics_update_interval 5_000
+  @heartbeat_tolerance 15_000
+  @downtime_history_limit 10
+  @completion_sample_limit 100
   @pipeline_steps [:ingest, :embed, :curate, :propose, :train, :serve]
   @telemetry_table :thunderline_dashboard_telemetry
   @ml_pipeline_table :thunderline_dashboard_ml_pipeline
   @uptime_table :thunderline_dashboard_uptime
   @rate_cache_table :thunderline_dashboard_rates
-  @io_cache_key {:dashboard_metrics, :io_snapshot}
 
   @pipeline_handler_id "thunderline-dashboard-metrics-pipeline"
   @trial_handler_id "thunderline-dashboard-metrics-ml"
@@ -100,7 +102,11 @@ defmodule Thunderline.DashboardMetrics do
 
     %{
       cpu_usage: metrics.cpu_usage,
-      memory_usage: %{used: memory.used, total: memory.total, percent: metrics.memory_used_percent},
+      memory_usage: %{
+        used: memory.used,
+        total: memory.total,
+        percent: metrics.memory_used_percent
+      },
       active_processes: metrics.process_count,
       uptime_seconds: metrics.uptime,
       uptime_percent: metrics.uptime_percent
@@ -150,8 +156,7 @@ defmodule Thunderline.DashboardMetrics do
       cpu_usage_percent: cpu_usage_percent(),
       network_latency_ms: network_latency_ms(),
       active_connections: 1 + length(Node.list()),
-      data_transfer_mb_s:
-        Float.round(io_bytes_per_second(:output) / 1_048_576, 3),
+      data_transfer_mb_s: Float.round(io_bytes_per_second(:output) / 1_048_576, 3),
       error_rate_percent: error_rate_percent(enqueue, dropped)
     }
   end
@@ -307,13 +312,18 @@ defmodule Thunderline.DashboardMetrics do
         cross_domain_stats = get_queue_stats(:cross_domain)
         scheduled_stats = get_queue_stats(:scheduled_workflows)
 
+        avg_completion_time =
+          case average_job_completion_time() do
+            {:ok, seconds} -> format_duration(seconds)
+            {:error, _} -> "OFFLINE"
+          end
+
         %{
           queued_jobs: default_stats.queued + cross_domain_stats.queued + scheduled_stats.queued,
           completed_recent: default_stats.completed + cross_domain_stats.completed,
           failed_recent: default_stats.failed + cross_domain_stats.failed,
           cross_domain_jobs: cross_domain_stats.queued + cross_domain_stats.executing,
-          # TODO: calculate real average completion time
-          avg_completion_time: "OFFLINE"
+          avg_completion_time: avg_completion_time
         }
       else
         log_once(:oban_not_running, fn ->
@@ -375,6 +385,85 @@ defmodule Thunderline.DashboardMetrics do
     # Return 0 instead of random data
     0
   end
+
+  defp average_job_completion_time(limit \\ @completion_sample_limit) do
+    try do
+      jobs =
+        Job
+        |> where([j], j.state == "completed" and not is_nil(j.completed_at))
+        |> order_by([j], desc: j.completed_at)
+        |> limit(^limit)
+        |> select([j], %{
+          completed_at: j.completed_at,
+          scheduled_at: j.scheduled_at,
+          inserted_at: j.inserted_at
+        })
+        |> Repo.all()
+
+      durations =
+        jobs
+        |> Enum.map(&job_duration_seconds/1)
+        |> Enum.filter(&is_number/1)
+
+      case durations do
+        [] -> {:error, :no_samples}
+        _ -> {:ok, Enum.sum(durations) / length(durations)}
+      end
+    rescue
+      error ->
+        {:error, error}
+    end
+  end
+
+  defp job_duration_seconds(%{completed_at: %NaiveDateTime{} = completed} = job) do
+    start_at =
+      case Map.get(job, :scheduled_at) do
+        %NaiveDateTime{} = scheduled -> scheduled
+        _ -> Map.get(job, :inserted_at)
+      end
+
+    case start_at do
+      %NaiveDateTime{} = starting_point ->
+        duration_ms = NaiveDateTime.diff(completed, starting_point, :millisecond)
+
+        if duration_ms > 0 do
+          duration_ms / 1_000
+        else
+          0.0
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp job_duration_seconds(_), do: nil
+
+  defp format_duration(seconds) when is_number(seconds) do
+    cond do
+      seconds >= 3_600 ->
+        hours = trunc(seconds / 3_600)
+        minutes = trunc((seconds - hours * 3_600) / 60)
+        remaining = seconds - hours * 3_600 - minutes * 60
+        "#{hours}h #{minutes}m #{Float.round(remaining, 1)}s"
+
+      seconds >= 60 ->
+        minutes = trunc(seconds / 60)
+        remaining = seconds - minutes * 60
+        "#{minutes}m #{Float.round(remaining, 1)}s"
+
+      seconds >= 1 ->
+        "#{Float.round(seconds, 2)}s"
+
+      seconds > 0 ->
+        "#{Float.round(seconds * 1_000, 2)}ms"
+
+      true ->
+        "0ms"
+    end
+  end
+
+  defp format_duration(_), do: "OFFLINE"
 
   defp get_supervision_tree_stats do
     try do
@@ -440,7 +529,7 @@ defmodule Thunderline.DashboardMetrics do
       completed_recent: 0,
       failed_recent: 0,
       cross_domain_jobs: 0,
-      avg_completion_time: "0.0s"
+      avg_completion_time: format_duration(0)
     }
   end
 
@@ -507,7 +596,12 @@ defmodule Thunderline.DashboardMetrics do
   def thunderlink_metrics do
     throughput_mb = Float.round(io_bytes_per_second(:output) / 1_048_576, 3)
     latency_ms = network_latency_ms()
-    error_rate = error_rate_percent(get_telemetry_counter([:thunderline, :event, :enqueue]), get_telemetry_counter([:thunderline, :event, :dropped]))
+
+    error_rate =
+      error_rate_percent(
+        get_telemetry_counter([:thunderline, :event, :enqueue]),
+        get_telemetry_counter([:thunderline, :event, :dropped])
+      )
 
     %{
       connections_active: 1 + length(Node.list()),
@@ -566,6 +660,7 @@ defmodule Thunderline.DashboardMetrics do
     Logger.info("Starting DashboardMetrics system...")
 
     ensure_tables()
+    initialize_uptime_tracking()
     attach_pipeline_handlers()
     attach_trial_handlers()
 
@@ -902,6 +997,8 @@ defmodule Thunderline.DashboardMetrics do
   end
 
   defp collect_all_metrics(state) do
+    record_uptime_heartbeat()
+
     %{
       state
       | system_metrics: collect_system_metrics(),
@@ -915,6 +1012,7 @@ defmodule Thunderline.DashboardMetrics do
 
   defp collect_system_metrics do
     ensure_tables()
+    initialize_uptime_tracking()
     memory_info = :erlang.memory()
     memory_snapshot = system_memory_snapshot(memory_info)
 
@@ -974,25 +1072,477 @@ defmodule Thunderline.DashboardMetrics do
     get_ml_pipeline_snapshot()
   end
 
-  defp get_system_uptime_percentage do
-    # For now, assume 99%+ uptime if system is running
-    # TODO: Implement real uptime tracking with downtime history
-    "99.5%"
-  end
+  defp rate_per_second(key, value_fun) when is_function(value_fun, 0) do
+    ensure_tables()
 
-  defp get_memory_usage_percentage do
-    try do
-      memory_info = :erlang.memory()
-      total = memory_info[:total]
-      # Get system memory limit (this is an approximation)
-      # Rough estimate
-      system_limit = memory_info[:system] * 10
-      percentage = (total / system_limit * 100) |> Float.round(1)
-      "#{percentage}%"
-    rescue
-      _ -> "OFFLINE"
+    now_ms = System.monotonic_time(:millisecond)
+
+    case safe_number(value_fun.()) do
+      {:ok, current_value} ->
+        cache_key = {:rate, key}
+
+        case :ets.lookup(@rate_cache_table, cache_key) do
+          [{^cache_key, {previous_value, previous_timestamp}}] ->
+            time_diff_ms = max(now_ms - previous_timestamp, 1)
+            value_diff = current_value - previous_value
+            rate = value_diff / (time_diff_ms / 1_000)
+            :ets.insert(@rate_cache_table, {cache_key, {current_value, now_ms}})
+            max(rate, 0.0)
+
+          _ ->
+            :ets.insert(@rate_cache_table, {cache_key, {current_value, now_ms}})
+            0.0
+        end
+
+      :error ->
+        0.0
     end
   end
+
+  defp rate_per_second(_key, _fun), do: 0.0
+
+  defp io_bytes_per_second(direction) when direction in [:input, :output] do
+    ensure_tables()
+    {{:input, input_bytes}, {:output, output_bytes}} = :erlang.statistics(:io)
+    now_ms = System.monotonic_time(:millisecond)
+    current_bytes = if direction == :input, do: input_bytes, else: output_bytes
+    cache_key = {:io_rate, direction}
+
+    case :ets.lookup(@rate_cache_table, cache_key) do
+      [{^cache_key, {previous_bytes, previous_timestamp}}] ->
+        time_diff_ms = max(now_ms - previous_timestamp, 1)
+        byte_diff = current_bytes - previous_bytes
+        rate = byte_diff / (time_diff_ms / 1_000)
+        :ets.insert(@rate_cache_table, {cache_key, {current_bytes, now_ms}})
+        max(rate, 0.0)
+
+      _ ->
+        :ets.insert(@rate_cache_table, {cache_key, {current_bytes, now_ms}})
+        0.0
+    end
+  rescue
+    _ -> 0.0
+  end
+
+  defp io_bytes_per_second(_), do: 0.0
+
+  defp cpu_usage_percent do
+    case :erlang.statistics(:scheduler_wall_time) do
+      :undefined ->
+        :erlang.system_flag(:scheduler_wall_time, true)
+        0.0
+
+      scheduler_times when is_list(scheduler_times) ->
+        scheduler_times
+        |> Enum.map(fn {_id, active, total} ->
+          if total > 0, do: active / total, else: 0.0
+        end)
+        |> case do
+          [] -> 0.0
+          utilizations -> Float.round(Enum.sum(utilizations) / length(utilizations) * 100, 2)
+        end
+
+      _ ->
+        0.0
+    end
+  rescue
+    _ -> 0.0
+  end
+
+  defp memory_usage_snapshot do
+    memory_info = :erlang.memory()
+    snapshot = system_memory_snapshot(memory_info)
+
+    %{
+      used_mb: Float.round(snapshot.used / (1024 * 1024), 2),
+      total_mb: Float.round(snapshot.total / (1024 * 1024), 2),
+      percent: snapshot.percent
+    }
+  rescue
+    _ -> %{used_mb: 0.0, total_mb: 0.0, percent: 0.0}
+  end
+
+  defp system_memory_snapshot(memory_info) when is_map(memory_info) do
+    total = memory_info[:total] || 0
+    processes = memory_info[:processes] || 0
+    system = memory_info[:system] || 0
+    used = processes + system
+
+    percent =
+      if total > 0 do
+        Float.round(used / total * 100, 2)
+      else
+        0.0
+      end
+
+    %{
+      total: total,
+      used: used,
+      processes: processes,
+      system: system,
+      atom: memory_info[:atom] || 0,
+      binary: memory_info[:binary] || 0,
+      code: memory_info[:code] || 0,
+      ets: memory_info[:ets] || 0,
+      percent: percent
+    }
+  end
+
+  defp system_memory_snapshot(_), do: %{total: 0, used: 0, processes: 0, system: 0, percent: 0.0}
+
+  defp uptime_seconds do
+    case :ets.lookup(@uptime_table, {:boot, :monotonic}) do
+      [{{:boot, :monotonic}, boot_ms}] ->
+        now_ms = System.monotonic_time(:millisecond)
+        max(div(now_ms - boot_ms, 1_000), 0)
+
+      _ ->
+        0
+    end
+  end
+
+  defp uptime_percentage do
+    case :ets.lookup(@uptime_table, {:boot, :monotonic}) do
+      [{{:boot, :monotonic}, boot_ms}] ->
+        now_ms = System.monotonic_time(:millisecond)
+        total_ms = max(now_ms - boot_ms, 1)
+        downtime_ms = min(downtime_total_ms(), total_ms)
+        uptime_ms = max(total_ms - downtime_ms, 0)
+        Float.round(uptime_ms / total_ms * 100.0, 4)
+
+      _ ->
+        100.0
+    end
+  end
+
+  defp error_rate_percent(total, errors) when is_number(total) and is_number(errors) do
+    cond do
+      total <= 0 -> 0.0
+      errors <= 0 -> 0.0
+      true -> Float.round(errors / total * 100.0, 2)
+    end
+  end
+
+  defp error_rate_percent(_, _), do: 0.0
+
+  defp cache_hit_rate(total, hits) when is_number(total) and is_number(hits) do
+    cond do
+      total <= 0 -> 0.0
+      hits <= 0 -> 0.0
+      true -> Float.round(hits / total * 100.0, 2)
+    end
+  end
+
+  defp cache_hit_rate(_, _), do: 0.0
+
+  defp network_latency_ms do
+    nodes = Node.list()
+
+    if nodes == [] do
+      0.0
+    else
+      nodes
+      |> Enum.map(fn node ->
+        start = System.monotonic_time(:microsecond)
+
+        try do
+          :rpc.call(node, :erlang, :node, [])
+          stop = System.monotonic_time(:microsecond)
+          max(stop - start, 0) / 1_000
+        catch
+          _ -> 0.0
+        end
+      end)
+      |> case do
+        [] -> 0.0
+        latencies -> Float.round(Enum.sum(latencies) / length(latencies), 2)
+      end
+    end
+  rescue
+    _ -> 0.0
+  end
+
+  defp load_balancer_health(efficiency) when is_number(efficiency) do
+    cond do
+      efficiency >= 95 -> :healthy
+      efficiency >= 85 -> :active
+      efficiency >= 70 -> :watch
+      true -> :degraded
+    end
+  end
+
+  defp load_balancer_health(_), do: :unknown
+
+  defp network_stability(error_rate) when is_number(error_rate) do
+    cond do
+      error_rate < 1.0 -> :excellent
+      error_rate < 5.0 -> :good
+      error_rate < 10.0 -> :degraded
+      true -> :critical
+    end
+  end
+
+  defp network_stability(_), do: :unknown
+
+  defp agent_snapshot do
+    with {:ok, agents} <- ThunderMemory.list_agents() do
+      {active, inactive} = Enum.split_with(agents, &(&1.status in [:active, "active"]))
+
+      neural =
+        Enum.count(agents, fn agent ->
+          case agent.data do
+            %{} = data -> to_string(Map.get(data, :type) || Map.get(data, "type")) == "neural"
+            _ -> false
+          end
+        end)
+
+      memory_bytes =
+        Enum.reduce(agents, 0, fn agent, acc ->
+          metrics = Map.get(agent, :metadata) || %{}
+          acc + (metrics[:memory_usage_bytes] || metrics["memory_usage_bytes"] || 0)
+        end)
+
+      %{
+        total: length(agents),
+        active: length(active),
+        inactive: length(inactive),
+        neural: neural,
+        memory_mb: Float.round(memory_bytes / (1024 * 1024), 2),
+        agents: agents
+      }
+    else
+      _ -> %{total: 0, active: 0, inactive: 0, neural: 0, memory_mb: 0.0, agents: []}
+    end
+  rescue
+    _ -> %{total: 0, active: 0, inactive: 0, neural: 0, memory_mb: 0.0, agents: []}
+  end
+
+  defp grid_snapshot do
+    active_zones =
+      try do
+        :ets.info(:thundergrid_zones, :size)
+      rescue
+        _ -> 0
+      end
+
+    total_nodes =
+      try do
+        :ets.info(:thundergrid_nodes, :size)
+      rescue
+        _ -> 0
+      end
+
+    %{
+      active_zones: active_zones || 0,
+      total_nodes: total_nodes || 0,
+      active_nodes: total_nodes || 0,
+      current_load: 0.0,
+      efficiency: 0.0
+    }
+  end
+
+  defp vault_snapshot do
+    with {:ok, decisions} <- metric_total("thunderblock.vault.decision"),
+         {:ok, evaluations} <- metric_total("thunderblock.vault.policy_eval"),
+         {:ok, access} <- metric_total("thunderblock.vault.access") do
+      %{
+        decisions: decisions,
+        policy_evaluations: evaluations,
+        access_requests: access,
+        security_score: 100.0
+      }
+    else
+      _ ->
+        %{decisions: 0, policy_evaluations: 0, access_requests: 0, security_score: 0.0}
+    end
+  end
+
+  defp communication_snapshot do
+    %{
+      active_communities: 0,
+      messages_per_min:
+        rate_per_second({:thunderlink, :messages}, fn ->
+          get_telemetry_counter([:thunderlink, :message, :processed])
+        end) * 60,
+      federation_connections: Node.list() |> length(),
+      health: :unknown
+    }
+  end
+
+  defp observability_snapshot do
+    %{
+      traces_collected: get_telemetry_counter([:thundereye, :traces, :collected]),
+      performance_rate:
+        rate_per_second({:thundereye, :performance}, fn ->
+          get_telemetry_counter([:thundereye, :metrics, :processed])
+        end),
+      anomaly_count: get_telemetry_counter([:thundereye, :anomaly, :detected]),
+      coverage_percent: 0.0
+    }
+  end
+
+  defp flow_snapshot do
+    processed = get_telemetry_counter([:thunderline, :event, :publish])
+
+    %{
+      events_processed: processed,
+      pipelines_active: 3,
+      flow_rate: rate_per_second({:thunderflow, :events}, fn -> processed end),
+      consciousness_level: if(processed > 0, do: :active, else: :idle)
+    }
+  end
+
+  defp storage_snapshot do
+    %{
+      operations: get_telemetry_counter([:thunderblock, :storage, :operations]),
+      integrity_percent: 100.0,
+      compression_ratio: 1.0,
+      health: :unknown
+    }
+  end
+
+  defp governance_snapshot do
+    %{
+      actions: get_telemetry_counter([:thundercrown, :governance, :action]),
+      policy_updates: get_telemetry_counter([:thundercrown, :policy, :update]),
+      compliance_score: 100.0,
+      authority_level: :active
+    }
+  end
+
+  defp metric_total(metric_name) when is_binary(metric_name) do
+    case ThunderMemory.get_metrics(metric_name, :minute) do
+      {:ok, metrics} ->
+        total =
+          metrics
+          |> Enum.map(&(&1.value || 0))
+          |> Enum.reduce(0, &+/2)
+
+        {:ok, total}
+
+      other ->
+        other
+    end
+  end
+
+  defp metric_total(_), do: {:ok, 0}
+
+  defp safe_number(value) when is_integer(value) or is_float(value), do: {:ok, value}
+
+  defp safe_number(value) when is_binary(value) do
+    case Float.parse(value) do
+      {float, _} -> {:ok, float}
+      :error -> :error
+    end
+  end
+
+  defp safe_number(_), do: :error
+
+  defp initialize_uptime_tracking(force \\ false) do
+    ensure_tables()
+
+    if force do
+      [
+        {:boot, :monotonic},
+        {:boot, :timestamp},
+        {:downtime, :total_ms},
+        {:downtime, :events},
+        {:heartbeat, :monotonic},
+        {:heartbeat, :last}
+      ]
+      |> Enum.each(fn key -> :ets.delete(@uptime_table, key) end)
+    end
+
+    case :ets.lookup(@uptime_table, {:boot, :monotonic}) do
+      [] ->
+        {uptime_ms, _} = :erlang.statistics(:wall_clock)
+        now_ms = System.monotonic_time(:millisecond)
+        boot_monotonic = max(now_ms - uptime_ms, 0)
+        boot_timestamp = DateTime.add(DateTime.utc_now(), -div(uptime_ms, 1_000), :second)
+
+        :ets.insert(@uptime_table, {{:boot, :monotonic}, boot_monotonic})
+        :ets.insert(@uptime_table, {{:boot, :timestamp}, boot_timestamp})
+        :ets.insert(@uptime_table, {{:downtime, :total_ms}, 0})
+        :ets.insert(@uptime_table, {{:downtime, :events}, []})
+        :ets.insert(@uptime_table, {{:heartbeat, :monotonic}, now_ms})
+        :ets.insert(@uptime_table, {{:heartbeat, :last}, DateTime.utc_now()})
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp record_uptime_heartbeat do
+    ensure_tables()
+    initialize_uptime_tracking()
+
+    now_ms = System.monotonic_time(:millisecond)
+
+    last_ms =
+      case :ets.lookup(@uptime_table, {:heartbeat, :monotonic}) do
+        [{{:heartbeat, :monotonic}, value}] -> value
+        _ -> nil
+      end
+
+    cond do
+      is_nil(last_ms) ->
+        :ok
+
+      now_ms < last_ms ->
+        initialize_uptime_tracking(true)
+
+      true ->
+        gap = now_ms - last_ms
+        threshold = @metrics_update_interval + @heartbeat_tolerance
+
+        if gap > threshold do
+          downtime_ms = max(gap - @metrics_update_interval, 0)
+          increment_downtime(downtime_ms)
+        end
+    end
+
+    :ets.insert(@uptime_table, {{:heartbeat, :monotonic}, now_ms})
+    :ets.insert(@uptime_table, {{:heartbeat, :last}, DateTime.utc_now()})
+    :ok
+  end
+
+  defp increment_downtime(duration_ms) when is_integer(duration_ms) and duration_ms > 0 do
+    :ets.update_counter(
+      @uptime_table,
+      {:downtime, :total_ms},
+      {2, duration_ms},
+      {{:downtime, :total_ms}, 0}
+    )
+
+    store_downtime_event(duration_ms)
+  end
+
+  defp increment_downtime(_), do: :ok
+
+  defp store_downtime_event(duration_ms) when is_integer(duration_ms) and duration_ms > 0 do
+    entry = %{duration_ms: duration_ms, detected_at: DateTime.utc_now()}
+
+    history =
+      case :ets.lookup(@uptime_table, {:downtime, :events}) do
+        [{{:downtime, :events}, events}] when is_list(events) -> [entry | events]
+        _ -> [entry]
+      end
+
+    :ets.insert(
+      @uptime_table,
+      {{:downtime, :events}, Enum.take(history, @downtime_history_limit)}
+    )
+  end
+
+  defp store_downtime_event(_), do: :ok
+
+  defp downtime_total_ms do
+    case :ets.lookup(@uptime_table, {:downtime, :total_ms}) do
+      [{{:downtime, :total_ms}, value}] when is_integer(value) -> value
+      _ -> 0
+    end
+  end
+
 
   defp get_load_average do
     # Try to get system load average (Linux/Unix)
@@ -1085,14 +1635,6 @@ defmodule Thunderline.DashboardMetrics do
 
   defp telemetry_counter_key(event_path) do
     {:telemetry, List.to_tuple(event_path)}
-  end
-
-  defp active_zone_count do
-    try do
-      :ets.info(:thundergrid_zones, :size)
-    rescue
-      _ -> 0
-    end
   end
 
   defp ensure_tables do

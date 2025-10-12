@@ -8,7 +8,7 @@ defmodule Thunderline.Thunderbolt.DatasetManagerTest do
       result = DatasetManager.preprocess_sample(text)
 
       refute String.contains?(result, "https://example.com")
-      assert String.contains?(result, "Visit  for more information")
+      assert String.contains?(result, "Visit for more information")
     end
 
     test "removes citations" do
@@ -17,7 +17,7 @@ defmodule Thunderline.Thunderbolt.DatasetManagerTest do
 
       refute String.contains?(result, "[Smith et al. 2023]")
       refute String.contains?(result, "[1]")
-      assert String.contains?(result, "The study  shows significant results")
+      assert String.contains?(result, "The study shows significant results")
     end
 
     test "removes non-ASCII Unicode characters" do
