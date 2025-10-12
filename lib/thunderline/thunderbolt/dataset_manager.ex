@@ -11,9 +11,6 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
 
   require Logger
 
-  @url_token "__THUNDERLINE_URL__"
-  @citation_token "__THUNDERLINE_CITATION__"
-
   @phase1_sources [
     "swiss-ai/apertus-pretrain-gutenberg",
     "PleIAs/common_corpus",
@@ -59,9 +56,11 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
              not Regex.match?(~r/[.!?]$/, stripped) do
           nil
         else
+          has_terminal_punctuation? = Regex.match?(~r/[.!?]\s*\z/, stripped)
+
           stripped
+          |> summarize_to_length(max_tokens, has_terminal_punctuation?)
           |> ensure_sentence_boundaries()
-          |> summarize_to_length(max_tokens)
           |> validate_format()
         end
     end
@@ -132,12 +131,10 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
 
   defp strip_non_prose(text) when is_binary(text) do
     text
-    |> String.replace(~r/https?:\/\/[^\s]+/, @url_token)
-    |> String.replace(~r/\[[^\]]+\]/, @citation_token)
+    |> String.replace(~r/https?:\/\/[^\s]+/, " ")
+    |> String.replace(~r/\[[^\]]+\]/, " ")
     |> String.replace(~r/[^\x00-\x7F]/, "")
-    |> String.replace(~r/\r\n?/, " ")
-    |> String.replace(@url_token, "")
-    |> String.replace(@citation_token, "")
+    |> String.replace(~r/\r?\n/, " ")
     |> normalize_spacing()
     |> case do
       "" -> nil
@@ -168,47 +165,68 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     end
   end
 
-  defp summarize_to_length(nil, _max_tokens), do: nil
+  defp summarize_to_length(nil, _max_tokens, _has_terminal?), do: nil
 
-  defp summarize_to_length(text, max_tokens) do
+  defp summarize_to_length(text, max_tokens, has_terminal?) when is_binary(text) do
     max_chars = max(1, max_tokens * 3)
 
-    if String.length(text) <= max_chars do
-      text
-    else
-      truncated = String.slice(text, 0, max_chars)
-
-      sentences =
-        Regex.scan(~r/.*?(?:[.!?](?:\s|$))/s, truncated)
-        |> Enum.map(&hd/1)
-        |> Enum.map(&String.trim/1)
-        |> Enum.reject(&(&1 == ""))
-
-      {selected_rev, _len} =
-        Enum.reduce_while(sentences, {[], 0}, fn sentence, {acc, acc_len} ->
-          new_len = acc_len + String.length(sentence)
-
-          if new_len <= max_chars do
-            {:cont, {[sentence | acc], new_len}}
-          else
-            {:halt, {acc, acc_len}}
-          end
-        end)
-
-      summary =
-        selected_rev
-        |> Enum.reverse()
-        |> case do
-          [] -> fallback_summary(truncated)
-          selected -> selected |> Enum.join(" ") |> normalize_spacing()
-        end
-
-      case summary do
-        "" -> nil
-        content -> content |> maybe_add_period() |> normalize_spacing()
+    truncated =
+      if String.length(text) > max_chars do
+        String.slice(text, 0, max_chars)
+      else
+        text
       end
+
+    sentences =
+      Regex.scan(~r/[^.!?]*[.!?]/, truncated)
+      |> Enum.map(&hd/1)
+      |> Enum.map(&normalize_spacing/1)
+      |> Enum.reject(&(&1 == ""))
+
+    summary =
+      Enum.reduce_while(sentences, "", fn sentence, acc ->
+        candidate =
+          [acc, sentence]
+          |> Enum.reject(&(&1 == ""))
+          |> Enum.join(" ")
+          |> normalize_spacing()
+
+        cond do
+          candidate == "" ->
+            {:cont, candidate}
+
+          String.length(candidate) <= max_chars ->
+            {:cont, candidate}
+
+          acc == "" ->
+            {:halt, fallback_summary(truncated)}
+
+          true ->
+            {:halt, acc}
+        end
+      end)
+      |> case do
+        "" -> fallback_summary(truncated)
+        value -> value
+      end
+
+    summary =
+      if has_terminal? do
+        summary
+      else
+        case Regex.run(~r/.*[.!?]/, summary) do
+          [complete] -> normalize_spacing(complete)
+          _ -> summary
+        end
+      end
+
+    case summary do
+      "" -> nil
+      content -> content |> maybe_add_period() |> normalize_spacing()
     end
   end
+
+  defp summarize_to_length(_value, _max_tokens, _has_terminal?), do: nil
 
   defp validate_format(nil), do: nil
 
@@ -266,17 +284,27 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
   defp normalize_spacing(text) when is_binary(text) do
     text
     |> String.replace(~r/\s+/u, " ")
+    |> String.replace(~r/\s+([,.!?;:])/, "\\1")
+    |> String.replace(~r/\b([A-Za-z])\.\s+([A-Za-z])\./, "\\1.\\2.")
     |> String.trim()
   end
 
   defp normalize_spacing(_), do: ""
 
-  defp fallback_summary(truncated) do
-    truncated
-    |> String.split(~r/\s+/)
-    |> Enum.drop(-1)
-    |> Enum.join(" ")
-    |> normalize_spacing()
+  defp fallback_summary(text) do
+    trimmed = normalize_spacing(text)
+
+    case Regex.run(~r/.*[.!?]/, trimmed) do
+      [complete] ->
+        normalize_spacing(complete)
+
+      nil ->
+        trimmed
+        |> String.split(~r/\s+/)
+        |> Enum.drop(-1)
+        |> Enum.join(" ")
+        |> normalize_spacing()
+    end
   end
 
   defp ensure_sample_target(_samples, target) when target <= 0, do: []
