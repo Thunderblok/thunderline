@@ -70,6 +70,10 @@ defmodule Thunderline.Thunderbolt.Domain do
 
     # Automata controls (non-persistent control surface)
     resource Thunderline.Thunderbolt.Resources.AutomataRun
+    resource Thunderline.Thunderbolt.Resources.Chunk
+    resource Thunderline.Thunderbolt.Resources.ChunkHealth
+    resource Thunderline.Thunderbolt.Resources.ActivationRule
+    resource Thunderline.Thunderbolt.Resources.OrchestrationEvent
 
     # Cerebros (ML search & training)
     resource Thunderline.Thunderbolt.Resources.ModelRun

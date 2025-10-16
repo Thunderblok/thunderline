@@ -9,7 +9,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
-    data_layer: :embedded,
+    data_layer: Ash.DataLayer.Ets,
     extensions: [AshStateMachine, AshJsonApi.Resource, AshOban, AshGraphql.Resource],
     notifiers: [Ash.Notifier.PubSub]
 
@@ -71,7 +71,13 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   actions do
-    defaults [:read, :create, :update, :destroy]
+    defaults [:read, :destroy]
+
+    # Custom update action that accepts common fields for testing
+    update :update do
+      require_atomic? false
+      accept [:active_count, :dormant_count, :resource_allocation, :health_status, :health_metrics]
+    end
 
     # ============================================================================
     # STATE MACHINE ACTIONS - CHUNK LIFECYCLE ORCHESTRATION
@@ -143,7 +149,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept [:optimization_score, :resource_allocation]
 
-      change transition_state(&__MODULE__.determine_optimization_target_state/2)
+      change before_action(&apply_optimization_target_state/2)
       change set_attribute(:last_optimization, &DateTime.utc_now/0)
       change after_action(&apply_optimization_changes/3)
       change after_action(&create_orchestration_event/3)
@@ -182,10 +188,10 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
     update :scaling_complete do
       require_atomic? false
-      accept [:total_capacity, :resource_allocation]
+      accept [:active_count, :dormant_count, :resource_allocation, :total_capacity]
 
-      change transition_state(&__MODULE__.determine_scaling_target_state/2)
-      change after_action(&finalize_scaling_operation/3)
+      change before_action(&apply_scaling_target_state/2)
+      change after_action(&apply_scaling_changes/3)
       change after_action(&create_orchestration_event/3)
     end
 
@@ -194,7 +200,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      change before_action(&validate_recovery_conditions/1)
+      change before_action(&validate_recovery_conditions/2)
       change transition_state(:dormant)
       change after_action(&complete_recovery_process/3)
       change after_action(&create_orchestration_event/3)
@@ -204,7 +210,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      change before_action(&prepare_force_reset/1)
+      change before_action(&prepare_force_reset/2)
       change transition_state(:initializing)
       change after_action(&complete_force_reset/3)
       change after_action(&create_orchestration_event/3)
@@ -213,6 +219,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     # Emergency operations
     update :emergency_stop do
       require_atomic? false
+      argument :error_info, :map, allow_nil?: true
       accept []
 
       change transition_state(:emergency_stopped)
@@ -234,7 +241,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      change before_action(&prepare_shutdown/1)
+      change before_action(&prepare_shutdown/2)
       change transition_state(:shutting_down)
       change after_action(&start_shutdown_process/3)
       change after_action(&create_orchestration_event/3)
@@ -251,6 +258,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
     # Health and status updates (non-state-changing)
     update :update_health do
+      require_atomic? false
       accept [:health_status, :resource_allocation, :health_metrics]
       change after_action(&broadcast_health_update/3)
     end
@@ -317,6 +325,38 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
                     health_status == :healthy and
                     optimization_score < 0.7)
              )
+    end
+
+    # Backwards-compatibility: many older callers create chunks by passing
+    # a single hex coordinate (hex_q, hex_r, hex_s). Add a small compatibility
+    # create action that accepts those arguments and maps them to the
+    # canonical `create_for_region` attributes (start_q/start_r/end_q/end_r).
+    create :create do
+      # We intentionally accept the legacy hex args as action arguments so they
+      # needn't become persistent resource fields.
+      argument :hex_q, :integer, allow_nil?: false
+      argument :hex_r, :integer, allow_nil?: false
+      argument :hex_s, :integer, allow_nil?: true
+
+      accept [:total_capacity, :thundercore_subscription]
+
+      change before_action(&map_hex_coords_to_region/2)
+      change before_action(&calculate_chunk_boundaries/2)
+      change after_action(&initialize_chunk_supervisor/3)
+      change after_action(&subscribe_to_thundercore_pulse/3)
+      change after_action(&create_orchestration_event/3)
+    end
+
+    # Allow tests to mark a chunk as failed using a public action name used in
+    # other resources. This small action simply transitions state to :failed.
+    update :mark_failed do
+      description "Mark chunk as failed for recovery testing"
+      argument :error_info, :map, allow_nil?: true
+
+      require_atomic? false
+
+      change transition_state(:failed)
+      change after_action(&create_orchestration_event/3)
     end
   end
 
@@ -411,7 +451,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       transition(:begin_scaling, from: [:active, :dormant], to: [:scaling])
       transition(:scaling_complete, from: [:scaling], to: [:active, :dormant, :failed])
       transition(:recover, from: [:failed, :emergency_stopped], to: [:dormant])
-      transition(:force_reset, from: [:failed, :maintenance, :emergency_stopped], to: [:initializing])
+      transition(:force_reset, from: [:active, :failed, :maintenance, :emergency_stopped], to: [:initializing])
       transition(:begin_shutdown, from: [:dormant, :active, :optimizing, :maintenance, :failed, :scaling, :deactivating, :emergency_stopped], to: [:shutting_down])
       transition(:shutdown_complete, from: [:shutting_down], to: [:destroyed])
   transition(:mark_failed, from: :*, to: [:failed])
@@ -463,28 +503,6 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     publish :activate, ["activated", :id]
     publish :optimization_complete, ["optimized", :id]
     publish :update_health, ["health_updated", :id]
-  end
-
-  # Backwards-compatibility: many older callers create chunks by passing
-  # a single hex coordinate (hex_q, hex_r, hex_s). Add a small compatibility
-  # create action that accepts those arguments and maps them to the
-  # canonical `create_for_region` attributes (start_q/start_r/end_q/end_r).
-  create :create do
-    # We intentionally accept the legacy hex args as action arguments so they
-    # needn't become persistent resource fields.
-    arguments do
-      argument :hex_q, :integer, allow_nil?: false
-      argument :hex_r, :integer, allow_nil?: false
-      argument :hex_s, :integer, allow_nil?: true
-    end
-
-    accept [:total_capacity, :thundercore_subscription]
-
-    change before_action(&map_hex_coords_to_region/2)
-    change before_action(&calculate_chunk_boundaries/2)
-    change after_action(&initialize_chunk_supervisor/3)
-    change after_action(&subscribe_to_thundercore_pulse/3)
-    change after_action(&create_orchestration_event/3)
   end
 
   # ============================================================================
@@ -592,6 +610,17 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
+  defp apply_scaling_changes(_changeset, chunk, _context) do
+    # Apply scaling operations
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      "thunderbolt:chunk:scaled",
+      {:chunk_scaled, chunk.id, chunk.active_count}
+    )
+
+    {:ok, chunk}
+  end
+
   # Maintenance implementations
   defp prepare_maintenance_mode(changeset, _context) do
     # Prepare chunk for maintenance operations
@@ -649,7 +678,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Recovery implementations
-  defp validate_recovery_conditions(changeset) do
+  defp validate_recovery_conditions(changeset, _context) do
     # Validate that recovery is possible
     changeset
   end
@@ -665,7 +694,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp prepare_force_reset(changeset) do
+  defp prepare_force_reset(changeset, _context) do
     # Prepare for force reset operation
     changeset
   end
@@ -705,7 +734,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Shutdown implementations
-  defp prepare_shutdown(changeset) do
+  defp prepare_shutdown(changeset, _context) do
     # Prepare for graceful shutdown
     changeset
   end
@@ -775,26 +804,13 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     end_q = q + 1
     end_r = r + 1
 
+    # Use force_change_attribute since this runs in a before_action hook after validation
     changeset
-    |> Ash.Changeset.change_attribute(:start_q, start_q)
-    |> Ash.Changeset.change_attribute(:start_r, start_r)
-    |> Ash.Changeset.change_attribute(:end_q, end_q)
-    |> Ash.Changeset.change_attribute(:end_r, end_r)
-    |> Ash.Changeset.change_attribute(:z_level, 0)
-  end
-
-  # Allow tests to mark a chunk as failed using a public action name used in
-  # other resources. This small action simply transitions state to :failed.
-  update :mark_failed do
-    description "Mark chunk as failed for recovery testing"
-    arguments do
-      argument :error_info, :map, allow_nil?: true
-    end
-
-    require_atomic? false
-
-    change transition_state(:failed)
-    change after_action(&create_orchestration_event/3)
+    |> Ash.Changeset.force_change_attribute(:start_q, start_q)
+    |> Ash.Changeset.force_change_attribute(:start_r, start_r)
+    |> Ash.Changeset.force_change_attribute(:end_q, end_q)
+    |> Ash.Changeset.force_change_attribute(:end_r, end_r)
+    |> Ash.Changeset.force_change_attribute(:z_level, 0)
   end
 
   defp create_orchestration_event(_changeset, chunk, _context) do
@@ -838,9 +854,30 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
+  # Apply optimization target state based on score
+  defp apply_optimization_target_state(changeset, _context) do
+    target_state = determine_optimization_target_state(changeset, nil)
+    Ash.Changeset.force_change_attribute(changeset, :state, target_state)
+  end
+
+  # Apply scaling target state based on active count
+  defp apply_scaling_target_state(changeset, _context) do
+    target_state = determine_scaling_target_state(changeset, nil)
+    Ash.Changeset.force_change_attribute(changeset, :state, target_state)
+  end
+
   # State transition decision functions (must be named for Spark DSL)
   def determine_optimization_target_state(changeset, _context) do
-    score = Ash.Changeset.get_attribute(changeset, :optimization_score)
+    # Check if optimization_score was explicitly changed; if not, use existing value
+    score = case Ash.Changeset.get_attribute(changeset, :optimization_score) do
+      nil ->
+        # No new value provided, check the record's existing value
+        case Ash.Changeset.get_data(changeset) do
+          %{optimization_score: existing_score} -> existing_score
+          _ -> nil
+        end
+      new_score -> new_score
+    end
 
     cond do
       is_nil(score) ->
@@ -855,9 +892,20 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   def determine_scaling_target_state(changeset, _context) do
-    case Ash.Changeset.get_attribute(changeset, :active_count) do
-      count when is_integer(count) and count > 0 -> :active
-      _ -> :dormant
+    active = case Ash.Changeset.get_attribute(changeset, :active_count) do
+      nil ->
+        # Check existing value
+        case Ash.Changeset.get_data(changeset) do
+          %{active_count: count} -> count
+          _ -> 0
+        end
+      count -> count
+    end
+
+    if is_integer(active) and active > 0 do
+      :active
+    else
+      :dormant
     end
   end
 
@@ -895,13 +943,13 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       &prepare_scaling_operation/2,
       &start_scaling_process/3,
       &finalize_scaling_operation/3,
-      &validate_recovery_conditions/1,
+      &validate_recovery_conditions/2,
       &complete_recovery_process/3,
-      &prepare_force_reset/1,
+      &prepare_force_reset/2,
       &complete_force_reset/3,
       &execute_emergency_stop/3,
       &complete_emergency_recovery/3,
-      &prepare_shutdown/1,
+      &prepare_shutdown/2,
       &start_shutdown_process/3,
       &finalize_shutdown/3,
       &calculate_chunk_boundaries/2,

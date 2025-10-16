@@ -242,7 +242,8 @@ defmodule Thunderline.Thunderbolt.Resources.ChunkTest do
                |> Ash.update(domain: Domain)
 
       assert updated_chunk.state == :active
-      assert is_nil(updated_chunk.optimization_score)
+      # Score stays at default value since no new score was provided
+      assert Decimal.compare(updated_chunk.optimization_score, Decimal.new("0.5")) == :eq
     end
   end
 
