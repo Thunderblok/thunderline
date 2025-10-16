@@ -80,20 +80,20 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     # Initialization actions
     create :create_for_region do
       accept [:start_q, :start_r, :end_q, :end_r, :z_level, :total_capacity]
-      change before_action(&calculate_chunk_boundaries/1)
-      change after_action(&initialize_chunk_supervisor/2)
-      change after_action(&subscribe_to_thundercore_pulse/2)
-      change after_action(&create_orchestration_event/2)
+      change before_action(&calculate_chunk_boundaries/2)
+      change after_action(&initialize_chunk_supervisor/3)
+      change after_action(&subscribe_to_thundercore_pulse/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :initialize do
       require_atomic? false
       accept []
 
-      change before_action(&validate_initialization_requirements/1)
+      change before_action(&validate_initialization_requirements/2)
       change transition_state(:dormant)
-      change after_action(&complete_chunk_initialization/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&complete_chunk_initialization/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Core operational state transitions
@@ -101,21 +101,21 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept [:active_count, :resource_allocation]
 
-      change before_action(&prepare_activation/1)
+      change before_action(&prepare_activation/2)
       change transition_state(:active)
-      change after_action(&start_activation_process/2)
-      change after_action(&finalize_activation/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&start_activation_process/3)
+      change after_action(&finalize_activation/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :deactivate do
       require_atomic? false
       accept []
 
-      change before_action(&prepare_deactivation/1)
+      change before_action(&prepare_deactivation/2)
       change transition_state(:deactivating)
-      change after_action(&start_deactivation_process/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&start_deactivation_process/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :deactivation_complete do
@@ -123,8 +123,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       accept [:active_count]
 
       change transition_state(:dormant)
-      change after_action(&finalize_deactivation/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&finalize_deactivation/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Optimization state transitions
@@ -133,10 +133,10 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       description "Begin chunk optimization"
       accept []
 
-      change before_action(&prepare_optimization/1)
+      change before_action(&prepare_optimization/2)
       change transition_state(:optimizing)
-      change after_action(&start_optimization_process/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&start_optimization_process/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :optimization_complete do
@@ -145,8 +145,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
       change transition_state(&__MODULE__.determine_optimization_target_state/2)
       change set_attribute(:last_optimization, &DateTime.utc_now/0)
-      change after_action(&apply_optimization_changes/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&apply_optimization_changes/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Maintenance state transitions
@@ -154,10 +154,10 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept []
 
-      change before_action(&prepare_maintenance_mode/1)
+      change before_action(&prepare_maintenance_mode/2)
       change transition_state(:maintenance)
-      change after_action(&start_maintenance_procedures/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&start_maintenance_procedures/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :exit_maintenance do
@@ -165,8 +165,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       accept []
 
       change transition_state(:dormant)
-      change after_action(&complete_maintenance_procedures/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&complete_maintenance_procedures/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Scaling state transitions
@@ -174,10 +174,10 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       require_atomic? false
       accept [:total_capacity]
 
-      change before_action(&prepare_scaling_operation/1)
+      change before_action(&prepare_scaling_operation/2)
       change transition_state(:scaling)
-      change after_action(&start_scaling_process/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&start_scaling_process/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :scaling_complete do
@@ -185,8 +185,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       accept [:total_capacity, :resource_allocation]
 
       change transition_state(&__MODULE__.determine_scaling_target_state/2)
-      change after_action(&finalize_scaling_operation/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&finalize_scaling_operation/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Failure and recovery
@@ -196,8 +196,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
       change before_action(&validate_recovery_conditions/1)
       change transition_state(:dormant)
-      change after_action(&complete_recovery_process/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&complete_recovery_process/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :force_reset do
@@ -206,8 +206,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
       change before_action(&prepare_force_reset/1)
       change transition_state(:initializing)
-      change after_action(&complete_force_reset/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&complete_force_reset/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Emergency operations
@@ -216,8 +216,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       accept []
 
       change transition_state(:emergency_stopped)
-      change after_action(&execute_emergency_stop/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&execute_emergency_stop/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :emergency_recover do
@@ -225,8 +225,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       accept []
 
       change transition_state(:dormant)
-      change after_action(&complete_emergency_recovery/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&complete_emergency_recovery/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Shutdown operations
@@ -236,8 +236,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
       change before_action(&prepare_shutdown/1)
       change transition_state(:shutting_down)
-      change after_action(&start_shutdown_process/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&start_shutdown_process/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     update :shutdown_complete do
@@ -245,15 +245,38 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       accept []
 
       change transition_state(:destroyed)
-      change after_action(&finalize_shutdown/2)
-      change after_action(&create_orchestration_event/2)
+      change after_action(&finalize_shutdown/3)
+      change after_action(&create_orchestration_event/3)
     end
 
     # Health and status updates (non-state-changing)
     update :update_health do
-      accept [:health_status, :resource_allocation]
-      change after_action(&broadcast_health_update/2)
+      accept [:health_status, :resource_allocation, :health_metrics]
+      change after_action(&broadcast_health_update/3)
     end
+
+  validations do
+    validate fn changeset, _context ->
+      total = Ash.Changeset.get_attribute(changeset, :total_capacity)
+
+      if total && total < 144 do
+        {:error, "total_capacity must be at least 144"}
+      else
+        :ok
+      end
+    end
+
+    validate fn changeset, _context ->
+      total = Ash.Changeset.get_attribute(changeset, :total_capacity) || 0
+      active = Ash.Changeset.get_attribute(changeset, :active_count) || 0
+
+      if active > total do
+        {:error, "active_count cannot exceed total_capacity"}
+      else
+        :ok
+      end
+    end
+  end
 
     read :chunk_status do
       get? true
@@ -331,7 +354,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
     # 64x64 default
 
-    attribute :total_capacity, :integer, default: 4096
+  attribute :total_capacity, :integer, default: 144
 
     # Resource management
     attribute :resource_allocation, :map,
@@ -344,9 +367,12 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     # Health status (separate from state machine)
     attribute :health_status, :atom,
       constraints: [
-        one_of: [:healthy, :degraded, :critical, :offline]
+        one_of: [:unknown, :healthy, :degraded, :critical, :offline, :unhealthy]
       ],
-      default: :healthy
+      default: :unknown
+
+    # Free-form health metrics recorded from probes
+    attribute :health_metrics, :map, default: %{}
 
     # Orchestration metadata
     attribute :activation_triggers, {:array, :atom},
@@ -388,6 +414,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       transition(:force_reset, from: [:failed, :maintenance, :emergency_stopped], to: [:initializing])
       transition(:begin_shutdown, from: [:dormant, :active, :optimizing, :maintenance, :failed, :scaling, :deactivating, :emergency_stopped], to: [:shutting_down])
       transition(:shutdown_complete, from: [:shutting_down], to: [:destroyed])
+  transition(:mark_failed, from: :*, to: [:failed])
       transition(:emergency_stop, from: :*, to: [:emergency_stopped])
       transition(:emergency_recover, from: [:emergency_stopped], to: [:dormant, :failed])
     end
@@ -438,17 +465,39 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     publish :update_health, ["health_updated", :id]
   end
 
+  # Backwards-compatibility: many older callers create chunks by passing
+  # a single hex coordinate (hex_q, hex_r, hex_s). Add a small compatibility
+  # create action that accepts those arguments and maps them to the
+  # canonical `create_for_region` attributes (start_q/start_r/end_q/end_r).
+  create :create do
+    # We intentionally accept the legacy hex args as action arguments so they
+    # needn't become persistent resource fields.
+    arguments do
+      argument :hex_q, :integer, allow_nil?: false
+      argument :hex_r, :integer, allow_nil?: false
+      argument :hex_s, :integer, allow_nil?: true
+    end
+
+    accept [:total_capacity, :thundercore_subscription]
+
+    change before_action(&map_hex_coords_to_region/2)
+    change before_action(&calculate_chunk_boundaries/2)
+    change after_action(&initialize_chunk_supervisor/3)
+    change after_action(&subscribe_to_thundercore_pulse/3)
+    change after_action(&create_orchestration_event/3)
+  end
+
   # ============================================================================
   # STATE MACHINE ACTION IMPLEMENTATIONS
   # ============================================================================
 
   # Initialization implementations
-  defp validate_initialization_requirements(changeset) do
+  defp validate_initialization_requirements(changeset, _context) do
     # Validate that chunk has required attributes for initialization
     changeset
   end
 
-  defp complete_chunk_initialization(_changeset, chunk) do
+  defp complete_chunk_initialization(_changeset, chunk, _context) do
     # Initialize chunk resources and establish connections
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -460,12 +509,12 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Activation implementations
-  defp prepare_activation(changeset) do
+  defp prepare_activation(changeset, _context) do
     # Pre-activation validation and preparation
     changeset
   end
 
-  defp start_activation_process(_changeset, chunk) do
+  defp start_activation_process(_changeset, chunk, _context) do
     # Start the activation process for Thunderbits in this chunk
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -476,7 +525,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp finalize_activation(_changeset, chunk) do
+  defp finalize_activation(_changeset, chunk, _context) do
     # Complete activation process and notify systems
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -488,12 +537,12 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Deactivation implementations
-  defp prepare_deactivation(changeset) do
+  defp prepare_deactivation(changeset, _context) do
     # Pre-deactivation validation
     changeset
   end
 
-  defp start_deactivation_process(_changeset, chunk) do
+  defp start_deactivation_process(_changeset, chunk, _context) do
     # Start the deactivation process
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -504,7 +553,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp finalize_deactivation(_changeset, chunk) do
+  defp finalize_deactivation(_changeset, chunk, _context) do
     # Complete deactivation and cleanup
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -516,12 +565,12 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Optimization implementations
-  defp prepare_optimization(changeset) do
+  defp prepare_optimization(changeset, _context) do
     # Placeholder for ML-driven pre-optimization heuristics
     changeset
   end
 
-  defp start_optimization_process(_changeset, chunk) do
+  defp start_optimization_process(_changeset, chunk, _context) do
     # Begin optimization procedures
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -532,7 +581,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp apply_optimization_changes(_changeset, chunk) do
+  defp apply_optimization_changes(_changeset, chunk, _context) do
     # Apply calculated optimizations
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -544,12 +593,12 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Maintenance implementations
-  defp prepare_maintenance_mode(changeset) do
-    # Prepare for maintenance operations
+  defp prepare_maintenance_mode(changeset, _context) do
+    # Prepare chunk for maintenance operations
     changeset
   end
 
-  defp start_maintenance_procedures(_changeset, chunk) do
+  defp start_maintenance_procedures(_changeset, chunk, _context) do
     # Begin maintenance procedures
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -560,7 +609,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp complete_maintenance_procedures(_changeset, chunk) do
+  defp complete_maintenance_procedures(_changeset, chunk, _context) do
     # Complete maintenance and return to service
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -572,12 +621,12 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Scaling implementations
-  defp prepare_scaling_operation(changeset) do
+  defp prepare_scaling_operation(changeset, _context) do
     # Prepare for scaling operation
     changeset
   end
 
-  defp start_scaling_process(_changeset, chunk) do
+  defp start_scaling_process(_changeset, chunk, _context) do
     # Begin scaling procedures
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -588,7 +637,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp finalize_scaling_operation(_changeset, chunk) do
+  defp finalize_scaling_operation(_changeset, chunk, _context) do
     # Complete scaling operation
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -605,7 +654,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     changeset
   end
 
-  defp complete_recovery_process(_changeset, chunk) do
+  defp complete_recovery_process(_changeset, chunk, _context) do
     # Complete recovery procedures
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -621,7 +670,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     changeset
   end
 
-  defp complete_force_reset(_changeset, chunk) do
+  defp complete_force_reset(_changeset, chunk, _context) do
     # Complete force reset
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -633,7 +682,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Emergency implementations
-  defp execute_emergency_stop(_changeset, chunk) do
+  defp execute_emergency_stop(_changeset, chunk, _context) do
     # Execute emergency stop procedures
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -644,7 +693,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp complete_emergency_recovery(_changeset, chunk) do
+  defp complete_emergency_recovery(_changeset, chunk, _context) do
     # Complete emergency recovery
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -661,7 +710,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     changeset
   end
 
-  defp start_shutdown_process(_changeset, chunk) do
+  defp start_shutdown_process(_changeset, chunk, _context) do
     # Begin shutdown procedures
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -672,7 +721,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp finalize_shutdown(_changeset, chunk) do
+  defp finalize_shutdown(_changeset, chunk, _context) do
     # Complete shutdown and cleanup
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -684,12 +733,12 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # Legacy implementations (preserved)
-  defp calculate_chunk_boundaries(changeset) do
+  defp calculate_chunk_boundaries(changeset, _context) do
     # Hex coordinate validation and boundary calculation
     changeset
   end
 
-  defp initialize_chunk_supervisor(_changeset, chunk) do
+  defp initialize_chunk_supervisor(_changeset, chunk, _context) do
     # Start dedicated supervisor for this chunk
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
@@ -700,15 +749,55 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     {:ok, chunk}
   end
 
-  defp subscribe_to_thundercore_pulse(_changeset, chunk) do
+  defp subscribe_to_thundercore_pulse(_changeset, chunk, _context) do
     if chunk.thundercore_subscription do
-      Phoenix.PubSub.subscribe(Thunderline.PubSub, "thundercore:pulse")
+      for pubsub <- Thunderline.PubSub.active_pubsubs() do
+        Phoenix.PubSub.subscribe(pubsub, "thundercore:pulse")
+      end
     end
 
     {:ok, chunk}
   end
 
-  defp create_orchestration_event(_changeset, chunk) do
+  # Map legacy single-hex coordinates (hex_q, hex_r, hex_s) to a small
+  # region centered on that hex so older callers can continue using
+  # the `:create` action.
+  defp map_hex_coords_to_region(changeset, _context) do
+    q = Ash.Changeset.get_argument(changeset, :hex_q)
+    r = Ash.Changeset.get_argument(changeset, :hex_r)
+
+    # If hex_s isn't provided we compute it as -q - r (axial coordinate invariant)
+    s = Ash.Changeset.get_argument(changeset, :hex_s) || -(q + r)
+
+    # Build a 2x2 region around the provided hex for simplicity
+    start_q = q - 1
+    start_r = r - 1
+    end_q = q + 1
+    end_r = r + 1
+
+    changeset
+    |> Ash.Changeset.change_attribute(:start_q, start_q)
+    |> Ash.Changeset.change_attribute(:start_r, start_r)
+    |> Ash.Changeset.change_attribute(:end_q, end_q)
+    |> Ash.Changeset.change_attribute(:end_r, end_r)
+    |> Ash.Changeset.change_attribute(:z_level, 0)
+  end
+
+  # Allow tests to mark a chunk as failed using a public action name used in
+  # other resources. This small action simply transitions state to :failed.
+  update :mark_failed do
+    description "Mark chunk as failed for recovery testing"
+    arguments do
+      argument :error_info, :map, allow_nil?: true
+    end
+
+    require_atomic? false
+
+    change transition_state(:failed)
+    change after_action(&create_orchestration_event/3)
+  end
+
+  defp create_orchestration_event(_changeset, chunk, _context) do
     # Create orchestration event record through Ash
     try do
       Thunderline.Thunderbolt.Resources.OrchestrationEvent
@@ -739,7 +828,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     Ash.Changeset.change_attribute(changeset, :optimization_score, score)
   end
 
-  defp broadcast_health_update(_changeset, chunk) do
+  defp broadcast_health_update(_changeset, chunk, _context) do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "thunderbolt:chunk:health_updated",
@@ -750,7 +839,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   # State transition decision functions (must be named for Spark DSL)
-  defp determine_optimization_target_state(changeset, _context) do
+  def determine_optimization_target_state(changeset, _context) do
     score = Ash.Changeset.get_attribute(changeset, :optimization_score)
 
     cond do
@@ -765,7 +854,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     end
   end
 
-  defp determine_scaling_target_state(changeset, _context) do
+  def determine_scaling_target_state(changeset, _context) do
     case Ash.Changeset.get_attribute(changeset, :active_count) do
       count when is_integer(count) and count > 0 -> :active
       _ -> :dormant
@@ -789,38 +878,38 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
   def __silence_unused__ do
     _ = [
-      &validate_initialization_requirements/1,
-      &complete_chunk_initialization/2,
-      &prepare_activation/1,
-      &start_activation_process/2,
-      &finalize_activation/2,
-      &prepare_deactivation/1,
-      &start_deactivation_process/2,
-      &finalize_deactivation/2,
-      &prepare_optimization/1,
-      &start_optimization_process/2,
-      &apply_optimization_changes/2,
-      &prepare_maintenance_mode/1,
-      &start_maintenance_procedures/2,
-      &complete_maintenance_procedures/2,
-      &prepare_scaling_operation/1,
-      &start_scaling_process/2,
-      &finalize_scaling_operation/2,
+      &validate_initialization_requirements/2,
+      &complete_chunk_initialization/3,
+      &prepare_activation/2,
+      &start_activation_process/3,
+      &finalize_activation/3,
+      &prepare_deactivation/2,
+      &start_deactivation_process/3,
+      &finalize_deactivation/3,
+      &prepare_optimization/2,
+      &start_optimization_process/3,
+      &apply_optimization_changes/3,
+      &prepare_maintenance_mode/2,
+      &start_maintenance_procedures/3,
+      &complete_maintenance_procedures/3,
+      &prepare_scaling_operation/2,
+      &start_scaling_process/3,
+      &finalize_scaling_operation/3,
       &validate_recovery_conditions/1,
-      &complete_recovery_process/2,
+      &complete_recovery_process/3,
       &prepare_force_reset/1,
-      &complete_force_reset/2,
-      &execute_emergency_stop/2,
-      &complete_emergency_recovery/2,
+      &complete_force_reset/3,
+      &execute_emergency_stop/3,
+      &complete_emergency_recovery/3,
       &prepare_shutdown/1,
-      &start_shutdown_process/2,
-      &finalize_shutdown/2,
-      &calculate_chunk_boundaries/1,
-      &initialize_chunk_supervisor/2,
-      &subscribe_to_thundercore_pulse/2,
-      &create_orchestration_event/2,
+      &start_shutdown_process/3,
+      &finalize_shutdown/3,
+      &calculate_chunk_boundaries/2,
+      &initialize_chunk_supervisor/3,
+      &subscribe_to_thundercore_pulse/3,
+      &create_orchestration_event/3,
       &calculate_optimization_score/1,
-      &broadcast_health_update/2,
+      &broadcast_health_update/3,
       &determine_optimization_target_state/2,
       &determine_scaling_target_state/2
     ]
