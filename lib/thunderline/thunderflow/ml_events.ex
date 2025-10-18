@@ -103,7 +103,8 @@ defmodule Thunderline.Thunderflow.MLEvents do
   """
   @spec emit_run_start(map()) :: {:ok, Event.t()} | {:error, term()}
   def emit_run_start(%{} = attrs) do
-    with :ok <- validate_required(attrs, [:model_run_id, :requested_trials, :search_space_version]),
+    with :ok <-
+           validate_required(attrs, [:model_run_id, :requested_trials, :search_space_version]),
          :ok <- validate_positive_integer(attrs, :requested_trials),
          :ok <- validate_positive_integer(attrs, :search_space_version) do
       Event.new(
@@ -481,5 +482,7 @@ defmodule Thunderline.Thunderflow.MLEvents do
   end
 
   defp validate_state(state) when state in ["completed", "failed", "cancelled"], do: :ok
-  defp validate_state(_), do: {:error, {:invalid_state, "must be completed, failed, or cancelled"}}
+
+  defp validate_state(_),
+    do: {:error, {:invalid_state, "must be completed, failed, or cancelled"}}
 end

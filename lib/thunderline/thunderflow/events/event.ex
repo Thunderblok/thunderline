@@ -80,6 +80,7 @@ defmodule Thunderline.Thunderflow.Events.Event do
     attribute :domain, :string do
       description "Thunderline domain (thunderbit, thundervault, etc.)"
       allow_nil? false
+      default "unknown"
     end
 
     attribute :operation_type, :string do

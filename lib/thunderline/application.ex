@@ -24,6 +24,7 @@ defmodule Thunderline.Application do
          {Task.Supervisor, name: Thunderline.TaskSupervisor}
        ] ++
          cerebros_children() ++
+         saga_children() ++
          [
            Thunderline.Thunderflow.EventBuffer,
            Thunderline.Thunderflow.Blackboard,
@@ -87,6 +88,17 @@ defmodule Thunderline.Application do
     case Keyword.get(config, :enabled, false) do
       val when val in [true, "true", "TRUE", 1, "1"] -> true
       _ -> false
+    end
+  end
+
+  defp saga_children do
+    if Feature.enabled?(:reactor_sagas, default: true) do
+      [
+        Thunderline.Thunderbolt.Sagas.Registry,
+        Thunderline.Thunderbolt.Sagas.Supervisor
+      ]
+    else
+      []
     end
   end
 end

@@ -81,7 +81,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Run do
 
     attribute :mlflow_run_id, :string do
       allow_nil? false
-      constraints [match: ~r/^[a-f0-9]{32}$/]
+      constraints match: ~r/^[a-f0-9]{32}$/
     end
 
     attribute :mlflow_experiment_id, :string, allow_nil?: false

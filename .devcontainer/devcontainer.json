@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-docker-compose
 {
-	"name": "Existing Docker Compose (Extend)",
+	"name": "Thunderline Dev Container",
 
 	// Update the 'dockerComposeFile' list if you have more compose files or use different names.
 	// The .devcontainer/docker-compose.yml file contains any overrides you need/want to make.
@@ -16,26 +16,73 @@
 
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+	"workspaceFolder": "/app",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [4000, 5432, 5000],
+
+	// Ports configuration
+	"portsAttributes": {
+		"4000": {
+			"label": "Phoenix Server",
+			"onAutoForward": "notify"
+		},
+		"5432": {
+			"label": "PostgreSQL",
+			"onAutoForward": "silent"
+		},
+		"5000": {
+			"label": "MLflow",
+			"onAutoForward": "silent"
+		}
+	},
 
 	// Uncomment the next line if you want start specific services in your Docker Compose config.
-	// "runServices": [],
+	"runServices": ["postgres", "mlflow", "thunderline"],
 
-	// Uncomment the next line if you want to keep your containers running after VS Code shuts down.
-	// "shutdownAction": "none",
+	// Keep containers running after VS Code shuts down for faster reconnection
+	"shutdownAction": "stopCompose",
 
-	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "cat /etc/os-release",
+	// Run commands after the container is created
+	"postCreateCommand": "mix deps.get && mix compile",
 
 	// Configure tool-specific properties.
-	// "customizations": {},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"jakebecker.elixir-ls",
+				"github.copilot",
+				"github.copilot-chat",
+				"phoenixframework.phoenix",
+				"bradlc.vscode-tailwindcss",
+				"eamodio.gitlens",
+				"ms-azuretools.vscode-docker"
+			],
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"elixirLS.projectDir": "/app",
+				"editor.formatOnSave": true,
+				"[elixir]": {
+					"editor.defaultFormatter": "JakeBecker.elixir-ls",
+					"editor.formatOnSave": true
+				},
+				"files.associations": {
+					"*.ex": "elixir",
+					"*.exs": "elixir",
+					"*.heex": "phoenix-heex",
+					"*.leex": "eex",
+					"mix.lock": "elixir"
+				}
+			}
+		}
+	},
 
-	// Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "devcontainer"
+	// Use non-root user for better security
+	"remoteUser": "root"
 }

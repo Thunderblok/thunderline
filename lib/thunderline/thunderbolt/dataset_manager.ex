@@ -26,7 +26,9 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     target_samples = opts[:target_samples] || @target_samples
     max_length = opts[:max_context_length] || @max_context_length
 
-    Logger.info("[DatasetManager] Creating Phase I dataset: #{target_samples} samples, max_len=#{max_length}")
+    Logger.info(
+      "[DatasetManager] Creating Phase I dataset: #{target_samples} samples, max_len=#{max_length}"
+    )
 
     samples =
       @phase1_sources
@@ -53,7 +55,9 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     # TODO: Replace with actual HuggingFace dataset loading
     # For now, generate synthetic textbook-style samples
 
-    Logger.info("[DatasetManager] Generating #{target_count} synthetic samples from #{length(sources)} sources")
+    Logger.info(
+      "[DatasetManager] Generating #{target_count} synthetic samples from #{length(sources)} sources"
+    )
 
     base_texts = [
       "The principles of scientific inquiry require careful observation and hypothesis formation. Researchers must consider multiple variables when designing experiments to ensure valid conclusions.",
@@ -66,6 +70,7 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     Enum.map(1..target_count, fn i ->
       base = Enum.random(base_texts)
       variation = generate_variation(base, i)
+
       %{
         text: variation,
         source: Enum.random(sources),
@@ -83,7 +88,8 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
       String.replace(base_text, "require", "demand"),
       String.replace(base_text, "must", "should"),
       base_text <> " This fundamental concept applies across multiple disciplines and contexts.",
-      "Furthermore, " <> String.downcase(String.slice(base_text, 0..0)) <> String.slice(base_text, 1..-1//1)
+      "Furthermore, " <>
+        String.downcase(String.slice(base_text, 0..0)) <> String.slice(base_text, 1..-1//1)
     ]
 
     Enum.random(variations)
@@ -103,11 +109,16 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
 
   defp strip_non_prose(text) do
     text
-    |> String.replace(~r/https?:\/\/[^\s]+/, "")  # Remove URLs
-    |> String.replace(~r/\[[^\]]+\]/, "")         # Remove citations [1], [Smith 2023]
-    |> String.replace(~r/\n+/, " ")               # Replace line breaks with spaces
-    |> String.replace(~r/[^\x00-\x7F]/, "")       # Remove non-ASCII Unicode
-    |> String.replace(~r/\s+/, " ")               # Normalize whitespace
+    # Remove URLs
+    |> String.replace(~r/https?:\/\/[^\s]+/, "")
+    # Remove citations [1], [Smith 2023]
+    |> String.replace(~r/\[[^\]]+\]/, "")
+    # Replace line breaks with spaces
+    |> String.replace(~r/\n+/, " ")
+    # Remove non-ASCII Unicode
+    |> String.replace(~r/[^\x00-\x7F]/, "")
+    # Normalize whitespace
+    |> String.replace(~r/\s+/, " ")
     |> String.trim()
   end
 
@@ -115,14 +126,19 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     # Ensure text starts with capital letter
     text =
       case String.first(text) do
-        nil -> text
+        nil ->
+          text
+
         first when first >= "a" and first <= "z" ->
           String.upcase(first) <> String.slice(text, 1..-1//1)
-        _ -> text
+
+        _ ->
+          text
       end
 
     # Ensure text ends with proper punctuation
     last_char = String.last(text)
+
     if last_char not in [".", "!", "?", ":", ";"] do
       text <> "."
     else
@@ -144,7 +160,8 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
         [single] ->
           # No sentence boundary found, truncate at word boundary
           words = String.split(single, ~r/\s+/)
-          take_count = div(length(words) * 3, 4)  # Take 75% of words
+          # Take 75% of words
+          take_count = div(length(words) * 3, 4)
 
           words
           |> Enum.take(take_count)
@@ -165,7 +182,8 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     # Final validation checks
     cond do
       String.length(text) < @min_context_length ->
-        nil  # Too short, will be filtered out
+        # Too short, will be filtered out
+        nil
 
       String.length(text) > @max_context_length * 4 ->
         String.slice(text, 0, @max_context_length * 4) <> "."
@@ -182,9 +200,10 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
   end
 
   defp validate_samples(samples) do
-    valid_samples = Enum.reject(samples, fn sample ->
-      is_nil(sample.text) or String.length(sample.text) < @min_context_length
-    end)
+    valid_samples =
+      Enum.reject(samples, fn sample ->
+        is_nil(sample.text) or String.length(sample.text) < @min_context_length
+      end)
 
     Logger.info("[DatasetManager] Validated #{length(valid_samples)}/#{length(samples)} samples")
     valid_samples
@@ -208,7 +227,9 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
 
     total_samples = sharded_samples |> Enum.map(&length(elem(&1, 1))) |> Enum.sum()
 
-    Logger.info("[DatasetManager] Registered dataset #{dataset_id}: #{total_samples} samples in #{length(sharded_samples)} shards")
+    Logger.info(
+      "[DatasetManager] Registered dataset #{dataset_id}: #{total_samples} samples in #{length(sharded_samples)} shards"
+    )
 
     # TODO: Store dataset metadata in database
     # For now, just return the ID

@@ -4,8 +4,7 @@
     <div class="mb-8 flex items-center justify-between">
       <div>
         <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-          <.icon name="hero-bolt" class="w-10 h-10 inline-block text-blue-400" />
-          Event Monitor
+          <.icon name="hero-bolt" class="w-10 h-10 inline-block text-blue-400" /> Event Monitor
         </h1>
         <p class="mt-2 text-slate-300">Real-time ThunderFlow event stream monitoring</p>
       </div>
@@ -14,67 +13,65 @@
           phx-click="export_csv"
           class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
         >
-          <.icon name="hero-arrow-down-tray" class="w-5 h-5" />
-          Export CSV
+          <.icon name="hero-arrow-down-tray" class="w-5 h-5" /> Export CSV
         </button>
         <button
           phx-click="clear_events"
           class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
         >
-          <.icon name="hero-arrow-path" class="w-5 h-5" />
-          Refresh
+          <.icon name="hero-arrow-path" class="w-5 h-5" /> Refresh
         </button>
       </div>
     </div>
-
-    <!-- Stats Cards -->
+    
+<!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <!-- Total Events -->
       <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-slate-400 text-sm font-medium">Total Events</p>
-            <p class="text-3xl font-bold text-white mt-2"><%= @pipeline_stats.total %></p>
+            <p class="text-3xl font-bold text-white mt-2">{@pipeline_stats.total}</p>
           </div>
           <div class="p-3 bg-blue-500/20 rounded-lg">
             <.icon name="hero-chart-bar" class="w-8 h-8 text-blue-400" />
           </div>
         </div>
       </div>
-
-      <!-- Event Rate -->
+      
+<!-- Event Rate -->
       <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-slate-400 text-sm font-medium">Events/Minute</p>
-            <p class="text-3xl font-bold text-white mt-2"><%= @event_rate.per_minute %></p>
-            <p class="text-slate-400 text-xs mt-1"><%= @event_rate.per_second %>/sec</p>
+            <p class="text-3xl font-bold text-white mt-2">{@event_rate.per_minute}</p>
+            <p class="text-slate-400 text-xs mt-1">{@event_rate.per_second}/sec</p>
           </div>
           <div class="p-3 bg-green-500/20 rounded-lg">
             <.icon name="hero-bolt" class="w-8 h-8 text-green-400" />
           </div>
         </div>
       </div>
-
-      <!-- Real-Time Pipeline -->
+      
+<!-- Real-Time Pipeline -->
       <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-slate-400 text-sm font-medium">Real-Time</p>
-            <p class="text-3xl font-bold text-white mt-2"><%= @pipeline_stats.realtime %></p>
+            <p class="text-3xl font-bold text-white mt-2">{@pipeline_stats.realtime}</p>
           </div>
           <div class="p-3 bg-blue-500/20 rounded-lg">
             <.icon name="hero-signal" class="w-8 h-8 text-blue-400" />
           </div>
         </div>
       </div>
-
-      <!-- Cross-Domain Pipeline -->
+      
+<!-- Cross-Domain Pipeline -->
       <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-slate-400 text-sm font-medium">Cross-Domain</p>
-            <p class="text-3xl font-bold text-white mt-2"><%= @pipeline_stats.cross_domain %></p>
+            <p class="text-3xl font-bold text-white mt-2">{@pipeline_stats.cross_domain}</p>
           </div>
           <div class="p-3 bg-purple-500/20 rounded-lg">
             <.icon name="hero-arrows-right-left" class="w-8 h-8 text-purple-400" />
@@ -82,8 +79,8 @@
         </div>
       </div>
     </div>
-
-    <!-- Event Flow Chart -->
+    
+<!-- Event Flow Chart -->
     <div class="mb-8 bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
       <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
         <.icon name="hero-chart-bar-square" class="w-6 h-6 text-blue-400" />
@@ -116,8 +113,8 @@
         </div>
       </div>
     </div>
-
-    <!-- Recent Events Table -->
+    
+<!-- Recent Events Table -->
     <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 overflow-hidden">
       <div class="p-6 border-b border-slate-700">
         <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -150,22 +147,22 @@
             <%= for event <- @events do %>
               <tr class="hover:bg-slate-700/30 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  <%= format_timestamp(event.timestamp) %>
+                  {format_timestamp(event.timestamp)}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                  <%= event.name %>
+                  {event.name}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                  <%= event.source %>
+                  {event.source}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class={"px-2 py-1 text-xs font-medium text-white rounded-full #{pipeline_color(event.pipeline)}"}>
-                    <%= format_pipeline(event.pipeline) %>
+                    {format_pipeline(event.pipeline)}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class={"px-2 py-1 text-xs font-medium text-white rounded-full #{priority_color(event.priority)}"}>
-                    <%= format_priority(event.priority) %>
+                    {format_priority(event.priority)}
                   </span>
                 </td>
               </tr>

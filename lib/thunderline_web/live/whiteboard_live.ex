@@ -21,15 +21,16 @@ defmodule ThunderlineWeb.WhiteboardLive do
       ThunderlineWeb.Endpoint.subscribe(@topic)
 
       # Track presence
-      {:ok, _} = Presence.track_global(
-        self(),
-        socket.assigns.current_principal.id,
-        %{
-          name: display_name(socket),
-          joined_at: System.system_time(:second),
-          cursor: nil
-        }
-      )
+      {:ok, _} =
+        Presence.track_global(
+          self(),
+          socket.assigns.current_principal.id,
+          %{
+            name: display_name(socket),
+            joined_at: System.system_time(:second),
+            cursor: nil
+          }
+        )
     end
 
     socket =
@@ -76,7 +77,8 @@ defmodule ThunderlineWeb.WhiteboardLive do
   end
 
   @impl true
-  def handle_event("send_message", %{"message" => message_text}, socket) when message_text != "" do
+  def handle_event("send_message", %{"message" => message_text}, socket)
+      when message_text != "" do
     message = %{
       id: Ecto.UUID.generate(),
       text: String.trim(message_text),

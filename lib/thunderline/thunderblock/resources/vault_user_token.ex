@@ -7,7 +7,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultUserToken do
 
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
   import Ash.Resource.Change.Builtins
 
@@ -74,6 +75,31 @@ defmodule Thunderline.Thunderblock.Resources.VaultUserToken do
     end
   end
 
+  policies do
+    # Allow unauthenticated token creation (magic link flow, session generation)
+    policy action_type(:create) do
+      authorize_if always()
+    end
+
+    # Token reads require ownership or admin role
+    policy action_type(:read) do
+      authorize_if relates_to_actor_via(:user)
+      authorize_if expr(^actor(:role) == :admin)
+    end
+
+    # Token updates require ownership or admin role
+    policy action_type(:update) do
+      authorize_if relates_to_actor_via(:user)
+      authorize_if expr(^actor(:role) == :admin)
+    end
+
+    # Token deletion requires ownership or admin role
+    policy action_type(:destroy) do
+      authorize_if relates_to_actor_via(:user)
+      authorize_if expr(^actor(:role) == :admin)
+    end
+  end
+
   preparations do
     prepare build(load: [:user])
   end
@@ -125,30 +151,4 @@ defmodule Thunderline.Thunderblock.Resources.VaultUserToken do
       attribute_writable? true
     end
   end
-
-  # TODO: Re-enable policies once AshAuthentication is properly configured
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-
-  #   policy action_type(:create) do
-  #     authorize_if always()
-  #   end
-
-  #   policy action_type(:read) do
-  #     authorize_if relates_to_actor_via(:user)
-  #     authorize_if actor_attribute_equals(:role, :admin)
-  #   end
-
-  #   policy action_type(:update) do
-  #     authorize_if relates_to_actor_via(:user)
-  #     authorize_if actor_attribute_equals(:role, :admin)
-  #   end
-
-  #   policy action_type(:destroy) do
-  #     authorize_if relates_to_actor_via(:user)
-  #     authorize_if actor_attribute_equals(:role, :admin)
-  #   end
-  # end
 end

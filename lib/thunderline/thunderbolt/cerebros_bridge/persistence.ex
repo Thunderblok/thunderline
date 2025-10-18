@@ -509,7 +509,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
         {:error, reason} ->
           if Config.fail_silently?() do
             require Logger
-            Logger.warning("Failed to queue MLflow sync for trial #{trial.id}: #{inspect(reason)}")
+
+            Logger.warning(
+              "Failed to queue MLflow sync for trial #{trial.id}: #{inspect(reason)}"
+            )
+
             :ok
           else
             {:error, reason}

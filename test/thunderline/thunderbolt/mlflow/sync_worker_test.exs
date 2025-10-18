@@ -12,47 +12,48 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
       if not Config.enabled?() do
         assert true
       else
+        # Create a trial with metrics
+        {:ok, model_run} =
+          ModelRun.create(%{
+            search_space_version: 1,
+            max_params: 1000,
+            requested_trials: 1
+          })
 
-      # Create a trial with metrics
-      {:ok, model_run} = ModelRun.create(%{
-        search_space_version: 1,
-        max_params: 1000,
-        requested_trials: 1
-      })
+        {:ok, trial} =
+          ModelTrial
+          |> Changeset.for_create(:log, %{
+            model_run_id: model_run.id,
+            trial_id: "test_trial_#{System.unique_integer([:positive])}",
+            parameters: %{"learning_rate" => 0.001},
+            metrics: %{"accuracy" => 0.95, "loss" => 0.25},
+            spectral_norm: false,
+            status: :succeeded
+          })
+          |> Ash.create()
 
-      {:ok, trial} = ModelTrial
-        |> Changeset.for_create(:log, %{
-          model_run_id: model_run.id,
-          trial_id: "test_trial_#{System.unique_integer([:positive])}",
-          parameters: %{"learning_rate" => 0.001},
-          metrics: %{"accuracy" => 0.95, "loss" => 0.25},
-          spectral_norm: false,
-          status: :succeeded
-        })
-        |> Ash.create()
-
-      # Create job
-      job = %Oban.Job{
-        worker: "Thunderline.Thunderbolt.MLflow.SyncWorker",
-        args: %{
-          "action" => "sync_trial_to_mlflow",
-          "trial_id" => trial.id
+        # Create job
+        job = %Oban.Job{
+          worker: "Thunderline.Thunderbolt.MLflow.SyncWorker",
+          args: %{
+            "action" => "sync_trial_to_mlflow",
+            "trial_id" => trial.id
+          }
         }
-      }
 
-      # Perform job
-      case perform_job(SyncWorker, job.args) do
-        :ok ->
-          assert true
+        # Perform job
+        case perform_job(SyncWorker, job.args) do
+          :ok ->
+            assert true
 
-        {:error, reason} ->
-          # If MLflow not available, that's okay for this test
-          assert reason =~ "MLflow" or reason =~ "connection"
+          {:error, reason} ->
+            # If MLflow not available, that's okay for this test
+            assert reason =~ "MLflow" or reason =~ "connection"
 
-        {:discard, _reason} ->
-          # Job was discarded (expected if config disabled)
-          assert true
-      end
+          {:discard, _reason} ->
+            # Job was discarded (expected if config disabled)
+            assert true
+        end
       end
     end
 
@@ -81,20 +82,19 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
       if not Config.enabled?() do
         assert true
       else
-
-      # Use non-existent trial ID to trigger error
-      job = %Oban.Job{
-        worker: "Thunderline.Thunderbolt.MLflow.SyncWorker",
-        args: %{
-          "action" => "sync_trial_to_mlflow",
-          "trial_id" => Ash.UUID.generate()
+        # Use non-existent trial ID to trigger error
+        job = %Oban.Job{
+          worker: "Thunderline.Thunderbolt.MLflow.SyncWorker",
+          args: %{
+            "action" => "sync_trial_to_mlflow",
+            "trial_id" => Ash.UUID.generate()
+          }
         }
-      }
 
-      result = perform_job(SyncWorker, job.args)
+        result = perform_job(SyncWorker, job.args)
 
-      # Should return error (which Oban will retry)
-      assert match?({:error, _}, result) or match?({:discard, _}, result)
+        # Should return error (which Oban will retry)
+        assert match?({:error, _}, result) or match?({:discard, _}, result)
       end
     end
   end
@@ -104,43 +104,44 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
       if not Config.enabled?() do
         assert true
       else
+        {:ok, model_run} =
+          ModelRun.create(%{
+            search_space_version: 1,
+            max_params: 1000,
+            requested_trials: 1
+          })
 
-      {:ok, model_run} = ModelRun.create(%{
-        search_space_version: 1,
-        max_params: 1000,
-        requested_trials: 1
-      })
+        {:ok, trial} =
+          ModelTrial
+          |> Changeset.for_create(:log, %{
+            model_run_id: model_run.id,
+            trial_id: "create_run_test_#{System.unique_integer([:positive])}",
+            parameters: %{"epochs" => 100},
+            spectral_norm: false,
+            status: :succeeded
+          })
+          |> Ash.create()
 
-      {:ok, trial} = ModelTrial
-        |> Changeset.for_create(:log, %{
-          model_run_id: model_run.id,
-          trial_id: "create_run_test_#{System.unique_integer([:positive])}",
-          parameters: %{"epochs" => 100},
-          spectral_norm: false,
-          status: :succeeded
-        })
-        |> Ash.create()
-
-      job = %Oban.Job{
-        worker: "Thunderline.Thunderbolt.MLflow.SyncWorker",
-        args: %{
-          "action" => "create_mlflow_run",
-          "trial_id" => trial.id,
-          "experiment_name" => "test_experiment"
+        job = %Oban.Job{
+          worker: "Thunderline.Thunderbolt.MLflow.SyncWorker",
+          args: %{
+            "action" => "create_mlflow_run",
+            "trial_id" => trial.id,
+            "experiment_name" => "test_experiment"
+          }
         }
-      }
 
-      case perform_job(SyncWorker, job.args) do
-        :ok ->
-          assert true
+        case perform_job(SyncWorker, job.args) do
+          :ok ->
+            assert true
 
-        {:error, _reason} ->
-          # MLflow not available
-          assert true
+          {:error, _reason} ->
+            # MLflow not available
+            assert true
 
-        {:discard, _} ->
-          assert true
-      end
+          {:discard, _} ->
+            assert true
+        end
       end
     end
   end
@@ -210,13 +211,15 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
 
   describe "job scheduling" do
     test "enqueues sync job successfully" do
-      {:ok, model_run} = ModelRun.create(%{
-        search_space_version: 1,
-        max_params: 1000,
-        requested_trials: 1
-      })
+      {:ok, model_run} =
+        ModelRun.create(%{
+          search_space_version: 1,
+          max_params: 1000,
+          requested_trials: 1
+        })
 
-      {:ok, trial} = ModelTrial
+      {:ok, trial} =
+        ModelTrial
         |> Changeset.for_create(:log, %{
           model_run_id: model_run.id,
           trial_id: "enqueue_test_#{System.unique_integer([:positive])}",
@@ -238,13 +241,15 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorkerTest do
     end
 
     test "schedules job with delay" do
-      {:ok, model_run} = ModelRun.create(%{
-        search_space_version: 1,
-        max_params: 1000,
-        requested_trials: 1
-      })
+      {:ok, model_run} =
+        ModelRun.create(%{
+          search_space_version: 1,
+          max_params: 1000,
+          requested_trials: 1
+        })
 
-      {:ok, trial} = ModelTrial
+      {:ok, trial} =
+        ModelTrial
         |> Changeset.for_create(:log, %{
           model_run_id: model_run.id,
           trial_id: "delay_test_#{System.unique_integer([:positive])}",

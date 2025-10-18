@@ -50,6 +50,7 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
       studies: %{},
       active_trials: %{}
     }
+
     Logger.info("[AutoMLDriver] Started")
     {:ok, state}
   end
@@ -79,7 +80,8 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
     })
 
     # Start initial trial batch
-    {:ok, study} = start_trial_batch(study, 4) # Start with 4 concurrent trials
+    # Start with 4 concurrent trials
+    {:ok, study} = start_trial_batch(study, 4)
 
     new_state = put_in(state, [:studies, study_id], study)
     {:reply, {:ok, study_id}, new_state}
@@ -148,15 +150,16 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
   defp start_trial_batch(study, batch_size) do
     # TODO: Implement Optuna ask() integration
     # For now, generate random suggestions within param bounds
-    trials = Enum.map(1..batch_size, fn _ ->
-      suggestion = generate_suggestion(study.params)
-      trial_id = "trial-#{System.unique_integer([:positive])}"
+    trials =
+      Enum.map(1..batch_size, fn _ ->
+        suggestion = generate_suggestion(study.params)
+        trial_id = "trial-#{System.unique_integer([:positive])}"
 
-      # Enqueue trial execution
-      HPOExecutor.execute_trial(study.id, trial_id, suggestion)
+        # Enqueue trial execution
+        HPOExecutor.execute_trial(study.id, trial_id, suggestion)
 
-      trial_id
-    end)
+        trial_id
+      end)
 
     updated_study =
       study
@@ -174,6 +177,7 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
       :ok ->
         updated_study = Map.update!(study, :trials_running, &(&1 + 1))
         {:ok, updated_study}
+
       error ->
         error
     end
@@ -189,10 +193,13 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
           else
             {key, Enum.random(min..max)}
           end
+
         [min, max] when is_integer(min) and is_integer(max) ->
           {key, Enum.random(min..max)}
+
         value when is_number(value) ->
           {key, value}
+
         _ ->
           {key, bounds}
       end

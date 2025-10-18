@@ -16,6 +16,52 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   alias Ash.Changeset
   alias Thunderline.Thunderbolt.Domain
 
+  # ============================================================================
+  # STATE MACHINE - CHUNK LIFECYCLE ORCHESTRATION
+  # ============================================================================
+  state_machine do
+    initial_states([:initializing])
+    default_initial_state(:initializing)
+
+    transitions do
+      transition(:initialize, from: [:initializing], to: [:dormant, :failed])
+      transition(:activate, from: [:dormant, :optimizing, :maintenance], to: [:active])
+      transition(:deactivate, from: [:active], to: [:deactivating])
+      transition(:deactivation_complete, from: [:deactivating], to: [:dormant, :failed])
+      transition(:begin_optimization, from: [:active, :dormant], to: [:optimizing])
+      transition(:optimization_complete, from: [:optimizing], to: [:active, :dormant, :failed])
+      transition(:enter_maintenance, from: [:active, :dormant, :optimizing], to: [:maintenance])
+      transition(:exit_maintenance, from: [:maintenance], to: [:dormant, :failed])
+      transition(:begin_scaling, from: [:active, :dormant], to: [:scaling])
+      transition(:scaling_complete, from: [:scaling], to: [:active, :dormant, :failed])
+      transition(:recover, from: [:failed, :emergency_stopped], to: [:dormant])
+
+      transition(:force_reset,
+        from: [:active, :failed, :maintenance, :emergency_stopped],
+        to: [:initializing]
+      )
+
+      transition(:begin_shutdown,
+        from: [
+          :dormant,
+          :active,
+          :optimizing,
+          :maintenance,
+          :failed,
+          :scaling,
+          :deactivating,
+          :emergency_stopped
+        ],
+        to: [:shutting_down]
+      )
+
+      transition(:shutdown_complete, from: [:shutting_down], to: [:destroyed])
+      transition(:mark_failed, from: :*, to: [:failed])
+      transition(:emergency_stop, from: :*, to: [:emergency_stopped])
+      transition(:emergency_recover, from: [:emergency_stopped], to: [:dormant, :failed])
+    end
+  end
+
   # IN-MEMORY CONFIGURATION (sqlite removed)
   # Using :embedded data layer
 
@@ -32,22 +78,6 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       get :chunk_status, route: "/:id/status"
       patch(:activate, route: "/:id/activate")
       patch(:begin_optimization, route: "/:id/optimize")
-    end
-  end
-
-  graphql do
-    type :chunk
-
-    queries do
-      get :get_chunk, :read
-      list :list_chunks, :read
-    end
-
-    mutations do
-      create :create_chunk, :create
-      update :update_chunk, :update
-      update :activate_chunk, :activate
-      update :optimize_chunk, :begin_optimization
     end
   end
 
@@ -70,13 +100,46 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     |> Ash.update!()
   end
 
+  oban do
+    triggers do
+      trigger :chunk_health_check do
+        action :update_health
+        scheduler_cron("*/1 * * * *")
+        where expr(state in [:active, :optimizing, :maintenance, :scaling])
+      end
+    end
+  end
+
+  graphql do
+    type :chunk
+
+    queries do
+      get :get_chunk, :read
+      list :list_chunks, :read
+    end
+
+    mutations do
+      create :create_chunk, :create
+      update :update_chunk, :update
+      update :activate_chunk, :activate
+      update :optimize_chunk, :begin_optimization
+    end
+  end
+
   actions do
     defaults [:read, :destroy]
 
     # Custom update action that accepts common fields for testing
     update :update do
       require_atomic? false
-      accept [:active_count, :dormant_count, :resource_allocation, :health_status, :health_metrics]
+
+      accept [
+        :active_count,
+        :dormant_count,
+        :resource_allocation,
+        :health_status,
+        :health_metrics
+      ]
     end
 
     # ============================================================================
@@ -263,28 +326,28 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
       change after_action(&broadcast_health_update/3)
     end
 
-  validations do
-    validate fn changeset, _context ->
-      total = Ash.Changeset.get_attribute(changeset, :total_capacity)
+    validations do
+      validate fn changeset, _context ->
+        total = Ash.Changeset.get_attribute(changeset, :total_capacity)
 
-      if total && total < 144 do
-        {:error, "total_capacity must be at least 144"}
-      else
-        :ok
+        if total && total < 144 do
+          {:error, "total_capacity must be at least 144"}
+        else
+          :ok
+        end
+      end
+
+      validate fn changeset, _context ->
+        total = Ash.Changeset.get_attribute(changeset, :total_capacity) || 0
+        active = Ash.Changeset.get_attribute(changeset, :active_count) || 0
+
+        if active > total do
+          {:error, "active_count cannot exceed total_capacity"}
+        else
+          :ok
+        end
       end
     end
-
-    validate fn changeset, _context ->
-      total = Ash.Changeset.get_attribute(changeset, :total_capacity) || 0
-      active = Ash.Changeset.get_attribute(changeset, :active_count) || 0
-
-      if active > total do
-        {:error, "active_count cannot exceed total_capacity"}
-      else
-        :ok
-      end
-    end
-  end
 
     read :chunk_status do
       get? true
@@ -360,6 +423,17 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     end
   end
 
+  pub_sub do
+    module Thunderline.PubSub
+    prefix "thunderbolt:chunk"
+
+    publish :create, ["created", :id]
+    publish :create_for_region, ["created", :id]
+    publish :activate, ["activated", :id]
+    publish :optimization_complete, ["optimized", :id]
+    publish :update_health, ["health_updated", :id]
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -373,19 +447,20 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     attribute :state, :atom do
       allow_nil? false
       default :initializing
+
       constraints one_of: [
-        :initializing,
-        :dormant,
-        :active,
-        :optimizing,
-        :maintenance,
-        :scaling,
-        :deactivating,
-        :failed,
-        :emergency_stopped,
-        :shutting_down,
-        :destroyed
-      ]
+                    :initializing,
+                    :dormant,
+                    :active,
+                    :optimizing,
+                    :maintenance,
+                    :scaling,
+                    :deactivating,
+                    :failed,
+                    :emergency_stopped,
+                    :shutting_down,
+                    :destroyed
+                  ]
     end
 
     # Chunk statistics
@@ -394,7 +469,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
     # 64x64 default
 
-  attribute :total_capacity, :integer, default: 144
+    attribute :total_capacity, :integer, default: 144
 
     # Resource management
     attribute :resource_allocation, :map,
@@ -432,34 +507,6 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     timestamps()
   end
 
-  # ============================================================================
-  # STATE MACHINE - CHUNK LIFECYCLE ORCHESTRATION
-  # ============================================================================
-  state_machine do
-    initial_states([:initializing])
-    default_initial_state(:initializing)
-
-    transitions do
-      transition(:initialize, from: [:initializing], to: [:dormant, :failed])
-      transition(:activate, from: [:dormant, :optimizing, :maintenance], to: [:active])
-      transition(:deactivate, from: [:active], to: [:deactivating])
-      transition(:deactivation_complete, from: [:deactivating], to: [:dormant, :failed])
-      transition(:begin_optimization, from: [:active, :dormant], to: [:optimizing])
-      transition(:optimization_complete, from: [:optimizing], to: [:active, :dormant, :failed])
-      transition(:enter_maintenance, from: [:active, :dormant, :optimizing], to: [:maintenance])
-      transition(:exit_maintenance, from: [:maintenance], to: [:dormant, :failed])
-      transition(:begin_scaling, from: [:active, :dormant], to: [:scaling])
-      transition(:scaling_complete, from: [:scaling], to: [:active, :dormant, :failed])
-      transition(:recover, from: [:failed, :emergency_stopped], to: [:dormant])
-      transition(:force_reset, from: [:active, :failed, :maintenance, :emergency_stopped], to: [:initializing])
-      transition(:begin_shutdown, from: [:dormant, :active, :optimizing, :maintenance, :failed, :scaling, :deactivating, :emergency_stopped], to: [:shutting_down])
-      transition(:shutdown_complete, from: [:shutting_down], to: [:destroyed])
-  transition(:mark_failed, from: :*, to: [:failed])
-      transition(:emergency_stop, from: :*, to: [:emergency_stopped])
-      transition(:emergency_recover, from: [:emergency_stopped], to: [:dormant, :failed])
-    end
-  end
-
   relationships do
     has_many :chunk_health_records, Thunderline.Thunderbolt.Resources.ChunkHealth
     has_many :activation_rules, Thunderline.Thunderbolt.Resources.ActivationRule
@@ -482,27 +529,6 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
                   0
                 )
               )
-  end
-
-  oban do
-    triggers do
-      trigger :chunk_health_check do
-        action :update_health
-        scheduler_cron("*/1 * * * *")
-        where expr(state in [:active, :optimizing, :maintenance, :scaling])
-      end
-    end
-  end
-
-  pub_sub do
-    module Thunderline.PubSub
-    prefix "thunderbolt:chunk"
-
-    publish :create, ["created", :id]
-    publish :create_for_region, ["created", :id]
-    publish :activate, ["activated", :id]
-    publish :optimization_complete, ["optimized", :id]
-    publish :update_health, ["health_updated", :id]
   end
 
   # ============================================================================
@@ -869,15 +895,18 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   # State transition decision functions (must be named for Spark DSL)
   def determine_optimization_target_state(changeset, _context) do
     # Check if optimization_score was explicitly changed; if not, use existing value
-    score = case Ash.Changeset.get_attribute(changeset, :optimization_score) do
-      nil ->
-        # No new value provided, check the record's existing value
-        case Ash.Changeset.get_data(changeset) do
-          %{optimization_score: existing_score} -> existing_score
-          _ -> nil
-        end
-      new_score -> new_score
-    end
+    score =
+      case Ash.Changeset.get_attribute(changeset, :optimization_score) do
+        nil ->
+          # No new value provided, check the record's existing value
+          case Ash.Changeset.get_data(changeset) do
+            %{optimization_score: existing_score} -> existing_score
+            _ -> nil
+          end
+
+        new_score ->
+          new_score
+      end
 
     cond do
       is_nil(score) ->
@@ -892,15 +921,18 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   end
 
   def determine_scaling_target_state(changeset, _context) do
-    active = case Ash.Changeset.get_attribute(changeset, :active_count) do
-      nil ->
-        # Check existing value
-        case Ash.Changeset.get_data(changeset) do
-          %{active_count: count} -> count
-          _ -> 0
-        end
-      count -> count
-    end
+    active =
+      case Ash.Changeset.get_attribute(changeset, :active_count) do
+        nil ->
+          # Check existing value
+          case Ash.Changeset.get_data(changeset) do
+            %{active_count: count} -> count
+            _ -> 0
+          end
+
+        count ->
+          count
+      end
 
     if is_integer(active) and active > 0 do
       :active

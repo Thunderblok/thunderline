@@ -4,11 +4,10 @@
     <div class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center justify-between">
       <div class="flex items-center space-x-4">
         <h1 class="text-xl font-bold text-white flex items-center">
-          <.icon name="hero-paint-brush" class="w-6 h-6 mr-2" />
-          Dev Whiteboard
+          <.icon name="hero-paint-brush" class="w-6 h-6 mr-2" /> Dev Whiteboard
         </h1>
         
-        <!-- Tool selector -->
+<!-- Tool selector -->
         <div class="flex items-center space-x-2 bg-gray-700 rounded-lg p-1">
           <button
             phx-click="change_tool"
@@ -33,8 +32,8 @@
             Eraser
           </button>
         </div>
-
-        <!-- Color picker -->
+        
+<!-- Color picker -->
         <div class="flex items-center space-x-2">
           <label for="color-picker" class="text-sm text-gray-300">Color:</label>
           <input
@@ -46,8 +45,8 @@
             class="w-10 h-10 rounded cursor-pointer"
           />
         </div>
-
-        <!-- Line width -->
+        
+<!-- Line width -->
         <div class="flex items-center space-x-2">
           <label for="width-slider" class="text-sm text-gray-300">Width:</label>
           <input
@@ -70,20 +69,19 @@
           <.icon name="hero-user-group" class="w-5 h-5" />
           <span class="text-sm">{length(@streams.users)} online</span>
         </div>
-
-        <!-- Clear button -->
+        
+<!-- Clear button -->
         <button
           phx-click="clear_canvas"
           data-confirm="Clear entire canvas? This cannot be undone."
           class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
-          <.icon name="hero-trash" class="w-4 h-4 inline mr-1" />
-          Clear Canvas
+          <.icon name="hero-trash" class="w-4 h-4 inline mr-1" /> Clear Canvas
         </button>
       </div>
     </div>
-
-    <!-- Main content -->
+    
+<!-- Main content -->
     <div class="flex-1 flex overflow-hidden">
       <!-- Canvas area -->
       <div class="flex-1 relative bg-white">
@@ -96,8 +94,8 @@
           class="absolute inset-0 w-full h-full cursor-crosshair"
         >
         </canvas>
-
-        <!-- Remote cursors overlay -->
+        
+<!-- Remote cursors overlay -->
         <div id="cursors-overlay" class="absolute inset-0 pointer-events-none">
           <div
             :for={{id, user} <- @streams.users}
@@ -111,8 +109,8 @@
           </div>
         </div>
       </div>
-
-      <!-- Sidebar -->
+      
+<!-- Sidebar -->
       <div class="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
         <!-- Users list -->
         <div class="p-4 border-b border-gray-700">
@@ -138,17 +136,16 @@
             </div>
           </div>
         </div>
-
-        <!-- Chat area -->
+        
+<!-- Chat area -->
         <div class="flex-1 flex flex-col overflow-hidden">
           <div class="p-4 border-b border-gray-700">
             <h3 class="text-sm font-semibold text-gray-300 flex items-center">
-              <.icon name="hero-chat-bubble-left-right" class="w-4 h-4 mr-2" />
-              Chat
+              <.icon name="hero-chat-bubble-left-right" class="w-4 h-4 mr-2" /> Chat
             </h3>
           </div>
-
-          <!-- Messages -->
+          
+<!-- Messages -->
           <div
             id="chat-messages"
             class="flex-1 overflow-y-auto p-4 space-y-3"
@@ -172,8 +169,8 @@
               </p>
             </div>
           </div>
-
-          <!-- Message input -->
+          
+<!-- Message input -->
           <div class="p-4 border-t border-gray-700">
             <form phx-submit="send_message" class="flex space-x-2">
               <input

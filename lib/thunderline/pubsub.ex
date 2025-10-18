@@ -74,7 +74,9 @@ defmodule Thunderline.PubSub do
     parts = String.split(topic, ":")
 
     case parts do
-      [single] -> single
+      [single] ->
+        single
+
       parts ->
         # Reconstruct the topic without the final segment (the id)
         parts

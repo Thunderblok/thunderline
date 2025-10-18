@@ -46,7 +46,8 @@ defmodule Thunderline.Thunderbolt.DatasetManagerTest do
 
     test "truncates long text at sentence boundaries" do
       long_text = String.duplicate("This is a sentence. ", 50) <> "This is incomplete"
-      result = DatasetManager.preprocess_sample(long_text, 100) # ~25 tokens
+      # ~25 tokens
+      result = DatasetManager.preprocess_sample(long_text, 100)
 
       # Should end with complete sentence, not mid-sentence
       assert String.ends_with?(result, ".")
@@ -78,7 +79,8 @@ defmodule Thunderline.Thunderbolt.DatasetManagerTest do
 
     test "smart truncation preserves complete thoughts" do
       text = "First complete sentence. Second complete sentence. Third incomplete sent"
-      result = DatasetManager.preprocess_sample(text, 50) # Force truncation
+      # Force truncation
+      result = DatasetManager.preprocess_sample(text, 50)
 
       # Should include first two complete sentences but not the incomplete one
       assert String.contains?(result, "First complete sentence")
@@ -98,10 +100,11 @@ defmodule Thunderline.Thunderbolt.DatasetManagerTest do
     end
 
     test "respects max context length parameter" do
-      {:ok, _dataset_id, _sample_count} = DatasetManager.create_phase1_dataset(
-        target_samples: 10,
-        max_context_length: 200
-      )
+      {:ok, _dataset_id, _sample_count} =
+        DatasetManager.create_phase1_dataset(
+          target_samples: 10,
+          max_context_length: 200
+        )
 
       # Should complete without error - actual validation would require
       # inspecting the generated samples, which is more complex
@@ -141,7 +144,9 @@ defmodule Thunderline.Thunderbolt.DatasetManagerTest do
     end
 
     test "preserves technical content appropriately" do
-      text = "The algorithm achieves O(n log n) complexity. Performance metrics show 95% accuracy."
+      text =
+        "The algorithm achieves O(n log n) complexity. Performance metrics show 95% accuracy."
+
       result = DatasetManager.preprocess_sample(text)
 
       # Technical notation should be preserved

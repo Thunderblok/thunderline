@@ -11,7 +11,9 @@ defmodule Thunderline.Thunderbolt.HPOExecutor do
   alias Thunderline.Thunderbolt.AutoMLDriver
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"study_id" => study_id, "trial_id" => trial_id, "suggestion" => suggestion}}) do
+  def perform(%Oban.Job{
+        args: %{"study_id" => study_id, "trial_id" => trial_id, "suggestion" => suggestion}
+      }) do
     Logger.info("[HPOExecutor] Starting trial #{trial_id} for study #{study_id}")
 
     try do
@@ -21,14 +23,20 @@ defmodule Thunderline.Thunderbolt.HPOExecutor do
       # Report result back to AutoMLDriver
       AutoMLDriver.tell_result(study_id, trial_id, result.objective, result.artifact)
 
-      Logger.info("[HPOExecutor] Completed trial #{trial_id}: perplexity=#{result.objective["perplexity"]}")
+      Logger.info(
+        "[HPOExecutor] Completed trial #{trial_id}: perplexity=#{result.objective["perplexity"]}"
+      )
+
       :ok
     rescue
       error ->
         Logger.error("[HPOExecutor] Trial #{trial_id} failed: #{inspect(error)}")
 
         # Report failure
-        AutoMLDriver.tell_result(study_id, trial_id, %{"perplexity" => 999.0, "error" => inspect(error)})
+        AutoMLDriver.tell_result(study_id, trial_id, %{
+          "perplexity" => 999.0,
+          "error" => inspect(error)
+        })
 
         {:error, error}
     end
@@ -53,18 +61,22 @@ defmodule Thunderline.Thunderbolt.HPOExecutor do
 
     # TODO: Replace with actual model training
     # For now, simulate training with random results
-    training_time = :rand.uniform(30_000) + 10_000  # 10-40 seconds
+    # 10-40 seconds
+    training_time = :rand.uniform(30_000) + 10_000
     Process.sleep(training_time)
 
     # Simulate perplexity result (lower is better)
     base_perplexity = 15.0
     param_quality = calculate_param_quality(suggestion)
-    noise = (:rand.uniform() - 0.5) * 4.0  # ±2.0 noise
+    # ±2.0 noise
+    noise = (:rand.uniform() - 0.5) * 4.0
 
     perplexity = base_perplexity - param_quality + noise
-    perplexity = max(perplexity, 2.0)  # Floor at 2.0
+    # Floor at 2.0
+    perplexity = max(perplexity, 2.0)
 
-    gen_time_ms = :rand.uniform(200) + 50  # 50-250ms per token
+    # 50-250ms per token
+    gen_time_ms = :rand.uniform(200) + 50
 
     # Simulate MLflow artifact
     mlflow_run_id = "run-#{System.unique_integer([:positive])}"
@@ -90,9 +102,12 @@ defmodule Thunderline.Thunderbolt.HPOExecutor do
 
     lr_bonus =
       case suggestion["lr"] do
-        lr when lr >= 0.0001 and lr <= 0.0005 -> 2.0  # Sweet spot
-        lr when lr >= 0.00005 and lr <= 0.001 -> 1.0   # OK range
-        _ -> 0.0  # Poor range
+        # Sweet spot
+        lr when lr >= 0.0001 and lr <= 0.0005 -> 2.0
+        # OK range
+        lr when lr >= 0.00005 and lr <= 0.001 -> 1.0
+        # Poor range
+        _ -> 0.0
       end
 
     layer_bonus =

@@ -782,67 +782,66 @@ defmodule ThunderlineWeb.DashboardLive do
     {:noreply, socket}
   end
 
+  def handle_event("system_control", %{"action" => action}, socket) do
+    Logger.info("Executing system control action: #{action}")
 
-    def handle_event("system_control", %{"action" => action}, socket) do
-      Logger.info("Executing system control action: #{action}")
+    result =
+      case action do
+        "emergency_stop" -> execute_emergency_stop()
+        "system_restart" -> execute_system_restart()
+        "safe_mode" -> execute_safe_mode()
+        "maintenance_mode" -> execute_maintenance_mode()
+        _ -> {:error, :unknown_action}
+      end
 
-      result =
-        case action do
-          "emergency_stop" -> execute_emergency_stop()
-          "system_restart" -> execute_system_restart()
-          "safe_mode" -> execute_safe_mode()
-          "maintenance_mode" -> execute_maintenance_mode()
-          _ -> {:error, :unknown_action}
-        end
+    socket =
+      case result do
+        :ok ->
+          flash_message =
+            case action do
+              "emergency_stop" -> "🚨 Emergency stop activated - All systems halted"
+              "system_restart" -> "🔄 System restart initiated - Please wait..."
+              "safe_mode" -> "🛡️ Safe mode activated - Limited functionality enabled"
+              "maintenance_mode" -> "🔧 Maintenance mode activated - System operations paused"
+              _ -> "System control #{action} executed successfully"
+            end
 
-      socket =
-        case result do
-          :ok ->
-            flash_message =
-              case action do
-                "emergency_stop" -> "🚨 Emergency stop activated - All systems halted"
-                "system_restart" -> "🔄 System restart initiated - Please wait..."
-                "safe_mode" -> "🛡️ Safe mode activated - Limited functionality enabled"
-                "maintenance_mode" -> "🔧 Maintenance mode activated - System operations paused"
-                _ -> "System control #{action} executed successfully"
-              end
+          socket = put_flash(socket, :info, flash_message)
+          load_all_metrics(socket)
 
-            socket = put_flash(socket, :info, flash_message)
-            load_all_metrics(socket)
+        {:error, reason} ->
+          put_flash(socket, :error, "System control #{action} failed: #{inspect(reason)}")
+      end
 
-          {:error, reason} ->
-            put_flash(socket, :error, "System control #{action} failed: #{inspect(reason)}")
-        end
+    {:noreply, socket}
+  end
 
-      {:noreply, socket}
-    end
+  def handle_event("create_room", params, socket) do
+    # Room creation logic (stub: replace with actual implementation)
+    Logger.info("[DashboardLive] create_room event received with params: #{inspect(params)}")
 
-    def handle_event("create_room", params, socket) do
-      # Room creation logic (stub: replace with actual implementation)
-      Logger.info("[DashboardLive] create_room event received with params: #{inspect(params)}")
+    # For now, just flash a message and reload metrics
+    socket =
+      socket
+      |> put_flash(:info, "🎉 Room created successfully! This is a test message.")
+      |> load_all_metrics()
 
-      # For now, just flash a message and reload metrics
-      socket =
-        socket
-        |> put_flash(:info, "🎉 Room created successfully! This is a test message.")
-        |> load_all_metrics()
+    {:noreply, socket}
+  end
 
-      {:noreply, socket}
-    end
+  # Metrics Tab Event Handlers
+  def handle_event("select_domain", %{"domain" => domain}, socket) do
+    {:noreply, assign(socket, :selected_domain, domain)}
+  end
 
-    # Metrics Tab Event Handlers
-    def handle_event("select_domain", %{"domain" => domain}, socket) do
-      {:noreply, assign(socket, :selected_domain, domain)}
-    end
+  def handle_event("change_time_range", %{"range" => range}, socket) do
+    {:noreply, assign(socket, :time_range, range)}
+  end
 
-    def handle_event("change_time_range", %{"range" => range}, socket) do
-      {:noreply, assign(socket, :time_range, range)}
-    end
-
-    def handle_event("adjust_refresh_rate", %{"rate" => rate}, socket) do
-      rate_value = String.to_integer(rate)
-      {:noreply, assign(socket, :refresh_rate, rate_value)}
-    end
+  def handle_event("adjust_refresh_rate", %{"rate" => rate}, socket) do
+    rate_value = String.to_integer(rate)
+    {:noreply, assign(socket, :refresh_rate, rate_value)}
+  end
 
   # Private Functions
 

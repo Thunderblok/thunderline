@@ -295,7 +295,7 @@ defmodule ThunderlineWeb.TrialDashboardLive do
     base_url = System.get_env("MLFLOW_TRACKING_URI", "http://localhost:5000")
 
     if trial.mlflow_run_id do
-      "#{base_url}/#/experiments/#{trial.mlflow_run && trial.mlflow_run.mlflow_experiment_id || "default"}/runs/#{trial.mlflow_run_id}"
+      "#{base_url}/#/experiments/#{(trial.mlflow_run && trial.mlflow_run.mlflow_experiment_id) || "default"}/runs/#{trial.mlflow_run_id}"
     else
       nil
     end

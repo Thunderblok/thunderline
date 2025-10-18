@@ -528,11 +528,11 @@ defmodule Thunderline.Thunderbolt.Resources.ChunkTest do
   describe "pubsub notifications" do
     setup do
       # Subscribe to PubSub events (use the application PubSub name)
-  Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:created")
-  Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:created")
-  Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:activated")
-  Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:optimized")
-  Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:health_updated")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:created")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:created")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:activated")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:optimized")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "thunderbolt:chunk:health_updated")
 
       :ok
     end

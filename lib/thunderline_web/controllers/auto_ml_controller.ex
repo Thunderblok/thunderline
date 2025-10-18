@@ -82,9 +82,9 @@ defmodule ThunderlineWeb.AutoMLController do
     Logger.info("[AutoMLController] Registering dataset: #{inspect(params)}")
 
     case DatasetManager.create_phase1_dataset(
-      target_samples: params["samples"] || 10_000,
-      max_context_length: params["max_context_length"] || 512
-    ) do
+           target_samples: params["samples"] || 10_000,
+           max_context_length: params["max_context_length"] || 512
+         ) do
       {:ok, dataset_id, actual_samples} ->
         conn
         |> put_status(:created)
@@ -107,15 +107,18 @@ defmodule ThunderlineWeb.AutoMLController do
     samples = params["samples"] || []
     max_length = params["max_context_length"] || 512
 
-    cleaned = Enum.map(samples, fn sample ->
-      cleaned_text = DatasetManager.preprocess_sample(sample["text"], max_length)
-      %{
-        original: sample["text"],
-        cleaned: cleaned_text,
-        length_chars: String.length(cleaned_text),
-        length_tokens: div(String.length(cleaned_text), 4)  # Rough approximation
-      }
-    end)
+    cleaned =
+      Enum.map(samples, fn sample ->
+        cleaned_text = DatasetManager.preprocess_sample(sample["text"], max_length)
+
+        %{
+          original: sample["text"],
+          cleaned: cleaned_text,
+          length_chars: String.length(cleaned_text),
+          # Rough approximation
+          length_tokens: div(String.length(cleaned_text), 4)
+        }
+      end)
 
     json(conn, %{
       success: true,

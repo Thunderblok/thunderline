@@ -8,6 +8,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultUser do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer],
     extensions: [AshEvents.Events]
 
   import Ash.Resource.Change.Builtins
@@ -23,10 +24,16 @@ defmodule Thunderline.Thunderblock.Resources.VaultUser do
   end
 
   actions do
-    defaults [:read, :update, :destroy]
+    defaults [:read, :destroy]
 
     create :create do
+      primary? true
       accept [:email, :hashed_password, :first_name, :last_name, :avatar_url, :role]
+    end
+
+    update :update do
+      primary? true
+      accept [:first_name, :last_name, :avatar_url]
     end
 
     create :register do
@@ -53,6 +60,30 @@ defmodule Thunderline.Thunderblock.Resources.VaultUser do
       accept []
       change set_attribute(:last_login_at, &DateTime.utc_now/0)
       change increment(:login_count)
+    end
+  end
+
+  policies do
+    # Allow unauthenticated user creation (registration flow)
+    policy action_type(:create) do
+      authorize_if always()
+    end
+
+    # Allow unauthenticated reads (for auth preparation, email lookup)
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    # Updates require actor to be the user themselves or an admin
+    policy action_type(:update) do
+      authorize_if expr(id == ^actor(:id))
+      authorize_if expr(^actor(:role) == :admin)
+    end
+
+    # Deletes require actor to be the user themselves or an admin
+    policy action_type(:destroy) do
+      authorize_if expr(id == ^actor(:id))
+      authorize_if expr(^actor(:role) == :admin)
     end
   end
 
@@ -134,29 +165,4 @@ defmodule Thunderline.Thunderblock.Resources.VaultUser do
   identities do
     identity :unique_email, [:email]
   end
-
-  # TODO: Re-enable policies once AshAuthentication is properly configured
-  # policies do
-  #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-  #     authorize_if always()
-  #   end
-
-  #   policy action_type(:create) do
-  #     authorize_if always()
-  #   end
-
-  #   policy action_type(:read) do
-  #     authorize_if always()
-  #   end
-
-  #   policy action_type(:update) do
-  #     authorize_if actor_attribute_equals(:id, :id)
-  #     authorize_if actor_attribute_equals(:role, :admin)
-  #   end
-
-  #   policy action_type(:destroy) do
-  #     authorize_if actor_attribute_equals(:id, :id)
-  #     authorize_if actor_attribute_equals(:role, :admin)
-  #   end
-  # end
 end

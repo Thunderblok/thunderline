@@ -264,7 +264,8 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
   defp map_trial_status(:cancelled), do: :killed
   defp map_trial_status(_), do: :running
 
-  defp map_trial_status_to_mlflow(status), do: map_trial_status(status) |> to_string() |> String.upcase()
+  defp map_trial_status_to_mlflow(status),
+    do: map_trial_status(status) |> to_string() |> String.upcase()
 
   defp create_mlflow_run(trial, experiment_id) do
     opts = [
