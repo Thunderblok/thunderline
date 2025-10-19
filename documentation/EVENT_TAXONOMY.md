@@ -180,10 +180,10 @@ JSON Schema (excerpt) for `system.email.sent`:
 - [x] Add full domain → event matrix (Section 12 seed)
 - [x] Add JSON Schema examples per event (selected examples added)
 - [x] Document correlation/causation threading rules (Section 5 invariants & Section 13)
-- [ ] Add additional JSON Schema for remaining seed events
-- [ ] Ship automated linter mix task (`mix thunderline.events.lint`) — see Section 14
-- [ ] Generate docs site variant (mdbook or LiveDashboard page) from registry
-- [ ] Add fanout guard metrics spec
+- [ ] Add additional JSON Schema for remaining seed events _(DocsOps owner; reference refresh plan in [`documentation/README.md`](documentation/README.md))_
+- [ ] Ship automated linter mix task (`mix thunderline.events.lint`) — see Section 14 _(Observability squad; CI enablement tracked under HC-02)_
+- [ ] Generate docs site variant (mdbook or LiveDashboard page) from registry _(Platform Engineering; align with catalog restructure)_
+- [ ] Add fanout guard metrics spec _(ThunderFlow; include Grafana panel export)_
 
 ## 12. Domain → Event Category Matrix (Seed)
 | Domain (source) | Allowed Top-Level Categories | Notes |

@@ -30,11 +30,53 @@ defmodule Thunderline.Thunderflow.EventBus do
 
   @spec publish_event(Thunderline.Event.t()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   def publish_event(%Thunderline.Event{} = ev) do
-    start = System.monotonic_time()
+    alias Thunderline.Thunderflow.Telemetry.OtelTrace
 
-    case EventValidator.validate(ev) do
-      :ok -> do_publish(ev, start)
-      {:error, reason} -> on_invalid(ev, reason, start)
+    OtelTrace.with_span "flow.publish_event", %{
+      event_id: ev.id,
+      event_name: ev.name,
+      pipeline: ev.meta[:pipeline] || :default
+    } do
+      Process.put(:current_domain, :flow)
+
+      OtelTrace.set_attributes(%{
+        "thunderline.domain" => "flow",
+        "thunderline.component" => "event_bus",
+        "event.id" => ev.id,
+        "event.name" => ev.name,
+        "event.type" => to_string(ev.type),
+        "event.source" => to_string(ev.source),
+        "event.priority" => to_string(ev.priority)
+      })
+
+      # Continue trace from upstream domain if trace context present
+      OtelTrace.continue_trace_from_event(ev)
+
+      start = System.monotonic_time()
+
+      result =
+        case EventValidator.validate(ev) do
+          :ok ->
+            OtelTrace.add_event("flow.event_validated")
+            do_publish(ev, start)
+
+          {:error, reason} ->
+            OtelTrace.set_status(:error, "Validation failed: #{inspect(reason)}")
+            on_invalid(ev, reason, start)
+        end
+
+      case result do
+        {:ok, published_ev} ->
+          OtelTrace.add_event("flow.event_published", %{
+            event_id: published_ev.id,
+            published_at: published_ev.meta[:published_at]
+          })
+
+        {:error, _reason} ->
+          OtelTrace.add_event("flow.event_dropped")
+      end
+
+      result
     end
   end
 

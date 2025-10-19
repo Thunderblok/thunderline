@@ -16,7 +16,17 @@ This roadmap leverages Thunderline's 7-domain architecture:
 - **ThunderLink**: Mesh coordination + device enrollment
 
 ---
+ 
+## Status Overview (Week 42)
 
+| Track | Status | Dependency Readiness |
+| --- | --- | --- |
+| Identity & DID Foundations | 🟡 In Progress | Awaiting decision between `did_kit` NIF and pure Elixir `web5_ex`; see [`documentation/README.md`](documentation/README.md) refresh plan. |
+| Google OAuth Connector | 🔴 Blocked | Service account policy review pending Crown sign-off; OAuth redirect URI reviewed but not deployed. |
+| Gmail Ingress Pipeline | ⚪ Not Started | Depends on OAuth connector token availability. |
+| ERP Schema Migrations | 🟡 In Progress | Ash migration draft authored; waiting for RLS policy review. |
+| Device Enrollment Flow | 🟢 Ready | ThunderLink heartbeat instrumentation merged; awaiting Ops dry-run. |
+ 
 ## Phase 0: Identity & Business Setup
 
 ### Web5 DID Integration
@@ -519,6 +529,16 @@ end
 
 ## MVP Artifacts (5-Day Sprint)
 
+### Sprint Progress Matrix
+
+| Deliverable | Owner | Status | Dependency Notes |
+| --- | --- | --- | --- |
+| DID resolver baseline | Platform Engineering | 🟡 In Progress | Library selection (Rust NIF vs pure Elixir) pending security review. |
+| Drive + Gmail connectors (read-only) | Gate Squad | 🔴 Blocked | Requires OAuth token vaulting once Crown approves connector policy. |
+| ERP schema migrations | ThunderBlock | 🟡 In Progress | Ash migrations drafted; RLS policy audit scheduled. |
+| Device enrollment flow | Link Squad | 🟢 Ready | Enrollment endpoint merged; Ops dry-run planned Day 2. |
+| Gmail ingress pipeline | Flow Squad | ⚪ Not Started | Waiting on OAuth connector readiness. |
+
 ### Day 1: Foundation
 - [ ] DID integration (did:web resolver)
 - [ ] Business DID + admin user DID provisioned
@@ -615,6 +635,13 @@ end
 - **Cost per Transaction**: <$0.01 (compute efficiency)
 
 ---
+
+### Current Sprint Commitments (Week 42)
+
+1. Finalize OAuth connector policy packet for Crown sign-off (Gate Squad, due Day 2).
+2. Deliver Ash RLS review for ERP schema migrations and capture approvals in runbook (ThunderBlock, due Day 3).
+3. Conduct device enrollment dry-run and publish heartbeat telemetry snapshot (Link Squad, due Day 3).
+4. Prepare libcluster load harness execution plan aligning with Flow pipeline go/no-go (Flow Squad, due Day 4).
 
 ## Next Steps
 

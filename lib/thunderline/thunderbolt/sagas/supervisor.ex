@@ -39,35 +39,72 @@ defmodule Thunderline.Thunderbolt.Sagas.Supervisor do
   Runs a saga asynchronously under supervision.
 
   Returns `{:ok, pid}` where pid is the Task process running the saga.
+
+  Instrumented with OpenTelemetry for T-72h telemetry heartbeat.
   """
   def run_saga(saga_module, inputs) do
-    correlation_id = Map.get(inputs, :correlation_id, Thunderline.UUID.v7())
+    alias Thunderline.Thunderflow.Telemetry.OtelTrace
 
-    task_spec =
-      Task.Supervisor.child_spec(
-        fn ->
-          Logger.info("Starting saga: #{inspect(saga_module)} [#{correlation_id}]")
+    OtelTrace.with_span "bolt.run_saga", %{
+      saga_module: inspect(saga_module),
+      correlation_id: Map.get(inputs, :correlation_id)
+    } do
+      Process.put(:current_domain, :bolt)
 
-          result = Reactor.run(saga_module, inputs)
+      OtelTrace.set_attributes(%{
+        "thunderline.domain" => "bolt",
+        "thunderline.component" => "sagas_supervisor",
+        "saga.module" => inspect(saga_module)
+      })
 
-          Logger.info("Saga completed: #{inspect(saga_module)} [#{correlation_id}]")
+      # Continue trace from event if trace context present in inputs
+      if Map.has_key?(inputs, :meta) do
+        OtelTrace.continue_trace_from_event(inputs)
+      end
 
-          # Emit telemetry for saga completion
-          emit_saga_telemetry(saga_module, result, correlation_id)
+      correlation_id = Map.get(inputs, :correlation_id, Thunderline.UUID.v7())
 
-          result
-        end,
-        restart: :temporary
-      )
+      OtelTrace.set_attributes(%{"saga.correlation_id" => correlation_id})
 
-    case DynamicSupervisor.start_child(__MODULE__, task_spec) do
-      {:ok, pid} ->
-        register_saga(correlation_id, saga_module, pid)
-        {:ok, pid}
+      task_spec =
+        Task.Supervisor.child_spec(
+          fn ->
+            # Inherit trace context in saga task
+            OtelTrace.with_span "bolt.saga_execution", %{
+              saga_module: inspect(saga_module),
+              correlation_id: correlation_id
+            } do
+              Logger.info("Starting saga: #{inspect(saga_module)} [#{correlation_id}]")
+              OtelTrace.add_event("bolt.saga_started")
 
-      {:error, reason} ->
-        Logger.error("Failed to start saga: #{inspect(reason)}")
-        {:error, reason}
+              result = Reactor.run(saga_module, inputs)
+
+              Logger.info("Saga completed: #{inspect(saga_module)} [#{correlation_id}]")
+              OtelTrace.add_event("bolt.saga_completed", %{result: inspect(result)})
+
+              # Emit telemetry for saga completion
+              emit_saga_telemetry(saga_module, result, correlation_id)
+
+              result
+            end
+          end,
+          restart: :temporary
+        )
+
+      result =
+        case DynamicSupervisor.start_child(__MODULE__, task_spec) do
+          {:ok, pid} ->
+            register_saga(correlation_id, saga_module, pid)
+            OtelTrace.add_event("bolt.saga_registered", %{pid: inspect(pid)})
+            {:ok, pid}
+
+          {:error, reason} ->
+            Logger.error("Failed to start saga: #{inspect(reason)}")
+            OtelTrace.set_status(:error, "Failed to start saga: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      result
     end
   end
 

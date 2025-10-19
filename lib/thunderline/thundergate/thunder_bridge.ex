@@ -83,22 +83,41 @@ defmodule Thundergate.ThunderBridge do
 
   This is a compatibility function for Thunderbit and other modules
   that need to publish events.
+
+  Instrumented with OpenTelemetry for T-72h telemetry heartbeat.
   """
   def publish(event) when is_map(event) do
-    # Route through EventBus for Broadway pipeline processing
-    build_and_publish = fn attrs ->
-      with {:ok, ev} <- Thunderline.Event.new(attrs) do
-        case Thunderline.EventBus.publish_event(ev) do
-          {:ok, _} ->
-            :ok
+    alias Thunderline.Thunderflow.Telemetry.OtelTrace
+    require OtelTrace
 
-          {:error, reason} ->
-            Logger.warning(
-              "[ThunderBridge] publish failed: #{inspect(reason)} name=#{attrs.name}"
-            )
+    OtelTrace.with_span "gate.publish", %{event_name: event[:name] || "unknown"} do
+      Process.put(:current_domain, :gate)
+
+      OtelTrace.set_attributes(%{
+        "thunderline.domain" => "gate",
+        "thunderline.component" => "thunder_bridge"
+      })
+
+      # Route through EventBus for Broadway pipeline processing
+      build_and_publish = fn attrs ->
+        with {:ok, ev} <- Thunderline.Event.new(attrs) do
+          # Inject trace context into event for cross-domain propagation
+          ev_with_trace = OtelTrace.inject_trace_context(ev)
+
+          case Thunderline.EventBus.publish_event(ev_with_trace) do
+            {:ok, _} ->
+              OtelTrace.add_event("gate.event_published", %{event_id: ev.id})
+              :ok
+
+            {:error, reason} ->
+              Logger.warning(
+                "[ThunderBridge] publish failed: #{inspect(reason)} name=#{attrs.name}"
+              )
+
+              OtelTrace.set_status(:error, "Event publish failed: #{inspect(reason)}")
+          end
         end
       end
-    end
 
     case event do
       %{type: event_type, payload: payload} ->
@@ -138,6 +157,7 @@ defmodule Thundergate.ThunderBridge do
           payload: event,
           meta: %{pipeline: :realtime}
         })
+    end
     end
   end
 
