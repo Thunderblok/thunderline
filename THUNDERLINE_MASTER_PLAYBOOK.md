@@ -30,6 +30,10 @@
 | HC-19 | P2 | Mobile Readiness | No offline/mobile doc | Draft sync/offline strategy | Link | Not Started |
 | HC-20 | P1 | Cerebros Bridge | No formal external core bridge boundary | Create gitignored mirror + API boundary doc + DIP | Bolt Steward | Not Started |
 | HC-21 | P1 | VIM Rollout Governance | Shadow telemetry & canary activation plan missing | Implement vim.* telemetry + rollout checklist | Flow + Bolt | Not Started |
+| HC-23 | P1 | Thundra/Nerves Integration | Multi-dimensional PAC execution engine (cloud + edge) needed for sovereign agent autonomy | Implement Thundra VM (tick-based voxelized cellular automata in Bolt, 12-zone hexagonal lattice), Nerves firmware template (mTLS enrollment via Gate, local PAC execution), device telemetry backhaul (Link TOCP transport), policy enforcement (Crown device manifests), event DAG traceability (correlation_id/causation_id lineage) | Bolt + Gate + Link + Crown Stewards | Not Started |
+
+Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
+| HC-23 | P1 | Thundra/Nerves Integration | No edge PAC execution runtime | Implement Thundra VM (tick-based voxel engine in Bolt), Nerves firmware template (mTLS enrollment via Gate), device telemetry backhaul (Link TOCP), policy enforcement (Crown device manifests), DAG traceability | Bolt + Gate + Link + Crown Stewards | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
@@ -119,6 +123,459 @@ Status summary for the ThunderBolt ML ledger, Cerebros bridge boundary, and NAS 
 4. Implement resilient search/exploration strategy (replace `simple_search.ex` stub) and feed outcomes back into trials queue.
 4. Publish walkthrough for executing NAS loop via Thunderhelm (Livebook → Cerebros runner → MLflow) including feature flag prerequisites.
 5. Add `mix thunderline.ml.validate` (planned) to verify bridge config, dataset availability, and event emission paths before enabling flag.
+
+---
+
+## 🌩️ Thundra & Nerves Integration (HC-23 High Command Directive)
+
+**Strategic Context**: Multi-dimensional PAC execution engine enabling sovereign agents to run seamlessly in **cloud** (Thundra VM) or on **edge devices** (Nerves hardware runtime) with unified policy enforcement. This establishes Thunderline's differentiated capability: PACs that can autonomously execute complex workflows across distributed infrastructure with full lineage tracking and governance.
+
+### 🎯 Executive Summary
+
+**Thundra VM** is a tick-driven voxelized cellular automata engine hosted in ThunderBolt that provides PAC agents with:
+- Time-state evolution through 12-zone hexagonal lattice (chakra-inspired progression)
+- Hierarchical agent architecture (Thunderbit → Thunderbolt → Sage → Magus → Thunderchief)
+- ~3 million atomic state cells per Thunderblock instance
+- GraphQL-queryable live state via ThunderGrid
+- Full event DAG lineage tracking (correlation_id/causation_id chains)
+
+**Nerves Runtime** enables PACs to execute on physical devices (Raspberry Pi, BeagleBone, etc.) with:
+- Signed firmware with embedded client certificates
+- mTLS enrollment via ThunderGate
+- Local autonomous control loops with cloud fallback
+- Cached Crown policy manifests for offline governance
+- Telemetry backhaul through ThunderLink TOCP transport
+- OTA updates orchestrated by ThunderGate
+
+### 🏗️ Architecture Foundations
+
+#### Domain Boundary Assignments
+
+| Domain | Thundra Responsibilities | Nerves Responsibilities |
+|--------|-------------------------|-------------------------|
+| **ThunderGate** | Thundra VM registration, tick event validation, zone assignment | Device mTLS authentication, client cert validation, firmware handshake protocol, enrollment lifecycle (provision → active → revoked) |
+| **ThunderBolt** | Thundra VM hosting, PAC state orchestration, tick-tock cycle scheduling, zone failover coordination, hierarchical agent supervision | Cloud-side PAC coordination when device offline, offload heavy compute from edge, Thundra VM spinup for edge-provisioned PACs |
+| **ThunderBlock** | Persistent PAC state storage, voxel data persistence, memory vault APIs for Thundra snapshots, zone configuration records | Device association records (PAC ↔ device mapping), firmware version tracking, last-seen telemetry |
+| **ThunderLink** | Event routing between Thundra zones, cross-PAC communication fabric | TOCP transport (store-and-forward messaging), device heartbeat management, telemetry backhaul queue, mesh connectivity coordination |
+| **ThunderCrown** | Thundra policy enforcement (action validation within VM), zone-level governance rules | Edge policy manifest generation, device-specific policy caching, offline governance enforcement, certificate lifecycle (issuance/rotation/revocation) |
+
+#### Thundra VM Architecture
+
+**Core Design Principles:**
+- **Voxelized Time-State**: 3D cellular automata with honeycomb structure enabling parallel state evolution
+- **12-Zone Hexagonal Lattice**: Inspired by chakra progression model, zones cycle through states providing temporal rhythm
+- **Tick-Tock Cycles**: Fast micro-updates (tick) + slow macro-sync (tock, every 7 ticks) for balance between responsiveness and stability
+- **Event-Driven**: Every state transition emits `thundra.*` events with full lineage (correlation_id/causation_id chains)
+
+**Zone Configuration** (12 zones per Thunderblock):
+
+| Zone | Chakra Mapping | Active Time | Full Cycle | Primary Function |
+|------|----------------|-------------|------------|------------------|
+| 1 | Red/Root | ~12s | ~132s | Memory/Persistence (Thundervault integration) |
+| 2 | Orange/Sacral | ~12s | ~132s | Security/Access (Thundergate validation) |
+| 3 | Yellow/Solar | ~12s | ~132s | Computation (Thunderbolt/Lit workload) |
+| 4 | Green/Heart | ~12s | ~132s | API/Interchange (Thundergrid queries) |
+| 5 | Blue/Throat | ~12s | ~132s | Communication (ThunderLink messaging) |
+| 6 | Indigo/Third Eye | ~12s | ~132s | Monitoring (ThunderEye observability) |
+| 7 | Violet/Crown | ~12s | ~132s | Governance (ThunderCrown policy) |
+| 8-12 | Extended | ~12s | ~132s | Future expansion (reserved) |
+
+**Hierarchical Agent Structure:**
+
+```
+Thunderblock Instance
+├── 12 Zones (chakra-inspired)
+│   ├── 1 Thunderchief (zone leader)
+│   ├── 3 Magi (load balancers, 1 per cluster)
+│   ├── 12 Sages (workers, 1 per sector)
+│   │   └── 144 Thunderbolts (functional clusters per Sage)
+│   │       └── 144 Thunderbits (atomic cells per Thunderbolt)
+│
+└── Scale: ~3 million Thunderbits total
+    - 1,728 Thunderbolts per zone (12 Sages × 144 Thunderbolts)
+    - 20,736 Thunderbolts per Thunderblock (12 zones × 1,728)
+    - ~3M Thunderbits (20,736 Thunderbolts × 144 Thunderbits)
+```
+
+**Agent Responsibilities:**
+- **Thunderbit**: Atomic state cell (smallest unit of computation)
+- **Thunderbolt**: 144 Thunderbits forming functional cluster (local coordination)
+- **Sage**: Worker controlling 144 Thunderbolts (sector management, resource allocation)
+- **Magus**: Load balancer coordinating 4 Sages (cluster coordination, failover)
+- **Thunderchief**: Zone leader (1 per zone, cross-zone coordination with other Chiefs)
+
+**Tick-Tock Execution Model:**
+```elixir
+# Tick Cycle (Fast - Micro Updates)
+- Thunderbit state transitions (local rules)
+- Thunderbolt aggregation (cluster consensus)
+- Sage coordination (sector sync)
+- Event emission: thundra.tick.{zone_id}
+
+# Tock Cycle (Slow - Macro Sync, every 7 ticks)
+- Magus load balancing (redistribute work)
+- Thunderchief zone sync (cross-zone coordination)
+- State persistence to ThunderBlock
+- Event emission: thundra.tock.{zone_id}
+
+# Full Zone Rotation: ~132 seconds
+# (12 zones × ~12 seconds active per zone = ~144s theoretical)
+# (Actual ~132s accounting for transition overhead)
+```
+
+**GraphQL Integration (ThunderGrid):**
+- Live PAC state queryable via `query { pacs { thundraState { zone currentTick voxelData } } }`
+- Subscriptions for tick/tock events: `subscription { thundraTick(zoneId: 3) { timestamp agents } }`
+- Zone health metrics: `query { thundraZones { id activeAgents tickRate latency } }`
+
+**Event DAG Lineage:**
+```elixir
+# Every Thundra state transition emits event with lineage
+%Thunderline.Event{
+  name: "thundra.tick.zone_3",
+  source: :bolt,
+  payload: %{
+    zone_id: 3,
+    tick_count: 42,
+    active_agents: 1728,
+    state_mutations: [...]
+  },
+  correlation_id: "pac-123-session-abc",  # Links entire PAC session
+  causation_id: "thundra.tick.zone_3.41", # Previous tick that caused this one
+  event_hash: "sha256...",                 # Ledger integrity
+  event_signature: "ecdsa..."              # Crown cryptographic proof
+}
+```
+
+#### Nerves Hardware Runtime
+
+**Deployment Pipeline:**
+1. **Firmware Build**: `mix firmware` → signed `.fw` image with embedded client cert
+2. **Device Provisioning**: Flash firmware to device (SD card or network)
+3. **First Boot**: Device presents cert to ThunderGate for mTLS handshake
+4. **Enrollment**: ThunderGate validates cert → ThunderLink establishes session → device registered in ThunderBlock
+5. **Policy Download**: Device fetches Crown policy manifest (cached locally)
+6. **PAC Initialization**: Device spawns local PAC runtime with cached policies
+7. **Telemetry Start**: Device begins backhaul via ThunderLink TOCP transport
+
+**mTLS Enrollment Flow:**
+```elixir
+# Device Side (Nerves)
+1. Load embedded client certificate from firmware
+2. Establish TLS connection to ThunderGate endpoint
+3. Present client cert during TLS handshake
+4. Wait for validation response
+
+# ThunderGate Validation
+1. Verify client cert chain against Crown CA
+2. Check certificate revocation status (CRL/OCSP)
+3. Lookup device record in ThunderBlock (cert fingerprint)
+4. Validate device not in :revoked state
+5. Create/update session in ThunderLink
+6. Return success + policy manifest URL
+
+# Policy Enforcement
+1. Device downloads policy manifest from Crown
+2. Cache manifest locally (SQLite/ETS)
+3. Validate PAC actions against cached rules
+4. Optional: Phone home to Crown for ambiguous cases
+5. Emit telemetry for policy decisions (allow/deny/defer)
+```
+
+**Local Execution Model:**
+```elixir
+# Autonomous PAC Control Loop (runs on device)
+defmodule NervesPAC.Runner do
+  use GenServer
+  
+  def handle_info(:tick, state) do
+    # 1. Check for local events (GPIO, sensor data, timers)
+    local_events = collect_local_events(state)
+    
+    # 2. Evaluate against cached Crown policies
+    {allowed, denied} = enforce_policies(local_events, state.policy_cache)
+    
+    # 3. Execute allowed actions locally
+    execute_local(allowed)
+    
+    # 4. Queue telemetry for backhaul
+    queue_telemetry(state, allowed ++ denied)
+    
+    # 5. Offload heavy compute to cloud if needed
+    offload_requests = identify_heavy_compute(allowed)
+    request_cloud_execution(offload_requests)
+    
+    # 6. Sync with cloud Thundra (if connected)
+    sync_thundra_state(state)
+    
+    {:noreply, schedule_next_tick(state)}
+  end
+end
+```
+
+**Telemetry Backhaul (ThunderLink TOCP):**
+- **Store-and-Forward**: Events queued locally, transmitted when connectivity available
+- **Priority Queue**: Critical events (errors, policy violations) sent first
+- **Compression**: Batched events compressed before transmission
+- **Acknowledgment**: Cloud confirms receipt, device can prune local queue
+- **Fallback**: If offline >24hrs, device writes to local SQLite for later sync
+
+**OTA Update Flow:**
+```elixir
+# Orchestrated by ThunderGate
+1. New firmware built, signed with Crown key
+2. ThunderGate publishes firmware metadata to ThunderBlock
+3. Devices poll for updates (or pushed via ThunderLink)
+4. Device downloads .fw file, validates signature
+5. Device applies update (A/B partition swap)
+6. Device reboots into new firmware
+7. Device re-enrolls via mTLS (proves update success)
+8. ThunderGate updates device firmware_version in ThunderBlock
+```
+
+**Performance Optimizations (NIFs/Rust):**
+- Image processing: Rust NIFs for CV pipelines (face detection, OCR)
+- TensorFlow Lite: Rust bindings for on-device inference
+- Signal processing: Rust NIFs for audio analysis (voice commands)
+- Encryption: Rust crypto for secure local storage
+
+#### PAC Execution Lifecycles
+
+**Cloud Execution Path (Thundra VM):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Provisioning (ThunderBlock)                              │
+│    - User creates PAC via UI/API                            │
+│    - PAC record persisted with initial config               │
+│    - Zone assignment calculated (load balancing)            │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Initialization (ThunderBolt)                             │
+│    - Thundra VM instance spawned in assigned zone           │
+│    - Hierarchical agents allocated (Thunderchief→Sage→...)  │
+│    - Initial voxel state loaded from ThunderBlock           │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Execution Loop (ThunderFlow → ThunderBolt)               │
+│    - Tick events drive state evolution                      │
+│    - PAC processes ThunderFlow events                       │
+│    - State mutations propagate through CA hierarchy         │
+│    - Tock cycles trigger macro-sync + persistence           │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Policy Check (ThunderCrown)                              │
+│    - PAC action evaluated against policies                  │
+│    - Tenant/scope validation                                │
+│    - Resource quota checks                                  │
+│    - Allow/deny decision with audit trail                   │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 5. Action Execution (Domain-Specific)                       │
+│    - Gate: External API calls                               │
+│    - Block: Data persistence                                │
+│    - Link: Communication/messaging                          │
+│    - Grid: Spatial queries                                  │
+│    - Crown: Governance operations                           │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 6. State Persistence (ThunderBlock)                         │
+│    - Tock cycle triggers snapshot                           │
+│    - Voxel data serialized                                  │
+│    - Memory vault updated                                   │
+│    - Lineage DAG extended                                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Edge Execution Path (Nerves Device):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Device Provisioning (ThunderGate + ThunderBlock)         │
+│    - PAC record created with device association             │
+│    - Firmware built with embedded PAC config + client cert  │
+│    - Device flashed with signed .fw image                   │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Enrollment (ThunderGate → ThunderLink)                   │
+│    - Device boots, presents client cert via mTLS            │
+│    - ThunderGate validates cert, checks revocation          │
+│    - ThunderLink establishes session, assigns TOCP address  │
+│    - Device downloads Crown policy manifest                 │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. Local Execution Loop (Device-Side)                       │
+│    - GenServer tick loop (synchronized with local clock)    │
+│    - Collect local events (GPIO, sensors, timers)           │
+│    - Evaluate against cached Crown policies                 │
+│    - Execute allowed actions locally                        │
+│    - Queue telemetry for backhaul                           │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Policy Enforcement (Local Cache + Optional Cloud)        │
+│    - Primary: Check cached Crown manifest (offline-capable) │
+│    - Fallback: Phone home to Crown for ambiguous cases      │
+│    - Log all decisions for audit (persisted locally)        │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 5. Telemetry Backhaul (ThunderLink TOCP)                    │
+│    - Store-and-forward queue (local SQLite)                 │
+│    - Priority transmission (errors first)                   │
+│    - Batch compression for efficiency                       │
+│    - Cloud acknowledgment → prune local queue               │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 6. Cloud Offloading (Optional Heavy Compute)                │
+│    - Identify compute-heavy tasks (ML inference, rendering) │
+│    - Request cloud Thundra execution via ThunderLink        │
+│    - ThunderBolt spins up cloud VM for offloaded work       │
+│    - Results sent back to device                            │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 7. Failover (Device Offline Scenario)                       │
+│    - ThunderBolt detects device heartbeat timeout           │
+│    - Spins up cloud Thundra VM with last-known state        │
+│    - Cloud VM executes PAC logic until device returns       │
+│    - State sync when device reconnects                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 📋 Implementation Checklist (P1 for Thundra/Nerves MVP)
+
+#### HC-23.1: ThunderBolt Thundra VM Scaffolding
+- [ ] Create `Thunderline.Thunderbolt.ThundraVM` GenServer supervisor
+- [ ] Implement zone assignment algorithm (round-robin → load-aware)
+- [ ] Wire tick subscription from ThunderFlow (`system.flow.tick` → `thundra.tick.*`)
+- [ ] Implement tock cycle scheduler (7-tick macro-sync)
+- [ ] Add telemetry: `[:thunderbolt, :thundra, :tick]`, `[:thunderbolt, :thundra, :tock]`
+- [ ] Unit tests: zone assignment, tick propagation, tock scheduling
+
+#### HC-23.2: ThunderBlock PAC State Schema
+- [ ] Extend `Thunderline.Thunderblock.Resources.PAC` with Thundra fields:
+  - `thundra_zone_id` (integer, 1-12)
+  - `thundra_voxel_data` (jsonb, compressed state)
+  - `thundra_tick_count` (bigint)
+  - `thundra_last_tock` (utc_datetime_usec)
+- [ ] Create `Thunderline.Thunderblock.Resources.ThundraZone` resource
+- [ ] Add zone configuration storage (active_time, cycle_duration, chakra_mapping)
+- [ ] Migration: `add_thundra_fields_to_pacs` + `create_thundra_zones`
+- [ ] Unit tests: voxel data persistence, zone assignments
+
+#### HC-23.3: ThunderGate mTLS Device Authentication
+- [ ] Implement `Thunderline.Thundergate.DeviceEnrollment` action
+- [ ] Add client cert validation middleware (`:ssl.peercert/1` extraction)
+- [ ] Create `Thunderline.Thundergate.Resources.Device` resource:
+  - `cert_fingerprint` (string, unique identity)
+  - `enrollment_status` (enum: :pending, :active, :revoked)
+  - `firmware_version` (string)
+  - `last_seen_at` (utc_datetime_usec)
+- [ ] Implement CRL/OCSP revocation checking
+- [ ] Integration test: successful enrollment, revoked cert rejection
+- [ ] Document mTLS configuration in `NERVES_DEPLOYMENT.md`
+
+#### HC-23.4: ThunderLink TOCP Transport
+- [ ] Design TOCP wire protocol (store-and-forward messaging)
+- [ ] Implement `Thunderline.Thunderlink.TOCP.Server` (WebSocket/TCP listener)
+- [ ] Create `Thunderline.Thunderlink.TOCP.DeviceSession` (per-device GenServer)
+- [ ] Implement message queue (ETS/Mnesia for persistence)
+- [ ] Add priority transmission (error events first)
+- [ ] Implement acknowledgment protocol (prune queue on ACK)
+- [ ] Telemetry: message latency, queue depth, throughput
+- [ ] Unit tests: store-and-forward, priority queue, ACK handling
+
+#### HC-23.5: ThunderCrown Edge Policy Caching
+- [ ] Create `Thunderline.Thundercrown.DeviceManifest` action
+- [ ] Generate per-device policy manifest (subset of full Crown policies)
+- [ ] Add manifest versioning (device caches hash, polls for updates)
+- [ ] Implement offline policy evaluation rules (fail-safe defaults)
+- [ ] Document policy manifest format in `CROWN_POLICIES.md`
+- [ ] Unit tests: manifest generation, version checking, offline evaluation
+
+#### HC-23.6: Nerves Firmware Build Pipeline
+- [ ] Create `nerves_pac/` Mix project (Nerves umbrella)
+- [ ] Add `mix firmware` target (cross-compile for target hardware)
+- [ ] Implement firmware signing with Crown key (cosign or GPG)
+- [ ] Create OTA update server (serve .fw files from ThunderGate)
+- [ ] Document firmware build in `NERVES_DEPLOYMENT.md`:
+  - Target hardware (rpi4, bbb)
+  - Cross-compilation steps
+  - Signing procedure
+  - OTA update process
+- [ ] CI: automate firmware builds on release tags
+
+#### HC-23.7: Event Taxonomy Extension
+- [ ] Add `pac.*` event prefix:
+  - `pac.provisioned` (new PAC created)
+  - `pac.initialized` (Thundra VM started)
+  - `pac.tick` (execution cycle)
+  - `pac.action.{allow|deny}` (policy decisions)
+- [ ] Add `device.*` event prefix:
+  - `device.enrolled` (mTLS handshake success)
+  - `device.heartbeat` (periodic check-in)
+  - `device.offline` (timeout detected)
+  - `device.firmware.updated` (OTA completed)
+- [ ] Add `thundra.*` event prefix:
+  - `thundra.tick.{zone_id}` (zone tick cycle)
+  - `thundra.tock.{zone_id}` (zone tock sync)
+  - `thundra.zone.failover` (zone reassignment)
+- [ ] Update `EVENT_TAXONOMY.md` with new prefixes
+- [ ] Run `mix thunderline.events.lint` to validate
+
+#### HC-23.8: GraphQL Schema for PAC State
+- [ ] Extend `Thunderline.Thundergrid.Schema` with Thundra queries:
+  - `query { pacs { id thundraState { zoneId tickCount voxelData } } }`
+  - `query { thundraZones { id activeAgents tickRate latency healthScore } }`
+- [ ] Add subscriptions:
+  - `subscription { thundraTick(zoneId: Int!) { timestamp agents mutations } }`
+  - `subscription { pacStateChanged(pacId: ID!) { tickCount voxelData } }`
+- [ ] Implement resolvers using ThunderBolt supervision tree
+- [ ] Add authorization checks (user can only query own PACs)
+- [ ] Integration test: GraphQL queries return live Thundra state
+
+#### HC-23.9: Documentation & Runbooks
+- [ ] Create `THUNDRA_ARCHITECTURE.md` (this content, refined)
+- [ ] Create `NERVES_DEPLOYMENT.md` (device provisioning, firmware builds, OTA)
+- [ ] Create `THUNDRA_OPERATIONS.md` (monitoring, troubleshooting, scaling)
+- [ ] Update `THUNDERLINE_DOMAIN_CATALOG.md` with Thundra/Nerves responsibilities
+- [ ] Add Thundra metrics to Grafana dashboards
+- [ ] Document failover scenarios (device offline, zone crash)
+
+#### HC-23.10: MVP Integration Test
+- [ ] End-to-end test: Provision PAC → Thundra VM initialization → Tick processing → State persistence
+- [ ] End-to-end test: Device enrollment → mTLS validation → Policy download → Local execution → Telemetry backhaul
+- [ ] Failover test: Kill Thundra zone → Verify PAC migrates → Resume processing
+- [ ] Chaos test: Disconnect device → Verify cloud takeover → Reconnect → Verify state sync
+- [ ] Load test: 100 PACs across 12 zones, 1000 ticks/sec sustained
+- [ ] Document test results in `THUNDRA_MVP_REPORT.md`
+
+### 🎯 Success Criteria (MVP)
+
+1. **Cloud Execution**: PAC can execute in Thundra VM with tick-driven state evolution
+2. **Edge Execution**: PAC can execute on Nerves device with local policy enforcement
+3. **Failover**: Device offline triggers cloud Thundra spinup automatically
+4. **Policy Enforcement**: Crown policies enforced in both cloud and edge (with offline capability)
+5. **Telemetry**: Full observability via ThunderFlow events (cloud) and TOCP backhaul (edge)
+6. **Lineage**: correlation_id/causation_id chains enable full audit trail
+7. **GraphQL**: Live PAC state queryable via ThunderGrid
+8. **OTA**: Firmware updates deployed and verified on test devices
+
+### 🔗 Dependencies & Integration Points
+
+- **Blocked By**: None (can start immediately post T-72h countdown)
+- **Blocks**: PAC swarm demo (Gate E), export-my-vault device-local path
+- **Depends On**: Event Ledger (HC-T72H-2, COMPLETE), OpenTelemetry heartbeat (HC-T72H-1, COMPLETE)
+- **Integrates With**: All domains (Gate, Bolt, Block, Link, Crown, Flow, Grid)
 
 ---
 

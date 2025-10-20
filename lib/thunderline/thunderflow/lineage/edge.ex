@@ -29,13 +29,13 @@ defmodule Thunderline.Lineage.Edge do
   end
 
   policies do
-    # Create-specific
+    # Create-specific: Tenant isolation enforced
     policy [action(:connect), action_type(:create)] do
-      authorize_if always()
+      authorize_if expr(^actor(:tenant_id) != nil)
       authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])
     end
 
-    # Read
+    # Read: Tenant isolation enforced
     policy action(:read) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
       authorize_if expr(^actor(:role) == :system and ^actor(:scope) in [:maintenance])

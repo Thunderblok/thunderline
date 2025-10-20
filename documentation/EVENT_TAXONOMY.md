@@ -79,6 +79,9 @@ Envelope Invariants:
 | `ml.run` | ML lifecycle transitions | `ml.run.completed` |
 | `voice.signal` | WebRTC signaling primitives (offers/answers/ICE) normalized | `voice.signal.offer`, `voice.signal.answer`, `voice.signal.ice` |
 | `voice.room` | Room lifecycle, media pipeline + recording/transcription | `voice.room.closed`, `voice.room.recording.started` |
+| `pac` | PAC (Policy-as-Code) lifecycle and execution | `pac.provisioned`, `pac.tick`, `pac.action.allow` |
+| `device` | Edge device enrollment, telemetry, and firmware | `device.enrolled`, `device.heartbeat`, `device.offline` |
+| `thundra` | Thundra VM zone orchestration and failover | `thundra.tick.{zone_id}`, `thundra.tock.{zone_id}`, `thundra.zone.failover` |
 
 (Initial table; to be expanded.)
 
@@ -117,6 +120,18 @@ Phases (optional final segment) SHOULD be used when an action has distinguishabl
 | `dag.commit` | 1 | `%{workflow_id: uuid, node_id: uuid, correlation_id: binary}` | persistent | DAG lineage mutation committed |
 | `cmd.ca.rule.parse` | 1 | `%{line: binary, meta: map}` | transient | Command to parse & ingest a CA rule line |
 | `cmd.workflow.spec.parse` | 1 | `%{spec: binary, meta: map}` | transient | Command to parse workflow textual spec |
+| `pac.provisioned` | 1 | `%{pac_id: binary, owner_id: binary, policy_manifest_id: binary|nil}` | persistent | New PAC created in ThunderBlock |
+| `pac.initialized` | 1 | `%{pac_id: binary, zone_id: integer, vm_id: binary, thunderbits: integer}` | persistent | Thundra VM zone allocated and started |
+| `pac.tick` | 1 | `%{pac_id: binary, zone_id: integer, cycle_count: integer, state_hash: binary}` | transient | Execution tick cycle completed |
+| `pac.action.allow` | 1 | `%{pac_id: binary, action: binary, policy_id: binary, reason: binary|nil}` | persistent | ThunderCrown policy allowed action |
+| `pac.action.deny` | 1 | `%{pac_id: binary, action: binary, policy_id: binary, reason: binary}` | persistent | ThunderCrown policy denied action |
+| `device.enrolled` | 1 | `%{device_id: binary, client_cert_fingerprint: binary, policy_manifest_id: binary}` | persistent | mTLS handshake success via ThunderGate |
+| `device.heartbeat` | 1 | `%{device_id: binary, last_seen: datetime, telemetry_queue_depth: integer|nil}` | transient | Periodic device check-in via TOCP |
+| `device.offline` | 1 | `%{device_id: binary, last_seen: datetime, timeout_threshold_ms: integer}` | persistent | Device timeout detected by ThunderGate |
+| `device.firmware.updated` | 1 | `%{device_id: binary, firmware_version: binary, previous_version: binary|nil, duration_ms: integer}` | persistent | OTA update completed successfully |
+| `thundra.tick.{zone_id}` | 1 | `%{zone_id: integer, cycle_count: integer, active_pacs: integer, state_mutations: integer}` | transient | Zone tick cycle (micro-update) |
+| `thundra.tock.{zone_id}` | 1 | `%{zone_id: integer, cycle_count: integer, sync_duration_ms: integer, voxels_persisted: integer}` | persistent | Zone tock cycle (macro-sync every 7 ticks) |
+| `thundra.zone.failover` | 1 | `%{from_zone_id: integer, to_zone_id: integer, pac_id: binary, reason: binary}` | persistent | Zone reassignment due to failure |
 
 Schema Detail (Selected):
 ```elixir
@@ -140,6 +155,98 @@ Schema Detail (Selected):
   reason: binary(),            # Human readable
   code: integer() | nil,       # Transport/provider code
   class: atom() | nil          # Error classifier result (when available)
+}
+
+# pac.provisioned v1
+%{
+  pac_id: binary(),            # UUID v7 PAC identifier
+  owner_id: binary(),          # User/system owner
+  policy_manifest_id: binary() | nil  # Crown policy manifest reference
+}
+
+# pac.initialized v1
+%{
+  pac_id: binary(),
+  zone_id: integer(),          # 1-12 hexagonal zone assignment
+  vm_id: binary(),             # Thundra VM instance identifier
+  thunderbits: integer()       # Allocated Thunderbit count (~3M typical)
+}
+
+# pac.tick v1
+%{
+  pac_id: binary(),
+  zone_id: integer(),
+  cycle_count: integer(),      # Monotonic tick counter
+  state_hash: binary()         # SHA256 of PAC voxel state
+}
+
+# pac.action.allow v1
+%{
+  pac_id: binary(),
+  action: binary(),            # Action identifier (e.g., "email.send")
+  policy_id: binary(),         # ThunderCrown policy rule ID
+  reason: binary() | nil       # Optional explanation
+}
+
+# pac.action.deny v1
+%{
+  pac_id: binary(),
+  action: binary(),
+  policy_id: binary(),
+  reason: binary()             # Required denial explanation
+}
+
+# device.enrolled v1
+%{
+  device_id: binary(),         # UUID v7 device identifier
+  client_cert_fingerprint: binary(),  # SHA256 of client cert
+  policy_manifest_id: binary() # Crown-issued edge policy manifest
+}
+
+# device.heartbeat v1
+%{
+  device_id: binary(),
+  last_seen: datetime(),       # ISO8601 timestamp
+  telemetry_queue_depth: integer() | nil  # Buffered telemetry count
+}
+
+# device.offline v1
+%{
+  device_id: binary(),
+  last_seen: datetime(),
+  timeout_threshold_ms: integer()  # Configured timeout value
+}
+
+# device.firmware.updated v1
+%{
+  device_id: binary(),
+  firmware_version: binary(),  # Semantic version (e.g., "1.2.3")
+  previous_version: binary() | nil,
+  duration_ms: integer()       # OTA update duration
+}
+
+# thundra.tick.{zone_id} v1
+%{
+  zone_id: integer(),          # 1-12 (zone identifier in name also)
+  cycle_count: integer(),      # Zone-specific tick counter
+  active_pacs: integer(),      # PACs executing in this zone
+  state_mutations: integer()   # Voxel changes this tick
+}
+
+# thundra.tock.{zone_id} v1
+%{
+  zone_id: integer(),
+  cycle_count: integer(),      # Occurs every 7 ticks
+  sync_duration_ms: integer(), # Time to persist state
+  voxels_persisted: integer()  # Count of voxels written
+}
+
+# thundra.zone.failover v1
+%{
+  from_zone_id: integer(),     # Failed zone
+  to_zone_id: integer(),       # Reassigned zone
+  pac_id: binary(),            # PAC being migrated
+  reason: binary()             # Failure reason (e.g., "zone_timeout")
 }
 ```
 
@@ -176,24 +283,29 @@ JSON Schema (excerpt) for `system.email.sent`:
 - Provide replacement event name.
 - Maintain for ≥2 release cycles or 30 days (whichever longer) before removal.
 
-## 11. Open TODOs (for completion of HC-03)
+## 11. Open TODOs (for completion of HC-03 & HC-23)
 - [x] Add full domain → event matrix (Section 12 seed)
 - [x] Add JSON Schema examples per event (selected examples added)
 - [x] Document correlation/causation threading rules (Section 5 invariants & Section 13)
+- [x] Add Thundra/Nerves event prefixes (pac.*, device.*, thundra.*) — HC-23.7
+- [x] Add event DAG lineage examples for PAC lifecycle and device operations
+- [x] Document metadata requirements for Thundra/Nerves events (Section 13A)
+- [ ] Add JSON Schema for Thundra/Nerves events (`pac.provisioned`, `device.enrolled`, etc.) _(DocsOps owner)_
 - [ ] Add additional JSON Schema for remaining seed events _(DocsOps owner; reference refresh plan in [`documentation/README.md`](documentation/README.md))_
-- [ ] Ship automated linter mix task (`mix thunderline.events.lint`) — see Section 14 _(Observability squad; CI enablement tracked under HC-02)_
+- [ ] Ship automated linter mix task (`mix thunderline.events.lint`) — see Section 14 _(Observability squad; CI enablement tracked under HC-02 & HC-23.7)_
+- [ ] Add zone_id consistency validation to linter (thundra.tick.N name must match payload zone_id) _(Observability squad)_
 - [ ] Generate docs site variant (mdbook or LiveDashboard page) from registry _(Platform Engineering; align with catalog restructure)_
 - [ ] Add fanout guard metrics spec _(ThunderFlow; include Grafana panel export)_
 
 ## 12. Domain → Event Category Matrix (Seed)
 | Domain (source) | Allowed Top-Level Categories | Notes |
 |-----------------|------------------------------|-------|
-| `:gate` (Auth/Gateway) | `ui.command`, `system`, `presence` | Auth flows, presence join/leave |
+| `:gate` (Auth/Gateway) | `ui.command`, `system`, `presence`, `device` | Auth flows, presence join/leave, device enrollment/offline |
 | `:flow` (Pipelines/Reactor) | `flow.reactor`, `system` | Reactor orchestration + internal pipeline completions |
-| `:bolt` (ML / ThunderBolt) | `ml.run`, `system` | ML lifecycle & internal orchestration |
-| `:link` (Comms / Chat / Voice) | `ui.command`, `system`, `voice.signal`, `voice.room` | Adds voice session + signaling categories |
-| `:crown` (AI Governance) | `ai.intent`, `system` | AI interpretation & governance decisions |
-| `:block` (Provisioning/Tenancy) | `system` | Provisioning, server lifecycle events |
+| `:bolt` (ML / ThunderBolt) | `ml.run`, `system`, `pac`, `thundra` | ML lifecycle, PAC orchestration, VM zone management |
+| `:link` (Comms / Chat / Voice) | `ui.command`, `system`, `voice.signal`, `voice.room`, `device` | Voice/chat + TOCP transport, device heartbeat |
+| `:crown` (AI Governance) | `ai.intent`, `system`, `pac` | AI interpretation, governance decisions, PAC action allow/deny |
+| `:block` (Provisioning/Tenancy) | `system`, `pac` | Provisioning, server lifecycle, PAC state storage |
 | `:bridge` (Future Ingest Layer) | `system`, `ui.command` | External ingest normalization |
 
 Violations (emitting a category not in the domain row) MUST be justified in PR description & typically indicate domain boundary confusion.
@@ -210,12 +322,78 @@ Violations (emitting a category not in the domain row) MUST be justified in PR d
 | AI tool result | Inherit | `causation_id = ai.tool_start event id` | `ai.tool_result` |
 | AI streaming token | Inherit | `causation_id = ai.tool_start event id` | `ai.model_token` |
 | AI conversation delta | Inherit | `causation_id = parent (token or tool)` | `ai.conversation_delta` |
+| PAC provisioned | `correlation_id = id` | `causation_id = nil` (or provisioning command if present) | `pac.provisioned` |
+| PAC initialized | Inherit from provisioned | `causation_id = pac.provisioned event id` | `pac.initialized` |
+| PAC tick | Inherit | `causation_id = previous pac.tick or pac.initialized` | `pac.tick` |
+| PAC action allow/deny | Inherit | `causation_id = pac.tick that triggered evaluation` | `pac.action.allow` |
+| Device enrolled | `correlation_id = id` | `causation_id = nil` (root mTLS handshake) | `device.enrolled` |
+| Device heartbeat | Inherit from enrollment | `causation_id = device.enrolled or previous heartbeat` | `device.heartbeat` |
+| Device offline | Inherit | `causation_id = last device.heartbeat` | `device.offline` |
+| Thundra zone tick | `correlation_id = zone session id` | `causation_id = previous tick or zone initialization` | `thundra.tick.{zone_id}` |
+| Thundra zone tock | Inherit | `causation_id = 7th tick event id` | `thundra.tock.{zone_id}` |
+| Zone failover | Inherit from PAC correlation | `causation_id = failure detection event` | `thundra.zone.failover` |
 
 Batch Emission Policy:
 * `emit_batch_meta/2` returns a batch-level `correlation_id` — **callers MUST propagate** this id to any follow-on AI tool or reactor emissions spawned from the batch.
 * When a provided payload already includes `:correlation_id`, the constructor preserves it (no overwrite) ensuring upstream trace continuity (e.g., external MCP client session id).
 
 Never re-base a correlation mid-flow. If a *new* logical transaction emerges (e.g., follow-up automation triggered by email success), start a NEW correlation with that event's id.
+
+**Thundra/Nerves Event DAG Examples:**
+
+PAC Lifecycle (Cloud Execution):
+```
+pac.provisioned (correlation_id=C1, causation_id=nil)
+  → pac.initialized (correlation_id=C1, causation_id=E1)
+    → pac.tick #1 (correlation_id=C1, causation_id=E2)
+      → pac.action.allow (correlation_id=C1, causation_id=E3)
+    → pac.tick #2 (correlation_id=C1, causation_id=E3)
+```
+
+Device Enrollment & Operation (Edge Execution):
+```
+device.enrolled (correlation_id=D1, causation_id=nil)
+  → device.heartbeat #1 (correlation_id=D1, causation_id=D1)
+  → device.heartbeat #2 (correlation_id=D1, causation_id=D2)
+  → device.offline (correlation_id=D1, causation_id=D3)
+```
+
+Thundra Zone Orchestration:
+```
+thundra.tick.1 #1 (correlation_id=Z1, causation_id=nil)
+  → thundra.tick.1 #2 (correlation_id=Z1, causation_id=T1)
+  → ... (ticks 3-7)
+  → thundra.tock.1 (correlation_id=Z1, causation_id=T7)
+```
+
+Cross-Domain PAC Execution (Cloud + Edge):
+```
+device.enrolled (correlation_id=D1, causation_id=nil)
+  → pac.provisioned (correlation_id=C1, causation_id=D1) [triggered by enrollment]
+    → pac.initialized (correlation_id=C1, causation_id=C1)
+      → pac.tick (correlation_id=C1, causation_id=C2)
+        → pac.action.allow (correlation_id=C1, causation_id=C3)
+          → device.heartbeat (correlation_id=D1, causation_id=C4) [action executed telemetry]
+```
+
+## 13A. Event Metadata Requirements
+
+Certain event categories require specific metadata fields for proper routing, lineage tracking, and observability:
+
+| Event Category | Required Metadata Fields | Purpose | Example |
+|----------------|-------------------------|---------|---------|
+| `pac.*` | `pac_id` in payload | PAC instance identification | `%{pac_id: "01234567-89ab-cdef..."}` |
+| `pac.tick`, `pac.action.*` | `zone_id` in payload | Zone assignment tracking | `%{zone_id: 3}` |
+| `device.*` | `device_id` in payload | Device instance identification | `%{device_id: "89abcdef-0123-4567..."}` |
+| `thundra.tick.*`, `thundra.tock.*` | `zone_id` in event name AND payload | Zone-specific events | `thundra.tick.3 → %{zone_id: 3}` |
+| `thundra.zone.failover` | `from_zone_id`, `to_zone_id`, `pac_id` in payload | Failover tracking | `%{from_zone_id: 2, to_zone_id: 5, pac_id: "..."}` |
+| All Thundra/Nerves events | `correlation_id`, `causation_id` | Event DAG lineage | Standard envelope fields |
+
+Additional Requirements:
+- **Thundra zone events**: Zone ID MUST match event name suffix (e.g., `thundra.tick.7` payload must have `zone_id: 7`)
+- **Device offline**: MUST include `last_seen` timestamp for timeout calculation
+- **PAC action events**: MUST include `policy_id` for audit trail
+- **Firmware updates**: MUST include both `firmware_version` and `previous_version` for rollback capability
 
 ## 14. Automated Lint / Validation (Planned)
 Proposed Mix Task: `mix thunderline.events.lint`
@@ -226,9 +404,14 @@ Checks:
 4. Deprecations older than grace window raise warning.
 5. Ensures correlation/causation presence according to category transitions (heuristic ruleset):
    - `ui.command.*` must have `causation_id == nil`.
-  - Non-root events must have non-nil `causation_id` unless explicitly flagged `:root`.
-  - AI tool & streaming events (`ai.tool_*`, `ai.model_token`, `ai.conversation_delta`) MUST have non-nil `correlation_id` AND `ai_stage` (except conversation delta which may omit `ai_stage`).
-6. Emits summary metrics for gating CI.
+   - Non-root events must have non-nil `causation_id` unless explicitly flagged `:root`.
+   - AI tool & streaming events (`ai.tool_*`, `ai.model_token`, `ai.conversation_delta`) MUST have non-nil `correlation_id` AND `ai_stage` (except conversation delta which may omit `ai_stage`).
+   - `pac.*` events MUST have `pac_id` in payload (Section 13A).
+   - `device.*` events MUST have `device_id` in payload (Section 13A).
+   - `thundra.tick.*` and `thundra.tock.*` events MUST have `zone_id` in both name and payload, with values matching (Section 13A).
+   - `thundra.zone.failover` events MUST have `from_zone_id`, `to_zone_id`, and `pac_id` in payload (Section 13A).
+6. Validates metadata requirements per Section 13A (zone_id consistency, required fields).
+7. Emits summary metrics for gating CI.
 
 Implementation Sketch (excerpt additions for AI & batch correlation auditing):
 ```elixir

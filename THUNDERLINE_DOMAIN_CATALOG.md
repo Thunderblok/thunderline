@@ -161,6 +161,28 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 - **telemetry/retention.ex** – Named telemetry handler that aggregates sweep results, publishes PubSub updates, and exposes stats for dashboards/tests.
 - **jobs/retention_sweep_worker.ex** – Oban worker scheduled via `RETENTION_SWEEPER_CRON` (hourly by default) that fans out across configured sweep targets.
 
+#### 🌩️ Thundra & Nerves Integration (HC-23)
+
+**Thundra VM Responsibilities** (Cloud Execution):
+- **PAC State Storage**: Persist voxelized time-state for all Thunderbit/Thunderbolt/Sage/Magus agents
+- **Voxel Data Persistence**: Store 3D cellular automata state across 12-zone hexagonal lattice
+- **Memory Vault APIs**: Provide high-performance read/write APIs for Thundra VM state access
+- **Zone Configuration Storage**: Maintain zone metadata (timing, chakra mappings, active agents)
+- **Snapshot & Replay**: Support GraphQL-driven state snapshots and temporal replay of PAC executions
+
+**Nerves Runtime Responsibilities** (Edge Execution):
+- **Device Association Records**: Map hardware devices to their enrolled PAC instances
+- **Firmware Version Tracking**: Store deployed firmware versions, certificates, and build metadata
+- **Last-Seen Telemetry**: Track device heartbeats and connection status for offline detection
+- **Local State Persistence**: Cache device-specific configuration for offline PAC execution
+- **Telemetry Buffer Storage**: Queue device telemetry for backhaul when connectivity restored
+
+**Key Integration Points**:
+- ThunderBolt coordinates Thundra VM lifecycle → Block persists state
+- ThunderGate device enrollment → Block stores device certificates & associations
+- ThunderLink TOCP transport → Block buffers telemetry queue for devices
+- Retention policies apply to voxel snapshots, device logs, and telemetry buffers
+
 **Total**: **23 Resources** - Complete infrastructure and memory foundation
 
 ---
@@ -246,6 +268,29 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - Hardened bridge boundary with caching, retries, structured error classes, and canonical event emission.
 - Flower federation wiring lives in `python/cerebros/keras/flower_app.py`, providing a Keras-only client/server for Flower Deployment Engine and eliminating PyTorch from the baseline superexec images.
 
+#### 🌩️ Thundra & Nerves Integration (HC-23)
+
+**Thundra VM Responsibilities** (Cloud Execution):
+- **Thundra VM Hosting**: Run GenServer-based Thundra VM instances with 12-zone hexagonal lattice
+- **PAC Orchestration**: Coordinate ~3M Thunderbits organized into Thunderbolt → Sage → Magus → Thunderchief hierarchy
+- **Tick Scheduling**: Drive tick-tock execution cycles (12-second active zones, 132-second full rotation)
+- **Zone Failover Coordination**: Detect zone failures and migrate PAC state to healthy zones via ThunderBlock
+- **GraphQL State Exposure**: Provide real-time PAC state queries via ThunderGrid (`thundraState { zone tickCount voxelData }`)
+- **ML Offload for Edge**: Execute heavy compute requests from Nerves devices (TensorFlow inference, rendering)
+
+**Nerves Runtime Responsibilities** (Edge Execution):
+- **Cloud PAC Coordination**: Coordinate with edge devices when they go offline → spin up cloud Thundra VM as failover
+- **Heavy Compute Offload**: Accept ML inference, image processing, signal processing requests from resource-constrained devices
+- **VM Spinup for Edge PACs**: Instantiate Thundra VM instances for edge PACs requiring cloud execution
+- **Policy Enforcement Bridge**: Relay Crown policy decisions to offline devices via cached manifests in ThunderBlock
+
+**Key Integration Points**:
+- ThunderBlock persists Thundra VM state → Bolt reads/writes voxel data via memory vault APIs
+- ThunderGate validates device enrollments → Bolt provisions cloud VM when device offline
+- ThunderFlow routes zone tick events → Bolt consumes for PAC state transitions
+- ThunderCrown policies gate zone activations → Bolt enforces via feature flag checks (`:unified_model`, `:ml_nas`)
+- ThunderLink TOCP transport → Bolt coordinates device-to-cloud failover messaging
+
 **Total**: **30 resources + supporting modules** (Ash resources under `resources/` and ML registry modules under `ml/`) – the command center for orchestration, numerics, and Cerebros-driven model experimentation.
 
 ---
@@ -266,6 +311,30 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - **Policy Enforcement**: AI safety and behavior constraint management
 - **Workflow Orchestration**: Cross-domain process coordination
 - **UI Management**: Central control interface for system operations
+
+#### 🌩️ Thundra & Nerves Integration (HC-23)
+
+**Thundra VM Responsibilities** (Cloud Execution):
+- **Thundra VM Policy Enforcement**: Evaluate zone-level governance rules for PAC tick cycles
+- **Zone-Level Governance**: Enforce chakra-aligned policies per zone (security for Zone 2/Orange, computation for Zone 3/Yellow, etc.)
+- **PAC Action Authorization**: Validate PAC actions against AI safety policies before execution in Thundra zones
+- **Dynamic Policy Updates**: Push policy updates to active Thundra VM instances via ThunderFlow events
+- **Audit Trail Generation**: Emit `crown.policy.*` events for all Thundra VM governance decisions
+
+**Nerves Runtime Responsibilities** (Edge Execution):
+- **Edge Policy Manifest Generation**: Generate device-specific policy caches for offline enforcement
+- **Device-Specific Policy Caching**: Create compressed policy bundles for local PAC execution on Nerves devices
+- **Offline Governance Mode**: Support PACs making policy decisions using cached manifests when disconnected from cloud
+- **Certificate Lifecycle Management**: Issue/renew/revoke device client certificates via ThunderGate integration
+- **Fallback Phone-Home Protocol**: Define escalation rules when edge PACs encounter ambiguous policy cases
+- **Policy Sync on Reconnect**: Update device policy cache when connectivity restored
+
+**Key Integration Points**:
+- ThunderGate mTLS handshake → Crown validates device cert and issues policy manifest
+- ThunderBolt Thundra VM requests → Crown provides zone activation policies
+- ThunderBlock caches edge policy manifests → Crown updates when policies change
+- ThunderLink TOCP transport → Crown pushes policy updates to connected devices
+- ThunderFlow emits `crown.policy.evaluated` events → Crown tracks policy decision metrics
 
 **Total**: **4 Resources** - AI governance and orchestration control center
 
@@ -335,6 +404,35 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - **Cross-Realm Identity**: Secure identity federation across different systems
 - **Performance Security**: Security-focused performance monitoring and optimization
 
+#### 🌩️ Thundra & Nerves Integration (HC-23)
+
+**Thundra VM Responsibilities** (Cloud Execution):
+- **Thundra VM Registration**: Register new Thundra VM instances and assign zone allocations
+- **Tick Event Validation**: Validate zone tick events for timing accuracy and integrity before ThunderFlow routing
+- **Zone Assignment Logic**: Determine optimal zone placement for new PACs based on load and chakra progression
+- **VM Health Monitoring**: Track Thundra VM heartbeats and zone rotation status for failover detection
+- **Cross-Zone Authorization**: Enforce security boundaries between Thundra zones (prevent Zone 2/Security from accessing Zone 7/Crown directly)
+
+**Nerves Runtime Responsibilities** (Edge Execution):
+- **mTLS Device Authentication**: Validate device client certificates against Crown CA during enrollment
+- **Client Certificate Validation**: Verify certificate chain, expiration, and revocation status (CRL/OCSP)
+- **Enrollment Lifecycle Management**: 
+  1. Device presents client cert
+  2. Gate validates cert chain
+  3. Checks Crown revocation list
+  4. ThunderLink establishes TOCP session
+  5. Device downloads Crown policy manifest
+- **Firmware Handshake Protocol**: Coordinate signed firmware delivery with Crown signature verification
+- **Device Re-enrollment**: Handle certificate renewal and policy refresh for existing devices
+- **Offline Device Detection**: Mark devices as offline after heartbeat timeout → trigger Bolt cloud failover
+
+**Key Integration Points**:
+- ThunderCrown provides device CA and policy manifests → Gate enforces during mTLS handshake
+- ThunderBlock stores device association records → Gate queries for enrollment status
+- ThunderLink TOCP establishes transport session → Gate controls admission and rate limiting
+- ThunderBolt requests VM registration → Gate validates identity and assigns zones
+- ThunderFlow emits `device.enrolled` events → Gate publishes after successful handshake
+
 **Total**: **18 Resources** - Complete security and external integration gateway
 
 ---
@@ -395,6 +493,42 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 **LiveView Auth Integration**:
 - `on_mount ThunderlineWeb.Live.Auth` ensures `current_user` + Ash actor assignment
 - Layout wiring prepared for presence & channel membership policies (next phase)
+
+#### 🌩️ Thundra & Nerves Integration (HC-23)
+
+**Thundra VM Responsibilities** (Cloud Execution):
+- **Inter-Zone Event Routing**: Route tick/tock events between Thundra zones with proper correlation_id/causation_id lineage
+- **Cross-PAC Communication Fabric**: Enable PAC-to-PAC messaging within Thundra VM for swarm coordination
+- **Zone Boundary Enforcement**: Validate events crossing zone boundaries comply with chakra progression rules (e.g., Zone 2 → Zone 3 allowed, Zone 2 → Zone 7 blocked)
+- **Event DAG Construction**: Build causation chains for full Thundra execution audit trails
+- **ThunderFlow Integration**: Emit zone tick events to ThunderFlow pipelines for persistence and analytics
+
+**Nerves Runtime Responsibilities** (Edge Execution):
+- **TOCP Transport Protocol**: Implement Thunderlink Transport (formerly TOCP) for device-to-cloud messaging
+- **Device Heartbeat Management**: Send periodic `device.heartbeat` events to cloud via TOCP store-and-forward
+- **Telemetry Backhaul Queue**: 
+  - Local SQLite queue for offline telemetry buffering
+  - Priority transmission (errors first, then metrics, then logs)
+  - Batch compression for bandwidth efficiency
+  - Cloud acknowledgment → prune local queue
+  - Fallback: Persist locally >24hrs if connectivity lost
+- **Mesh Connectivity Protocol**: Enable device-to-device communication for local PAC coordination
+- **Network Failover Logic**: Detect offline state → queue events locally → resume backhaul when reconnected
+- **Bandwidth Management**: Throttle telemetry transmission based on connection quality (WiFi vs cellular)
+
+**Key Integration Points**:
+- ThunderGate establishes TOCP session → Link manages transport lifecycle
+- ThunderBlock provides telemetry buffer storage → Link reads queue for transmission
+- ThunderCrown policy updates → Link pushes via TOCP to connected devices
+- ThunderBolt coordinates device failover → Link detects offline state via heartbeat timeout
+- ThunderFlow consumes device telemetry → Link publishes `device.*` events after backhaul
+
+**Transport Feature Gate**:
+- TOCP/Thunderlink Transport is FEATURE GATED (`:tocp` flag)
+- Supervisor: `Thunderline.Thunderlink.Transport.Supervisor`
+- Config: `config :thunderline, :tocp` (port=5088, gossip=1000±150ms, window=32)
+- See `documentation/tocp/TOCP_DECISIONS.md` for architecture decisions
+- Security: Control frame signing planned, replay window (30s), admission tokens required
 
 **Total**: **9 Resources** - Complete communication and social platform
 
