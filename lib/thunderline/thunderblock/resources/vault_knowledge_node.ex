@@ -80,7 +80,6 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
     multitenancy do
       strategy :attribute
       attribute :tenant_id
-      parse_attribute {TenantParser, :parse, []}
       global? false
     end  # ===== JSON API CONFIGURATION =====
   json_api do
@@ -104,7 +103,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
     # Create: Tenant-scoped or system
     policy action_type(:create) do
-      authorize_if expr(^actor(:tenant_id) != nil)
+      authorize_if expr(not is_nil(^actor(:tenant_id)))
       authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
     end
 
@@ -132,7 +131,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
     end
 
-    # Graph operations: Tenant-scoped
+    # Graph operations: Tenant-scoped with system override
     policy action(:add_relationship) do
       authorize_if expr(tenant_id == ^actor(:tenant_id))
       authorize_if expr(^actor(:role) == :system)
@@ -148,9 +147,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       authorize_if expr(^actor(:role) == :system)
     end
 
-    # Search: Tenant-scoped
+    # Search: Tenant-scoped with system access
     policy action(:search_knowledge) do
-      authorize_if expr(^actor(:tenant_id) != nil)
+      authorize_if expr(not is_nil(^actor(:tenant_id)))
       authorize_if expr(^actor(:role) == :system)
     end
 
@@ -167,10 +166,10 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
     # Access tracking: Any authenticated user
     policy action(:record_access) do
-      authorize_if expr(^actor(:id) != nil)
+      authorize_if expr(not is_nil(^actor(:id)))
     end
 
-    # System maintenance: System role with maintenance scope
+    # System maintenance: System role only
     policy action(:optimize_relationships) do
       authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
     end
@@ -741,8 +740,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
   # ===== PREPARATIONS =====
   preparations do
-    # :audit_logs removed - resource doesn't exist
-    prepare build(load: [:memory_records, :embedding_vectors])
+    # Removed load preparation - :memory_records and :embedding_vectors relationships don't exist
   end
 
   # ===== VALIDATIONS =====
