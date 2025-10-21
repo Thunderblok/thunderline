@@ -77,14 +77,12 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   end
 
   # ===== MULTITENANCY CONFIGURATION =====
-  # TEMPORARILY COMMENTED OUT - Will re-enable after base table is created
-  # multitenancy do
-  #   strategy :attribute
-  #   attribute :tenant_id
-  #   global? false
-  # end
-
-  # ===== JSON API CONFIGURATION =====
+    multitenancy do
+      strategy :attribute
+      attribute :tenant_id
+      parse_attribute {TenantParser, :parse, []}
+      global? false
+    end  # ===== JSON API CONFIGURATION =====
   json_api do
     type "knowledge_node"
 
@@ -760,11 +758,11 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   attributes do
     uuid_primary_key :id
 
-    # TEMPORARILY COMMENTED OUT - Will re-enable after base table is created
-    # attribute :tenant_id, :uuid do
-    #   allow_nil? false
-    #   description "Owning tenant for knowledge isolation"
-    # end
+    attribute :tenant_id, :uuid do
+      allow_nil? false
+      description "Owning tenant for knowledge isolation"
+      public? false
+    end
 
     attribute :node_type, :atom do
       allow_nil? false
