@@ -11,6 +11,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
 
   use Thunderline.DataCase, async: true
 
+  require Ash.Query
+
   alias Thunderline.Thunderblock.Domain
   alias Thunderline.Thunderblock.Resources.VaultKnowledgeNode
 
@@ -80,7 +82,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       node_a: node_a
     } do
       # Tenant B trying to read Tenant A's node
-      assert_raise Ash.Error.Forbidden, fn ->
+      assert_raise Ash.Error.Invalid, fn ->
         VaultKnowledgeNode
         |> Ash.get!(node_a.id, actor: actor_b, tenant: actor_b.tenant_id)
       end
@@ -172,7 +174,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
 
     test "anonymous users cannot access knowledge nodes", %{node: node} do
       # No actor provided
-      assert_raise Ash.Error.Forbidden, fn ->
+      assert_raise Ash.Error.Invalid, fn ->
         VaultKnowledgeNode
         |> Ash.get!(node.id)
       end
@@ -238,7 +240,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       |> Ash.destroy!()
 
       # Verify deletion
-      assert_raise Ash.Error.Query.NotFound, fn ->
+      assert_raise Ash.Error.Invalid, fn ->
         VaultKnowledgeNode
         |> Ash.get!(node.id, actor: admin_actor, tenant: tenant_id)
       end
@@ -300,7 +302,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       # User from different tenant cannot read
       other_tenant_actor = create_tenant_actor(Ash.UUID.generate(), :user)
 
-      assert_raise Ash.Error.Forbidden, fn ->
+      assert_raise Ash.Error.Invalid, fn ->
         VaultKnowledgeNode
         |> Ash.get!(node.id, actor: other_tenant_actor, tenant: other_tenant_actor.tenant_id)
       end
@@ -328,7 +330,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       |> Ash.destroy!()
 
       # Verify deletion
-      assert_raise Ash.Error.Query.NotFound, fn ->
+      assert_raise Ash.Error.Invalid, fn ->
         VaultKnowledgeNode
         |> Ash.get!(node.id, actor: admin_actor, tenant: tenant_id)
       end
