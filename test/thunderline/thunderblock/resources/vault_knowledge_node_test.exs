@@ -530,20 +530,20 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       tenant_id: tenant_id,
       system_actor: system_actor
     } do
-      node = create_knowledge_node(tenant_id, %{indexing_status: "pending"})
+      node = create_knowledge_node(tenant_id, %{indexing_status: :pending})
 
       # System actor can update indexing status
       indexed_node =
         node
         |> Ash.Changeset.for_update(
           :update,
-          %{indexing_status: "indexed"},
+          %{indexing_status: :indexed},
           actor: system_actor,
           tenant: tenant_id
         )
         |> Ash.update!()
 
-      assert indexed_node.indexing_status == "indexed"
+      assert indexed_node.indexing_status == :indexed
     end
 
     test "archive action validates permissions", %{
@@ -556,13 +556,13 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
         node
         |> Ash.Changeset.for_update(
           :update,
-          %{verification_status: "archived"},
+          %{verification_status: :archived},
           actor: admin_actor,
           tenant: tenant_id
         )
         |> Ash.update!()
 
-      assert archived_node.verification_status == "archived"
+      assert archived_node.verification_status == :archived
     end
 
     test "restore action enforces ownership", %{
@@ -572,7 +572,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       node =
         create_knowledge_node(tenant_id, %{
           title: "Archived Node",
-          verification_status: "archived"
+          verification_status: :archived
         })
 
       # Admin can restore
@@ -580,13 +580,13 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
         node
         |> Ash.Changeset.for_update(
           :update,
-          %{verification_status: "active"},
+          %{verification_status: :unverified},
           actor: admin_actor,
           tenant: tenant_id
         )
         |> Ash.update!()
 
-      assert restored_node.verification_status == "active"
+      assert restored_node.verification_status == :unverified
     end
   end
 
@@ -596,8 +596,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
     test "nil tenant_id is rejected" do
       actor = %{id: Ash.UUID.generate(), tenant_id: nil, role: :user}
 
-      # Cannot create without tenant_id
-      assert_raise Ash.Error.Invalid, fn ->
+      # Cannot create without tenant_id (rejected by policy)
+      assert_raise Ash.Error.Forbidden, fn ->
         VaultKnowledgeNode
         |> Ash.Changeset.for_create(
           :create,

@@ -80,7 +80,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
     multitenancy do
       strategy :attribute
       attribute :tenant_id
-      global? false
+      # Allow global queries (tenant optional) - tenant isolation enforced via policies for non-system actors
+      global? true
     end  # ===== JSON API CONFIGURATION =====
   json_api do
     type "knowledge_node"
@@ -132,9 +133,20 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
     end
 
     # Graph operations: Tenant-scoped with system override
+    # System actors bypass all tenant restrictions
+    bypass expr(^actor(:role) == :system) do
+      authorize_if always()
+    end
+
     policy action(:add_relationship) do
-      authorize_if expr(tenant_id == ^actor(:tenant_id))
-      authorize_if expr(^actor(:role) == :system)
+      # Regular users: forbid if not in same tenant as source
+      forbid_unless expr(tenant_id == ^actor(:tenant_id))
+
+      # Regular users: forbid if target not in same tenant as source
+      forbid_unless Thunderline.Thunderblock.Resources.VaultKnowledgeNode.Checks.TargetNodeSameTenant
+
+      # If both checks pass, authorize
+      authorize_if always()
     end
 
     policy action(:remove_relationship) do
@@ -231,7 +243,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         :temporal_data,
         :spatial_data,
         :taxonomy_path,
-        :metadata
+        :metadata,
+        :verification_status,
+        :indexing_status
       ]
 
       change fn changeset, _context ->
@@ -288,7 +302,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         :temporal_data,
         :spatial_data,
         :taxonomy_path,
-        :metadata
+        :metadata,
+        :verification_status,
+        :indexing_status
       ]
 
       require_atomic? false
@@ -297,9 +313,14 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         temporal_data = Ash.Changeset.get_attribute(changeset, :temporal_data) || %{}
         updated_temporal = Map.put(temporal_data, "last_updated", DateTime.utc_now())
 
-        changeset
-        |> Ash.Changeset.change_attribute(:temporal_data, updated_temporal)
-        |> Ash.Changeset.change_attribute(:indexing_status, :reindex_needed)
+        changeset = Ash.Changeset.change_attribute(changeset, :temporal_data, updated_temporal)
+
+        # Only set reindex_needed if user didn't explicitly provide indexing_status
+        if Ash.Changeset.changing_attribute?(changeset, :indexing_status) do
+          changeset
+        else
+          Ash.Changeset.change_attribute(changeset, :indexing_status, :reindex_needed)
+        end
       end
 
       change after_action(fn _changeset, node, _context ->
@@ -339,10 +360,10 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         constraints min: Decimal.new("0.0"), max: Decimal.new("1.0")
       end
 
-      change fn changeset, context ->
-        target_id = context.arguments.target_node_id
-        rel_type = context.arguments.relationship_type
-        strength = context.arguments.relationship_strength
+      change fn changeset, _context ->
+        target_id = Ash.Changeset.get_argument(changeset, :target_node_id)
+        rel_type = Ash.Changeset.get_argument(changeset, :relationship_type)
+        strength = Ash.Changeset.get_argument(changeset, :relationship_strength)
 
         current_relationships = Ash.Changeset.get_attribute(changeset, :relationship_data) || %{}
 
@@ -352,10 +373,12 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
             "parent" -> "parent_nodes"
             "child" -> "child_nodes"
             "related" -> "related_nodes"
+            "related_to" -> "related_nodes"
             "contradicts" -> "contradicts_nodes"
             "supports" -> "supports_nodes"
             "temporal_next" -> "temporal_next"
             "causal_effect" -> "causal_effects"
+            _ -> "related_nodes"  # Default to related_nodes for unknown types
           end
 
         current_list = Map.get(current_relationships, relationship_key, [])
@@ -399,9 +422,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         allow_nil? false
       end
 
-      change fn changeset, context ->
-        target_id = context.arguments.target_node_id
-        rel_type = context.arguments.relationship_type
+      change fn changeset, _context ->
+        target_id = Ash.Changeset.get_argument(changeset, :target_node_id)
+        rel_type = Ash.Changeset.get_argument(changeset, :relationship_type)
 
         current_relationships = Ash.Changeset.get_attribute(changeset, :relationship_data) || %{}
 
@@ -410,10 +433,12 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
             "parent" -> "parent_nodes"
             "child" -> "child_nodes"
             "related" -> "related_nodes"
+            "related_to" -> "related_nodes"
             "contradicts" -> "contradicts_nodes"
             "supports" -> "supports_nodes"
             "temporal_next" -> "temporal_next"
             "causal_effect" -> "causal_effects"
+            _ -> "related_nodes"  # Default to related_nodes for unknown types
           end
 
         current_list = Map.get(current_relationships, relationship_key, [])
@@ -434,8 +459,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         allow_nil? false
       end
 
-      change fn changeset, context ->
-        duplicate_ids = context.arguments.duplicate_node_ids
+      change fn changeset, _context ->
+        duplicate_ids = Ash.Changeset.get_argument(changeset, :duplicate_node_ids)
 
         current_consolidation = Ash.Changeset.get_attribute(changeset, :consolidation_data) || %{}
         current_memories = Ash.Changeset.get_attribute(changeset, :memory_record_ids) || []
@@ -459,9 +484,10 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         )
       end
 
-      change after_action(fn _changeset, node, context ->
+      change after_action(fn changeset, node, _context ->
                # Mark duplicate nodes as consolidated
-               mark_nodes_as_duplicates(context.arguments.duplicate_node_ids, node.id)
+               duplicate_ids = Ash.Changeset.get_argument(changeset, :duplicate_node_ids)
+               mark_nodes_as_duplicates(duplicate_ids, node.id)
                {:ok, node}
              end)
     end
@@ -478,9 +504,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
       argument :user_context, :map, allow_nil?: true
 
-      change fn changeset, context ->
-        access_type = context.arguments.access_type
-        user_context = context.arguments.user_context || %{}
+      change fn changeset, _context ->
+        access_type = Ash.Changeset.get_argument(changeset, :access_type)
+        user_context = Ash.Changeset.get_argument(changeset, :user_context) || %{}
 
         current_patterns = Ash.Changeset.get_attribute(changeset, :access_patterns) || %{}
         access_count = Map.get(current_patterns, "access_count", 0) + 1
@@ -508,9 +534,9 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
       argument :verification_evidence, :map, allow_nil?: true
 
-      change fn changeset, context ->
-        result = context.arguments.verification_result
-        evidence = context.arguments.verification_evidence || %{}
+      change fn changeset, _context ->
+        result = Ash.Changeset.get_argument(changeset, :verification_result)
+        evidence = Ash.Changeset.get_argument(changeset, :verification_evidence) || %{}
 
         current_quality = Ash.Changeset.get_attribute(changeset, :knowledge_quality) || %{}
 
@@ -741,6 +767,10 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   # ===== PREPARATIONS =====
   preparations do
     # Removed load preparation - :memory_records and :embedding_vectors relationships don't exist
+
+    # System actors with maintenance scope can bypass tenant isolation for all read operations
+    prepare Thunderline.Thunderblock.Resources.VaultKnowledgeNode.Preparations.RemoveTenantFilterForSystem,
+      on: [:read]
   end
 
   # ===== VALIDATIONS =====

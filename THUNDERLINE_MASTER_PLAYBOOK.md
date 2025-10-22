@@ -31,6 +31,8 @@
 | HC-20 | P1 | Cerebros Bridge | No formal external core bridge boundary | Create gitignored mirror + API boundary doc + DIP | Bolt Steward | Not Started |
 | HC-21 | P1 | VIM Rollout Governance | Shadow telemetry & canary activation plan missing | Implement vim.* telemetry + rollout checklist | Flow + Bolt | Not Started |
 | HC-23 | P1 | Thundra/Nerves Integration | Multi-dimensional PAC execution engine (cloud + edge) needed for sovereign agent autonomy | Implement Thundra VM (tick-based voxelized cellular automata in Bolt, 12-zone hexagonal lattice), Nerves firmware template (mTLS enrollment via Gate, local PAC execution), device telemetry backhaul (Link TOCP transport), policy enforcement (Crown device manifests), event DAG traceability (correlation_id/causation_id lineage) | Bolt + Gate + Link + Crown Stewards | Not Started |
+| HC-24 | P1 | Sensor-to-STAC Pipeline | Complete sensor data to knowledge graph to tokenized reward pipeline undefined | Design and implement Thunderforge to Thunderblock flow: Thunderbit ingestion (Nerves devices), decode/assemble workers (Oban), PAC validation (6-dimensional policy checks), DAG commit (knowledge graph), STAC minting (reward function), staking mechanics (sSTAC/STACC), anti-grief patterns (novelty decay, collusion detection), observability (SLOs P50 under 150ms, P95 under 500ms, P99 under 2s). See documentation/architecture/sensor_to_stac_pipeline.md | Forge + Bolt + Block Stewards | Not Started |
+| HC-25 | P1 | ML Optimization Infrastructure | No hyperparameter tuning framework | Implement Tree-structured Parzen Estimator (TPE) for Bayesian optimization: Nx/Scholar core algorithm (200 lines KDE-based), Ash resource (Oko.Tuner.TPEJob for persistence), Oban worker (async execution), Mix task CLI (mix tpe.run), search space support (uniform/lognormal/categorical distributions). Enable automated tuning for Cerebros NAS, Oko classifiers, VIM solvers. See documentation/architecture/tpe_optimizer.md | Bolt Steward | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 | HC-23 | P1 | Thundra/Nerves Integration | No edge PAC execution runtime | Implement Thundra VM (tick-based voxel engine in Bolt), Nerves firmware template (mTLS enrollment via Gate), device telemetry backhaul (Link TOCP), policy enforcement (Crown device manifests), DAG traceability | Bolt + Gate + Link + Crown Stewards | Not Started |
@@ -656,6 +658,64 @@ _Status legend: [x] done · [ ] pending · [~] scaffolded / partial_
 7. [ ] Extend Thundergrid GraphQL with trials/parzen/dataset queries + subscriptions; surface dashboard tiles for live monitoring.
 8. [ ] Persist lineage into Thundervine DAG (trials ↔ dataset chunks ↔ docs/events, parzen snapshots, model registry edges).
 9. [ ] Codify Jido policy playbooks for proposal SLA, retry/prune loops, and integrate observability metrics.
+
+---
+
+---
+
+## 🌊 Sensor-to-STAC Pipeline Overview (HC-24)
+
+**Status**: Specification complete | Priority: P1 | Owners: Forge + Bolt + Block Stewards
+
+### Purpose
+Complete data pipeline transforming raw sensor observations from edge devices into tokenized knowledge graph contributions with economic rewards. Bridges Thunderforge (ingestion), Thunderbolt (orchestration), and Thunderblock (persistence/rewards).
+
+### High-Level Flow
+Nerves Device → Thunderbit → Decode Worker → Assembly Worker → PAC Validation (6 dimensions) → DAG Commit → STAC Minting → Staking (sSTAC) → Yield (STACC)
+
+### Key Components
+- **Thunderbit**: Signed data packet from edge sensors
+- **Knowledge Item**: Assembled observation meeting PAC thresholds (5 types: Instruction, Milestone, Query, Observation, Metric)
+- **DAG**: Knowledge graph storing items as nodes with causal/semantic edges
+- **STAC**: Reward token (formula: R = Base × Quality × Novelty × Policy × StakeMultiplier)
+- **sSTAC**: Staked STAC (governance rights)
+- **STACC**: Yield certificate (tradeable)
+
+### PAC Validation (6 Dimensions)
+1. Relevance (goal alignment), 2. Novelty (anti-spam decay), 3. Crown Policy (governance), 4. Ownership (auth chain), 5. Integrity (signatures), 6. Cost Budget (resource limits)
+
+### MVP Cut (2 Sprints)
+Sprint 1: Thunderbit → DAG (no rewards). Sprint 2: Reward mechanics + staking.
+
+**Full Specification**: [documentation/architecture/sensor_to_stac_pipeline.md](documentation/architecture/sensor_to_stac_pipeline.md)
+
+---
+
+## 🧠 TPE Optimizer Overview (HC-25)
+
+**Status**: Specification complete | Priority: P1 | Owner: Bolt Steward
+
+### Purpose
+Automated hyperparameter tuning using Tree-structured Parzen Estimator (Bayesian optimization) for Thunderline ML models.
+
+### Algorithm
+TPE splits trials into good/bad groups via KDE, samples candidates maximizing l(x) = p(x|good) / p(x|bad). Sample-efficient, handles mixed spaces (continuous/categorical/log-scale), parallelizable.
+
+### Implementation Stack
+Nx (tensors) + Scholar (KDE) + Ash (persistence) + Oban (async) + Mix task (CLI)
+
+### Search Space Support
+Uniform, lognormal (log-scale hyperparameters), categorical (discrete choices)
+
+### Integration Points
+Cerebros NAS tuning, Oko classifiers, VIM solvers, Axon models
+
+### Usage Example
+```bash
+mix tpe.run --objective MyApp.NeuralNet --space '{"lr": {"lognormal": [-5, 1.5]}}' --n-total 50
+```
+
+**Full Specification**: [documentation/architecture/tpe_optimizer.md](documentation/architecture/tpe_optimizer.md)
 
 ---
 

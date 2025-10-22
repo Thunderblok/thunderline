@@ -28,6 +28,43 @@ defmodule Thunderline.Thunderblock.Domain do
 
   use Ash.Domain
 
+  alias Thunderline.Thunderblock.Resources.VaultKnowledgeNode
+
+  # VaultKnowledgeNode relationship management functions
+  defdelegate add_relationship!(node, target_node_id, relationship_type, relationship_strength, opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate remove_relationship!(node, target_node_id, relationship_type, opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate consolidate_knowledge!(node, duplicate_node_ids, opts \\ []),
+    to: VaultKnowledgeNode
+
+  # VaultKnowledgeNode other operations
+  defdelegate verify_knowledge!(node, verification_result, verification_evidence, opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate record_access!(node, access_type, user_context, opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate search_knowledge!(search_term, knowledge_domains, node_types, min_confidence \\ nil, opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate traverse_graph!(start_node_id, relationship_types, max_depth, direction, opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate by_domain!(knowledge_domain, opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate optimize_relationships!(opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate recalculate_metrics!(opts \\ []),
+    to: VaultKnowledgeNode
+
+  defdelegate cleanup_deprecated!(opts \\ []),
+    to: VaultKnowledgeNode
+
   resources do
     # Original ThunderBlock resources
     resource Thunderblock.Resources.ExecutionContainer
