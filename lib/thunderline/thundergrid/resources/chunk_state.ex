@@ -7,10 +7,10 @@ defmodule Thunderline.Thundergrid.Resources.ChunkState do
   """
 
   use Ash.Resource,
-    domain: Thunderline.Thundergrid.Domain,
-    data_layer: Ash.DataLayer.Ets
+    domain: Thunderline.Thundergrid,
+    data_layer: AshPostgres.DataLayer
 
-  alias Thunderline.Thunderlane
+  alias Thunderline.Thunderbolt.Thunderlane
 
   actions do
     defaults [:read]

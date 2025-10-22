@@ -58,7 +58,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
     end
 
     update :update_status do
-      accept [:status, :started_at, :completed_at, :error_message]
+      accept [:status, :started_at, :completed_at, :error_message, :intrinsic_reward]
     end
 
     update :fail do
@@ -142,6 +142,11 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
 
     attribute :completed_at, :utc_datetime do
       allow_nil? true
+    end
+
+    attribute :intrinsic_reward, :decimal do
+      allow_nil? true
+      description "IGPO intrinsic reward score (0.0-1.0) measuring information gain/novelty across laps"
     end
 
     create_timestamp :inserted_at

@@ -1,4 +1,4 @@
-defmodule Thundergrid.UnikernelDataLayer do
+defmodule Thunderline.Thundergrid.UnikernelDataLayer do
   @moduledoc """
   Custom Ash Data Layer for Unikernel Integration
 
@@ -9,7 +9,7 @@ defmodule Thundergrid.UnikernelDataLayer do
   interfaces with real-time computational processes in the unikernel.
   """
 
-  alias Thunderline.Thunderlane
+  alias Thunderline.Thunderbolt.Thunderlane
 
   @behaviour Ash.DataLayer
 

@@ -340,7 +340,7 @@ export async function validateListTickets(
     body: JSON.stringify(payload),
   };
 
-  const response = await fetchFunction("/rpc/run", fetchOptions);
+  const response = await fetchFunction("/rpc/validate", fetchOptions);
 
   if (!response.ok) {
     return {
@@ -466,7 +466,7 @@ export async function validateCreateTicket(
     body: JSON.stringify(payload),
   };
 
-  const response = await fetchFunction("/rpc/run", fetchOptions);
+  const response = await fetchFunction("/rpc/validate", fetchOptions);
 
   if (!response.ok) {
     return {

@@ -50,7 +50,7 @@ config :thunderline, :thunderwatch,
   max_events: 500
 
 # Explicit test feature flags (tocp scaffold disabled unless opted-in per test)
-config :thunderline, :features, tocp: false
+config :thunderline, :features, tocp: false, reward_signal: false
 
 config :thunderline,
   minimal_test_boot: true,

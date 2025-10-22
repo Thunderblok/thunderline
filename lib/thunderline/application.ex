@@ -14,6 +14,7 @@ defmodule Thunderline.Application do
   @impl Application
   def start(_type, _args) do
     Thunderline.Thunderblock.Telemetry.Retention.attach()
+    attach_reward_handler()
 
     children =
       ([
@@ -99,6 +100,19 @@ defmodule Thunderline.Application do
       ]
     else
       []
+    end
+  end
+
+  defp attach_reward_handler do
+    if Feature.enabled?(:reward_signal, default: false) do
+      Thunderline.Thunderblock.Telemetry.RewardHandler.init()
+
+      :telemetry.attach(
+        "thunderline-reward-handler",
+        [:thunderline, :flow, :probe, :reward],
+        &Thunderline.Thunderblock.Telemetry.RewardHandler.handle_event/4,
+        nil
+      )
     end
   end
 end

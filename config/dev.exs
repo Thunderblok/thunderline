@@ -64,7 +64,8 @@ config :thunderline, :features,
   ai_chat_panel: true,
   tocp: false,
   ml_nas: true,
-  cerebros_bridge: true
+  cerebros_bridge: true,
+  reward_signal: true
 
 dev_cerebros_bridge_config =
   Application.compile_env(:thunderline, :cerebros_bridge, [])

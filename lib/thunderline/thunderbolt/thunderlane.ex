@@ -1,4 +1,4 @@
-defmodule Thundergate.Thunderlane do
+defmodule Thunderline.Thunderbolt.Thunderlane do
   @moduledoc """
   Revolutionary Thunderlane Protocol Bridge for 3-Tier Hybrid Architecture
 

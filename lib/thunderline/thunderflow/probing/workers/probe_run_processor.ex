@@ -4,6 +4,8 @@ defmodule Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor do
   require Logger
   alias Thunderline.Thunderflow.Probing.Engine
   alias Thunderline.Thunderflow.Resources.{ProbeRun, ProbeLap}
+  alias Thunderline.Thunderflow.IntrinsicReward
+  alias Thunderline.{Event, EventBus, Feature}
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"run_id" => run_id}}) do
@@ -52,9 +54,80 @@ defmodule Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor do
       })
     end)
 
-    Ash.update!(run, %{status: :completed, completed_at: DateTime.utc_now()},
+    # Compute intrinsic reward (IGPO) - gated by :reward_signal feature flag
+    intrinsic_reward =
+      IntrinsicReward.compute_reward(laps, %{
+        run_id: run.id,
+        provider: run.provider,
+        model: run.model
+      })
+
+    Logger.debug(
+      "[ProbeRunProcessor] Computed intrinsic_reward=#{intrinsic_reward} for run=#{run.id}"
+    )
+
+    Ash.update!(
+      run,
+      %{
+        status: :completed,
+        completed_at: DateTime.utc_now(),
+        intrinsic_reward: intrinsic_reward
+      },
       action: :update_status
     )
+
+    # Emit event with reward data (IGPO)
+    if Feature.enabled?(:reward_signal) do
+      with {:ok, event} <-
+             Event.new(
+               "flow.probe.run.completed",
+               %{
+                 run_id: run.id,
+                 status: :completed,
+                 laps_count: length(laps),
+                 intrinsic_reward: intrinsic_reward
+               },
+               source: :flow,
+               meta: %{
+                 provider: run.provider,
+                 model: run.model,
+                 samples: run.samples,
+                 embedding_dim: run.embedding_dim
+               }
+             ),
+           {:ok, _} <- EventBus.publish_event(event) do
+        Logger.debug(
+          "[ProbeRunProcessor] Published flow.probe.run.completed event for run=#{run.id}"
+        )
+      else
+        {:error, reason} ->
+          Logger.warning(
+            "[ProbeRunProcessor] Failed to publish event for run=#{run.id}: #{inspect(reason)}"
+          )
+      end
+    end
+
+    # Emit telemetry for reward metrics (IGPO)
+    if Feature.enabled?(:reward_signal) do
+      duration_ms =
+        case run.started_at do
+          nil -> 0
+          started -> DateTime.diff(DateTime.utc_now(), started, :millisecond)
+        end
+
+      :telemetry.execute(
+        [:thunderline, :flow, :probe, :reward],
+        %{count: 1, intrinsic_reward: intrinsic_reward},
+        %{
+          run_id: run.id,
+          provider: run.provider,
+          model: run.model,
+          success?: true,
+          laps_count: length(laps),
+          duration_ms: duration_ms
+        }
+      )
+    end
 
     # Enqueue attractor summary computation
     %{
