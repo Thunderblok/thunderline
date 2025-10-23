@@ -40,6 +40,7 @@
   "cc_precompiler": {:hex, :cc_precompiler, "0.1.11", "8c844d0b9fb98a3edea067f94f616b3f6b29b959b6b3bf25fee94ffe34364768", [:mix], [{:elixir_make, "~> 0.7", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "3427232caf0835f94680e5bcf082408a70b48ad68a5f5c0b02a3bea9f3a075b9"},
   "certifi": {:hex, :certifi, "2.15.0", "0e6e882fcdaaa0a5a9f2b3db55b1394dba07e8d6d9bcad08318fb604c6839712", [:rebar3], [], "hexpm", "b147ed22ce71d72eafdad94f055165c1c182f61a2ff49df28bcc71d1d5b94a60"},
   "chatterbox": {:hex, :ts_chatterbox, "0.15.1", "5cac4d15dd7ad61fc3c4415ce4826fc563d4643dee897a558ec4ea0b1c835c9c", [:rebar3], [{:hpack, "~> 0.3.0", [hex: :hpack_erl, repo: "hexpm", optional: false]}], "hexpm", "4f75b91451338bc0da5f52f3480fa6ef6e3a2aeecfc33686d6b3d0a0948f31aa"},
+  "chroma": {:git, "https://github.com/3zcurdia/chroma.git", "c16f0d01b91113fbb80a3b9b41dc55f99950cc4e", [branch: "main"]},
   "circular_buffer": {:hex, :circular_buffer, "1.0.0", "25c004da0cba7bd8bc1bdabded4f9a902d095e20600fd15faf1f2ffbaea18a07", [:mix], [], "hexpm", "c829ec31c13c7bafd1f546677263dff5bfb006e929f25635878ac3cfba8749e5"},
   "cloak": {:hex, :cloak, "1.1.4", "aba387b22ea4d80d92d38ab1890cc528b06e0e7ef2a4581d71c3fdad59e997e7", [:mix], [{:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: true]}], "hexpm", "92b20527b9aba3d939fab0dd32ce592ff86361547cfdc87d74edce6f980eb3d7"},
   "combine": {:hex, :combine, "0.10.0", "eff8224eeb56498a2af13011d142c5e7997a80c8f5b97c499f84c841032e429f", [:mix], [], "hexpm", "1b1dbc1790073076580d0d1d64e42eae2366583e7aecd455d1215b0d16f2451b"},

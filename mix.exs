@@ -132,6 +132,8 @@ defmodule Thunderline.MixProject do
       {:torchx, "~> 0.9"},
       {:bumblebee, "~> 0.6"},
       {:polaris, "~> 0.1"},
+      # RAG - We'll use Req directly for Chroma HTTP API (simpler than buggy client)
+      # {:chroma, github: "3zcurdia/chroma", branch: "main"},
       # Agents (non-Jido runtime deps live above; Jido ecosystem is added below via git)
       # File system watch (dev/test only)
       {:file_system, "~> 1.0"},

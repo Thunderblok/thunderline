@@ -79,6 +79,9 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.Resources.ModelRun
     resource Thunderline.Thunderbolt.Resources.ModelTrial
     # New ML stack resources
+
+    # RAG (Retrieval Augmented Generation)
+    resource Thunderline.RAG.Document
     resource Thunderline.Thunderbolt.ML.TrainingDataset
     resource Thunderline.Thunderbolt.ML.FeatureView
     resource Thunderline.Thunderbolt.ML.ConsentRecord

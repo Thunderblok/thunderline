@@ -8,9 +8,17 @@ cerebros_enabled =
     _ -> true
   end
 
+rag_enabled =
+  case System.get_env("RAG_ENABLED") do
+    val when val in ["0", "false", "FALSE"] -> false
+    val when val in ["1", "true", "TRUE"] -> true
+    _ -> true
+  end
+
 config :thunderline, :features,
   ml_nas: cerebros_enabled,
-  cerebros_bridge: cerebros_enabled
+  cerebros_bridge: cerebros_enabled,
+  rag_enabled: rag_enabled
 
 config :thunderline, :cerebros_bridge,
   enabled: cerebros_enabled,
