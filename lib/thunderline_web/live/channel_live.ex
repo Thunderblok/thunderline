@@ -5,8 +5,10 @@ defmodule ThunderlineWeb.ChannelLive do
   Renders message stream, input box, minimal presence, and AI side thread.
   """
   use ThunderlineWeb, :live_view
-  alias Thunderline.Thunderlink.Resources.{Community, Channel, Message}
-  alias Thunderline.Thunderlink.{Domain, Topics}
+  # on_mount {ThunderlineWeb.LiveUserAuth, :live_user_required}
+  alias Thunderline.Thundercom.Resources.{Community, Channel, Message}
+  alias Thunderline.Thundercom.Domain
+  alias Thunderline.Thunderlink.Topics
   import Thunderline.Thunderlink.Presence.Enforcer, only: [with_presence: 3, with_presence: 4]
   alias ThunderlineWeb.Presence
   require Logger
@@ -153,6 +155,7 @@ defmodule ThunderlineWeb.ChannelLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <Layouts.app flash={@flash} current_scope={assigns[:current_scope]}>
     <div class="flex h-full w-full bg-slate-950/70 text-slate-100">
       <!-- Channel sidebar (mini) -->
       <div class="w-56 bg-slate-900/80 border-r border-slate-700/40 p-3 flex flex-col">
@@ -259,6 +262,7 @@ defmodule ThunderlineWeb.ChannelLive do
         </div>
       <% end %>
     </div>
+    </Layouts.app>
     """
   end
 
@@ -288,12 +292,15 @@ defmodule ThunderlineWeb.ChannelLive do
     # Actor derived sender; fallback ephemeral if missing (should be denied earlier)
     sender_id = if actor_ctx, do: actor_ctx.actor_id, else: Ash.UUID.generate()
 
-    Message.create(%{
+    Message
+    |> Ash.Changeset.for_create(:create, %{
       content: content,
       channel_id: channel.id,
       community_id: channel.community_id,
-      sender_id: sender_id
+      sender_id: sender_id,
+      message_type: :user
     })
+    |> Ash.create!(domain: Domain, authorize?: false)
   rescue
     e -> Logger.error("Failed to send message: #{inspect(e)}")
   end
