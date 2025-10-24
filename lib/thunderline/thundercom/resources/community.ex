@@ -782,19 +782,27 @@ defmodule Thunderline.Thundercom.Resources.Community do
 
   # ===== PRIVATE FUNCTIONS =====
   defp provision_community_zone(community) do
-    # Create dedicated execution zone for community
-    {:ok, zone} =
-      Thunderblock.Resources.ZoneContainer.create(%{
-        zone_name: "community_#{community.community_slug}",
-        zone_type: :community,
-        cluster_node_id: community.cluster_node_id,
-        capacity_config: community.resource_limits
-      })
+    # Only provision zone if cluster_node_id is set
+    case community.cluster_node_id do
+      nil ->
+        # Skip zone provisioning for communities without cluster assignment
+        :ok
 
-    # Update community with zone reference
-    community
-    |> Ash.Changeset.for_update(:internal_set_zone, %{execution_zone_id: zone.id})
-    |> Ash.update(domain: Thunderline.Thundercom.Domain)
+      cluster_node_id ->
+        # Create dedicated execution zone for community
+        {:ok, zone} =
+          Thunderblock.Resources.ZoneContainer.create(%{
+            zone_name: "community_#{community.community_slug}",
+            zone_type: :specialized,
+            cluster_node_id: cluster_node_id,
+            capacity_config: community.resource_limits
+          })
+
+        # Update community with zone reference
+        community
+        |> Ash.Changeset.for_update(:internal_set_zone, %{execution_zone_id: zone.id})
+        |> Ash.update(domain: Thunderline.Thundercom.Domain)
+    end
   end
 
   defp create_default_channels(_community) do

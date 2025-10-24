@@ -88,21 +88,24 @@ defmodule Thunderline.Thunderflow.Domain do
 
     case broadway_event["pipeline_hint"] do
       "realtime" ->
-        GenStage.call(
-          Thunderline.Thunderflow.Pipelines.RealTimePipeline,
-          {:send_event, broadway_event}
+        Thunderflow.MnesiaProducer.enqueue_event(
+          Thunderflow.RealTimeEvents,
+          broadway_event,
+          pipeline_type: :realtime
         )
 
       "cross_domain" ->
-        GenStage.call(
-          Thunderline.Thunderflow.Pipelines.CrossDomainPipeline,
-          {:send_event, broadway_event}
+        Thunderflow.MnesiaProducer.enqueue_event(
+          Thunderflow.CrossDomainEvents,
+          broadway_event,
+          pipeline_type: :cross_domain
         )
 
       _ ->
-        GenStage.call(
-          Thunderline.Thunderflow.Pipelines.EventPipeline,
-          {:send_event, broadway_event}
+        Thunderflow.MnesiaProducer.enqueue_event(
+          Thunderflow.MnesiaProducer,
+          broadway_event,
+          pipeline_type: :general
         )
     end
   end
