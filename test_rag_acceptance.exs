@@ -29,14 +29,14 @@ IO.puts(String.duplicate("-", 80))
 
 try do
   existing_docs = Ash.read!(Document)
-  test_docs = Enum.filter(existing_docs, fn doc -> 
-    get_in(doc.metadata, ["source"]) == "README.md" 
+  test_docs = Enum.filter(existing_docs, fn doc ->
+    get_in(doc.metadata, ["source"]) == "README.md"
   end)
-  
+
   Enum.each(test_docs, fn doc ->
     Ash.destroy!(doc)
   end)
-  
+
   IO.puts("✓ Cleaned up #{length(test_docs)} existing test documents")
 rescue
   _ -> IO.puts("✓ No existing documents to clean")
@@ -53,10 +53,10 @@ readme = File.read!(readme_path)
 # Split README into chunks (simple paragraph-based splitting)
 chunks = String.split(readme, ~r/\n\n+/, trim: true)
   |> Enum.with_index()
-  |> Enum.map(fn {chunk, idx} -> 
-    {String.trim(chunk), idx} 
+  |> Enum.map(fn {chunk, idx} ->
+    {String.trim(chunk), idx}
   end)
-  |> Enum.reject(fn {chunk, _idx} -> 
+  |> Enum.reject(fn {chunk, _idx} ->
     String.length(chunk) < 50  # Skip very small chunks
   end)
 
@@ -95,8 +95,8 @@ IO.puts(String.duplicate("-", 80))
 
 {time_μs, results} = :timer.tc(fn ->
   Ash.Query.for_read(Document, :semantic_search, %{
-    query: "What domains does Thunderline have?", 
-    limit: 5, 
+    query: "What domains does Thunderline have?",
+    limit: 5,
     threshold: 0.8
   })
   |> Ash.read!()
@@ -126,8 +126,8 @@ IO.puts(String.duplicate("-", 80))
 
 {time_μs, results} = :timer.tc(fn ->
   Ash.Query.for_read(Document, :semantic_search, %{
-    query: "How does the event system work?", 
-    limit: 3, 
+    query: "How does the event system work?",
+    limit: 3,
     threshold: 0.7
   })
   |> Ash.read!()
@@ -156,7 +156,7 @@ IO.puts(String.duplicate("-", 80))
 
 {time_μs, results} = :timer.tc(fn ->
   Ash.Query.for_read(Document, :semantic_search, %{
-    query: "What is Thunderline?", 
+    query: "What is Thunderline?",
     limit: 3
   })
   |> Ash.read!()
@@ -193,18 +193,18 @@ queries = [
 results = Enum.map(queries, fn q ->
   {time_μs, docs} = :timer.tc(fn ->
     Ash.Query.for_read(Document, :semantic_search, %{
-      query: q, 
-      limit: 2, 
+      query: q,
+      limit: 2,
       threshold: 0.6
     })
     |> Ash.read!()
   end)
-  
+
   # Filter to README docs
   docs = Enum.filter(docs, fn doc ->
     get_in(doc.metadata, ["source"]) == "README.md"
   end)
-  
+
   {q, time_μs / 1000, docs}
 end)
 
@@ -213,7 +213,7 @@ IO.puts("✓ SUCCESS: All queries completed")
 Enum.each(results, fn {query, time_ms, docs} ->
   IO.puts("\n  Q: #{query}")
   IO.puts("  Time: #{Float.round(time_ms, 2)}ms | Results: #{length(docs)}")
-  
+
   if length(docs) > 0 do
     preview = hd(docs).content |> String.slice(0..60) |> String.replace("\n", " ")
     IO.puts("  Top: #{preview}...")
