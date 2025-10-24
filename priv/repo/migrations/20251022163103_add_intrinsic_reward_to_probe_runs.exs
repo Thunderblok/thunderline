@@ -12,29 +12,33 @@ defmodule Thunderline.Repo.Migrations.AddIntrinsicRewardToProbeRuns do
       add :intrinsic_reward, :decimal
     end
 
-    drop constraint(:embedding_vectors, "embedding_vectors_knowledge_node_id_fkey")
-
-    alter table(:embedding_vectors) do
-      modify :knowledge_node_id,
-             references(:thunderblock_knowledge_nodes,
-               column: :id,
-               name: "embedding_vectors_knowledge_node_id_fkey",
-               type: :uuid
-             )
-    end
+    # Only modify embedding_vectors if it exists
+    execute("""
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'embedding_vectors') THEN
+        ALTER TABLE embedding_vectors DROP CONSTRAINT IF EXISTS embedding_vectors_knowledge_node_id_fkey;
+        ALTER TABLE embedding_vectors ALTER COLUMN knowledge_node_id TYPE uuid USING knowledge_node_id::uuid;
+        ALTER TABLE embedding_vectors ADD CONSTRAINT embedding_vectors_knowledge_node_id_fkey
+          FOREIGN KEY (knowledge_node_id) REFERENCES thunderblock_knowledge_nodes(id);
+      END IF;
+    END $$;
+    """)
   end
 
   def down do
-    drop constraint(:embedding_vectors, "embedding_vectors_knowledge_node_id_fkey")
-
-    alter table(:embedding_vectors) do
-      modify :knowledge_node_id,
-             references(:thunderblock_knowledge_nodes,
-               column: :id,
-               name: "embedding_vectors_knowledge_node_id_fkey",
-               type: :uuid
-             )
-    end
+    # Only modify embedding_vectors if it exists
+    execute("""
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'embedding_vectors') THEN
+        ALTER TABLE embedding_vectors DROP CONSTRAINT IF EXISTS embedding_vectors_knowledge_node_id_fkey;
+        ALTER TABLE embedding_vectors ALTER COLUMN knowledge_node_id TYPE uuid USING knowledge_node_id::uuid;
+        ALTER TABLE embedding_vectors ADD CONSTRAINT embedding_vectors_knowledge_node_id_fkey
+          FOREIGN KEY (knowledge_node_id) REFERENCES thunderblock_knowledge_nodes(id);
+      END IF;
+    END $$;
+    """)
 
     alter table(:probe_runs) do
       remove :intrinsic_reward

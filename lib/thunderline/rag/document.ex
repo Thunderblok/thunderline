@@ -29,6 +29,7 @@ defmodule Thunderline.RAG.Document do
     extensions: [AshAi]
 
   require Logger
+  require Ash.Query
 
   postgres do
     table "rag_documents"
@@ -115,12 +116,12 @@ defmodule Thunderline.RAG.Document do
             Logger.debug("[RAG.Document] Generated query embedding (#{length(search_vector)} dims)")
 
             # Filter by cosine distance and sort by relevance
+            # Using PostgreSQL's <=> operator for cosine distance
+            # Note: Must explicitly cast array to vector type for PostgreSQL
             query
-            |> Ash.Query.filter(
-              vector_cosine_distance(full_text_vector, ^search_vector) < ^threshold
-            )
+            |> Ash.Query.filter(expr(fragment("(? <=> ?::vector)", full_text_vector, ^search_vector) < ^threshold))
             |> Ash.Query.sort(
-              vector_cosine_distance(full_text_vector, ^search_vector)
+              {calc(fragment("(? <=> ?::vector)", full_text_vector, ^search_vector), type: :float), :asc}
             )
             |> Ash.Query.limit(limit)
 

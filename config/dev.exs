@@ -17,7 +17,8 @@ dev_repo_defaults = [
   socket_options: [:inet],
   connect_timeout: 60_000,
   pool_timeout: 60_000,
-  ownership_timeout: 60_000
+  ownership_timeout: 60_000,
+  types: Thunderline.PostgresTypes
 ]
 
 # Allow DATABASE_URL to fully override discrete settings if provided.

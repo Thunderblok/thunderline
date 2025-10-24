@@ -13,7 +13,7 @@ defmodule Thunderline.Repo do
   # Implement required AshPostgres.Repo callbacks
   @impl true
   def installed_extensions do
-    ["ash-functions", "uuid-ossp", "citext"]
+    ["ash-functions", "uuid-ossp", "citext", "vector"]
   end
 
   @impl true

@@ -26,6 +26,7 @@ defmodule Thunderline.Application do
        ] ++
          cerebros_children() ++
          saga_children() ++
+         rag_children() ++
          [
            Thunderline.Thunderflow.EventBuffer,
            Thunderline.Thunderflow.Blackboard,
@@ -98,6 +99,14 @@ defmodule Thunderline.Application do
         Thunderline.Thunderbolt.Sagas.Registry,
         Thunderline.Thunderbolt.Sagas.Supervisor
       ]
+    else
+      []
+    end
+  end
+
+  defp rag_children do
+    if Feature.enabled?(:rag_enabled, default: true) do
+      [Thunderline.RAG.Serving]
     else
       []
     end
