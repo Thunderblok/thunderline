@@ -45,7 +45,8 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 
 - **Mission**: Execute computational workloads including ThunderCell CA engine, Lane orchestrators, Model of Experts, and Cerebros bridges.
 - **Key services**: `ThunderCell`, `Lane` orchestrators, expert registries, `ErlangBridge` for neuro handoff, `CerebrosBridge` helpers (`RunOptions`, `Summary`).
-- **Primary resources**: `lane_*`, `workflow_dag`, `thundercell_cluster`, `model_run`, `model_artifact`, `ising_*`; helper coverage enforced by `test/thunderline/thunderbolt/cerebros_bridge/run_options_test.exs` and `cerebros/summary_test.exs`.
+- **Primary resources**: `lane_*`, `workflow_dag`, `thundercell_cluster`, `model_run`, `model_artifact`, `ising_*`, `rag_document` (ash_ai + pgvector); helper coverage enforced by `test/thunderline/thunderbolt/cerebros_bridge/run_options_test.exs` and `cerebros/summary_test.exs`.
+- **RAG System**: Native PostgreSQL semantic search via `Document.semantic_search/2` (~7-10ms queries). Feature flag `:rag_enabled` (dev default). See `RAG_REFACTOR_HANDOFF.md` for complete API documentation.
 - **Event responsibilities**: `ml.run.*`, `ai.tool_*`, `dag.commit`, `cmd.workflow.*`; cross-domain dispatch to Flow pipelines.
 - **Roadmap**: Phase B policy/ orchestration unification; NAS integration phases (Section 10 in [`architecture/market_moe_pipeline.md`](Thunderline/documentation/architecture/market_moe_pipeline.md)). Flower federation now runs exclusively through the Keras backend wiring (`python/cerebros/keras/flower_app.py`) so PyTorch dependencies can be dropped from NAS control plane images.
 - **Feature flags**: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active` gating advanced features.

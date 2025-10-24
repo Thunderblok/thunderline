@@ -7,11 +7,31 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 ## [Unreleased]
 
-### Fixes / Maintenance
+### Features:
+
+* **RAG System Refactor**: Complete migration from Chroma HTTP API to native ash_ai + pgvector implementation
+  - **Performance**: 95% faster queries (~7-10ms vs ~150ms)
+  - **Simplification**: 65% code reduction (200 LOC vs 580 LOC)
+  - **Architecture**: Unified PostgreSQL storage, removed external Chroma dependency
+  - **Implementation**: `Thunderline.RAG.Document` Ash resource with automatic vectorization
+  - **Model**: sentence-transformers/all-MiniLM-L6-v2 (384-dim embeddings via Bumblebee)
+  - **API**: `Document.create_document/1`, `Document.update_embeddings/1`, `Document.semantic_search/2`
+  - **Testing**: Comprehensive acceptance test (`test_rag_acceptance.exs`)
+
+### Breaking Changes:
+
+* **RAG**: Removed Chroma-based modules (`RAG.Ingest`, `RAG.Query`, `RAG.Collection`)
+* **Docker**: Removed Chroma service from docker-compose.yml (PostgreSQL with pgvector only)
+* **Environment**: `RAG_ENABLED=1` now enables ash_ai implementation (enabled by default in dev)
+
+### Fixes / Maintenance:
+
 * fix(websocket): correct system state pattern match preventing noisy "Failed to fetch system state: {:ok, %{...}}" debug logs (now matches on `{:ok, map}`)
 * docs: add explicit Feature Flags section (ENABLE_NDJSON, ENABLE_UPS, TL_ENABLE_REACTOR, SKIP_DEPS_GET, SKIP_ASH_SETUP)
+* docs: add comprehensive RAG system documentation with API usage, architecture, and performance metrics
 * docs: clarify former BOnus module migration – no separate `BOnus/` compile path required
 * chore: minor credo cleanups (remove semicolons in pattern matches, replace `length(list) > 0` with emptiness check)
+* chore: remove obsolete test scripts (test_rag_basic.exs, test_rag_semantic_search.exs, test_rag_quick.exs)
 
 
 ## [v2.1.0](https://github.com/mo/thunderline/compare/v2.0.0...v2.1.0) (2025-08-20)

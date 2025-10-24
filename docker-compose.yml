@@ -18,23 +18,6 @@ services:
       retries: 30
       start_period: 5s
   
-  chroma:
-    image: chromadb/chroma:0.4.24  # Pin to stable version
-    container_name: thunderline_chroma
-    restart: unless-stopped
-    environment:
-      ALLOW_RESET: "true"  # Dev only - allows collection resets
-    ports:
-      - "8000:8000"
-    volumes:
-      - chroma_data:/chroma/chroma
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-  
   thunderline:
     build: .
     depends_on:
@@ -50,8 +33,6 @@ services:
       GATE_SELFTEST_DISABLED: "1"
       # MLflow tracking (service below)
       MLFLOW_TRACKING_URI: http://mlflow:5000
-      # Chroma vector store for RAG
-      CHROMA_URL: http://chroma:8000
     ports:
       - "4000:4000"
     volumes:
@@ -75,6 +56,5 @@ services:
       - "5000:5000"
 volumes:
   postgres_data:
-  chroma_data:
   mlflow_data:
   mlartifacts:

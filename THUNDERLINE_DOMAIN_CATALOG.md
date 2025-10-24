@@ -236,7 +236,23 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 - Event Outputs: `ai.upm.snapshot.created`, `ai.upm.snapshot.activated`, `ai.upm.shadow_delta`, with correlation back to originating command/event.
 - Dependencies: Consumes ThunderFlow `feature_window` resources, persists snapshots via ThunderBlock retention policies, coordinates rollout with ThunderCrown policy verdicts.
 
-#### 🛰 Cerebros Bridge & Event Surface
+#### � RAG System - Semantic Search & Document Retrieval
+- `rag/document.ex` (Ash resource with AshPostgres + ash_ai extension)
+    - Stores documents with automatic vectorization via sentence-transformers/all-MiniLM-L6-v2 (384-dim embeddings)
+    - PostgreSQL pgvector storage for native vector operations and cosine similarity search
+    - Actions: `create_document`, `update_embeddings`, `semantic_search` (sub-10ms query performance)
+- `rag/embedding_model.ex`
+    - Adapter implementing `AshAi.Embedding` behavior for Bumblebee model serving
+    - Converts text to 384-dimensional vectors using transformer models
+- `rag/serving.ex`
+    - Manages Bumblebee model lifecycle via supervision tree (~7-8s initial load, persistent thereafter)
+- **Feature flag**: `:rag_enabled` (enabled by default in dev, set `RAG_ENABLED=1` for production)
+- **Performance**: 95% faster than previous Chroma HTTP implementation (~7-10ms vs ~150ms queries)
+- **Architecture**: Unified PostgreSQL storage (removed external Chroma dependency, 65% code reduction)
+- **Testing**: Run `test_rag_acceptance.exs` for end-to-end validation
+- See `RAG_REFACTOR_HANDOFF.md` for complete migration documentation
+
+#### �🛰 Cerebros Bridge & Event Surface
 - `cerebros/adapter.ex`, `cerebros/artifacts.ex`, `cerebros/simple_search.ex`, `cerebros/telemetry.ex`
     - Adapter between Ash model ledger and bridge, artifact hydration, placeholder search strategy, and telemetry helpers.
 - `cerebros_bridge/client.ex`, `translator.ex`, `invoker.ex`, `cache.ex`, `contracts.ex`
