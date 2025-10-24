@@ -18,25 +18,25 @@ alias Thunderline.Thundergate.Domain, as: ThundergateDomain
 try do
   # Step 1: Create a test user (directly via repo since User doesn't have create action)
   IO.puts("\nStep 1: Creating test user...")
-  
+
   # Insert directly via Ecto since AshAuthentication manages user creation
   unique_id = System.system_time(:millisecond)
   test_email = "testuser-#{unique_id}@thunderline.local"
-  
+
   %{rows: [[user_id]]} = Ecto.Adapters.SQL.query!(Thunderline.Repo, """
-    INSERT INTO users (id, email, hashed_password, inserted_at, updated_at) 
-    VALUES (gen_random_uuid(), $1, $2, NOW(), NOW()) 
+    INSERT INTO users (id, email, hashed_password, inserted_at, updated_at)
+    VALUES (gen_random_uuid(), $1, $2, NOW(), NOW())
     RETURNING id
   """, [test_email, "$2b$12$dummyhashfortesting"])
-  
+
   # Create a simple struct for compatibility
   user = %{id: user_id, email: test_email}
-  
+
   IO.puts("  ✓ Created user: #{user.email} (ID: #{user.id})")
 
   # Step 2: Create a test community
   IO.puts("\nStep 2: Creating test community...")
-  
+
   community = Community
   |> Ash.Changeset.for_create(:create, %{
     community_name: "Test Community",
@@ -47,13 +47,13 @@ try do
     created_by: user.id
   })
   |> Ash.create!(domain: ThundercomDomain, authorize?: false, load: [])
-  
+
   IO.puts("  ✓ Created community: #{community.community_name} (ID: #{community.id})")
   IO.puts("  ✓ Community slug: #{community.community_slug}")
 
   # Step 3: Create test channels
   IO.puts("\nStep 3: Creating test channels...")
-  
+
   general_channel = Channel
   |> Ash.Changeset.for_create(:create, %{
     channel_name: "general",
@@ -66,9 +66,9 @@ try do
     topic: "General discussion for the test community"
   })
   |> Ash.create!(domain: ThundercomDomain, authorize?: false, load: [])
-  
+
   IO.puts("  ✓ Created channel: ##{general_channel.channel_name} (ID: #{general_channel.id})")
-  
+
   random_channel = Channel
   |> Ash.Changeset.for_create(:create, %{
     channel_name: "random",
@@ -81,19 +81,19 @@ try do
     topic: "Random chat and off-topic discussions"
   })
   |> Ash.create!(domain: ThundercomDomain, authorize?: false, load: [])
-  
+
   IO.puts("  ✓ Created channel: ##{random_channel.channel_name} (ID: #{random_channel.id})")
 
   # Step 4: Create some test messages
   IO.puts("\nStep 4: Creating test messages...")
-  
+
   messages = [
     "Welcome to the test community! 👋",
     "This is a test message to verify the chat functionality.",
     "You can now test real-time messaging in the dashboard!",
     "Try sending your own messages through the web interface."
   ]
-  
+
   for {content, index} <- Enum.with_index(messages, 1) do
     message = Message
     |> Ash.Changeset.for_create(:create, %{
@@ -103,7 +103,7 @@ try do
       message_type: :user
     })
     |> Ash.create!(domain: ThundercomDomain, authorize?: false, load: [])
-    
+
     IO.puts("  ✓ Created message #{index}: #{String.slice(content, 0, 30)}...")
   end
 
