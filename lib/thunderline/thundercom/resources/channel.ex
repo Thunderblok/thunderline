@@ -234,7 +234,7 @@ defmodule Thunderline.Thundercom.Resources.Channel do
             last_message_at: DateTime.utc_now(),
             channel_metrics: updated_metrics
           })
-          |> Thunderblock.Domain.update!()
+          |> Ash.update!()
 
         # Create message record
         create_channel_message(updated_channel, input.arguments)
@@ -726,8 +726,17 @@ defmodule Thunderline.Thundercom.Resources.Channel do
 
   defp create_channel_message(channel, message_args) do
     # Create message record in the messages table
-    # This would interface with the Message resource
-    :ok
+    alias Thunderline.Thundercom.Resources.Message
+
+    Message
+    |> Ash.Changeset.for_create(:create, %{
+      content: message_args.message_content,
+      sender_id: message_args.sender_id,
+      message_type: message_args.message_type || :text,
+      channel_id: channel.id,
+      community_id: channel.community_id
+    })
+    |> Ash.create!()
   end
 
   defp broadcast_channel_message(channel, message_args) do
