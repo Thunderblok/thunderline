@@ -120,7 +120,7 @@ defmodule Thunderline.RAG.Document do
               vector_cosine_distance(full_text_vector, ^search_vector) < ^threshold
             )
             |> Ash.Query.sort(
-              [{:vector_cosine_distance, [:full_text_vector, search_vector], :asc}]
+              vector_cosine_distance(full_text_vector, ^search_vector)
             )
             |> Ash.Query.limit(limit)
 
