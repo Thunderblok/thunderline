@@ -453,6 +453,19 @@ Thunderline embodies a commitment to architectural excellence through:
 
 Thunderline development follows rigorous engineering standards with comprehensive testing, documentation-driven development, and systematic code review processes. The system maintains living documentation through the OKO Handbook, ensuring continuous knowledge preservation and team alignment.
 
+### Strategic Planning
+
+**Mission & Roadmap**:
+- **[OPERATION_SAGA_CONCORDIA.md](OPERATION_SAGA_CONCORDIA.md)** - Current mission: Harmonize orchestration layers (Oct 27 - Nov 7, 2025) ⚡
+- **[IMMEDIATE_ACTION_PLAN.md](documentation/planning/IMMEDIATE_ACTION_PLAN.md)** - Week 1 recovery plan (48-hour critical path)
+- **[THUNDERLINE_REBUILD_INITIATIVE.md](documentation/planning/THUNDERLINE_REBUILD_INITIATIVE.md)** - Master plan (10 High Command missions) ⭐
+- **[Q4_2025_PAC_Distributed_Agent_Network_STATUS.md](documentation/planning/Q4_2025_PAC_Distributed_Agent_Network_STATUS.md)** - PAC technical roadmap (8 pillars)
+
+**Developer Resources**:
+- **[DEVELOPER_QUICK_REFERENCE.md](documentation/planning/DEVELOPER_QUICK_REFERENCE.md)** - Dev cheat sheet (Mix tasks, Ash patterns, pitfalls)
+- **[PR_REVIEW_CHECKLIST.md](documentation/planning/PR_REVIEW_CHECKLIST.md)** - 12-section quality gate (now enforced via PR template)
+- **[QUICKSTART.md](documentation/planning/QUICKSTART.md)** - Quick start guide
+
 ### Documentation
 
 **Core Documentation**:
