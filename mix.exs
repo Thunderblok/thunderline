@@ -84,7 +84,7 @@ defmodule Thunderline.MixProject do
       {:venomous, "~> 0.7"},
       {:swoosh, "~> 1.16"},
       # Ash Framework
-      {:ash, "~> 3.0"},
+      {:ash, "~> 3.7"},
       {:ash_phoenix, "~> 2.0"},
       {:ash_cloak, "~> 0.1.6"},
       {:ash_postgres, "~> 2.0"},
