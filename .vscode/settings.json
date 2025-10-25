@@ -6,17 +6,24 @@
       "path": "/bin/bash",
       "args": ["-l"],
       "icon": "terminal-bash"
-    },
-   
-    },
-    "cSpell.words": [
-      "inotify",
-      "Mnesia",
-      "Oban",
-      "Thunderblocks",
-      "Thunderline",
-      "topdown",
-      "webrtc"
-    ]
+    }
+  },
+  "cSpell.words": [
+    "inotify",
+    "Mnesia",
+    "Oban",
+    "Thunderblocks",
+    "Thunderline",
+    "topdown",
+    "webrtc"
+  ],
+  // Tidewave MCP Server Configuration
+  "mcpServers": {
+    "tidewave": {
+      "command": "mix",
+      "args": ["tidewave"],
+      "cwd": "${workspaceFolder}"
+    }
   }
+}
 

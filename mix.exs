@@ -222,7 +222,10 @@ defmodule Thunderline.MixProject do
       # WARHORSE lint bundle (Phase1 advisory)
       lint: ["format --check-formatted", "credo --strict"],
       precommit: ["lint", "thunderline.events.lint", "test"],
-      test: ["ash.setup --quiet", "test"]
+      test: ["ash.setup --quiet", "test"],
+      # Tidewave MCP server for debugging
+      tidewave:
+        "run --no-halt -e 'Agent.start(fn -> Bandit.start_link(plug: Tidewave, port: 4000) end)'"
     ]
   end
 
