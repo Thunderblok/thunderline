@@ -50,10 +50,10 @@ created_channels = Enum.map(channels, fn channel_data ->
     created_by: user.id
   })
   |> Ash.create!(authorize?: false)
-  
+
   IO.puts("✓ Created channel: ##{channel_data.slug}")
   IO.puts("  URL: http://localhost:4000/c/demo/#{channel_data.slug}")
-  
+
   channel
 end)
 

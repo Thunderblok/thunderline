@@ -17,14 +17,19 @@ defmodule Thunderline.MixProject do
       aliases: aliases(),
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
+      consolidate_protocols: Mix.env() != :dev,
+      dialyzer: dialyzer()
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
         coveralls: :test,
         "coveralls.html": :test,
         "coveralls.json": :test,
         "coveralls.github": :test
-      ],
-      consolidate_protocols: Mix.env() != :dev,
-      dialyzer: dialyzer()
+      ]
     ]
   end
 
@@ -66,6 +71,7 @@ defmodule Thunderline.MixProject do
       {:telemetry_metrics, "~> 1.1"},
       {:telemetry_poller, "~> 1.0"},
       # OpenTelemetry (align versions to avoid conflicts)
+      {:opentelemetry_api, "~> 1.5", override: true},
       {:opentelemetry, "~> 1.4"},
       {:opentelemetry_exporter, "~> 1.8"},
       {:opentelemetry_phoenix, "~> 1.2"},

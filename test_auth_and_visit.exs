@@ -29,7 +29,7 @@ case AshAuthentication.Jwt.token_for_user(user) do
     IO.puts("4. Then visit: http://localhost:4000/c/demo")
     IO.puts("\n=== Or test with curl ===")
     IO.puts("   curl -i -H 'Authorization: Bearer #{token}' http://localhost:4000/c/demo\n")
-  
+
   {:error, reason} ->
     IO.puts("\n✗ Failed to generate token: #{inspect(reason)}")
     IO.puts("\nMake sure tokens are enabled in User resource authentication config.")

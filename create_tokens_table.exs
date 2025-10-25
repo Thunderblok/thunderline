@@ -21,7 +21,7 @@ IO.puts("\n🔧 Creating tokens table...")
 case Repo.query(create_tokens_sql, []) do
   {:ok, _result} ->
     IO.puts("✅ SUCCESS: tokens table created\n")
-    
+
     # Verify table exists by querying its structure
     case Repo.query("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'tokens' ORDER BY ordinal_position", []) do
       {:ok, %{rows: columns}} ->
@@ -33,7 +33,7 @@ case Repo.query(create_tokens_sql, []) do
       {:error, error} ->
         IO.puts("⚠️  Could not verify table structure: #{inspect(error)}\n")
     end
-    
+
   {:error, error} ->
     IO.puts("❌ ERROR: #{inspect(error)}\n")
     System.halt(1)
