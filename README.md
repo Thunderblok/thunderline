@@ -453,6 +453,16 @@ Thunderline embodies a commitment to architectural excellence through:
 
 Thunderline development follows rigorous engineering standards with comprehensive testing, documentation-driven development, and systematic code review processes. The system maintains living documentation through the OKO Handbook, ensuring continuous knowledge preservation and team alignment.
 
+### Documentation
+
+**Core Documentation**:
+- **[THUNDERLINE_DOMAIN_CATALOG.md](THUNDERLINE_DOMAIN_CATALOG.md)** - Authoritative domain and resource inventory
+- **[HOW_TO_AUDIT.md](HOW_TO_AUDIT.md)** - Systematic codebase audit methodology ⭐ **READ THIS BEFORE AUDITING**
+- **[CODEBASE_AUDIT_2025.md](CODEBASE_AUDIT_2025.md)** - Latest audit findings and verification
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development workflow and guidelines
+
+**⚠️ Important**: Always use the file-by-file audit methodology in `HOW_TO_AUDIT.md` for any architectural assessment. GitHub search alone cannot determine production status or resource counts.
+
 ### Automated Maintenance & Release Workflow
 
 To keep the platform secure and current while minimizing manual toil, Thunderline uses:

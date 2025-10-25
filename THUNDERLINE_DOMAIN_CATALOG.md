@@ -2,10 +2,13 @@
 
 > **SYSTEMS THEORY AUGMENT (2025)** – Domain ecology & governance layers integrated. See added sections: Interaction Matrix, Event Taxonomy, Anti-Corruption, Stewardship.
 
-> **UNIFIED ARCHITECTURE** - Last Updated: October 3 2025  
-> **Status**: 🔥 **7-DOMAIN ARCHITECTURE OPERATIONAL (Auth + Realtime Chat Baseline Added)**  
+> **UNIFIED ARCHITECTURE** - Last Updated: October 25 2025 (Post-Audit)  
+> **Status**: 🔥 **7-DOMAIN ARCHITECTURE OPERATIONAL + 4 UTILITY DOMAINS DOCUMENTED**  
 > **Compilation**: ✅ **CLEAN BUILD SUCCESSFUL**  
 > **Purpose**: Complete catalog of consolidated domain architecture with all resources
+> 
+> **📋 Audit Status**: Updated from `CODEBASE_AUDIT_2025.md` (October 2025)  
+> Resource counts verified file-by-file. Ghost domains documented. Production status clarified.
 
 ---
 
@@ -125,7 +128,7 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 **Purpose**: Core infrastructure, distributed systems, and unified memory management  
 **Integration**: Consolidates all infrastructure and vault resources into single domain
 
-#### **Infrastructure Resources** (12 resources)
+#### **Infrastructure Resources** (18 resources)
 - **cluster_node.ex** - Distributed cluster node management and coordination
 - **community.ex** - Community infrastructure and organization management
 - **distributed_state.ex** - Cross-node state synchronization and consistency
@@ -183,14 +186,24 @@ After the **Great Domain Consolidation of December 2024**, Thunderline now opera
 - ThunderLink TOCP transport → Block buffers telemetry queue for devices
 - Retention policies apply to voxel snapshots, device logs, and telemetry buffers
 
-**Total**: **23 Resources** - Complete infrastructure and memory foundation
+**Total**: **29 Resources** - Complete infrastructure and memory foundation
 
 ---
 
 ### ⚡ **ThunderBolt** – Orchestration, Optimization & ML Control Plane
 **Path**: `lib/thunderline/thunderbolt/`  
+**Status**: ✅ **PRODUCTION** (NOT EXPERIMENTAL)  
+**Resources**: 34 (LARGEST domain in system)  
 **Purpose**: Coordinate computational lanes, numerical solvers, and ML experimentation while enforcing domain boundaries.  
 **Integration**: Hosts core workflow DAGs, lane automation, Ising/VIM numerics, and the full Cerebros NAS bridge + model ledger.
+
+### ⚠️ CRITICAL: DO NOT ARCHIVE
+This domain contains **production saga infrastructure** that is:
+- ✅ **Battle-tested**: CerebrosNASSaga runs ML pipelines (247 lines, 9 steps)
+- ✅ **Cross-domain**: UserProvisioningSaga orchestrates Gate→Block→Link
+- ✅ **Foundation**: Base pattern for PAC provisioning workflows
+- ✅ **Complete**: Full telemetry, compensation, and event integration
+- ✅ **Active**: Saga system drives ML model lifecycle and user onboarding
 
 #### 🔁 Core Orchestration Resources
 - `core_agent.ex`, `core_workflow_dag.ex`, `core_task_node.ex`, `core_system_policy.ex`, `core_timing_event.ex`
@@ -307,7 +320,15 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - ThunderCrown policies gate zone activations → Bolt enforces via feature flag checks (`:unified_model`, `:ml_nas`)
 - ThunderLink TOCP transport → Bolt coordinates device-to-cloud failover messaging
 
-**Total**: **30 resources + supporting modules** (Ash resources under `resources/` and ML registry modules under `ml/`) – the command center for orchestration, numerics, and Cerebros-driven model experimentation.
+**Total**: **34 resources + supporting modules** (Ash resources under `resources/` and ML registry modules under `ml/`) – the command center for orchestration, numerics, and Cerebros-driven model experimentation.
+
+**Saga Infrastructure (PRODUCTION)**:
+- **`sagas/base.ex`** - Telemetry/compensation framework (142 lines)
+- **`sagas/cerebros_nas_saga.ex`** - ML workflow orchestration (247 lines, 9 steps)
+- **`sagas/user_provisioning_saga.ex`** - Cross-domain onboarding (158 lines, 7 steps)  
+- **`sagas/upm_activation_saga.ex`** - Model activation workflow
+- **`sagas/registry.ex`** - Process tracking and supervision
+- **`sagas/supervisor.ex`** - Fault-tolerant supervision tree
 
 ---
 
@@ -316,7 +337,7 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 **Purpose**: AI policy management, MCP integration, and high-level workflow orchestration  
 **Integration**: Central AI governance and policy coordination
 
-#### **AI Governance Resources** (4 resources)
+#### **AI Governance Resources** (7 resources)
 - **ai_policy.ex** - AI behavior policies, safety rules, and governance frameworks
 - **mcp_bus.ex** - Model Context Protocol bus for AI tool coordination
 - **orchestration_ui.ex** - User interface for system orchestration and control
@@ -352,7 +373,7 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - ThunderLink TOCP transport → Crown pushes policy updates to connected devices
 - ThunderFlow emits `crown.policy.evaluated` events → Crown tracks policy decision metrics
 
-**Total**: **4 Resources** - AI governance and orchestration control center
+**Total**: **7 Resources** - AI governance and orchestration control center
 
 ---
 
@@ -361,7 +382,7 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 **Purpose**: Event streaming, real-time processing, and comprehensive system monitoring  
 **Integration**: Broadway pipelines, monitoring, and event coordination
 
-#### **Core Resources** (14 resources)
+#### **Core Resources** (7 resources)
 - **consciousness_flow.ex** - Consciousness state flows and awareness processing
 - **event_stream.ex** - Core event streaming infrastructure with Broadway integration
 - **telemetry_seeder.ex** - Telemetry data seeding and initialization
@@ -380,7 +401,7 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - **Cross-Domain Events**: Structured inter-domain communication
 - **Real-Time Monitoring**: Comprehensive system observability
 
-**Total**: **14 Resources** - Complete event processing and monitoring platform
+**Total**: **7 Resources** - Complete event processing and monitoring platform
 
 ---
 
@@ -486,7 +507,7 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 **Purpose**: Communication channels, social systems, community management & authenticated real-time UX  
 **Integration**: Real-time communication and social coordination (Discord-style navigation established Aug 2025)
 
-#### **Communication Resources** (9 resources)
+#### **Communication Resources** (6 resources)
 - **channel.ex** - Communication channels with real-time messaging capabilities
 - **community.ex** - Community organization, governance, and management
 - **federation_socket.ex** - WebSocket connections for federated real-time communication
@@ -546,21 +567,119 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 - See `documentation/tocp/TOCP_DECISIONS.md` for architecture decisions
 - Security: Control frame signing planned, replay window (30s), admission tokens required
 
-**Total**: **9 Resources** - Complete communication and social platform
+**Total**: **6 Resources** - Complete communication and social platform
 
 ---
 
-## 📊 **SYSTEM STATISTICS & HEALTH**
+## �️ **UTILITY DOMAINS** - Supporting Infrastructure
+
+### 🎯 **ThunderChief** - Job Orchestration
+
+**Path**: `lib/thunderline/thunderchief/`  
+**Purpose**: Job orchestration and domain processing infrastructure  
+**Status**: ✅ ACTIVE (Utility Domain)  
+**Resources**: 0 (no Ash resources)  
+**Implementation**: 4 .ex files
+
+#### **Core Components**
+- **`orchestrator.ex`** - Main orchestration engine for job coordination
+- **`jobs/demo_job.ex`** - Example job definition template  
+- **`jobs/domain_processor.ex`** - Domain-level processing job logic
+- **`workers/demo_job.ex`** - Job worker implementation for execution
+
+#### **Purpose & Integration**
+Provides job orchestration layer for domain-level processing tasks. Coordinates multi-step workflows without requiring full saga infrastructure for simpler use cases. Used by ThunderFlow for event-driven job dispatch and batch processing operations.
+
+**Integration Points**:
+- ThunderFlow → Event-driven job triggers
+- ThunderBolt → Saga-free orchestration for lightweight workflows
+- Oban → Job queue management and scheduling
+
+---
+
+### 🏭 **ThunderForge** - Blueprint Factory
+
+**Path**: `lib/thunderline/thunderforge/`  
+**Purpose**: Blueprint/codegen infrastructure for domain creation and scaffolding  
+**Status**: ✅ ACTIVE (Utility Domain)  
+**Resources**: 0 (no Ash resources)  
+**Implementation**: 3 .ex files
+
+#### **Core Components**
+- **`blueprint.ex`** - Blueprint definition and schema specification
+- **`factory_run.ex`** - Factory execution engine and build orchestration
+- **`domain.ex`** - Domain configuration, metadata, and registry
+
+#### **Purpose & Integration**
+Generates code and configuration for new domains following established architectural patterns. Provides blueprint system for consistent domain creation, extension, and maintenance. Ensures all new domains follow Thunderline conventions and integration patterns.
+
+**Integration Points**:
+- Development tooling → Domain scaffolding and code generation
+- ThunderBlock → Domain metadata persistence
+- Mix tasks → Blueprint-driven project generation
+
+---
+
+### 🌿 **ThunderVine** - Workflow Compaction
+
+**Path**: `lib/thunderline/thundervine/`  
+**Purpose**: Workflow compaction and specification parsing for event processing optimization  
+**Status**: ✅ ACTIVE (Utility Domain)  
+**Resources**: 0 (no Ash resources)  
+**Implementation**: 4 .ex files
+
+#### **Core Components**
+- **`events.ex`** - Event handling and emission coordination
+- **`spec_parser.ex`** - Workflow specification parser and validator
+- **`workflow_compactor.ex`** - Compaction logic and workflow optimization
+- **`workflow_compactor_worker.ex`** - Background compaction worker process
+
+#### **Purpose & Integration**
+Compacts and optimizes event workflows by analyzing patterns and reducing redundant operations. Parses workflow specifications to enable efficient event processing and routing. Reduces event chatter and improves system throughput through intelligent workflow analysis.
+
+**Integration Points**:
+- ThunderFlow EventBus → Workflow pattern analysis and optimization
+- ThunderBolt → Saga workflow optimization and reduction
+- Oban → Background compaction job processing
+
+---
+
+### 👁️ **ThunderWatch** - System Monitoring
+
+**Path**: `lib/thunderline/thunderwatch/`  
+**Purpose**: System monitoring and observability infrastructure coordination  
+**Status**: ✅ ACTIVE (Utility Domain)  
+**Resources**: 0 (no Ash resources)  
+**Implementation**: 1 .ex file
+
+#### **Core Components**
+- **`manager.ex`** - Monitoring manager and coordinator for system-wide observability
+
+#### **Purpose & Integration**
+Provides centralized monitoring management for system-wide observability. Coordinates telemetry collection, health checks, and monitoring dashboards across all domains. Integrates with Telemetry and Logger for unified system monitoring.
+
+**Integration Points**:
+- All domains → Telemetry event aggregation
+- ThunderFlow → Monitoring event routing and persistence
+- Phoenix LiveDashboard → Real-time metrics visualization
+
+---
+
+## �📊 **SYSTEM STATISTICS & HEALTH**
 
 ### **Domain Completion Status**
 ```
-✅ ThunderBlock  - 23 resources (100% operational)
-✅ ThunderBolt   - 34 resources (100% operational) 
-✅ ThunderCrown  - 4 resources  (100% operational)
-✅ ThunderFlow   - 14 resources (100% operational)
+✅ ThunderBlock  - 29 resources (100% operational)
+✅ ThunderBolt   - 34 resources (100% operational - PRODUCTION saga infrastructure) 
+✅ ThunderCrown  - 7 resources  (100% operational)
+✅ ThunderFlow   - 7 resources (100% operational)
 ✅ ThunderGate   - 18 resources (100% operational, includes ThunderEye & ThunderGuard consolidation)
 ✅ ThunderGrid   - 8 resources  (100% operational)
-✅ ThunderLink   - 9 resources  (100% operational)
+✅ ThunderLink   - 6 resources  (100% operational)
+🛠️ ThunderChief  - 0 resources (utility domain - orchestration, 4 .ex files)
+🛠️ ThunderForge  - 0 resources (utility domain - blueprint factory, 3 .ex files)
+🛠️ ThunderVine   - 0 resources (utility domain - workflow compaction, 4 .ex files)
+🛠️ ThunderWatch  - 0 resources (utility domain - monitoring, 1 .ex file)
 🛰️ Thunderlink Transport (formerly TOCP) — FEATURE GATED (scaffold only). Not part of the original 7; emerging transport layer for membership, routing, reliability & store/forward. Code has been consolidated under `Thunderline.Thunderlink.Transport.*` (TOCP modules remain as shims). Feature flag `:tocp` still controls activation. Zero‑logic scaffold merged Aug 2025 (Orders Θ‑01).
     - Supervisor: `Thunderline.Thunderlink.Transport.Supervisor` (feature‑gated)
     - Core behaviours & components: `Admission`, `Config`, `FlowControl`, `Fragments`, `Membership`, `Reliability`, `Router`, `Routing.*`, `Security.*`, `Store`, `Telemetry.*`, `Wire` — under `Thunderline.Thunderlink.Transport.*`
@@ -573,8 +692,9 @@ The task returns exit code 1 when any check errors, ensuring CI/CD or ops script
 ```
 
 ### **Architecture Metrics**
-- **Total Domains**: 7 (down from 21+ - 67% reduction in complexity)
-- **Total Resources**: 110 operational resources
+- **Total Domains**: 7 operational + 4 utility (11 total, down from 21+ - 48% reduction)
+- **Total Resources**: 116 Ash resources across operational domains
+- **Utility Domains**: 4 domains without resources (Chief, Forge, Vine, Watch - 12 .ex files)
 - **Domain Consolidation**: Successfully merged ThunderEye and ThunderGuard into ThunderGate
 - **Security Consolidation**: All security, monitoring, and access control unified under ThunderGate
 - **Code Cleanup**: Eliminated redundant domain references and legacy code
