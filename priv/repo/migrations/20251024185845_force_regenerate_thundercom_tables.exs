@@ -8,7 +8,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
   use Ecto.Migration
 
   def up do
-    create table(:decision_traces, primary_key: false) do
+    create_if_not_exists table(:decision_traces, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :feature_window_id, :uuid, null: false
@@ -31,7 +31,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_rule_oracles, primary_key: false) do
+    create_if_not_exists table(:thunderlane_rule_oracles, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :implementation, :text, null: false
@@ -61,7 +61,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :state, :text, null: false, default: "initializing"
     end
 
-    create table(:performance_traces, primary_key: false) do
+    create_if_not_exists table(:performance_traces, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :trace_id, :text, null: false
       add :span_name, :text, null: false
@@ -86,7 +86,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "performance_traces_unique_span_index"
            )
 
-    create table(:voice_rooms, primary_key: false) do
+    create_if_not_exists table(:voice_rooms, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :title, :text, null: false
       add :community_id, :uuid
@@ -104,7 +104,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thundereye_system_actions, primary_key: false) do
+    create_if_not_exists table(:thundereye_system_actions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :action_name, :text, null: false
       add :domain, :text, null: false
@@ -135,7 +135,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "system_actions_domain_status_idx"
            )
 
-    create table(:tokens, primary_key: false) do
+    create_if_not_exists table(:tokens, primary_key: false) do
       add :jti, :text, null: false, primary_key: true
       add :subject, :text, null: false
       add :expires_at, :utc_datetime, null: false
@@ -151,7 +151,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thundermag_task_executions, primary_key: false) do
+    create_if_not_exists table(:thundermag_task_executions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :execution_id, :uuid, null: false
       add :macro_command_id, :uuid, null: false
@@ -176,7 +176,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:system_metrics, primary_key: false) do
+    create_if_not_exists table(:system_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :domain, :text, null: false
       add :metric_name, :text, null: false
@@ -194,7 +194,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "system_metrics_unique_metric_point_index"
            )
 
-    create table(:ml_consent_records, primary_key: false) do
+    create_if_not_exists table(:ml_consent_records, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :user_id, :uuid, null: false
       add :tenant_id, :text, null: false
@@ -216,7 +216,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "ml_consent_records_unique_consent_index"
            )
 
-    create table(:ml_training_runs, primary_key: false) do
+    create_if_not_exists table(:ml_training_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :run_id, :text, null: false
       add :tenant_id, :text, null: false
@@ -238,7 +238,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:messages, primary_key: false) do
+    create_if_not_exists table(:messages, primary_key: false) do
       add :inserted_at, :utc_datetime_usec,
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
@@ -257,7 +257,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :response_to_id, :uuid
     end
 
-    create table(:thunderblock_cache_entries, primary_key: false) do
+    create_if_not_exists table(:thunderblock_cache_entries, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :cache_key, :text, null: false
       add :cache_value, :map, null: false, default: %{}
@@ -290,7 +290,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_cache_entries_unique_cache_key_index"
            )
 
-    create table(:experiences, primary_key: false) do
+    create_if_not_exists table(:experiences, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
       add :experience_type, :text, null: false
       add :situation_context, :text, null: false
@@ -319,7 +319,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :action_id, :uuid
     end
 
-    create table(:thundercore_agents, primary_key: false) do
+    create_if_not_exists table(:thundercore_agents, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :agent_name, :text, null: false
       add :agent_type, :text, null: false
@@ -341,7 +341,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thundercore_agents_unique_agent_name_index"
            )
 
-    create table(:dag_edges, primary_key: false) do
+    create_if_not_exists table(:dag_edges, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_id, :uuid, null: false
       add :from_node_id, :uuid, null: false
@@ -353,7 +353,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:probe_runs, primary_key: false) do
+    create_if_not_exists table(:probe_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :provider, :text, null: false
       add :model, :text
@@ -387,7 +387,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:probe_runs, [:status])
 
-    create table(:upm_snapshots, primary_key: false) do
+    create_if_not_exists table(:upm_snapshots, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :version, :text, null: false
       add :tenant_id, :uuid
@@ -410,7 +410,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :trainer_id, :uuid, null: false
     end
 
-    create table(:thunderblock_messages, primary_key: false) do
+    create_if_not_exists table(:thunderblock_messages, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :content, :text, null: false
       add :message_type, :text, null: false, default: "text"
@@ -506,7 +506,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "messages_channel_time_idx"
            )
 
-    create table(:thunderblock_pac_homes, primary_key: false) do
+    create_if_not_exists table(:thunderblock_pac_homes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :home_name, :text, null: false
       add :home_slug, :text, null: false
@@ -576,7 +576,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              unique: true
            )
 
-    create table(:thundereye_audit_logs, primary_key: false) do
+    create_if_not_exists table(:thundereye_audit_logs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :action_type, :text, null: false
       add :target_resource_type, :text, null: false
@@ -599,7 +599,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "audit_logs_target_idx"
            )
 
-    create table(:export_jobs, primary_key: false) do
+    create_if_not_exists table(:export_jobs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :slice_spec, :map, null: false, default: %{}
@@ -617,7 +617,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderflow_consciousness_flows, primary_key: false) do
+    create_if_not_exists table(:thunderflow_consciousness_flows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :agent_id, :uuid, null: false
       add :consciousness_type, :text, null: false
@@ -657,7 +657,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:thunderflow_consciousness_flows, [:agent_id])
 
-    create table(:ml_model_specs, primary_key: false) do
+    create_if_not_exists table(:ml_model_specs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :text, null: false
       add :base_model, :text, null: false
@@ -675,7 +675,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:dag_snapshots, primary_key: false) do
+    create_if_not_exists table(:dag_snapshots, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_id, :uuid, null: false
       add :version, :bigint, null: false, default: 1
@@ -690,7 +690,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:ml_model_artifacts, primary_key: false) do
+    create_if_not_exists table(:ml_model_artifacts, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :spec_id,
@@ -718,7 +718,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_coordinators, primary_key: false) do
+    create_if_not_exists table(:thunderlane_coordinators, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :lane_dimension, :text, null: false
       add :name, :text, null: false
@@ -758,7 +758,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:ml_feature_views, primary_key: false) do
+    create_if_not_exists table(:ml_feature_views, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :feature_view_id, :text, null: false
       add :dataset_id, :uuid, null: false
@@ -776,7 +776,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:decision_frameworks, primary_key: false) do
+    create_if_not_exists table(:decision_frameworks, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :description, :text
@@ -798,7 +798,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "decision_frameworks_unique_name_index"
            )
 
-    create table(:health_checks, primary_key: false) do
+    create_if_not_exists table(:health_checks, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :component, :text, null: false
       add :domain, :text, null: false
@@ -822,7 +822,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "health_checks_unique_check_index"
            )
 
-    create table(:upm_adapters, primary_key: false) do
+    create_if_not_exists table(:upm_adapters, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :adapter_key, :text, null: false
       add :tenant_id, :uuid
@@ -852,7 +852,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "upm_adapters_adapter_key_per_tenant_index"
            )
 
-    create table(:thunderblock_load_balancing_rules, primary_key: false) do
+    create_if_not_exists table(:thunderblock_load_balancing_rules, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :rule_name, :text, null: false
       add :target_service, :text, null: false
@@ -874,7 +874,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_load_balancing_rules_unique_rule_service_index"
            )
 
-    create table(:data_adapters, primary_key: false) do
+    create_if_not_exists table(:data_adapters, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :source_format, :text, null: false
@@ -905,7 +905,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "data_adapters_unique_transformation_path_index"
            )
 
-    create table(:agents, primary_key: false) do
+    create_if_not_exists table(:agents, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -938,7 +938,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :created_by_user_id, :uuid
     end
 
-    create table(:task_orchestrators, primary_key: false) do
+    create_if_not_exists table(:task_orchestrators, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_name, :text, null: false
       add :workflow_version, :text, default: "1.0.0"
@@ -970,7 +970,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "task_orchestrators_unique_workflow_index"
            )
 
-    create table(:thundercom_realm_identities, primary_key: false) do
+    create_if_not_exists table(:thundercom_realm_identities, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :realm_id, :uuid, null: false
       add :public_key, :text, null: false
@@ -994,7 +994,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:thundercom_realm_identities, [:realm_id])
 
-    create table(:conversations, primary_key: false) do
+    create_if_not_exists table(:conversations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
     end
 
@@ -1022,7 +1022,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderblock_retention_policies, primary_key: false) do
+    create_if_not_exists table(:thunderblock_retention_policies, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :resource, :text, null: false
       add :scope_type, :text, default: "global"
@@ -1048,7 +1048,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_retention_policies_policy_scope_index"
            )
 
-    create table(:thundermag_macro_commands, primary_key: false) do
+    create_if_not_exists table(:thundermag_macro_commands, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -1082,7 +1082,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_rulesets, primary_key: false) do
+    create_if_not_exists table(:thunderlane_rulesets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -1134,7 +1134,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:external_services, primary_key: false) do
+    create_if_not_exists table(:external_services, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :base_url, :text, null: false
@@ -1166,7 +1166,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "external_services_unique_service_url_index"
            )
 
-    create table(:thundermag_task_assignments, primary_key: false) do
+    create_if_not_exists table(:thundermag_task_assignments, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :task_execution_id,
@@ -1204,7 +1204,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:alert_rules, primary_key: false) do
+    create_if_not_exists table(:alert_rules, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :description, :text
@@ -1239,7 +1239,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create unique_index(:alert_rules, [:name], name: "alert_rules_unique_rule_name_index")
 
-    create table(:thunderblock_communities, primary_key: false) do
+    create_if_not_exists table(:thunderblock_communities, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -1323,7 +1323,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              unique: true
            )
 
-    create table(:thunderblock_query_optimizations, primary_key: false) do
+    create_if_not_exists table(:thunderblock_query_optimizations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :query_hash, :text, null: false
       add :query_sql, :text, null: false
@@ -1366,7 +1366,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_query_optimizations_unique_query_hash_index"
            )
 
-    create table(:error_logs, primary_key: false) do
+    create_if_not_exists table(:error_logs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :domain, :text, null: false
       add :error_type, :text, null: false
@@ -1395,7 +1395,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "error_logs_unique_error_occurrence_index"
            )
 
-    create table(:upm_drift_windows, primary_key: false) do
+    create_if_not_exists table(:upm_drift_windows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid
       add :status, :text, null: false, default: "open"
@@ -1425,7 +1425,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :trainer_id, :uuid, null: false
     end
 
-    create table(:thunderlane_cross_lane_coupling, primary_key: false) do
+    create_if_not_exists table(:thunderlane_cross_lane_coupling, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :source_lane, :text, null: false
       add :target_lane, :text, null: false
@@ -1482,7 +1482,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderlane_cross_lane_coupling_unique_lane_coupling_index"
            )
 
-    create table(:ising_optimization_runs, primary_key: false) do
+    create_if_not_exists table(:ising_optimization_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :problem_id, :uuid, null: false
       add :name, :text
@@ -1512,7 +1512,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :completed_at, :utc_datetime
     end
 
-    create table(:feature_windows, primary_key: false) do
+    create_if_not_exists table(:feature_windows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :kind, :text, null: false
@@ -1535,7 +1535,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:lane_configurations, primary_key: false) do
+    create_if_not_exists table(:lane_configurations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :lane_type, :text, null: false, default: "ca"
@@ -1565,7 +1565,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :state, :text, null: false, default: "initializing"
     end
 
-    create table(:thunderline_events, primary_key: false) do
+    create_if_not_exists table(:thunderline_events, primary_key: false) do
       add :domain, :text, null: false, default: "unknown"
       add :operation_type, :text
       add :criticality, :text, default: "medium"
@@ -1588,7 +1588,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderline_events_correlation_events_index"
            )
 
-    create table(:thunderblock_zone_containers, primary_key: false) do
+    create_if_not_exists table(:thunderblock_zone_containers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -1686,7 +1686,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              unique: true
            )
 
-    create table(:thundercore_system_policies, primary_key: false) do
+    create_if_not_exists table(:thundercore_system_policies, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :policy_name, :text, null: false
       add :policy_type, :text, null: false
@@ -1708,7 +1708,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thundercore_system_policies_unique_policy_name_index"
            )
 
-    create table(:support_tickets, primary_key: false) do
+    create_if_not_exists table(:support_tickets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :subject, :text, null: false
       add :status, :text, null: false, default: "open"
@@ -1726,7 +1726,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:cerebros_model_trials, primary_key: false) do
+    create_if_not_exists table(:cerebros_model_trials, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :trial_id, :text, null: false
       add :status, :text, null: false, default: "succeeded"
@@ -1753,7 +1753,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :model_run_id, :uuid, null: false
     end
 
-    create table(:ising_performance_metrics, primary_key: false) do
+    create_if_not_exists table(:ising_performance_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :benchmark_name, :text, null: false
       add :system_info, :map, null: false
@@ -1776,7 +1776,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :environment_tags, {:array, :text}, default: []
     end
 
-    create table(:thunderblock_supervision_trees, primary_key: false) do
+    create_if_not_exists table(:thunderblock_supervision_trees, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tree_name, :text, null: false
       add :tree_type, :text, null: false, default: "zone_supervisor"
@@ -1853,7 +1853,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              unique: true
            )
 
-    create table(:user_tokens, primary_key: false) do
+    create_if_not_exists table(:user_tokens, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :token, :binary, null: false
       add :context, :text, null: false
@@ -1872,7 +1872,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :user_id, :uuid, null: false
     end
 
-    create table(:lineage_edges, primary_key: false) do
+    create_if_not_exists table(:lineage_edges, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :from_id, :uuid, null: false
@@ -1889,7 +1889,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_lane_metrics, primary_key: false) do
+    create_if_not_exists table(:thunderlane_lane_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :metric_type, :text, null: false
       add :source_type, :text, null: false
@@ -1969,7 +1969,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :ruleset_id, :uuid
     end
 
-    create table(:experts, primary_key: false) do
+    create_if_not_exists table(:experts, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :name, :text, null: false
@@ -1988,7 +1988,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:rag_documents, primary_key: false) do
+    create_if_not_exists table(:rag_documents, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :content, :text, null: false
       add :metadata, :map, default: %{}
@@ -2004,7 +2004,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :full_text_vector, :vector, size: 384
     end
 
-    create table(:thunderbit_monitors, primary_key: false) do
+    create_if_not_exists table(:thunderbit_monitors, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :agent_id, :uuid, null: false
       add :agent_name, :text
@@ -2040,7 +2040,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderbit_monitors_unique_agent_monitor_index"
            )
 
-    create table(:workflow_trackers, primary_key: false) do
+    create_if_not_exists table(:workflow_trackers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_id, :text, null: false
       add :step_name, :text, null: false
@@ -2059,7 +2059,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderflow_event_streams, primary_key: false) do
+    create_if_not_exists table(:thunderflow_event_streams, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :stream_name, :text, null: false
       add :stream_type, :text, null: false
@@ -2091,7 +2091,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:thunderflow_event_streams, [:stream_name], unique: true)
 
-    create table(:actions, primary_key: false) do
+    create_if_not_exists table(:actions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :type, :text, null: false
       add :name, :text, null: false
@@ -2122,7 +2122,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :parent_action_id, :uuid
     end
 
-    create table(:thundercore_task_nodes, primary_key: false) do
+    create_if_not_exists table(:thundercore_task_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :node_name, :text, null: false
       add :task_type, :text, null: false
@@ -2145,7 +2145,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :workflow_dag_id, :uuid
     end
 
-    create table(:thundercom_federated_messages, primary_key: false) do
+    create_if_not_exists table(:thundercom_federated_messages, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :source_realm_id, :uuid, null: false
       add :target_realm_id, :uuid
@@ -2175,7 +2175,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:thundercom_federated_messages, [:source_realm_id])
 
-    create table(:memory_nodes, primary_key: false) do
+    create_if_not_exists table(:memory_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :title, :text, null: false
       add :content, :text, null: false
@@ -2212,7 +2212,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create table(:thunderblock_system_events, primary_key: false) do
+    create_if_not_exists table(:thunderblock_system_events, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :event_type, :text, null: false
       add :source_domain, :text, null: false
@@ -2240,7 +2240,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              where: "(correlation_id IS NOT NULL)"
            )
 
-    create table(:thunderlane_performance_metrics, primary_key: false) do
+    create_if_not_exists table(:thunderlane_performance_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :coordinator_id, :text
       add :metric_type, :text, null: false
@@ -2295,7 +2295,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:voice_participants, primary_key: false) do
+    create_if_not_exists table(:voice_participants, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :room_id,
@@ -2322,7 +2322,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "voice_participants_unique_room_principal_index"
            )
 
-    create table(:thunderblock_rate_limit_policies, primary_key: false) do
+    create_if_not_exists table(:thunderblock_rate_limit_policies, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :policy_name, :text, null: false
       add :target_pattern, :text, null: false
@@ -2344,7 +2344,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_rate_limit_policies_unique_policy_name_index"
            )
 
-    create table(:thunderlane_consensus_runs, primary_key: false) do
+    create_if_not_exists table(:thunderlane_consensus_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :region_id, :text
       add :trigger_reason, :text
@@ -2384,7 +2384,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:system_actions, primary_key: false) do
+    create_if_not_exists table(:system_actions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :action_type, :text, null: false
       add :action_name, :text, null: false
@@ -2415,7 +2415,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              where: "(status = 'pending')"
            )
 
-    create table(:mlflow_experiments, primary_key: false) do
+    create_if_not_exists table(:mlflow_experiments, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :mlflow_experiment_id, :text, null: false
       add :name, :text, null: false
@@ -2434,7 +2434,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:embedding_vectors, primary_key: false) do
+    create_if_not_exists table(:embedding_vectors, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
       add :vector, {:array, :float}, null: false
       add :vector_model, :text, null: false
@@ -2457,7 +2457,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :experience_id, :uuid
     end
 
-    create table(:ml_model_versions, primary_key: false) do
+    create_if_not_exists table(:ml_model_versions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :version_id, :text, null: false
 
@@ -2490,7 +2490,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:mlflow_runs, primary_key: false) do
+    create_if_not_exists table(:mlflow_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :mlflow_run_id, :text, null: false
 
@@ -2531,7 +2531,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:decisions, primary_key: false) do
+    create_if_not_exists table(:decisions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -2597,7 +2597,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create table(:thunderblock_channels, primary_key: false) do
+    create_if_not_exists table(:thunderblock_channels, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -2699,7 +2699,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_channels_unique_channel_in_community_index"
            )
 
-    create table(:thunderlane_telemetry_snapshots, primary_key: false) do
+    create_if_not_exists table(:thunderlane_telemetry_snapshots, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -2775,7 +2775,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_cell_topology, primary_key: false) do
+    create_if_not_exists table(:thunderlane_cell_topology, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -2848,7 +2848,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create table(:dag_workflows, primary_key: false) do
+    create_if_not_exists table(:dag_workflows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -2895,7 +2895,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "dag_workflows_unique_correlation_index"
            )
 
-    create table(:memories, primary_key: false) do
+    create_if_not_exists table(:memories, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
     end
 
@@ -2949,7 +2949,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create table(:execution_containers, primary_key: false) do
+    create_if_not_exists table(:execution_containers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :status, :text
@@ -2975,7 +2975,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "execution_containers_unique_container_name_index"
            )
 
-    create table(:cerebros_model_runs, primary_key: false) do
+    create_if_not_exists table(:cerebros_model_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3047,7 +3047,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:dag_nodes, primary_key: false) do
+    create_if_not_exists table(:dag_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :workflow_id,
@@ -3070,7 +3070,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderbolt_monitors, primary_key: false) do
+    create_if_not_exists table(:thunderbolt_monitors, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :service_name, :text, null: false
       add :service_type, :text
@@ -3111,7 +3111,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderbolt_monitors_unique_service_index"
            )
 
-    create table(:thundercom_federated_realms, primary_key: false) do
+    create_if_not_exists table(:thundercom_federated_realms, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3163,7 +3163,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:thundercom_federated_realms, [:realm_name], unique: true)
 
-    create table(:thunderblock_roles, primary_key: false) do
+    create_if_not_exists table(:thunderblock_roles, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :role_name, :text, null: false
       add :role_slug, :text, null: false
@@ -3242,7 +3242,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_roles_unique_role_in_community_index"
            )
 
-    create table(:probe_attractor_summaries, primary_key: false) do
+    create_if_not_exists table(:probe_attractor_summaries, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :run_id,
@@ -3274,7 +3274,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:probe_attractor_summaries, [:corr_dim])
 
-    create table(:upm_trainers, primary_key: false) do
+    create_if_not_exists table(:upm_trainers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3324,7 +3324,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "upm_trainers_name_per_tenant_index"
            )
 
-    create table(:ising_optimization_problems, primary_key: false) do
+    create_if_not_exists table(:ising_optimization_problems, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3359,7 +3359,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderblock_cluster_nodes, primary_key: false) do
+    create_if_not_exists table(:thunderblock_cluster_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3435,7 +3435,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_cluster_nodes_unique_node_name_index"
            )
 
-    create table(:thundercore_workflow_dags, primary_key: false) do
+    create_if_not_exists table(:thundercore_workflow_dags, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3470,7 +3470,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thundercore_workflow_dags_unique_workflow_name_index"
            )
 
-    create table(:policy_rules, primary_key: false) do
+    create_if_not_exists table(:policy_rules, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :rule_type, :text, null: false
@@ -3493,7 +3493,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "policy_rules_unique_name_per_scope_index"
            )
 
-    create table(:thundercore_timing_events, primary_key: false) do
+    create_if_not_exists table(:thundercore_timing_events, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :event_name, :text, null: false
       add :event_type, :text, null: false
@@ -3511,7 +3511,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderblock_federation_sockets, primary_key: false) do
+    create_if_not_exists table(:thunderblock_federation_sockets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :socket_name, :text, null: false
       add :socket_slug, :text, null: false
@@ -3615,7 +3615,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "federation_socket_community_idx"
            )
 
-    create table(:probe_laps, primary_key: false) do
+    create_if_not_exists table(:probe_laps, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :run_id,
@@ -3640,7 +3640,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create index(:probe_laps, [:run_id, :lap_index], unique: true)
 
-    create table(:users, primary_key: false) do
+    create_if_not_exists table(:users, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3678,7 +3678,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create unique_index(:users, [:email], name: "users_unique_email_index")
 
-    create table(:thunderblock_knowledge_nodes, primary_key: false) do
+    create_if_not_exists table(:thunderblock_knowledge_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3790,7 +3790,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_knowledge_nodes_unique_title_domain_index"
            )
 
-    create table(:thunderblock_distributed_state, primary_key: false) do
+    create_if_not_exists table(:thunderblock_distributed_state, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :state_key, :text, null: false
       add :state_scope, :text, default: "global"
@@ -3812,7 +3812,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "thunderblock_distributed_state_unique_state_key_scope_index"
            )
 
-    create table(:ml_training_datasets, primary_key: false) do
+    create_if_not_exists table(:ml_training_datasets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
     end
 
@@ -3879,7 +3879,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:voice_devices, primary_key: false) do
+    create_if_not_exists table(:voice_devices, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :principal_id, :uuid, null: false
       add :input_device_id, :text
