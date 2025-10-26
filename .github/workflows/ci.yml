@@ -46,12 +46,9 @@ jobs:
       - name: Install pgvector extension
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-contrib postgresql-server-dev-all
-          cd /tmp
-          git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git
-          cd pgvector
-          make
-          sudo make install
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-18-pgvector
 
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
