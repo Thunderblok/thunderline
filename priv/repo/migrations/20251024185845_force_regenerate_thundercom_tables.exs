@@ -8,6 +8,8 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
   use Ecto.Migration
 
   def up do
+    execute "CREATE EXTENSION IF NOT EXISTS pg_trgm"
+
     create_if_not_exists table(:decision_traces, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
@@ -482,6 +484,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
     create_if_not_exists index(:thunderblock_messages, [:mentions], using: :gin, name: "messages_mentions_idx")
 
     create_if_not_exists index(:thunderblock_messages, [:search_vector], using: :gin,
+             options: "gin_trgm_ops",
              name: "messages_search_idx"
            )
 
@@ -5489,6 +5492,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                    )
 
     drop_if_exists index(:thunderblock_messages, [:search_vector], using: :gin,
+             options: "gin_trgm_ops",
                      name: "messages_search_idx"
                    )
 
