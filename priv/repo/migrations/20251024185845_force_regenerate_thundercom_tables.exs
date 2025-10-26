@@ -1197,6 +1197,30 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderblock_communities, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :community_name, :string
+      add :community_slug, :string
+      add :community_type, :string
+      add :governance_model, :string
+      add :status, :string
+      add :federation_config, :map
+      add :community_config, :map
+      add :resource_limits, :map
+      add :member_count, :integer
+      add :channel_count, :integer
+      add :pac_home_count, :integer
+      add :owner_id, :uuid
+      add :moderator_ids, {:array, :uuid}
+      add :member_ids, {:array, :uuid}
+      add :invitation_config, :map
+      add :community_policies, :map
+      add :vault_mount_id, :uuid
+      add :execution_zone_id, :uuid
+      add :federation_socket_id, :uuid
+      add :community_metrics, :map
+      add :tags, {:array, :string}
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thunderblock_pac_homes
