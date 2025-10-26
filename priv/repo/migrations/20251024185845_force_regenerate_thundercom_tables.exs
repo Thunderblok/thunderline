@@ -483,8 +483,9 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists index(:thunderblock_messages, [:mentions], using: :gin, name: "messages_mentions_idx")
 
-    create_if_not_exists index(:thunderblock_messages, [:search_vector], using: :gin,
-             options: "gin_trgm_ops",
+    create_if_not_exists index(:thunderblock_messages,
+             [fragment("search_vector gin_trgm_ops")],
+             using: :gin,
              name: "messages_search_idx"
            )
 
@@ -5491,10 +5492,10 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "messages_ephemeral_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, [:search_vector], using: :gin,
-             options: "gin_trgm_ops",
-                     name: "messages_search_idx"
-                   )
+    drop_if_exists index(:thunderblock_messages, [:search_vector],
+             using: :gin,
+             name: "messages_search_idx"
+           )
 
     drop_if_exists index(:thunderblock_messages, [:mentions], using: :gin,
                      name: "messages_mentions_idx"
