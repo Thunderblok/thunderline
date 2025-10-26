@@ -22,6 +22,7 @@ defmodule Thunderline.Thunderbolt.Sagas.Supervisor do
 
   use DynamicSupervisor
   require Logger
+  require Thunderline.Thunderflow.Telemetry.OtelTrace
 
   @registry Thunderline.Thunderbolt.Sagas.Registry
 

@@ -22,6 +22,7 @@ defmodule Thunderline.Thunderflow.EventBus do
   """
 
   require Logger
+  require Thunderline.Thunderflow.Telemetry.OtelTrace
   alias Phoenix.PubSub
   alias Thunderline.Thunderflow.EventValidator
 
