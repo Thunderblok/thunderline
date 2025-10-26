@@ -275,8 +275,9 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_cache_entries, ["USING GIN (cache_tags)"],
-             name: "cache_entries_tags_idx"
+    create index(:thunderblock_cache_entries, [:cache_tags],
+             name: "cache_entries_tags_idx",
+             using: :gin
            )
 
     create index(:thunderblock_cache_entries, [:expires_at], name: "cache_entries_expires_idx")
@@ -5537,7 +5538,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "cache_entries_expires_idx"
                    )
 
-    drop_if_exists index(:thunderblock_cache_entries, ["USING GIN (cache_tags)"],
+    drop_if_exists index(:thunderblock_cache_entries, [:cache_tags],
                      name: "cache_entries_tags_idx"
                    )
 
