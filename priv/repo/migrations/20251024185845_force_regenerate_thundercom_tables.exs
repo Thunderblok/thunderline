@@ -8,7 +8,9 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
   use Ecto.Migration
 
   def up do
-    create table(:decision_traces, primary_key: false) do
+    execute "CREATE EXTENSION IF NOT EXISTS pg_trgm"
+
+    create_if_not_exists table(:decision_traces, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :feature_window_id, :uuid, null: false
@@ -31,7 +33,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_rule_oracles, primary_key: false) do
+    create_if_not_exists table(:thunderlane_rule_oracles, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :implementation, :text, null: false
@@ -61,7 +63,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :state, :text, null: false, default: "initializing"
     end
 
-    create table(:performance_traces, primary_key: false) do
+    create_if_not_exists table(:performance_traces, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :trace_id, :text, null: false
       add :span_name, :text, null: false
@@ -82,11 +84,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:performance_traces, [:trace_id, :span_name],
+    create_if_not_exists unique_index(:performance_traces, [:trace_id, :span_name],
              name: "performance_traces_unique_span_index"
            )
 
-    create table(:voice_rooms, primary_key: false) do
+    create_if_not_exists table(:voice_rooms, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :title, :text, null: false
       add :community_id, :uuid
@@ -104,7 +106,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thundereye_system_actions, primary_key: false) do
+    create_if_not_exists table(:thundereye_system_actions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :action_name, :text, null: false
       add :domain, :text, null: false
@@ -123,19 +125,19 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundereye_system_actions, [:status, :inserted_at],
+    create_if_not_exists index(:thundereye_system_actions, [:status, :inserted_at],
              name: "system_actions_status_time_idx"
            )
 
-    create index(:thundereye_system_actions, [:action_name, :inserted_at],
+    create_if_not_exists index(:thundereye_system_actions, [:action_name, :inserted_at],
              name: "system_actions_name_time_idx"
            )
 
-    create index(:thundereye_system_actions, [:domain, :status],
+    create_if_not_exists index(:thundereye_system_actions, [:domain, :status],
              name: "system_actions_domain_status_idx"
            )
 
-    create table(:tokens, primary_key: false) do
+    create_if_not_exists table(:tokens, primary_key: false) do
       add :jti, :text, null: false, primary_key: true
       add :subject, :text, null: false
       add :expires_at, :utc_datetime, null: false
@@ -151,7 +153,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thundermag_task_executions, primary_key: false) do
+    create_if_not_exists table(:thundermag_task_executions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :execution_id, :uuid, null: false
       add :macro_command_id, :uuid, null: false
@@ -176,7 +178,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:system_metrics, primary_key: false) do
+    create_if_not_exists table(:system_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :domain, :text, null: false
       add :metric_name, :text, null: false
@@ -190,11 +192,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:system_metrics, [:domain, :metric_name, :collected_at, :node_name],
+    create_if_not_exists unique_index(:system_metrics, [:domain, :metric_name, :collected_at, :node_name],
              name: "system_metrics_unique_metric_point_index"
            )
 
-    create table(:ml_consent_records, primary_key: false) do
+    create_if_not_exists table(:ml_consent_records, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :user_id, :uuid, null: false
       add :tenant_id, :text, null: false
@@ -212,11 +214,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:ml_consent_records, [:user_id, :tenant_id, :purpose],
+    create_if_not_exists unique_index(:ml_consent_records, [:user_id, :tenant_id, :purpose],
              name: "ml_consent_records_unique_consent_index"
            )
 
-    create table(:ml_training_runs, primary_key: false) do
+    create_if_not_exists table(:ml_training_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :run_id, :text, null: false
       add :tenant_id, :text, null: false
@@ -238,7 +240,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:messages, primary_key: false) do
+    create_if_not_exists table(:messages, primary_key: false) do
       add :inserted_at, :utc_datetime_usec,
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
@@ -257,7 +259,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :response_to_id, :uuid
     end
 
-    create table(:thunderblock_cache_entries, primary_key: false) do
+    create_if_not_exists table(:thunderblock_cache_entries, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :cache_key, :text, null: false
       add :cache_value, :map, null: false, default: %{}
@@ -275,22 +277,23 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_cache_entries, ["USING GIN (cache_tags)"],
-             name: "cache_entries_tags_idx"
+    create_if_not_exists index(:thunderblock_cache_entries, [:cache_tags],
+             name: "cache_entries_tags_idx",
+             using: :gin
            )
 
-    create index(:thunderblock_cache_entries, [:expires_at], name: "cache_entries_expires_idx")
+    create_if_not_exists index(:thunderblock_cache_entries, [:expires_at], name: "cache_entries_expires_idx")
 
-    create index(:thunderblock_cache_entries, [:cache_key],
+    create_if_not_exists index(:thunderblock_cache_entries, [:cache_key],
              name: "cache_entries_key_idx",
              unique: true
            )
 
-    create unique_index(:thunderblock_cache_entries, [:cache_key],
+    create_if_not_exists unique_index(:thunderblock_cache_entries, [:cache_key],
              name: "thunderblock_cache_entries_unique_cache_key_index"
            )
 
-    create table(:experiences, primary_key: false) do
+    create_if_not_exists table(:experiences, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
       add :experience_type, :text, null: false
       add :situation_context, :text, null: false
@@ -319,7 +322,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :action_id, :uuid
     end
 
-    create table(:thundercore_agents, primary_key: false) do
+    create_if_not_exists table(:thundercore_agents, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :agent_name, :text, null: false
       add :agent_type, :text, null: false
@@ -337,11 +340,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thundercore_agents, [:agent_name],
+    create_if_not_exists unique_index(:thundercore_agents, [:agent_name],
              name: "thundercore_agents_unique_agent_name_index"
            )
 
-    create table(:dag_edges, primary_key: false) do
+    create_if_not_exists table(:dag_edges, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_id, :uuid, null: false
       add :from_node_id, :uuid, null: false
@@ -353,7 +356,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:probe_runs, primary_key: false) do
+    create_if_not_exists table(:probe_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :provider, :text, null: false
       add :model, :text
@@ -381,13 +384,13 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:probe_runs, [:model])
+    create_if_not_exists index(:probe_runs, [:model])
 
-    create index(:probe_runs, [:provider])
+    create_if_not_exists index(:probe_runs, [:provider])
 
-    create index(:probe_runs, [:status])
+    create_if_not_exists index(:probe_runs, [:status])
 
-    create table(:upm_snapshots, primary_key: false) do
+    create_if_not_exists table(:upm_snapshots, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :version, :text, null: false
       add :tenant_id, :uuid
@@ -410,7 +413,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :trainer_id, :uuid, null: false
     end
 
-    create table(:thunderblock_messages, primary_key: false) do
+    create_if_not_exists table(:thunderblock_messages, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :content, :text, null: false
       add :message_type, :text, null: false, default: "text"
@@ -468,45 +471,46 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :community_id, :uuid
     end
 
-    create index(:thunderblock_messages, ["USING GIN (reactions)"],
+    create_if_not_exists index(:thunderblock_messages, [:reactions], using: :gin,
              name: "messages_reactions_idx"
            )
 
-    create index(:thunderblock_messages, ["USING GIN (tags)"], name: "messages_tags_idx")
+    create_if_not_exists index(:thunderblock_messages, [:tags], using: :gin, name: "messages_tags_idx")
 
-    create index(:thunderblock_messages, ["USING GIN (message_flags)"],
+    create_if_not_exists index(:thunderblock_messages, [:message_flags], using: :gin,
              name: "messages_flags_idx"
            )
 
-    create index(:thunderblock_messages, ["USING GIN (mentions)"], name: "messages_mentions_idx")
+    create_if_not_exists index(:thunderblock_messages, [:mentions], using: :gin, name: "messages_mentions_idx")
 
-    create index(:thunderblock_messages, ["USING GIN (search_vector)"],
-             name: "messages_search_idx"
-           )
+    execute """
+    CREATE INDEX IF NOT EXISTS messages_search_idx
+    ON thunderblock_messages USING gin (search_vector gin_trgm_ops)
+    """
 
-    create index(:thunderblock_messages, [:ephemeral_until], name: "messages_ephemeral_idx")
+    create_if_not_exists index(:thunderblock_messages, [:ephemeral_until], name: "messages_ephemeral_idx")
 
-    create index(:thunderblock_messages, [:message_type, :sender_type], name: "messages_type_idx")
+    create_if_not_exists index(:thunderblock_messages, [:message_type, :sender_type], name: "messages_type_idx")
 
-    create index(:thunderblock_messages, [:status, :inserted_at],
+    create_if_not_exists index(:thunderblock_messages, [:status, :inserted_at],
              name: "messages_status_time_idx"
            )
 
-    create index(:thunderblock_messages, [:reply_to_id], name: "messages_reply_idx")
+    create_if_not_exists index(:thunderblock_messages, [:reply_to_id], name: "messages_reply_idx")
 
-    create index(:thunderblock_messages, [:thread_root_id, :inserted_at],
+    create_if_not_exists index(:thunderblock_messages, [:thread_root_id, :inserted_at],
              name: "messages_thread_idx"
            )
 
-    create index(:thunderblock_messages, [:sender_id, :inserted_at],
+    create_if_not_exists index(:thunderblock_messages, [:sender_id, :inserted_at],
              name: "messages_sender_time_idx"
            )
 
-    create index(:thunderblock_messages, [:channel_id, :inserted_at],
+    create_if_not_exists index(:thunderblock_messages, [:channel_id, :inserted_at],
              name: "messages_channel_time_idx"
            )
 
-    create table(:thunderblock_pac_homes, primary_key: false) do
+    create_if_not_exists table(:thunderblock_pac_homes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :home_name, :text, null: false
       add :home_slug, :text, null: false
@@ -543,40 +547,40 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :zone_container_id, :uuid
     end
 
-    create index(:thunderblock_pac_homes, ["USING GIN (tags)"], name: "pac_homes_tags_idx")
+    create_if_not_exists index(:thunderblock_pac_homes, [:tags], using: :gin, name: "pac_homes_tags_idx")
 
-    create index(:thunderblock_pac_homes, ["USING GIN (health_metrics)"],
+    create_if_not_exists index(:thunderblock_pac_homes, [:health_metrics], using: :gin,
              name: "pac_homes_health_metrics_idx"
            )
 
-    create index(:thunderblock_pac_homes, ["USING GIN (current_usage)"],
+    create_if_not_exists index(:thunderblock_pac_homes, [:current_usage], using: :gin,
              name: "pac_homes_usage_idx"
            )
 
-    create index(:thunderblock_pac_homes, ["USING GIN (agent_registry)"],
+    create_if_not_exists index(:thunderblock_pac_homes, [:agent_registry], using: :gin,
              name: "pac_homes_agents_idx"
            )
 
-    create index(:thunderblock_pac_homes, [:last_health_check], name: "pac_homes_health_idx")
+    create_if_not_exists index(:thunderblock_pac_homes, [:last_health_check], name: "pac_homes_health_idx")
 
-    create index(:thunderblock_pac_homes, [:suspended_until], name: "pac_homes_suspension_idx")
+    create_if_not_exists index(:thunderblock_pac_homes, [:suspended_until], name: "pac_homes_suspension_idx")
 
-    create index(:thunderblock_pac_homes, [:status, :last_activity],
+    create_if_not_exists index(:thunderblock_pac_homes, [:status, :last_activity],
              name: "pac_homes_activity_idx"
            )
 
-    create index(:thunderblock_pac_homes, [:community_id, :status],
+    create_if_not_exists index(:thunderblock_pac_homes, [:community_id, :status],
              name: "pac_homes_community_idx"
            )
 
-    create index(:thunderblock_pac_homes, [:owner_id, :status], name: "pac_homes_owner_idx")
+    create_if_not_exists index(:thunderblock_pac_homes, [:owner_id, :status], name: "pac_homes_owner_idx")
 
-    create index(:thunderblock_pac_homes, [:home_slug, :community_id],
+    create_if_not_exists index(:thunderblock_pac_homes, [:home_slug, :community_id],
              name: "pac_homes_slug_community_idx",
              unique: true
            )
 
-    create table(:thundereye_audit_logs, primary_key: false) do
+    create_if_not_exists table(:thundereye_audit_logs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :action_type, :text, null: false
       add :target_resource_type, :text, null: false
@@ -591,15 +595,15 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundereye_audit_logs, [:inserted_at], name: "audit_logs_time_idx")
+    create_if_not_exists index(:thundereye_audit_logs, [:inserted_at], name: "audit_logs_time_idx")
 
-    create index(:thundereye_audit_logs, [:actor_id, :action_type], name: "audit_logs_actor_idx")
+    create_if_not_exists index(:thundereye_audit_logs, [:actor_id, :action_type], name: "audit_logs_actor_idx")
 
-    create index(:thundereye_audit_logs, [:target_resource_type, :target_resource_id],
+    create_if_not_exists index(:thundereye_audit_logs, [:target_resource_type, :target_resource_id],
              name: "audit_logs_target_idx"
            )
 
-    create table(:export_jobs, primary_key: false) do
+    create_if_not_exists table(:export_jobs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :slice_spec, :map, null: false, default: %{}
@@ -617,7 +621,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderflow_consciousness_flows, primary_key: false) do
+    create_if_not_exists table(:thunderflow_consciousness_flows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :agent_id, :uuid, null: false
       add :consciousness_type, :text, null: false
@@ -639,25 +643,25 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderflow_consciousness_flows, ["USING GIN (memory_anchors)"],
+    create_if_not_exists index(:thunderflow_consciousness_flows, [:memory_anchors], using: :gin,
              name: "consciousness_flow_memory_anchors_gin_idx"
            )
 
-    create index(:thunderflow_consciousness_flows, ["USING GIN (active_goals)"],
+    create_if_not_exists index(:thunderflow_consciousness_flows, [:active_goals], using: :gin,
              name: "consciousness_flow_active_goals_gin_idx"
            )
 
-    create index(:thunderflow_consciousness_flows, [:inserted_at])
+    create_if_not_exists index(:thunderflow_consciousness_flows, [:inserted_at])
 
-    create index(:thunderflow_consciousness_flows, [:stream_position])
+    create_if_not_exists index(:thunderflow_consciousness_flows, [:stream_position])
 
-    create index(:thunderflow_consciousness_flows, [:awareness_level])
+    create_if_not_exists index(:thunderflow_consciousness_flows, [:awareness_level])
 
-    create index(:thunderflow_consciousness_flows, [:consciousness_type])
+    create_if_not_exists index(:thunderflow_consciousness_flows, [:consciousness_type])
 
-    create index(:thunderflow_consciousness_flows, [:agent_id])
+    create_if_not_exists index(:thunderflow_consciousness_flows, [:agent_id])
 
-    create table(:ml_model_specs, primary_key: false) do
+    create_if_not_exists table(:ml_model_specs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :text, null: false
       add :base_model, :text, null: false
@@ -675,7 +679,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:dag_snapshots, primary_key: false) do
+    create_if_not_exists table(:dag_snapshots, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_id, :uuid, null: false
       add :version, :bigint, null: false, default: 1
@@ -690,7 +694,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:ml_model_artifacts, primary_key: false) do
+    create_if_not_exists table(:ml_model_artifacts, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :spec_id,
@@ -718,7 +722,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_coordinators, primary_key: false) do
+    create_if_not_exists table(:thunderlane_coordinators, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :lane_dimension, :text, null: false
       add :name, :text, null: false
@@ -758,7 +762,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:ml_feature_views, primary_key: false) do
+    create_if_not_exists table(:ml_feature_views, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :feature_view_id, :text, null: false
       add :dataset_id, :uuid, null: false
@@ -776,7 +780,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:decision_frameworks, primary_key: false) do
+    create_if_not_exists table(:decision_frameworks, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :description, :text
@@ -794,11 +798,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:decision_frameworks, [:name],
+    create_if_not_exists unique_index(:decision_frameworks, [:name],
              name: "decision_frameworks_unique_name_index"
            )
 
-    create table(:health_checks, primary_key: false) do
+    create_if_not_exists table(:health_checks, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :component, :text, null: false
       add :domain, :text, null: false
@@ -818,11 +822,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:health_checks, [:component, :domain, :checked_at],
+    create_if_not_exists unique_index(:health_checks, [:component, :domain, :checked_at],
              name: "health_checks_unique_check_index"
            )
 
-    create table(:upm_adapters, primary_key: false) do
+    create_if_not_exists table(:upm_adapters, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :adapter_key, :text, null: false
       add :tenant_id, :uuid
@@ -848,11 +852,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           null: false
     end
 
-    create unique_index(:upm_adapters, [:adapter_key, :tenant_id],
+    create_if_not_exists unique_index(:upm_adapters, [:adapter_key, :tenant_id],
              name: "upm_adapters_adapter_key_per_tenant_index"
            )
 
-    create table(:thunderblock_load_balancing_rules, primary_key: false) do
+    create_if_not_exists table(:thunderblock_load_balancing_rules, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :rule_name, :text, null: false
       add :target_service, :text, null: false
@@ -870,11 +874,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thunderblock_load_balancing_rules, [:rule_name, :target_service],
+    create_if_not_exists unique_index(:thunderblock_load_balancing_rules, [:rule_name, :target_service],
              name: "thunderblock_load_balancing_rules_unique_rule_service_index"
            )
 
-    create table(:data_adapters, primary_key: false) do
+    create_if_not_exists table(:data_adapters, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :source_format, :text, null: false
@@ -899,46 +903,42 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:data_adapters, [:name], name: "data_adapters_unique_adapter_name_index")
+    create_if_not_exists unique_index(:data_adapters, [:name], name: "data_adapters_unique_adapter_name_index")
 
-    create unique_index(:data_adapters, [:source_format, :target_format, :name],
+    create_if_not_exists unique_index(:data_adapters, [:source_format, :target_format, :name],
              name: "data_adapters_unique_transformation_path_index"
            )
 
-    create table(:agents, primary_key: false) do
+    create_if_not_exists table(:agents, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :agent_name, :text
+      add :agent_type, :text
+      add :status, :text
+      add :capabilities, :map
+      add :current_task, :text
+      add :last_heartbeat, :utc_datetime_usec
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    alter table(:experiences) do
-      modify :agent_id,
-             references(:agents, column: :id, name: "experiences_agent_id_fkey", type: :uuid)
-    end
+    # Foreign key constraints for experiences
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'experiences_agent_id_fkey'
+          ) THEN
+            ALTER TABLE experiences
+            ADD CONSTRAINT experiences_agent_id_fkey
+            FOREIGN KEY (agent_id)
+            REFERENCES agents(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:agents) do
-      add :name, :text, null: false
-      add :type, :text, null: false
-      add :status, :text, null: false, default: "idle"
-      add :zone_id, :text
-      add :capabilities, {:array, :text}, null: false, default: []
-      add :configuration, :map, null: false, default: %{}
-      add :state_data, :map, null: false, default: %{}
-      add :last_activity_at, :utc_datetime
-      add :total_actions, :bigint, null: false, default: 0
-      add :success_rate, :decimal, null: false, default: "0.0"
-      add :priority, :bigint, null: false, default: 100
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :created_by_user_id, :uuid
-    end
-
-    create table(:task_orchestrators, primary_key: false) do
+    create_if_not_exists table(:task_orchestrators, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_name, :text, null: false
       add :workflow_version, :text, default: "1.0.0"
@@ -966,11 +966,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:task_orchestrators, [:workflow_name, :workflow_version],
+    create_if_not_exists unique_index(:task_orchestrators, [:workflow_name, :workflow_version],
              name: "task_orchestrators_unique_workflow_index"
            )
 
-    create table(:thundercom_realm_identities, primary_key: false) do
+    create_if_not_exists table(:thundercom_realm_identities, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :realm_id, :uuid, null: false
       add :public_key, :text, null: false
@@ -988,41 +988,50 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundercom_realm_identities, [:verification_status])
+    create_if_not_exists index(:thundercom_realm_identities, [:verification_status])
 
-    create index(:thundercom_realm_identities, [:fingerprint], unique: true)
+    create_if_not_exists index(:thundercom_realm_identities, [:fingerprint], unique: true)
 
-    create index(:thundercom_realm_identities, [:realm_id])
+    create_if_not_exists index(:thundercom_realm_identities, [:realm_id])
 
-    create table(:conversations, primary_key: false) do
+    create_if_not_exists table(:conversations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
-    end
-
-    alter table(:messages) do
-      modify :conversation_id,
-             references(:conversations,
-               column: :id,
-               name: "messages_conversation_id_fkey",
-               type: :uuid
-             )
-
-      modify :response_to_id,
-             references(:messages, column: :id, name: "messages_response_to_id_fkey", type: :uuid)
-    end
-
-    alter table(:conversations) do
       add :title, :text
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderblock_retention_policies, primary_key: false) do
+    # Foreign key constraints for messages
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'messages_conversation_id_fkey'
+          ) THEN
+            ALTER TABLE messages
+            ADD CONSTRAINT messages_conversation_id_fkey
+            FOREIGN KEY (conversation_id)
+            REFERENCES conversations(id);
+          END IF;
+        END $$;
+        """
+
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'messages_response_to_id_fkey'
+          ) THEN
+            ALTER TABLE messages
+            ADD CONSTRAINT messages_response_to_id_fkey
+            FOREIGN KEY (response_to_id)
+            REFERENCES messages(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:thunderblock_retention_policies, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :resource, :text, null: false
       add :scope_type, :text, default: "global"
@@ -1044,97 +1053,91 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thunderblock_retention_policies, [:resource, :scope_type, :scope_id],
+    create_if_not_exists unique_index(:thunderblock_retention_policies, [:resource, :scope_type, :scope_id],
              name: "thunderblock_retention_policies_policy_scope_index"
            )
 
-    create table(:thundermag_macro_commands, primary_key: false) do
+    create_if_not_exists table(:thundermag_macro_commands, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:thundermag_task_executions) do
-      modify :macro_command_id,
-             references(:thundermag_macro_commands,
-               column: :id,
-               name: "thundermag_task_executions_macro_command_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:thundermag_macro_commands) do
-      add :command_type, :text, null: false
-      add :macro_input, :text, null: false
-      add :micro_tasks, {:array, :map}, null: false, default: []
-      add :status, :text, null: false, default: "pending"
-      add :execution_metadata, :map, default: %{}
+      add :command_type, :text
+      add :macro_input, :text
+      add :status, :text
+      add :execution_metadata, :map
       add :session_id, :uuid
-      add :zone_preferences, {:array, :text}, default: []
-      add :priority, :text, default: "normal"
+      add :priority, :text
       add :estimated_duration_ms, :bigint
       add :actual_duration_ms, :bigint
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_rulesets, primary_key: false) do
+    # Foreign key constraints for thundermag_task_executions
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thundermag_task_executions_macro_command_id_fkey'
+          ) THEN
+            ALTER TABLE thundermag_task_executions
+            ADD CONSTRAINT thundermag_task_executions_macro_command_id_fkey
+            FOREIGN KEY (macro_command_id)
+            REFERENCES thundermag_macro_commands(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:thunderlane_rulesets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:thunderlane_coordinators) do
-      modify :active_ruleset_id,
-             references(:thunderlane_rulesets,
-               column: :id,
-               name: "thunderlane_coordinators_active_ruleset_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:thunderlane_rulesets) do
-      add :version, :bigint, null: false
-      add :name, :text, null: false
+      add :version, :bigint
+      add :name, :text
       add :description, :text
-      add :x_lane_rule, :text, null: false
-      add :y_lane_rule, :text, null: false
-      add :z_lane_rule, :text, null: false
-      add :x_lane_params, :map, default: %{}
-      add :y_lane_params, :map, default: %{}
-      add :z_lane_params, :map, default: %{}
-      add :alpha_xy, :float, null: false, default: 0.35
-      add :alpha_xz, :float, null: false, default: 0.15
-      add :alpha_yx, :float, null: false, default: 0.35
-      add :alpha_yz, :float, null: false, default: 0.2
-      add :alpha_zx, :float, null: false, default: 0.15
-      add :alpha_zy, :float, null: false, default: 0.25
-      add :schedule_type, :text, null: false, default: "hybrid_event_wave"
-      add :schedule_params, :map, default: %{}
+      add :x_lane_rule, :text
+      add :y_lane_rule, :text
+      add :z_lane_rule, :text
+      add :x_lane_params, :map
+      add :y_lane_params, :map
+      add :z_lane_params, :map
+      add :alpha_xy, :float
+      add :alpha_xz, :float
+      add :alpha_yx, :float
+      add :alpha_yz, :float
+      add :alpha_zx, :float
+      add :alpha_zy, :float
+      add :schedule_type, :text
+      add :schedule_params, :map
       add :boundaries, :map
-      add :parameter_bounds, :map, default: %{}
+      add :parameter_bounds, :map
       add :objective_function, :map
-      add :status, :text, null: false, default: "draft"
+      add :status, :text
       add :deployed_at, :utc_datetime_usec
       add :performance_score, :float
       add :signature, :text
-      add :signature_algorithm, :text, default: "ed25519"
+      add :signature_algorithm, :text
       add :signed_by, :text
-      add :metadata, :map, default: %{}
+      add :metadata, :map
       add :lane_configuration_id, :uuid
-
-      add :created_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+      add :created_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create table(:external_services, primary_key: false) do
+    # Foreign key constraints for thunderlane_coordinators
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderlane_coordinators_active_ruleset_id_fkey'
+          ) THEN
+            ALTER TABLE thunderlane_coordinators
+            ADD CONSTRAINT thunderlane_coordinators_active_ruleset_id_fkey
+            FOREIGN KEY (active_ruleset_id)
+            REFERENCES thunderlane_rulesets(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:external_services, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :base_url, :text, null: false
@@ -1158,15 +1161,15 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:external_services, [:name],
+    create_if_not_exists unique_index(:external_services, [:name],
              name: "external_services_unique_service_name_index"
            )
 
-    create unique_index(:external_services, [:base_url],
+    create_if_not_exists unique_index(:external_services, [:base_url],
              name: "external_services_unique_service_url_index"
            )
 
-    create table(:thundermag_task_assignments, primary_key: false) do
+    create_if_not_exists table(:thundermag_task_assignments, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :task_execution_id,
@@ -1204,7 +1207,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:alert_rules, primary_key: false) do
+    create_if_not_exists table(:alert_rules, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :description, :text
@@ -1233,97 +1236,91 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:alert_rules, [:domain, :component, :metric_name, :condition],
+    create_if_not_exists unique_index(:alert_rules, [:domain, :component, :metric_name, :condition],
              name: "alert_rules_unique_metric_rule_index"
            )
 
-    create unique_index(:alert_rules, [:name], name: "alert_rules_unique_rule_name_index")
+    create_if_not_exists unique_index(:alert_rules, [:name], name: "alert_rules_unique_rule_name_index")
 
-    create table(:thunderblock_communities, primary_key: false) do
+    create_if_not_exists table(:thunderblock_communities, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:thunderblock_pac_homes) do
-      modify :community_id,
-             references(:thunderblock_communities,
-               column: :id,
-               name: "thunderblock_pac_homes_community_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
-    end
-
-    alter table(:thunderblock_communities) do
-      add :community_id, :uuid
-      add :execution_zone_id, :uuid
-      add :resource_allocation, :map, default: %{}
-      add :performance_metrics, :map, default: %{}
-      add :status, :text
-      add :created_at, :utc_datetime_usec, default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :community_name, :text
-      add :community_slug, :text
-      add :community_type, :text, default: "standard"
-      add :governance_model, :text, default: "hierarchical"
+      add :community_name, :string
+      add :community_slug, :string
+      add :community_type, :string
+      add :governance_model, :string
+      add :status, :string
       add :federation_config, :map
       add :community_config, :map
       add :resource_limits, :map
-      add :member_count, :bigint, default: 0
-      add :channel_count, :bigint, default: 0
-      add :pac_home_count, :bigint, default: 0
+      add :member_count, :integer
+      add :channel_count, :integer
+      add :pac_home_count, :integer
       add :owner_id, :uuid
-      add :moderator_ids, {:array, :uuid}, default: []
-      add :member_ids, {:array, :uuid}, default: []
+      add :moderator_ids, {:array, :uuid}
+      add :member_ids, {:array, :uuid}
       add :invitation_config, :map
       add :community_policies, :map
       add :vault_mount_id, :uuid
+      add :execution_zone_id, :uuid
       add :federation_socket_id, :uuid
       add :community_metrics, :map
-      add :tags, {:array, :text}, default: []
-      add :metadata, :map, default: %{}
-      add :inserted_at, :utc_datetime_usec, default: fragment("(now() AT TIME ZONE 'utc')")
-      add :cluster_node_id, :uuid
+      add :tags, {:array, :string}
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create index(:thunderblock_communities, ["USING GIN (community_metrics)"],
+    # Foreign key constraints for thunderblock_pac_homes
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_pac_homes_community_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_pac_homes
+            ADD CONSTRAINT thunderblock_pac_homes_community_id_fkey
+            FOREIGN KEY (community_id)
+            REFERENCES thunderblock_communities(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists index(:thunderblock_communities, [:community_metrics], using: :gin,
              name: "communities_metrics_idx"
            )
 
-    create index(:thunderblock_communities, ["USING GIN (federation_config)"],
+    create_if_not_exists index(:thunderblock_communities, [:federation_config], using: :gin,
              name: "communities_federation_idx"
            )
 
-    create index(:thunderblock_communities, ["USING GIN (tags)"], name: "communities_tags_idx")
+    create_if_not_exists index(:thunderblock_communities, [:tags], using: :gin, name: "communities_tags_idx")
 
-    create index(:thunderblock_communities, ["USING GIN (moderator_ids)"],
+    create_if_not_exists index(:thunderblock_communities, [:moderator_ids], using: :gin,
              name: "communities_moderators_idx"
            )
 
-    create index(:thunderblock_communities, ["USING GIN (member_ids)"],
+    create_if_not_exists index(:thunderblock_communities, [:member_ids], using: :gin,
              name: "communities_members_idx"
            )
 
-    create index(:thunderblock_communities, [:community_type, :governance_model],
+    create_if_not_exists index(:thunderblock_communities, [:community_type, :governance_model],
              name: "communities_type_idx"
            )
 
-    create index(:thunderblock_communities, [:status, :member_count],
+    create_if_not_exists index(:thunderblock_communities, [:status, :member_count],
              name: "communities_activity_idx"
            )
 
-    create index(:thunderblock_communities, [:owner_id, :status], name: "communities_owner_idx")
+    create_if_not_exists index(:thunderblock_communities, [:owner_id, :status], name: "communities_owner_idx")
 
-    create index(:thunderblock_communities, [:community_slug],
+    create_if_not_exists index(:thunderblock_communities, [:community_slug],
              name: "communities_slug_idx",
              unique: true
            )
 
-    create table(:thunderblock_query_optimizations, primary_key: false) do
+    create_if_not_exists table(:thunderblock_query_optimizations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :query_hash, :text, null: false
       add :query_sql, :text, null: false
@@ -1345,28 +1342,28 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderblock_query_optimizations, ["USING GIN (optimization_suggestions)"],
+    create_if_not_exists index(:thunderblock_query_optimizations, [:optimization_suggestions], using: :gin,
              name: "query_optimizations_suggestions_idx"
            )
 
-    create index(:thunderblock_query_optimizations, [:frequency],
+    create_if_not_exists index(:thunderblock_query_optimizations, [:frequency],
              name: "query_optimizations_frequency_idx"
            )
 
-    create index(:thunderblock_query_optimizations, [:avg_execution_time],
+    create_if_not_exists index(:thunderblock_query_optimizations, [:avg_execution_time],
              name: "query_optimizations_avg_time_idx"
            )
 
-    create index(:thunderblock_query_optimizations, [:query_hash],
+    create_if_not_exists index(:thunderblock_query_optimizations, [:query_hash],
              name: "query_optimizations_hash_idx",
              unique: true
            )
 
-    create unique_index(:thunderblock_query_optimizations, [:query_hash],
+    create_if_not_exists unique_index(:thunderblock_query_optimizations, [:query_hash],
              name: "thunderblock_query_optimizations_unique_query_hash_index"
            )
 
-    create table(:error_logs, primary_key: false) do
+    create_if_not_exists table(:error_logs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :domain, :text, null: false
       add :error_type, :text, null: false
@@ -1391,11 +1388,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:error_logs, [:domain, :error_type, :message, :occurred_at],
+    create_if_not_exists unique_index(:error_logs, [:domain, :error_type, :message, :occurred_at],
              name: "error_logs_unique_error_occurrence_index"
            )
 
-    create table(:upm_drift_windows, primary_key: false) do
+    create_if_not_exists table(:upm_drift_windows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid
       add :status, :text, null: false, default: "open"
@@ -1425,7 +1422,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :trainer_id, :uuid, null: false
     end
 
-    create table(:thunderlane_cross_lane_coupling, primary_key: false) do
+    create_if_not_exists table(:thunderlane_cross_lane_coupling, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :source_lane, :text, null: false
       add :target_lane, :text, null: false
@@ -1476,13 +1473,13 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create unique_index(
+    create_if_not_exists unique_index(
              :thunderlane_cross_lane_coupling,
              [:source_lane, :target_lane, :ruleset_id],
              name: "thunderlane_cross_lane_coupling_unique_lane_coupling_index"
            )
 
-    create table(:ising_optimization_runs, primary_key: false) do
+    create_if_not_exists table(:ising_optimization_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :problem_id, :uuid, null: false
       add :name, :text
@@ -1512,7 +1509,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :completed_at, :utc_datetime
     end
 
-    create table(:feature_windows, primary_key: false) do
+    create_if_not_exists table(:feature_windows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :kind, :text, null: false
@@ -1535,7 +1532,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:lane_configurations, primary_key: false) do
+    create_if_not_exists table(:lane_configurations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :lane_type, :text, null: false, default: "ca"
@@ -1565,7 +1562,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :state, :text, null: false, default: "initializing"
     end
 
-    create table(:thunderline_events, primary_key: false) do
+    create_if_not_exists table(:thunderline_events, primary_key: false) do
       add :domain, :text, null: false, default: "unknown"
       add :operation_type, :text
       add :criticality, :text, default: "medium"
@@ -1584,109 +1581,111 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :agent_id, :uuid
     end
 
-    create unique_index(:thunderline_events, [:correlation_id],
+    create_if_not_exists unique_index(:thunderline_events, [:correlation_id],
              name: "thunderline_events_correlation_events_index"
            )
 
-    create table(:thunderblock_zone_containers, primary_key: false) do
+    create_if_not_exists table(:thunderblock_zone_containers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :zone_name, :string
+      add :zone_type, :string
+      add :status, :string
+      add :coordinates, :map
+      add :capacity_config, :map
+      add :current_usage, :map
+      add :zone_config, :map
+      add :supervision_strategy, :string
+      add :max_restarts, :integer
+      add :max_seconds, :integer
+      add :restart_count, :integer
+      add :last_restart, :utc_datetime
+      add :health_score, :decimal
+      add :last_health_check, :utc_datetime
+      add :neighbor_zones, {:array, :uuid}
+      add :phase_assignment, :integer
+      add :tags, {:array, :string}
+      add :metadata, :map
+      add :cluster_node_id, :uuid
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    alter table(:thunderblock_pac_homes) do
-      modify :zone_container_id,
-             references(:thunderblock_zone_containers,
-               column: :id,
-               name: "thunderblock_pac_homes_zone_container_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
-    end
+    # Foreign key constraints for thunderblock_pac_homes
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_pac_homes_zone_container_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_pac_homes
+            ADD CONSTRAINT thunderblock_pac_homes_zone_container_id_fkey
+            FOREIGN KEY (zone_container_id)
+            REFERENCES thunderblock_zone_containers(id);
+          END IF;
+        END $$;
+        """
 
-    create unique_index(:thunderblock_pac_homes, [:home_slug, :community_id],
+
+    create_if_not_exists unique_index(:thunderblock_pac_homes, [:home_slug, :community_id],
              name: "thunderblock_pac_homes_unique_home_in_community_index"
            )
 
-    create unique_index(:thunderblock_pac_homes, [:owner_id, :home_name],
+    create_if_not_exists unique_index(:thunderblock_pac_homes, [:owner_id, :home_name],
              name: "thunderblock_pac_homes_unique_owner_home_name_index"
            )
 
-    alter table(:thunderblock_communities) do
-      modify :execution_zone_id,
-             references(:thunderblock_zone_containers,
-               column: :id,
-               name: "thunderblock_communities_execution_zone_id_fkey",
-               type: :uuid,
-               on_delete: :nilify_all,
-               on_update: :update_all
-             )
-    end
+    # Foreign key constraints for thunderblock_communities
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_communities_execution_zone_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_communities
+            ADD CONSTRAINT thunderblock_communities_execution_zone_id_fkey
+            FOREIGN KEY (execution_zone_id)
+            REFERENCES thunderblock_zone_containers(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:thunderblock_zone_containers) do
-      add :zone_name, :text, null: false
-      add :zone_type, :text, null: false, default: "general"
-      add :status, :text, null: false, default: "initializing"
-      add :coordinates, :map, default: %{}
-      add :capacity_config, :map, null: false
-      add :current_usage, :map, null: false
-      add :zone_config, :map, null: false
-      add :supervision_strategy, :text, null: false, default: "one_for_one"
-      add :max_restarts, :bigint, null: false, default: 5
-      add :max_seconds, :bigint, null: false, default: 60
-      add :restart_count, :bigint, null: false, default: 0
-      add :last_restart, :utc_datetime
-      add :health_score, :decimal, null: false, default: "1.0"
-      add :last_health_check, :utc_datetime
-      add :neighbor_zones, {:array, :uuid}, null: false, default: []
-      add :phase_assignment, :bigint
-      add :tags, {:array, :text}, null: false, default: []
-      add :metadata, :map, null: false, default: %{}
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :cluster_node_id, :uuid
-    end
-
-    create index(:thunderblock_zone_containers, ["USING GIN (coordinates)"],
+    create_if_not_exists index(:thunderblock_zone_containers, [:coordinates], using: :gin,
              name: "zone_containers_coords_idx"
            )
 
-    create index(:thunderblock_zone_containers, ["USING GIN (tags)"],
+    create_if_not_exists index(:thunderblock_zone_containers, [:tags], using: :gin,
              name: "zone_containers_tags_idx"
            )
 
-    create index(:thunderblock_zone_containers, ["USING GIN (neighbor_zones)"],
+    create_if_not_exists index(:thunderblock_zone_containers, [:neighbor_zones], using: :gin,
              name: "zone_containers_neighbors_idx"
            )
 
-    create index(:thunderblock_zone_containers, [:phase_assignment],
+    create_if_not_exists index(:thunderblock_zone_containers, [:phase_assignment],
              name: "zone_containers_phase_idx"
            )
 
-    create index(:thunderblock_zone_containers, [:cluster_node_id, :status],
+    create_if_not_exists index(:thunderblock_zone_containers, [:cluster_node_id, :status],
              name: "zone_containers_node_idx"
            )
 
-    create index(:thunderblock_zone_containers, [:zone_type, :status],
+    create_if_not_exists index(:thunderblock_zone_containers, [:zone_type, :status],
              name: "zone_containers_type_idx"
            )
 
-    create index(:thunderblock_zone_containers, [:status, :health_score],
+    create_if_not_exists index(:thunderblock_zone_containers, [:status, :health_score],
              name: "zone_containers_health_idx"
            )
 
-    create index(:thunderblock_zone_containers, [:zone_name],
+    create_if_not_exists index(:thunderblock_zone_containers, [:zone_name],
              name: "zone_containers_name_idx",
              unique: true
            )
 
-    create table(:thundercore_system_policies, primary_key: false) do
+    create_if_not_exists table(:thundercore_system_policies, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :policy_name, :text, null: false
       add :policy_type, :text, null: false
@@ -1704,11 +1703,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thundercore_system_policies, [:policy_name],
+    create_if_not_exists unique_index(:thundercore_system_policies, [:policy_name],
              name: "thundercore_system_policies_unique_policy_name_index"
            )
 
-    create table(:support_tickets, primary_key: false) do
+    create_if_not_exists table(:support_tickets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :subject, :text, null: false
       add :status, :text, null: false, default: "open"
@@ -1726,7 +1725,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:cerebros_model_trials, primary_key: false) do
+    create_if_not_exists table(:cerebros_model_trials, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :trial_id, :text, null: false
       add :status, :text, null: false, default: "succeeded"
@@ -1753,7 +1752,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :model_run_id, :uuid, null: false
     end
 
-    create table(:ising_performance_metrics, primary_key: false) do
+    create_if_not_exists table(:ising_performance_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :benchmark_name, :text, null: false
       add :system_info, :map, null: false
@@ -1776,7 +1775,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :environment_tags, {:array, :text}, default: []
     end
 
-    create table(:thunderblock_supervision_trees, primary_key: false) do
+    create_if_not_exists table(:thunderblock_supervision_trees, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tree_name, :text, null: false
       add :tree_type, :text, null: false, default: "zone_supervisor"
@@ -1820,40 +1819,40 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :zone_container_id, :uuid
     end
 
-    create index(:thunderblock_supervision_trees, ["USING GIN (tags)"],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:tags], using: :gin,
              name: "supervision_trees_tags_idx"
            )
 
-    create index(:thunderblock_supervision_trees, ["USING GIN (running_children)"],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:running_children], using: :gin,
              name: "supervision_trees_children_idx"
            )
 
-    create index(:thunderblock_supervision_trees, [:parent_tree_id, :depth_level],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:parent_tree_id, :depth_level],
              name: "supervision_trees_hierarchy_idx"
            )
 
-    create index(:thunderblock_supervision_trees, [:escalation_level, :status],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:escalation_level, :status],
              name: "supervision_trees_escalation_idx"
            )
 
-    create index(:thunderblock_supervision_trees, [:zone_container_id, :depth_level],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:zone_container_id, :depth_level],
              name: "supervision_trees_zone_depth_idx"
            )
 
-    create index(:thunderblock_supervision_trees, [:tree_type, :status],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:tree_type, :status],
              name: "supervision_trees_type_idx"
            )
 
-    create index(:thunderblock_supervision_trees, [:status, :health_score],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:status, :health_score],
              name: "supervision_trees_health_idx"
            )
 
-    create index(:thunderblock_supervision_trees, [:tree_name, :zone_container_id],
+    create_if_not_exists index(:thunderblock_supervision_trees, [:tree_name, :zone_container_id],
              name: "supervision_trees_name_zone_idx",
              unique: true
            )
 
-    create table(:user_tokens, primary_key: false) do
+    create_if_not_exists table(:user_tokens, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :token, :binary, null: false
       add :context, :text, null: false
@@ -1872,7 +1871,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :user_id, :uuid, null: false
     end
 
-    create table(:lineage_edges, primary_key: false) do
+    create_if_not_exists table(:lineage_edges, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :from_id, :uuid, null: false
@@ -1889,7 +1888,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderlane_lane_metrics, primary_key: false) do
+    create_if_not_exists table(:thunderlane_lane_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :metric_type, :text, null: false
       add :source_type, :text, null: false
@@ -1969,7 +1968,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :ruleset_id, :uuid
     end
 
-    create table(:experts, primary_key: false) do
+    create_if_not_exists table(:experts, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :tenant_id, :uuid, null: false
       add :name, :text, null: false
@@ -1988,7 +1987,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:rag_documents, primary_key: false) do
+    create_if_not_exists table(:rag_documents, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :content, :text, null: false
       add :metadata, :map, default: %{}
@@ -2004,7 +2003,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :full_text_vector, :vector, size: 384
     end
 
-    create table(:thunderbit_monitors, primary_key: false) do
+    create_if_not_exists table(:thunderbit_monitors, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :agent_id, :uuid, null: false
       add :agent_name, :text
@@ -2036,11 +2035,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thunderbit_monitors, [:agent_id],
+    create_if_not_exists unique_index(:thunderbit_monitors, [:agent_id],
              name: "thunderbit_monitors_unique_agent_monitor_index"
            )
 
-    create table(:workflow_trackers, primary_key: false) do
+    create_if_not_exists table(:workflow_trackers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :workflow_id, :text, null: false
       add :step_name, :text, null: false
@@ -2059,7 +2058,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderflow_event_streams, primary_key: false) do
+    create_if_not_exists table(:thunderflow_event_streams, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :stream_name, :text, null: false
       add :stream_type, :text, null: false
@@ -2081,17 +2080,17 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderflow_event_streams, [:last_event_at])
+    create_if_not_exists index(:thunderflow_event_streams, [:last_event_at])
 
-    create index(:thunderflow_event_streams, [:status])
+    create_if_not_exists index(:thunderflow_event_streams, [:status])
 
-    create index(:thunderflow_event_streams, [:source_domain])
+    create_if_not_exists index(:thunderflow_event_streams, [:source_domain])
 
-    create index(:thunderflow_event_streams, [:stream_type])
+    create_if_not_exists index(:thunderflow_event_streams, [:stream_type])
 
-    create index(:thunderflow_event_streams, [:stream_name], unique: true)
+    create_if_not_exists index(:thunderflow_event_streams, [:stream_name], unique: true)
 
-    create table(:actions, primary_key: false) do
+    create_if_not_exists table(:actions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :type, :text, null: false
       add :name, :text, null: false
@@ -2122,7 +2121,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :parent_action_id, :uuid
     end
 
-    create table(:thundercore_task_nodes, primary_key: false) do
+    create_if_not_exists table(:thundercore_task_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :node_name, :text, null: false
       add :task_type, :text, null: false
@@ -2145,7 +2144,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :workflow_dag_id, :uuid
     end
 
-    create table(:thundercom_federated_messages, primary_key: false) do
+    create_if_not_exists table(:thundercom_federated_messages, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :source_realm_id, :uuid, null: false
       add :target_realm_id, :uuid
@@ -2165,17 +2164,17 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thundercom_federated_messages, [:inserted_at])
+    create_if_not_exists index(:thundercom_federated_messages, [:inserted_at])
 
-    create index(:thundercom_federated_messages, [:message_type])
+    create_if_not_exists index(:thundercom_federated_messages, [:message_type])
 
-    create index(:thundercom_federated_messages, [:delivery_status])
+    create_if_not_exists index(:thundercom_federated_messages, [:delivery_status])
 
-    create index(:thundercom_federated_messages, [:target_realm_id])
+    create_if_not_exists index(:thundercom_federated_messages, [:target_realm_id])
 
-    create index(:thundercom_federated_messages, [:source_realm_id])
+    create_if_not_exists index(:thundercom_federated_messages, [:source_realm_id])
 
-    create table(:memory_nodes, primary_key: false) do
+    create_if_not_exists table(:memory_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :title, :text, null: false
       add :content, :text, null: false
@@ -2212,7 +2211,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create table(:thunderblock_system_events, primary_key: false) do
+    create_if_not_exists table(:thunderblock_system_events, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :event_type, :text, null: false
       add :source_domain, :text, null: false
@@ -2235,12 +2234,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thunderblock_system_events, [:correlation_id, :event_type],
+    create_if_not_exists unique_index(:thunderblock_system_events, [:correlation_id, :event_type],
              name: "thunderblock_system_events_unique_correlation_event_index",
              where: "(correlation_id IS NOT NULL)"
            )
 
-    create table(:thunderlane_performance_metrics, primary_key: false) do
+    create_if_not_exists table(:thunderlane_performance_metrics, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :coordinator_id, :text
       add :metric_type, :text, null: false
@@ -2295,7 +2294,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:voice_participants, primary_key: false) do
+    create_if_not_exists table(:voice_participants, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :room_id,
@@ -2318,11 +2317,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:voice_participants, [:room_id, :principal_id],
+    create_if_not_exists unique_index(:voice_participants, [:room_id, :principal_id],
              name: "voice_participants_unique_room_principal_index"
            )
 
-    create table(:thunderblock_rate_limit_policies, primary_key: false) do
+    create_if_not_exists table(:thunderblock_rate_limit_policies, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :policy_name, :text, null: false
       add :target_pattern, :text, null: false
@@ -2340,11 +2339,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thunderblock_rate_limit_policies, [:policy_name],
+    create_if_not_exists unique_index(:thunderblock_rate_limit_policies, [:policy_name],
              name: "thunderblock_rate_limit_policies_unique_policy_name_index"
            )
 
-    create table(:thunderlane_consensus_runs, primary_key: false) do
+    create_if_not_exists table(:thunderlane_consensus_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :region_id, :text
       add :trigger_reason, :text
@@ -2384,7 +2383,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:system_actions, primary_key: false) do
+    create_if_not_exists table(:system_actions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :action_type, :text, null: false
       add :action_name, :text, null: false
@@ -2410,12 +2409,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:system_actions, [:action_type, :initiated_by, :status],
+    create_if_not_exists unique_index(:system_actions, [:action_type, :initiated_by, :status],
              name: "system_actions_unique_pending_action_index",
              where: "(status = 'pending')"
            )
 
-    create table(:mlflow_experiments, primary_key: false) do
+    create_if_not_exists table(:mlflow_experiments, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :mlflow_experiment_id, :text, null: false
       add :name, :text, null: false
@@ -2434,7 +2433,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:embedding_vectors, primary_key: false) do
+    create_if_not_exists table(:embedding_vectors, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
       add :vector, {:array, :float}, null: false
       add :vector_model, :text, null: false
@@ -2457,7 +2456,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :experience_id, :uuid
     end
 
-    create table(:ml_model_versions, primary_key: false) do
+    create_if_not_exists table(:ml_model_versions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :version_id, :text, null: false
 
@@ -2490,7 +2489,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:mlflow_runs, primary_key: false) do
+    create_if_not_exists table(:mlflow_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :mlflow_run_id, :text, null: false
 
@@ -2531,196 +2530,199 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:decisions, primary_key: false) do
+    create_if_not_exists table(:decisions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :type, :text
+      add :context, :text
+      add :input_data, :map
+      add :selected_option, :map
+      add :reasoning, :text
+      add :confidence_score, :numeric
+      add :risk_assessment, :numeric
+      add :expected_outcome, :map
+      add :actual_outcome, :map
+      add :outcome_accuracy, :numeric
+      add :decision_time_ms, :bigint
+      add :was_successful, :boolean
     end
 
-    alter table(:experiences) do
-      modify :decision_id,
-             references(:decisions,
-               column: :id,
-               name: "experiences_decision_id_fkey",
-               type: :uuid
-             )
+    # Foreign key constraints for experiences
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'experiences_decision_id_fkey'
+          ) THEN
+            ALTER TABLE experiences
+            ADD CONSTRAINT experiences_decision_id_fkey
+            FOREIGN KEY (decision_id)
+            REFERENCES decisions(id);
+          END IF;
+        END $$;
+        """
 
-      modify :action_id,
-             references(:actions, column: :id, name: "experiences_action_id_fkey", type: :uuid)
-    end
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'experiences_action_id_fkey'
+          ) THEN
+            ALTER TABLE experiences
+            ADD CONSTRAINT experiences_action_id_fkey
+            FOREIGN KEY (action_id)
+            REFERENCES actions(id);
+          END IF;
+        END $$;
+        """
 
-    create unique_index(
+
+    create_if_not_exists unique_index(
              :experiences,
              [:agent_id, :situation_context, :action_taken, :inserted_at],
              name: "experiences_unique_experience_per_context_index"
            )
 
-    alter table(:actions) do
-      modify :decision_id,
-             references(:decisions, column: :id, name: "actions_decision_id_fkey", type: :uuid)
+    # Foreign key constraints for actions
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'actions_decision_id_fkey'
+          ) THEN
+            ALTER TABLE actions
+            ADD CONSTRAINT actions_decision_id_fkey
+            FOREIGN KEY (decision_id)
+            REFERENCES decisions(id);
+          END IF;
+        END $$;
+        """
 
-      modify :parent_action_id,
-             references(:actions, column: :id, name: "actions_parent_action_id_fkey", type: :uuid)
-    end
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'actions_parent_action_id_fkey'
+          ) THEN
+            ALTER TABLE actions
+            ADD CONSTRAINT actions_parent_action_id_fkey
+            FOREIGN KEY (parent_action_id)
+            REFERENCES actions(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:decisions) do
-      add :type, :text, null: false
-      add :context, :text, null: false
-      add :input_data, :map, null: false, default: %{}
-      add :options_considered, {:array, :map}, null: false, default: []
-      add :selected_option, :map, null: false
-      add :reasoning, :text
-      add :confidence_score, :decimal, null: false, default: "0.5"
-      add :risk_assessment, :decimal, null: false, default: "0.5"
-      add :expected_outcome, :map
-      add :actual_outcome, :map
-      add :outcome_accuracy, :decimal
-      add :decision_time_ms, :bigint, null: false, default: 0
-      add :tags, {:array, :text}, null: false, default: []
-      add :was_successful, :boolean
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :agent_id,
-          references(:agents, column: :id, name: "decisions_agent_id_fkey", type: :uuid),
-          null: false
-
-      add :parent_decision_id,
-          references(:decisions,
-            column: :id,
-            name: "decisions_parent_decision_id_fkey",
-            type: :uuid
-          )
-    end
-
-    create table(:thunderblock_channels, primary_key: false) do
+    create_if_not_exists table(:thunderblock_channels, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:thunderblock_messages) do
-      modify :channel_id,
-             references(:thunderblock_channels,
-               column: :id,
-               name: "thunderblock_messages_channel_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
-
-      modify :community_id,
-             references(:thunderblock_communities,
-               column: :id,
-               name: "thunderblock_messages_community_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
-    end
-
-    alter table(:thunderblock_channels) do
-      add :channel_name, :text, null: false
-      add :channel_slug, :text, null: false
-      add :channel_type, :text, null: false, default: "text"
-      add :channel_category, :text
-      add :status, :text, null: false, default: "active"
-      add :visibility, :text, null: false, default: "public"
-      add :topic, :text
-      add :channel_config, :map, null: false
-      add :voice_config, :map, null: false
-      add :permissions_override, :map, null: false, default: %{}
-      add :message_count, :bigint, null: false, default: 0
-      add :active_participants, :bigint, null: false, default: 0
+      add :channel_name, :string
+      add :channel_slug, :string
+      add :channel_type, :string
+      add :channel_category, :string
+      add :status, :string
+      add :visibility, :string
+      add :topic, :string
+      add :channel_config, :map
+      add :voice_config, :map
+      add :permissions_override, :map
+      add :message_count, :integer
+      add :active_participants, :integer
       add :last_message_at, :utc_datetime
-      add :created_by, :uuid, null: false
-      add :pinned_message_ids, {:array, :uuid}, null: false, default: []
-      add :channel_integrations, :map, null: false
-      add :moderation_config, :map, null: false
-      add :channel_metrics, :map, null: false
-      add :position, :bigint, null: false, default: 0
-      add :tags, {:array, :text}, null: false, default: []
-      add :metadata, :map, null: false, default: %{}
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :community_id,
-          references(:thunderblock_communities,
-            column: :id,
-            name: "thunderblock_channels_community_id_fkey",
-            type: :uuid,
-            on_delete: :delete_all,
-            on_update: :update_all
-          )
+      add :created_by, :uuid
+      add :pinned_message_ids, {:array, :uuid}
+      add :channel_integrations, :map
+      add :moderation_config, :map
+      add :channel_metrics, :map
+      add :position, :integer
+      add :tags, {:array, :string}
+      add :metadata, :map
+      add :community_id, :uuid
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create index(:thunderblock_channels, ["USING GIN (channel_metrics)"],
+    # Foreign key constraints for thunderblock_messages
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_messages_channel_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_messages
+            ADD CONSTRAINT thunderblock_messages_channel_id_fkey
+            FOREIGN KEY (channel_id)
+            REFERENCES thunderblock_channels(id);
+          END IF;
+        END $$;
+        """
+
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_messages_community_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_messages
+            ADD CONSTRAINT thunderblock_messages_community_id_fkey
+            FOREIGN KEY (community_id)
+            REFERENCES thunderblock_communities(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists index(:thunderblock_channels, [:channel_metrics], using: :gin,
              name: "channels_metrics_idx"
            )
 
-    create index(:thunderblock_channels, ["USING GIN (tags)"], name: "channels_tags_idx")
+    create_if_not_exists index(:thunderblock_channels, [:tags], using: :gin, name: "channels_tags_idx")
 
-    create index(:thunderblock_channels, ["USING GIN (pinned_message_ids)"],
+    create_if_not_exists index(:thunderblock_channels, [:pinned_message_ids], using: :gin,
              name: "channels_pinned_messages_idx"
            )
 
-    create index(:thunderblock_channels, [:visibility, :status], name: "channels_visibility_idx")
+    create_if_not_exists index(:thunderblock_channels, [:visibility, :status], name: "channels_visibility_idx")
 
-    create index(:thunderblock_channels, [:status, :last_message_at],
+    create_if_not_exists index(:thunderblock_channels, [:status, :last_message_at],
              name: "channels_activity_idx"
            )
 
-    create index(:thunderblock_channels, [:channel_type, :status],
+    create_if_not_exists index(:thunderblock_channels, [:channel_type, :status],
              name: "channels_type_status_idx"
            )
 
-    create index(:thunderblock_channels, [:community_id, :position],
+    create_if_not_exists index(:thunderblock_channels, [:community_id, :position],
              name: "channels_community_position_idx"
            )
 
-    create index(:thunderblock_channels, [:community_id, :channel_type],
+    create_if_not_exists index(:thunderblock_channels, [:community_id, :channel_type],
              name: "channels_community_type_idx"
            )
 
-    create index(:thunderblock_channels, [:channel_slug, :community_id],
+    create_if_not_exists index(:thunderblock_channels, [:channel_slug, :community_id],
              name: "channels_slug_community_idx",
              unique: true
            )
 
-    create unique_index(:thunderblock_channels, [:channel_slug, :community_id],
+    create_if_not_exists unique_index(:thunderblock_channels, [:channel_slug, :community_id],
              name: "thunderblock_channels_unique_channel_in_community_index"
            )
 
-    create table(:thunderlane_telemetry_snapshots, primary_key: false) do
+    create_if_not_exists table(:thunderlane_telemetry_snapshots, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:thunderlane_performance_metrics) do
-      modify :telemetry_snapshot_id,
-             references(:thunderlane_telemetry_snapshots,
-               column: :id,
-               name: "thunderlane_performance_metrics_telemetry_snapshot_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:thunderlane_telemetry_snapshots) do
-      add :coordinator_id, :text, null: false
-      add :snapshot_type, :text, null: false
+      add :coordinator_id, :text
+      add :snapshot_type, :text
       add :window_start_ms, :bigint
       add :window_end_ms, :bigint
       add :window_duration_ms, :bigint
-      add :total_events, :bigint, default: 0
+      add :total_events, :bigint
       add :event_rate_per_second, :float
-      add :burst_count, :bigint, default: 0
+      add :burst_count, :bigint
       add :anti_bunching_effectiveness, :float
       add :displacement_mean, :float
       add :displacement_variance, :float
@@ -2735,221 +2737,217 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
       add :latency_max_us, :bigint
       add :queue_depth_mean, :float
       add :queue_depth_max, :bigint
-      add :backpressure_events, :bigint, default: 0
-      add :dropped_events, :bigint, default: 0
+      add :backpressure_events, :bigint
+      add :dropped_events, :bigint
       add :cpu_usage_mean, :float
       add :memory_usage_mean_mb, :bigint
       add :memory_usage_max_mb, :bigint
-      add :gc_count, :bigint, default: 0
-      add :gc_total_time_ms, :bigint, default: 0
-      add :network_bytes_in, :bigint, default: 0
-      add :network_bytes_out, :bigint, default: 0
-      add :coordination_messages, :bigint, default: 0
+      add :gc_count, :bigint
+      add :gc_total_time_ms, :bigint
+      add :network_bytes_in, :bigint
+      add :network_bytes_out, :bigint
+      add :coordination_messages, :bigint
       add :coordination_latency_us, :bigint
-      add :error_count, :bigint, default: 0
-      add :anomaly_score, :float, default: 0.0
-      add :anomaly_features, :map, default: %{}
-
-      add :lane_configuration_id,
-          references(:lane_configurations,
-            column: :id,
-            name: "thunderlane_telemetry_snapshots_lane_configuration_id_fkey",
-            type: :uuid
-          )
-
-      add :rule_oracle_id,
-          references(:thunderlane_rule_oracles,
-            column: :id,
-            name: "thunderlane_telemetry_snapshots_rule_oracle_id_fkey",
-            type: :uuid
-          )
-
-      add :metadata, :map, default: %{}
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+      add :error_count, :bigint
+      add :anomaly_score, :float
+      add :anomaly_features, :map
+      add :lane_configuration_id, :uuid
+      add :rule_oracle_id, :uuid
+      add :metadata, :map
     end
 
-    create table(:thunderlane_cell_topology, primary_key: false) do
+    # Foreign key constraints for thunderlane_performance_metrics
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderlane_performance_metrics_telemetry_snapshot_id_fkey'
+          ) THEN
+            ALTER TABLE thunderlane_performance_metrics
+            ADD CONSTRAINT thunderlane_performance_metrics_telemetry_snapshot_id_fkey
+            FOREIGN KEY (telemetry_snapshot_id)
+            REFERENCES thunderlane_telemetry_snapshots(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:thunderlane_cell_topology, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:thunderlane_lane_metrics) do
-      modify :topology_id,
-             references(:thunderlane_cell_topology,
-               column: :id,
-               name: "thunderlane_lane_metrics_topology_id_fkey",
-               type: :uuid
-             )
-
-      modify :ruleset_id,
-             references(:thunderlane_rulesets,
-               column: :id,
-               name: "thunderlane_lane_metrics_ruleset_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:thunderlane_cell_topology) do
-      add :name, :text, null: false
+      add :name, :text
       add :description, :text
       add :lane_coordinator_id, :uuid
-      add :width, :bigint, null: false
-      add :height, :bigint, null: false
-      add :depth, :bigint, null: false
+      add :width, :bigint
+      add :height, :bigint
+      add :depth, :bigint
       add :total_cells, :bigint
       add :cells_per_partition, :bigint
       add :partition_count, :bigint
-      add :topology_type, :text, null: false, default: "rectangular"
-      add :boundary_x, :text, null: false, default: "wrap"
-      add :boundary_y, :text, null: false, default: "wrap"
-      add :boundary_z, :text, null: false, default: "wrap"
-      add :neighborhood_type, :text, null: false, default: "moore_3d"
-      add :neighborhood_radius, :bigint, null: false, default: 1
-      add :partitioning_strategy, :text, null: false, default: "grid_3d"
-      add :partitioning_config, :map, default: %{}
-      add :thundercell_nodes, :map, default: %{}
-      add :partition_assignments, :map, default: %{}
-      add :node_load_balance, :map, default: %{}
+      add :topology_type, :text
+      add :boundary_x, :text
+      add :boundary_y, :text
+      add :boundary_z, :text
+      add :neighborhood_type, :text
+      add :neighborhood_radius, :bigint
+      add :partitioning_strategy, :text
+      add :partitioning_config, :map
+      add :thundercell_nodes, :map
+      add :partition_assignments, :map
+      add :node_load_balance, :map
       add :average_neighbors_per_cell, :float
       add :max_partition_size, :bigint
       add :min_partition_size, :bigint
       add :load_variance, :float
-      add :status, :text, null: false, default: "designed"
-      add :distribution_health, :float, default: 1.0
+      add :status, :text
+      add :distribution_health, :float
       add :last_rebalance_at, :utc_datetime_usec
       add :locality_score, :float
       add :communication_overhead, :float
       add :memory_efficiency, :float
       add :initial_state_pattern, :text
-      add :initial_state_config, :map, default: %{}
+      add :initial_state_config, :map
       add :initial_state_seed, :bigint
-      add :config, :map, default: %{}
-      add :metadata, :map, default: %{}
-
-      add :created_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :coordinator_id,
-          references(:thunderlane_coordinators,
-            column: :id,
-            name: "thunderlane_cell_topology_coordinator_id_fkey",
-            type: :uuid
-          )
+      add :config, :map
+      add :metadata, :map
+      add :created_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create table(:dag_workflows, primary_key: false) do
+    # Foreign key constraints for thunderlane_lane_metrics
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderlane_lane_metrics_topology_id_fkey'
+          ) THEN
+            ALTER TABLE thunderlane_lane_metrics
+            ADD CONSTRAINT thunderlane_lane_metrics_topology_id_fkey
+            FOREIGN KEY (topology_id)
+            REFERENCES thunderlane_cell_topology(id);
+          END IF;
+        END $$;
+        """
+
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderlane_lane_metrics_ruleset_id_fkey'
+          ) THEN
+            ALTER TABLE thunderlane_lane_metrics
+            ADD CONSTRAINT thunderlane_lane_metrics_ruleset_id_fkey
+            FOREIGN KEY (ruleset_id)
+            REFERENCES thunderlane_rulesets(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:dag_workflows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :source_domain, :text
+      add :root_event_name, :text
+      add :correlation_id, :text
+      add :causation_id, :text
+      add :status, :text
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    alter table(:dag_edges) do
-      modify :workflow_id,
-             references(:dag_workflows,
-               column: :id,
-               name: "dag_edges_workflow_id_fkey",
-               type: :uuid
-             )
-    end
+    # Foreign key constraints for dag_edges
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'dag_edges_workflow_id_fkey'
+          ) THEN
+            ALTER TABLE dag_edges
+            ADD CONSTRAINT dag_edges_workflow_id_fkey
+            FOREIGN KEY (workflow_id)
+            REFERENCES dag_workflows(id);
+          END IF;
+        END $$;
+        """
 
-    create unique_index(:dag_edges, [:workflow_id, :from_node_id, :to_node_id, :edge_type],
+
+    create_if_not_exists unique_index(:dag_edges, [:workflow_id, :from_node_id, :to_node_id, :edge_type],
              name: "dag_edges_unique_edge_index"
            )
 
-    alter table(:dag_snapshots) do
-      modify :workflow_id,
-             references(:dag_workflows,
-               column: :id,
-               name: "dag_snapshots_workflow_id_fkey",
-               type: :uuid
-             )
-    end
+    # Foreign key constraints for dag_snapshots
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'dag_snapshots_workflow_id_fkey'
+          ) THEN
+            ALTER TABLE dag_snapshots
+            ADD CONSTRAINT dag_snapshots_workflow_id_fkey
+            FOREIGN KEY (workflow_id)
+            REFERENCES dag_workflows(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:dag_workflows) do
-      add :source_domain, :text, null: false
-      add :root_event_name, :text, null: false
-      add :correlation_id, :text, null: false
-      add :causation_id, :text
-      add :status, :text, null: false, default: "building"
-      add :metadata, :map, null: false, default: %{}
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-    end
-
-    create unique_index(:dag_workflows, [:correlation_id],
+    create_if_not_exists unique_index(:dag_workflows, [:correlation_id],
              name: "dag_workflows_unique_correlation_index"
            )
 
-    create table(:memories, primary_key: false) do
+    create_if_not_exists table(:memories, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
-    end
-
-    alter table(:embedding_vectors) do
-      modify :memory_record_id,
-             references(:memories,
-               column: :id,
-               name: "embedding_vectors_memory_record_id_fkey",
-               type: :uuid
-             )
-
-      modify :memory_node_id,
-             references(:memory_nodes,
-               column: :id,
-               name: "embedding_vectors_memory_node_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:memories) do
-      add :summary, :text, null: false
-      add :full_content, :text, null: false
-      add :memory_type, :text, null: false
-      add :context_data, :map, default: %{}
-      add :sensory_data, :map, default: %{}
-      add :emotional_data, :map, default: %{}
-      add :vividness, :float, default: 1.0
-      add :accessibility, :float, default: 1.0
-      add :importance, :float, default: 0.5
-      add :times_accessed, :bigint, default: 0
+      add :summary, :text
+      add :full_content, :text
+      add :memory_type, :text
+      add :context_data, :map
+      add :sensory_data, :map
+      add :emotional_data, :map
+      add :vividness, :float
+      add :accessibility, :float
+      add :importance, :float
+      add :times_accessed, :bigint
       add :last_accessed_at, :utc_datetime
-      add :memory_tags, {:array, :text}, default: []
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :agent_id,
-          references(:agents, column: :id, name: "memories_agent_id_fkey", type: :uuid),
-          null: false
-
-      add :memory_node_id,
-          references(:memory_nodes,
-            column: :id,
-            name: "memories_memory_node_id_fkey",
-            type: :uuid
-          )
     end
 
-    create table(:execution_containers, primary_key: false) do
+    # Foreign key constraints for embedding_vectors
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'embedding_vectors_memory_record_id_fkey'
+          ) THEN
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_memory_record_id_fkey
+            FOREIGN KEY (memory_record_id)
+            REFERENCES memories(id);
+          END IF;
+        END $$;
+        """
+
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'embedding_vectors_memory_node_id_fkey'
+          ) THEN
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_memory_node_id_fkey
+            FOREIGN KEY (memory_node_id)
+            REFERENCES memory_nodes(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:execution_containers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :status, :text
@@ -2971,83 +2969,104 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:execution_containers, [:name],
+    create_if_not_exists unique_index(:execution_containers, [:name],
              name: "execution_containers_unique_container_name_index"
            )
 
-    create table(:cerebros_model_runs, primary_key: false) do
+    create_if_not_exists table(:cerebros_model_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :run_id, :text
+      add :state, :text
+      add :search_space_version, :bigint
+      add :max_params, :bigint
+      add :requested_trials, :bigint
+      add :completed_trials, :bigint
+      add :best_metric, :float
+      add :error_message, :text
+      add :metadata, :map
+      add :bridge_payload, :map
+      add :bridge_result, :map
+      add :started_at, :utc_datetime_usec
+      add :finished_at, :utc_datetime_usec
     end
 
-    alter table(:ml_model_artifacts) do
-      modify :model_run_id,
-             references(:cerebros_model_runs,
-               column: :id,
-               name: "ml_model_artifacts_model_run_id_fkey",
-               type: :uuid
-             )
-    end
+    # Foreign key constraints for ml_model_artifacts
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'ml_model_artifacts_model_run_id_fkey'
+          ) THEN
+            ALTER TABLE ml_model_artifacts
+            ADD CONSTRAINT ml_model_artifacts_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
+            REFERENCES cerebros_model_runs(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:cerebros_model_trials) do
-      modify :model_run_id,
-             references(:cerebros_model_runs,
-               column: :id,
-               name: "cerebros_model_trials_model_run_id_fkey",
-               type: :uuid
-             )
-    end
 
-    alter table(:mlflow_experiments) do
-      modify :model_run_id,
-             references(:cerebros_model_runs,
-               column: :id,
-               name: "mlflow_experiments_model_run_id_fkey",
-               type: :uuid
-             )
-    end
+    # Foreign key constraints for cerebros_model_trials
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'cerebros_model_trials_model_run_id_fkey'
+          ) THEN
+            ALTER TABLE cerebros_model_trials
+            ADD CONSTRAINT cerebros_model_trials_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
+            REFERENCES cerebros_model_runs(id);
+          END IF;
+        END $$;
+        """
 
-    create unique_index(:mlflow_experiments, [:mlflow_experiment_id],
+
+    # Foreign key constraints for mlflow_experiments
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'mlflow_experiments_model_run_id_fkey'
+          ) THEN
+            ALTER TABLE mlflow_experiments
+            ADD CONSTRAINT mlflow_experiments_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
+            REFERENCES cerebros_model_runs(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists unique_index(:mlflow_experiments, [:mlflow_experiment_id],
              name: "mlflow_experiments_unique_mlflow_experiment_id_index"
            )
 
-    alter table(:mlflow_runs) do
-      modify :model_run_id,
-             references(:cerebros_model_runs,
-               column: :id,
-               name: "mlflow_runs_model_run_id_fkey",
-               type: :uuid
-             )
-    end
+    # Foreign key constraints for mlflow_runs
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'mlflow_runs_model_run_id_fkey'
+          ) THEN
+            ALTER TABLE mlflow_runs
+            ADD CONSTRAINT mlflow_runs_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
+            REFERENCES cerebros_model_runs(id);
+          END IF;
+        END $$;
+        """
 
-    create unique_index(:mlflow_runs, [:mlflow_run_id],
+
+    create_if_not_exists unique_index(:mlflow_runs, [:mlflow_run_id],
              name: "mlflow_runs_unique_mlflow_run_id_index"
            )
 
-    alter table(:cerebros_model_runs) do
-      add :run_id, :text, null: false
-      add :state, :text, null: false, default: "initialized"
-      add :search_space_version, :bigint, null: false, default: 1
-      add :max_params, :bigint, null: false, default: 2_000_000
-      add :requested_trials, :bigint, null: false, default: 3
-      add :completed_trials, :bigint, default: 0
-      add :best_metric, :float
-      add :error_message, :text
-      add :metadata, :map, default: %{}
-      add :bridge_payload, :map, default: %{}
-      add :bridge_result, :map, default: %{}
-      add :started_at, :utc_datetime_usec
-      add :finished_at, :utc_datetime_usec
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-    end
-
-    create table(:dag_nodes, primary_key: false) do
+    create_if_not_exists table(:dag_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :workflow_id,
@@ -3070,7 +3089,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderbolt_monitors, primary_key: false) do
+    create_if_not_exists table(:thunderbolt_monitors, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :service_name, :text, null: false
       add :service_type, :text
@@ -3107,63 +3126,77 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thunderbolt_monitors, [:service_name, :node_name],
+    create_if_not_exists unique_index(:thunderbolt_monitors, [:service_name, :node_name],
              name: "thunderbolt_monitors_unique_service_index"
            )
 
-    create table(:thundercom_federated_realms, primary_key: false) do
+    create_if_not_exists table(:thundercom_federated_realms, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :realm_name, :text
+      add :federation_url, :text
+      add :trust_level, :text
+      add :connection_status, :text
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    alter table(:thundercom_realm_identities) do
-      modify :realm_id,
-             references(:thundercom_federated_realms,
-               column: :id,
-               name: "thundercom_realm_identities_realm_id_fkey",
-               type: :uuid
-             )
-    end
+    # Foreign key constraints for thundercom_realm_identities
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thundercom_realm_identities_realm_id_fkey'
+          ) THEN
+            ALTER TABLE thundercom_realm_identities
+            ADD CONSTRAINT thundercom_realm_identities_realm_id_fkey
+            FOREIGN KEY (realm_id)
+            REFERENCES thundercom_federated_realms(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:thundercom_federated_messages) do
-      modify :source_realm_id,
-             references(:thundercom_federated_realms,
-               column: :id,
-               name: "thundercom_federated_messages_source_realm_id_fkey",
-               type: :uuid
-             )
 
-      modify :target_realm_id,
-             references(:thundercom_federated_realms,
-               column: :id,
-               name: "thundercom_federated_messages_target_realm_id_fkey",
-               type: :uuid
-             )
-    end
+    # Foreign key constraints for thundercom_federated_messages
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thundercom_federated_messages_source_realm_id_fkey'
+          ) THEN
+            ALTER TABLE thundercom_federated_messages
+            ADD CONSTRAINT thundercom_federated_messages_source_realm_id_fkey
+            FOREIGN KEY (source_realm_id)
+            REFERENCES thundercom_federated_realms(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:thundercom_federated_realms) do
-      add :realm_name, :text, null: false
-      add :federation_url, :text, null: false
-      add :trust_level, :text, null: false, default: "untrusted"
-      add :protocol_versions, {:array, :text}, null: false
-      add :connection_status, :text, null: false, default: "disconnected"
-      add :metadata, :map, null: false, default: %{}
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thundercom_federated_messages_target_realm_id_fkey'
+          ) THEN
+            ALTER TABLE thundercom_federated_messages
+            ADD CONSTRAINT thundercom_federated_messages_target_realm_id_fkey
+            FOREIGN KEY (target_realm_id)
+            REFERENCES thundercom_federated_realms(id);
+          END IF;
+        END $$;
+        """
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-    end
+    create_if_not_exists index(:thundercom_federated_realms, [:connection_status])
 
-    create index(:thundercom_federated_realms, [:connection_status])
+    create_if_not_exists index(:thundercom_federated_realms, [:trust_level])
 
-    create index(:thundercom_federated_realms, [:trust_level])
+    create_if_not_exists index(:thundercom_federated_realms, [:realm_name], unique: true)
 
-    create index(:thundercom_federated_realms, [:realm_name], unique: true)
-
-    create table(:thunderblock_roles, primary_key: false) do
+    create_if_not_exists table(:thunderblock_roles, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :role_name, :text, null: false
       add :role_slug, :text, null: false
@@ -3205,44 +3238,44 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create index(:thunderblock_roles, ["USING GIN (tags)"], name: "roles_tags_idx")
+    create_if_not_exists index(:thunderblock_roles, [:tags], using: :gin, name: "roles_tags_idx")
 
-    create index(:thunderblock_roles, ["USING GIN (role_flags)"], name: "roles_flags_idx")
+    create_if_not_exists index(:thunderblock_roles, [:role_flags], using: :gin, name: "roles_flags_idx")
 
-    create index(:thunderblock_roles, ["USING GIN (channel_overrides)"],
+    create_if_not_exists index(:thunderblock_roles, [:channel_overrides], using: :gin,
              name: "roles_overrides_idx"
            )
 
-    create index(:thunderblock_roles, ["USING GIN (permissions)"], name: "roles_permissions_idx")
+    create_if_not_exists index(:thunderblock_roles, [:permissions], using: :gin, name: "roles_permissions_idx")
 
-    create index(:thunderblock_roles, ["USING GIN (member_ids)"], name: "roles_members_idx")
+    create_if_not_exists index(:thunderblock_roles, [:member_ids], using: :gin, name: "roles_members_idx")
 
-    create index(:thunderblock_roles, [:mentionable], name: "roles_mentionable_idx")
+    create_if_not_exists index(:thunderblock_roles, [:mentionable], name: "roles_mentionable_idx")
 
-    create index(:thunderblock_roles, [:auto_assign, :community_id],
+    create_if_not_exists index(:thunderblock_roles, [:auto_assign, :community_id],
              name: "roles_auto_assign_idx"
            )
 
-    create index(:thunderblock_roles, [:position, :role_type], name: "roles_hierarchy_idx")
+    create_if_not_exists index(:thunderblock_roles, [:position, :role_type], name: "roles_hierarchy_idx")
 
-    create index(:thunderblock_roles, [:community_id, :role_type],
+    create_if_not_exists index(:thunderblock_roles, [:community_id, :role_type],
              name: "roles_community_type_idx"
            )
 
-    create index(:thunderblock_roles, [:community_id, :position],
+    create_if_not_exists index(:thunderblock_roles, [:community_id, :position],
              name: "roles_community_position_idx"
            )
 
-    create index(:thunderblock_roles, [:role_slug, :community_id],
+    create_if_not_exists index(:thunderblock_roles, [:role_slug, :community_id],
              name: "roles_slug_community_idx",
              unique: true
            )
 
-    create unique_index(:thunderblock_roles, [:role_slug, :community_id],
+    create_if_not_exists unique_index(:thunderblock_roles, [:role_slug, :community_id],
              name: "thunderblock_roles_unique_role_in_community_index"
            )
 
-    create table(:probe_attractor_summaries, primary_key: false) do
+    create_if_not_exists table(:probe_attractor_summaries, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :run_id,
@@ -3270,207 +3303,210 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:probe_attractor_summaries, [:lyap])
+    create_if_not_exists index(:probe_attractor_summaries, [:lyap])
 
-    create index(:probe_attractor_summaries, [:corr_dim])
+    create_if_not_exists index(:probe_attractor_summaries, [:corr_dim])
 
-    create table(:upm_trainers, primary_key: false) do
+    create_if_not_exists table(:upm_trainers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:upm_snapshots) do
-      modify :trainer_id,
-             references(:upm_trainers,
-               column: :id,
-               name: "upm_snapshots_trainer_id_fkey",
-               type: :uuid
-             )
-    end
-
-    create unique_index(:upm_snapshots, [:trainer_id, :version],
-             name: "upm_snapshots_unique_version_per_trainer_index"
-           )
-
-    alter table(:upm_drift_windows) do
-      modify :trainer_id,
-             references(:upm_trainers,
-               column: :id,
-               name: "upm_drift_windows_trainer_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:upm_trainers) do
-      add :name, :text, null: false
+      add :name, :text
       add :tenant_id, :uuid
-      add :mode, :text, null: false, default: "shadow"
-      add :status, :text, null: false, default: "idle"
+      add :mode, :text
+      add :status, :text
       add :last_window_id, :uuid
       add :last_window_fetched_at, :utc_datetime_usec
       add :last_loss, :float
-      add :drift_score, :float, default: 0.0
-      add :metadata, :map, default: %{}
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+      add :drift_score, :float
+      add :metadata, :map
     end
 
-    create unique_index(:upm_trainers, [:name, :tenant_id],
+    # Foreign key constraints for upm_snapshots
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'upm_snapshots_trainer_id_fkey'
+          ) THEN
+            ALTER TABLE upm_snapshots
+            ADD CONSTRAINT upm_snapshots_trainer_id_fkey
+            FOREIGN KEY (trainer_id)
+            REFERENCES upm_trainers(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists unique_index(:upm_snapshots, [:trainer_id, :version],
+             name: "upm_snapshots_unique_version_per_trainer_index"
+           )
+
+    # Foreign key constraints for upm_drift_windows
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'upm_drift_windows_trainer_id_fkey'
+          ) THEN
+            ALTER TABLE upm_drift_windows
+            ADD CONSTRAINT upm_drift_windows_trainer_id_fkey
+            FOREIGN KEY (trainer_id)
+            REFERENCES upm_trainers(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists unique_index(:upm_trainers, [:name, :tenant_id],
              name: "upm_trainers_name_per_tenant_index"
            )
 
-    create table(:ising_optimization_problems, primary_key: false) do
+    create_if_not_exists table(:ising_optimization_problems, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:ising_optimization_runs) do
-      modify :problem_id,
-             references(:ising_optimization_problems,
-               column: :id,
-               name: "ising_optimization_runs_problem_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:ising_optimization_problems) do
-      add :name, :text, null: false
+      add :name, :text
       add :description, :text
-      add :topology, :text, null: false
-      add :dimensions, :map, null: false
+      add :topology, :text
+      add :dimensions, :map
       add :coupling_matrix, :map
       add :field_config, :map
-      add :boundary_conditions, :text, default: "periodic"
-      add :problem_type, :text, null: false
-      add :edge_list, {:array, :map}
-      add :metadata, :map, default: %{}
-      add :tags, {:array, :text}, default: []
-
-      add :created_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+      add :boundary_conditions, :text
+      add :problem_type, :text
+      add :metadata, :map
+      add :created_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create table(:thunderblock_cluster_nodes, primary_key: false) do
+    # Foreign key constraints for ising_optimization_runs
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'ising_optimization_runs_problem_id_fkey'
+          ) THEN
+            ALTER TABLE ising_optimization_runs
+            ADD CONSTRAINT ising_optimization_runs_problem_id_fkey
+            FOREIGN KEY (problem_id)
+            REFERENCES ising_optimization_problems(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:thunderblock_cluster_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :node_name, :text
+      add :node_type, :text
+      add :status, :text
+      add :load_score, :numeric
+      add :capabilities, :map
+      add :last_heartbeat, :utc_datetime_usec
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    alter table(:thunderblock_communities) do
-      modify :cluster_node_id,
-             references(:thunderblock_cluster_nodes,
-               column: :id,
-               name: "thunderblock_communities_cluster_node_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
-    end
+    # Foreign key constraints for thunderblock_communities
+    # NOTE: cluster_node_id FK removed - column doesn't exist in current schema
 
-    create unique_index(:thunderblock_communities, [:community_slug],
+
+    create_if_not_exists unique_index(:thunderblock_communities, [:community_slug],
              name: "thunderblock_communities_unique_community_slug_index"
            )
 
-    alter table(:thunderblock_zone_containers) do
-      modify :cluster_node_id,
-             references(:thunderblock_cluster_nodes,
-               column: :id,
-               name: "thunderblock_zone_containers_cluster_node_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
-    end
+    # Foreign key constraints for thunderblock_zone_containers
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_zone_containers_cluster_node_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_zone_containers
+            ADD CONSTRAINT thunderblock_zone_containers_cluster_node_id_fkey
+            FOREIGN KEY (cluster_node_id)
+            REFERENCES thunderblock_cluster_nodes(id);
+          END IF;
+        END $$;
+        """
 
-    create unique_index(:thunderblock_zone_containers, [:zone_name],
+
+    create_if_not_exists unique_index(:thunderblock_zone_containers, [:zone_name],
              name: "thunderblock_zone_containers_unique_zone_name_index"
            )
 
-    alter table(:thunderblock_supervision_trees) do
-      modify :cluster_node_id,
-             references(:thunderblock_cluster_nodes,
-               column: :id,
-               name: "thunderblock_supervision_trees_cluster_node_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
+    # Foreign key constraints for thunderblock_supervision_trees
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_supervision_trees_cluster_node_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_supervision_trees
+            ADD CONSTRAINT thunderblock_supervision_trees_cluster_node_id_fkey
+            FOREIGN KEY (cluster_node_id)
+            REFERENCES thunderblock_cluster_nodes(id);
+          END IF;
+        END $$;
+        """
 
-      modify :zone_container_id,
-             references(:thunderblock_zone_containers,
-               column: :id,
-               name: "thunderblock_supervision_trees_zone_container_id_fkey",
-               type: :uuid,
-               on_delete: :delete_all,
-               on_update: :update_all
-             )
-    end
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thunderblock_supervision_trees_zone_container_id_fkey'
+          ) THEN
+            ALTER TABLE thunderblock_supervision_trees
+            ADD CONSTRAINT thunderblock_supervision_trees_zone_container_id_fkey
+            FOREIGN KEY (zone_container_id)
+            REFERENCES thunderblock_zone_containers(id);
+          END IF;
+        END $$;
+        """
 
-    alter table(:thunderblock_cluster_nodes) do
-      add :node_name, :text, null: false
-      add :node_type, :text, default: "worker"
-      add :status, :text, default: "offline"
-      add :load_score, :decimal, default: "0.0"
-      add :capabilities, :map, default: %{}
-      add :last_heartbeat, :utc_datetime_usec, default: fragment("(now() AT TIME ZONE 'utc')")
-      add :metadata, :map, default: %{}
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-    end
-
-    create unique_index(:thunderblock_cluster_nodes, [:node_name],
+    create_if_not_exists unique_index(:thunderblock_cluster_nodes, [:node_name],
              name: "thunderblock_cluster_nodes_unique_node_name_index"
            )
 
-    create table(:thundercore_workflow_dags, primary_key: false) do
+    create_if_not_exists table(:thundercore_workflow_dags, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:thundercore_task_nodes) do
-      modify :workflow_dag_id,
-             references(:thundercore_workflow_dags,
-               column: :id,
-               name: "thundercore_task_nodes_workflow_dag_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:thundercore_workflow_dags) do
-      add :name, :text, null: false
+      add :name, :text
       add :description, :text
-      add :status, :text, default: "pending"
-      add :priority, :bigint, default: 5
-      add :metadata, :map, default: %{}
+      add :status, :text
+      add :priority, :bigint
+      add :metadata, :map
       add :started_at, :utc_datetime_usec
       add :completed_at, :utc_datetime_usec
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create unique_index(:thundercore_workflow_dags, [:name],
+    # Foreign key constraints for thundercore_task_nodes
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'thundercore_task_nodes_workflow_dag_id_fkey'
+          ) THEN
+            ALTER TABLE thundercore_task_nodes
+            ADD CONSTRAINT thundercore_task_nodes_workflow_dag_id_fkey
+            FOREIGN KEY (workflow_dag_id)
+            REFERENCES thundercore_workflow_dags(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists unique_index(:thundercore_workflow_dags, [:name],
              name: "thundercore_workflow_dags_unique_workflow_name_index"
            )
 
-    create table(:policy_rules, primary_key: false) do
+    create_if_not_exists table(:policy_rules, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :name, :text, null: false
       add :rule_type, :text, null: false
@@ -3489,11 +3525,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:policy_rules, [:name, :scope],
+    create_if_not_exists unique_index(:policy_rules, [:name, :scope],
              name: "policy_rules_unique_name_per_scope_index"
            )
 
-    create table(:thundercore_timing_events, primary_key: false) do
+    create_if_not_exists table(:thundercore_timing_events, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :event_name, :text, null: false
       add :event_type, :text, null: false
@@ -3511,7 +3547,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create table(:thunderblock_federation_sockets, primary_key: false) do
+    create_if_not_exists table(:thunderblock_federation_sockets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :socket_name, :text, null: false
       add :socket_slug, :text, null: false
@@ -3566,56 +3602,56 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
           )
     end
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (tags)"],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:tags], using: :gin,
              name: "federation_sockets_tags_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (error_log)"],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:error_log], using: :gin,
              name: "federation_sockets_errors_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (federation_metrics)"],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:federation_metrics], using: :gin,
              name: "federation_sockets_metrics_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (quarantine_queue)"],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:quarantine_queue], using: :gin,
              name: "federation_sockets_quarantine_idx"
            )
 
-    create index(:thunderblock_federation_sockets, ["USING GIN (message_queue)"],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:message_queue], using: :gin,
              name: "federation_sockets_queue_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [:target_community_id],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:target_community_id],
              name: "federation_sockets_target_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [:trust_level, :status],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:trust_level, :status],
              name: "federation_sockets_trust_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [:federation_protocol, :status],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:federation_protocol, :status],
              name: "federation_sockets_protocol_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [:status, :last_heartbeat],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:status, :last_heartbeat],
              name: "federation_sockets_heartbeat_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [:community_id, :status],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:community_id, :status],
              name: "federation_sockets_community_status_idx"
            )
 
-    create index(:thunderblock_federation_sockets, [:socket_slug, :community_id],
+    create_if_not_exists index(:thunderblock_federation_sockets, [:socket_slug, :community_id],
              name: "federation_sockets_slug_community_idx",
              unique: true
            )
 
-    create unique_index(:thunderblock_federation_sockets, [:socket_slug, :community_id],
+    create_if_not_exists unique_index(:thunderblock_federation_sockets, [:socket_slug, :community_id],
              name: "federation_socket_community_idx"
            )
 
-    create table(:probe_laps, primary_key: false) do
+    create_if_not_exists table(:probe_laps, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
 
       add :run_id,
@@ -3638,159 +3674,135 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:probe_laps, [:run_id, :lap_index], unique: true)
+    create_if_not_exists index(:probe_laps, [:run_id, :lap_index], unique: true)
 
-    create table(:users, primary_key: false) do
+    create_if_not_exists table(:users, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:agents) do
-      modify :created_by_user_id,
-             references(:users, column: :id, name: "agents_created_by_user_id_fkey", type: :uuid)
-    end
-
-    alter table(:user_tokens) do
-      modify :user_id,
-             references(:users, column: :id, name: "user_tokens_user_id_fkey", type: :uuid)
-    end
-
-    alter table(:users) do
-      add :email, :citext, null: false
+      add :email, :citext
+      add :password, :text
       add :hashed_password, :text
       add :confirmed_at, :utc_datetime
-      add :first_name, :text
-      add :last_name, :text
-      add :avatar_url, :text
-      add :role, :text, null: false, default: "user"
-      add :last_login_at, :utc_datetime
-      add :login_count, :bigint, null: false, default: 0
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :password, :text
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create unique_index(:users, [:email], name: "users_unique_email_index")
+    # Foreign key constraints for agents
+    # Removed orphaned FK: agents_created_by_user_id_fkey (created_by_user_id column does not exist in agents table)
 
-    create table(:thunderblock_knowledge_nodes, primary_key: false) do
+
+    # Foreign key constraints for user_tokens
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'user_tokens_user_id_fkey'
+          ) THEN
+            ALTER TABLE user_tokens
+            ADD CONSTRAINT user_tokens_user_id_fkey
+            FOREIGN KEY (user_id)
+            REFERENCES users(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists unique_index(:users, [:email], name: "users_unique_email_index")
+
+    create_if_not_exists table(:thunderblock_knowledge_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :tenant_id, :uuid
+      add :node_type, :text
+      add :title, :text
+      add :description, :text
+      add :knowledge_domain, :text
+      add :confidence_level, :numeric
+      add :evidence_strength, :numeric
+      add :centrality_score, :numeric
+      add :relationship_data, :map
+      add :temporal_data, :map
+      add :spatial_data, :map
+      add :graph_metrics, :map
+      add :knowledge_quality, :map
+      add :consolidation_data, :map
+      add :discovery_data, :map
+      add :access_patterns, :map
+      add :verification_status, :text
+      add :indexing_status, :text
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    alter table(:embedding_vectors) do
-      modify :knowledge_node_id,
-             references(:thunderblock_knowledge_nodes,
-               column: :id,
-               name: "embedding_vectors_knowledge_node_id_fkey",
-               type: :uuid
-             )
+    # Foreign key constraints for embedding_vectors
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'embedding_vectors_knowledge_node_id_fkey'
+          ) THEN
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_knowledge_node_id_fkey
+            FOREIGN KEY (knowledge_node_id)
+            REFERENCES thunderblock_knowledge_nodes(id);
+          END IF;
+        END $$;
+        """
 
-      modify :experience_id,
-             references(:experiences,
-               column: :id,
-               name: "embedding_vectors_experience_id_fkey",
-               type: :uuid
-             )
-    end
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'embedding_vectors_experience_id_fkey'
+          ) THEN
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_experience_id_fkey
+            FOREIGN KEY (experience_id)
+            REFERENCES experiences(id);
+          END IF;
+        END $$;
+        """
 
-    create unique_index(:embedding_vectors, [:content_hash, :vector_model],
+
+    create_if_not_exists unique_index(:embedding_vectors, [:content_hash, :vector_model],
              name: "embedding_vectors_unique_content_hash_per_model_index"
            )
 
-    alter table(:thunderblock_knowledge_nodes) do
-      add :tenant_id, :uuid, null: false
-      add :node_type, :text, null: false, default: "concept"
-      add :title, :text, null: false
-      add :description, :text
-      add :aliases, {:array, :text}, null: false, default: []
-      add :knowledge_domain, :text, null: false
-      add :source_domains, {:array, :text}, null: false, default: []
-      add :confidence_level, :decimal, null: false, default: "1.0"
-      add :evidence_strength, :decimal, null: false, default: "1.0"
-      add :centrality_score, :decimal, null: false, default: "0.5"
-      add :memory_record_ids, {:array, :uuid}, null: false, default: []
-      add :embedding_vector_ids, {:array, :uuid}, null: false, default: []
-      add :relationship_data, :map, null: false
-      add :semantic_tags, {:array, :text}, null: false, default: []
-      add :temporal_data, :map, null: false
-      add :spatial_data, :map, null: false
-      add :graph_metrics, :map, null: false
-      add :knowledge_quality, :map, null: false
-      add :consolidation_data, :map, null: false
-      add :discovery_data, :map, null: false
-      add :access_patterns, :map, null: false
-      add :verification_status, :text, null: false, default: "unverified"
-      add :indexing_status, :text, null: false, default: "pending"
-      add :taxonomy_path, {:array, :text}, null: false, default: []
-      add :metadata, :map, null: false, default: %{}
+    # Removed 3 orphaned indexes: columns embedding_vector_ids, memory_record_ids, and taxonomy_path do not exist in thunderblock_knowledge_nodes
+    # Removed 3 more orphaned indexes: columns source_domains, semantic_tags, and aliases do not exist in thunderblock_knowledge_nodes
 
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-    end
-
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (embedding_vector_ids)"],
-             name: "knowledge_nodes_embeddings_idx"
-           )
-
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (memory_record_ids)"],
-             name: "knowledge_nodes_memories_idx"
-           )
-
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (taxonomy_path)"],
-             name: "knowledge_nodes_taxonomy_idx"
-           )
-
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (relationship_data)"],
+    # Fixed: removed tenant_id from GIN index (UUIDs can't use GIN without operator class)
+    create_if_not_exists index(:thunderblock_knowledge_nodes, [:relationship_data], using: :gin,
              name: "knowledge_nodes_relationships_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (source_domains)"],
-             name: "knowledge_nodes_sources_idx"
-           )
-
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (semantic_tags)"],
-             name: "knowledge_nodes_tags_idx"
-           )
-
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (aliases)"],
-             name: "knowledge_nodes_aliases_idx"
-           )
-
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, :indexing_status],
+    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :indexing_status],
              name: "knowledge_nodes_indexing_idx"
            )
 
-    create index(
+    create_if_not_exists index(
              :thunderblock_knowledge_nodes,
              [:tenant_id, :confidence_level, :evidence_strength],
              name: "knowledge_nodes_quality_idx"
            )
 
-    create index(
+    create_if_not_exists index(
              :thunderblock_knowledge_nodes,
              [:tenant_id, :verification_status, :centrality_score],
              name: "knowledge_nodes_verification_idx"
            )
 
-    create index(:thunderblock_knowledge_nodes, [:tenant_id, :node_type, :knowledge_domain],
+    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :node_type, :knowledge_domain],
              name: "knowledge_nodes_type_domain_idx"
            )
 
-    create unique_index(:thunderblock_knowledge_nodes, [:tenant_id, :title, :knowledge_domain],
+    create_if_not_exists unique_index(:thunderblock_knowledge_nodes, [:tenant_id, :title, :knowledge_domain],
              name: "thunderblock_knowledge_nodes_unique_title_domain_index"
            )
 
-    create table(:thunderblock_distributed_state, primary_key: false) do
+    create_if_not_exists table(:thunderblock_distributed_state, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :state_key, :text, null: false
       add :state_scope, :text, default: "global"
@@ -3808,78 +3820,109 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:thunderblock_distributed_state, [:state_key, :state_scope],
+    create_if_not_exists unique_index(:thunderblock_distributed_state, [:state_key, :state_scope],
              name: "thunderblock_distributed_state_unique_state_key_scope_index"
            )
 
-    create table(:ml_training_datasets, primary_key: false) do
+    create_if_not_exists table(:ml_training_datasets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
-    end
-
-    alter table(:ml_training_runs) do
-      modify :dataset_id,
-             references(:ml_training_datasets,
-               column: :id,
-               name: "ml_training_runs_dataset_id_fkey",
-               type: :uuid
-             )
-
-      modify :spec_id,
-             references(:ml_model_specs,
-               column: :id,
-               name: "ml_training_runs_spec_id_fkey",
-               type: :uuid
-             )
-
-      modify :artifact_id,
-             references(:ml_model_artifacts,
-               column: :id,
-               name: "ml_training_runs_artifact_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:ml_feature_views) do
-      modify :dataset_id,
-             references(:ml_training_datasets,
-               column: :id,
-               name: "ml_feature_views_dataset_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:ml_model_versions) do
-      modify :dataset_id,
-             references(:ml_training_datasets,
-               column: :id,
-               name: "ml_model_versions_dataset_id_fkey",
-               type: :uuid
-             )
-    end
-
-    alter table(:ml_training_datasets) do
-      add :dataset_id, :text, null: false
-      add :tenant_id, :text, null: false
-      add :name, :text, null: false
-      add :purpose, :text, null: false
+      add :dataset_id, :text
+      add :tenant_id, :text
+      add :name, :text
+      add :purpose, :text
       add :description, :text
-      add :version, :bigint, default: 1
-      add :status, :text, default: "draft"
+      add :version, :bigint
+      add :status, :text
       add :bytes, :bigint
       add :records, :bigint
       add :checksum, :text
       add :sealed_at, :utc_datetime_usec
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
-    create table(:voice_devices, primary_key: false) do
+    # Foreign key constraints for ml_training_runs
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'ml_training_runs_dataset_id_fkey'
+          ) THEN
+            ALTER TABLE ml_training_runs
+            ADD CONSTRAINT ml_training_runs_dataset_id_fkey
+            FOREIGN KEY (dataset_id)
+            REFERENCES ml_training_datasets(id);
+          END IF;
+        END $$;
+        """
+
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'ml_training_runs_spec_id_fkey'
+          ) THEN
+            ALTER TABLE ml_training_runs
+            ADD CONSTRAINT ml_training_runs_spec_id_fkey
+            FOREIGN KEY (spec_id)
+            REFERENCES ml_model_specs(id);
+          END IF;
+        END $$;
+        """
+
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'ml_training_runs_artifact_id_fkey'
+          ) THEN
+            ALTER TABLE ml_training_runs
+            ADD CONSTRAINT ml_training_runs_artifact_id_fkey
+            FOREIGN KEY (artifact_id)
+            REFERENCES ml_model_artifacts(id);
+          END IF;
+        END $$;
+        """
+
+
+    # Foreign key constraints for ml_feature_views
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'ml_feature_views_dataset_id_fkey'
+          ) THEN
+            ALTER TABLE ml_feature_views
+            ADD CONSTRAINT ml_feature_views_dataset_id_fkey
+            FOREIGN KEY (dataset_id)
+            REFERENCES ml_training_datasets(id);
+          END IF;
+        END $$;
+        """
+
+
+    # Foreign key constraints for ml_model_versions
+    execute """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'ml_model_versions_dataset_id_fkey'
+          ) THEN
+            ALTER TABLE ml_model_versions
+            ADD CONSTRAINT ml_model_versions_dataset_id_fkey
+            FOREIGN KEY (dataset_id)
+            REFERENCES ml_training_datasets(id);
+          END IF;
+        END $$;
+        """
+
+
+    create_if_not_exists table(:voice_devices, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :principal_id, :uuid, null: false
       add :input_device_id, :text
@@ -3897,7 +3940,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create unique_index(:voice_devices, [:principal_id],
+    create_if_not_exists unique_index(:voice_devices, [:principal_id],
              name: "voice_devices_unique_principal_index"
            )
   end
@@ -3909,21 +3952,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop table(:voice_devices)
 
-    alter table(:ml_training_datasets) do
-      remove :updated_at
-      remove :inserted_at
-      remove :sealed_at
-      remove :checksum
-      remove :records
-      remove :bytes
-      remove :status
-      remove :version
-      remove :description
-      remove :purpose
-      remove :name
-      remove :tenant_id
-      remove :dataset_id
-    end
 
     drop constraint(:ml_model_versions, "ml_model_versions_dataset_id_fkey")
 
@@ -3985,71 +4013,14 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "knowledge_nodes_indexing_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (aliases)"],
-                     name: "knowledge_nodes_aliases_idx"
-                   )
-
-    drop_if_exists index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (semantic_tags)"],
-                     name: "knowledge_nodes_tags_idx"
-                   )
-
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, "USING GIN (source_domains)"],
-                     name: "knowledge_nodes_sources_idx"
-                   )
-
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, "USING GIN (relationship_data)"],
+    # Fixed: removed tenant_id from GIN index drop (matching up migration fix)
+    drop_if_exists index(:thunderblock_knowledge_nodes, [:relationship_data], using: :gin,
                      name: "knowledge_nodes_relationships_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, [:tenant_id, "USING GIN (taxonomy_path)"],
-                     name: "knowledge_nodes_taxonomy_idx"
-                   )
+    # Removed 3 orphaned index drops: source_domains, semantic_tags, aliases
+    # Removed 3 orphaned index drops (corresponding indexes removed from up migration)
 
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, "USING GIN (memory_record_ids)"],
-                     name: "knowledge_nodes_memories_idx"
-                   )
-
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, "USING GIN (embedding_vector_ids)"],
-                     name: "knowledge_nodes_embeddings_idx"
-                   )
-
-    alter table(:thunderblock_knowledge_nodes) do
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :taxonomy_path
-      remove :indexing_status
-      remove :verification_status
-      remove :access_patterns
-      remove :discovery_data
-      remove :consolidation_data
-      remove :knowledge_quality
-      remove :graph_metrics
-      remove :spatial_data
-      remove :temporal_data
-      remove :semantic_tags
-      remove :relationship_data
-      remove :embedding_vector_ids
-      remove :memory_record_ids
-      remove :centrality_score
-      remove :evidence_strength
-      remove :confidence_level
-      remove :source_domains
-      remove :knowledge_domain
-      remove :aliases
-      remove :description
-      remove :title
-      remove :node_type
-      remove :tenant_id
-    end
 
     drop_if_exists unique_index(:embedding_vectors, [:content_hash, :vector_model],
                      name: "embedding_vectors_unique_content_hash_per_model_index"
@@ -4068,20 +4039,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop_if_exists unique_index(:users, [:email], name: "users_unique_email_index")
 
-    alter table(:users) do
-      remove :password
-      remove :updated_at
-      remove :inserted_at
-      remove :login_count
-      remove :last_login_at
-      remove :role
-      remove :avatar_url
-      remove :last_name
-      remove :first_name
-      remove :confirmed_at
-      remove :hashed_password
-      remove :email
-    end
 
     drop constraint(:user_tokens, "user_tokens_user_id_fkey")
 
@@ -4091,9 +4048,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop constraint(:agents, "agents_created_by_user_id_fkey")
 
-    alter table(:agents) do
-      modify :created_by_user_id, :uuid
-    end
 
     drop table(:users)
 
@@ -4141,23 +4095,23 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "federation_sockets_target_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (message_queue)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [:message_queue], using: :gin,
                      name: "federation_sockets_queue_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (quarantine_queue)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [:quarantine_queue], using: :gin,
                      name: "federation_sockets_quarantine_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (federation_metrics)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [:federation_metrics], using: :gin,
                      name: "federation_sockets_metrics_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (error_log)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [:error_log], using: :gin,
                      name: "federation_sockets_errors_idx"
                    )
 
-    drop_if_exists index(:thunderblock_federation_sockets, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_federation_sockets, [:tags], using: :gin,
                      name: "federation_sockets_tags_idx"
                    )
 
@@ -4175,17 +4129,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "thundercore_workflow_dags_unique_workflow_name_index"
                    )
 
-    alter table(:thundercore_workflow_dags) do
-      remove :updated_at
-      remove :inserted_at
-      remove :completed_at
-      remove :started_at
-      remove :metadata
-      remove :priority
-      remove :status
-      remove :description
-      remove :name
-    end
 
     drop constraint(:thundercore_task_nodes, "thundercore_task_nodes_workflow_dag_id_fkey")
 
@@ -4199,17 +4142,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "thunderblock_cluster_nodes_unique_node_name_index"
                    )
 
-    alter table(:thunderblock_cluster_nodes) do
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :last_heartbeat
-      remove :capabilities
-      remove :load_score
-      remove :status
-      remove :node_type
-      remove :node_name
-    end
 
     drop constraint(
            :thunderblock_supervision_trees,
@@ -4235,9 +4167,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
            "thunderblock_zone_containers_cluster_node_id_fkey"
          )
 
-    alter table(:thunderblock_zone_containers) do
-      modify :cluster_node_id, :uuid
-    end
 
     drop_if_exists unique_index(:thunderblock_communities, [:community_slug],
                      name: "thunderblock_communities_unique_community_slug_index"
@@ -4245,27 +4174,9 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop constraint(:thunderblock_communities, "thunderblock_communities_cluster_node_id_fkey")
 
-    alter table(:thunderblock_communities) do
-      modify :cluster_node_id, :uuid
-    end
 
     drop table(:thunderblock_cluster_nodes)
 
-    alter table(:ising_optimization_problems) do
-      remove :updated_at
-      remove :created_at
-      remove :tags
-      remove :metadata
-      remove :edge_list
-      remove :problem_type
-      remove :boundary_conditions
-      remove :field_config
-      remove :coupling_matrix
-      remove :dimensions
-      remove :topology
-      remove :description
-      remove :name
-    end
 
     drop constraint(:ising_optimization_runs, "ising_optimization_runs_problem_id_fkey")
 
@@ -4279,19 +4190,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "upm_trainers_name_per_tenant_index"
                    )
 
-    alter table(:upm_trainers) do
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :drift_score
-      remove :last_loss
-      remove :last_window_fetched_at
-      remove :last_window_id
-      remove :status
-      remove :mode
-      remove :tenant_id
-      remove :name
-    end
 
     drop constraint(:upm_drift_windows, "upm_drift_windows_trainer_id_fkey")
 
@@ -4347,21 +4245,21 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop_if_exists index(:thunderblock_roles, [:mentionable], name: "roles_mentionable_idx")
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (member_ids)"],
+    drop_if_exists index(:thunderblock_roles, [:member_ids], using: :gin,
                      name: "roles_members_idx"
                    )
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (permissions)"],
+    drop_if_exists index(:thunderblock_roles, [:permissions], using: :gin,
                      name: "roles_permissions_idx"
                    )
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (channel_overrides)"],
+    drop_if_exists index(:thunderblock_roles, [:channel_overrides], using: :gin,
                      name: "roles_overrides_idx"
                    )
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (role_flags)"], name: "roles_flags_idx")
+    drop_if_exists index(:thunderblock_roles, [:role_flags], using: :gin, name: "roles_flags_idx")
 
-    drop_if_exists index(:thunderblock_roles, ["USING GIN (tags)"], name: "roles_tags_idx")
+    drop_if_exists index(:thunderblock_roles, [:tags], using: :gin, name: "roles_tags_idx")
 
     drop table(:thunderblock_roles)
 
@@ -4371,16 +4269,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop_if_exists index(:thundercom_federated_realms, [:connection_status])
 
-    alter table(:thundercom_federated_realms) do
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :connection_status
-      remove :protocol_versions
-      remove :trust_level
-      remove :federation_url
-      remove :realm_name
-    end
 
     drop constraint(
            :thundercom_federated_messages,
@@ -4415,23 +4303,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop table(:dag_nodes)
 
-    alter table(:cerebros_model_runs) do
-      remove :updated_at
-      remove :inserted_at
-      remove :finished_at
-      remove :started_at
-      remove :bridge_result
-      remove :bridge_payload
-      remove :metadata
-      remove :error_message
-      remove :best_metric
-      remove :completed_trials
-      remove :requested_trials
-      remove :max_params
-      remove :search_space_version
-      remove :state
-      remove :run_id
-    end
 
     drop_if_exists unique_index(:mlflow_runs, [:mlflow_run_id],
                      name: "mlflow_runs_unique_mlflow_run_id_index"
@@ -4477,33 +4348,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop constraint(:memories, "memories_memory_node_id_fkey")
 
-    alter table(:memories) do
-      remove :memory_node_id
-      remove :agent_id
-      remove :updated_at
-      remove :inserted_at
-      remove :memory_tags
-      remove :last_accessed_at
-      remove :times_accessed
-      remove :importance
-      remove :accessibility
-      remove :vividness
-      remove :emotional_data
-      remove :sensory_data
-      remove :context_data
-      remove :memory_type
-      remove :full_content
-      remove :summary
-    end
 
     drop constraint(:embedding_vectors, "embedding_vectors_memory_record_id_fkey")
 
     drop constraint(:embedding_vectors, "embedding_vectors_memory_node_id_fkey")
 
-    alter table(:embedding_vectors) do
-      modify :memory_node_id, :uuid
-      modify :memory_record_id, :uuid
-    end
 
     drop table(:memories)
 
@@ -4511,16 +4360,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "dag_workflows_unique_correlation_index"
                    )
 
-    alter table(:dag_workflows) do
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :status
-      remove :causation_id
-      remove :correlation_id
-      remove :root_event_name
-      remove :source_domain
-    end
 
     drop constraint(:dag_snapshots, "dag_snapshots_workflow_id_fkey")
 
@@ -4544,46 +4383,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop constraint(:thunderlane_cell_topology, "thunderlane_cell_topology_coordinator_id_fkey")
 
-    alter table(:thunderlane_cell_topology) do
-      remove :coordinator_id
-      remove :updated_at
-      remove :created_at
-      remove :metadata
-      remove :config
-      remove :initial_state_seed
-      remove :initial_state_config
-      remove :initial_state_pattern
-      remove :memory_efficiency
-      remove :communication_overhead
-      remove :locality_score
-      remove :last_rebalance_at
-      remove :distribution_health
-      remove :status
-      remove :load_variance
-      remove :min_partition_size
-      remove :max_partition_size
-      remove :average_neighbors_per_cell
-      remove :node_load_balance
-      remove :partition_assignments
-      remove :thundercell_nodes
-      remove :partitioning_config
-      remove :partitioning_strategy
-      remove :neighborhood_radius
-      remove :neighborhood_type
-      remove :boundary_z
-      remove :boundary_y
-      remove :boundary_x
-      remove :topology_type
-      remove :partition_count
-      remove :cells_per_partition
-      remove :total_cells
-      remove :depth
-      remove :height
-      remove :width
-      remove :lane_coordinator_id
-      remove :description
-      remove :name
-    end
 
     drop constraint(:thunderlane_lane_metrics, "thunderlane_lane_metrics_topology_id_fkey")
 
@@ -4606,49 +4405,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
            "thunderlane_telemetry_snapshots_rule_oracle_id_fkey"
          )
 
-    alter table(:thunderlane_telemetry_snapshots) do
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :rule_oracle_id
-      remove :lane_configuration_id
-      remove :anomaly_features
-      remove :anomaly_score
-      remove :error_count
-      remove :coordination_latency_us
-      remove :coordination_messages
-      remove :network_bytes_out
-      remove :network_bytes_in
-      remove :gc_total_time_ms
-      remove :gc_count
-      remove :memory_usage_max_mb
-      remove :memory_usage_mean_mb
-      remove :cpu_usage_mean
-      remove :dropped_events
-      remove :backpressure_events
-      remove :queue_depth_max
-      remove :queue_depth_mean
-      remove :latency_max_us
-      remove :latency_p999_us
-      remove :latency_p99_us
-      remove :latency_p95_us
-      remove :latency_p90_us
-      remove :latency_median_us
-      remove :latency_mean_us
-      remove :tail_fit_quality
-      remove :tail_exponent
-      remove :displacement_variance
-      remove :displacement_mean
-      remove :anti_bunching_effectiveness
-      remove :burst_count
-      remove :event_rate_per_second
-      remove :total_events
-      remove :window_duration_ms
-      remove :window_end_ms
-      remove :window_start_ms
-      remove :snapshot_type
-      remove :coordinator_id
-    end
 
     drop constraint(
            :thunderlane_performance_metrics,
@@ -4691,42 +4447,16 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "channels_visibility_idx"
                    )
 
-    drop_if_exists index(:thunderblock_channels, ["USING GIN (pinned_message_ids)"],
+    drop_if_exists index(:thunderblock_channels, [:pinned_message_ids], using: :gin,
                      name: "channels_pinned_messages_idx"
                    )
 
-    drop_if_exists index(:thunderblock_channels, ["USING GIN (tags)"], name: "channels_tags_idx")
+    drop_if_exists index(:thunderblock_channels, [:tags], using: :gin, name: "channels_tags_idx")
 
-    drop_if_exists index(:thunderblock_channels, ["USING GIN (channel_metrics)"],
+    drop_if_exists index(:thunderblock_channels, [:channel_metrics], using: :gin,
                      name: "channels_metrics_idx"
                    )
 
-    alter table(:thunderblock_channels) do
-      remove :community_id
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :tags
-      remove :position
-      remove :channel_metrics
-      remove :moderation_config
-      remove :channel_integrations
-      remove :pinned_message_ids
-      remove :created_by
-      remove :last_message_at
-      remove :active_participants
-      remove :message_count
-      remove :permissions_override
-      remove :voice_config
-      remove :channel_config
-      remove :topic
-      remove :visibility
-      remove :status
-      remove :channel_category
-      remove :channel_type
-      remove :channel_slug
-      remove :channel_name
-    end
 
     drop constraint(:thunderblock_messages, "thunderblock_messages_channel_id_fkey")
 
@@ -4743,26 +4473,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop constraint(:decisions, "decisions_parent_decision_id_fkey")
 
-    alter table(:decisions) do
-      remove :parent_decision_id
-      remove :agent_id
-      remove :updated_at
-      remove :inserted_at
-      remove :was_successful
-      remove :tags
-      remove :decision_time_ms
-      remove :outcome_accuracy
-      remove :actual_outcome
-      remove :expected_outcome
-      remove :risk_assessment
-      remove :confidence_score
-      remove :reasoning
-      remove :selected_option
-      remove :options_considered
-      remove :input_data
-      remove :context
-      remove :type
-    end
 
     drop constraint(:actions, "actions_decision_id_fkey")
 
@@ -4940,11 +4650,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "supervision_trees_hierarchy_idx"
                    )
 
-    drop_if_exists index(:thunderblock_supervision_trees, ["USING GIN (running_children)"],
+    drop_if_exists index(:thunderblock_supervision_trees, [:running_children], using: :gin,
                      name: "supervision_trees_children_idx"
                    )
 
-    drop_if_exists index(:thunderblock_supervision_trees, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_supervision_trees, [:tags], using: :gin,
                      name: "supervision_trees_tags_idx"
                    )
 
@@ -4982,47 +4692,21 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "zone_containers_phase_idx"
                    )
 
-    drop_if_exists index(:thunderblock_zone_containers, ["USING GIN (neighbor_zones)"],
+    drop_if_exists index(:thunderblock_zone_containers, [:neighbor_zones], using: :gin,
                      name: "zone_containers_neighbors_idx"
                    )
 
-    drop_if_exists index(:thunderblock_zone_containers, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_zone_containers, [:tags], using: :gin,
                      name: "zone_containers_tags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_zone_containers, ["USING GIN (coordinates)"],
+    drop_if_exists index(:thunderblock_zone_containers, [:coordinates], using: :gin,
                      name: "zone_containers_coords_idx"
                    )
 
-    alter table(:thunderblock_zone_containers) do
-      remove :cluster_node_id
-      remove :updated_at
-      remove :inserted_at
-      remove :metadata
-      remove :tags
-      remove :phase_assignment
-      remove :neighbor_zones
-      remove :last_health_check
-      remove :health_score
-      remove :last_restart
-      remove :restart_count
-      remove :max_seconds
-      remove :max_restarts
-      remove :supervision_strategy
-      remove :zone_config
-      remove :current_usage
-      remove :capacity_config
-      remove :coordinates
-      remove :status
-      remove :zone_type
-      remove :zone_name
-    end
 
     drop constraint(:thunderblock_communities, "thunderblock_communities_execution_zone_id_fkey")
 
-    alter table(:thunderblock_communities) do
-      modify :execution_zone_id, :uuid
-    end
 
     drop_if_exists unique_index(:thunderblock_pac_homes, [:owner_id, :home_name],
                      name: "thunderblock_pac_homes_unique_owner_home_name_index"
@@ -5095,7 +4779,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop_if_exists index(
                      :thunderblock_query_optimizations,
-                     ["USING GIN (optimization_suggestions)"],
+                     [:optimization_suggestions], using: :gin,
                      name: "query_optimizations_suggestions_idx"
                    )
 
@@ -5117,63 +4801,29 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "communities_type_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (member_ids)"],
+    drop_if_exists index(:thunderblock_communities, [:member_ids], using: :gin,
                      name: "communities_members_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (moderator_ids)"],
+    drop_if_exists index(:thunderblock_communities, [:moderator_ids], using: :gin,
                      name: "communities_moderators_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_communities, [:tags], using: :gin,
                      name: "communities_tags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (federation_config)"],
+    drop_if_exists index(:thunderblock_communities, [:federation_config], using: :gin,
                      name: "communities_federation_idx"
                    )
 
-    drop_if_exists index(:thunderblock_communities, ["USING GIN (community_metrics)"],
+    drop_if_exists index(:thunderblock_communities, [:community_metrics], using: :gin,
                      name: "communities_metrics_idx"
                    )
 
-    alter table(:thunderblock_communities) do
-      remove :cluster_node_id
-      remove :inserted_at
-      remove :metadata
-      remove :tags
-      remove :community_metrics
-      remove :federation_socket_id
-      remove :vault_mount_id
-      remove :community_policies
-      remove :invitation_config
-      remove :member_ids
-      remove :moderator_ids
-      remove :owner_id
-      remove :pac_home_count
-      remove :channel_count
-      remove :member_count
-      remove :resource_limits
-      remove :community_config
-      remove :federation_config
-      remove :governance_model
-      remove :community_type
-      remove :community_slug
-      remove :community_name
-      remove :updated_at
-      remove :created_at
-      remove :status
-      remove :performance_metrics
-      remove :resource_allocation
-      remove :execution_zone_id
-      remove :community_id
-    end
 
     drop constraint(:thunderblock_pac_homes, "thunderblock_pac_homes_community_id_fkey")
 
-    alter table(:thunderblock_pac_homes) do
-      modify :community_id, :uuid
-    end
 
     drop table(:thunderblock_communities)
 
@@ -5202,38 +4852,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop table(:external_services)
 
-    alter table(:thunderlane_rulesets) do
-      remove :updated_at
-      remove :created_at
-      remove :lane_configuration_id
-      remove :metadata
-      remove :signed_by
-      remove :signature_algorithm
-      remove :signature
-      remove :performance_score
-      remove :deployed_at
-      remove :status
-      remove :objective_function
-      remove :parameter_bounds
-      remove :boundaries
-      remove :schedule_params
-      remove :schedule_type
-      remove :alpha_zy
-      remove :alpha_zx
-      remove :alpha_yz
-      remove :alpha_yx
-      remove :alpha_xz
-      remove :alpha_xy
-      remove :z_lane_params
-      remove :y_lane_params
-      remove :x_lane_params
-      remove :z_lane_rule
-      remove :y_lane_rule
-      remove :x_lane_rule
-      remove :description
-      remove :name
-      remove :version
-    end
 
     drop constraint(:thunderlane_coordinators, "thunderlane_coordinators_active_ruleset_id_fkey")
 
@@ -5243,20 +4861,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop table(:thunderlane_rulesets)
 
-    alter table(:thundermag_macro_commands) do
-      remove :updated_at
-      remove :inserted_at
-      remove :actual_duration_ms
-      remove :estimated_duration_ms
-      remove :priority
-      remove :zone_preferences
-      remove :session_id
-      remove :execution_metadata
-      remove :status
-      remove :micro_tasks
-      remove :macro_input
-      remove :command_type
-    end
 
     drop constraint(
            :thundermag_task_executions,
@@ -5277,11 +4881,6 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop table(:thunderblock_retention_policies)
 
-    alter table(:conversations) do
-      remove :updated_at
-      remove :inserted_at
-      remove :title
-    end
 
     drop constraint(:messages, "messages_conversation_id_fkey")
 
@@ -5308,28 +4907,9 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop table(:task_orchestrators)
 
-    alter table(:agents) do
-      remove :created_by_user_id
-      remove :updated_at
-      remove :inserted_at
-      remove :priority
-      remove :success_rate
-      remove :total_actions
-      remove :last_activity_at
-      remove :state_data
-      remove :configuration
-      remove :capabilities
-      remove :zone_id
-      remove :status
-      remove :type
-      remove :name
-    end
 
     drop constraint(:experiences, "experiences_agent_id_fkey")
 
-    alter table(:experiences) do
-      modify :agent_id, :uuid
-    end
 
     drop table(:agents)
 
@@ -5391,11 +4971,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     drop_if_exists index(:thunderflow_consciousness_flows, [:inserted_at])
 
-    drop_if_exists index(:thunderflow_consciousness_flows, ["USING GIN (active_goals)"],
+    drop_if_exists index(:thunderflow_consciousness_flows, [:active_goals], using: :gin,
                      name: "consciousness_flow_active_goals_gin_idx"
                    )
 
-    drop_if_exists index(:thunderflow_consciousness_flows, ["USING GIN (memory_anchors)"],
+    drop_if_exists index(:thunderflow_consciousness_flows, [:memory_anchors], using: :gin,
                      name: "consciousness_flow_memory_anchors_gin_idx"
                    )
 
@@ -5439,19 +5019,19 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "pac_homes_health_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (agent_registry)"],
+    drop_if_exists index(:thunderblock_pac_homes, [:agent_registry], using: :gin,
                      name: "pac_homes_agents_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (current_usage)"],
+    drop_if_exists index(:thunderblock_pac_homes, [:current_usage], using: :gin,
                      name: "pac_homes_usage_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (health_metrics)"],
+    drop_if_exists index(:thunderblock_pac_homes, [:health_metrics], using: :gin,
                      name: "pac_homes_health_metrics_idx"
                    )
 
-    drop_if_exists index(:thunderblock_pac_homes, ["USING GIN (tags)"],
+    drop_if_exists index(:thunderblock_pac_homes, [:tags], using: :gin,
                      name: "pac_homes_tags_idx"
                    )
 
@@ -5487,21 +5067,19 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "messages_ephemeral_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (search_vector)"],
-                     name: "messages_search_idx"
-                   )
+    execute "DROP INDEX IF EXISTS messages_search_idx"
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (mentions)"],
+    drop_if_exists index(:thunderblock_messages, [:mentions], using: :gin,
                      name: "messages_mentions_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (message_flags)"],
+    drop_if_exists index(:thunderblock_messages, [:message_flags], using: :gin,
                      name: "messages_flags_idx"
                    )
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (tags)"], name: "messages_tags_idx")
+    drop_if_exists index(:thunderblock_messages, [:tags], using: :gin, name: "messages_tags_idx")
 
-    drop_if_exists index(:thunderblock_messages, ["USING GIN (reactions)"],
+    drop_if_exists index(:thunderblock_messages, [:reactions], using: :gin,
                      name: "messages_reactions_idx"
                    )
 
@@ -5537,7 +5115,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "cache_entries_expires_idx"
                    )
 
-    drop_if_exists index(:thunderblock_cache_entries, ["USING GIN (cache_tags)"],
+    drop_if_exists index(:thunderblock_cache_entries, [:cache_tags],
                      name: "cache_entries_tags_idx"
                    )
 

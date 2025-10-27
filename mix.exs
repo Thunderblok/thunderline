@@ -16,7 +16,11 @@ defmodule Thunderline.MixProject do
       listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
+      test_coverage: [
+        tool: ExCoveralls
+        # TODO: Re-enable coverage gate after MVP (target: 85%)
+        # minimum_coverage: 85
+      ],
       consolidate_protocols: Mix.env() != :dev,
       dialyzer: dialyzer()
     ]
@@ -84,7 +88,7 @@ defmodule Thunderline.MixProject do
       {:venomous, "~> 0.7"},
       {:swoosh, "~> 1.16"},
       # Ash Framework
-      {:ash, "~> 3.0"},
+      {:ash, "~> 3.7"},
       {:ash_phoenix, "~> 2.0"},
       {:ash_cloak, "~> 0.1.6"},
       {:ash_postgres, "~> 2.0"},

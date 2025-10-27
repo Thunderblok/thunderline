@@ -5,6 +5,9 @@ defmodule Thunderline.Repo.Migrations.CreateObanTables do
 
   # Use Oban's recommended canonical schema (kept minimal here). Avoid redefining :id primary key manually.
   def up do
+    # Enable citext extension for case-insensitive text (used in users.email)
+    execute "CREATE EXTENSION IF NOT EXISTS citext", "DROP EXTENSION IF EXISTS citext"
+
     # Idempotent creation (dev convenience). In prod this should only run once; using
     # create_if_not_exists prevents crashes if migration state desync occurs early in lifecycle.
     create_if_not_exists table(:oban_jobs) do

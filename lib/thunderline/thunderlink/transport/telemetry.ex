@@ -7,6 +7,8 @@ defmodule Thunderline.Thunderlink.Transport.Telemetry do
   Instrumented with OpenTelemetry for T-72h telemetry heartbeat.
   """
 
+  require Thunderline.Thunderflow.Telemetry.OtelTrace
+
   @spec emit(atom(), map(), map()) :: :ok
   def emit(event, measurements, meta)
       when is_atom(event) and is_map(measurements) and is_map(meta) do
