@@ -88,7 +88,7 @@ jobs:
         run: mix ash.setup
 
       - name: Run Tests (≥85% coverage HARD GATE)
-        run: mix coveralls.json --color --slowest 10 --min-coverage ${{ env.MIN_COVERAGE }}
+        run: mix coveralls.json --color --slowest 10
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4

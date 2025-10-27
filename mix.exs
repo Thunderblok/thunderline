@@ -16,7 +16,10 @@ defmodule Thunderline.MixProject do
       listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
+      test_coverage: [
+        tool: ExCoveralls,
+        minimum_coverage: 85
+      ],
       consolidate_protocols: Mix.env() != :dev,
       dialyzer: dialyzer()
     ]
