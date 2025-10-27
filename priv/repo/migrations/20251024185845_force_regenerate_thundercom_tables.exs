@@ -3408,20 +3408,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
     end
 
     # Foreign key constraints for thunderblock_communities
-    execute """
-        DO $$
-        BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
-            WHERE conname = 'thunderblock_communities_cluster_node_id_fkey'
-          ) THEN
-            ALTER TABLE thunderblock_communities 
-            ADD CONSTRAINT thunderblock_communities_cluster_node_id_fkey 
-            FOREIGN KEY (cluster_node_id) 
-            REFERENCES thunderblock_cluster_nodes(id);
-          END IF;
-        END $$;
-        """
+    # NOTE: cluster_node_id FK removed - column doesn't exist in current schema
 
 
     create_if_not_exists unique_index(:thunderblock_communities, [:community_slug],
