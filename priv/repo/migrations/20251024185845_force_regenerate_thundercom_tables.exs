@@ -911,6 +911,14 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:agents, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :agent_name, :text
+      add :agent_type, :text
+      add :status, :text
+      add :capabilities, :map
+      add :current_task, :text
+      add :last_heartbeat, :utc_datetime_usec
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for experiences
@@ -988,6 +996,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:conversations, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
+      add :title, :text
     end
 
     # Foreign key constraints for messages
@@ -1050,6 +1059,14 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thundermag_macro_commands, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :command_type, :text
+      add :macro_input, :text
+      add :status, :text
+      add :execution_metadata, :map
+      add :session_id, :uuid
+      add :priority, :text
+      add :estimated_duration_ms, :bigint
+      add :actual_duration_ms, :bigint
     end
 
     # Foreign key constraints for thundermag_task_executions
@@ -1071,6 +1088,36 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderlane_rulesets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :version, :bigint
+      add :name, :text
+      add :description, :text
+      add :x_lane_rule, :text
+      add :y_lane_rule, :text
+      add :z_lane_rule, :text
+      add :x_lane_params, :map
+      add :y_lane_params, :map
+      add :z_lane_params, :map
+      add :alpha_xy, :float
+      add :alpha_xz, :float
+      add :alpha_yx, :float
+      add :alpha_yz, :float
+      add :alpha_zx, :float
+      add :alpha_zy, :float
+      add :schedule_type, :text
+      add :schedule_params, :map
+      add :boundaries, :map
+      add :parameter_bounds, :map
+      add :objective_function, :map
+      add :status, :text
+      add :deployed_at, :utc_datetime_usec
+      add :performance_score, :float
+      add :signature, :text
+      add :signature_algorithm, :text
+      add :signed_by, :text
+      add :metadata, :map
+      add :lane_configuration_id, :uuid
+      add :created_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thunderlane_coordinators
@@ -2485,6 +2532,18 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:decisions, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :type, :text
+      add :context, :text
+      add :input_data, :map
+      add :selected_option, :map
+      add :reasoning, :text
+      add :confidence_score, :numeric
+      add :risk_assessment, :numeric
+      add :expected_outcome, :map
+      add :actual_outcome, :map
+      add :outcome_accuracy, :numeric
+      add :decision_time_ms, :bigint
+      add :was_successful, :boolean
     end
 
     # Foreign key constraints for experiences
@@ -2656,6 +2715,45 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderlane_telemetry_snapshots, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :coordinator_id, :text
+      add :snapshot_type, :text
+      add :window_start_ms, :bigint
+      add :window_end_ms, :bigint
+      add :window_duration_ms, :bigint
+      add :total_events, :bigint
+      add :event_rate_per_second, :float
+      add :burst_count, :bigint
+      add :anti_bunching_effectiveness, :float
+      add :displacement_mean, :float
+      add :displacement_variance, :float
+      add :tail_exponent, :float
+      add :tail_fit_quality, :float
+      add :latency_mean_us, :float
+      add :latency_median_us, :float
+      add :latency_p90_us, :bigint
+      add :latency_p95_us, :bigint
+      add :latency_p99_us, :bigint
+      add :latency_p999_us, :bigint
+      add :latency_max_us, :bigint
+      add :queue_depth_mean, :float
+      add :queue_depth_max, :bigint
+      add :backpressure_events, :bigint
+      add :dropped_events, :bigint
+      add :cpu_usage_mean, :float
+      add :memory_usage_mean_mb, :bigint
+      add :memory_usage_max_mb, :bigint
+      add :gc_count, :bigint
+      add :gc_total_time_ms, :bigint
+      add :network_bytes_in, :bigint
+      add :network_bytes_out, :bigint
+      add :coordination_messages, :bigint
+      add :coordination_latency_us, :bigint
+      add :error_count, :bigint
+      add :anomaly_score, :float
+      add :anomaly_features, :map
+      add :lane_configuration_id, :uuid
+      add :rule_oracle_id, :uuid
+      add :metadata, :map
     end
 
     # Foreign key constraints for thunderlane_performance_metrics
@@ -2677,6 +2775,43 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderlane_cell_topology, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :name, :text
+      add :description, :text
+      add :lane_coordinator_id, :uuid
+      add :width, :bigint
+      add :height, :bigint
+      add :depth, :bigint
+      add :total_cells, :bigint
+      add :cells_per_partition, :bigint
+      add :partition_count, :bigint
+      add :topology_type, :text
+      add :boundary_x, :text
+      add :boundary_y, :text
+      add :boundary_z, :text
+      add :neighborhood_type, :text
+      add :neighborhood_radius, :bigint
+      add :partitioning_strategy, :text
+      add :partitioning_config, :map
+      add :thundercell_nodes, :map
+      add :partition_assignments, :map
+      add :node_load_balance, :map
+      add :average_neighbors_per_cell, :float
+      add :max_partition_size, :bigint
+      add :min_partition_size, :bigint
+      add :load_variance, :float
+      add :status, :text
+      add :distribution_health, :float
+      add :last_rebalance_at, :utc_datetime_usec
+      add :locality_score, :float
+      add :communication_overhead, :float
+      add :memory_efficiency, :float
+      add :initial_state_pattern, :text
+      add :initial_state_config, :map
+      add :initial_state_seed, :bigint
+      add :config, :map
+      add :metadata, :map
+      add :created_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thunderlane_lane_metrics
@@ -2713,6 +2848,14 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:dag_workflows, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :source_domain, :text
+      add :root_event_name, :text
+      add :correlation_id, :text
+      add :causation_id, :text
+      add :status, :text
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for dag_edges
@@ -2759,6 +2902,17 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:memories, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
+      add :summary, :text
+      add :full_content, :text
+      add :memory_type, :text
+      add :context_data, :map
+      add :sensory_data, :map
+      add :emotional_data, :map
+      add :vividness, :float
+      add :accessibility, :float
+      add :importance, :float
+      add :times_accessed, :bigint
+      add :last_accessed_at, :utc_datetime
     end
 
     # Foreign key constraints for embedding_vectors
@@ -2821,6 +2975,19 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:cerebros_model_runs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :run_id, :text
+      add :state, :text
+      add :search_space_version, :bigint
+      add :max_params, :bigint
+      add :requested_trials, :bigint
+      add :completed_trials, :bigint
+      add :best_metric, :float
+      add :error_message, :text
+      add :metadata, :map
+      add :bridge_payload, :map
+      add :bridge_result, :map
+      add :started_at, :utc_datetime_usec
+      add :finished_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for ml_model_artifacts
@@ -2965,6 +3132,13 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thundercom_federated_realms, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :realm_name, :text
+      add :federation_url, :text
+      add :trust_level, :text
+      add :connection_status, :text
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thundercom_realm_identities
@@ -3135,6 +3309,15 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:upm_trainers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :name, :text
+      add :tenant_id, :uuid
+      add :mode, :text
+      add :status, :text
+      add :last_window_id, :uuid
+      add :last_window_fetched_at, :utc_datetime_usec
+      add :last_loss, :float
+      add :drift_score, :float
+      add :metadata, :map
     end
 
     # Foreign key constraints for upm_snapshots
@@ -3181,6 +3364,17 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:ising_optimization_problems, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :name, :text
+      add :description, :text
+      add :topology, :text
+      add :dimensions, :map
+      add :coupling_matrix, :map
+      add :field_config, :map
+      add :boundary_conditions, :text
+      add :problem_type, :text
+      add :metadata, :map
+      add :created_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for ising_optimization_runs
@@ -3202,6 +3396,15 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderblock_cluster_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :node_name, :text
+      add :node_type, :text
+      add :status, :text
+      add :load_score, :numeric
+      add :capabilities, :map
+      add :last_heartbeat, :utc_datetime_usec
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thunderblock_communities
@@ -3284,6 +3487,15 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thundercore_workflow_dags, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :name, :text
+      add :description, :text
+      add :status, :text
+      add :priority, :bigint
+      add :metadata, :map
+      add :started_at, :utc_datetime_usec
+      add :completed_at, :utc_datetime_usec
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thundercore_task_nodes
@@ -3479,6 +3691,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:users, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :email, :citext
+      add :password, :text
+      add :hashed_password, :text
+      add :confirmed_at, :utc_datetime
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for agents
@@ -3519,6 +3737,27 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderblock_knowledge_nodes, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :tenant_id, :uuid
+      add :node_type, :text
+      add :title, :text
+      add :description, :text
+      add :knowledge_domain, :text
+      add :confidence_level, :numeric
+      add :evidence_strength, :numeric
+      add :centrality_score, :numeric
+      add :relationship_data, :map
+      add :temporal_data, :map
+      add :spatial_data, :map
+      add :graph_metrics, :map
+      add :knowledge_quality, :map
+      add :consolidation_data, :map
+      add :discovery_data, :map
+      add :access_patterns, :map
+      add :verification_status, :text
+      add :indexing_status, :text
+      add :metadata, :map
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for embedding_vectors
@@ -3633,6 +3872,19 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:ml_training_datasets, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :dataset_id, :text
+      add :tenant_id, :text
+      add :name, :text
+      add :purpose, :text
+      add :description, :text
+      add :version, :bigint
+      add :status, :text
+      add :bytes, :bigint
+      add :records, :bigint
+      add :checksum, :text
+      add :sealed_at, :utc_datetime_usec
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for ml_training_runs
