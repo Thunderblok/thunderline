@@ -1,4 +1,4 @@
-# Thunderlink Transport (formerly TOCP) — MVP Spec v0.1
+v# Thunderlink Transport (formerly TOCP) — MVP Spec v0.1
 
 > Goal: Transport‑agnostic, low‑overhead, presence‑centric protocol for swarms (1k–10k nodes) that works over UDP/QUIC/WebRTC/LoRa/TCP with identical semantics. Inspired by Hotline, Telnet, IRC/ICQ presence, Gnutella/DHT gossip, and store‑and‑forward BBS/Usenet.
 
