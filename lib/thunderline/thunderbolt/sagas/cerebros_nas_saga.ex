@@ -236,7 +236,7 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
 
     run fn %{version_result: %{run: run, best_model: model}, correlation_id: correlation_id}, _ ->
       event_attrs = %{
-        name: "ml.run.complete",
+        name: "ml.run.completed",
         type: :ml_lifecycle,
         domain: :bolt,
         source: "CerebrosNASSaga",

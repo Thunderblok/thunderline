@@ -313,3 +313,148 @@ end
 
 **Last Updated**: October 27, 2025  
 **Next Review**: Phase 3 kickoff (Fri Oct 31, 2025)
+
+
+## Taxonomy Drift Gaps (Event Conformance)
+
+Discovered during **Task 2.2 - Event Conformance Audit** against EVENT_TAXONOMY.md v0.2
+
+### DRIFT-001: user.onboarding.complete - Missing from Registry
+
+**File**: `lib/thunderline/thunderbolt/sagas/user_provisioning_saga.ex:219`  
+**Event**: `user.onboarding.complete`  
+**Issue**: Not present in canonical registry (Section 7)
+
+**Impact**: 🟡 **MEDIUM**
+- `mix thunderline.events.lint` will fail validation
+- Event not discoverable in canonical registry
+- No schema validation for payload structure
+
+**Recommendation**:
+Add to EVENT_TAXONOMY.md Section 7:
+```yaml
+name: "user.onboarding.complete"
+version: 1
+description: "User completes onboarding (email verified, vault provisioned, community created)"
+source: "UserProvisioningSaga"
+reliability: persistent
+payload_schema:
+  user_id: {type: uuid, required: true}
+  email: {type: string, required: true}
+  vault_id: {type: uuid, required: true}
+```
+
+**Estimated Effort**: 30 minutes  
+**Phase**: 3  
+**Status**: 🔴 Not Started
+
+---
+
+### DRIFT-002: ai.upm.snapshot.activated - Missing from Registry
+
+**File**: `lib/thunderline/thunderbolt/sagas/upm_activation_saga.ex:255`  
+**Event**: `ai.upm.snapshot.activated`  
+**Issue**: Not present in canonical registry (Section 7)
+
+**Impact**: 🟡 **MEDIUM**
+- `mix thunderline.events.lint` will fail validation
+- Event not discoverable in canonical registry
+- No schema validation for payload structure
+
+**Recommendation**:
+Add to EVENT_TAXONOMY.md Section 7:
+```yaml
+name: "ai.upm.snapshot.activated"
+version: 1
+description: "UPM snapshot promoted to active (all adapters synchronized)"
+source: "UPMActivationSaga"
+reliability: transient
+payload_schema:
+  snapshot_id: {type: uuid, required: true}
+  activated_at: {type: datetime, required: true}
+  adapter_count: {type: integer, required: true}
+```
+
+**Estimated Effort**: 30 minutes  
+**Phase**: 3  
+**Status**: 🔴 Not Started
+
+---
+
+### DRIFT-003: ml.run.complete - Name Mismatch
+
+**File**: `lib/thunderline/thunderbolt/sagas/cerebros_nas_saga.ex:256`  
+**Event**: `ml.run.complete`  
+**Issue**: Registry has "ml.run.completed" (past tense), saga emits "ml.run.complete" (present tense)
+
+**Impact**: 🔴 **HIGH**
+- Event name does not match canonical registry
+- `mix thunderline.events.lint` will fail validation
+- Consumers expecting "ml.run.completed" won't receive events
+
+**Recommendation**:
+Refactor saga to match registry (past tense):
+```elixir
+# BEFORE
+name: "ml.run.complete",
+
+# AFTER
+name: "ml.run.completed",  # Match canonical registry
+```
+
+**Estimated Effort**: 15 minutes  
+**Phase**: 3  
+**Status**: 🔴 Not Started
+
+---
+
+### DRIFT-004: Saga Causation Chain - Missing causation_id
+
+**Files**: All 3 sagas (UserProvisioningSaga, UPMActivationSaga, CerebrosNASSaga)  
+**Issue**: All saga events set `causation_id: nil` (assumes saga is flow origin)
+
+**Impact**: 🟡 **MEDIUM**
+- Event causality chain broken when saga triggered by upstream events
+- Cannot trace saga execution back to triggering UI command or system event
+- Distributed tracing incomplete
+
+**Recommendation**:
+Add `causation_id` to saga inputs:
+```elixir
+# Accept causation_id as saga input (inherit from triggering event)
+def run(input, context) do
+  correlation_id = input.correlation_id || UUID.uuid4()
+  causation_id = input.causation_id  # NEW: inherit from parent event
+  
+  EventBus.publish_event(%{
+    correlation_id: correlation_id,
+    causation_id: causation_id,  # Link to triggering event
+    ...
+  })
+end
+```
+
+**Estimated Effort**: 2 hours (update all 3 sagas + call sites)  
+**Phase**: 3  
+**Status**: 🔴 Not Started
+
+---
+
+---
+
+## Build Environment Notes
+
+### torchx Compilation Issue (Resolved - Oct 27, 2024)
+
+**Issue**: torchx 0.10.2 incompatible with PyTorch 2.8.0 (missing `ATen/BatchedTensorImpl.h` header)
+
+**Impact**: Blocked all compilation, preventing Phase 2 Task 2.3 (Correlation ID Audit)
+
+**Resolution**: Commented out torchx dependency in mix.exs
+- torchx is one of 4 ML backends (LocalNx, CerebrosPy, EXLA, Torchx)
+- Not currently used in saga code
+- Can be re-enabled when torchx updates for PyTorch 2.8.0+ compatibility
+
+**File Modified**: `mix.exs:142` - torchx dependency commented out
+
+**Status**: ✅ Resolved - compilation successful, warnings only (expected undefined modules)

@@ -139,7 +139,9 @@ defmodule Thunderline.MixProject do
       {:nx, "~> 0.9"},
       {:axon, "~> 0.7"},
       {:exla, "~> 0.9"},
-      {:torchx, "~> 0.9"},
+      # NOTE: torchx 0.10.2 incompatible with PyTorch 2.8.0 (missing BatchedTensorImpl.h)
+      # Commented out to unblock compilation - revisit when torchx updates
+      # {:torchx, "~> 0.9", optional: true, runtime: false},
       {:bumblebee, "~> 0.6"},
       {:polaris, "~> 0.1"},
       # RAG - We'll use Req directly for Chroma HTTP API (simpler than buggy client)

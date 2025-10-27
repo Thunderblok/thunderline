@@ -1,8 +1,11 @@
-# Thunderline Codebase Review Checklist
+# Thunderline Codebase Review Checklist — Consolidation Plan (2025-10-27)
+
+> **Merged Scope:** This checklist will be folded into the unified `CODEBASE_AUDIT_AND_STATUS.md` consolidation document alongside `CODEBASE_STATUS.md` and `CODEBASE_AUDIT_2025.md`.
+> **Status:** Pending consolidation — remove once new document is finalized.
 
 Last updated: September 26, 2025
 
-This checklist captures the minimum bar before merging into `main` or cutting a release. Treat every unchecked box as a ship blocker.
+This checklist captures the minimum bar for pre-release validation, now superseded by audit-driven governance criteria from CODEBASE_AUDIT_2025.md and CODEBASE_STATUS.md.
 
 ---
 

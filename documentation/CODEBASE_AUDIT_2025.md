@@ -1,4 +1,6 @@
 # 🔍 THUNDERLINE CODEBASE AUDIT - October 2025
+> Consolidation Note (2025-10-27): This file will merge with `CODEBASE_STATUS.md` and `CODEBASE_REVIEW_CHECKLIST.md` into `CODEBASE_AUDIT_AND_STATUS.md`.
+> **Reason:** Significant redundancy — all three touch on resource inventories, High Command actions, and phase statuses.
 
 > **Status**: ✅ **PHASE 1 COMPLETE**  
 > **Auditor**: System Audit (file-by-file verification)  

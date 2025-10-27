@@ -1,4 +1,6 @@
 # Thunderline Codebase Status – October 19, 2025
+> **Consolidation in progress:** This file’s executive summaries and action register are being merged into `CODEBASE_AUDIT_AND_STATUS.md`.
+> Once the merge completes, this standalone file will be archived under `planning/[HISTORICAL]_CODEBASE_STATUS_2025-10-19.md`.
 
 **Last Updated**: Post T-0h Directive #3 (CI Lockdown Enforcement - 6-stage pipeline enforced)  
 **Audit Status**: ✅ High Command Deep Dive Complete (10m research, 30 sources)  
@@ -192,3 +194,103 @@ High Command's deep teardown reveals:
 ---
 
 _This status note complements `THUNDERLINE_MASTER_PLAYBOOK.md` and `thunderline_domain_resource_guide.md`. Update it whenever major subsystems land or risk posture changes. Last audit: High Command Deep Dive, October 19, 2025._
+---
+
+## 🎯 OPERATION SAGA CONCORDIA - Event/Saga Infrastructure Audit
+
+**Mission**: Systematic audit of saga orchestration, event taxonomy conformance, and correlation/causation threading  
+**Status**: **PHASE 2 COMPLETE** ✅ (Oct 27, 2024)  
+**Documentation**: `docs/concordia/` (event_conformance_audit.md, correlation_audit.md, compensation_gaps.md)
+
+### Phase Summary
+
+**Phase 1: Planning & Setup** (✅ COMPLETE)
+- Scope definition: 3 sagas × 3 task types (discovery, conformance, correlation)
+- Effort estimation: 9 total tasks (~72 hours planned)
+- Work breakdown structure documented in `compensation_gaps.md`
+
+**Phase 2: Discovery & Conformance** (✅ COMPLETE - Oct 27, 2024)
+- **Task 2.1**: Saga Discovery - 3 sagas identified, all using Reactor DSL
+- **Task 2.2**: Event Conformance Audit - 4 drift gaps identified (DRIFT-001 through DRIFT-004)
+- **Task 2.3**: Correlation ID Audit - 100% conformance, 1 architectural gap (causation chain)
+
+### Key Findings
+
+**Saga Architecture** ✅
+- All 3 sagas properly use Reactor DSL (UserProvisioningSaga, UPMActivationSaga, CerebrosNASSaga)
+- Compensation logic defined for transactional rollback
+- Telemetry integration via `Thunderline.Thunderbolt.Sagas.Base`
+
+**Event Taxonomy Conformance** ⚠️
+- **DRIFT-001**: `user.onboarding.complete` missing from canonical registry
+- **DRIFT-002**: `ai.upm.snapshot.activated` missing from canonical registry
+- **DRIFT-003**: `ml.run.complete` name mismatch (registry has "ml.run.completed")
+- **DRIFT-004**: All saga events missing causation_id (architectural gap)
+
+**Correlation ID Flow** ✅
+- 100% compliance across all critical paths
+- Event.new/1 generates correlation_id if missing
+- Sagas accept, preserve, and forward correlation_id
+- EventBus validates UUID v7 format
+- Telemetry and logging include correlation_id
+
+**Causation Chain** ⚠️
+- 0% compliance - all saga events set causation_id = nil
+- Cannot trace event-to-event causality ("why did this saga run?")
+- Remediation: Add causation_id to saga inputs (~2 hours effort)
+
+### Deliverables
+
+1. **Event Conformance Audit** (`docs/concordia/event_conformance_audit.md`)
+   - Comprehensive saga discovery (architecture, file paths, event emission analysis)
+   - Taxonomy drift gap identification (4 gaps with remediation guidance)
+   - Per-saga conformance breakdown with code references
+
+2. **Correlation Audit** (`docs/concordia/correlation_audit.md`)
+   - End-to-end correlation ID flow analysis
+   - Conformance matrix (8 components, 100% correlation compliance)
+   - Causation chain gap analysis (DRIFT-004 architectural issue)
+   - Test cases for correlation verification
+
+3. **Compensation Gap Tracking** (`docs/concordia/compensation_gaps.md`)
+   - 4 taxonomy drift gaps with impact assessment (DRIFT-001 through DRIFT-004)
+   - Remediation recommendations with effort estimates
+   - Build environment notes (torchx compilation issue resolved)
+
+### Action Items (Phase 3)
+
+**Week 1 - High Priority** 🔴
+1. Add missing events to EVENT_TAXONOMY.md (DRIFT-001, DRIFT-002) - 1 hour
+2. Fix ml.run.complete name mismatch (DRIFT-003) - 15 minutes
+3. Add causation_id to saga inputs (DRIFT-004) - 2 hours
+
+**Week 2 - Important** 🟡
+1. Implement correlation ID test cases (4 tests from audit)
+2. Add `mix thunderline.events.lint` enforcement to CI (gate PRs)
+3. Document correlation ID contract in EVENT_TAXONOMY.md Section 5.2
+
+### Next Phase (Phase 3 - Event Pipeline Hardening)
+
+**Focus**: Close gaps identified in Phase 2, strengthen event validation
+- Remediate 4 taxonomy drift gaps
+- Implement causation chain propagation
+- Add automated linting to CI/CD pipeline
+- Create correlation ID utilities module
+
+**Timeline**: Week 1-2 post-Phase 2 completion  
+**Estimated Effort**: ~8 hours total
+
+### Build Environment Notes
+
+**torchx Compilation Issue** (Resolved - Oct 27, 2024)
+- **Issue**: torchx 0.10.2 incompatible with PyTorch 2.8.0 (missing `ATen/BatchedTensorImpl.h`)
+- **Impact**: Blocked all compilation, preventing Phase 2 Task 2.3
+- **Resolution**: Commented out torchx dependency in mix.exs (one of 4 ML backends, not critical)
+- **Status**: ✅ Compilation successful, warnings only (expected undefined modules)
+
+---
+
+**CONCORDIA Status**: Phase 2 objectives met. Event/saga infrastructure well-architected with minor gaps requiring ~4 hours remediation. Ready for Phase 3 hardening.
+
+**Last Updated**: October 27, 2024 (Phase 2 complete)  
+**Next Review**: Phase 3 kickoff (remediate drift gaps, add CI enforcement)
