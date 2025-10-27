@@ -3770,17 +3770,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
              name: "embedding_vectors_unique_content_hash_per_model_index"
            )
 
-    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :embedding_vector_ids], using: :gin,
-             name: "knowledge_nodes_embeddings_idx"
-           )
-
-    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :memory_record_ids], using: :gin,
-             name: "knowledge_nodes_memories_idx"
-           )
-
-    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :taxonomy_path], using: :gin,
-             name: "knowledge_nodes_taxonomy_idx"
-           )
+    # Removed 3 orphaned indexes: columns embedding_vector_ids, memory_record_ids, and taxonomy_path do not exist in thunderblock_knowledge_nodes
 
     create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :relationship_data], using: :gin,
              name: "knowledge_nodes_relationships_idx"
@@ -4053,21 +4043,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "knowledge_nodes_relationships_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :taxonomy_path], using: :gin,
-                     name: "knowledge_nodes_taxonomy_idx"
-                   )
-
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, :memory_record_ids], using: :gin,
-                     name: "knowledge_nodes_memories_idx"
-                   )
-
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, :embedding_vector_ids], using: :gin,
-                     name: "knowledge_nodes_embeddings_idx"
-                   )
+    # Removed 3 orphaned index drops (corresponding indexes removed from up migration)
 
 
     drop_if_exists unique_index(:embedding_vectors, [:content_hash, :vector_model],
