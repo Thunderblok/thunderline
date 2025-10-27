@@ -12,6 +12,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSagaTest do
       inputs = %{
         email: "test@example.com",
         correlation_id: correlation_id,
+        causation_id: nil,
         magic_link_redirect: "/communities"
       }
 
@@ -36,6 +37,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSagaTest do
       inputs = %{
         email: "invalid@",
         correlation_id: correlation_id,
+        causation_id: nil,
         magic_link_redirect: "/communities"
       }
 

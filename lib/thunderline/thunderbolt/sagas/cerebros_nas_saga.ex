@@ -61,6 +61,7 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
   input :search_space
   input :max_trials
   input :correlation_id
+  input :causation_id
 
   step :prepare_dataset do
     argument :dataset_id, input(:dataset_id)
@@ -233,14 +234,16 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
   step :emit_completion_event do
     argument :version_result, result(:persist_version)
     argument :correlation_id, input(:correlation_id)
+    argument :causation_id, input(:causation_id)
 
-    run fn %{version_result: %{run: run, best_model: model}, correlation_id: correlation_id}, _ ->
+    run fn %{version_result: %{run: run, best_model: model}, correlation_id: correlation_id, causation_id: causation_id}, _ ->
       event_attrs = %{
         name: "ml.run.completed",
         type: :ml_lifecycle,
         domain: :bolt,
         source: "CerebrosNASSaga",
         correlation_id: correlation_id,
+        causation_id: causation_id,
         payload: %{
           run_id: run.id,
           best_model_id: model.id,

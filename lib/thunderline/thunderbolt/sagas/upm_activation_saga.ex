@@ -57,6 +57,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
 
   input :snapshot_id
   input :correlation_id
+  input :causation_id
   input :max_drift_score
 
   step :load_snapshot do
@@ -232,14 +233,16 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
     argument :snapshot, result(:activate_snapshot)
     argument :adapters, result(:sync_adapters)
     argument :correlation_id, input(:correlation_id)
+    argument :causation_id, input(:causation_id)
 
-    run fn %{snapshot: snapshot, adapters: adapters, correlation_id: correlation_id}, _ ->
+    run fn %{snapshot: snapshot, adapters: adapters, correlation_id: correlation_id, causation_id: causation_id}, _ ->
       event_attrs = %{
         name: "ai.upm.snapshot.activated",
         type: :upm_lifecycle,
         domain: :bolt,
         source: "UPMActivationSaga",
         correlation_id: correlation_id,
+        causation_id: causation_id,
         payload: %{
           snapshot_id: snapshot.id,
           activated_at: snapshot.activated_at,

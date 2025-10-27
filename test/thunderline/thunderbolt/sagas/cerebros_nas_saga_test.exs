@@ -23,7 +23,8 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSagaTest do
         dataset_id: "nonexistent",
         search_space: %{layers: [2, 4], units: [64, 128]},
         max_trials: 3,
-        correlation_id: correlation_id
+        correlation_id: correlation_id,
+        causation_id: nil
       }
 
       result = Reactor.run(CerebrosNASSaga, inputs)

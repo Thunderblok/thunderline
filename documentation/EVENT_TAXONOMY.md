@@ -103,6 +103,8 @@ Phases (optional final segment) SHOULD be used when an action has distinguishabl
 | `ai.tool_result` | 1 | `%{tool: binary, ai_stage: :tool_result, duration_ms: integer|nil, status: atom, correlation_id: binary}` | transient | Terminal tool result (success/failure) |
 | `ai.model_token` | 1 | `%{model: binary, token: binary, seq: integer, correlation_id: binary}` | transient | Streaming token emission |
 | `ai.conversation_delta` | 1 | `%{delta: binary, role: atom, correlation_id: binary}` | transient | Conversation streaming delta |
+| `user.onboarding.complete` | 1 | `%{user_id: uuid, email: binary, vault_id: uuid}` | persistent | Emitted after user provisioning saga completes (vault + email verified) |
+| `ai.upm.snapshot.activated` | 1 | `%{snapshot_id: uuid, activated_at: datetime, adapter_count: integer}` | transient | Emitted when UPM snapshot is promoted to active state (all adapters synchronized) |
 | `ui.command.voice.room.requested` | 1 | `%{title: binary, requested_by: binary, scope: %{community_id: binary|nil, block_id: binary|nil}}` | persistent | Root of a voice session creation flow |
 | `system.voice.room.created` | 1 | `%{room_id: binary, created_by: binary}` | persistent | Emitted after VoiceRoom persisted |
 | `system.voice.room.closed` | 1 | `%{room_id: binary, closed_by: binary}` | persistent | Terminal state of room |
@@ -247,6 +249,21 @@ Schema Detail (Selected):
   to_zone_id: integer(),       # Reassigned zone
   pac_id: binary(),            # PAC being migrated
   reason: binary()             # Failure reason (e.g., "zone_timeout")
+}
+```
+
+# user.onboarding.complete v1
+%{
+  user_id: binary(),           # UUID v7 user identifier
+  email: binary(),             # Verified email address
+  vault_id: binary()           # Provisioned vault UUID
+}
+
+# ai.upm.snapshot.activated v1
+%{
+  snapshot_id: binary(),       # UUID v7 UPM snapshot identifier
+  activated_at: datetime(),    # ISO8601 activation timestamp
+  adapter_count: integer()     # Number of adapters synchronized
 }
 ```
 

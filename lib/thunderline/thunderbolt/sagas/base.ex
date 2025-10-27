@@ -68,10 +68,12 @@ defmodule Thunderline.Thunderbolt.Sagas.Base do
   def before_saga(reactor, context) do
     saga_name = reactor.id || inspect(reactor.__struct__)
     correlation_id = Map.get(context, :correlation_id, Thunderline.UUID.v7())
+    causation_id = Map.get(context, :causation_id)
 
     metadata = %{
       saga: saga_name,
       correlation_id: correlation_id,
+      causation_id: causation_id,
       inputs: Map.keys(context)
     }
 
@@ -88,18 +90,25 @@ defmodule Thunderline.Thunderbolt.Sagas.Base do
   def after_saga(reactor, {status, context}) do
     saga_name = reactor.id || inspect(reactor.__struct__)
     correlation_id = Map.get(context, :correlation_id, "unknown")
+    causation_id = Map.get(context, :causation_id)
     start_time = Map.get(context, :_saga_start_time, System.monotonic_time())
     duration = System.monotonic_time() - start_time
 
     event = if status == :ok, do: :complete, else: :fail
-    metadata = %{saga: saga_name, correlation_id: correlation_id, status: status}
+
+    metadata = %{
+      saga: saga_name,
+      correlation_id: correlation_id,
+      causation_id: causation_id,
+      status: status
+    }
 
     :telemetry.execute(@telemetry_prefix ++ [event], %{duration: duration}, metadata)
 
     log_level = if status == :ok, do: :info, else: :warning
     Logger.log(log_level, "Saga #{event}: #{saga_name} [#{correlation_id}]")
 
-    maybe_emit_event(event, saga_name, correlation_id, status)
+    maybe_emit_event(event, saga_name, correlation_id, causation_id, status)
 
     {:ok, {status, context}}
   end
@@ -155,7 +164,7 @@ defmodule Thunderline.Thunderbolt.Sagas.Base do
   end
 
   # Emit canonical event to ThunderFlow EventBus for saga lifecycle
-  defp maybe_emit_event(event, saga_name, correlation_id, status) do
+  defp maybe_emit_event(event, saga_name, correlation_id, causation_id, status) do
     if feature?(:reactor_events) do
       event_name = "reactor.saga.#{event}"
 
@@ -165,6 +174,7 @@ defmodule Thunderline.Thunderbolt.Sagas.Base do
         domain: :bolt,
         source: saga_name,
         correlation_id: correlation_id,
+        causation_id: causation_id,
         payload: %{
           saga: saga_name,
           status: status,

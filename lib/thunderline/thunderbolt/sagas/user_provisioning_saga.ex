@@ -53,6 +53,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
 
   input :email
   input :correlation_id
+  input :causation_id
   input :magic_link_redirect
 
   step :validate_email do
@@ -196,14 +197,16 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
     argument :user, result(:create_user)
     argument :vault, result(:provision_vault)
     argument :correlation_id, input(:correlation_id)
+    argument :causation_id, input(:causation_id)
 
-    run fn %{user: user, vault: vault, correlation_id: correlation_id}, _ ->
+    run fn %{user: user, vault: vault, correlation_id: correlation_id, causation_id: causation_id}, _ ->
       event_attrs = %{
         name: "user.onboarding.complete",
         type: :user_lifecycle,
         domain: :gate,
         source: "UserProvisioningSaga",
         correlation_id: correlation_id,
+        causation_id: causation_id,
         payload: %{
           user_id: user.id,
           email: user.email,
