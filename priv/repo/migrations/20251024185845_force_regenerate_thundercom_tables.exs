@@ -2559,6 +2559,30 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderblock_channels, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :channel_name, :string
+      add :channel_slug, :string
+      add :channel_type, :string
+      add :channel_category, :string
+      add :status, :string
+      add :visibility, :string
+      add :topic, :string
+      add :channel_config, :map
+      add :voice_config, :map
+      add :permissions_override, :map
+      add :message_count, :integer
+      add :active_participants, :integer
+      add :last_message_at, :utc_datetime
+      add :created_by, :uuid
+      add :pinned_message_ids, {:array, :uuid}
+      add :channel_integrations, :map
+      add :moderation_config, :map
+      add :channel_metrics, :map
+      add :position, :integer
+      add :tags, {:array, :string}
+      add :metadata, :map
+      add :community_id, :uuid
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thunderblock_messages
