@@ -484,7 +484,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
     create_if_not_exists index(:thunderblock_messages, [:mentions], using: :gin, name: "messages_mentions_idx")
 
     execute """
-    CREATE INDEX IF NOT EXISTS messages_search_idx 
+    CREATE INDEX IF NOT EXISTS messages_search_idx
     ON thunderblock_messages USING gin (search_vector gin_trgm_ops)
     """
 
@@ -926,12 +926,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'experiences_agent_id_fkey'
           ) THEN
-            ALTER TABLE experiences 
-            ADD CONSTRAINT experiences_agent_id_fkey 
-            FOREIGN KEY (agent_id) 
+            ALTER TABLE experiences
+            ADD CONSTRAINT experiences_agent_id_fkey
+            FOREIGN KEY (agent_id)
             REFERENCES agents(id);
           END IF;
         END $$;
@@ -1004,12 +1004,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'messages_conversation_id_fkey'
           ) THEN
-            ALTER TABLE messages 
-            ADD CONSTRAINT messages_conversation_id_fkey 
-            FOREIGN KEY (conversation_id) 
+            ALTER TABLE messages
+            ADD CONSTRAINT messages_conversation_id_fkey
+            FOREIGN KEY (conversation_id)
             REFERENCES conversations(id);
           END IF;
         END $$;
@@ -1019,12 +1019,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'messages_response_to_id_fkey'
           ) THEN
-            ALTER TABLE messages 
-            ADD CONSTRAINT messages_response_to_id_fkey 
-            FOREIGN KEY (response_to_id) 
+            ALTER TABLE messages
+            ADD CONSTRAINT messages_response_to_id_fkey
+            FOREIGN KEY (response_to_id)
             REFERENCES messages(id);
           END IF;
         END $$;
@@ -1074,12 +1074,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thundermag_task_executions_macro_command_id_fkey'
           ) THEN
-            ALTER TABLE thundermag_task_executions 
-            ADD CONSTRAINT thundermag_task_executions_macro_command_id_fkey 
-            FOREIGN KEY (macro_command_id) 
+            ALTER TABLE thundermag_task_executions
+            ADD CONSTRAINT thundermag_task_executions_macro_command_id_fkey
+            FOREIGN KEY (macro_command_id)
             REFERENCES thundermag_macro_commands(id);
           END IF;
         END $$;
@@ -1125,12 +1125,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderlane_coordinators_active_ruleset_id_fkey'
           ) THEN
-            ALTER TABLE thunderlane_coordinators 
-            ADD CONSTRAINT thunderlane_coordinators_active_ruleset_id_fkey 
-            FOREIGN KEY (active_ruleset_id) 
+            ALTER TABLE thunderlane_coordinators
+            ADD CONSTRAINT thunderlane_coordinators_active_ruleset_id_fkey
+            FOREIGN KEY (active_ruleset_id)
             REFERENCES thunderlane_rulesets(id);
           END IF;
         END $$;
@@ -1275,12 +1275,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_pac_homes_community_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_pac_homes 
-            ADD CONSTRAINT thunderblock_pac_homes_community_id_fkey 
-            FOREIGN KEY (community_id) 
+            ALTER TABLE thunderblock_pac_homes
+            ADD CONSTRAINT thunderblock_pac_homes_community_id_fkey
+            FOREIGN KEY (community_id)
             REFERENCES thunderblock_communities(id);
           END IF;
         END $$;
@@ -1615,12 +1615,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_pac_homes_zone_container_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_pac_homes 
-            ADD CONSTRAINT thunderblock_pac_homes_zone_container_id_fkey 
-            FOREIGN KEY (zone_container_id) 
+            ALTER TABLE thunderblock_pac_homes
+            ADD CONSTRAINT thunderblock_pac_homes_zone_container_id_fkey
+            FOREIGN KEY (zone_container_id)
             REFERENCES thunderblock_zone_containers(id);
           END IF;
         END $$;
@@ -1640,12 +1640,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_communities_execution_zone_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_communities 
-            ADD CONSTRAINT thunderblock_communities_execution_zone_id_fkey 
-            FOREIGN KEY (execution_zone_id) 
+            ALTER TABLE thunderblock_communities
+            ADD CONSTRAINT thunderblock_communities_execution_zone_id_fkey
+            FOREIGN KEY (execution_zone_id)
             REFERENCES thunderblock_zone_containers(id);
           END IF;
         END $$;
@@ -2551,12 +2551,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'experiences_decision_id_fkey'
           ) THEN
-            ALTER TABLE experiences 
-            ADD CONSTRAINT experiences_decision_id_fkey 
-            FOREIGN KEY (decision_id) 
+            ALTER TABLE experiences
+            ADD CONSTRAINT experiences_decision_id_fkey
+            FOREIGN KEY (decision_id)
             REFERENCES decisions(id);
           END IF;
         END $$;
@@ -2566,12 +2566,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'experiences_action_id_fkey'
           ) THEN
-            ALTER TABLE experiences 
-            ADD CONSTRAINT experiences_action_id_fkey 
-            FOREIGN KEY (action_id) 
+            ALTER TABLE experiences
+            ADD CONSTRAINT experiences_action_id_fkey
+            FOREIGN KEY (action_id)
             REFERENCES actions(id);
           END IF;
         END $$;
@@ -2589,12 +2589,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'actions_decision_id_fkey'
           ) THEN
-            ALTER TABLE actions 
-            ADD CONSTRAINT actions_decision_id_fkey 
-            FOREIGN KEY (decision_id) 
+            ALTER TABLE actions
+            ADD CONSTRAINT actions_decision_id_fkey
+            FOREIGN KEY (decision_id)
             REFERENCES decisions(id);
           END IF;
         END $$;
@@ -2604,12 +2604,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'actions_parent_action_id_fkey'
           ) THEN
-            ALTER TABLE actions 
-            ADD CONSTRAINT actions_parent_action_id_fkey 
-            FOREIGN KEY (parent_action_id) 
+            ALTER TABLE actions
+            ADD CONSTRAINT actions_parent_action_id_fkey
+            FOREIGN KEY (parent_action_id)
             REFERENCES actions(id);
           END IF;
         END $$;
@@ -2649,12 +2649,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_messages_channel_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_messages 
-            ADD CONSTRAINT thunderblock_messages_channel_id_fkey 
-            FOREIGN KEY (channel_id) 
+            ALTER TABLE thunderblock_messages
+            ADD CONSTRAINT thunderblock_messages_channel_id_fkey
+            FOREIGN KEY (channel_id)
             REFERENCES thunderblock_channels(id);
           END IF;
         END $$;
@@ -2664,12 +2664,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_messages_community_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_messages 
-            ADD CONSTRAINT thunderblock_messages_community_id_fkey 
-            FOREIGN KEY (community_id) 
+            ALTER TABLE thunderblock_messages
+            ADD CONSTRAINT thunderblock_messages_community_id_fkey
+            FOREIGN KEY (community_id)
             REFERENCES thunderblock_communities(id);
           END IF;
         END $$;
@@ -2761,12 +2761,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderlane_performance_metrics_telemetry_snapshot_id_fkey'
           ) THEN
-            ALTER TABLE thunderlane_performance_metrics 
-            ADD CONSTRAINT thunderlane_performance_metrics_telemetry_snapshot_id_fkey 
-            FOREIGN KEY (telemetry_snapshot_id) 
+            ALTER TABLE thunderlane_performance_metrics
+            ADD CONSTRAINT thunderlane_performance_metrics_telemetry_snapshot_id_fkey
+            FOREIGN KEY (telemetry_snapshot_id)
             REFERENCES thunderlane_telemetry_snapshots(id);
           END IF;
         END $$;
@@ -2819,12 +2819,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderlane_lane_metrics_topology_id_fkey'
           ) THEN
-            ALTER TABLE thunderlane_lane_metrics 
-            ADD CONSTRAINT thunderlane_lane_metrics_topology_id_fkey 
-            FOREIGN KEY (topology_id) 
+            ALTER TABLE thunderlane_lane_metrics
+            ADD CONSTRAINT thunderlane_lane_metrics_topology_id_fkey
+            FOREIGN KEY (topology_id)
             REFERENCES thunderlane_cell_topology(id);
           END IF;
         END $$;
@@ -2834,12 +2834,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderlane_lane_metrics_ruleset_id_fkey'
           ) THEN
-            ALTER TABLE thunderlane_lane_metrics 
-            ADD CONSTRAINT thunderlane_lane_metrics_ruleset_id_fkey 
-            FOREIGN KEY (ruleset_id) 
+            ALTER TABLE thunderlane_lane_metrics
+            ADD CONSTRAINT thunderlane_lane_metrics_ruleset_id_fkey
+            FOREIGN KEY (ruleset_id)
             REFERENCES thunderlane_rulesets(id);
           END IF;
         END $$;
@@ -2863,12 +2863,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'dag_edges_workflow_id_fkey'
           ) THEN
-            ALTER TABLE dag_edges 
-            ADD CONSTRAINT dag_edges_workflow_id_fkey 
-            FOREIGN KEY (workflow_id) 
+            ALTER TABLE dag_edges
+            ADD CONSTRAINT dag_edges_workflow_id_fkey
+            FOREIGN KEY (workflow_id)
             REFERENCES dag_workflows(id);
           END IF;
         END $$;
@@ -2884,12 +2884,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'dag_snapshots_workflow_id_fkey'
           ) THEN
-            ALTER TABLE dag_snapshots 
-            ADD CONSTRAINT dag_snapshots_workflow_id_fkey 
-            FOREIGN KEY (workflow_id) 
+            ALTER TABLE dag_snapshots
+            ADD CONSTRAINT dag_snapshots_workflow_id_fkey
+            FOREIGN KEY (workflow_id)
             REFERENCES dag_workflows(id);
           END IF;
         END $$;
@@ -2920,12 +2920,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'embedding_vectors_memory_record_id_fkey'
           ) THEN
-            ALTER TABLE embedding_vectors 
-            ADD CONSTRAINT embedding_vectors_memory_record_id_fkey 
-            FOREIGN KEY (memory_record_id) 
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_memory_record_id_fkey
+            FOREIGN KEY (memory_record_id)
             REFERENCES memories(id);
           END IF;
         END $$;
@@ -2935,12 +2935,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'embedding_vectors_memory_node_id_fkey'
           ) THEN
-            ALTER TABLE embedding_vectors 
-            ADD CONSTRAINT embedding_vectors_memory_node_id_fkey 
-            FOREIGN KEY (memory_node_id) 
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_memory_node_id_fkey
+            FOREIGN KEY (memory_node_id)
             REFERENCES memory_nodes(id);
           END IF;
         END $$;
@@ -2995,12 +2995,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'ml_model_artifacts_model_run_id_fkey'
           ) THEN
-            ALTER TABLE ml_model_artifacts 
-            ADD CONSTRAINT ml_model_artifacts_model_run_id_fkey 
-            FOREIGN KEY (model_run_id) 
+            ALTER TABLE ml_model_artifacts
+            ADD CONSTRAINT ml_model_artifacts_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
             REFERENCES cerebros_model_runs(id);
           END IF;
         END $$;
@@ -3012,12 +3012,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'cerebros_model_trials_model_run_id_fkey'
           ) THEN
-            ALTER TABLE cerebros_model_trials 
-            ADD CONSTRAINT cerebros_model_trials_model_run_id_fkey 
-            FOREIGN KEY (model_run_id) 
+            ALTER TABLE cerebros_model_trials
+            ADD CONSTRAINT cerebros_model_trials_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
             REFERENCES cerebros_model_runs(id);
           END IF;
         END $$;
@@ -3029,12 +3029,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'mlflow_experiments_model_run_id_fkey'
           ) THEN
-            ALTER TABLE mlflow_experiments 
-            ADD CONSTRAINT mlflow_experiments_model_run_id_fkey 
-            FOREIGN KEY (model_run_id) 
+            ALTER TABLE mlflow_experiments
+            ADD CONSTRAINT mlflow_experiments_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
             REFERENCES cerebros_model_runs(id);
           END IF;
         END $$;
@@ -3050,12 +3050,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'mlflow_runs_model_run_id_fkey'
           ) THEN
-            ALTER TABLE mlflow_runs 
-            ADD CONSTRAINT mlflow_runs_model_run_id_fkey 
-            FOREIGN KEY (model_run_id) 
+            ALTER TABLE mlflow_runs
+            ADD CONSTRAINT mlflow_runs_model_run_id_fkey
+            FOREIGN KEY (model_run_id)
             REFERENCES cerebros_model_runs(id);
           END IF;
         END $$;
@@ -3146,12 +3146,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thundercom_realm_identities_realm_id_fkey'
           ) THEN
-            ALTER TABLE thundercom_realm_identities 
-            ADD CONSTRAINT thundercom_realm_identities_realm_id_fkey 
-            FOREIGN KEY (realm_id) 
+            ALTER TABLE thundercom_realm_identities
+            ADD CONSTRAINT thundercom_realm_identities_realm_id_fkey
+            FOREIGN KEY (realm_id)
             REFERENCES thundercom_federated_realms(id);
           END IF;
         END $$;
@@ -3163,12 +3163,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thundercom_federated_messages_source_realm_id_fkey'
           ) THEN
-            ALTER TABLE thundercom_federated_messages 
-            ADD CONSTRAINT thundercom_federated_messages_source_realm_id_fkey 
-            FOREIGN KEY (source_realm_id) 
+            ALTER TABLE thundercom_federated_messages
+            ADD CONSTRAINT thundercom_federated_messages_source_realm_id_fkey
+            FOREIGN KEY (source_realm_id)
             REFERENCES thundercom_federated_realms(id);
           END IF;
         END $$;
@@ -3178,12 +3178,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thundercom_federated_messages_target_realm_id_fkey'
           ) THEN
-            ALTER TABLE thundercom_federated_messages 
-            ADD CONSTRAINT thundercom_federated_messages_target_realm_id_fkey 
-            FOREIGN KEY (target_realm_id) 
+            ALTER TABLE thundercom_federated_messages
+            ADD CONSTRAINT thundercom_federated_messages_target_realm_id_fkey
+            FOREIGN KEY (target_realm_id)
             REFERENCES thundercom_federated_realms(id);
           END IF;
         END $$;
@@ -3325,12 +3325,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'upm_snapshots_trainer_id_fkey'
           ) THEN
-            ALTER TABLE upm_snapshots 
-            ADD CONSTRAINT upm_snapshots_trainer_id_fkey 
-            FOREIGN KEY (trainer_id) 
+            ALTER TABLE upm_snapshots
+            ADD CONSTRAINT upm_snapshots_trainer_id_fkey
+            FOREIGN KEY (trainer_id)
             REFERENCES upm_trainers(id);
           END IF;
         END $$;
@@ -3346,12 +3346,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'upm_drift_windows_trainer_id_fkey'
           ) THEN
-            ALTER TABLE upm_drift_windows 
-            ADD CONSTRAINT upm_drift_windows_trainer_id_fkey 
-            FOREIGN KEY (trainer_id) 
+            ALTER TABLE upm_drift_windows
+            ADD CONSTRAINT upm_drift_windows_trainer_id_fkey
+            FOREIGN KEY (trainer_id)
             REFERENCES upm_trainers(id);
           END IF;
         END $$;
@@ -3382,12 +3382,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'ising_optimization_runs_problem_id_fkey'
           ) THEN
-            ALTER TABLE ising_optimization_runs 
-            ADD CONSTRAINT ising_optimization_runs_problem_id_fkey 
-            FOREIGN KEY (problem_id) 
+            ALTER TABLE ising_optimization_runs
+            ADD CONSTRAINT ising_optimization_runs_problem_id_fkey
+            FOREIGN KEY (problem_id)
             REFERENCES ising_optimization_problems(id);
           END IF;
         END $$;
@@ -3420,12 +3420,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_zone_containers_cluster_node_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_zone_containers 
-            ADD CONSTRAINT thunderblock_zone_containers_cluster_node_id_fkey 
-            FOREIGN KEY (cluster_node_id) 
+            ALTER TABLE thunderblock_zone_containers
+            ADD CONSTRAINT thunderblock_zone_containers_cluster_node_id_fkey
+            FOREIGN KEY (cluster_node_id)
             REFERENCES thunderblock_cluster_nodes(id);
           END IF;
         END $$;
@@ -3441,12 +3441,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_supervision_trees_cluster_node_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_supervision_trees 
-            ADD CONSTRAINT thunderblock_supervision_trees_cluster_node_id_fkey 
-            FOREIGN KEY (cluster_node_id) 
+            ALTER TABLE thunderblock_supervision_trees
+            ADD CONSTRAINT thunderblock_supervision_trees_cluster_node_id_fkey
+            FOREIGN KEY (cluster_node_id)
             REFERENCES thunderblock_cluster_nodes(id);
           END IF;
         END $$;
@@ -3456,12 +3456,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thunderblock_supervision_trees_zone_container_id_fkey'
           ) THEN
-            ALTER TABLE thunderblock_supervision_trees 
-            ADD CONSTRAINT thunderblock_supervision_trees_zone_container_id_fkey 
-            FOREIGN KEY (zone_container_id) 
+            ALTER TABLE thunderblock_supervision_trees
+            ADD CONSTRAINT thunderblock_supervision_trees_zone_container_id_fkey
+            FOREIGN KEY (zone_container_id)
             REFERENCES thunderblock_zone_containers(id);
           END IF;
         END $$;
@@ -3490,12 +3490,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'thundercore_task_nodes_workflow_dag_id_fkey'
           ) THEN
-            ALTER TABLE thundercore_task_nodes 
-            ADD CONSTRAINT thundercore_task_nodes_workflow_dag_id_fkey 
-            FOREIGN KEY (workflow_dag_id) 
+            ALTER TABLE thundercore_task_nodes
+            ADD CONSTRAINT thundercore_task_nodes_workflow_dag_id_fkey
+            FOREIGN KEY (workflow_dag_id)
             REFERENCES thundercore_workflow_dags(id);
           END IF;
         END $$;
@@ -3687,20 +3687,7 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
     end
 
     # Foreign key constraints for agents
-    execute """
-        DO $$
-        BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
-            WHERE conname = 'agents_created_by_user_id_fkey'
-          ) THEN
-            ALTER TABLE agents 
-            ADD CONSTRAINT agents_created_by_user_id_fkey 
-            FOREIGN KEY (created_by_user_id) 
-            REFERENCES users(id);
-          END IF;
-        END $$;
-        """
+    # Removed orphaned FK: agents_created_by_user_id_fkey (created_by_user_id column does not exist in agents table)
 
 
     # Foreign key constraints for user_tokens
@@ -3708,12 +3695,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'user_tokens_user_id_fkey'
           ) THEN
-            ALTER TABLE user_tokens 
-            ADD CONSTRAINT user_tokens_user_id_fkey 
-            FOREIGN KEY (user_id) 
+            ALTER TABLE user_tokens
+            ADD CONSTRAINT user_tokens_user_id_fkey
+            FOREIGN KEY (user_id)
             REFERENCES users(id);
           END IF;
         END $$;
@@ -3752,12 +3739,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'embedding_vectors_knowledge_node_id_fkey'
           ) THEN
-            ALTER TABLE embedding_vectors 
-            ADD CONSTRAINT embedding_vectors_knowledge_node_id_fkey 
-            FOREIGN KEY (knowledge_node_id) 
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_knowledge_node_id_fkey
+            FOREIGN KEY (knowledge_node_id)
             REFERENCES thunderblock_knowledge_nodes(id);
           END IF;
         END $$;
@@ -3767,12 +3754,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'embedding_vectors_experience_id_fkey'
           ) THEN
-            ALTER TABLE embedding_vectors 
-            ADD CONSTRAINT embedding_vectors_experience_id_fkey 
-            FOREIGN KEY (experience_id) 
+            ALTER TABLE embedding_vectors
+            ADD CONSTRAINT embedding_vectors_experience_id_fkey
+            FOREIGN KEY (experience_id)
             REFERENCES experiences(id);
           END IF;
         END $$;
@@ -3879,12 +3866,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'ml_training_runs_dataset_id_fkey'
           ) THEN
-            ALTER TABLE ml_training_runs 
-            ADD CONSTRAINT ml_training_runs_dataset_id_fkey 
-            FOREIGN KEY (dataset_id) 
+            ALTER TABLE ml_training_runs
+            ADD CONSTRAINT ml_training_runs_dataset_id_fkey
+            FOREIGN KEY (dataset_id)
             REFERENCES ml_training_datasets(id);
           END IF;
         END $$;
@@ -3894,12 +3881,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'ml_training_runs_spec_id_fkey'
           ) THEN
-            ALTER TABLE ml_training_runs 
-            ADD CONSTRAINT ml_training_runs_spec_id_fkey 
-            FOREIGN KEY (spec_id) 
+            ALTER TABLE ml_training_runs
+            ADD CONSTRAINT ml_training_runs_spec_id_fkey
+            FOREIGN KEY (spec_id)
             REFERENCES ml_model_specs(id);
           END IF;
         END $$;
@@ -3909,12 +3896,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'ml_training_runs_artifact_id_fkey'
           ) THEN
-            ALTER TABLE ml_training_runs 
-            ADD CONSTRAINT ml_training_runs_artifact_id_fkey 
-            FOREIGN KEY (artifact_id) 
+            ALTER TABLE ml_training_runs
+            ADD CONSTRAINT ml_training_runs_artifact_id_fkey
+            FOREIGN KEY (artifact_id)
             REFERENCES ml_model_artifacts(id);
           END IF;
         END $$;
@@ -3926,12 +3913,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'ml_feature_views_dataset_id_fkey'
           ) THEN
-            ALTER TABLE ml_feature_views 
-            ADD CONSTRAINT ml_feature_views_dataset_id_fkey 
-            FOREIGN KEY (dataset_id) 
+            ALTER TABLE ml_feature_views
+            ADD CONSTRAINT ml_feature_views_dataset_id_fkey
+            FOREIGN KEY (dataset_id)
             REFERENCES ml_training_datasets(id);
           END IF;
         END $$;
@@ -3943,12 +3930,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
         DO $$
         BEGIN
           IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint 
+            SELECT 1 FROM pg_constraint
             WHERE conname = 'ml_model_versions_dataset_id_fkey'
           ) THEN
-            ALTER TABLE ml_model_versions 
-            ADD CONSTRAINT ml_model_versions_dataset_id_fkey 
-            FOREIGN KEY (dataset_id) 
+            ALTER TABLE ml_model_versions
+            ADD CONSTRAINT ml_model_versions_dataset_id_fkey
+            FOREIGN KEY (dataset_id)
             REFERENCES ml_training_datasets(id);
           END IF;
         END $$;
