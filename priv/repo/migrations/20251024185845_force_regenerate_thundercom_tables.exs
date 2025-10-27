@@ -3771,21 +3771,11 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
            )
 
     # Removed 3 orphaned indexes: columns embedding_vector_ids, memory_record_ids, and taxonomy_path do not exist in thunderblock_knowledge_nodes
+    # Removed 3 more orphaned indexes: columns source_domains, semantic_tags, and aliases do not exist in thunderblock_knowledge_nodes
 
-    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :relationship_data], using: :gin,
+    # Fixed: removed tenant_id from GIN index (UUIDs can't use GIN without operator class)
+    create_if_not_exists index(:thunderblock_knowledge_nodes, [:relationship_data], using: :gin,
              name: "knowledge_nodes_relationships_idx"
-           )
-
-    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :source_domains], using: :gin,
-             name: "knowledge_nodes_sources_idx"
-           )
-
-    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :semantic_tags], using: :gin,
-             name: "knowledge_nodes_tags_idx"
-           )
-
-    create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :aliases], using: :gin,
-             name: "knowledge_nodes_aliases_idx"
            )
 
     create_if_not_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :indexing_status],
@@ -4023,26 +4013,12 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
                      name: "knowledge_nodes_indexing_idx"
                    )
 
-    drop_if_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :aliases], using: :gin,
-                     name: "knowledge_nodes_aliases_idx"
-                   )
-
-    drop_if_exists index(:thunderblock_knowledge_nodes, [:tenant_id, :semantic_tags], using: :gin,
-                     name: "knowledge_nodes_tags_idx"
-                   )
-
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, :source_domains], using: :gin,
-                     name: "knowledge_nodes_sources_idx"
-                   )
-
-    drop_if_exists index(
-                     :thunderblock_knowledge_nodes,
-                     [:tenant_id, :relationship_data], using: :gin,
+    # Fixed: removed tenant_id from GIN index drop (matching up migration fix)
+    drop_if_exists index(:thunderblock_knowledge_nodes, [:relationship_data], using: :gin,
                      name: "knowledge_nodes_relationships_idx"
                    )
 
+    # Removed 3 orphaned index drops: source_domains, semantic_tags, aliases
     # Removed 3 orphaned index drops (corresponding indexes removed from up migration)
 
 
