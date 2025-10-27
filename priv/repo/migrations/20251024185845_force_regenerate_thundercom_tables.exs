@@ -1540,6 +1540,27 @@ defmodule Thunderline.Repo.Migrations.ForceRegenerateThundercomTables do
 
     create_if_not_exists table(:thunderblock_zone_containers, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
+      add :zone_name, :string
+      add :zone_type, :string
+      add :status, :string
+      add :coordinates, :map
+      add :capacity_config, :map
+      add :current_usage, :map
+      add :zone_config, :map
+      add :supervision_strategy, :string
+      add :max_restarts, :integer
+      add :max_seconds, :integer
+      add :restart_count, :integer
+      add :last_restart, :utc_datetime
+      add :health_score, :decimal
+      add :last_health_check, :utc_datetime
+      add :neighbor_zones, {:array, :uuid}
+      add :phase_assignment, :integer
+      add :tags, {:array, :string}
+      add :metadata, :map
+      add :cluster_node_id, :uuid
+      add :inserted_at, :utc_datetime_usec
+      add :updated_at, :utc_datetime_usec
     end
 
     # Foreign key constraints for thunderblock_pac_homes
