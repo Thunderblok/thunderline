@@ -1,5 +1,0 @@
-{
-  "private": "{\"crv\":\"Ed25519\",\"d\":\"vI65tyTfuFaQf658nyAwC3k17zMrtTYxWKke0cEyyh4\",\"kty\":\"OKP\",\"x\":\"1e32ztFdHMDZvQSDk6MpUxrxhfXBlH3HA_bQsJTSm_Y\"}",
-  "public": "{\"crv\":\"Ed25519\",\"kty\":\"OKP\",\"x\":\"1e32ztFdHMDZvQSDk6MpUxrxhfXBlH3HA_bQsJTSm_Y\"}",
-  "created_at": "2025-10-19T14:08:51.775948Z"
-}
