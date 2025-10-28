@@ -1,14 +1,14 @@
 defmodule Thunderline.Thunderflow.CorrelationIdTest do
   @moduledoc """
   Test suite for correlation ID propagation across the event-driven architecture.
-  
+
   Based on OPERATION SAGA CONCORDIA - Correlation Audit (docs/concordia/correlation_audit.md)
   Tests verify:
   - Correlation ID acceptance and propagation through sagas
   - Auto-generation when correlation_id not provided
   - Multi-step saga correlation ID preservation
   - EventBus validation of correlation_id format
-  
+
   Phase 3 Week 2 - Task 1: Correlation ID Test Cases
   """
   use ExUnit.Case, async: false
