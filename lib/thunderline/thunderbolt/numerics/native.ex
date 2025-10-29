@@ -2,7 +2,8 @@ defmodule Thunderline.Thunderbolt.Numerics.Native do
   @moduledoc """
   NIF glue for Rust implementation.
   """
-  use Rustler, otp_app: :thunderline, crate: "cerebros_numerics"
+  # Temporarily disabled for development
+  # use Rustler, otp_app: :thunderline, crate: "cerebros_numerics"
 
   @doc """
   GEMM FP16 with FP32 accumulation.
@@ -13,5 +14,5 @@ defmodule Thunderline.Thunderbolt.Numerics.Native do
   Returns:
     - binary FP16 row-major (m×n)
   """
-  def gemm_fp16_acc32(_a, _b, _m, _n, _k), do: :erlang.nif_error(:nif_not_loaded)
+  def gemm_fp16_acc32(_a, _b, _m, _n, _k), do: {:error, :nif_disabled}
 end

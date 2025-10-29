@@ -82,6 +82,33 @@ defmodule Thunderline.Thunderbolt.Domain do
     # Cerebros (ML search & training)
     resource Thunderline.Thunderbolt.Resources.ModelRun
     resource Thunderline.Thunderbolt.Resources.ModelTrial
+
+    # Cerebros Training Pipeline (new)
+    resource Thunderline.Thunderbolt.Resources.TrainingDataset do
+      define :create_training_dataset, action: :create
+      define :update_training_dataset, action: :update
+      define :update_corpus_path, action: :update_corpus_path
+      define :get_training_dataset, action: :read, get_by: [:id]
+      define :list_training_datasets, action: :read
+      define :freeze_dataset, action: :freeze
+    end
+
+    resource Thunderline.Thunderbolt.Resources.DocumentUpload do
+      define :create_document_upload, action: :create
+      define :list_document_uploads, action: :read
+      define :process_upload, action: :mark_processed
+    end
+
+    resource Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
+      define :create_training_job, action: :create
+      define :get_training_job, action: :read, get_by: [:id]
+      define :start_job, action: :start
+      define :update_fine_tuned_model, action: :update_fine_tuned_model
+      define :complete_job, action: :complete
+      define :fail_job, action: :fail
+      define :mark_model_loaded, action: :mark_model_loaded
+    end
+
     # New ML stack resources
 
     # RAG (Retrieval Augmented Generation)
