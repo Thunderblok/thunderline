@@ -87,7 +87,7 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.Resources.TrainingDataset do
       define :create_training_dataset, action: :create
       define :update_training_dataset, action: :update
-      define :update_corpus_path, action: :update_corpus_path
+      define :update_corpus_path, action: :set_corpus_path, args: [:corpus_path]
       define :get_training_dataset, action: :read, get_by: [:id]
       define :list_training_datasets, action: :read
       define :freeze_dataset, action: :freeze
