@@ -26,22 +26,10 @@ defmodule Thunderline.Thunderflow.Domain do
   - Event flow monitoring and processing
   """
 
-  use Ash.Domain
+  use Ash.Domain, extensions: [AshAdmin.Domain]
 
-  resources do
-    # Original ThunderFlow resources
-    resource Thunderline.Thunderflow.Resources.ConsciousnessFlow
-    resource Thunderline.Thunderflow.Resources.EventStream
-    resource Thunderline.Thunderflow.Resources.SystemAction
-    # Event logging resource
-    resource Thunderline.Thunderflow.Events.Event
-    # Probe & drift resources (integrated from Raincatcher)
-    resource Thunderline.Thunderflow.Resources.ProbeRun
-    resource Thunderline.Thunderflow.Resources.ProbeLap
-    resource Thunderline.Thunderflow.Resources.ProbeAttractorSummary
-    # Feature/Lineage resources (market/edgar removed)
-    resource Thunderline.Features.FeatureWindow
-    resource Thunderline.Lineage.Edge
+  admin do
+    show? true
   end
 
   @doc """
@@ -119,4 +107,20 @@ defmodule Thunderline.Thunderflow.Domain do
   end
 
   defp determine_pipeline(pipeline, _event_type), do: to_string(pipeline)
+
+  resources do
+    # Original ThunderFlow resources
+    resource Thunderline.Thunderflow.Resources.ConsciousnessFlow
+    resource Thunderline.Thunderflow.Resources.EventStream
+    resource Thunderline.Thunderflow.Resources.SystemAction
+    # Event logging resource
+    resource Thunderline.Thunderflow.Events.Event
+    # Probe & drift resources (integrated from Raincatcher)
+    resource Thunderline.Thunderflow.Resources.ProbeRun
+    resource Thunderline.Thunderflow.Resources.ProbeLap
+    resource Thunderline.Thunderflow.Resources.ProbeAttractorSummary
+    # Feature/Lineage resources (market/edgar removed)
+    resource Thunderline.Features.FeatureWindow
+    resource Thunderline.Lineage.Edge
+  end
 end

@@ -8,7 +8,9 @@ IO.puts("\n=== Testing Authentication & Channel Access ===\n")
 
 # Find existing demo user (deselect virtual password field)
 IO.puts("Looking for demo user...")
-user = User
+
+user =
+  User
   |> Ash.Query.filter(email == "demo@thunderline.dev")
   |> Ash.Query.deselect([:password])
   |> Ash.read_one!(authorize?: false)
@@ -17,6 +19,7 @@ IO.puts("✓ Found user: #{user.email} (ID: #{user.id})")
 
 # Generate authentication token
 IO.puts("\nGenerating authentication token...")
+
 case AshAuthentication.Jwt.token_for_user(user) do
   {:ok, token, _claims} ->
     IO.puts("✓ Generated authentication token\n")

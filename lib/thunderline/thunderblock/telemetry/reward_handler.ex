@@ -113,9 +113,7 @@ defmodule Thunderline.Thunderblock.Telemetry.RewardHandler do
     :ok
   rescue
     error ->
-      Logger.error(
-        "[RewardHandler] Failed to handle reward event: #{Exception.message(error)}"
-      )
+      Logger.error("[RewardHandler] Failed to handle reward event: #{Exception.message(error)}")
 
       :ok
   end
@@ -187,9 +185,7 @@ defmodule Thunderline.Thunderblock.Telemetry.RewardHandler do
       # Recalculate aggregations after deletion
       recalculate_aggregations()
 
-      Logger.info(
-        "[RewardHandler] Swept #{deleted_count} old reward metrics (cutoff: #{cutoff})"
-      )
+      Logger.info("[RewardHandler] Swept #{deleted_count} old reward metrics (cutoff: #{cutoff})")
     end
 
     {:ok, deleted_count}
@@ -224,10 +220,14 @@ defmodule Thunderline.Thunderblock.Telemetry.RewardHandler do
   defp recalculate_aggregations do
     # Clear existing aggregations
     :ets.delete(@table_name, :global)
-    :ets.match(@table_name, {{:provider, :"$1"}, :_}) |> Enum.each(fn [p] ->
+
+    :ets.match(@table_name, {{:provider, :"$1"}, :_})
+    |> Enum.each(fn [p] ->
       :ets.delete(@table_name, {:provider, p})
     end)
-    :ets.match(@table_name, {{:model, :"$1"}, :_}) |> Enum.each(fn [m] ->
+
+    :ets.match(@table_name, {{:model, :"$1"}, :_})
+    |> Enum.each(fn [m] ->
       :ets.delete(@table_name, {:model, m})
     end)
 

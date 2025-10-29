@@ -35,25 +35,28 @@ try do
 
   # Create a test user FIRST (required for community owner_id)
   # User resource only has auth actions, so insert directly for testing
-  {:ok, user} = Thunderline.Repo.insert(%Thunderline.Thundergate.Resources.User{
-    id: Ash.UUID.generate(),
-    email: "test-#{:erlang.unique_integer([:positive])}@example.com",
-    hashed_password: "$2b$12$dummyhashfortest",  # Dummy hash for testing
-    inserted_at: DateTime.utc_now(),
-    updated_at: DateTime.utc_now()
-  })
+  {:ok, user} =
+    Thunderline.Repo.insert(%Thunderline.Thundergate.Resources.User{
+      id: Ash.UUID.generate(),
+      email: "test-#{:erlang.unique_integer([:positive])}@example.com",
+      # Dummy hash for testing
+      hashed_password: "$2b$12$dummyhashfortest",
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
+    })
 
   IO.puts("  ✓ Created user: #{user.email} (ID: #{user.id})")
   cleanup_data = %{cleanup_data | user: user}
 
   # Create a test community (now that we have owner_id)
-  community = Community
-  |> Ash.Changeset.for_create(:create, %{
-    community_name: "Test Community #{:erlang.unique_integer([:positive])}",
-    community_slug: "test-community-#{:erlang.unique_integer([:positive])}",
-    owner_id: user.id
-  })
-  |> Ash.create!(authorize?: false, load: [])
+  community =
+    Community
+    |> Ash.Changeset.for_create(:create, %{
+      community_name: "Test Community #{:erlang.unique_integer([:positive])}",
+      community_slug: "test-community-#{:erlang.unique_integer([:positive])}",
+      owner_id: user.id
+    })
+    |> Ash.create!(authorize?: false, load: [])
 
   IO.puts("  ✓ Created community: #{community.community_name} (ID: #{community.id})")
   cleanup_data = %{cleanup_data | community: community}
@@ -66,14 +69,15 @@ try do
   channel_name = "test-channel-#{:erlang.unique_integer([:positive])}"
   channel_slug = String.downcase(channel_name) |> String.replace(~r/[^a-z0-9\-_]/, "-")
 
-  channel = Channel
-  |> Ash.Changeset.for_create(:create, %{
-    channel_name: channel_name,
-    channel_slug: channel_slug,
-    community_id: community.id,
-    created_by: user.id
-  })
-  |> Ash.create!(authorize?: false, load: [])
+  channel =
+    Channel
+    |> Ash.Changeset.for_create(:create, %{
+      channel_name: channel_name,
+      channel_slug: channel_slug,
+      community_id: community.id,
+      created_by: user.id
+    })
+    |> Ash.create!(authorize?: false, load: [])
 
   IO.puts("  ✓ Created channel: #{channel.channel_name} (ID: #{channel.id})")
   IO.puts("    Initial message_count: #{channel.message_count}")
@@ -87,13 +91,14 @@ try do
 
   message_content = "Test message at #{DateTime.utc_now() |> DateTime.to_iso8601()}"
 
-  message = Message
-  |> Ash.Changeset.for_create(:create, %{
-    content: message_content,
-    sender_id: user.id,
-    channel_id: channel.id
-  })
-  |> Ash.create!(authorize?: false, load: [])
+  message =
+    Message
+    |> Ash.Changeset.for_create(:create, %{
+      content: message_content,
+      sender_id: user.id,
+      channel_id: channel.id
+    })
+    |> Ash.create!(authorize?: false, load: [])
 
   IO.puts("  ✓ Message sent successfully!")
   IO.puts("    Content: \"#{message_content}\"")
@@ -146,8 +151,9 @@ try do
   IO.puts("\nStep 5: Verifying channel metrics update...")
 
   # Reload channel to get updated metrics
-  reloaded_channel = Channel
-  |> Ash.get!(channel.id, authorize?: false)
+  reloaded_channel =
+    Channel
+    |> Ash.get!(channel.id, authorize?: false)
 
   IO.puts("  Channel metrics after message:")
   IO.puts("    message_count: #{reloaded_channel.message_count}")
@@ -158,7 +164,11 @@ try do
 
   if count_increased and timestamp_updated do
     IO.puts("  ✓ Channel metrics updated correctly!")
-    IO.puts("    message_count incremented: #{channel.message_count} → #{reloaded_channel.message_count}")
+
+    IO.puts(
+      "    message_count incremented: #{channel.message_count} → #{reloaded_channel.message_count}"
+    )
+
     test_results = %{test_results | metrics_update: true}
   else
     IO.puts("  ✗ Channel metrics not updated:")
@@ -181,6 +191,7 @@ try do
   all_passed = Enum.all?(Map.values(test_results), & &1)
 
   IO.puts("\n" <> String.duplicate("=", 70))
+
   if all_passed do
     IO.puts("✓✓✓ ALL TESTS PASSED! ✓✓✓")
     IO.puts("\nTask 1-2 fixes validated successfully:")
@@ -192,10 +203,12 @@ try do
   else
     IO.puts("✗✗✗ SOME TESTS FAILED ✗✗✗")
     IO.puts("\nFailed checks:")
+
     test_results
     |> Enum.reject(fn {_k, v} -> v end)
     |> Enum.each(fn {k, _v} -> IO.puts("  • #{k}") end)
   end
+
   IO.puts(String.duplicate("=", 70) <> "\n")
 
   # Cleanup
@@ -212,7 +225,6 @@ try do
   else
     System.halt(1)
   end
-
 rescue
   e in [Ash.Error.Invalid, Ash.Error.Forbidden, Ash.Error.Framework] ->
     IO.puts("\n✗✗✗ ASH ERROR OCCURRED ✗✗✗")

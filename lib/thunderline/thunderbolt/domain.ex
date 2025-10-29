@@ -17,11 +17,15 @@ defmodule Thunderline.Thunderbolt.Domain do
 
   use Ash.Domain,
     validate_config_inclusion?: false,
-    extensions: [AshOban.Domain, AshJsonApi.Domain, AshGraphql.Domain]
+    extensions: [AshAdmin.Domain, AshOban.Domain, AshJsonApi.Domain, AshGraphql.Domain]
+
+  admin do
+    show? true
+  end
 
   json_api do
     prefix "/api/thunderbolt"
-    log_errors?(true)
+    log_errors? true
   end
 
   graphql do

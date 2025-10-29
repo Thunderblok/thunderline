@@ -1,5 +1,9 @@
 defmodule Thunderline.Thunderlink.Chat do
-  use Ash.Domain, otp_app: :thunderline, extensions: [AshPhoenix]
+  use Ash.Domain, otp_app: :thunderline, extensions: [AshAdmin.Domain, AshPhoenix]
+
+  admin do
+    show? true
+  end
 
   resources do
     resource Thunderline.Thunderlink.Chat.Conversation do

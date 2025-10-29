@@ -77,9 +77,8 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
           # If event was published, it should have same correlation_id
           # (EventBus doesn't expose metadata in telemetry, so we verify indirectly)
           assert event_name == "user.onboarding.complete"
-
-        after
-          500 -> :ok
+      after
+        500 -> :ok
       end
     end
   end
@@ -174,9 +173,11 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
       }
 
       # Attempt to publish should fail with ArgumentError in test mode
-      assert_raise ArgumentError, ~r/Invalid event system\.test\.correlation_missing: :missing_correlation_id/, fn ->
-        EventBus.publish_event(event)
-      end
+      assert_raise ArgumentError,
+                   ~r/Invalid event system\.test\.correlation_missing: :missing_correlation_id/,
+                   fn ->
+                     EventBus.publish_event(event)
+                   end
     end
 
     test "EventBus rejects events with invalid correlation_id format" do
@@ -195,9 +196,11 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
       }
 
       # Attempt to publish should fail with ArgumentError in test mode
-      assert_raise ArgumentError, ~r/Invalid event system\.test\.correlation_invalid: :bad_correlation_id/, fn ->
-        EventBus.publish_event(event)
-      end
+      assert_raise ArgumentError,
+                   ~r/Invalid event system\.test\.correlation_invalid: :bad_correlation_id/,
+                   fn ->
+                     EventBus.publish_event(event)
+                   end
     end
 
     test "EventBus accepts events with valid correlation_id" do

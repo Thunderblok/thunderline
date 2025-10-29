@@ -146,6 +146,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
 
     attribute :intrinsic_reward, :decimal do
       allow_nil? true
+
       description "IGPO intrinsic reward score (0.0-1.0) measuring information gain/novelty across laps"
     end
 

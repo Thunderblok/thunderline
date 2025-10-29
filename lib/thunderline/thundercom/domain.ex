@@ -15,7 +15,11 @@ defmodule Thunderline.Thundercom.Domain do
   - Personal and collaborative spaces (PAC Homes)
   """
 
-  use Ash.Domain
+  use Ash.Domain, extensions: [AshAdmin.Domain]
+
+  admin do
+    show? true
+  end
 
   resources do
     resource Thunderline.Thundercom.Resources.Community

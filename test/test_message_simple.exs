@@ -26,7 +26,9 @@ IO.puts("========================================\n")
 
 try do
   IO.puts("1. Getting demo user...")
-  user = User
+
+  user =
+    User
     |> Ash.Query.filter(email == "demo@thunderline.dev")
     |> Ash.Query.select([:id, :email])
     |> Ash.read_one!(authorize?: false)
@@ -48,26 +50,30 @@ try do
 
   IO.puts("\n3. Creating test channel...")
   channel_name = "test-#{:os.system_time(:millisecond)}"
-  channel = Channel
-  |> Ash.Changeset.for_create(:create, %{
-    channel_name: channel_name,
-    channel_slug: String.downcase(channel_name),
-    community_id: community.id,
-    created_by: user.id
-  })
-  |> Ash.create!(authorize?: false)
+
+  channel =
+    Channel
+    |> Ash.Changeset.for_create(:create, %{
+      channel_name: channel_name,
+      channel_slug: String.downcase(channel_name),
+      community_id: community.id,
+      created_by: user.id
+    })
+    |> Ash.create!(authorize?: false)
 
   IO.puts("   ✓ Channel: #{channel.channel_name} (ID: #{channel.id})")
 
   IO.puts("\n4. Creating message...")
   content = "Test at #{DateTime.utc_now() |> DateTime.to_iso8601()}"
-  message = Message
-  |> Ash.Changeset.for_create(:create, %{
-    content: content,
-    sender_id: user.id,
-    channel_id: channel.id
-  })
-  |> Ash.create!(authorize?: false)
+
+  message =
+    Message
+    |> Ash.Changeset.for_create(:create, %{
+      content: content,
+      sender_id: user.id,
+      channel_id: channel.id
+    })
+    |> Ash.create!(authorize?: false)
 
   IO.puts("   ✓ Message: #{message.id}")
   IO.puts("   Content: #{message.content}")
@@ -85,7 +91,6 @@ try do
   IO.puts("  • Database persistence working")
   IO.puts("\nTodo #4 COMPLETE ✓")
   IO.puts("========================================\n")
-
 rescue
   e ->
     IO.puts("\n✗✗✗ TEST FAILED ✗✗✗")

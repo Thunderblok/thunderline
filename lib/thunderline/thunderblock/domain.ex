@@ -26,13 +26,19 @@ defmodule Thunderline.Thunderblock.Domain do
   - Knowledge and memory management
   """
 
-  use Ash.Domain
+  use Ash.Domain, extensions: [AshAdmin.Domain]
 
   alias Thunderline.Thunderblock.Resources.VaultKnowledgeNode
 
   # VaultKnowledgeNode relationship management functions
-  defdelegate add_relationship!(node, target_node_id, relationship_type, relationship_strength, opts \\ []),
-    to: VaultKnowledgeNode
+  defdelegate add_relationship!(
+                node,
+                target_node_id,
+                relationship_type,
+                relationship_strength,
+                opts \\ []
+              ),
+              to: VaultKnowledgeNode
 
   defdelegate remove_relationship!(node, target_node_id, relationship_type, opts \\ []),
     to: VaultKnowledgeNode
@@ -47,11 +53,23 @@ defmodule Thunderline.Thunderblock.Domain do
   defdelegate record_access!(node, access_type, user_context, opts \\ []),
     to: VaultKnowledgeNode
 
-  defdelegate search_knowledge!(search_term, knowledge_domains, node_types, min_confidence \\ nil, opts \\ []),
-    to: VaultKnowledgeNode
+  defdelegate search_knowledge!(
+                search_term,
+                knowledge_domains,
+                node_types,
+                min_confidence \\ nil,
+                opts \\ []
+              ),
+              to: VaultKnowledgeNode
 
-  defdelegate traverse_graph!(start_node_id, relationship_types, max_depth, direction, opts \\ []),
-    to: VaultKnowledgeNode
+  defdelegate traverse_graph!(
+                start_node_id,
+                relationship_types,
+                max_depth,
+                direction,
+                opts \\ []
+              ),
+              to: VaultKnowledgeNode
 
   defdelegate by_domain!(knowledge_domain, opts \\ []),
     to: VaultKnowledgeNode
@@ -64,6 +82,10 @@ defmodule Thunderline.Thunderblock.Domain do
 
   defdelegate cleanup_deprecated!(opts \\ []),
     to: VaultKnowledgeNode
+
+  admin do
+    show? true
+  end
 
   resources do
     # Original ThunderBlock resources

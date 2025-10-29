@@ -10,11 +10,11 @@ defmodule Thunderline.Thunderlink.Chat.Message do
     triggers do
       trigger :respond do
         action :respond
-        queue(:chat_responses)
-        lock_for_update?(false)
-        scheduler_cron(false)
-        worker_module_name(Thunderline.Thunderlink.Chat.Message.Workers.Respond)
-        scheduler_module_name(Thunderline.Thunderlink.Chat.Message.Schedulers.Respond)
+        queue :chat_responses
+        lock_for_update? false
+        scheduler_cron false
+        worker_module_name Thunderline.Thunderlink.Chat.Message.Workers.Respond
+        scheduler_module_name Thunderline.Thunderlink.Chat.Message.Schedulers.Respond
         where expr(needs_response)
       end
     end

@@ -21,12 +21,34 @@
 // Feel free to adjust this configuration however you need.
 {
   "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "*": ["../deps/*"]
-    },
-    "allowJs": true,
-    "noEmit": true
+      "*": ["../deps/*"],
+      "@cerebros/*": ["js/cerebros/*"]
+    }
   },
-  "include": ["js/**/*"]
+  "include": [
+    "js/**/*.js",
+    "js/**/*.ts",
+    "js/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "_build",
+    "deps"
+  ]
 }

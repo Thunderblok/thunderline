@@ -30,9 +30,9 @@ defmodule Thunderline.Thunderlink.Resources.Ticket do
         where expr(status == :open and is_nil(processed_at))
 
         # Every minute
-        scheduler_cron("* * * * *")
-        queue(:default)
-        max_attempts(3)
+        scheduler_cron "* * * * *"
+        queue :default
+        max_attempts 3
       end
 
       # Escalate tickets that haven't been processed in 5 minutes
@@ -46,9 +46,9 @@ defmodule Thunderline.Thunderlink.Resources.Ticket do
               )
 
         # Every 2 minutes
-        scheduler_cron("*/2 * * * *")
-        queue(:scheduled_workflows)
-        max_attempts(2)
+        scheduler_cron "*/2 * * * *"
+        queue :scheduled_workflows
+        max_attempts 2
       end
     end
   end

@@ -1,6 +1,10 @@
 import Config
 config :ash, policies: [show_policy_breakdowns?: true]
-config :thunderline, event_validator_mode: :warn, require_actor_ctx: false
+
+config :thunderline,
+  event_validator_mode: :warn,
+  require_actor_ctx: false,
+  token_signing_secret: "YZHEbja+m4hn1VwozT3JnDna3MHse+qS"
 
 # Configure the AshPostgres repo
 db_url = System.get_env("DATABASE_URL")

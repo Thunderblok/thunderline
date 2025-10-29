@@ -119,45 +119,45 @@ defmodule Thundergate.ThunderBridge do
         end
       end
 
-    case event do
-      %{type: event_type, payload: payload} ->
-        build_and_publish.(%{
-          name: Map.get(payload, :event_name, "system.bridge.#{event_type}"),
-          type: event_type,
-          source: :bridge,
-          payload: payload,
-          meta: %{pipeline: :realtime},
-          priority: Map.get(payload, :priority, :normal)
-        })
+      case event do
+        %{type: event_type, payload: payload} ->
+          build_and_publish.(%{
+            name: Map.get(payload, :event_name, "system.bridge.#{event_type}"),
+            type: event_type,
+            source: :bridge,
+            payload: payload,
+            meta: %{pipeline: :realtime},
+            priority: Map.get(payload, :priority, :normal)
+          })
 
-      %{event: event_type, data: payload} ->
-        build_and_publish.(%{
-          name: Map.get(payload, :event_name, "system.bridge.#{event_type}"),
-          type: event_type,
-          source: :bridge,
-          payload: payload,
-          meta: %{pipeline: :realtime},
-          priority: Map.get(payload, :priority, :normal)
-        })
+        %{event: event_type, data: payload} ->
+          build_and_publish.(%{
+            name: Map.get(payload, :event_name, "system.bridge.#{event_type}"),
+            type: event_type,
+            source: :bridge,
+            payload: payload,
+            meta: %{pipeline: :realtime},
+            priority: Map.get(payload, :priority, :normal)
+          })
 
-      %{topic: topic, event: event_data} ->
-        build_and_publish.(%{
-          name: "system.bridge.bridge_event",
-          type: :bridge_event,
-          source: :bridge,
-          payload: Map.merge(event_data, %{topic: topic}),
-          meta: %{pipeline: infer_pipeline_from_topic(topic)}
-        })
+        %{topic: topic, event: event_data} ->
+          build_and_publish.(%{
+            name: "system.bridge.bridge_event",
+            type: :bridge_event,
+            source: :bridge,
+            payload: Map.merge(event_data, %{topic: topic}),
+            meta: %{pipeline: infer_pipeline_from_topic(topic)}
+          })
 
-      _ ->
-        build_and_publish.(%{
-          name: "system.bridge.generic_event",
-          type: :generic_event,
-          source: :bridge,
-          payload: event,
-          meta: %{pipeline: :realtime}
-        })
-    end
+        _ ->
+          build_and_publish.(%{
+            name: "system.bridge.generic_event",
+            type: :generic_event,
+            source: :bridge,
+            payload: event,
+            meta: %{pipeline: :realtime}
+          })
+      end
     end
   end
 

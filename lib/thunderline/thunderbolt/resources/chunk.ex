@@ -104,7 +104,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     triggers do
       trigger :chunk_health_check do
         action :update_health
-        scheduler_cron("*/1 * * * *")
+        scheduler_cron "*/1 * * * *"
         where expr(state in [:active, :optimizing, :maintenance, :scaling])
       end
     end

@@ -57,6 +57,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   end
 
   input :email
+
   input :correlation_id do
     transform fn value ->
       case value do
@@ -67,6 +68,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
       end
     end
   end
+
   input :causation_id
   input :magic_link_redirect
 
@@ -236,7 +238,8 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
     argument :correlation_id, result(:emit_saga_start, [:correlation_id])
     argument :causation_id, input(:causation_id)
 
-    run fn %{user: user, vault: vault, correlation_id: correlation_id, causation_id: causation_id}, _ ->
+    run fn %{user: user, vault: vault, correlation_id: correlation_id, causation_id: causation_id},
+           _ ->
       event_attrs = %{
         name: "user.onboarding.complete",
         type: :user_lifecycle,

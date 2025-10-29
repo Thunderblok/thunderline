@@ -255,7 +255,13 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       user_actor = create_tenant_actor(tenant_id, :user)
       admin_actor = create_tenant_actor(tenant_id, :admin)
       curator_actor = create_tenant_actor(tenant_id, :curator)
-      system_actor = %{id: Ash.UUID.generate(), role: :system, scope: :maintenance, tenant_id: tenant_id}
+
+      system_actor = %{
+        id: Ash.UUID.generate(),
+        role: :system,
+        scope: :maintenance,
+        tenant_id: tenant_id
+      }
 
       node = create_knowledge_node(tenant_id)
 
@@ -269,7 +275,10 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       }
     end
 
-    test "create action requires proper authorization", %{tenant_id: tenant_id, user_actor: user_actor} do
+    test "create action requires proper authorization", %{
+      tenant_id: tenant_id,
+      user_actor: user_actor
+    } do
       # User with tenant_id can create
       node =
         VaultKnowledgeNode
@@ -291,7 +300,11 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       assert node.tenant_id == tenant_id
     end
 
-    test "read action respects tenant boundaries", %{tenant_id: tenant_id, user_actor: user_actor, node: node} do
+    test "read action respects tenant boundaries", %{
+      tenant_id: tenant_id,
+      user_actor: user_actor,
+      node: node
+    } do
       # User can read their own tenant's node
       fetched_node =
         VaultKnowledgeNode
@@ -308,7 +321,11 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNodeTest do
       end
     end
 
-    test "update action enforces ownership", %{tenant_id: tenant_id, user_actor: user_actor, node: node} do
+    test "update action enforces ownership", %{
+      tenant_id: tenant_id,
+      user_actor: user_actor,
+      node: node
+    } do
       # User can update node in their tenant
       updated_node =
         node

@@ -36,7 +36,7 @@ defmodule Thunderline.Thundergrid.Domain do
 
   json_api do
     prefix "/api/thundergrid"
-    log_errors?(true)
+    log_errors? true
   end
 
   resources do

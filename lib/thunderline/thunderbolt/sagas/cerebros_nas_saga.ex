@@ -236,7 +236,12 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
     argument :correlation_id, input(:correlation_id)
     argument :causation_id, input(:causation_id)
 
-    run fn %{version_result: %{run: run, best_model: model}, correlation_id: correlation_id, causation_id: causation_id}, _ ->
+    run fn %{
+             version_result: %{run: run, best_model: model},
+             correlation_id: correlation_id,
+             causation_id: causation_id
+           },
+           _ ->
       event_attrs = %{
         name: "ml.run.completed",
         type: :ml_lifecycle,

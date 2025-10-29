@@ -76,13 +76,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
     end
   end
 
-  # ===== MULTITENANCY CONFIGURATION =====
-    multitenancy do
-      strategy :attribute
-      attribute :tenant_id
-      # Allow global queries (tenant optional) - tenant isolation enforced via policies for non-system actors
-      global? true
-    end  # ===== JSON API CONFIGURATION =====
+  # ===== JSON API CONFIGURATION =====
   json_api do
     type "knowledge_node"
 
@@ -93,105 +87,6 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       post(:create)
       patch(:update)
       delete(:destroy)
-    end
-  end
-
-  # ===== POLICIES =====
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    # Create: Tenant-scoped or system
-    policy action_type(:create) do
-      authorize_if expr(not is_nil(^actor(:tenant_id)))
-      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
-    end
-
-    # Read: Tenant isolation with global admin access
-    policy action_type(:read) do
-      authorize_if expr(tenant_id == ^actor(:tenant_id))
-      authorize_if expr(^actor(:role) == :admin and ^actor(:scope) == :global)
-      authorize_if expr(^actor(:role) == :system)
-    end
-
-    # Update: Tenant + unlocked verification status
-    policy action_type(:update) do
-      authorize_if expr(
-        tenant_id == ^actor(:tenant_id) and
-          verification_status != :locked
-      )
-
-      authorize_if expr(^actor(:role) == :admin and tenant_id == ^actor(:tenant_id))
-      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
-    end
-
-    # Destroy: Admin within tenant or system
-    policy action_type(:destroy) do
-      authorize_if expr(tenant_id == ^actor(:tenant_id) and ^actor(:role) == :admin)
-      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
-    end
-
-    # Graph operations: Tenant-scoped with system override
-    # System actors bypass all tenant restrictions
-    bypass expr(^actor(:role) == :system) do
-      authorize_if always()
-    end
-
-    policy action(:add_relationship) do
-      # Regular users: forbid if not in same tenant as source
-      forbid_unless expr(tenant_id == ^actor(:tenant_id))
-
-      # Regular users: forbid if target not in same tenant as source
-      forbid_unless Thunderline.Thunderblock.Resources.VaultKnowledgeNode.Checks.TargetNodeSameTenant
-
-      # If both checks pass, authorize
-      authorize_if always()
-    end
-
-    policy action(:remove_relationship) do
-      authorize_if expr(tenant_id == ^actor(:tenant_id))
-      authorize_if expr(^actor(:role) == :admin and tenant_id == ^actor(:tenant_id))
-    end
-
-    policy action(:traverse_graph) do
-      authorize_if expr(tenant_id == ^actor(:tenant_id))
-      authorize_if expr(^actor(:role) == :system)
-    end
-
-    # Search: Tenant-scoped with system access
-    policy action(:search_knowledge) do
-      authorize_if expr(not is_nil(^actor(:tenant_id)))
-      authorize_if expr(^actor(:role) == :system)
-    end
-
-    # Knowledge management: Admin or system only
-    policy action(:consolidate_knowledge) do
-      authorize_if expr(tenant_id == ^actor(:tenant_id) and ^actor(:role) == :admin)
-      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
-    end
-
-    policy action(:verify_knowledge) do
-      authorize_if expr(tenant_id == ^actor(:tenant_id) and ^actor(:role) in [:admin, :curator])
-      authorize_if expr(^actor(:role) == :system)
-    end
-
-    # Access tracking: Any authenticated user
-    policy action(:record_access) do
-      authorize_if expr(not is_nil(^actor(:id)))
-    end
-
-    # System maintenance: System role only
-    policy action(:optimize_relationships) do
-      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
-    end
-
-    policy action(:recalculate_metrics) do
-      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
-    end
-
-    policy action(:cleanup_deprecated) do
-      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
     end
   end
 
@@ -378,7 +273,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
             "supports" -> "supports_nodes"
             "temporal_next" -> "temporal_next"
             "causal_effect" -> "causal_effects"
-            _ -> "related_nodes"  # Default to related_nodes for unknown types
+            # Default to related_nodes for unknown types
+            _ -> "related_nodes"
           end
 
         current_list = Map.get(current_relationships, relationship_key, [])
@@ -438,7 +334,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
             "supports" -> "supports_nodes"
             "temporal_next" -> "temporal_next"
             "causal_effect" -> "causal_effects"
-            _ -> "related_nodes"  # Default to related_nodes for unknown types
+            # Default to related_nodes for unknown types
+            _ -> "related_nodes"
           end
 
         current_list = Map.get(current_relationships, relationship_key, [])
@@ -764,6 +661,105 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
     end
   end
 
+  # ===== POLICIES =====
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    # Create: Tenant-scoped or system
+    policy action_type(:create) do
+      authorize_if expr(not is_nil(^actor(:tenant_id)))
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
+    end
+
+    # Read: Tenant isolation with global admin access
+    policy action_type(:read) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :admin and ^actor(:scope) == :global)
+      authorize_if expr(^actor(:role) == :system)
+    end
+
+    # Update: Tenant + unlocked verification status
+    policy action_type(:update) do
+      authorize_if expr(
+                     tenant_id == ^actor(:tenant_id) and
+                       verification_status != :locked
+                   )
+
+      authorize_if expr(^actor(:role) == :admin and tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
+    end
+
+    # Destroy: Admin within tenant or system
+    policy action_type(:destroy) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id) and ^actor(:role) == :admin)
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
+    end
+
+    # Graph operations: Tenant-scoped with system override
+    # System actors bypass all tenant restrictions
+    bypass expr(^actor(:role) == :system) do
+      authorize_if always()
+    end
+
+    policy action(:add_relationship) do
+      # Regular users: forbid if not in same tenant as source
+      forbid_unless expr(tenant_id == ^actor(:tenant_id))
+
+      # Regular users: forbid if target not in same tenant as source
+      forbid_unless Thunderline.Thunderblock.Resources.VaultKnowledgeNode.Checks.TargetNodeSameTenant
+
+      # If both checks pass, authorize
+      authorize_if always()
+    end
+
+    policy action(:remove_relationship) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :admin and tenant_id == ^actor(:tenant_id))
+    end
+
+    policy action(:traverse_graph) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id))
+      authorize_if expr(^actor(:role) == :system)
+    end
+
+    # Search: Tenant-scoped with system access
+    policy action(:search_knowledge) do
+      authorize_if expr(not is_nil(^actor(:tenant_id)))
+      authorize_if expr(^actor(:role) == :system)
+    end
+
+    # Knowledge management: Admin or system only
+    policy action(:consolidate_knowledge) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id) and ^actor(:role) == :admin)
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
+    end
+
+    policy action(:verify_knowledge) do
+      authorize_if expr(tenant_id == ^actor(:tenant_id) and ^actor(:role) in [:admin, :curator])
+      authorize_if expr(^actor(:role) == :system)
+    end
+
+    # Access tracking: Any authenticated user
+    policy action(:record_access) do
+      authorize_if expr(not is_nil(^actor(:id)))
+    end
+
+    # System maintenance: System role only
+    policy action(:optimize_relationships) do
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
+    end
+
+    policy action(:recalculate_metrics) do
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
+    end
+
+    policy action(:cleanup_deprecated) do
+      authorize_if expr(^actor(:role) == :system and ^actor(:scope) == :maintenance)
+    end
+  end
+
   # ===== PREPARATIONS =====
   preparations do
     # Removed load preparation - :memory_records and :embedding_vectors relationships don't exist
@@ -780,6 +776,15 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
     # (Legacy validation hooks retained for reference - original Thundervault module names commented out)
     # validate {ThunderblockVault.Validations, :valid_relationship_structure}, on: [:create, :update]
     # validate {ThunderblockVault.Validations, :valid_taxonomy_path}, on: [:create, :update]
+  end
+
+  # ===== MULTITENANCY CONFIGURATION =====
+  multitenancy do
+    strategy :attribute
+    attribute :tenant_id
+
+    # Allow global queries (tenant optional) - tenant isolation enforced via policies for non-system actors
+    global? true
   end
 
   # ===== ATTRIBUTES =====

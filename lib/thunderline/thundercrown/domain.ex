@@ -42,7 +42,11 @@ defmodule Thunderline.Thundercrown.Domain do
   [ThunderBlock (storage)] <──────┘
   """
 
-  use Ash.Domain, otp_app: :thunderline, extensions: [AshAi]
+  use Ash.Domain, otp_app: :thunderline, extensions: [AshAdmin.Domain, AshAi]
+
+  admin do
+    show? true
+  end
 
   # Expose governance-approved actions as AshAI MCP tools (initial slice).
   # Additional tools should be added only after Crown policy review.

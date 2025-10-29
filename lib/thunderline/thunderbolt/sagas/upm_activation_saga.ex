@@ -235,7 +235,13 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
     argument :correlation_id, input(:correlation_id)
     argument :causation_id, input(:causation_id)
 
-    run fn %{snapshot: snapshot, adapters: adapters, correlation_id: correlation_id, causation_id: causation_id}, _ ->
+    run fn %{
+             snapshot: snapshot,
+             adapters: adapters,
+             correlation_id: correlation_id,
+             causation_id: causation_id
+           },
+           _ ->
       event_attrs = %{
         name: "ai.upm.snapshot.activated",
         type: :upm_lifecycle,

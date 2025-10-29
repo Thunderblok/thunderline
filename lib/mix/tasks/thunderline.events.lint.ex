@@ -34,7 +34,10 @@ defmodule Mix.Tasks.Thunderline.Events.Lint do
 
     if warnings != [] do
       output_warnings(warnings, format)
-      Mix.shell().info("\n[event-lint] #{length(warnings)} warning(s) - Consider explicitly providing correlation_id for better traceability")
+
+      Mix.shell().info(
+        "\n[event-lint] #{length(warnings)} warning(s) - Consider explicitly providing correlation_id for better traceability"
+      )
     end
   end
 
@@ -52,9 +55,9 @@ defmodule Mix.Tasks.Thunderline.Events.Lint do
       # - full match contains iex> (doc test)
       is_doc_example =
         String.trim(inner) == "" ||
-        String.contains?(inner, "...") ||
-        String.contains?(full, "iex>") ||
-        (String.contains?(inner, "type:") && !String.contains?(inner, "name:"))
+          String.contains?(inner, "...") ||
+          String.contains?(full, "iex>") ||
+          (String.contains?(inner, "type:") && !String.contains?(inner, "name:"))
 
       if is_doc_example do
         []
@@ -135,19 +138,21 @@ defmodule Mix.Tasks.Thunderline.Events.Lint do
         # Check if correlation_id is explicitly provided
         has_correlation_id =
           String.contains?(args, "correlation_id:") ||
-          String.contains?(args, ":correlation_id")
+            String.contains?(args, ":correlation_id")
 
         if has_correlation_id do
           []
         else
-          [%{
-            file: path,
-            issue: %{
-              type: :missing_explicit_correlation_id,
-              value: "Consider explicitly providing correlation_id for better traceability"
-            },
-            snippet: String.slice(full_match, 0, 100)
-          }]
+          [
+            %{
+              file: path,
+              issue: %{
+                type: :missing_explicit_correlation_id,
+                value: "Consider explicitly providing correlation_id for better traceability"
+              },
+              snippet: String.slice(full_match, 0, 100)
+            }
+          ]
         end
       end)
     end)

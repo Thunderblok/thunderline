@@ -4,13 +4,27 @@
   "version": "0.1.0",
   "scripts": {
     "assets:build": "esbuild js/app.js --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js",
-    "assets:watch": "esbuild js/app.js --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js --watch"
+    "assets:watch": "esbuild js/app.js --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js --watch",
+    "cerebros:build": "esbuild js/cerebros/index.tsx --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js --loader:.tsx=tsx --loader:.ts=ts",
+    "cerebros:watch": "esbuild js/cerebros/index.tsx --bundle --format=esm --target=es2022 --outdir=../priv/static/assets/js --watch --loader:.tsx=tsx --loader:.ts=ts"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@llm-ui/react": "^0.13.3",
+    "@llm-ui/markdown": "^0.13.3",
+    "@llm-ui/code": "^0.13.3",
+    "react-markdown": "^9.0.1",
+    "recharts": "^2.12.0"
   },
   "devDependencies": {
     "esbuild": "^0.23.0",
     "three": "^0.168.0",
     "phoenix": "^1.7.11",
     "phoenix_html": "^4.0.0",
-    "phoenix_live_view": "^1.0.0"
+    "phoenix_live_view": "^1.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.4.0"
   }
 }

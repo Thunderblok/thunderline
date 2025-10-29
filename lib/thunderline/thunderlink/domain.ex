@@ -17,7 +17,12 @@ defmodule Thunderline.Thunderlink.Domain do
   - P2P communication protocols
   """
 
-  use Ash.Domain, extensions: [AshOban.Domain, AshGraphql.Domain, AshTypescript.Rpc]
+  use Ash.Domain,
+    extensions: [AshAdmin.Domain, AshOban.Domain, AshGraphql.Domain, AshTypescript.Rpc]
+
+  admin do
+    show? true
+  end
 
   graphql do
     queries do

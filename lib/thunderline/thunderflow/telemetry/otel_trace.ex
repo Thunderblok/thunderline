@@ -50,7 +50,12 @@ defmodule Thunderline.Thunderflow.Telemetry.OtelTrace do
         rescue
           error ->
             OpenTelemetry.Span.record_exception(span_ctx, error, __STACKTRACE__)
-            OpenTelemetry.Span.set_status(span_ctx, OpenTelemetry.status(:error, Exception.message(error)))
+
+            OpenTelemetry.Span.set_status(
+              span_ctx,
+              OpenTelemetry.status(:error, Exception.message(error))
+            )
+
             reraise error, __STACKTRACE__
         end
       end

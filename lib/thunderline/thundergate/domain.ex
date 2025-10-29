@@ -22,7 +22,11 @@ defmodule Thunderline.Thundergate.Domain do
   - Federated message routing and security
   """
 
-  use Ash.Domain
+  use Ash.Domain, extensions: [AshAdmin.Domain]
+
+  admin do
+    show? true
+  end
 
   resources do
     # Accounts → ThunderGate (authentication/security)

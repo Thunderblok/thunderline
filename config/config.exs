@@ -6,6 +6,7 @@
 
 # General application configuration
 import Config
+config :ash_oban, pro?: false
 
 ## AshTypescript configuration (typed TS client & RPC)
 config :ash_typescript,
@@ -51,6 +52,8 @@ config :spark,
     remove_parens?: true,
     "Ash.Resource": [
       section_order: [
+        :token,
+        :user_identity,
         :authentication,
         :tokens,
         :postgres,
@@ -201,6 +204,7 @@ config :thunderline,
     presence_secured: true
   ],
   ash_domains: [
+    Thunderline.Accounts,
     Thunderline.Thunderlink.Chat,
     # === SLIM MODE ACTIVE ===
     # For the current milestone we only need the core runtime needed to ship
@@ -331,10 +335,7 @@ retention_cron =
 
 config :thunderline, Oban,
   repo: Thunderline.Repo,
-  plugins: [
-    {Oban.Plugins.Cron, crontab: compactor_cron ++ retention_cron},
-    Oban.Plugins.Pruner
-  ],
+  plugins: [{Oban.Plugins.Cron, crontab: compactor_cron ++ retention_cron}, Oban.Plugins.Pruner],
   queues: [
     default: 10,
     cross_domain: 5,

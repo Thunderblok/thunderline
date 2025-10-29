@@ -10,10 +10,10 @@ defmodule Thunderline.Thunderlink.Chat.Conversation do
     triggers do
       trigger :name_conversation do
         action :generate_name
-        queue(:conversations)
-        lock_for_update?(false)
-        worker_module_name(Thunderline.Thunderlink.Chat.Message.Workers.NameConversation)
-        scheduler_module_name(Thunderline.Thunderlink.Chat.Message.Schedulers.NameConversation)
+        queue :conversations
+        lock_for_update? false
+        worker_module_name Thunderline.Thunderlink.Chat.Message.Workers.NameConversation
+        scheduler_module_name Thunderline.Thunderlink.Chat.Message.Schedulers.NameConversation
         where expr(needs_title)
       end
     end

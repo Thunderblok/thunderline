@@ -29,9 +29,11 @@ IO.puts(String.duplicate("-", 80))
 
 try do
   existing_docs = Ash.read!(Document)
-  test_docs = Enum.filter(existing_docs, fn doc ->
-    get_in(doc.metadata, ["source"]) == "README.md"
-  end)
+
+  test_docs =
+    Enum.filter(existing_docs, fn doc ->
+      get_in(doc.metadata, ["source"]) == "README.md"
+    end)
 
   Enum.each(test_docs, fn doc ->
     Ash.destroy!(doc)
@@ -51,40 +53,44 @@ readme_path = Path.join(__DIR__, "README.md")
 readme = File.read!(readme_path)
 
 # Split README into chunks (simple paragraph-based splitting)
-chunks = String.split(readme, ~r/\n\n+/, trim: true)
+chunks =
+  String.split(readme, ~r/\n\n+/, trim: true)
   |> Enum.with_index()
   |> Enum.map(fn {chunk, idx} ->
     {String.trim(chunk), idx}
   end)
   |> Enum.reject(fn {chunk, _idx} ->
-    String.length(chunk) < 50  # Skip very small chunks
+    # Skip very small chunks
+    String.length(chunk) < 50
   end)
 
 IO.puts("Ingesting #{length(chunks)} chunks...")
 
 # Create documents for each chunk
-docs = Enum.map(chunks, fn {chunk, idx} ->
-  Document
-  |> Ash.Changeset.for_create(:create, %{
-    content: chunk,
-    metadata: %{
-      source: "README.md",
-      section: idx,
-      type: "documentation",
-      ingested_at: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-  })
-  |> Ash.create!()
-end)
+docs =
+  Enum.map(chunks, fn {chunk, idx} ->
+    Document
+    |> Ash.Changeset.for_create(:create, %{
+      content: chunk,
+      metadata: %{
+        source: "README.md",
+        section: idx,
+        type: "documentation",
+        ingested_at: DateTime.utc_now() |> DateTime.to_iso8601()
+      }
+    })
+    |> Ash.create!()
+  end)
 
 IO.puts("✓ Created #{length(docs)} documents")
 
 # Generate embeddings for all documents
 IO.puts("Generating embeddings (this will take ~7-8s for model load on first run)...")
 
-docs_with_vectors = Enum.map(docs, fn doc ->
-  Ash.update!(doc, %{}, action: :ash_ai_update_embeddings)
-end)
+docs_with_vectors =
+  Enum.map(docs, fn doc ->
+    Ash.update!(doc, %{}, action: :ash_ai_update_embeddings)
+  end)
 
 IO.puts("✓ SUCCESS: Ingested #{length(docs_with_vectors)} chunks with embeddings")
 
@@ -93,21 +99,23 @@ IO.puts("\n" <> String.duplicate("-", 80))
 IO.puts("TEST 2: Semantic Search - 'What domains does Thunderline have?'")
 IO.puts(String.duplicate("-", 80))
 
-{time_μs, results} = :timer.tc(fn ->
-  Ash.Query.for_read(Document, :semantic_search, %{
-    query: "What domains does Thunderline have?",
-    limit: 5,
-    threshold: 0.8
-  })
-  |> Ash.read!()
-end)
+{time_μs, results} =
+  :timer.tc(fn ->
+    Ash.Query.for_read(Document, :semantic_search, %{
+      query: "What domains does Thunderline have?",
+      limit: 5,
+      threshold: 0.8
+    })
+    |> Ash.read!()
+  end)
 
 time_ms = time_μs / 1000
 
 # Filter to only README results (in case old test docs exist)
-results = Enum.filter(results, fn doc ->
-  get_in(doc.metadata, ["source"]) == "README.md"
-end)
+results =
+  Enum.filter(results, fn doc ->
+    get_in(doc.metadata, ["source"]) == "README.md"
+  end)
 
 IO.puts("✓ SUCCESS")
 IO.puts("  Query time: #{Float.round(time_ms, 2)}ms")
@@ -124,20 +132,22 @@ IO.puts("\n" <> String.duplicate("-", 80))
 IO.puts("TEST 3: Semantic Search - 'How does the event system work?'")
 IO.puts(String.duplicate("-", 80))
 
-{time_μs, results} = :timer.tc(fn ->
-  Ash.Query.for_read(Document, :semantic_search, %{
-    query: "How does the event system work?",
-    limit: 3,
-    threshold: 0.7
-  })
-  |> Ash.read!()
-end)
+{time_μs, results} =
+  :timer.tc(fn ->
+    Ash.Query.for_read(Document, :semantic_search, %{
+      query: "How does the event system work?",
+      limit: 3,
+      threshold: 0.7
+    })
+    |> Ash.read!()
+  end)
 
 time_ms = time_μs / 1000
 
-results = Enum.filter(results, fn doc ->
-  get_in(doc.metadata, ["source"]) == "README.md"
-end)
+results =
+  Enum.filter(results, fn doc ->
+    get_in(doc.metadata, ["source"]) == "README.md"
+  end)
 
 IO.puts("✓ SUCCESS")
 IO.puts("  Query time: #{Float.round(time_ms, 2)}ms")
@@ -154,19 +164,21 @@ IO.puts("\n" <> String.duplicate("-", 80))
 IO.puts("TEST 4: Performance - 'What is Thunderline?'")
 IO.puts(String.duplicate("-", 80))
 
-{time_μs, results} = :timer.tc(fn ->
-  Ash.Query.for_read(Document, :semantic_search, %{
-    query: "What is Thunderline?",
-    limit: 3
-  })
-  |> Ash.read!()
-end)
+{time_μs, results} =
+  :timer.tc(fn ->
+    Ash.Query.for_read(Document, :semantic_search, %{
+      query: "What is Thunderline?",
+      limit: 3
+    })
+    |> Ash.read!()
+  end)
 
 time_ms = time_μs / 1000
 
-results = Enum.filter(results, fn doc ->
-  get_in(doc.metadata, ["source"]) == "README.md"
-end)
+results =
+  Enum.filter(results, fn doc ->
+    get_in(doc.metadata, ["source"]) == "README.md"
+  end)
 
 IO.puts("✓ SUCCESS")
 IO.puts("  Query time: #{Float.round(time_ms, 2)}ms")
@@ -190,23 +202,26 @@ queries = [
   "What is ThunderBlock?"
 ]
 
-results = Enum.map(queries, fn q ->
-  {time_μs, docs} = :timer.tc(fn ->
-    Ash.Query.for_read(Document, :semantic_search, %{
-      query: q,
-      limit: 2,
-      threshold: 0.6
-    })
-    |> Ash.read!()
-  end)
+results =
+  Enum.map(queries, fn q ->
+    {time_μs, docs} =
+      :timer.tc(fn ->
+        Ash.Query.for_read(Document, :semantic_search, %{
+          query: q,
+          limit: 2,
+          threshold: 0.6
+        })
+        |> Ash.read!()
+      end)
 
-  # Filter to README docs
-  docs = Enum.filter(docs, fn doc ->
-    get_in(doc.metadata, ["source"]) == "README.md"
-  end)
+    # Filter to README docs
+    docs =
+      Enum.filter(docs, fn doc ->
+        get_in(doc.metadata, ["source"]) == "README.md"
+      end)
 
-  {q, time_μs / 1000, docs}
-end)
+    {q, time_μs / 1000, docs}
+  end)
 
 IO.puts("✓ SUCCESS: All queries completed")
 
