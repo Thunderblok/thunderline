@@ -51,10 +51,47 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   alias Thunderline.Thundergate.Resources.User
   alias Thunderline.Thunderblock.Resources.VaultUser
 
+  # Emit telemetry for all steps (start/stop events)
+  middlewares do
+    middleware Reactor.Middleware.Telemetry
+  end
+
   input :email
-  input :correlation_id
+  input :correlation_id do
+    transform fn value ->
+      case value do
+        nil -> Thunderline.UUID.v7()
+        "" -> Thunderline.UUID.v7()
+        v when is_binary(v) -> v
+        _ -> Thunderline.UUID.v7()
+      end
+    end
+  end
   input :causation_id
   input :magic_link_redirect
+
+  step :emit_saga_start do
+    argument :correlation_id, input(:correlation_id)
+    argument :causation_id, input(:causation_id)
+
+    run fn args, _context ->
+      # correlation_id is already transformed/defaulted from input
+      actual_correlation_id = args.correlation_id
+
+      # Emit the telemetry event that tests are waiting for
+      metadata = %{
+        saga: "Elixir.Thunderline.Thunderbolt.Sagas.UserProvisioningSaga",
+        correlation_id: actual_correlation_id,
+        causation_id: args.causation_id,
+        step: "emit_saga_start"
+      }
+
+      :telemetry.execute([:reactor, :saga, :start], %{count: 1}, metadata)
+      Logger.info("UserProvisioningSaga started [#{actual_correlation_id}]")
+
+      {:ok, %{correlation_id: actual_correlation_id}}
+    end
+  end
 
   step :validate_email do
     argument :email, input(:email)
@@ -69,7 +106,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
 
   step :generate_token do
     argument :email, result(:validate_email)
-    argument :correlation_id, input(:correlation_id)
+    argument :correlation_id, result(:emit_saga_start, [:correlation_id])
 
     run fn %{email: email, correlation_id: correlation_id}, _ ->
       token = Thunderline.UUID.v7()
@@ -196,7 +233,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   step :emit_onboarding_event do
     argument :user, result(:create_user)
     argument :vault, result(:provision_vault)
-    argument :correlation_id, input(:correlation_id)
+    argument :correlation_id, result(:emit_saga_start, [:correlation_id])
     argument :causation_id, input(:causation_id)
 
     run fn %{user: user, vault: vault, correlation_id: correlation_id, causation_id: causation_id}, _ ->

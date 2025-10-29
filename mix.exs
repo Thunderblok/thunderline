@@ -52,6 +52,13 @@ defmodule Thunderline.MixProject do
 
   defp deps do
     base = [
+      {:open_api_spex, "~> 3.0"},
+      {:ash_paper_trail, "~> 0.5"},
+      {:mishka_chelekom, "~> 0.0", only: [:dev]},
+      {:live_debugger, "~> 0.4", only: [:dev]},
+      {:ash_archival, "~> 2.0"},
+      {:oban_web, "~> 2.0"},
+      {:ash_csv, "~> 0.9"},
       {:tidewave, "~> 0.5", only: [:dev]},
       {:mdex, "~> 0.7"},
       {:usage_rules, "~> 0.1", only: [:dev]},
@@ -88,22 +95,21 @@ defmodule Thunderline.MixProject do
       {:venomous, "~> 0.7"},
       {:swoosh, "~> 1.16"},
       # Ash Framework
-      {:ash, "~> 3.7"},
+      {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.0"},
-      {:ash_cloak, "~> 0.1.6"},
+      {:ash_cloak, "~> 0.1"},
       {:ash_postgres, "~> 2.0"},
       {:ash_graphql, "~> 1.0"},
       {:ash_rate_limiter, "~> 0.1.1"},
       {:ash_json_api, "~> 1.0"},
-      {:ash_oban, "~> 0.4"},
-      {:ash_events, "~> 0.4.3"},
+      {:ash_oban, "~> 0.5"},
+      {:ash_events, "~> 0.5"},
       {:opentelemetry_ash, "~> 0.1.3"},
-      {:ash_state_machine, "~> 0.2.12"},
-      {:ash_admin, "~> 0.11"},
+      {:ash_state_machine, "~> 0.2"},
+      {:ash_admin, "~> 0.13"},
       {:ash_ai, "~> 0.2"},
-
       # Type-safe TS client & RPC bridge
-      {:ash_typescript, github: "ash-project/ash_typescript", ref: "main"},
+      {:ash_typescript, "~> 0.6"},
       # Additional deps
       {:broadway, "~> 1.0"},
       {:picosat_elixir, "~> 0.2"},
@@ -127,7 +133,7 @@ defmodule Thunderline.MixProject do
       {:yamerl, "~> 0.10"},
       # Memory & Security
       {:memento, "~> 0.5.0"},
-      {:cloak, "~> 1.1"},
+      {:cloak, "~> 1.0"},
       # Crypto / JOSE (Ed25519 capability & policy signature stack)
       {:jose, "~> 1.11"},
       # ECS & GraphQL

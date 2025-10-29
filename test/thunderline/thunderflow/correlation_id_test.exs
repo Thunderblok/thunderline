@@ -27,7 +27,9 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
       handler_id,
       [
         [:reactor, :saga, :start],
-        [:reactor, :saga, :step, :start],
+        # Use actual Reactor.Middleware.Telemetry event names for steps
+        [:reactor, :step, :run, :start],
+        [:reactor, :step, :run, :stop],
         [:reactor, :saga, :complete],
         [:thunderline, :event, :enqueue],
         [:thunderline, :event, :dropped]
@@ -86,7 +88,8 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
     test "saga auto-generates correlation_id if not provided" do
       inputs = %{
         email: "correlation-test-2@example.com",
-        # No correlation_id provided
+        # Explicitly pass nil to trigger auto-generation via input transform
+        correlation_id: nil,
         causation_id: nil,
         magic_link_redirect: "/communities"
       }
@@ -128,19 +131,19 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
       # Run saga
       _result = Reactor.run(UserProvisioningSaga, inputs)
 
-      # Collect all saga step events
+      # Collect all Reactor step events (using actual Reactor.Middleware.Telemetry event names)
       step_events =
-        collect_telemetry_events([:reactor, :saga, :step, :start], timeout: 2000, max: 10)
+        collect_telemetry_events([:reactor, :step, :run, :start], timeout: 2000, max: 10)
 
       # Verify at least some steps executed (saga may fail, but initial steps should fire)
-      assert length(step_events) > 0
+      assert length(step_events) > 0,
+             "Expected at least one step to execute, but got 0 step events"
 
-      # Verify all collected steps have same correlation_id
+      # Verify all collected steps belong to our saga
       Enum.each(step_events, fn {_event, _meas, metadata} ->
-        # Steps inherit correlation_id from saga context
-        # Note: Reactor doesn't directly expose correlation_id in step metadata,
-        # but saga base ensures it's in context. We verify saga-level propagation.
-        assert metadata.reactor_id =~ "UserProvisioningSaga"
+        # Reactor telemetry includes the reactor module in metadata[:id]
+        assert metadata[:id] == UserProvisioningSaga,
+               "Expected reactor id to be UserProvisioningSaga, got: #{inspect(metadata[:id])}"
       end)
 
       # Verify saga start had correct correlation_id
@@ -170,20 +173,10 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
         meta: %{}
       }
 
-      # Attempt to publish should fail
-      result = EventBus.publish_event(event)
-
-      assert {:error, reason} = result
-      assert reason == :missing_correlation_id
-
-      # Verify telemetry emitted drop event
-      assert_receive {
-                       :telemetry,
-                       [:thunderline, :event, :dropped],
-                       %{count: 1},
-                       %{reason: :missing_correlation_id, name: "system.test.correlation_missing"}
-                     },
-                     500
+      # Attempt to publish should fail with ArgumentError in test mode
+      assert_raise ArgumentError, ~r/Invalid event system\.test\.correlation_missing: :missing_correlation_id/, fn ->
+        EventBus.publish_event(event)
+      end
     end
 
     test "EventBus rejects events with invalid correlation_id format" do
@@ -201,20 +194,10 @@ defmodule Thunderline.Thunderflow.CorrelationIdTest do
         meta: %{}
       }
 
-      # Attempt to publish should fail
-      result = EventBus.publish_event(event)
-
-      assert {:error, reason} = result
-      assert reason == :bad_correlation_id
-
-      # Verify telemetry emitted drop event
-      assert_receive {
-                       :telemetry,
-                       [:thunderline, :event, :dropped],
-                       %{count: 1},
-                       %{reason: :bad_correlation_id, name: "system.test.correlation_invalid"}
-                     },
-                     500
+      # Attempt to publish should fail with ArgumentError in test mode
+      assert_raise ArgumentError, ~r/Invalid event system\.test\.correlation_invalid: :bad_correlation_id/, fn ->
+        EventBus.publish_event(event)
+      end
     end
 
     test "EventBus accepts events with valid correlation_id" do

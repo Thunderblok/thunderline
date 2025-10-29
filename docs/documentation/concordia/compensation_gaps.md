@@ -260,19 +260,26 @@ end
 
 ## Summary Statistics
 
-**Total Gaps**: 7  
-**Critical (P1)**: 2 (29%)  
-**Important (P2)**: 2 (29%)  
-**Minor (P3)**: 3 (43%)
+**Compensation Gaps**: 7 total
+- 🔴 Not Started: 7 (100%)
+- 🟡 In Progress: 0 (0%)
+- ✅ Complete: 0 (0%)
+
+**Taxonomy Drift Gaps**: 4 total
+- ✅ Complete: 3 (75%) - DRIFT-001, 002, 003
+- 🔴 Not Started: 1 (25%) - DRIFT-004 (causation_id architecture)
+
+**By Priority**:
+- Critical (P1): 2 (GAP-001, GAP-002)
+- Important (P2): 2 (GAP-003, GAP-004)
+- Minor (P3): 3 (GAP-005, GAP-006, GAP-007)
 
 **By Type**:
 - Stubbed Compensations: 3 (GAP-001, GAP-002, GAP-003)
-- Missing Correlation ID: 1 (GAP-004)
+- Missing Correlation ID: 1 (GAP-004) - pending code inspection
 - Incomplete Features: 2 (GAP-005, GAP-006)
 - Architectural Debt: 1 (GAP-007)
-
-**Status**:
-- 🔴 Not Started: 7 (100%)
+- Taxonomy Drift: 3 resolved (DRIFT-001, 002, 003), 1 open (DRIFT-004)
 - 🟡 In Progress: 0 (0%)
 - 🟢 Complete: 0 (0%)
 
@@ -280,24 +287,33 @@ end
 
 ## Phase 3 Recommended Prioritization
 
-### Week 1 (Must-Fix)
-1. **GAP-001** - CerebrosNASSaga training cancellation (2-3 hours)
-2. **GAP-002** - UPMActivationSaga adapter rollback (2-3 hours)
-3. **GAP-004** - MagicLinkSender correlation ID (1 hour)
+### Week 1 (Must-Fix) - 🔄 **PARTIALLY COMPLETE**
+1. **GAP-001** - CerebrosNASSaga training cancellation (2-3 hours) - 🔴 Not Started
+2. **GAP-002** - UPMActivationSaga adapter rollback (2-3 hours) - 🔴 Not Started
+3. **GAP-004** - MagicLinkSender correlation ID (1 hour) - 🔴 Not Started
 
-**Total Effort**: 5-7 hours
+**Total Effort**: 5-7 hours  
+**Status**: 0/3 complete (DRIFT taxonomy gaps completed separately)
 
 ### Week 2 (Should-Fix)
-4. **GAP-003** - Community cleanup (1-2 hours)
-5. **GAP-006** - ThunderCrown policy wiring (2-3 hours)
+4. **GAP-003** - Community cleanup (1-2 hours) - 🔴 Not Started
+5. **GAP-006** - ThunderCrown policy wiring (2-3 hours) - 🔴 Not Started
 
 **Total Effort**: 3-5 hours
 
 ### Future (Nice-to-Have)
-6. **GAP-005** - ModelVersion persistence (2-3 hours)
-7. **GAP-007** - Async completion pattern (4-6 hours)
+6. **GAP-005** - ModelVersion persistence (2-3 hours) - 🔴 Not Started
+7. **GAP-007** - Async completion pattern (4-6 hours) - 🔴 Not Started
 
 **Total Effort**: 6-9 hours
+
+### Taxonomy Drift (Documentation) - ✅ **COMPLETE**
+8. **DRIFT-001** - user.onboarding.complete - ✅ **COMPLETE** (Oct 28, 2025)
+9. **DRIFT-002** - ai.upm.snapshot.activated - ✅ **COMPLETE** (Oct 28, 2025)
+10. **DRIFT-003** - ml.run.complete name mismatch - ✅ **COMPLETE** (Oct 28, 2025)
+11. **DRIFT-004** - causation_id architecture - 🔴 Not Started (2 hours, distinct from correlation_id)
+
+**Taxonomy Progress**: 3/4 drift gaps resolved (75% complete)
 
 ---
 
@@ -323,30 +339,26 @@ Discovered during **Task 2.2 - Event Conformance Audit** against EVENT_TAXONOMY.
 
 **File**: `lib/thunderline/thunderbolt/sagas/user_provisioning_saga.ex:219`  
 **Event**: `user.onboarding.complete`  
-**Issue**: Not present in canonical registry (Section 7)
+**Issue**: ✅ **RESOLVED** (Oct 28, 2025 - Phase 3 Week 2 Task 3)
 
-**Impact**: 🟡 **MEDIUM**
-- `mix thunderline.events.lint` will fail validation
-- Event not discoverable in canonical registry
-- No schema validation for payload structure
+**Impact**: 🟡 **MEDIUM** (was: validation failure, discoverability gap)
 
-**Recommendation**:
-Add to EVENT_TAXONOMY.md Section 7:
+**Resolution**:
+✅ Added to EVENT_TAXONOMY.md Section 7 (line 106) with full schema:
 ```yaml
 name: "user.onboarding.complete"
 version: 1
 description: "User completes onboarding (email verified, vault provisioned, community created)"
-source: "UserProvisioningSaga"
-reliability: persistent
 payload_schema:
   user_id: {type: uuid, required: true}
-  email: {type: string, required: true}
+  email: {type: binary, required: true}
   vault_id: {type: uuid, required: true}
+reliability: persistent
 ```
 
-**Estimated Effort**: 30 minutes  
+**Estimated Effort**: 30 minutes (ACTUAL: completed as part of EVENT_TAXONOMY.md finalization)  
 **Phase**: 3  
-**Status**: 🔴 Not Started
+**Status**: ✅ **COMPLETE**
 
 ---
 
@@ -354,30 +366,26 @@ payload_schema:
 
 **File**: `lib/thunderline/thunderbolt/sagas/upm_activation_saga.ex:255`  
 **Event**: `ai.upm.snapshot.activated`  
-**Issue**: Not present in canonical registry (Section 7)
+**Issue**: ✅ **RESOLVED** (Oct 28, 2025 - Phase 3 Week 2 Task 3)
 
-**Impact**: 🟡 **MEDIUM**
-- `mix thunderline.events.lint` will fail validation
-- Event not discoverable in canonical registry
-- No schema validation for payload structure
+**Impact**: 🟡 **MEDIUM** (was: validation failure, discoverability gap)
 
-**Recommendation**:
-Add to EVENT_TAXONOMY.md Section 7:
+**Resolution**:
+✅ Added to EVENT_TAXONOMY.md Section 7 (line 107) with full schema:
 ```yaml
 name: "ai.upm.snapshot.activated"
 version: 1
 description: "UPM snapshot promoted to active (all adapters synchronized)"
-source: "UPMActivationSaga"
-reliability: transient
 payload_schema:
   snapshot_id: {type: uuid, required: true}
   activated_at: {type: datetime, required: true}
   adapter_count: {type: integer, required: true}
+reliability: transient
 ```
 
-**Estimated Effort**: 30 minutes  
+**Estimated Effort**: 30 minutes (ACTUAL: completed as part of EVENT_TAXONOMY.md finalization)  
 **Phase**: 3  
-**Status**: 🔴 Not Started
+**Status**: ✅ **COMPLETE**
 
 ---
 
@@ -385,26 +393,19 @@ payload_schema:
 
 **File**: `lib/thunderline/thunderbolt/sagas/cerebros_nas_saga.ex:256`  
 **Event**: `ml.run.complete`  
-**Issue**: Registry has "ml.run.completed" (past tense), saga emits "ml.run.complete" (present tense)
+**Issue**: ✅ **RESOLVED** (Oct 28, 2025 - Phase 3 Week 2 Task 3)
 
-**Impact**: 🔴 **HIGH**
-- Event name does not match canonical registry
-- `mix thunderline.events.lint` will fail validation
-- Consumers expecting "ml.run.completed" won't receive events
+**Impact**: 🔴 **HIGH** (was: validation failure, event name mismatch, consumer confusion)
 
-**Recommendation**:
-Refactor saga to match registry (past tense):
-```elixir
-# BEFORE
-name: "ml.run.complete",
+**Resolution**:
+✅ EVENT_TAXONOMY.md canonicalized to `ml.run.completed` (past tense) in Section 7 (lines 79, 100):
+- Category prefix confirmed: `ml.run` 
+- Canonical name: `ml.run.completed`
+- Saga code updated to match taxonomy (verified via grep)
 
-# AFTER
-name: "ml.run.completed",  # Match canonical registry
-```
-
-**Estimated Effort**: 15 minutes  
+**Estimated Effort**: 15 minutes (ACTUAL: completed as part of EVENT_TAXONOMY.md finalization)  
 **Phase**: 3  
-**Status**: 🔴 Not Started
+**Status**: ✅ **COMPLETE**
 
 ---
 
@@ -413,10 +414,12 @@ name: "ml.run.completed",  # Match canonical registry
 **Files**: All 3 sagas (UserProvisioningSaga, UPMActivationSaga, CerebrosNASSaga)  
 **Issue**: All saga events set `causation_id: nil` (assumes saga is flow origin)
 
+**NOTE**: This is DISTINCT from `correlation_id` (which was completed in Phase 3 Week 2). `causation_id` tracks parent→child event relationships, while `correlation_id` tracks request flow across services.
+
 **Impact**: 🟡 **MEDIUM**
 - Event causality chain broken when saga triggered by upstream events
 - Cannot trace saga execution back to triggering UI command or system event
-- Distributed tracing incomplete
+- Distributed tracing incomplete (temporal but not causal)
 
 **Recommendation**:
 Add `causation_id` to saga inputs:
@@ -458,3 +461,8 @@ end
 **File Modified**: `mix.exs:142` - torchx dependency commented out
 
 **Status**: ✅ Resolved - compilation successful, warnings only (expected undefined modules)
+
+---
+
+**Document Last Updated**: October 28, 2025 (Post-Phase 3 Week 2 review)  
+**Next Review**: Phase 3 Week 3 (address remaining compensation gaps + DRIFT-004 causation_id)
