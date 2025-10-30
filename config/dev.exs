@@ -51,7 +51,7 @@ config :thunderline, ThunderlineWeb.Endpoint,
         do: {0, 0, 0, 0},
         else: {127, 0, 0, 1}
       ),
-    port: System.get_env("PORT", "4000") |> String.to_integer()
+    port: System.get_env("PORT", "5001") |> String.to_integer()
   ],
   check_origin: false,
   code_reloader: true,
