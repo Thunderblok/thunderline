@@ -30,6 +30,7 @@ defmodule Thunderline.Application do
          [
            Thunderline.Thunderflow.EventBuffer,
            Thunderline.Thunderflow.Blackboard,
+           Thunderline.ServiceRegistry.HealthMonitor,
            ThunderlineWeb.Presence,
            maybe_oban_child(),
            ThunderlineWeb.Endpoint

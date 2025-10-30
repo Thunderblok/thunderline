@@ -186,6 +186,20 @@ defmodule ThunderlineWeb.Router do
     # Dataset management API
     post "/datasets/register", AutoMLController, :register_dataset
     post "/datasets/clean", AutoMLController, :clean_samples
+
+    # Service Registry API
+    post "/registry/register", ServiceRegistryController, :register
+    patch "/registry/:id/heartbeat", ServiceRegistryController, :heartbeat
+    get "/registry/services", ServiceRegistryController, :index
+    get "/registry/services/:type", ServiceRegistryController, :index_by_type
+    delete "/registry/:id", ServiceRegistryController, :delete
+
+    # Cerebros Job Coordination API
+    get "/jobs/poll", CerebrosJobsController, :poll
+    patch "/jobs/:id/status", CerebrosJobsController, :update_status
+    patch "/jobs/:id/metrics", CerebrosJobsController, :update_metrics
+    post "/jobs/:id/checkpoints", CerebrosJobsController, :add_checkpoint
+    get "/datasets/:id/corpus", CerebrosJobsController, :get_corpus
   end
 
   # AshTypescript HTTP RPC endpoints (typed TS client uses these by default)

@@ -27,7 +27,7 @@ case result do
       IO.puts("\n📄 JSONL Corpus File:")
       lines = File.read!(dataset.corpus_path) |> String.split("\n", trim: true)
       IO.puts("  Total entries: #{length(lines)}")
-      
+
       IO.puts("\n🔍 First 2 entries:")
       lines
       |> Enum.take(2)

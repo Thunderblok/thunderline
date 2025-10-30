@@ -16,12 +16,12 @@ defmodule ExploreHelper do
       [] ->
         IO.puts("""
         Usage: mix run scripts/explore_data.exs <csv_file> [options]
-        
+
         Options:
           --sample N       Show first N rows (default: 5)
           --import         Import as training dataset (interactive)
           --stats          Show detailed statistics only
-        
+
         Examples:
           mix run scripts/explore_data.exs data/gutenberg.csv
           mix run scripts/explore_data.exs data/gutenberg.csv --sample 10
@@ -55,11 +55,11 @@ defmodule ExploreHelper do
     case CerebrosDataExplorer.explore_csv(csv_path) do
       {:ok, summary} ->
         print_summary(summary, opts)
-        
+
         if opts.import do
           interactive_import(csv_path, summary)
         end
-        
+
       {:error, reason} ->
         IO.puts("❌ Error: #{inspect(reason)}")
         System.halt(1)
@@ -71,7 +71,7 @@ defmodule ExploreHelper do
     IO.puts("  Rows: #{summary.rows}")
     IO.puts("  Columns: #{summary.columns}")
     IO.puts("\n📋 Columns:")
-    
+
     Enum.each(summary.column_names, fn col ->
       IO.puts("  - #{col}")
     end)
@@ -110,37 +110,37 @@ defmodule ExploreHelper do
 
   defp interactive_import(csv_path, summary) do
     IO.puts("\n\n=== Interactive Import ===\n")
-    
+
     # Ask for dataset name
     dataset_name = IO.gets("Enter dataset name: ") |> String.trim()
-    
+
     # Ask for description
     description = IO.gets("Enter description (optional): ") |> String.trim()
-    
+
     # Show text columns and ask which to use
     text_columns = summary.text_stats |> Map.keys()
-    
+
     IO.puts("\nAvailable text columns:")
     Enum.with_index(text_columns, 1)
     |> Enum.each(fn {col, idx} ->
       stats = summary.text_stats[col]
       IO.puts("  #{idx}. #{col} (avg: #{stats.avg_length} chars)")
     end)
-    
-    text_col_idx = 
+
+    text_col_idx =
       IO.gets("\nSelect text column number: ")
       |> String.trim()
       |> String.to_integer()
-    
+
     text_column = Enum.at(text_columns, text_col_idx - 1)
-    
+
     # Ask for metadata columns
     IO.puts("\nSelect metadata columns (comma-separated, or press Enter to skip):")
     IO.puts("Available: #{Enum.join(summary.column_names -- [text_column], ", ")}")
-    
+
     metadata_input = IO.gets("> ") |> String.trim()
-    
-    metadata_columns = 
+
+    metadata_columns =
       if metadata_input == "" do
         []
       else
@@ -148,16 +148,16 @@ defmodule ExploreHelper do
         |> String.split(",")
         |> Enum.map(&String.trim/1)
       end
-    
+
     # Confirm
     IO.puts("\n📋 Import Configuration:")
     IO.puts("  Name: #{dataset_name}")
     IO.puts("  Description: #{description}")
     IO.puts("  Text column: #{text_column}")
     IO.puts("  Metadata columns: #{inspect(metadata_columns)}")
-    
+
     confirm = IO.gets("\nProceed with import? (y/n): ") |> String.trim() |> String.downcase()
-    
+
     if confirm == "y" do
       perform_import(csv_path, dataset_name, description, text_column, metadata_columns)
     else
@@ -167,7 +167,7 @@ defmodule ExploreHelper do
 
   defp perform_import(csv_path, name, description, text_column, metadata_columns) do
     IO.puts("\n🚀 Importing dataset...")
-    
+
     opts = [
       name: name,
       description: description,
@@ -175,7 +175,7 @@ defmodule ExploreHelper do
       metadata_columns: metadata_columns,
       freeze: false
     ]
-    
+
     case CerebrosDataExplorer.import_csv_as_dataset(csv_path, opts) do
       {:ok, dataset} ->
         IO.puts("\n✅ Dataset imported successfully!")
@@ -193,7 +193,7 @@ defmodule ExploreHelper do
         IO.puts("      n_epochs: 3")
         IO.puts("    }")
         IO.puts("  })")
-        
+
       {:error, reason} ->
         IO.puts("\n❌ Import failed: #{inspect(reason)}")
         System.halt(1)
