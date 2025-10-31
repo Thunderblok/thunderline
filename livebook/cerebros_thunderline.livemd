@@ -1,5 +1,7 @@
 # Cerebros × Thunderline — Persistent HPO/NAS Loop
 
+## Section
+
 > End-to-end demo tying Thunderline's Ash resources (Postgres-backed) to a Cerebros sampler/runner from inside Livebook. Pick `:mock` for an entirely local loop, or point at a remote Cerebros service that speaks the `/propose` and `/train` contract.
 
 ---
@@ -516,11 +518,12 @@ export CEREBROS_MODE=remote
 export CEREBROS_URL=http://localhost:8088
 ```
 
-2. Implement the endpoints:
+1. Implement the endpoints:
+
    * `POST /propose` → returns the JSON list used above
    * `POST /train` → returns metrics (`accuracy`, `latency_ms`, optional `energy_j`, `artifact_bytes`)
 
-3. Optional: feed the returned metrics back into Cerebros so the sampler updates the priors.
+2. Optional: feed the returned metrics back into Cerebros so the sampler updates the priors.
 
 ---
 
