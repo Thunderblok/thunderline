@@ -10,7 +10,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
       # Enable Cerebros for tests
       original_config = Application.get_env(:thunderline, :cerebros_bridge, [])
       Application.put_env(:thunderline, :cerebros_bridge, Keyword.put(original_config, :enabled, true))
-      
+
       on_exit(fn ->
         Application.put_env(:thunderline, :cerebros_bridge, original_config)
       end)
@@ -83,7 +83,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
 
     test "emits telemetry events during run lifecycle" do
       run_id = "telemetry-test-#{System.unique_integer([:positive])}"
-      
+
       :telemetry.attach_many(
         "test-handler",
         [
@@ -113,7 +113,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
     test "handles client errors gracefully" do
       # This test requires mocking the Client module behavior
       # For now, we test that the worker doesn't crash on errors
-      
+
       args = %{
         "spec" => %{"model" => "error_test", "invalid_field" => "causes_error"},
         "budget" => %{"max_trials" => 1},
@@ -139,7 +139,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
 
     test "persists run records to database" do
       run_id = "persist-test-#{System.unique_integer([:positive])}"
-      
+
       args = %{
         "spec" => %{
           "model" => "persistence_test",
@@ -162,7 +162,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
     test "respects max_attempts configuration" do
       # RunWorker is configured with max_attempts: 1
       # This means it won't retry on failure
-      
+
       args = %{
         "spec" => %{"model" => "retry_test"},
         "run_id" => "retry-test-#{System.unique_integer([:positive])}"
@@ -170,7 +170,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
 
       # First attempt
       result = perform_job(RunWorker, args)
-      
+
       # Should not automatically retry
       refute_enqueued(worker: RunWorker, args: args)
     end
@@ -180,7 +180,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
     test "uses configured timeout for client calls" do
       # This is more of an integration test
       # Verifies that timeout configuration is respected
-      
+
       args = %{
         "spec" => %{
           "model" => "timeout_test",
@@ -199,14 +199,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
   describe "correlation_id tracking" do
     test "uses run_id as correlation_id when not provided" do
       run_id = "correlation-test-#{System.unique_integer([:positive])}"
-      
+
       args = %{
         "spec" => %{"model" => "correlation_test"},
         "run_id" => run_id
       }
 
       assert :ok = perform_job(RunWorker, args)
-      
+
       # Correlation ID should match run_id in telemetry
       # This would require telemetry assertions
     end
@@ -214,7 +214,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorkerTest do
     test "uses provided correlation_id when present" do
       run_id = "correlation-test-#{System.unique_integer([:positive])}"
       correlation_id = "custom-correlation-#{System.unique_integer([:positive])}"
-      
+
       args = %{
         "spec" => %{"model" => "correlation_test"},
         "run_id" => run_id,

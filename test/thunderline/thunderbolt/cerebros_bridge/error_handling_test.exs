@@ -8,7 +8,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.ErrorHandlingTest do
     setup do
       # Save original config
       original_config = Application.get_env(:thunderline, :cerebros_bridge, [])
-      
+
       on_exit(fn ->
         Application.put_env(:thunderline, :cerebros_bridge, original_config)
       end)
