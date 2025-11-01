@@ -105,9 +105,9 @@ config :thunderline,
   numerics_adapter: Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback,
   numerics_sidecar_url:
     System.get_env("THUNDERLINE_NUMERICS_SIDECAR_URL") || "http://localhost:8089",
-  # Cerebros bridge facade configuration (disabled by default)
+  # Cerebros bridge facade configuration (enabled for NAS integration)
   cerebros_bridge: [
-    enabled: false,
+    enabled: true,
     repo_path:
       System.get_env("CEREBROS_REPO") ||
         Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),

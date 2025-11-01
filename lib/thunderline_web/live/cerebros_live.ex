@@ -107,72 +107,42 @@ defmodule ThunderlineWeb.CerebrosLive do
      |> assign(:spec_status, result.status)}
   end
 
-  def handle_event("start_run", %{"nas" => %{"spec" => spec_json}}, socket) do
-    result = Validator.validate_spec(spec_json || "")
+  def handle_event("launch_nas_run", params, socket) do
+    spec_payload = socket.assigns[:spec_payload] || %{}
 
-    cond do
-      result.status == :error ->
-        {:noreply,
-         socket
-         |> assign(:spec_form, build_spec_form(result.json || spec_json))
-         |> assign(:spec_errors, result.errors)
-         |> assign(:spec_warnings, result.warnings)
-         |> assign(:spec_payload, nil)
-         |> assign(:spec_status, :error)
-         |> put_flash(:error, "Fix spec errors before launching a run")}
+    case Thunderline.Thunderbolt.CerebrosBridge.queue_run(params, spec_payload) do
+      {:ok, run_id} ->
+        {:noreply, put_flash(socket, :info, "NAS run queued successfully: #{run_id}")}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to queue run: #{inspect(reason)}")}
+    end
+  end
 
-      not cerebros_enabled?() ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Cerebros integration is disabled")}
+  def handle_event("cancel_run", %{"run_id" => run_id} = _params, socket) do
+    case Thunderline.Thunderbolt.CerebrosBridge.cancel_run(run_id) do
+      {:ok, _result} ->
+        {:noreply, put_flash(socket, :info, "Run #{run_id} cancelled successfully")}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to cancel run: #{inspect(reason)}")}
+    end
+  end
 
-      true ->
-        run_id = UUID.v7()
-        spec = Map.put(result.spec, "run_id", run_id)
-        enqueue_opts = build_enqueue_opts(run_id, spec)
+  def handle_event("view_results", %{"run_id" => run_id} = _params, socket) do
+    case Thunderline.Thunderbolt.CerebrosBridge.get_run_results(run_id) do
+      {:ok, results} ->
+        socket = assign(socket, :results, results)
+        {:noreply, put_flash(socket, :info, "Results loaded successfully")}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to load results: #{inspect(reason)}")}
+    end
+  end
 
-        case CerebrosBridge.enqueue_run(spec, enqueue_opts) do
-          {:ok, %Oban.Job{} = job} ->
-            update = %{
-              run_id: run_id,
-              stage: :queued,
-              metadata: %{job_id: job.id, queue: job.queue, priority: job.priority},
-              measurements: %{queue_time_ms: 0},
-              published_at: DateTime.utc_now(),
-              source: :liveview
-            }
-
-            broadcast_run_update(update)
-
-            {:noreply,
-             socket
-             |> assign(:spec_form, build_spec_form(result.json))
-             |> assign(:spec_payload, spec)
-             |> assign(:spec_errors, result.errors)
-             |> assign(:spec_warnings, result.warnings)
-             |> assign(:spec_status, result.status)
-             |> assign(:current_run_id, run_id)
-             |> assign(:current_run, update)
-             |> assign(:running_nas, true)
-             |> assign(:status_msg, "Queued NAS run #{short_id(run_id)}")
-             |> update(:run_history, &add_history(&1, update))
-             |> put_flash(:info, "Queued NAS run #{short_id(run_id)}")}
-
-          {:error, :bridge_disabled} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, "Cerebros bridge disabled at enqueue time")}
-
-          {:error, %Changeset{} = changeset} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, "Failed to enqueue NAS run: #{inspect(changeset.errors)}")}
-
-          {:error, reason} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, "Failed to enqueue NAS run: #{inspect(reason)}")}
-        end
+  def handle_event("download_report", %{"run_id" => run_id} = _params, socket) do
+    case Thunderline.Thunderbolt.CerebrosBridge.download_report(run_id) do
+      {:ok, report_path} ->
+        {:noreply, put_flash(socket, :info, "Report downloaded to: #{report_path}")}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to download report: #{inspect(reason)}")}
     end
   end
 
@@ -421,7 +391,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               <% end %>
             </div>
           </div>
-          
+
     <!-- Benchmarks -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Benchmarks</h2>
@@ -453,7 +423,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               </div>
             <% end %>
           </div>
-          
+
     <!-- Drift Metrics -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Drift Metrics (Preview)</h2>

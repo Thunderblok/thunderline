@@ -1,14 +1,48 @@
+<div align="center">
+
+![Thunderline](assets/static/images/0-thunderline-logo.png)
+
 # Thunderline
 
-**A Domain-Driven Intelligent System for Advanced Event Processing and Spatial Computing**
+**🚧 PRE-ALPHA WORK IN PROGRESS 🚧**
+
+*An ambitious domain-driven event processing platform built with Phoenix, Ash Framework, and Elixir*
+
+**Development Stage:** Pre-Alpha | **Status:** Heavy Active Development | **Stability:** Experimental
 
 *An OKO Holding Corporation Initiative*
 
+</div>
+
+---
+
+## ⚠️ Project Status
+
+**THIS IS A PRE-ALPHA PROJECT UNDER ACTIVE DEVELOPMENT**
+
+- ✅ Core architecture defined across 7 domains
+- ✅ Event system foundation operational
+- 🚧 Multiple subsystems in various states of completion
+- 🚧 Breaking changes expected frequently
+- 🚧 Documentation being consolidated and updated
+- 🚧 Integration points being stabilized
+- ⚠️ Not recommended for production use
+- ⚠️ API stability not guaranteed
+
+**Current Focus:** 
+- Stabilizing event processing pipeline
+- Completing domain resource migrations
+- Fixing integration points (Cerebros, MLflow, WebRTC)
+- Consolidating documentation
+- Establishing test coverage
+
+---
+
 ## Overview
 
-Thunderline represents the next evolution in distributed intelligent systems, combining event-driven architecture with spatial computing capabilities. Built on the robust foundation of Phoenix and Ash Framework, Thunderline orchestrates complex domain interactions through a sophisticated network of specialized processing units called Thunderblocks.
+Thunderline is an experimental distributed event processing system combining event-driven architecture with spatial computing concepts. Built on Phoenix LiveView and Ash Framework, it explores domain-driven design patterns through specialized processing domains.
 
-The system employs a unique hybrid architecture that seamlessly integrates Entity-Component-System (ECSx) patterns with Ash's declarative resource management, creating an environment where real-time agent coordination meets persistent policy-driven governance.
+The architecture integrates Entity-Component-System (ECSx) patterns with Ash's declarative resource management, creating a foundation for real-time coordination and policy-driven governance.
 
 ## Core Architecture
 
@@ -80,7 +114,10 @@ SKIP_DEPS_GET=true mix setup
 mix phx.server
 ```
 
-The application will be available at [localhost:4000](http://localhost:4000).
+The Phoenix application now runs on [localhost:5001](http://localhost:5001) by default.
+For auxiliary services:
+- **MLflow** dashboard (when enabled) runs on [localhost:5000](http://localhost:5000)
+- **Cerebros Python Service** (externalized, optional) available on [localhost:8000](http://localhost:8000)
 
 #### Dependency Fetch Behavior
 
@@ -500,9 +537,96 @@ Release flow (simplified):
 2. Run `mix git_ops.release --yes` (dev env) to cut a tagged release (updates version + CHANGELOG + README if configured).
 3. Push the tag; deployment pipeline (future) consumes the tag for artifact builds.
 
-## License
+## Environment Variables
+
+Below is a summary of environment variables used across configuration files and `.envrc.example`.
+Variables are classified as **Required** or **Optional**.
+
+| Variable | Description | Default | Required |
+|-----------|--------------|----------|-----------|
+| `DATABASE_URL` | Ecto Postgres connection string | none | ✅ |
+| `CEREBROS_ENABLED` | Toggle to enable Cerebros bridge runtime | disabled | Optional |
+| `RAG_ENABLED` | Enables RAG semantic search system | enabled in dev | Optional |
+| `CEREBROS_URL` | URL to external Cerebros Python API | http://localhost:8000 | Optional |
+| `MLFLOW_URL` | URL for MLflow tracking server | http://localhost:5000 | Optional |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | Token for MCP tooling | none | Optional |
+| `ENABLE_NDJSON` | Enable NDJSON structured event logs | disabled | Optional |
+| `ENABLE_UPS` | Start power signal watcher | disabled | Optional |
+| `FEATURES_AI_CHAT_PANEL` | Enable experimental chat assistant | disabled | Optional |
+| `RETENTION_SWEEPER_CRON` | Oban retention sweeper schedule | hourly | Optional |
+| `DISABLE_RETENTION_SWEEPER_CRON` | Turn off auto retention job | false | Optional |
+| `TL_ENABLE_REACTOR` | Switch between processor paths | false | Optional |
+
+> You may copy `.envrc.example` to `.envrc` (untracked) and populate credentials for local use.
+
+## 🚨 Known Issues & Current Work
+
+### Critical Integration Issues
+
+**Cerebros ML Pipeline** 🔴 BROKEN
+- Extracted to standalone package at `/home/mo/DEV/cerebros/`
+- CerebrosBridge layer exists but has one broken import (`run_worker.ex:26`)
+- Dashboard NAS features non-functional
+- Python service integration incomplete
+- Status: High priority fix in progress
+
+**Documentation** 🟡 CONSOLIDATION NEEDED
+- Multiple overlapping architectural documents
+- Domain catalogs being updated
+- README files in various states of accuracy
+- Rookie team completing documentation audit
+- See: `THUNDERLINE_DOMAIN_CATALOG.md`, `HOW_TO_AUDIT.md`
+
+**Test Coverage** 🟡 INCOMPLETE
+- Many modules lack comprehensive tests
+- Integration tests being developed
+- Some legacy tests may be outdated
+- Coverage report in progress
+
+**Service Coordination** 🟡 IN PROGRESS
+- MLflow integration optional/untested
+- WebRTC voice path documented but needs validation
+- Multiple Python service wrappers need consolidation
+- External service dependencies not fully managed
+
+### Feature Stability
+
+**Stable** ✅
+- Phoenix LiveView dashboard
+- Basic event bus (`Thunderline.Thunderflow.EventBus`)
+- Domain structure (`ThunderBlock`, `ThunderFlow`, `ThunderGate`, etc.)
+- PostgreSQL persistence layer
+- Feature flag system
+
+**Experimental** ⚠️
+- ECSx spatial computing integration
+- 3D cellular automata visualization
+- RAG semantic search system
+- Reactor saga orchestration
+- Signal processing stack
+- AI chat panel
+
+**Broken/Incomplete** 🔴
+- Cerebros NAS execution
+- Multi-tenant federation
+- WebRTC voice coordination
+- Some Oban background jobs
+- Cross-domain event routing (being refactored)
+
+### Developer Experience Issues
+- ElixirLS occasional crashes on WSL (use `scripts/dev_health.sh`)
+- Large dependency tree (slow initial compile)
+- Multiple competing patterns in codebase (being cleaned up)
+- Some deprecated modules still referenced in docs
+- Port conflicts if running all services (5000, 5001, 8000)
+
+---
+
+## License & Status
 
 This project is proprietary software of OKO Holding Corporation. All rights reserved.
+
+**Pre-Alpha Software**: Use at your own risk. No warranties or stability guarantees provided.
 
 ## Architectural Guardrails (IRONWOLF)
 

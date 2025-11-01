@@ -23,7 +23,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
   """
   use Oban.Worker, queue: :ml, max_attempts: 1
 
-  alias Thunderline.Thunderbolt.Cerebros.Telemetry
+  alias Thunderline.Thunderbolt.CerebrosBridge.Telemetry
   alias Thunderline.Thunderbolt.CerebrosBridge.{Client, Contracts, Persistence}
   alias Thunderline.Thunderflow.ErrorClass
 

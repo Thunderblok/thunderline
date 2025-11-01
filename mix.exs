@@ -73,7 +73,7 @@ defmodule Thunderline.MixProject do
       {:phoenix_html, "~> 4.0"},
       {:live_ex_webrtc, "~> 0.8.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 1.0"},
+      {:phoenix_live_view, "~> 1.0", override: true},
       {:floki, ">= 0.30.0", only: :test},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
@@ -207,7 +207,7 @@ defmodule Thunderline.MixProject do
         []
       end
 
-    base ++ jido_git_deps ++ ash_jido_dep
+    base ++ jido_git_deps ++ ash_jido_dep ++ [{:cerebros, path: "/home/mo/DEV/cerebros", override: true}]
   end
 
   defp aliases do
