@@ -335,6 +335,7 @@ retention_cron =
 
 config :thunderline, Oban,
   repo: Thunderline.Repo,
+  testing: :disabled,
   plugins: [{Oban.Plugins.Cron, crontab: compactor_cron ++ retention_cron}, Oban.Plugins.Pruner],
   queues: [
     default: 10,
@@ -358,6 +359,10 @@ config :jido_action,
         value -> String.to_integer(value)
       end
   ]
+
+# Configure Cerebros toolkit
+config :cerebros,
+  repo: Thunderline.Repo
 
 # --- AshOban Trigger Usage Reference ---------------------------------------
 # Example (from docs) for adding a trigger inside a resource:

@@ -6,6 +6,9 @@ config :thunderline,
   require_actor_ctx: false,
   token_signing_secret: "YZHEbja+m4hn1VwozT3JnDna3MHse+qS"
 
+# Disable Oban completely in development environment to prevent startup conflicts
+config :thunderline, Oban, false
+
 # Configure the AshPostgres repo
 db_url = System.get_env("DATABASE_URL")
 

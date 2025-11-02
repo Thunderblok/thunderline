@@ -58,6 +58,7 @@ defmodule Thunderline.Application do
   defp maybe_oban_child do
     case Application.get_env(:thunderline, Oban) do
       nil -> nil
+      false -> nil
       config -> {Oban, config}
     end
   end
