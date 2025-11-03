@@ -10,6 +10,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   alias Broadway.Message
   alias Phoenix.PubSub
+  alias Thunderline.Thunderflow.RetryPolicy
   alias Thunderline.Thunderflow.Support.Idempotency
   require Logger
 
@@ -359,19 +360,53 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
   end
 
   defp handle_batch_failures(messages, _failed_events) do
-    # Implementation for handling partial batch failures -> DLQ placeholder
-    Enum.map(messages, fn m ->
-      attempt = (m.metadata[:attempt] || 0) + 1
-      {max_attempts, _backoff} = retry_budget(m)
+    Enum.map(messages, fn message ->
+      policy = RetryPolicy.for_message(message)
 
-      if attempt >= max_attempts do
-        # DLQ: publish to topic, in future persist
-        :telemetry.execute([:thunderline, :pipeline, :dlq], %{count: 1}, %{})
-        Message.failed(m, :dlq)
+      prior_attempts =
+        message.metadata
+        |> Map.get(:attempts, Map.get(message.metadata, :attempt, 0))
+
+      next_attempt = prior_attempts + 1
+
+      if RetryPolicy.exhausted?(policy, next_attempt) do
+        :telemetry.execute(
+          [:thunderline, :pipeline, :dlq],
+          %{count: 1},
+          %{strategy: policy.strategy, attempts: next_attempt}
+        )
+
+        message
+        |> Message.update_metadata(fn metadata ->
+          metadata
+          |> Map.put(:attempts, next_attempt)
+          |> Map.put(:attempt, next_attempt)
+          |> Map.put(:retry_delay_ms, 0)
+          |> Map.put(:retry_strategy, policy.strategy)
+        end)
+        |> Message.failed({:dlq, :max_retries_exceeded})
       else
-        m
-        |> Message.update_metadata(&Map.put(&1, :attempt, attempt))
-        |> Message.failed(:retry)
+        delay = RetryPolicy.next_delay(policy, next_attempt)
+
+        :telemetry.execute(
+          [:thunderline, :pipeline, :retry],
+          %{count: 1},
+          %{
+            delay_ms: delay,
+            attempt: next_attempt,
+            strategy: policy.strategy
+          }
+        )
+
+        message
+        |> Message.update_metadata(fn metadata ->
+          metadata
+          |> Map.put(:attempts, next_attempt)
+          |> Map.put(:attempt, next_attempt)
+          |> Map.put(:retry_delay_ms, delay)
+          |> Map.put(:retry_strategy, policy.strategy)
+        end)
+        |> Message.failed({:retry, delay})
       end
     end)
   end
@@ -389,14 +424,6 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   defp idempotency_key(_), do: nil
 
-  defp retry_budget(%Message{data: %{"action" => action}}) do
-    cond do
-      String.starts_with?(action, "ml.run") -> {5, :exponential}
-      String.starts_with?(action, "ml.trial") -> {3, :linear}
-      String.starts_with?(action, "ui.command") -> {2, :none}
-      true -> {3, :exponential}
-    end
-  end
 
   defp maybe_domain_processor(job) do
     case Thunderline.Thunderchief.Orchestrator.enqueue_domain_job(job) do

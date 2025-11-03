@@ -16,7 +16,8 @@ defmodule Thunderline.Thunderflow.EventBusTest do
   """
   use ExUnit.Case, async: false
 
-  alias Thunderline.Thunderflow.{Event, EventBus}
+  alias Thunderline.Event
+  alias Thunderline.Thunderflow.EventBus
   alias Thunderline.Thunderflow.Validation.EventValidator
   alias Thunderline.Thunderflow.Telemetry.OtelTrace
 
@@ -28,8 +29,8 @@ defmodule Thunderline.Thunderflow.EventBusTest do
     # Ensure clean telemetry state
     detach_all_telemetry()
 
-    # Start PubSub if not running
-    start_supervised!({Phoenix.PubSub, name: @pubsub})
+    # PubSub is already started by the application (lib/thunderline/application.ex:24)
+    # No need to start_supervised! - it would fail with :already_started
 
     on_exit(fn -> detach_all_telemetry() end)
 
@@ -626,8 +627,8 @@ defmodule Thunderline.Thunderflow.EventBusTest do
 
   defp valid_event(opts \\ []) do
     defaults = [
-      name: "test.event.default",
-      source: :test,
+      name: "system.test.default",
+      source: :flow,
       payload: %{test: true},
       priority: :normal
     ]

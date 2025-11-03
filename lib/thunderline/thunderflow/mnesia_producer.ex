@@ -14,6 +14,7 @@ defmodule Thunderflow.MnesiaProducer do
 
   # alias Memento.Table  # unused
   alias Memento.Transaction
+  alias Thunderline.Thunderflow.RetryPolicy
 
   @behaviour Broadway.Producer
   @behaviour Broadway.Acknowledger
@@ -363,7 +364,7 @@ defmodule Thunderflow.MnesiaProducer do
 
     Enum.each(failed, fn %{acknowledger: {__MODULE__, _ref, %{event_id: event_id, table: table}}} =
                            msg ->
-      handle_failed_event(table, event_id, msg.status)
+      handle_failed_event(table, event_id, msg.status, msg)
     end)
 
     :ok
@@ -378,7 +379,107 @@ defmodule Thunderflow.MnesiaProducer do
     end)
   end
 
-  defp handle_failed_event(table, event_id, _status) do
+  defp handle_failed_event(table, event_id, status, message \\ nil)
+       when is_tuple(status) or is_atom(status) do
+    result =
+      :mnesia.transaction(fn ->
+        case :mnesia.read(table, event_id) do
+          [] ->
+            {:noop, nil}
+
+          [record] ->
+            attrs = :mnesia.table_info(table, :attributes)
+            values = Tuple.to_list(record) |> tl()
+            attr_map = Enum.zip(attrs, values) |> Map.new()
+
+            policy =
+              attr_map
+              |> Map.get(:data)
+              |> RetryPolicy.for_event()
+
+            current_attempts = attr_map.attempts || 0
+
+            metadata_attempt =
+              case message do
+                %Broadway.Message{metadata: metadata} ->
+                  metadata[:attempts] || metadata[:attempt]
+
+                _ ->
+                  nil
+              end
+
+            next_attempt =
+              case metadata_attempt do
+                nil -> current_attempts + 1
+                val -> max(val, current_attempts + 1)
+              end
+
+            cond do
+              match?({:dlq, _}, status) or RetryPolicy.exhausted?(policy, next_attempt) ->
+                updated_record =
+                  rewrite_record(table, attrs, attr_map,
+                    attempts: next_attempt,
+                    status: :dead_letter
+                  )
+
+                :mnesia.write(updated_record)
+                {:dead_letter, nil}
+
+              match?({:retry, _}, status) ->
+                {:retry, delay} = status
+
+                updated_record =
+                  rewrite_record(table, attrs, attr_map,
+                    attempts: next_attempt,
+                    status: :retrying
+                  )
+
+                :mnesia.write(updated_record)
+                {:schedule_retry, delay}
+
+              true ->
+                updated_record =
+                  rewrite_record(table, attrs, attr_map,
+                    attempts: next_attempt,
+                    status: :failed
+                  )
+
+                :mnesia.write(updated_record)
+                {:failed, nil}
+            end
+        end
+      end)
+
+    case result do
+      {:atomic, {:schedule_retry, delay}} ->
+        schedule_retry(table, event_id, delay)
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp rewrite_record(table, attrs, attr_map, overrides) do
+    overrides_map = Map.new(overrides)
+    updated_attr_map = Map.merge(attr_map, overrides_map)
+    updated_values = Enum.map(attrs, &Map.get(updated_attr_map, &1))
+    List.to_tuple([table | updated_values])
+  end
+
+  defp schedule_retry(_table, _event_id, delay) when delay <= 0 do
+    requeue_event(_table, _event_id)
+  end
+
+  defp schedule_retry(table, event_id, delay) do
+    Task.start(fn ->
+      Process.sleep(delay)
+      requeue_event(table, event_id)
+    end)
+
+    :ok
+  end
+
+  defp requeue_event(table, event_id) do
     :mnesia.transaction(fn ->
       case :mnesia.read(table, event_id) do
         [] ->
@@ -388,21 +489,13 @@ defmodule Thunderflow.MnesiaProducer do
           attrs = :mnesia.table_info(table, :attributes)
           values = Tuple.to_list(record) |> tl()
           attr_map = Enum.zip(attrs, values) |> Map.new()
-          attempts = attr_map.attempts + 1
-          new_status = if attempts >= 3, do: :dead_letter, else: :failed
 
-          updated_attr_vals =
-            attrs
-            |> Enum.map(fn attr ->
-              case attr do
-                :attempts -> attempts
-                :status -> new_status
-                _ -> Map.get(attr_map, attr)
-              end
-            end)
+          if attr_map.status in [:retrying, :failed] do
+            updated_record = rewrite_record(table, attrs, attr_map, status: :pending)
+            :mnesia.write(updated_record)
+          end
 
-          new_record = List.to_tuple([table | updated_attr_vals])
-          :mnesia.write(new_record)
+          :ok
       end
     end)
   end
