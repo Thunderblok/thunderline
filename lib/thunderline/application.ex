@@ -27,6 +27,7 @@ defmodule Thunderline.Application do
          cerebros_children() ++
          saga_children() ++
          rag_children() ++
+         upm_children() ++
          [
            Thunderline.Thunderflow.EventBuffer,
            Thunderline.Thunderflow.Blackboard,
@@ -109,6 +110,14 @@ defmodule Thunderline.Application do
   defp rag_children do
     if Feature.enabled?(:rag_enabled, default: true) do
       [Thunderline.RAG.Serving]
+    else
+      []
+    end
+  end
+
+  defp upm_children do
+    if Feature.enabled?(:unified_model, default: false) do
+      [Thunderline.Thunderbolt.UPM.Supervisor]
     else
       []
     end
