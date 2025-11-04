@@ -46,7 +46,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       # Verify snapshot was created
       assert snapshot.trainer_id == trainer.id
       assert snapshot.version == "1.0.0"
-      assert snapshot.status == :pending
+      assert snapshot.status == :created
     end
 
     test "stores snapshot to configured path", %{trainer: trainer} do
@@ -211,11 +211,11 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
     end
 
     test "activates snapshot", %{snapshot_id: snapshot_id} do
-      :ok = SnapshotManager.activate_snapshot(snapshot_id)
+      {:ok, _activated_snapshot} = SnapshotManager.activate_snapshot(snapshot_id)
 
       # Verify snapshot is active
       {:ok, snapshot} = Ash.get(UpmSnapshot, snapshot_id)
-      assert snapshot.status == :active
+      assert snapshot.status == :activated
     end
 
     test "deactivates previous active snapshot", %{trainer: trainer, snapshot_id: first_id} do
@@ -689,9 +689,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer.id,
           tenant_id: trainer.tenant_id,
-          version: 1,
-          mode: :canary,
-          status: :idle,
+          version: "1.0.0",
+          mode: :shadow,
           checksum: checksum,
           size_bytes: byte_size(binary),
           metadata: %{drift_score: 0.05}
@@ -709,7 +708,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       # Should succeed or provide clear policy violation reason
       case result do
         {:ok, activated} ->
-          assert activated.status == :active
+          assert activated.status == :activated
           assert activated.id == snapshot.id
 
         {:error, {:policy_violation, reason}} ->
