@@ -117,7 +117,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       model_data = %{test: "data"}
       binary = Jason.encode!(model_data)
       checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
-      
+
       {:ok, _snapshot} = SnapshotManager.create_snapshot(
         %{
           trainer_id: trainer.id,
@@ -147,7 +147,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       model_data = %{weights: [1, 2, 3], version: 1}
       binary = Jason.encode!(model_data)
       checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
-      
+
       {:ok, snapshot} = SnapshotManager.create_snapshot(
         %{
           trainer_id: trainer.id,
@@ -193,7 +193,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       model_data = %{version: 1}
       binary = Jason.encode!(model_data)
       checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
-      
+
       {:ok, snapshot} = SnapshotManager.create_snapshot(
         %{
           trainer_id: trainer.id,
@@ -226,7 +226,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       model_data = %{version: 2}
       binary = Jason.encode!(model_data)
       checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
-      
+
       {:ok, second_snapshot} = SnapshotManager.create_snapshot(
         %{
           trainer_id: trainer.id,
@@ -276,7 +276,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         model_data = %{version: v}
         binary = Jason.encode!(model_data)
         checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
-        
+
         {:ok, snapshot} = SnapshotManager.create_snapshot(
           %{
             trainer_id: trainer.id,
@@ -299,7 +299,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, snapshots} = SnapshotManager.list_snapshots(trainer.id)
 
       assert length(snapshots) >= length(snapshot_ids)
-      
+
       # Verify all our snapshots are present
       snapshot_ids_from_list = Enum.map(snapshots, & &1.id)
       for id <- snapshot_ids do
@@ -328,7 +328,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       model_data = %{version: 1}
       binary = Jason.encode!(model_data)
       checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
-      
+
       {:ok, snapshot} = SnapshotManager.create_snapshot(
         %{
           trainer_id: trainer.id,
@@ -358,7 +358,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
       # Try to delete (should fail or deactivate first)
       result = SnapshotManager.delete_snapshot(snapshot_id)
-      
+
       # Implementation may vary - either fails or auto-deactivates
       assert result == :ok or match?({:error, _}, result)
     end
@@ -431,7 +431,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       result = SnapshotManager.activate_snapshot(snapshot.id)
 
       # Verify result structure (success or policy violation)
-      assert match?({:ok, _}, result) or 
+      assert match?({:ok, _}, result) or
              match?({:error, {:policy_violation, _}}, result) or
              match?({:error, _}, result)
     end

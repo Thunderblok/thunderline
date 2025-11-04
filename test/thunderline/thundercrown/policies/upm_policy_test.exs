@@ -1,7 +1,7 @@
 defmodule Thunderline.Thundercrown.Policies.UPMPolicyTest do
   @moduledoc """
   Comprehensive test suite for UPM policy authorization.
-  
+
   Tests all policy decision paths including:
   - Admin bypass for all modes
   - Shadow mode (always allow)

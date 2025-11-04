@@ -211,7 +211,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   @spec activate_snapshot(binary(), map()) :: {:ok, UpmSnapshot.t()} | {:error, term()}
   def activate_snapshot(snapshot_id, opts \\ %{}) do
     correlation_id = Map.get(opts, :correlation_id, UUID.v7())
-    
+
     # Extract authorization context
     actor = Map.get(opts, :actor)
     tenant = Map.get(opts, :tenant)
@@ -310,17 +310,17 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
     status_filter = Keyword.get(opts, :status)
     limit = Keyword.get(opts, :limit, 100)
 
-    query = 
+    query =
       UpmSnapshot
       |> Ash.Query.filter(trainer_id == ^trainer_id)
-    
+
     query = if status_filter do
       Ash.Query.filter(query, status == ^status_filter)
     else
       query
     end
-    
-    query = 
+
+    query =
       query
       |> Ash.Query.limit(limit)
       |> Ash.Query.sort(version: :desc)
@@ -336,11 +336,11 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   """
   @spec get_active_snapshot(binary()) :: {:ok, UpmSnapshot.t() | nil} | {:error, term()}
   def get_active_snapshot(trainer_id) do
-    query = 
+    query =
       UpmSnapshot
       |> Ash.Query.filter(trainer_id == ^trainer_id and status == :active)
       |> Ash.Query.limit(1)
-    
+
     case Ash.read(query) do
       {:ok, [snapshot]} -> {:ok, snapshot}
       {:ok, []} -> {:ok, nil}
@@ -356,11 +356,11 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
     retention_days = Keyword.get(opts, :retention_days, 30)
     cutoff_date = DateTime.utc_now() |> DateTime.add(-retention_days, :day)
 
-    query = 
+    query =
       UpmSnapshot
       |> Ash.Query.filter(trainer_id == ^trainer_id and status == :superseded)
       |> Ash.Query.load([:inserted_at])
-    
+
     case Ash.read(query) do
       {:ok, snapshots} ->
         old_snapshots =
@@ -483,10 +483,10 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   end
 
   defp deactivate_previous_active(trainer_id, exclude_id) do
-    query = 
+    query =
       UpmSnapshot
       |> Ash.Query.filter(trainer_id == ^trainer_id and status == :active and id != ^exclude_id)
-    
+
     case Ash.read(query) do
       {:ok, snapshots} ->
         Enum.each(snapshots, fn snapshot ->
