@@ -11,9 +11,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       # Create trainer
       {:ok, trainer} = UpmTrainer.register(%{
         name: "test-snapshot-trainer",
-        mode: :shadow,
-        status: :idle
-      }) |> Ash.create()
+        mode: :shadow
+      })
 
       %{trainer: trainer}
     end
@@ -100,7 +99,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "test-load-trainer",
         mode: :shadow
-      }) |> Ash.create()
+      })
 
       model_data = %{weights: [1, 2, 3], version: 1}
       {:ok, snapshot_id} = SnapshotManager.create_snapshot(trainer.id, model_data)
@@ -132,7 +131,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "test-activate-trainer",
         mode: :shadow
-      }) |> Ash.create()
+      })
 
       model_data = %{version: 1}
       {:ok, snapshot_id} = SnapshotManager.create_snapshot(trainer.id, model_data)
@@ -183,7 +182,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "test-list-trainer",
         mode: :shadow
-      }) |> Ash.create()
+      })
 
       # Create multiple snapshots
       snapshots = for v <- 1..3 do
@@ -210,7 +209,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, empty_trainer} = UpmTrainer.register(%{
         name: "empty-trainer",
         mode: :shadow
-      }) |> Ash.create()
+      })
 
       {:ok, snapshots} = SnapshotManager.list_snapshots(empty_trainer.id)
       assert snapshots == []
@@ -222,7 +221,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "test-delete-trainer",
         mode: :shadow
-      }) |> Ash.create()
+      })
 
       {:ok, snapshot_id} = SnapshotManager.create_snapshot(trainer.id, %{version: 1})
 
@@ -261,7 +260,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "integration-test-trainer",
         mode: :shadow,
         tenant_id: tenant_id
-      }) |> Ash.create()
+      })
 
       %{trainer: trainer, tenant_id: tenant_id}
     end
@@ -329,7 +328,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "concurrent-test-trainer",
         mode: :canary,
         tenant_id: UUID.v7()
-      }) |> Ash.create()
+      })
 
       %{trainer: trainer}
     end
@@ -373,7 +372,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "version-progression-trainer",
         mode: :shadow,
         tenant_id: UUID.v7()
-      }) |> Ash.create()
+      })
 
       %{trainer: trainer}
     end
@@ -432,7 +431,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "rollback-test-trainer",
         mode: :active,
         tenant_id: UUID.v7()
-      }) |> Ash.create()
+      })
 
       # Create and activate v1
       v1_binary = Jason.encode!(%{version: 1, stable: true})
@@ -502,7 +501,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "cleanup-test-trainer",
         mode: :shadow,
         tenant_id: UUID.v7()
-      }) |> Ash.create()
+      })
 
       # Create 5 old snapshots
       old_snapshots = for version <- 1..5 do
@@ -568,7 +567,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "policy-chain-trainer",
         mode: :canary,
         tenant_id: tenant_id
-      }) |> Ash.create()
+      })
 
       %{trainer: trainer, tenant_id: tenant_id}
     end
@@ -622,13 +621,13 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "isolation-trainer-1",
         mode: :shadow,
         tenant_id: tenant_id
-      }) |> Ash.create()
+      })
 
       {:ok, trainer2} = UpmTrainer.register(%{
         name: "isolation-trainer-2",
         mode: :canary,
         tenant_id: tenant_id
-      }) |> Ash.create()
+      })
 
       %{trainer1: trainer1, trainer2: trainer2, tenant_id: tenant_id}
     end
@@ -688,7 +687,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         name: "large-model-trainer",
         mode: :shadow,
         tenant_id: UUID.v7()
-      }) |> Ash.create()
+      })
 
       %{trainer: trainer}
     end
