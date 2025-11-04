@@ -105,6 +105,23 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
                 path: #{storage_path}
               """)
 
+              # Emit telemetry event
+              :telemetry.execute(
+                [:upm, :snapshot, :create],
+                %{
+                  size_bytes: snapshot.size_bytes,
+                  original_size: byte_size(model_data),
+                  compression_ratio: byte_size(model_data) / snapshot.size_bytes
+                },
+                %{
+                  snapshot_id: snapshot.id,
+                  trainer_id: snapshot.trainer_id,
+                  version: snapshot.version,
+                  mode: snapshot.mode,
+                  compression: compression_used
+                }
+              )
+
               {:ok, snapshot}
 
             {:error, reason} ->
@@ -239,6 +256,20 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
                       mode: #{snapshot.mode}
                       actor: #{inspect(actor)}
                     """)
+
+                    # Emit telemetry event
+                    :telemetry.execute(
+                      [:upm, :snapshot, :activate],
+                      %{},
+                      %{
+                        snapshot_id: updated_snapshot.id,
+                        trainer_id: updated_snapshot.trainer_id,
+                        version: updated_snapshot.version,
+                        mode: updated_snapshot.mode,
+                        actor: actor,
+                        tenant: tenant
+                      }
+                    )
 
                     # Emit activation event
                     emit_activation_event(updated_snapshot, correlation_id)
