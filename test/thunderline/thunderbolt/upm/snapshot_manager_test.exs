@@ -220,7 +220,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
     test "deactivates previous active snapshot", %{trainer: trainer, snapshot_id: first_id} do
       # Activate first
-      :ok = SnapshotManager.activate_snapshot(first_id)
+      {:ok, _} = SnapshotManager.activate_snapshot(first_id)
 
       # Create and activate second
       model_data = %{version: 2}
@@ -240,7 +240,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         binary
       )
       second_id = second_snapshot.id
-      :ok = SnapshotManager.activate_snapshot(second_id)
+      {:ok, _} = SnapshotManager.activate_snapshot(second_id)
 
       # First should be deactivated
       {:ok, first} = Ash.get(UpmSnapshot, first_id)
@@ -256,7 +256,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "ai:upm:snapshot:activated")
 
-      :ok = SnapshotManager.activate_snapshot(snapshot_id)
+      {:ok, _} = SnapshotManager.activate_snapshot(snapshot_id)
 
       # Should receive broadcast
       assert_receive {:event_bus, event}, 1000
@@ -354,7 +354,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
     test "cannot delete active snapshot", %{snapshot_id: snapshot_id} do
       # Activate snapshot
-      :ok = SnapshotManager.activate_snapshot(snapshot_id)
+      {:ok, _} = SnapshotManager.activate_snapshot(snapshot_id)
 
       # Try to delete (should fail or deactivate first)
       result = SnapshotManager.delete_snapshot(snapshot_id)
@@ -749,9 +749,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer1.id,
           tenant_id: trainer1.tenant_id,
-          version: 1,
+          version: "1.0.0",
           mode: trainer1.mode,
-          status: trainer1.status,
           checksum: t1_checksum,
           size_bytes: byte_size(t1_binary),
           metadata: %{}
@@ -767,9 +766,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer2.id,
           tenant_id: trainer2.tenant_id,
-          version: 1,
+          version: "1.0.0",
           mode: trainer2.mode,
-          status: trainer2.status,
           checksum: t2_checksum,
           size_bytes: byte_size(t2_binary),
           metadata: %{}

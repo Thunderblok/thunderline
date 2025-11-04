@@ -145,7 +145,11 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
               :crypto.hash(:sha256, decompressed) |> Base.encode16(case: :lower)
 
             if calculated_checksum == snapshot.checksum do
-              {:ok, decompressed}
+              # Parse JSON if it's JSON data
+              case Jason.decode(decompressed) do
+                {:ok, parsed} -> {:ok, parsed}
+                {:error, _} -> {:ok, decompressed}  # Return raw binary if not JSON
+              end
             else
               Logger.error("""
               [UPM.SnapshotManager] Checksum validation failed on load
