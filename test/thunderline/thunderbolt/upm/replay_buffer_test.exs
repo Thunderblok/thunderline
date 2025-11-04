@@ -132,7 +132,7 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBufferTest do
 
       # Should not pop yet (would wait in real scenario)
       result = ReplayBuffer.pop_ready(pid)
-      
+
       # Depending on implementation, might be :empty or the window
       assert result == {:ok, :empty} or match?({:ok, _}, result)
     end

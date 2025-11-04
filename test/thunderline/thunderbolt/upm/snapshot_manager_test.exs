@@ -26,36 +26,54 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         version: 1
       }
 
-      {:ok, snapshot_id} = SnapshotManager.create_snapshot(
-        trainer.id,
-        model_data,
-        version: 1
-      )
+      model_data_binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, model_data_binary) |> Base.encode16(case: :lower)
 
-      assert is_binary(snapshot_id)
+      snapshot_params = %{
+        trainer_id: trainer.id,
+        tenant_id: trainer.tenant_id,
+        version: "1.0.0",
+        mode: trainer.mode,
+        checksum: checksum,
+        size_bytes: byte_size(model_data_binary),
+        metadata: %{}
+      }
+
+      {:ok, snapshot} = SnapshotManager.create_snapshot(snapshot_params, model_data_binary)
+
+      assert is_binary(snapshot.id)
 
       # Verify snapshot was created
-      {:ok, snapshot} = Ash.get(UpmSnapshot, snapshot_id)
       assert snapshot.trainer_id == trainer.id
-      assert snapshot.version == 1
+      assert snapshot.version == "1.0.0"
       assert snapshot.status == :pending
     end
 
     test "stores snapshot to configured path", %{trainer: trainer} do
       model_data = %{test: "data"}
+      binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
 
-      {:ok, snapshot_id} = SnapshotManager.create_snapshot(
-        trainer.id,
-        model_data
+      {:ok, snapshot} = SnapshotManager.create_snapshot(
+        %{
+          trainer_id: trainer.id,
+          tenant_id: trainer.tenant_id,
+          version: "1.0.0",
+          mode: trainer.mode,
+          checksum: checksum,
+          size_bytes: byte_size(binary),
+          metadata: %{}
+        },
+        binary
       )
 
       # Verify file was created
       storage_path = Application.get_env(:thunderline, :upm_snapshot_storage_path, "/tmp/thunderline/upm/snapshots")
-      snapshot_file = Path.join(storage_path, "#{snapshot_id}.snapshot")
+      snapshot_file = Path.join(storage_path, "#{snapshot.id}.snapshot")
 
       # Note: Actual file creation depends on implementation
       # This test verifies the API contract
-      assert is_binary(snapshot_id)
+      assert is_binary(snapshot.id)
     end
 
     test "compresses snapshot data", %{trainer: trainer} do
@@ -63,14 +81,22 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       model_data = %{
         embeddings: Enum.map(1..1000, fn i -> {i, :rand.uniform()} end) |> Map.new()
       }
+      binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
 
-      {:ok, snapshot_id} = SnapshotManager.create_snapshot(
-        trainer.id,
-        model_data
+      {:ok, snapshot} = SnapshotManager.create_snapshot(
+        %{
+          trainer_id: trainer.id,
+          tenant_id: trainer.tenant_id,
+          version: "1.0.0",
+          mode: trainer.mode,
+          checksum: checksum,
+          size_bytes: byte_size(binary),
+          metadata: %{}
+        },
+        binary
       )
 
-      {:ok, snapshot} = Ash.get(UpmSnapshot, snapshot_id)
-      
       # Verify checksum exists (indicates compression/serialization)
       assert is_binary(snapshot.checksum)
     end
@@ -89,7 +115,21 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       )
 
       model_data = %{test: "data"}
-      {:ok, _snapshot_id} = SnapshotManager.create_snapshot(trainer.id, model_data)
+      binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
+      
+      {:ok, _snapshot} = SnapshotManager.create_snapshot(
+        %{
+          trainer_id: trainer.id,
+          tenant_id: trainer.tenant_id,
+          version: "1.0.0",
+          mode: trainer.mode,
+          checksum: checksum,
+          size_bytes: byte_size(binary),
+          metadata: %{}
+        },
+        binary
+      )
 
       assert_receive {:telemetry, ^ref, _measurements, _metadata}, 1000
 
@@ -105,9 +145,23 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       })
 
       model_data = %{weights: [1, 2, 3], version: 1}
-      {:ok, snapshot_id} = SnapshotManager.create_snapshot(trainer.id, model_data)
+      binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
+      
+      {:ok, snapshot} = SnapshotManager.create_snapshot(
+        %{
+          trainer_id: trainer.id,
+          tenant_id: trainer.tenant_id,
+          version: "1.0.0",
+          mode: trainer.mode,
+          checksum: checksum,
+          size_bytes: byte_size(binary),
+          metadata: %{}
+        },
+        binary
+      )
 
-      %{trainer: trainer, snapshot_id: snapshot_id, model_data: model_data}
+      %{trainer: trainer, snapshot_id: snapshot.id, snapshot: snapshot, model_data: model_data}
     end
 
     test "loads previously created snapshot", %{snapshot_id: snapshot_id, model_data: original_data} do
@@ -137,9 +191,23 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       })
 
       model_data = %{version: 1}
-      {:ok, snapshot_id} = SnapshotManager.create_snapshot(trainer.id, model_data)
+      binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
+      
+      {:ok, snapshot} = SnapshotManager.create_snapshot(
+        %{
+          trainer_id: trainer.id,
+          tenant_id: trainer.tenant_id,
+          version: "1.0.0",
+          mode: trainer.mode,
+          checksum: checksum,
+          size_bytes: byte_size(binary),
+          metadata: %{}
+        },
+        binary
+      )
 
-      %{trainer: trainer, snapshot_id: snapshot_id}
+      %{trainer: trainer, snapshot_id: snapshot.id, snapshot: snapshot}
     end
 
     test "activates snapshot", %{snapshot_id: snapshot_id} do
@@ -155,7 +223,23 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       :ok = SnapshotManager.activate_snapshot(first_id)
 
       # Create and activate second
-      {:ok, second_id} = SnapshotManager.create_snapshot(trainer.id, %{version: 2})
+      model_data = %{version: 2}
+      binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
+      
+      {:ok, second_snapshot} = SnapshotManager.create_snapshot(
+        %{
+          trainer_id: trainer.id,
+          tenant_id: trainer.tenant_id,
+          version: "2.0.0",
+          mode: trainer.mode,
+          checksum: checksum,
+          size_bytes: byte_size(binary),
+          metadata: %{}
+        },
+        binary
+      )
+      second_id = second_snapshot.id
       :ok = SnapshotManager.activate_snapshot(second_id)
 
       # First should be deactivated
@@ -189,8 +273,23 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
       # Create multiple snapshots
       snapshots = for v <- 1..3 do
-        {:ok, id} = SnapshotManager.create_snapshot(trainer.id, %{version: v})
-        id
+        model_data = %{version: v}
+        binary = Jason.encode!(model_data)
+        checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
+        
+        {:ok, snapshot} = SnapshotManager.create_snapshot(
+          %{
+            trainer_id: trainer.id,
+            tenant_id: trainer.tenant_id,
+            version: "#{v}.0.0",
+            mode: trainer.mode,
+            checksum: checksum,
+            size_bytes: byte_size(binary),
+            metadata: %{}
+          },
+          binary
+        )
+        snapshot.id
       end
 
       %{trainer: trainer, snapshot_ids: snapshots}
@@ -226,9 +325,24 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         mode: :shadow
       })
 
-      {:ok, snapshot_id} = SnapshotManager.create_snapshot(trainer.id, %{version: 1})
+      model_data = %{version: 1}
+      binary = Jason.encode!(model_data)
+      checksum = :crypto.hash(:sha256, binary) |> Base.encode16(case: :lower)
+      
+      {:ok, snapshot} = SnapshotManager.create_snapshot(
+        %{
+          trainer_id: trainer.id,
+          tenant_id: trainer.tenant_id,
+          version: "1.0.0",
+          mode: trainer.mode,
+          checksum: checksum,
+          size_bytes: byte_size(binary),
+          metadata: %{}
+        },
+        binary
+      )
 
-      %{trainer: trainer, snapshot_id: snapshot_id}
+      %{trainer: trainer, snapshot_id: snapshot.id, snapshot: snapshot}
     end
 
     test "deletes snapshot and file", %{snapshot_id: snapshot_id} do
@@ -277,9 +391,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       snapshot_params = %{
         trainer_id: trainer.id,
         tenant_id: trainer.tenant_id,
-        version: 1,
+        version: "1.0.0",
         mode: trainer.mode,
-        status: trainer.status,
         checksum: checksum,
         size_bytes: byte_size(model_data_binary),
         metadata: %{}
@@ -298,16 +411,15 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
     end
 
     test "policy prevents activation when conditions not met", %{trainer: trainer} do
-      # Create snapshot with trainer in idle status (may violate policy)
+      # Create snapshot (status defaults to :created)
       model_data_binary = Jason.encode!(%{version: 1})
       checksum = :crypto.hash(:sha256, model_data_binary) |> Base.encode16(case: :lower)
 
       snapshot_params = %{
         trainer_id: trainer.id,
         tenant_id: trainer.tenant_id,
-        version: 1,
+        version: "1.0.0",
         mode: :shadow,
-        status: :idle,  # Policy may require training status
         checksum: checksum,
         size_bytes: byte_size(model_data_binary),
         metadata: %{}
@@ -346,9 +458,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
           params = %{
             trainer_id: trainer.id,
             tenant_id: trainer.tenant_id,
-            version: version,
+            version: "#{version}.0.0",
             mode: trainer.mode,
-            status: trainer.status,
             checksum: checksum,
             size_bytes: byte_size(model_data_binary),
             metadata: %{created_by: "concurrent_test"}
@@ -389,9 +500,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer.id,
           tenant_id: trainer.tenant_id,
-          version: 1,
+          version: "1.0.0",
           mode: trainer.mode,
-          status: trainer.status,
           checksum: v1_checksum,
           size_bytes: byte_size(v1_binary),
           metadata: %{}
@@ -409,9 +519,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer.id,
           tenant_id: trainer.tenant_id,
-          version: 2,
+          version: "2.0.0",
           mode: trainer.mode,
-          status: trainer.status,
           checksum: v2_checksum,
           size_bytes: byte_size(v2_binary),
           metadata: %{}
@@ -444,9 +553,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer.id,
           tenant_id: trainer.tenant_id,
-          version: 1,
+          version: "1.0.0",
           mode: trainer.mode,
-          status: trainer.status,
           checksum: v1_checksum,
           size_bytes: byte_size(v1_binary),
           metadata: %{tag: "stable"}
@@ -464,9 +572,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer.id,
           tenant_id: trainer.tenant_id,
-          version: 2,
+          version: "2.0.0",
           mode: trainer.mode,
-          status: trainer.status,
           checksum: v2_checksum,
           size_bytes: byte_size(v2_binary),
           metadata: %{tag: "experimental"}
@@ -515,9 +622,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
           %{
             trainer_id: trainer.id,
             tenant_id: trainer.tenant_id,
-            version: version,
+            version: Integer.to_string(version),
             mode: trainer.mode,
-            status: trainer.status,
             checksum: checksum,
             size_bytes: byte_size(binary),
             metadata: %{}
@@ -540,9 +646,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer.id,
           tenant_id: trainer.tenant_id,
-          version: 6,
+          version: "6.0.0",
           mode: trainer.mode,
-          status: trainer.status,
           checksum: recent_checksum,
           size_bytes: byte_size(recent_binary),
           metadata: %{}
@@ -707,9 +812,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
         %{
           trainer_id: trainer.id,
           tenant_id: trainer.tenant_id,
-          version: 1,
+          version: "1.0.0",
           mode: trainer.mode,
-          status: trainer.status,
           checksum: checksum,
           size_bytes: byte_size(large_binary),
           metadata: %{model_type: "large_nn"}

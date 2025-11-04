@@ -110,3 +110,8 @@ config :thunderline,
     enabled: false,
     shadow_mode: true
   ]
+
+# Configure UPM SnapshotManager for tests
+config :thunderline,
+  upm_snapshot_compression: :gzip,
+  upm_snapshot_storage_path: "/tmp/thunderline_test/upm/snapshots"

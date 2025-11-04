@@ -203,6 +203,24 @@ config :thunderline,
     selector_hysteresis_pct: 15,
     presence_secured: true
   ],
+  # UPM Policy Configuration (HC-22 Task #3)
+  # Governs authorization for Unified Persistent Model snapshot operations
+  # See lib/thunderline/thundercrown/policies/upm_policy.ex for policy implementation
+  upm_policies: [
+    # Tenant IDs eligible for canary rollout testing
+    # Add staging/test tenant IDs here for controlled canary deployment
+    # Example: ["tenant-abc-123", "tenant-xyz-789"]
+    canary_tenants: [],
+    # Minimum shadow mode duration before active rollout (hours)
+    # Default: 336 hours = 14 days
+    # Snapshots must run in shadow mode for this duration to validate
+    # stability before being promoted to active production use
+    min_shadow_hours: 336,
+    # Roles with admin bypass privileges for snapshot activation
+    # These roles can activate any snapshot regardless of mode or validation state
+    # Used for emergency operations and system-level automation
+    admin_roles: [:system, :upm_admin, :system_admin]
+  ],
   ash_domains: [
     Thunderline.Accounts,
     Thunderline.Thunderlink.Chat,

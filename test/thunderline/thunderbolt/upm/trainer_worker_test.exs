@@ -22,7 +22,7 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerTest do
       {:ok, pid} = TrainerWorker.start_link(opts)
 
       # Verify trainer was created in database
-      assert {:ok, [trainer]} = 
+      assert {:ok, [trainer]} =
         UpmTrainer
         |> Ash.Query.filter(name == "test-trainer-2")
         |> Ash.read()

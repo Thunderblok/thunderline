@@ -26,8 +26,10 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   """
 
   require Logger
+  require Ash.Query
 
   alias Thunderline.Thunderbolt.Resources.{UpmSnapshot, UpmTrainer}
+  alias Thunderline.Thundercrown.Policies.UPMPolicy
   alias Thunderline.UUID
 
   @type snapshot_params :: %{
@@ -82,7 +84,6 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
           # Create snapshot resource
           snapshot_params =
             Map.merge(params, %{
-              id: snapshot_id,
               storage_path: storage_path,
               size_bytes: byte_size(final_data),
               metadata:
@@ -93,11 +94,11 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
                 })
             })
 
-          case UpmSnapshot.record(snapshot_params) |> Ash.create() do
+          case UpmSnapshot.record(snapshot_params) do
             {:ok, snapshot} ->
               Logger.info("""
               [UPM.SnapshotManager] Created snapshot
-                id: #{snapshot_id}
+                id: #{snapshot.id}
                 trainer_id: #{params.trainer_id}
                 version: #{params.version}
                 size: #{byte_size(final_data)} bytes
@@ -166,40 +167,100 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   end
 
   @doc """
-  Activates a snapshot (promotes from shadow to active).
+  Activates a snapshot with ThunderCrown policy authorization.
 
-  This should be called after ThunderCrown policy approval.
+  Enforces rollout policy based on snapshot mode:
+  - Shadow mode: Always allowed (observational only)
+  - Canary mode: Requires tenant in canary list
+  - Active mode: Requires 336+ hour shadow validation period
+  - Admin roles bypass all policy checks
+
+  ## Parameters
+
+  - `snapshot_id` - The snapshot to activate
+  - `opts` - Options map:
+    - `:actor` - Actor context for authorization (required for non-shadow modes)
+    - `:tenant` - Tenant context for canary validation
+    - `:correlation_id` - Event correlation ID (optional, auto-generated)
+
+  ## Returns
+
+  - `{:ok, snapshot}` - Activation successful and policy authorized
+  - `{:error, {:policy_violation, reason}}` - Authorization denied by policy
+  - `{:error, {:snapshot_not_found, reason}}` - Snapshot doesn't exist
+  - `{:error, {:activation_failed, reason}}` - Database update failed
+  - `{:error, {:deactivation_failed, reason}}` - Previous snapshot deactivation failed
+
+  ## Examples
+
+      # Shadow mode activation (no auth required)
+      {:ok, snapshot} = SnapshotManager.activate_snapshot(snapshot_id)
+
+      # Canary mode activation (requires tenant)
+      {:ok, snapshot} = SnapshotManager.activate_snapshot(
+        snapshot_id,
+        %{actor: current_user, tenant: current_tenant}
+      )
+
+      # Admin bypass (any mode)
+      {:ok, snapshot} = SnapshotManager.activate_snapshot(
+        snapshot_id,
+        %{actor: %{role: :system}}
+      )
   """
   @spec activate_snapshot(binary(), map()) :: {:ok, UpmSnapshot.t()} | {:error, term()}
   def activate_snapshot(snapshot_id, opts \\ %{}) do
     correlation_id = Map.get(opts, :correlation_id, UUID.v7())
+    
+    # Extract authorization context
+    actor = Map.get(opts, :actor)
+    tenant = Map.get(opts, :tenant)
 
     case Ash.get(UpmSnapshot, snapshot_id) do
       {:ok, snapshot} ->
-        # Deactivate previous active snapshot (if any)
-        case deactivate_previous_active(snapshot.trainer_id, snapshot_id) do
+        # Enforce ThunderCrown policy authorization (HC-22 Task #3)
+        case UPMPolicy.can_activate_snapshot?(actor, snapshot, tenant) do
           :ok ->
-            # Activate this snapshot
-            case UpmSnapshot.activate(snapshot.id) |> Ash.update() do
-              {:ok, updated_snapshot} ->
-                Logger.info("""
-                [UPM.SnapshotManager] Activated snapshot
-                  id: #{snapshot_id}
-                  trainer_id: #{snapshot.trainer_id}
-                  version: #{snapshot.version}
-                """)
+            # Policy authorized - proceed with activation
+            case deactivate_previous_active(snapshot.trainer_id, snapshot_id) do
+              :ok ->
+                # Activate this snapshot
+                case UpmSnapshot.activate(snapshot.id) do
+                  {:ok, updated_snapshot} ->
+                    Logger.info("""
+                    [UPM.SnapshotManager] Activated snapshot
+                      id: #{snapshot_id}
+                      trainer_id: #{snapshot.trainer_id}
+                      version: #{snapshot.version}
+                      mode: #{snapshot.mode}
+                      actor: #{inspect(actor)}
+                    """)
 
-                # Emit activation event
-                emit_activation_event(updated_snapshot, correlation_id)
+                    # Emit activation event
+                    emit_activation_event(updated_snapshot, correlation_id)
 
-                {:ok, updated_snapshot}
+                    {:ok, updated_snapshot}
+
+                  {:error, reason} ->
+                    {:error, {:activation_failed, reason}}
+                end
 
               {:error, reason} ->
-                {:error, {:activation_failed, reason}}
+                {:error, {:deactivation_failed, reason}}
             end
 
           {:error, reason} ->
-            {:error, {:deactivation_failed, reason}}
+            # Policy denied activation - log and return violation error
+            Logger.warning("""
+            [UPM.SnapshotManager] Policy violation prevented snapshot activation
+              snapshot_id: #{snapshot_id}
+              mode: #{snapshot.mode}
+              reason: #{inspect(reason)}
+              actor: #{inspect(actor)}
+              tenant: #{inspect(tenant)}
+            """)
+
+            {:error, {:policy_violation, reason}}
         end
 
       {:error, reason} ->
@@ -218,7 +279,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
 
     case Ash.get(UpmSnapshot, snapshot_id) do
       {:ok, snapshot} ->
-        case UpmSnapshot.rollback(snapshot.id) |> Ash.update() do
+        case UpmSnapshot.rollback(snapshot.id) do
           {:ok, updated_snapshot} ->
             Logger.warn("""
             [UPM.SnapshotManager] Rolled back to snapshot
@@ -249,10 +310,22 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
     status_filter = Keyword.get(opts, :status)
     limit = Keyword.get(opts, :limit, 100)
 
-    query = [trainer_id: trainer_id]
-    query = if status_filter, do: Keyword.put(query, :status, status_filter), else: query
+    query = 
+      UpmSnapshot
+      |> Ash.Query.filter(trainer_id == ^trainer_id)
+    
+    query = if status_filter do
+      Ash.Query.filter(query, status == ^status_filter)
+    else
+      query
+    end
+    
+    query = 
+      query
+      |> Ash.Query.limit(limit)
+      |> Ash.Query.sort(version: :desc)
 
-    case Ash.read(UpmSnapshot, filter: query, limit: limit, sort: [version: :desc]) do
+    case Ash.read(query) do
       {:ok, snapshots} -> {:ok, snapshots}
       {:error, reason} -> {:error, reason}
     end
@@ -263,7 +336,12 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   """
   @spec get_active_snapshot(binary()) :: {:ok, UpmSnapshot.t() | nil} | {:error, term()}
   def get_active_snapshot(trainer_id) do
-    case Ash.read(UpmSnapshot, filter: [trainer_id: trainer_id, status: :active], limit: 1) do
+    query = 
+      UpmSnapshot
+      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :active)
+      |> Ash.Query.limit(1)
+    
+    case Ash.read(query) do
       {:ok, [snapshot]} -> {:ok, snapshot}
       {:ok, []} -> {:ok, nil}
       {:error, reason} -> {:error, reason}
@@ -278,10 +356,12 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
     retention_days = Keyword.get(opts, :retention_days, 30)
     cutoff_date = DateTime.utc_now() |> DateTime.add(-retention_days, :day)
 
-    case Ash.read(UpmSnapshot,
-           filter: [trainer_id: trainer_id, status: :superseded],
-           load: [:inserted_at]
-         ) do
+    query = 
+      UpmSnapshot
+      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :superseded)
+      |> Ash.Query.load([:inserted_at])
+    
+    case Ash.read(query) do
       {:ok, snapshots} ->
         old_snapshots =
           Enum.filter(snapshots, fn s ->
@@ -316,7 +396,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
     base_path =
       Application.get_env(
         :thunderline,
-        [__MODULE__, :storage_base_path],
+        :upm_snapshot_storage_path,
         "/var/lib/thunderline/upm/snapshots"
       )
 
@@ -325,7 +405,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
 
   defp maybe_compress(data) do
     compression =
-      Application.get_env(:thunderline, [__MODULE__, :compression], :zstd)
+      Application.get_env(:thunderline, :upm_snapshot_compression, :zstd)
 
     case compression do
       :zstd ->
@@ -403,17 +483,19 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   end
 
   defp deactivate_previous_active(trainer_id, exclude_id) do
-    case Ash.read(UpmSnapshot, filter: [trainer_id: trainer_id, status: :active]) do
+    query = 
+      UpmSnapshot
+      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :active and id != ^exclude_id)
+    
+    case Ash.read(query) do
       {:ok, snapshots} ->
-        snapshots
-        |> Enum.reject(&(&1.id == exclude_id))
-        |> Enum.each(fn snapshot ->
-          case UpmSnapshot.rollback(snapshot.id) |> Ash.update() do
+        Enum.each(snapshots, fn snapshot ->
+          case UpmSnapshot.rollback(snapshot.id) do
             {:ok, _} ->
               Logger.debug("[UPM.SnapshotManager] Deactivated snapshot #{snapshot.id}")
 
             {:error, reason} ->
-              Logger.warn(
+              Logger.warning(
                 "[UPM.SnapshotManager] Failed to deactivate snapshot #{snapshot.id}: #{inspect(reason)}"
               )
           end

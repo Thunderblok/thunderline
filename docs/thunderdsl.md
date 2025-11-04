@@ -44,8 +44,7 @@ create/read/update/destroy (standard Ash actions)
 
 validate/1: parses the DSL, checks syntax, populates diagnostics with any warnings or errors. On success, sets status to :validated.
 
-expand/1: performs pcube‑style macro expansion (loops, sums, min/max, sync) on the program’s source, producing an IR (stored in ir) and setting status to :expanded.
-
+pawn s
 compile/1: lowers the IR into Pegasus primitives (Partition/Map/SumReduce), applies fusion, generates target artefacts (Nx/eBPF/P4/WASM) and writes them to ThunderDSL.Build records. Sets status to :compiled.
 
 publish/1: locks the version (immutable), sets status to :published and emits events for downstream deployment.

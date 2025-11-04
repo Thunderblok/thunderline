@@ -34,7 +34,7 @@ defmodule Thunderline.Thunderbolt.UPM.DriftMonitorTest do
   describe "start_link/1" do
     test "starts monitor with trainer_id" do
       trainer_id = Thunderline.UUID.v7()
-      
+
       {:ok, pid} = DriftMonitor.start_link(
         trainer_id: trainer_id,
         name: :"test_drift_#{trainer_id}"
@@ -216,7 +216,7 @@ defmodule Thunderline.Thunderbolt.UPM.DriftMonitorTest do
 
       # Verify trainer status (implementation may vary)
       {:ok, trainer} = Ash.get(UpmTrainer, trainer_id)
-      
+
       # Status may be quarantined or still training depending on implementation
       assert trainer.status in [:training, :quarantined, :idle]
     end
