@@ -353,6 +353,50 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   end
 
   @doc """
+  Deletes a snapshot and its associated file from storage.
+
+  Returns `:ok` on success or `{:error, reason}` on failure.
+  Cannot delete active snapshots - they must be deactivated first.
+
+  ## Examples
+
+      iex> delete_snapshot(snapshot_id)
+      :ok
+
+      iex> delete_snapshot(active_snapshot_id)
+      {:error, :cannot_delete_active_snapshot}
+
+  """
+  @spec delete_snapshot(binary()) :: :ok | {:error, term()}
+  def delete_snapshot(snapshot_id) do
+    with {:ok, snapshot} <- Ash.get(UpmSnapshot, snapshot_id),
+         :ok <- check_not_active(snapshot),
+         :ok <- delete_snapshot_file(snapshot),
+         :ok <- Ash.destroy(snapshot) do
+      Logger.info("""
+      [UPM.SnapshotManager] Deleted snapshot
+        id: #{snapshot.id}
+        trainer_id: #{snapshot.trainer_id}
+        version: #{snapshot.version}
+      """)
+
+      :ok
+    else
+      {:error, %Ash.Error.Query.NotFound{}} ->
+        {:error, :snapshot_not_found}
+
+      {:error, reason} ->
+        Logger.error("""
+        [UPM.SnapshotManager] Failed to delete snapshot
+          id: #{snapshot_id}
+          reason: #{inspect(reason)}
+        """)
+
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Cleans up old snapshots based on retention policy.
   """
   @spec cleanup_old_snapshots(binary(), keyword()) :: {:ok, non_neg_integer()} | {:error, term()}
@@ -469,20 +513,19 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
     File.rm(path)
   end
 
-  defp delete_snapshot(snapshot_id) do
-    case Ash.get(UpmSnapshot, snapshot_id) do
-      {:ok, snapshot} ->
-        # Delete from storage
-        cleanup_storage(snapshot.storage_path)
+  # Helper for delete_snapshot/1 - check if snapshot is not active
+  defp check_not_active(%{status: :active}) do
+    {:error, :cannot_delete_active_snapshot}
+  end
 
-        # Delete resource
-        case Ash.destroy(snapshot) do
-          :ok -> :ok
-          {:error, reason} -> {:error, reason}
-        end
+  defp check_not_active(_snapshot), do: :ok
 
-      {:error, reason} ->
-        {:error, reason}
+  # Helper for delete_snapshot/1 - delete the physical file
+  defp delete_snapshot_file(%{storage_path: path}) do
+    case File.rm(path) do
+      :ok -> :ok
+      {:error, :enoent} -> :ok  # File already gone, that's fine
+      {:error, reason} -> {:error, {:file_deletion_failed, reason}}
     end
   end
 

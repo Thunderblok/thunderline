@@ -69,6 +69,10 @@ defmodule Thunderline.Thunderbolt.Resources.UpmSnapshot do
         Ash.Changeset.change_attribute(changeset, :status, :rolled_back)
       end
     end
+
+    destroy :destroy do
+      primary? true
+    end
   end
 
   policies do
