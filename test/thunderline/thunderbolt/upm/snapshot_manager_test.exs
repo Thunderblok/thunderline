@@ -4,6 +4,9 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
   alias Thunderline.Thunderbolt.UPM.SnapshotManager
   alias Thunderline.Thunderbolt.Resources.{UpmTrainer, UpmSnapshot}
 
+  # UUID module for generating v7 UUIDs
+  alias Elixir.UUID
+
   @moduletag :upm
 
   describe "create_snapshot/3" do
@@ -121,7 +124,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
     end
 
     test "returns error for nonexistent snapshot" do
-      fake_id = Thunderline.UUID.v7()
+      fake_id = UUID.uuid4()
       assert {:error, _reason} = SnapshotManager.load_snapshot(fake_id)
     end
   end
@@ -253,7 +256,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
   describe "integration: policy enforcement on activation" do
     setup do
-      tenant_id = UUID.v7()
+      tenant_id = UUID.uuid4()
 
       # Create shadow trainer
       {:ok, trainer} = UpmTrainer.register(%{
@@ -287,7 +290,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       # Activation should trigger policy check
       # (Implementation determines if policy allows shadow -> active)
       result = SnapshotManager.activate_snapshot(snapshot.id, %{
-        correlation_id: UUID.v7()
+        correlation_id: UUID.uuid4()
       })
 
       # Should either succeed or fail with policy violation
@@ -327,7 +330,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "concurrent-test-trainer",
         mode: :canary,
-        tenant_id: UUID.v7()
+        tenant_id: UUID.uuid4()
       })
 
       %{trainer: trainer}
@@ -371,7 +374,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "version-progression-trainer",
         mode: :shadow,
-        tenant_id: UUID.v7()
+        tenant_id: UUID.uuid4()
       })
 
       %{trainer: trainer}
@@ -430,7 +433,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "rollback-test-trainer",
         mode: :active,
-        tenant_id: UUID.v7()
+        tenant_id: UUID.uuid4()
       })
 
       # Create and activate v1
@@ -483,7 +486,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
       # Rollback to v1
       {:ok, rolled_back} = SnapshotManager.rollback_to_snapshot(v1_snapshot.id, %{
-        correlation_id: UUID.v7()
+        correlation_id: UUID.uuid4()
       })
 
       assert rolled_back.id == v1_snapshot.id
@@ -500,7 +503,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "cleanup-test-trainer",
         mode: :shadow,
-        tenant_id: UUID.v7()
+        tenant_id: UUID.uuid4()
       })
 
       # Create 5 old snapshots
@@ -561,7 +564,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
   describe "integration: activation with policy chain" do
     setup do
-      tenant_id = UUID.v7()
+      tenant_id = UUID.uuid4()
 
       {:ok, trainer} = UpmTrainer.register(%{
         name: "policy-chain-trainer",
@@ -593,9 +596,9 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
       # Activate with full context (triggers policy evaluation)
       result = SnapshotManager.activate_snapshot(snapshot.id, %{
-        actor: %{id: UUID.v7(), role: :admin},
+        actor: %{id: UUID.uuid4(), role: :admin},
         tenant: trainer.tenant_id,
-        correlation_id: UUID.v7()
+        correlation_id: UUID.uuid4()
       })
 
       # Should succeed or provide clear policy violation reason
@@ -615,7 +618,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
 
   describe "integration: multi-trainer isolation" do
     setup do
-      tenant_id = UUID.v7()
+      tenant_id = UUID.uuid4()
 
       {:ok, trainer1} = UpmTrainer.register(%{
         name: "isolation-trainer-1",
@@ -686,7 +689,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManagerTest do
       {:ok, trainer} = UpmTrainer.register(%{
         name: "large-model-trainer",
         mode: :shadow,
-        tenant_id: UUID.v7()
+        tenant_id: UUID.uuid4()
       })
 
       %{trainer: trainer}
