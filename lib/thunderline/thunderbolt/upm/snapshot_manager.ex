@@ -373,7 +373,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   def get_active_snapshot(trainer_id) do
     query =
       UpmSnapshot
-      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :active)
+      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :activated)
+      |> Ash.Query.sort(activated_at: :desc)
       |> Ash.Query.limit(1)
 
     case Ash.read(query) do
@@ -563,7 +564,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   defp deactivate_previous_active(trainer_id, exclude_id) do
     query =
       UpmSnapshot
-      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :active and id != ^exclude_id)
+      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :activated and id != ^exclude_id)
 
     case Ash.read(query) do
       {:ok, snapshots} ->
