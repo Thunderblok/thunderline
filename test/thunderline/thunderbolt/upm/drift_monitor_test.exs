@@ -1,5 +1,6 @@
 defmodule Thunderline.Thunderbolt.UPM.DriftMonitorTest do
   use Thunderline.DataCase, async: false
+  require Ash.Query
 
   alias Thunderline.Thunderbolt.UPM.DriftMonitor
   alias Thunderline.Thunderbolt.Resources.{UpmTrainer, UpmDriftWindow}

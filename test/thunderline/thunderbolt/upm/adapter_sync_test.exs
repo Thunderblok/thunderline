@@ -1,6 +1,8 @@
 defmodule Thunderline.Thunderbolt.UPM.AdapterSyncTest do
   use Thunderline.DataCase, async: false
 
+  require Ash.Query
+
   alias Thunderline.Thunderbolt.UPM.AdapterSync
   alias Thunderline.Thunderbolt.Resources.{UpmAdapter, UpmSnapshot, UpmTrainer}
 

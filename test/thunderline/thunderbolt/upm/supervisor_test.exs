@@ -1,5 +1,6 @@
 defmodule Thunderline.Thunderbolt.UPM.SupervisorTest do
   use Thunderline.DataCase, async: false
+  require Ash.Query
 
   alias Thunderline.Thunderbolt.UPM.{Supervisor, TrainerWorker, DriftMonitor}
   alias Thunderline.Thunderbolt.Resources.UpmTrainer
