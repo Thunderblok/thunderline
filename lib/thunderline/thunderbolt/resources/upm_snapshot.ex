@@ -25,6 +25,7 @@ defmodule Thunderline.Thunderbolt.Resources.UpmSnapshot do
     define :record, action: :record
     define :activate, action: :activate
     define :rollback, action: :rollback
+    define :deactivate, action: :deactivate
   end
 
   actions do
@@ -66,7 +67,19 @@ defmodule Thunderline.Thunderbolt.Resources.UpmSnapshot do
       accept [:metadata]
 
       change fn changeset, _context ->
-        Ash.Changeset.change_attribute(changeset, :status, :rolled_back)
+        changeset
+        |> Ash.Changeset.change_attribute(:status, :activated)
+        |> Ash.Changeset.change_attribute(:activated_at, DateTime.utc_now())
+      end
+    end
+
+    update :deactivate do
+      accept [:metadata]
+
+      change fn changeset, _context ->
+        changeset
+        |> Ash.Changeset.change_attribute(:status, :rolled_back)
+        |> Ash.Changeset.change_attribute(:activated_at, nil)
       end
     end
 

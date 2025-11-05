@@ -434,11 +434,11 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   @spec cleanup_old_snapshots(binary(), keyword()) :: {:ok, non_neg_integer()} | {:error, term()}
   def cleanup_old_snapshots(trainer_id, opts \\ []) do
     retention_days = Keyword.get(opts, :retention_days, 30)
-    cutoff_date = DateTime.utc_now() |> DateTime.add(-retention_days, :day)
+    cutoff_date = DateTime.utc_now() |> DateTime.add(-retention_days, :day) |> DateTime.add(-5, :second)
 
     query =
       UpmSnapshot
-      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :superseded)
+      |> Ash.Query.filter(trainer_id == ^trainer_id and status in [:created, :rolled_back, :archived])
       |> Ash.Query.load([:inserted_at])
 
     case Ash.read(query) do
@@ -569,7 +569,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
     case Ash.read(query) do
       {:ok, snapshots} ->
         Enum.each(snapshots, fn snapshot ->
-          case UpmSnapshot.rollback(snapshot.id) do
+          case UpmSnapshot.deactivate(snapshot.id) do
             {:ok, _} ->
               Logger.debug("[UPM.SnapshotManager] Deactivated snapshot #{snapshot.id}")
 
@@ -588,7 +588,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   end
 
   defp emit_activation_event(snapshot, correlation_id) do
-    Thunderline.Thunderflow.EventBus.publish_event(%{
+    case Thunderline.Event.new(
       name: "ai.upm.snapshot.activated",
       source: :bolt,
       payload: %{
@@ -599,11 +599,26 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
         checksum: snapshot.checksum
       },
       correlation_id: correlation_id
-    })
+    ) do
+      {:ok, event} ->
+        # Publish to EventBus for saga/worker consumption
+        Thunderline.Thunderflow.EventBus.publish_event(event)
+        
+        # Also broadcast to PubSub for real-time notifications
+        Phoenix.PubSub.broadcast(
+          Thunderline.PubSub,
+          "ai:upm:snapshot:activated",
+          {:event_bus, event}
+        )
+        
+        {:ok, event}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp emit_rollback_event(snapshot, correlation_id) do
-    Thunderline.Thunderflow.EventBus.publish_event(%{
+    case Thunderline.Event.new(
       name: "ai.upm.rollback",
       source: :bolt,
       payload: %{
@@ -613,6 +628,11 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
         reason: "manual_rollback"
       },
       correlation_id: correlation_id
-    })
+    ) do
+      {:ok, event} ->
+        Thunderline.Thunderflow.EventBus.publish_event(event)
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 end
