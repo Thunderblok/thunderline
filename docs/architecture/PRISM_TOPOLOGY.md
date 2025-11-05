@@ -54,12 +54,7 @@ Thunderline's architecture is organized as a **12-domain hexagonal prism** consi
    - Key management and rotation
    - Security attestation
    - Domain: `Thunderline.Thundersec` (SPLIT FROM GATE)
-
-6. **Thunderjam** (Vertex 6) - QoS & Rate Limiting
-   - Rate limiting and throttling
-   - Priority queues and fairness
-   - Backpressure management
-   - Domain: `Thunderline.Thunderjam` (NEW)
+   - **Note**: Rate limiting functionality consolidated into `Thunderline.Thundergate.RateLimiting` (see domain reorganization)
 
 ### Data Plane (Bottom Ring - Execution/IO/Storage)
 
@@ -86,14 +81,9 @@ Thunderline's architecture is organized as a **12-domain hexagonal prism** consi
     - Isolated execution environments
     - Security boundaries for untrusted code
     - Domain: `Thunderline.Thunderpac` (NEW)
+    - **Note**: Timer/scheduler functionality consolidated into `Thunderline.Thunderblock.Timing` (see domain reorganization)
 
-11. **Thunderclock/Thunderbeat** (Vertex 11) - Timers & Ticks
-    - System tick sources
-    - Periodic task scheduling
-    - Deadline management
-    - Domain: `Thunderline.Thunderclock` (NEW)
-
-12. **Thundervine** (Vertex 12) - 3D DAG & Provenance
+11. **Thundervine** (Vertex 11) - 3D DAG & Provenance
     - State history tracking
     - Causality graph maintenance
     - Provenance queries

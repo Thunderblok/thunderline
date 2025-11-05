@@ -304,7 +304,8 @@ defmodule Thunderline.ThunderBolt.PAC.Coordinator do
   
   @moduledoc """
   PAC control loop: observes events, applies policies, proposes actions.
-  Runs on Thunderclock ticks (realtime/batch/maintenance).
+  Runs on ThunderBlock.Timing ticks (realtime/batch/maintenance).
+  Note: Timer/scheduler functionality consolidated into ThunderBlock.Timing.
   """
   
   def handle_info({:tick, :realtime}, state) do

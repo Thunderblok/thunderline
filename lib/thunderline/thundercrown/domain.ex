@@ -4,7 +4,8 @@ defmodule Thunderline.Thundercrown.Domain do
 
   **Boundary**: "Crown decides" - When/why, scheduling, governance, coordination
 
-  Consolidated from: ThunderChief (job/orchestration), ThunderClock (scheduling)
+  Consolidated from: ThunderChief (job/orchestration)
+  Note: Scheduling/timing functionality moved to ThunderBlock.Timing (see domain reorganization)
 
   The sovereign governance and coordination layer for the Thunderline federation.
 
@@ -77,8 +78,6 @@ defmodule Thunderline.Thundercrown.Domain do
     # resource Thunderline.Thundercrown.Resources.AiPolicy
     # resource Thunderline.Thundercrown.Resources.McpBus
     # resource Thunderline.Thundercrown.Resources.WorkflowOrchestrator
-
-    # ThunderClock → ThunderCrown (temporal orchestration)
-    # Note: ThunderClock resources will be added when implemented
+    # Note: Timer/scheduler resources consolidated into ThunderBlock.Timing
   end
 end

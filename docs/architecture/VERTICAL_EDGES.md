@@ -31,14 +31,16 @@ Vertical edges in the prism topology represent **deployment flows** from control
   retry_policy: :exponential_backoff
 })
 
-# Clock registers policy enforcement
-{:ok, timer} = Thunderclock.create_timer(%{
+# Block.Timing registers policy enforcement
+{:ok, timer} = Thunderblock.Timing.create_timer(%{
   policy_id: policy.id,
   schedule: "*/5 * * * *"
 })
 ```
 
 **Rollback**: Timer disabled if policy validation fails.
+
+**Note**: Timer functionality consolidated into ThunderBlock.Timing subdomain.
 
 ---
 
@@ -168,8 +170,8 @@ Vertical edges in the prism topology represent **deployment flows** from control
 
 **Protocol**:
 ```elixir
-# Jam defines rate limit
-{:ok, limit} = Thunderjam.create_rate_limit(%{
+# Gate.RateLimiting defines rate limit
+{:ok, limit} = Thundergate.RateLimiting.create_rate_limit(%{
   resource: :provenance_writes,
   max_per_second: 1000,
   burst: 5000
@@ -183,6 +185,8 @@ Vertical edges in the prism topology represent **deployment flows** from control
 ```
 
 **Rollback**: Write queued if rate limit exceeded.
+
+**Note**: Rate limiting consolidated into ThunderGate.RateLimiting subdomain.
 
 ---
 

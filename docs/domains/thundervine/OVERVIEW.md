@@ -326,12 +326,12 @@ end
 
 ## Integration Points
 
-### Vertical Edge: Jam → Vine (Rate-Limited Provenance)
+### Vertical Edge: Gate → Vine (Rate-Limited Provenance)
 
 ```elixir
-# Jam checks rate limit before allowing provenance write
+# Gate.RateLimiting checks rate limit before allowing provenance write
 def record_provenance(execution) do
-  case Thunderjam.check_rate_limit(execution.actor_id, :provenance_writes) do
+  case Thundergate.RateLimiting.check_rate_limit(execution.actor_id, :provenance_writes) do
     :ok ->
       Thundervine.record_execution(execution)
     
@@ -341,6 +341,8 @@ def record_provenance(execution) do
   end
 end
 ```
+
+**Note**: Rate limiting functionality consolidated into ThunderGate.RateLimiting subdomain (see domain reorganization).
 
 ### Horizontal Edge: Pac → Vine (Execution Recording)
 

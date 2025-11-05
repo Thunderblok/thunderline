@@ -147,17 +147,19 @@ requirements = Thunderforge.get_resource_requirements(build)
 # Sec provides authentication context
 auth_context = Thundersec.authenticate(request)
 
-# Jam applies rate limit based on context
+# Gate.RateLimiting applies rate limit based on context
 limit = case auth_context.tier do
   :premium -> 10_000
   :standard -> 1_000
   :anonymous -> 100
 end
 
-Thunderjam.check_rate_limit(auth_context.actor_id, limit)
+Thundergate.RateLimiting.check_rate_limit(auth_context.actor_id, limit)
 ```
 
 **Latency**: 5-20ms (hot path, cached).
+
+**Note**: Rate limiting consolidated into ThunderGate.RateLimiting subdomain.
 
 ---
 
@@ -172,8 +174,8 @@ Thunderjam.check_rate_limit(auth_context.actor_id, limit)
 
 **Protocol**:
 ```elixir
-# Jam detects violations
-violations = Thunderjam.get_rate_limit_violations(last: :hour)
+# Gate.RateLimiting detects violations
+violations = Thundergate.RateLimiting.get_rate_limit_violations(last: :hour)
 
 if Enum.count(violations) > threshold do
   # Notify Crown to update policy
@@ -350,14 +352,16 @@ history = Thundervine.get_execution_history(%{
   last: {:days, 7}
 })
 
-# Clock optimizes schedule
-optimal_time = Thunderclock.optimize_schedule(%{
+# Block.Timing optimizes schedule
+optimal_time = Thunderblock.Timing.optimize_schedule(%{
   history: history,
   constraints: constraints
 })
 ```
 
 **Latency**: 20-100ms (query + optimization).
+
+**Note**: Timer/scheduler functionality consolidated into ThunderBlock.Timing subdomain.
 
 ---
 

@@ -384,7 +384,7 @@ Thundersec
 Security layer (policies, auth, encryption). Ensures PAC actions stay aligned with safe constraints.
 Think: immune system.
 
-Thunderjam
+ThunderGate.RateLimiting
 Rate limiting + load balancing. Prevents runaway loops or abusive calls.
 Think: braking system.
 
