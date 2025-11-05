@@ -603,14 +603,14 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
       {:ok, event} ->
         # Publish to EventBus for saga/worker consumption
         Thunderline.Thunderflow.EventBus.publish_event(event)
-        
+
         # Also broadcast to PubSub for real-time notifications
         Phoenix.PubSub.broadcast(
           Thunderline.PubSub,
           "ai:upm:snapshot:activated",
           {:event_bus, event}
         )
-        
+
         {:ok, event}
       {:error, reason} ->
         {:error, reason}
