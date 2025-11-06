@@ -177,11 +177,11 @@ Block, Link, Flow ───────────────── Data
 
 ### Target State (12 Domains)
 ```
-Crown, Bolt, Forge, Grid, Sec, Jam ─── Control Ring
+Crown, Bolt, Forge, Grid, Sec, Gate─── Control Ring
               ║║║║║║
          Vertical Edges
               ║║║║║║
-Clock, Block, Link, Flow, Pac, Vine ── Data Ring
+Chief, Block, Link, Flow, Pac, Vine ── Data Ring
 ```
 
 ### Evolution Strategy

@@ -1,6 +1,9 @@
 defmodule Thunderline.Auth.SessionTest do
   use Thunderline.DataCase, async: true
 
+  alias Ash.Query
+  require Ash.Query
+
   alias Thunderline.Thundergate.ActorContext
   alias Thunderline.Thundergate.Resources.Token
 
@@ -327,9 +330,10 @@ defmodule Thunderline.Auth.SessionTest do
       end
 
       # Get the subject from one of the created tokens
+      first_jti = hd(token_jtis)
       {:ok, [first_token | _]} =
         Token
-        |> Ash.Query.filter(jti: ^hd(token_jtis))
+        |> Ash.Query.filter(jti == ^first_jti)
         |> Ash.read()
 
       # Revoke all tokens for this subject
