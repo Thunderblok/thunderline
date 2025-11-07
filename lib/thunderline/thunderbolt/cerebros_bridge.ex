@@ -30,7 +30,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge do
   @spec enqueue_run(run_spec(), [enqueue_option()]) :: {:ok, Job.t()} | {:error, term()}
   def enqueue_run(spec, opts \\ []) when is_map(spec) do
     if Client.enabled?() do
-      RunWorker.new(build_args(spec, opts))
+      # Workaround for Oban 2.20.1 bug: ensure timestamps are set
+      # by using schedule_in: 0 which forces immediate scheduling with timestamps
+      RunWorker.new(build_args(spec, opts), schedule_in: 0)
       |> Oban.insert()
     else
       {:error, :bridge_disabled}

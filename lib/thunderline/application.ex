@@ -39,7 +39,14 @@ defmodule Thunderline.Application do
       |> Enum.reject(&is_nil/1)
 
     opts = [strategy: :one_for_one, name: Thunderline.Supervisor]
-    Supervisor.start_link(children, opts)
+
+    with {:ok, pid} <- Supervisor.start_link(children, opts) do
+      # When Oban is in testing: :manual mode, we need to explicitly start queues
+      # This happens after the supervisor tree is up, avoiding the race condition
+      # where Oban tries to query Repo before it's fully initialized
+      maybe_start_oban_queues()
+      {:ok, pid}
+    end
   end
 
   @impl Application
@@ -61,6 +68,26 @@ defmodule Thunderline.Application do
       nil -> nil
       false -> nil
       config -> {Oban, config}
+    end
+  end
+
+  defp maybe_start_oban_queues do
+    # Only start queues if Oban is configured and in manual testing mode
+    case Application.get_env(:thunderline, Oban) do
+      config when is_list(config) ->
+        case Keyword.get(config, :testing) do
+          :manual ->
+            # Give Repo a moment to fully initialize ETS tables
+            Process.sleep(100)
+            # Start Oban's queue system manually
+            Oban.start_queue(queue: :default)
+            Oban.start_queue(queue: :ml)
+            :ok
+          _ ->
+            :ok
+        end
+      _ ->
+        :ok
     end
   end
 

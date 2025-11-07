@@ -179,7 +179,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
         env: env,
         stderr_to_stdout: false
       ]
-      |> maybe_put(:input, opts[:input])
+      # Note: :input removed - Translator generates self-contained scripts
+      # with embedded spec/opts, so no stdin needed
       |> maybe_put(:cd, opts[:cd])
 
     System.cmd(command, args, cmd_opts)

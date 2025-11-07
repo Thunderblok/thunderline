@@ -77,7 +77,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
              metadata: attrs.metadata,
              bridge_result: attrs.bridge_result
            })
-           |> Domain.update(),
+           |> Ash.update(domain: Domain),
          :ok <- persist_artifacts(updated, contract, spec) do
       :ok
     else
@@ -109,7 +109,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
              error_message: format_error(error),
              bridge_result: failure_payload(error, spec)
            })
-           |> Domain.update() do
+           |> Ash.update(domain: Domain) do
       :ok
     else
       {:ok, nil} -> {:error, :run_missing}
@@ -387,12 +387,12 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
           :record,
           Map.delete(attrs, :trial_id) |> Map.delete(:model_run_id)
         )
-        |> Domain.update()
+        |> Ash.update(domain: Domain)
 
       {:ok, nil} ->
         ModelTrial
         |> Changeset.for_create(:log, attrs)
-        |> Domain.create()
+        |> Ash.create(domain: Domain)
 
       {:error, reason} ->
         {:error, reason}

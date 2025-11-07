@@ -45,9 +45,30 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
   def encode(op, payload, config, opts \\ [])
 
   def encode(:start_run, %Contracts.RunStartedV1{} = contract, config, opts) do
-    payload = contract_to_map(contract)
+    # Build spec and opts for cerebros_service.run_nas
+    spec = %{
+      "dataset_id" => contract.dataset_id,
+      "search_space" => contract.search_space || %{},
+      "objective" => contract.objective || "accuracy"
+    }
 
-    build_call(:start_run, payload, config, opts,
+    run_opts = %{
+      "run_id" => contract.run_id,
+      "budget" => contract.budget || %{},
+      "parameters" => contract.parameters || %{}
+    }
+
+    # Generate Python script that calls cerebros_service
+    python_script = generate_cerebros_script(spec, run_opts)
+
+    # Write to temp file
+    script_path = write_temp_script(python_script, contract.run_id)
+
+    build_call(:start_run, %{spec: spec, opts: run_opts}, config, opts,
+      command: python_executable(config),
+      script_path: script_path,
+      args: [],
+      base_args: [],
       env: %{
         "CEREBROS_BRIDGE_OP" => "start_run",
         "CEREBROS_BRIDGE_RUN_ID" => contract.run_id,
@@ -59,7 +80,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
         pulse_id: contract.pulse_id
       },
       cache_key: {:start_run, contract.run_id, contract.pulse_id},
-      timeout_ms: opts[:timeout_ms]
+      timeout_ms: opts[:timeout_ms] || 300_000  # 5 minutes for NAS
     )
   end
 
@@ -143,10 +164,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
 
   defp build_call(op, payload, config, opts, overrides) do
     script_path =
-      Overrides.get!(overrides, :script_path) ||
+      Overrides.get(overrides, :script_path) ||
         Keyword.get(opts, :script_path) ||
-        Map.get(config, :script_path) ||
-        raise ArgumentError, "Cerebros bridge script_path is not configured"
+        Map.get(config, :script_path)
 
     command =
       Overrides.get(overrides, :command) ||
@@ -161,7 +181,13 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
 
     base_args = Keyword.get(opts, :base_args, ["--bridge-op", Atom.to_string(op)])
 
-    args = [script_path | base_args ++ additional_args]
+    # Build args based on whether script_path exists
+    args =
+      if script_path do
+        [script_path | base_args ++ additional_args]
+      else
+        base_args ++ additional_args
+      end
 
     merged_env =
       config
@@ -237,6 +263,46 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
       {:ok, decoded} -> decoded
       _ -> nil
     end
+  end
+
+  # -- cerebros_service helpers -----------------------------------------------
+
+  defp python_executable(config) do
+    Map.get(config, :python_executable) ||
+      System.get_env("CEREBROS_PYTHON") ||
+      Path.expand(".venv/bin/python")
+  end
+
+  defp generate_cerebros_script(spec, opts) do
+    # Get absolute path to thunderhelm directory
+    thunderhelm_path = Path.join(File.cwd!(), "thunderhelm")
+
+    """
+    import sys
+    import json
+    sys.path.insert(0, '#{thunderhelm_path}')
+    import cerebros_service
+
+    spec = #{Jason.encode!(spec)}
+    opts = #{Jason.encode!(opts)}
+
+    result = cerebros_service.run_nas(spec, opts)
+    print(json.dumps(result))
+    """
+  end
+
+  defp write_temp_script(script_content, run_id) do
+    temp_dir = Path.join(System.tmp_dir!(), "cerebros_scripts")
+    File.mkdir_p!(temp_dir)
+
+    script_path =
+      Path.join(
+        temp_dir,
+        "cerebros_#{run_id}_#{:os.system_time(:millisecond)}.py"
+      )
+
+    File.write!(script_path, script_content)
+    script_path
   end
 
   defmodule Overrides do

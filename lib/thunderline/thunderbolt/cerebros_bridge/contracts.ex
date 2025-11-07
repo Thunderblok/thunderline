@@ -15,6 +15,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Contracts do
     Contract emitted when a Cerebros NAS pulse run is initiated.
 
     * `run_id` – canonical Ash ModelRun id / correlation id
+    * `dataset_id` – identifier for the dataset to use for training
+    * `search_space` – architecture search space configuration (layers, activations, etc.)
+    * `objective` – optimization objective (e.g. 'accuracy', 'loss', 'f1')
     * `pulse_id` – optional pulse identifier for incremental NAS loops
     * `budget` – map describing trial/time/resource limits
     * `parameters` – initial search parameters / priors
@@ -25,6 +28,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Contracts do
     """
     @enforce_keys [:run_id, :timestamp]
     defstruct run_id: nil,
+              dataset_id: nil,
+              search_space: %{},
+              objective: "accuracy",
               pulse_id: nil,
               budget: %{},
               parameters: %{},

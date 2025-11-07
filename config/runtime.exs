@@ -204,6 +204,27 @@ cerebros_toggle =
 if not is_nil(cerebros_toggle) do
   base_bridge = Application.get_env(:thunderline, :cerebros_bridge, [])
   config :thunderline, :cerebros_bridge, Keyword.put(base_bridge, :enabled, cerebros_toggle)
+
+  # When Cerebros is enabled, we need Oban to run background jobs
+  # Override dev.exs's "config :thunderline, Oban, false" by re-enabling Oban
+  if cerebros_toggle do
+    # Get base Oban config from config.exs (queues, plugins, etc.)
+    base_oban = Application.get_env(:thunderline, Oban, [])
+
+    # Only override if it was disabled (false) - preserve existing config otherwise
+    if base_oban == false or base_oban == [] do
+      # Re-enable with manual mode to prevent race condition with Repo startup
+      # Using testing: :manual means Oban won't start plugins/queues until explicitly started
+      # This avoids the race where Oban queries Repo before ETS tables are registered
+      config :thunderline, Oban,
+        repo: Thunderline.Repo,
+        testing: :manual,
+        queues: [
+          default: 10,
+          ml: [limit: 4]
+        ]
+    end
+  end
 end
 
 if config_env() == :prod do
