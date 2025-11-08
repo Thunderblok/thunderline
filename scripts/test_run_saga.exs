@@ -41,18 +41,18 @@ IO.puts(String.duplicate("=", 60))
 for test_case <- test_cases do
   IO.puts("\n📝 Test Case: #{test_case.name}")
   IO.puts(String.duplicate("-", 60))
-  
+
   case Reactor.run(RunSaga, test_case.inputs, context) do
     {:ok, result} ->
       IO.puts("✅ Success!")
       IO.puts("   Worker ID: #{result.worker_id}")
       IO.puts("   Status: #{result.status}")
       if result[:metrics], do: IO.puts("   Metrics: #{inspect(result.metrics, limit: 3)}")
-      
+
     {:error, error} ->
       IO.puts("❌ Failed!")
       IO.puts("   Error: #{inspect(error, pretty: true)}")
-      
+
     {:halted, state} ->
       IO.puts("⏸️  Halted!")
       IO.puts("   State: #{inspect(state, pretty: true, limit: 5)}")

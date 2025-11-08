@@ -27,7 +27,7 @@ Mix.install([], system_env: %{"MIX_ENV" => "dev"})
 Application.load(:thunderline)
 
 # Get database URL from environment or use default
-database_url = System.get_env("DATABASE_URL") || 
+database_url = System.get_env("DATABASE_URL") ||
   "ecto://postgres:postgres@localhost/thunderline_dev"
 
 IO.puts "Database: #{database_url}"
@@ -90,47 +90,47 @@ alias Thunderline.Thunderbolt.CerebrosBridge
 case CerebrosBridge.enqueue_run(spec, opts) do
   {:ok, job} ->
     IO.puts """
-    
+
     ================================================================================
     ✅ SUCCESS! NAS run enqueued
     ================================================================================
-    
+
     Job ID: #{job.id}
     Worker: #{job.worker}
     State: #{job.state}
     Queue: #{job.queue}
-    
+
     Run ID: #{job.args["run_id"]}
-    
+
     ================================================================================
     Monitoring:
     ================================================================================
-    
+
     1. Check Oban jobs table:
        psql #{database_url} -c "SELECT id, state, worker, attempted_at FROM oban_jobs WHERE id = #{job.id};"
-    
+
     2. Check for results in logs (when job processes)
-    
+
     3. Artifacts will be in: /tmp/cerebros/#{job.args["run_id"]}/
-    
+
     ================================================================================
     Note: Job will process when Oban worker picks it up.
           Start Phoenix server to process: iex -S mix phx.server
     ================================================================================
     """
-    
+
   {:error, :bridge_disabled} ->
     IO.puts """
-    
+
     ❌ ERROR: Cerebros bridge is disabled!
-    
+
     Enable it by setting environment variable:
       export TL_ENABLE_CEREBROS_BRIDGE=1
-    
+
     Or in config/dev.exs:
       config :thunderline, :cerebros_bridge, enabled: true
     """
-    
+
   {:error, reason} ->
     IO.puts "\n❌ ERROR: Failed to enqueue job"
     IO.inspect(reason, pretty: true, label: "Error")

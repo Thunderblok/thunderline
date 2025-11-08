@@ -19,7 +19,7 @@ IO.puts """
 This script REQUIRES the full Phoenix application running with database!
 
 1. In a separate terminal, start the server:
-   
+
    iex -S mix phx.server
 
 2. Once the server is running, copy the commands below into that IEx session

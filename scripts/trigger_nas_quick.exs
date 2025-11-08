@@ -14,17 +14,17 @@
 # Check if Oban is running
 unless Oban.Registry.whereis(Oban) do
   IO.puts """
-  
+
   ❌ ERROR: Oban is not running!
-  
+
   You need to start the Phoenix server first:
-  
+
     iex -S mix phx.server
-  
+
   Then in that IEx session, run:
-  
+
     Code.eval_file("scripts/trigger_nas_quick.exs")
-  
+
   ================================================================================
   """
   System.halt(1)
@@ -62,21 +62,21 @@ IO.puts "\nEnqueuing..."
 case CerebrosBridge.enqueue_run(spec, opts) do
   {:ok, job} ->
     IO.puts """
-    
+
     ✅ SUCCESS!
-    
+
     Job ID: #{job.id}
     State: #{job.state}
     Run ID: #{job.args["run_id"]}
-    
+
     📊 Monitor: http://localhost:4000/admin/oban
     🔍 Watch logs for Python output
     📁 Artifacts: /tmp/cerebros/#{job.args["run_id"]}/
-    
+
     """
-    
+
     {:ok, job}
-    
+
   {:error, reason} ->
     IO.puts "\n❌ ERROR!"
     IO.inspect(reason, pretty: true)
