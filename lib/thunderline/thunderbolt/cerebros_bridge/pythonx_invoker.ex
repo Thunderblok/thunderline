@@ -153,7 +153,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
     # Pass Elixir data structures via globals, let Pythonx handle encoding
     python_code = """
     import cerebros_service
-    
+
     # spec and opts are passed from Elixir via globals
     # Pythonx automatically converts them to Python dicts
     result = cerebros_service.run_nas(spec, opts)

@@ -1,33 +1,33 @@
 defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonEncoder do
   @moduledoc """
   Custom Pythonx.Encoder implementations for Cerebros bridge contract structs.
-  
+
   These encoders ensure proper marshalling of Elixir data structures to Python objects,
   handling type conversions, nested structures, and maintaining semantic meaning across
   the language boundary.
-  
+
   ## Important Note
-  
+
   These custom encoders are **only used when passing contract structs directly** to Python.
   For most use cases, we normalize structs to maps first and let PythonX's built-in
   encoding handle the conversion. See `normalize_for_python/1` in `PythonxInvoker`.
-  
+
   ## When to Use Custom Encoders
-  
+
   Implement custom `Pythonx.Encoder` when:
   - You need special Python object creation (e.g., datetime objects)
   - You want to preserve type information beyond basic JSON types
   - You need to transform data structure shape during encoding
-  
+
   ## Usage
-  
+
       # Automatic encoding via protocol when passing structs directly:
       contract = %Contracts.RunStartedV1{...}
       {result, _} = Pythonx.eval(python_code, %{"contract" => contract})
-      
+
       # Or manually:
       python_obj = Pythonx.encode!(contract)
-      
+
   For complete guide on PythonX data passing patterns, see:
   `documentation/pythonx_integration_guide.md`
   """
@@ -42,14 +42,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonEncoder do
         Pythonx.eval(
           """
           from datetime import datetime
-          
+
           # Convert timestamp if present
           timestamp_str = timestamp
           if timestamp_str:
               timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
           else:
               timestamp = None
-          
+
           # Build the contract dict
           result = {
               'run_id': run_id,
@@ -172,9 +172,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonEncoder do
 
   @doc """
   Helper to encode any supported contract struct to Python.
-  
+
   ## Examples
-  
+
       iex> contract = %Contracts.RunStartedV1{run_id: "123", timestamp: DateTime.utc_now()}
       iex> python_obj = PythonEncoder.encode(contract)
       #Pythonx.Object<{'run_id': '123', ...}>
@@ -185,7 +185,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonEncoder do
 
   @doc """
   Helper to convert a map to a Python dict with proper type handling.
-  
+
   This is useful for adhoc data structures that aren't contract structs.
   """
   def encode_map(map) when is_map(map) do

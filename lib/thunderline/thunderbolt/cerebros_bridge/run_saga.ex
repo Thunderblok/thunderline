@@ -1,0 +1,246 @@
+defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
+  @moduledoc """
+  Reactor saga for executing Cerebros NAS runs with proper lifecycle management,
+  error handling, and compensation.
+
+  This saga handles:
+  - Pre-run validation and setup
+  - Python environment initialization
+  - NAS run execution via PythonX
+  - Result processing and storage
+  - Cleanup and compensation on failures
+  - Event publishing for observability
+
+  ## Usage
+
+      # Start a NAS run
+      {:ok, result} = RunSaga.run(spec, opts)
+
+      # Async via Oban
+      {:ok, job} = RunSaga.enqueue(spec, opts)
+  """
+
+  use Reactor, extensions: [Reactor.Dsl]
+  require Logger
+
+  alias Thunderline.Thunderbolt.CerebrosBridge.{Client, PythonXInvoker}
+  alias Thunderline.Thunderflow.EventBus
+
+  @doc """
+  Execute the NAS run saga synchronously.
+  Returns `{:ok, result}` or `{:error, reason}`.
+  """
+  def run(spec, opts \\ []) do
+    Reactor.run(__MODULE__, build_inputs(spec, opts), %{})
+  end
+
+  @doc """
+  Enqueue the NAS run saga for async execution via Oban.
+  """
+  def enqueue(spec, opts \\ []) do
+    Thunderline.Thunderbolt.CerebrosBridge.RunWorker.new(
+      build_args(spec, opts),
+      schedule_in: 0
+    )
+    |> Oban.insert()
+  end
+
+  # ============================================================================
+  # Reactor DSL - Define the saga steps
+  # ============================================================================
+
+  input :spec
+  input :run_id
+  input :budget
+  input :parameters
+  input :meta
+
+  # Step 1: Validate bridge is enabled
+  step :check_enabled do
+    run fn _input, _context ->
+      if Client.enabled?() do
+        {:ok, true}
+      else
+        {:error, :bridge_disabled}
+      end
+    end
+  end
+
+  # Step 2: Generate run ID if not provided
+  step :ensure_run_id do
+    argument :run_id, input(:run_id)
+
+    run fn %{run_id: run_id}, _context ->
+      final_id = run_id || "nas_#{:os.system_time(:second)}_#{:rand.uniform(9999)}"
+      {:ok, final_id}
+    end
+  end
+
+  # Step 3: Publish run.started event
+  step :publish_start_event do
+    argument :run_id, result(:ensure_run_id)
+    argument :spec, input(:spec)
+
+    run fn %{run_id: run_id, spec: spec}, _context ->
+      event_attrs = %{
+        name: "cerebros.nas.run.started",
+        source: :thunderbolt,
+        payload: %{
+          run_id: run_id,
+          dataset_id: spec["dataset_id"],
+          objective: spec["objective"]
+        }
+      }
+
+      case EventBus.publish_event(event_attrs) do
+        {:ok, event} -> {:ok, event}
+        {:error, _} = err -> err
+      end
+    end
+
+    compensate fn _value, %{run_id: run_id}, _context ->
+      Logger.warning("[RunSaga] Compensating: publishing run.cancelled for #{run_id}")
+
+      EventBus.publish_event(%{
+        name: "cerebros.nas.run.cancelled",
+        source: :thunderbolt,
+        payload: %{run_id: run_id, reason: "saga_compensation"}
+      })
+
+      :ok
+    end
+  end
+
+  # Step 4: Execute the NAS run via PythonX
+  step :execute_nas_run do
+    argument :run_id, result(:ensure_run_id)
+    argument :spec, input(:spec)
+    argument :budget, input(:budget)
+    argument :parameters, input(:parameters)
+
+    run fn args, _context ->
+      run_id = args.run_id
+      spec = args.spec
+      budget = args.budget || %{}
+      parameters = args.parameters || %{}
+
+      Logger.info("[RunSaga] Starting NAS run: #{run_id}")
+
+      # Build the full Python args
+      python_args = %{
+        "spec" => spec,
+        "run_id" => run_id,
+        "budget" => budget,
+        "parameters" => parameters
+      }
+
+      # Call Python via PythonXInvoker
+      case PythonXInvoker.call_nas_run(python_args) do
+        {:ok, result} ->
+          Logger.info("[RunSaga] NAS run completed: #{run_id}")
+          {:ok, result}
+
+        {:error, reason} = err ->
+          Logger.error("[RunSaga] NAS run failed: #{run_id} - #{inspect(reason)}")
+          err
+      end
+    end
+
+    compensate fn _value, %{run_id: run_id}, _context ->
+      Logger.warning("[RunSaga] Compensating: cleaning up run artifacts for #{run_id}")
+
+      # Clean up any partial artifacts
+      artifact_dir = "/tmp/cerebros/#{run_id}"
+
+      if File.exists?(artifact_dir) do
+        File.rm_rf(artifact_dir)
+        Logger.info("[RunSaga] Removed artifact directory: #{artifact_dir}")
+      end
+
+      :ok
+    end
+  end
+
+  # Step 5: Process and validate results
+  step :process_results do
+    argument :run_id, result(:ensure_run_id)
+    argument :nas_result, result(:execute_nas_run)
+
+    run fn %{run_id: run_id, nas_result: result}, _context ->
+      Logger.debug("[RunSaga] Processing results for #{run_id}")
+
+      # Validate result structure
+      case validate_result(result) do
+        :ok ->
+          {:ok, result}
+
+        {:error, reason} ->
+          Logger.error("[RunSaga] Invalid result structure: #{inspect(reason)}")
+          {:error, {:invalid_result, reason}}
+      end
+    end
+  end
+
+  # Step 6: Publish run.completed event
+  step :publish_complete_event do
+    argument :run_id, result(:ensure_run_id)
+    argument :result, result(:process_results)
+
+    run fn %{run_id: run_id, result: result}, _context ->
+      event_attrs = %{
+        name: "cerebros.nas.run.completed",
+        source: :thunderbolt,
+        payload: %{
+          run_id: run_id,
+          status: result["status"],
+          trials_completed: result["completed_trials"],
+          best_fitness: get_in(result, ["best_architecture", "fitness"])
+        }
+      }
+
+      EventBus.publish_event(event_attrs)
+    end
+  end
+
+  # Step 7: Return final result
+  return :process_results
+
+  # ============================================================================
+  # Private Helpers
+  # ============================================================================
+
+  defp build_inputs(spec, opts) do
+    %{
+      spec: spec,
+      run_id: Keyword.get(opts, :run_id),
+      budget: Keyword.get(opts, :budget, %{}),
+      parameters: Keyword.get(opts, :parameters, %{}),
+      meta: Keyword.get(opts, :meta, %{})
+    }
+  end
+
+  defp build_args(spec, opts) do
+    %{
+      "spec" => spec,
+      "run_id" => Keyword.get(opts, :run_id),
+      "budget" => Keyword.get(opts, :budget, %{}),
+      "parameters" => Keyword.get(opts, :parameters, %{}),
+      "meta" => Keyword.get(opts, :meta, %{})
+    }
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.into(%{})
+  end
+
+  defp validate_result(result) when is_map(result) do
+    required_keys = ["status", "completed_trials", "best_architecture"]
+
+    missing = Enum.filter(required_keys, &(not Map.has_key?(result, &1)))
+
+    case missing do
+      [] -> :ok
+      keys -> {:error, {:missing_keys, keys}}
+    end
+  end
+
+  defp validate_result(_), do: {:error, :not_a_map}
+end

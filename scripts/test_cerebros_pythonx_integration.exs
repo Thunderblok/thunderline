@@ -43,7 +43,7 @@ dependencies = [
 """
 
 case Pythonx.uv_init(pyproject) do
-  :ok -> 
+  :ok ->
     IO.puts("✅ Pythonx initialized")
   {:error, reason} ->
     IO.puts("❌ Pythonx initialization failed: #{inspect(reason)}")
@@ -126,14 +126,14 @@ case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.invoke(:start_run, ca
     IO.puts("\n✅ SUCCESS!\n")
     IO.puts("Response:")
     IO.inspect(result, pretty: true, limit: :infinity)
-    
+
     # Verify structure
     parsed = Map.get(result, :parsed, %{})
-    
+
     IO.puts("\n" <> String.duplicate("=", 80))
     IO.puts("Validation:")
     IO.puts(String.duplicate("=", 80))
-    
+
     checks = [
       {"Return code is 0", result.returncode == 0},
       {"Has parsed result", is_map(parsed) and map_size(parsed) > 0},
@@ -145,13 +145,13 @@ case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.invoke(:start_run, ca
       {"Has artifacts", is_list(Map.get(parsed, "artifacts"))},
       {"Has metadata", is_map(Map.get(parsed, "metadata"))}
     ]
-    
+
     all_pass = Enum.all?(checks, fn {_, pass} -> pass end)
-    
+
     Enum.each(checks, fn {check, pass} ->
       IO.puts("  #{if pass, do: "✅", else: "❌"} #{check}")
     end)
-    
+
     IO.puts("\n" <> String.duplicate("=", 80))
     if all_pass do
       IO.puts("🎉 ALL CHECKS PASSED - Integration test successful!")
@@ -159,9 +159,9 @@ case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.invoke(:start_run, ca
       IO.puts("⚠️  SOME CHECKS FAILED - Review output above")
     end
     IO.puts(String.duplicate("=", 80))
-    
+
     System.halt(if all_pass, do: 0, else: 1)
-    
+
   {:error, error} ->
     IO.puts("\n❌ FAILED!\n")
     IO.puts("Error:")
