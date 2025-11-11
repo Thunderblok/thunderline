@@ -47,6 +47,21 @@ config :ash,
 config :opentelemetry_ash,
   trace_types: [:custom, :action, :flow]
 
+# Configure Pythonx with UV initialization for Python runtime
+# Temporarily disabled to use system Python
+# config :pythonx, :uv_init,
+#   pyproject_toml: """
+#   [project]
+#   name = "thunderline"
+#   version = "0.0.0"
+#   requires-python = ">=3.10"
+#   dependencies = []
+#   """
+
+# Use system Python - it has all standard library modules
+config :pythonx,
+  python: System.find_executable("python3.13") || System.find_executable("python3")
+
 config :spark,
   formatter: [
     remove_parens?: true,
@@ -105,9 +120,13 @@ config :thunderline,
   numerics_adapter: Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback,
   numerics_sidecar_url:
     System.get_env("THUNDERLINE_NUMERICS_SIDECAR_URL") || "http://localhost:8089",
+  # Pythonx configuration for Python integration (used by Cerebros bridge)
+  pythonx_enabled: true,
   # Cerebros bridge facade configuration (enabled for NAS integration)
   cerebros_bridge: [
     enabled: true,
+    invoker: :pythonx,  # Use pythonx for better performance vs subprocess
+    python_path: ["thunderhelm"],  # Path to cerebros_service.py module
     repo_path:
       System.get_env("CEREBROS_REPO") ||
         Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),

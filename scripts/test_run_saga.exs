@@ -1,53 +1,71 @@
-# Test script for RunWorker Reactor saga
+# Test script for CerebrosBridge RunSaga (Reactor-based NAS orchestration)
 #
 # Usage:
 #   mix run scripts/test_run_saga.exs
 
-alias Thunderline.Thunderbolt.Cerebros.RunSaga
-alias Thunderline.UUID
+alias Thunderline.Thunderbolt.CerebrosBridge.RunSaga
+alias Thunderline.Thunderbolt.CerebrosBridge
 
-# Create a test context
-context = %{
-  worker_id: UUID.v7(),
-  requested_by: "test_script"
-}
-
-# Test inputs with varying complexity
+# Test cases with varying complexity
 test_cases = [
   %{
-    name: "simple_run",
-    inputs: %{
-      worker_id: UUID.v7(),
-      model_name: "simple_model",
-      dataset_name: "test_dataset",
-      config_path: "/tmp/simple_config.yaml"
-    }
+    name: "mnist_simple",
+    spec: %{
+      "dataset_id" => "mnist",
+      "objective" => "accuracy",
+      "search_space" => %{
+        "layers" => [1, 2],
+        "neurons" => [32, 64]
+      },
+      "budget" => %{
+        "max_trials" => 2,
+        "timeout_seconds" => 30
+      }
+    },
+    opts: [budget: %{"max_trials" => 2}]
   },
   %{
-    name: "run_with_checkpoints",
-    inputs: %{
-      worker_id: UUID.v7(),
-      model_name: "checkpoint_model",
-      dataset_name: "checkpoint_dataset",
-      config_path: "/tmp/checkpoint_config.yaml",
-      checkpoint_interval: 100
-    }
+    name: "cifar10_advanced",
+    spec: %{
+      "dataset_id" => "cifar10",
+      "objective" => "f1_score",
+      "search_space" => %{
+        "layers" => [2, 3, 4],
+        "neurons" => [64, 128, 256],
+        "dropout" => [0.1, 0.2, 0.3]
+      },
+      "budget" => %{
+        "max_trials" => 3,
+        "timeout_seconds" => 60
+      }
+    },
+    opts: [
+      budget: %{"max_trials" => 3},
+      parameters: %{"early_stopping" => true}
+    ]
   }
 ]
 
-IO.puts("\n🧪 Testing Cerebros RunSaga\n")
+IO.puts("\n🧪 Testing CerebrosBridge RunSaga\n")
+IO.puts(String.duplicate("=", 60))
+IO.puts("Bridge enabled: #{CerebrosBridge.enabled?()}")
 IO.puts(String.duplicate("=", 60))
 
 for test_case <- test_cases do
   IO.puts("\n📝 Test Case: #{test_case.name}")
   IO.puts(String.duplicate("-", 60))
 
-  case Reactor.run(RunSaga, test_case.inputs, context) do
+  # Test direct saga execution (bypasses Oban)
+  case RunSaga.run(test_case.spec, test_case.opts) do
     {:ok, result} ->
       IO.puts("✅ Success!")
-      IO.puts("   Worker ID: #{result.worker_id}")
-      IO.puts("   Status: #{result.status}")
-      if result[:metrics], do: IO.puts("   Metrics: #{inspect(result.metrics, limit: 3)}")
+      IO.puts("   Run ID: #{result[:run_id]}")
+      IO.puts("   Status: #{result[:status] || "completed"}")
+      if result[:result], do: IO.puts("   Result: #{inspect(result[:result], limit: 3)}")
+
+    {:error, :bridge_disabled} ->
+      IO.puts("⚠️  Skipped - Bridge is disabled")
+      IO.puts("   Set TL_ENABLE_CEREBROS_BRIDGE=true to enable")
 
     {:error, error} ->
       IO.puts("❌ Failed!")

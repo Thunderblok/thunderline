@@ -23,7 +23,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
   use Reactor, extensions: [Reactor.Dsl]
   require Logger
 
-  alias Thunderline.Thunderbolt.CerebrosBridge.{Client, PythonXInvoker}
+  alias Thunderline.Thunderbolt.CerebrosBridge.{Client, PythonxInvoker}
   alias Thunderline.Thunderflow.EventBus
 
   @doc """
@@ -83,31 +83,50 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
 
     run fn %{run_id: run_id, spec: spec}, _context ->
       event_attrs = %{
-        name: "cerebros.nas.run.started",
-        source: :thunderbolt,
+        name: "ml.run.started",
+        source: :bolt,
         payload: %{
           run_id: run_id,
-          dataset_id: spec["dataset_id"],
-          objective: spec["objective"]
+          dataset_id: spec[:dataset_id] || spec["dataset_id"],
+          objective: spec[:objective] || spec["objective"]
         }
       }
 
-      case EventBus.publish_event(event_attrs) do
-        {:ok, event} -> {:ok, event}
-        {:error, _} = err -> err
+      case Thunderline.Event.new(event_attrs) do
+        {:ok, event} ->
+          case EventBus.publish_event(event) do
+            {:ok, published} -> {:ok, published}
+            {:error, reason} ->
+              Logger.warning("[RunSaga] Could not publish start event: #{inspect(reason)}")
+              {:ok, :event_skipped}
+          end
+        {:error, reason} ->
+          Logger.warning("[RunSaga] Could not build start event: #{inspect(reason)}")
+          {:ok, :event_skipped}
       end
     end
 
     compensate fn _value, %{run_id: run_id}, _context ->
       Logger.warning("[RunSaga] Compensating: publishing run.cancelled for #{run_id}")
 
-      EventBus.publish_event(%{
-        name: "cerebros.nas.run.cancelled",
-        source: :thunderbolt,
+      event_attrs = %{
+        name: "ml.run.cancelled",
+        source: :bolt,
         payload: %{run_id: run_id, reason: "saga_compensation"}
-      })
+      }
 
-      :ok
+      case Thunderline.Event.new(event_attrs) do
+        {:ok, event} ->
+          case EventBus.publish_event(event) do
+            {:ok, _} -> :ok
+            {:error, reason} ->
+              Logger.warning("[RunSaga] Could not publish cancel event: #{inspect(reason)}")
+              :ok
+          end
+        {:error, reason} ->
+          Logger.warning("[RunSaga] Could not build cancel event: #{inspect(reason)}")
+          :ok
+      end
     end
   end
 
@@ -126,19 +145,23 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
 
       Logger.info("[RunSaga] Starting NAS run: #{run_id}")
 
-      # Build the full Python args
+      # Build the full Python args with atom keys
       python_args = %{
-        "spec" => spec,
-        "run_id" => run_id,
-        "budget" => budget,
-        "parameters" => parameters
+        spec: spec,
+        opts: %{
+          run_id: run_id,
+          budget: budget,
+          parameters: parameters
+        }
       }
 
-      # Call Python via PythonXInvoker
-      case PythonXInvoker.call_nas_run(python_args) do
+      # Call Python via PythonxInvoker
+      case PythonxInvoker.invoke(:start_run, python_args, timeout_ms: 30_000) do
         {:ok, result} ->
           Logger.info("[RunSaga] NAS run completed: #{run_id}")
-          {:ok, result}
+          # Extract the parsed Python result from the wrapper
+          parsed_result = Map.get(result, :parsed, result)
+          {:ok, parsed_result}
 
         {:error, reason} = err ->
           Logger.error("[RunSaga] NAS run failed: #{run_id} - #{inspect(reason)}")
@@ -188,8 +211,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
 
     run fn %{run_id: run_id, result: result}, _context ->
       event_attrs = %{
-        name: "cerebros.nas.run.completed",
-        source: :thunderbolt,
+        name: "ml.run.completed",
+        source: :bolt,
         payload: %{
           run_id: run_id,
           status: result["status"],

@@ -29,7 +29,56 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
   """
   @spec init() :: :ok | {:error, term()}
   def init do
-    config = Client.config()
+    # Get the Python executable from config (set in config.exs)
+    python_exe = Application.get_env(:pythonx, :python)
+    
+    if python_exe do
+      Logger.info("[CerebrosBridge.PythonxInvoker] Python configured: #{python_exe}")
+      
+      # Initialize Pythonx with system Python manually
+      # We need to provide: DL path, HOME path, EXE path
+      try do
+        # Get Python paths using the Python executable itself
+        python_info_script = ~s"""
+import sys
+import sysconfig
+import os
+libdir = sysconfig.get_config_var('LIBDIR')
+ldlibrary = sysconfig.get_config_var('LDLIBRARY')
+# Find the actual .so file
+dl_path = os.path.join(libdir, ldlibrary)
+# Try alternate locations if not found
+if not os.path.exists(dl_path):
+    # Check lib/python3.13/config-*
+    config_dir = f"{sys.prefix}/lib/python{sys.version_info.major}.{sys.version_info.minor}/config-{sys.version_info.major}.{sys.version_info.minor}"
+    dl_path = os.path.join(config_dir, ldlibrary)
+print(f"{dl_path}|{sys.prefix}|{sys.executable}")
+"""
+        
+        {output, 0} = System.cmd(python_exe, ["-c", python_info_script])
+        [dl_path, home_path, exe_path] = String.trim(output) |> String.split("|")
+        
+        Logger.info("[CerebrosBridge.PythonxInvoker] Initializing with:")
+        Logger.info("  DL: #{dl_path}")
+        Logger.info("  HOME: #{home_path}")
+        Logger.info("  EXE: #{exe_path}")
+        
+        # Initialize Pythonx with these paths
+        Pythonx.init(dl_path, home_path, exe_path, sys_paths: [])
+        
+        # Verify it works
+        {result, _} = Pythonx.eval("import sys; sys.version", %{})
+        version = Pythonx.decode(result)
+        Logger.info("[CerebrosBridge.PythonxInvoker] Python runtime ready: #{version}")
+      rescue
+        error ->
+          Logger.error("[CerebrosBridge.PythonxInvoker] Failed to initialize Python: #{inspect(error)}")
+          {:error, error}
+      end
+    else
+      Logger.warning("[CerebrosBridge.PythonxInvoker] No Python executable configured")
+    end
+
     python_path = Application.get_env(:thunderline, :cerebros_bridge, [])
                   |> Keyword.get(:python_path, ["thunderhelm"])
 
@@ -40,21 +89,39 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
       Enum.each(python_path, fn path ->
         abs_path = Path.expand(path)
         if File.dir?(abs_path) do
-          Pythonx.eval("import sys; sys.path.insert(0, '#{abs_path}')")
+          # Pythonx.eval returns {result, globals}
+          {_result, _globals} = Pythonx.eval("import sys; sys.path.insert(0, '#{abs_path}')", %{})
           Logger.info("[CerebrosBridge.PythonxInvoker] Added to sys.path: #{abs_path}")
         else
           Logger.warning("[CerebrosBridge.PythonxInvoker] Path not found: #{abs_path}")
         end
       end)
 
-      # Try to import cerebros_service module
-      case Pythonx.eval("import cerebros_service; 'ok'") do
-        {:ok, "ok"} ->
-          Logger.info("[CerebrosBridge.PythonxInvoker] Successfully loaded cerebros_service module")
-          :ok
-        {:error, reason} ->
-          Logger.error("[CerebrosBridge.PythonxInvoker] Failed to load cerebros_service: #{inspect(reason)}")
-          {:error, {:module_load_failed, reason}}
+      # Try to import cerebros_service and nlp_service modules
+      # Pythonx.eval returns {result, globals}
+      {result, _globals} = Pythonx.eval("import cerebros_service; 'ok'", %{})
+      decoded = Pythonx.decode(result)
+
+      if decoded == "ok" do
+        Logger.info("[CerebrosBridge.PythonxInvoker] Successfully loaded cerebros_service module")
+        
+        # Try to import nlp_service as well
+        try do
+          {nlp_result, _} = Pythonx.eval("import nlp_service; 'ok'", %{})
+          nlp_decoded = Pythonx.decode(nlp_result)
+          
+          if nlp_decoded == "ok" do
+            Logger.info("[CerebrosBridge.PythonxInvoker] Successfully loaded nlp_service module")
+          end
+        rescue
+          error ->
+            Logger.warning("[CerebrosBridge.PythonxInvoker] NLP service not available: #{inspect(error)}")
+        end
+        
+        :ok
+      else
+        Logger.error("[CerebrosBridge.PythonxInvoker] Failed to load cerebros_service: unexpected result #{inspect(decoded)}")
+        {:error, {:module_load_failed, decoded}}
       end
     rescue
       error ->
@@ -144,6 +211,20 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
       {:error, unexpected_error(:start_run, :error, error, meta)}
   end
 
+  defp attempt_pythonx_invoke(op, _call_spec, _timeout_ms, _meta) when op in [:extract_entities, :tokenize, :analyze_sentiment, :analyze_syntax, :process_text] do
+    {:error, %ErrorClass{
+      origin: :cerebros_bridge,
+      class: :validation,
+      severity: :error,
+      visibility: :external,
+      context: %{
+        reason: :use_nlp_service_directly,
+        op: op,
+        hint: "Use Thunderline.Thunderbolt.CerebrosBridge.NLP module for NLP operations"
+      }
+    }}
+  end
+
   defp attempt_pythonx_invoke(op, _call_spec, _timeout_ms, _meta) do
     {:error, unsupported_op_error(op)}
   end
@@ -152,13 +233,13 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
     # Use Pythonx's proper data passing mechanism:
     # Pass Elixir data structures via globals, let Pythonx handle encoding
     python_code = """
-    import cerebros_service
+import cerebros_service
 
-    # spec and opts are passed from Elixir via globals
-    # Pythonx automatically converts them to Python dicts
-    result = cerebros_service.run_nas(spec, opts)
-    result
-    """
+# spec and opts are passed from Elixir via globals
+# Pythonx automatically converts them to Python dicts
+result = cerebros_service.run_nas(spec, opts)
+result
+"""
 
     # Pass data through globals - Pythonx.Encoder protocol handles conversion
     globals = %{
@@ -166,15 +247,12 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
       "opts" => normalize_for_python(opts)
     }
 
-    case Pythonx.eval(python_code, globals) do
-      {result_obj, _updated_globals} ->
-        # Decode Python object back to Elixir
-        decoded = Pythonx.decode(result_obj)
-        {:ok, decoded}
+    # Pythonx.eval returns {result, updated_globals}
+    {result_obj, _updated_globals} = Pythonx.eval(python_code, globals)
 
-      {:error, reason} ->
-        {:error, {:pythonx_eval_failed, reason}}
-    end
+    # Decode Python object back to Elixir
+    decoded = Pythonx.decode(result_obj)
+    {:ok, decoded}
   rescue
     error ->
       {:error, {:pythonx_call_failed, error}}

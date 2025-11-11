@@ -202,9 +202,13 @@ def run_cerebros_ga(
     # Save artifacts
     artifacts = save_artifacts(run_id, best_individual, population_history)
     
+    # Return format matching RunSaga expectations
+    best_model_spec = individual_to_model_spec(best_individual)
+    best_model_spec["fitness"] = float(best_fitness)
+    
     return {
         "status": "success",
-        "best_model": individual_to_model_spec(best_individual),
+        "best_architecture": best_model_spec,
         "best_metric": float(best_fitness),
         "completed_trials": len(population_history),
         "population_history": format_population_history(population_history),
@@ -241,13 +245,15 @@ def run_stub_nas(dataset_id: str, max_trials: int, run_id: str) -> Dict[str, Any
     
     best_fitness = max(h["best_fitness"] for h in population_history)
     
+    # Return format matching RunSaga expectations
     return {
         "status": "success",
-        "best_model": {
+        "best_architecture": {
             "layers": [128, 64, 32],
             "activation": "relu",
             "optimizer": "adam",
-            "learning_rate": 0.001
+            "learning_rate": 0.001,
+            "fitness": best_fitness
         },
         "best_metric": best_fitness,
         "completed_trials": max_trials,
