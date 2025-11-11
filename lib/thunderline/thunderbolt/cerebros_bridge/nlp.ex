@@ -124,31 +124,43 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
 
   defp call_python(function, args) do
     request = Jason.encode!(%{function: function, args: args})
+    
+    Logger.debug("NLP Request: #{request}")
 
-    # Use Port API (Elixir 1.19+ compatible)
-    port = Port.open({:spawn_executable, System.find_executable(@python_path)}, [
+    # Spawn Python process
+    python_cmd = System.find_executable(@python_path)
+    Logger.debug("Python executable: #{inspect(python_cmd)}")
+    Logger.debug("Script path: #{@script_path}")
+    Logger.debug("Working dir: #{File.cwd!()}")
+    
+    port = Port.open({:spawn_executable, python_cmd}, [
       :binary,
       :exit_status,
       {:args, [@script_path]},
       {:cd, File.cwd!()},
       :stderr_to_stdout
     ])
+    
+    Logger.debug("Port opened: #{inspect(port)}")
 
-    # Send request to stdin
-    Port.command(port, request)
-    Port.close(port)
-
-    # Collect output and exit code
+    # Send request to stdin (with newline for readline())
+    Port.command(port, request <> "\n")
+    Logger.debug("Request sent to port")
+    
+    # Receive output and exit code
+    # Note: Port will auto-close when the Python process exits
     receive_output(port, "", nil)
   end
 
   defp receive_output(port, output, exit_code) do
     receive do
       {^port, {:data, data}} ->
+        Logger.debug("Received data from port: #{inspect(data)}")
         # Accumulate output
         receive_output(port, output <> data, exit_code)
 
       {^port, {:exit_status, code}} ->
+        Logger.debug("Received exit status: #{code}, output: #{inspect(output)}")
         # Process exited, check if we have all the output
         if output != "" do
           # Process the result immediately
@@ -159,6 +171,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
         end
     after
       5000 ->
+        Logger.warning("Timeout in receive_output. Exit code: #{inspect(exit_code)}, Output: #{inspect(output)}")
         # Timeout after 5 seconds
         if exit_code != nil do
           # We have exit code, process what we got
@@ -172,13 +185,27 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
   defp process_result(output, exit_code) do
     case exit_code do
       0 ->
-        case Jason.decode(output) do
-          {:ok, %{"error" => error}} ->
-            {:error, error}
-          {:ok, result} ->
-            {:ok, result}
-          {:error, reason} ->
-            {:error, {:json_decode_failed, reason, output}}
+        # Extract JSON line from output (last line starting with '{')
+        # Python may output INFO logs before the JSON response
+        json_line = 
+          output
+          |> String.split("\n")
+          |> Enum.reverse()
+          |> Enum.find("", fn line -> 
+            String.starts_with?(String.trim(line), "{")
+          end)
+        
+        if json_line == "" do
+          {:error, {:no_json_found, output}}
+        else
+          case Jason.decode(json_line) do
+            {:ok, %{"error" => error}} ->
+              {:error, error}
+            {:ok, result} ->
+              {:ok, result}
+            {:error, reason} ->
+              {:error, {:json_decode_failed, reason, output}}
+          end
         end
 
       code ->

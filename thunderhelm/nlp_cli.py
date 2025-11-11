@@ -14,8 +14,8 @@ logging.basicConfig(level=logging.ERROR)
 
 def main():
     try:
-        # Read JSON request from stdin
-        request_line = sys.stdin.read()
+        # Read JSON request from stdin (line-delimited for Port compatibility)
+        request_line = sys.stdin.readline()
         request = json.loads(request_line)
         
         function = request['function']
