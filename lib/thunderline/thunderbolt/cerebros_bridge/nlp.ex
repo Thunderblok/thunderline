@@ -173,11 +173,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
     case exit_code do
       0 ->
         case Jason.decode(output) do
-          {:ok, %{"error" => error}} -> 
+          {:ok, %{"error" => error}} ->
             {:error, error}
-          {:ok, result} -> 
+          {:ok, result} ->
             {:ok, result}
-          {:error, reason} -> 
+          {:error, reason} ->
             {:error, {:json_decode_failed, reason, output}}
         end
 
