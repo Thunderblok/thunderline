@@ -52,7 +52,7 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
     }
 
     Logger.info("[AutoMLDriver] Started")
-    
+
     # Initialize Pythonx runtime if using Pythonx invoker
     if cerebros_bridge_invoker() == :pythonx do
       Logger.info("[AutoMLDriver] Initializing Pythonx runtime...")
@@ -61,10 +61,10 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
         {:error, reason} -> Logger.error("[AutoMLDriver] Failed to initialize Pythonx: #{inspect(reason)}")
       end
     end
-    
+
     {:ok, state}
   end
-  
+
   defp cerebros_bridge_invoker do
     Application.get_env(:thunderline, :cerebros_bridge, [])
     |> Keyword.get(:invoker, :subprocess)

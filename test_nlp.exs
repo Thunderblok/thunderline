@@ -20,7 +20,7 @@ case NLP.health_check() do
   {:ok, health} ->
     IO.puts("✅ NLP Service is healthy!")
     IO.inspect(health, label: "Health Status")
-  
+
   {:error, reason} ->
     IO.puts("❌ NLP Service unavailable: #{inspect(reason)}")
     System.halt(1)
@@ -36,13 +36,13 @@ case NLP.extract_entities(sample_text) do
     IO.puts("✅ Entity extraction successful!")
     IO.puts("\nText: #{result["text"]}")
     IO.puts("\nEntities found (#{result["entity_count"]}):")
-    
+
     Enum.each(result["entities"], fn entity ->
       IO.puts("  • #{entity["text"]} (#{entity["label"]}) at position #{entity["start"]}-#{entity["end"]}")
     end)
-    
+
     IO.puts("\nUnique labels: #{inspect(result["labels"])}")
-  
+
   {:error, reason} ->
     IO.puts("❌ Entity extraction failed: #{inspect(reason)}")
 end
@@ -57,13 +57,13 @@ case NLP.tokenize(simple_text) do
     IO.puts("✅ Tokenization successful!")
     IO.puts("\nText: #{result["text"]}")
     IO.puts("\nTokens (#{result["token_count"]}):")
-    
+
     result["tokens"]
     |> Enum.take(10)  # Show first 10 tokens
     |> Enum.each(fn token ->
       IO.puts("  • #{token["text"]} | POS: #{token["pos"]} | Lemma: #{token["lemma"]} | Stop: #{token["is_stop"]}")
     end)
-  
+
   {:error, reason} ->
     IO.puts("❌ Tokenization failed: #{inspect(reason)}")
 end
@@ -87,10 +87,10 @@ Enum.each(sentiment_texts, fn text ->
         "negative" -> "😞"
         _ -> "😐"
       end
-      
+
       IO.puts("\n#{emoji} \"#{text}\"")
       IO.puts("   Sentiment: #{sentiment} (score: #{Float.round(score, 2)})")
-    
+
     {:error, reason} ->
       IO.puts("❌ Sentiment analysis failed for \"#{text}\": #{inspect(reason)}")
   end
@@ -105,17 +105,17 @@ case NLP.analyze_syntax(syntax_text) do
   {:ok, result} ->
     IO.puts("✅ Syntax analysis successful!")
     IO.puts("\nText: #{result["text"]}")
-    
+
     IO.puts("\nNoun Chunks:")
     Enum.each(result["noun_chunks"], fn chunk ->
       IO.puts("  • #{chunk["text"]} (root: #{chunk["root"]})")
     end)
-    
+
     IO.puts("\nSentences (#{result["sentence_count"]}):")
     Enum.each(result["sentences"], fn sent ->
       IO.puts("  • #{sent["text"]} (root: #{sent["root"]})")
     end)
-  
+
   {:error, reason} ->
     IO.puts("❌ Syntax analysis failed: #{inspect(reason)}")
 end
@@ -129,18 +129,18 @@ case NLP.process(full_text, include_tokens: false) do
   {:ok, result} ->
     IO.puts("✅ Full NLP processing successful!")
     IO.puts("\nText: #{result["text"]}")
-    
+
     if result["entities"] do
       IO.puts("\nEntities: #{length(result["entities"])}")
       Enum.each(result["entities"], fn e ->
         IO.puts("  • #{e["text"]} (#{e["label"]})")
       end)
     end
-    
+
     if result["sentiment"] do
       IO.puts("\nSentiment: #{result["sentiment"]} (score: #{Float.round(result["sentiment_score"], 2)})")
     end
-    
+
     if result["noun_chunks"] do
       IO.puts("\nNoun Chunks: #{length(result["noun_chunks"])}")
       Enum.take(result["noun_chunks"], 5)
@@ -148,11 +148,11 @@ case NLP.process(full_text, include_tokens: false) do
         IO.puts("  • #{chunk["text"]}")
       end)
     end
-    
+
     if result["sentences"] do
       IO.puts("\nSentences: #{length(result["sentences"])}")
     end
-  
+
   {:error, reason} ->
     IO.puts("❌ Full processing failed: #{inspect(reason)}")
 end

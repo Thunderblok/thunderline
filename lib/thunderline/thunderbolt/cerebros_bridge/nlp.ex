@@ -140,14 +140,14 @@ result
     try do
       {result_obj, _} = Pythonx.eval(python_code, %{})
       decoded = Pythonx.decode(result_obj)
-      
+
       case decoded do
         %{"status" => "healthy"} = health ->
           {:ok, health}
-        
+
         %{"status" => "unhealthy"} = health ->
           {:error, {:unhealthy, health}}
-        
+
         other ->
           {:error, {:unexpected_response, other}}
       end
