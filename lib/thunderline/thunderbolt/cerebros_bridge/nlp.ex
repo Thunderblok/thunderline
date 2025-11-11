@@ -124,7 +124,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
 
   defp call_python(function, args) do
     request = Jason.encode!(%{function: function, args: args})
-    
+
     Logger.debug("NLP Request: #{request}")
 
     # Spawn Python process
@@ -132,7 +132,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
     Logger.debug("Python executable: #{inspect(python_cmd)}")
     Logger.debug("Script path: #{@script_path}")
     Logger.debug("Working dir: #{File.cwd!()}")
-    
+
     port = Port.open({:spawn_executable, python_cmd}, [
       :binary,
       :exit_status,
@@ -140,13 +140,13 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
       {:cd, File.cwd!()},
       :stderr_to_stdout
     ])
-    
+
     Logger.debug("Port opened: #{inspect(port)}")
 
     # Send request to stdin (with newline for readline())
     Port.command(port, request <> "\n")
     Logger.debug("Request sent to port")
-    
+
     # Receive output and exit code
     # Note: Port will auto-close when the Python process exits
     receive_output(port, "", nil)
@@ -187,14 +187,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
       0 ->
         # Extract JSON line from output (last line starting with '{')
         # Python may output INFO logs before the JSON response
-        json_line = 
+        json_line =
           output
           |> String.split("\n")
           |> Enum.reverse()
-          |> Enum.find("", fn line -> 
+          |> Enum.find("", fn line ->
             String.starts_with?(String.trim(line), "{")
           end)
-        
+
         if json_line == "" do
           {:error, {:no_json_found, output}}
         else
