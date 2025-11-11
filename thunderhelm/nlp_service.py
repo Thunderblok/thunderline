@@ -5,6 +5,7 @@ Provides named entity recognition, tokenization, POS tagging, and text analysis
 
 import logging
 import spacy
+import json
 from typing import Dict, List, Any, Optional
 
 # Setup logging
@@ -13,6 +14,14 @@ logger = logging.getLogger(__name__)
 
 # Global NLP model - loaded once and reused
 _nlp_model = None
+
+
+def _ensure_serializable(obj):
+    """
+    Force conversion to JSON-serializable primitives by round-tripping through JSON.
+    This breaks all Python object references that might cause msgpack issues.
+    """
+    return json.loads(json.dumps(obj))
 
 
 def load_model(model_name: str = "en_core_web_sm") -> spacy.Language:
@@ -56,28 +65,30 @@ def extract_entities(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
     entities = []
     for ent in doc.ents:
         entity_data = {
-            "text": ent.text,
-            "label": ent.label_,
-            "start": ent.start_char,
-            "end": ent.end_char
+            "text": str(ent.text),  # Convert to str
+            "label": str(ent.label_),  # Convert to str
+            "start": int(ent.start_char),  # Convert to int
+            "end": int(ent.end_char)  # Convert to int
         }
         
         # Include confidence scores if available
         if hasattr(ent, "_") and hasattr(ent._, "confidence"):
-            entity_data["confidence"] = ent._.confidence
+            entity_data["confidence"] = float(ent._.confidence)
             
         entities.append(entity_data)
     
     result = {
         "status": "success",
-        "text": text,
+        "text": str(text),  # Convert to str
         "entities": entities,
-        "entity_count": len(entities),
-        "labels": list(set([ent["label"] for ent in entities]))
+        "entity_count": int(len(entities)),  # Convert to int
+        "labels": [str(label) for label in set([ent["label"] for ent in entities])]  # Convert to str
     }
     
     logger.info(f"Extracted {len(entities)} entities")
-    return result
+    
+    # Force serialization through JSON to break all object references
+    return _ensure_serializable(result)
 
 
 def tokenize(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
@@ -101,26 +112,26 @@ def tokenize(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
     tokens = []
     for token in doc:
         token_data = {
-            "text": token.text,
-            "lemma": token.lemma_,
-            "pos": token.pos_,
-            "tag": token.tag_,
-            "dep": token.dep_,
-            "is_alpha": token.is_alpha,
-            "is_stop": token.is_stop,
-            "is_punct": token.is_punct
+            "text": str(token.text),  # Convert to str
+            "lemma": str(token.lemma_),  # Convert to str
+            "pos": str(token.pos_),  # Convert to str
+            "tag": str(token.tag_),  # Convert to str
+            "dep": str(token.dep_),  # Convert to str
+            "is_alpha": bool(token.is_alpha),  # Convert to bool
+            "is_stop": bool(token.is_stop),  # Convert to bool
+            "is_punct": bool(token.is_punct)  # Convert to bool
         }
         tokens.append(token_data)
     
     result = {
         "status": "success",
-        "text": text,
+        "text": str(text),  # Convert to str
         "tokens": tokens,
-        "token_count": len(tokens)
+        "token_count": int(len(tokens))  # Convert to int
     }
     
     logger.info(f"Tokenized into {len(tokens)} tokens")
-    return result
+    return _ensure_serializable(result)
 
 
 def analyze_sentiment(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
@@ -182,7 +193,7 @@ def analyze_sentiment(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
     }
     
     logger.info(f"Sentiment: {sentiment} (score: {score})")
-    return result
+    return _ensure_serializable(result)
 
 
 def analyze_syntax(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
@@ -207,32 +218,32 @@ def analyze_syntax(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
     noun_chunks = []
     for chunk in doc.noun_chunks:
         noun_chunks.append({
-            "text": chunk.text,
-            "root": chunk.root.text,
-            "root_dep": chunk.root.dep_,
-            "root_head": chunk.root.head.text
+            "text": str(chunk.text),  # Convert to str
+            "root": str(chunk.root.text),  # Convert to str
+            "root_dep": str(chunk.root.dep_),  # Convert to str
+            "root_head": str(chunk.root.head.text)  # Convert to str
         })
     
     # Extract sentences
     sentences = []
     for sent in doc.sents:
         sentences.append({
-            "text": sent.text,
-            "root": sent.root.text,
-            "start": sent.start_char,
-            "end": sent.end_char
+            "text": str(sent.text),  # Convert to str
+            "root": str(sent.root.text),  # Convert to str
+            "start": int(sent.start_char),  # Convert to int
+            "end": int(sent.end_char)  # Convert to int
         })
     
     result = {
         "status": "success",
-        "text": text,
+        "text": str(text),  # Convert to str
         "noun_chunks": noun_chunks,
         "sentences": sentences,
-        "sentence_count": len(sentences)
+        "sentence_count": int(len(sentences))  # Convert to int
     }
     
     logger.info(f"Found {len(noun_chunks)} noun chunks and {len(sentences)} sentences")
-    return result
+    return _ensure_serializable(result)
 
 
 def process_text(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
@@ -280,7 +291,7 @@ def process_text(text: str, opts: Optional[Dict] = None) -> Dict[str, Any]:
         result["sentences"] = syntax_result["sentences"]
     
     logger.info(f"Full NLP processing complete")
-    return result
+    return _ensure_serializable(result)
 
 
 # Health check function
