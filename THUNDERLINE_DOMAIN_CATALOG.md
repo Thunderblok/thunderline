@@ -94,13 +94,14 @@
 
 ### 🛡️ ThunderGate Domain  
 - **Location:** `lib/thunderline/thundergate/`  
-- **Purpose:** Security, Authentication, Authorization, Rate Limiting & Bridge  
+- **Purpose:** Security, Authentication, Authorization, Rate Limiting, AI Classification & Bridge  
 - **Status:** ⚠️ PARTIAL — Policy enforcement inconsistent; ~25% of resources lack tenant policies.  
-- **Expanded Scope:** Now includes all rate limiting/QoS functionality (formerly ThunderJam)
+- **Expanded Scope:** Now includes all rate limiting/QoS functionality (formerly ThunderJam) + AI-powered file classification
 - **Resources:**  
   - ✅ `domain.ex`, `authentication/magic_link_sender.ex`, `actor_context.ex`  
   - ⚠️ `resources/policy_rule.ex`, `resources/system_action.ex`, `resources/audit_log.ex` – missing tenancy checks  
   - 🔄 **NEW:** `rate_limiting/` - Rate limiter, throttling, QoS, token bucket (from ThunderJam)
+  - ✅ **NEW:** `magika.ex` - AI-powered file classification via Google Magika CLI (Production-ready)
 - **Key Responsibilities:**
   - Authentication (magic link, OAuth, API keys)
   - Authorization & policy enforcement
@@ -108,12 +109,15 @@
   - QoS policies
   - Token bucket algorithms
   - Sliding window limits
+  - **AI file classification** (Magika integration)
+  - **Content type detection** (ML-based + extension fallback)
   - Audit logging
   - Security bridges to external systems
   - Ingress hardening
 - **Notes:** Core gateway active. Cross‑domain fix (Flow→Gate metrics) underway via event subscription model.  
   **Migration:** ThunderJam functionality consolidated here (security concern).  
   **Rate Limiter:** Uses Ash's default rate limiting extension.  
+  **Magika:** Production-ready AI classifier integrated with ThunderFlow Broadway pipeline. See `docs/MAGIKA_QUICK_START.md`.  
 
 ---
 

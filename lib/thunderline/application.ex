@@ -28,6 +28,7 @@ defmodule Thunderline.Application do
          saga_children() ++
          rag_children() ++
          upm_children() ++
+         ml_pipeline_children() ++
          [
            Thunderline.Thunderflow.EventBuffer,
            Thunderline.Thunderflow.Blackboard,
@@ -145,6 +146,17 @@ defmodule Thunderline.Application do
   defp upm_children do
     if Feature.enabled?(:unified_model, default: false) do
       [Thunderline.Thunderbolt.UPM.Supervisor]
+    else
+      []
+    end
+  end
+
+  defp ml_pipeline_children do
+    if Feature.enabled?(:ml_pipeline, default: true) do
+      [
+        # File classification consumer
+        Thunderline.Thunderflow.Consumers.Classifier
+      ]
     else
       []
     end

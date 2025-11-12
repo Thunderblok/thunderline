@@ -80,6 +80,20 @@ end
 config :logger, level: :debug, backends: [:console]
 
 # ------------------------------------------------------------
+# Magika Configuration
+# ------------------------------------------------------------
+config :thunderline, Thunderline.Thundergate.Magika,
+  cli_path: System.get_env("MAGIKA_CLI_PATH", "magika"),
+  confidence_threshold: String.to_float(System.get_env("MAGIKA_CONFIDENCE_THRESHOLD", "0.85")),
+  timeout: String.to_integer(System.get_env("MAGIKA_TIMEOUT_MS", "5000"))
+
+# Classifier Consumer Configuration
+config :thunderline, Thunderline.Thunderflow.Consumers.Classifier,
+  batch_size: String.to_integer(System.get_env("CLASSIFIER_BATCH_SIZE", "10")),
+  batch_timeout: String.to_integer(System.get_env("CLASSIFIER_BATCH_TIMEOUT_MS", "1000")),
+  concurrency: String.to_integer(System.get_env("CLASSIFIER_CONCURRENCY", "4"))
+
+# ------------------------------------------------------------
 # OpenTelemetry Runtime Wiring (enabled by default; can be disabled via env)
 #
 # Use OTEL_SERVICE_NAME, OTEL_EXPORTER_OTLP_ENDPOINT/TRACES_ENDPOINT to direct traces.

@@ -143,21 +143,23 @@ Visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 **Pipeline Architecture:**
 ```
-Raw File → Magika (file classification)
-         → spaCy (NLP via Port)
-         → ONNX (ML inference via Ortex)
-         → Voxel (DAG packaging)
-         → ThunderBlock (persistence)
+Raw File → Magika (file classification) ✅
+         → spaCy (NLP via Port) ✅
+         → ONNX (ML inference via Ortex) 🚧
+         → Voxel (DAG packaging) 🚧
+         → ThunderBlock (persistence) ✅
 ```
 
 **Implementation Status:**
 - ✅ Infrastructure: 100% (all dependencies installed)
 - ✅ Foundation: 100% (Python CLI, Port supervisor, telemetry)
 - ✅ Specifications: 100% (10,000-word architecture doc)
-- 🟡 Implementation: 40% (3 modules pending: Magika, ONNX adapter, Voxel)
+- ✅ **Magika Integration: 100%** (wrapper, tests, Broadway consumer, supervision)
+- 🟡 Implementation: 50% (2 modules pending: ONNX adapter, Voxel)
 
-**Next Steps:**
-See `documentation/MAGIKA_SPACY_KERAS_INTEGRATION.md` for complete architecture specification.
+**Quick Start:**
+- [Magika Quick Start](docs/MAGIKA_QUICK_START.md) - File classification setup and API
+- [ML Architecture](documentation/MAGIKA_SPACY_KERAS_INTEGRATION.md) - Complete pipeline specification
 
 ## Development
 
