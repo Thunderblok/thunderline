@@ -24,27 +24,26 @@ defmodule Thunderline.EventBus.BroadwayProducer do
 
   use GenStage
 
-  alias Thunderline.EventBus
-
   require Logger
+
+  @pubsub Thunderline.PubSub
 
   def init(opts) do
     event_pattern = Keyword.fetch!(opts, :event_pattern)
-    bus_name = Keyword.get(opts, :bus_name, :default_bus)
-    persistent? = Keyword.get(opts, :persistent?, false)
+    _bus_name = Keyword.get(opts, :bus_name, :default_bus)
+    _persistent? = Keyword.get(opts, :persistent?, false)
 
-    # Subscribe to EventBus with self() as target
-    {:ok, subscription_id} =
-      EventBus.subscribe(
-        bus_name,
-        event_pattern,
-        dispatch: {:pid, target: self()},
-        persistent?: persistent?
-      )
+    # Convert event pattern to PubSub topic
+    # Pattern "ui.command.ingest.**" becomes topic "events:ui.command.ingest"
+    topic = pattern_to_topic(event_pattern)
+
+    # Subscribe to Phoenix.PubSub
+    :ok = Phoenix.PubSub.subscribe(@pubsub, topic)
+
+    Logger.debug("Broadway producer subscribed to topic: #{topic}")
 
     state = %{
-      subscription_id: subscription_id,
-      bus_name: bus_name,
+      topic: topic,
       event_pattern: event_pattern,
       demand: 0,
       queue: :queue.new()
@@ -104,6 +103,18 @@ defmodule Thunderline.EventBus.BroadwayProducer do
   end
 
   # Private functions
+
+  defp pattern_to_topic(pattern) do
+    # Convert wildcard pattern to PubSub topic
+    # "ui.command.ingest.**" -> "events:ui.command.ingest"
+    # "system.**" -> "events:system"
+    base_pattern =
+      pattern
+      |> String.replace(".**", "")
+      |> String.replace(".*", "")
+
+    "events:#{base_pattern}"
+  end
 
   defp take_events(queue, 0, acc), do: {Enum.reverse(acc), queue, 0}
 

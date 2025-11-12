@@ -1,0 +1,427 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "magika-pipeline",
+    "title": "Magika Classification Pipeline",
+    "description": "Real-time monitoring for Magika file classification with latency percentiles, throughput, and error rates",
+    "tags": ["thunderline", "ml-pipeline", "magika", "classification"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Classification Success Rate",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(rate(thunderline_magika_classify_total{status=\"success\"}[5m])) / sum(rate(thunderline_magika_classify_total[5m])) * 100",
+            "legendFormat": "Success Rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 90, "color": "yellow" },
+                { "value": 95, "color": "green" }
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name",
+          "orientation": "auto"
+        }
+      },
+      {
+        "id": 2,
+        "title": "Classifications per Second",
+        "type": "stat",
+        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(rate(thunderline_magika_classify_total[1m]))",
+            "legendFormat": "Rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 100, "color": "yellow" },
+                { "value": 200, "color": "red" }
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 3,
+        "title": "DLQ Error Rate",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "sum(rate(thunderline_magika_classify_total{status=\"error\"}[5m])) / sum(rate(thunderline_magika_classify_total[5m])) * 100",
+            "legendFormat": "Error Rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 1, "color": "yellow" },
+                { "value": 2, "color": "red" }
+              ]
+            }
+          }
+        },
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Active Classifications",
+        "type": "stat",
+        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "thunderline_magika_classify_in_progress",
+            "legendFormat": "In Progress",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 50, "color": "yellow" },
+                { "value": 100, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Classification Latency (Percentiles)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(thunderline_magika_classify_duration_milliseconds_bucket[5m])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(thunderline_magika_classify_duration_milliseconds_bucket[5m])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(thunderline_magika_classify_duration_milliseconds_bucket[5m])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          },
+          {
+            "expr": "histogram_quantile(0.999, sum(rate(thunderline_magika_classify_duration_milliseconds_bucket[5m])) by (le))",
+            "legendFormat": "p99.9",
+            "refId": "D"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (ms)",
+            "format": "ms",
+            "logBase": 1
+          },
+          {
+            "format": "short",
+            "logBase": 1
+          }
+        ],
+        "xaxis": {
+          "mode": "time"
+        },
+        "tooltip": {
+          "shared": true,
+          "sort": 0,
+          "value_type": "individual"
+        },
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true,
+          "max": true,
+          "min": true,
+          "values": true
+        },
+        "nullPointMode": "null"
+      },
+      {
+        "id": 6,
+        "title": "Classification Rate by File Type",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(thunderline_magika_classify_total[5m])) by (file_type)",
+            "legendFormat": "{{file_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Classifications/sec",
+            "format": "ops",
+            "logBase": 1
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "current": true,
+          "max": true,
+          "total": true,
+          "values": true
+        },
+        "stack": false,
+        "percentage": false,
+        "linewidth": 2
+      },
+      {
+        "id": 7,
+        "title": "Confidence Score Distribution",
+        "type": "heatmap",
+        "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(thunderline_magika_classify_confidence_bucket[5m])) by (le)",
+            "legendFormat": "{{le}}",
+            "refId": "A"
+          }
+        ],
+        "dataFormat": "tsbuckets",
+        "tooltip": {
+          "show": true,
+          "showHistogram": true
+        },
+        "color": {
+          "mode": "spectrum",
+          "cardColor": "#b4ff00",
+          "colorScale": "sqrt",
+          "exponent": 0.5,
+          "colorScheme": "interpolateSpectral"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Top 10 File Types",
+        "type": "bargauge",
+        "gridPos": { "x": 12, "y": 12, "w": 6, "h": 8 },
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(thunderline_magika_classify_total{status=\"success\"}[5m])) by (file_type))",
+            "legendFormat": "{{file_type}}",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient",
+          "showUnfilled": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "min": 0
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Error Breakdown",
+        "type": "piechart",
+        "gridPos": { "x": 18, "y": 12, "w": 6, "h": 8 },
+        "targets": [
+          {
+            "expr": "sum(rate(thunderline_magika_classify_total{status=\"error\"}[5m])) by (error_type)",
+            "legendFormat": "{{error_type}}",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": ["value", "percent"]
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Broadway Queue Depth",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 20, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "thunderline_broadway_classifier_consumer_queue_depth",
+            "legendFormat": "Queue Depth",
+            "refId": "A"
+          },
+          {
+            "expr": "thunderline_broadway_classifier_consumer_processing",
+            "legendFormat": "Processing",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Messages",
+            "format": "short",
+            "logBase": 1
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [100],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Queue Depth Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 11,
+        "title": "Telemetry Event Rate",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 20, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "sum(rate(thunderline_telemetry_events_total{subsystem=\"magika\"}[5m])) by (event_type)",
+            "legendFormat": "{{event_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Events/sec",
+            "format": "ops"
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "current": true,
+          "values": true
+        }
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=\"MagikaHighErrorRate\"}",
+          "iconColor": "red",
+          "name": "Magika Alerts",
+          "tagKeys": "alertname,severity",
+          "titleFormat": "Alert: {{alertname}}"
+        }
+      ]
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "environment",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(thunderline_magika_classify_total, environment)",
+          "refresh": 1,
+          "multi": false,
+          "includeAll": false
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(thunderline_magika_classify_total{environment=\"$environment\"}, instance)",
+          "refresh": 1,
+          "multi": true,
+          "includeAll": true
+        }
+      ]
+    }
+  },
+  "overwrite": true,
+  "folderId": 0,
+  "folderUid": "",
+  "message": "Magika Classification Pipeline Dashboard - Initial version with p50/p95/p99 latency percentiles, throughput metrics, and error tracking"
+}

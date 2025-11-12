@@ -54,7 +54,11 @@ defmodule Thunderline.Thunderflow.Consumers.Classifier do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {Thunderline.EventBus.BroadwayProducer, event_pattern: "ui.command.ingest.**"},
+        module: {Thunderflow.MnesiaProducer,
+          table: Thunderflow.MnesiaProducer,
+          poll_interval: 1_000,
+          max_batch_size: Keyword.get(config, :batch_size, 10),
+          broadway_name: __MODULE__},
         concurrency: 1
       ],
       processors: [
@@ -135,6 +139,39 @@ defmodule Thunderline.Thunderflow.Consumers.Classifier do
 
       %{path: path} when is_binary(path) ->
         correlation_id = get_in(event.metadata, [:correlation_id]) || event.id
+        causation_id = event.id
+
+        {:ok,
+         %{
+           path: path,
+           correlation_id: correlation_id,
+           causation_id: causation_id
+         }}
+
+      _other ->
+        {:error, :invalid_event_payload}
+    end
+  end
+
+  # Handle new taxonomy format (using 'name' instead of 'type')
+  defp validate_event(%Event{name: name} = event)
+       when name in ["ui.command.ingest.received", "ui.command.ingest"] do
+    # Extract required fields from event payload (new taxonomy uses 'payload' not 'data')
+    case event.payload do
+      %{bytes: bytes, filename: filename} when is_binary(bytes) and is_binary(filename) ->
+        correlation_id = event.correlation_id || event.id
+        causation_id = event.id
+
+        {:ok,
+         %{
+           bytes: bytes,
+           filename: filename,
+           correlation_id: correlation_id,
+           causation_id: causation_id
+         }}
+
+      %{path: path} when is_binary(path) ->
+        correlation_id = event.correlation_id || event.id
         causation_id = event.id
 
         {:ok,

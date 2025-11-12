@@ -1,0 +1,148 @@
+name: Magika E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'lib/thunderline/thundergate/magika.ex'
+      - 'lib/thunderline/thundergate/broadway/**'
+      - 'test/integration/magika_e2e_test.exs'
+      - '.github/workflows/magika-e2e.yml'
+
+env:
+  MIX_ENV: test
+  ELIXIR_VERSION: '1.18.1'
+  OTP_VERSION: '27.2'
+  TL_ENABLE_ML_PIPELINE: 'true'
+
+jobs:
+  magika-e2e:
+    name: End-to-End File Classification Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: thunderline_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Magika
+        run: |
+          python -m pip install --upgrade pip
+          pip install magika==0.5.0
+
+      - name: Verify Magika installation
+        run: |
+          magika --version
+          magika --help
+
+      - name: Create test fixtures
+        run: |
+          mkdir -p test/fixtures/magika_e2e
+          
+          # PDF fixture (minimal valid PDF)
+          echo -e "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\nxref\n0 4\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n199\n%%EOF" > test/fixtures/magika_e2e/sample.pdf
+          
+          # PNG fixture (1x1 transparent PNG)
+          echo -ne "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82" > test/fixtures/magika_e2e/sample.png
+          
+          # JSON fixture
+          echo '{"type":"test","data":{"id":1,"name":"Magika E2E Test"}}' > test/fixtures/magika_e2e/sample.json
+          
+          # HTML fixture
+          echo '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Magika E2E</h1></body></html>' > test/fixtures/magika_e2e/sample.html
+          
+          # MP4 fixture (minimal valid MP4)
+          echo -ne "\x00\x00\x00\x1cftypisom\x00\x00\x02\x00isomiso2mp41" > test/fixtures/magika_e2e/sample.mp4
+          
+          # DOCX fixture (minimal ZIP with content types)
+          echo -ne "PK\x03\x04\x14\x00\x00\x00\x08\x00" > test/fixtures/magika_e2e/sample.docx
+          
+          # TXT fixture
+          echo "This is a plain text file for Magika E2E testing." > test/fixtures/magika_e2e/sample.txt
+          
+          # CSV fixture
+          echo -e "id,name,value\n1,test,100\n2,sample,200" > test/fixtures/magika_e2e/sample.csv
+          
+          # XML fixture
+          echo '<?xml version="1.0"?><root><item id="1">Test</item></root>' > test/fixtures/magika_e2e/sample.xml
+          
+          # JavaScript fixture
+          echo 'function test() { return "Magika E2E"; }' > test/fixtures/magika_e2e/sample.js
+
+      - name: Compile project
+        run: mix compile --warnings-as-errors
+
+      - name: Run database migrations
+        run: mix ash_postgres.create && mix ash_postgres.migrate
+
+      - name: Run Magika E2E tests
+        run: |
+          mix test test/integration/magika_e2e_test.exs --trace --max-failures 1
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/thunderline_test
+          TL_ENABLE_ML_PIPELINE: 'true'
+          MAGIKA_CLI_PATH: magika
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: magika-e2e-artifacts
+          path: |
+            test/fixtures/magika_e2e/
+            _build/test/lib/thunderline/consolidated/
+          retention-days: 7
+
+      - name: Report test results
+        if: always()
+        run: |
+          echo "## Magika E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ $? -eq 0 ]; then
+            echo "✅ All E2E tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ E2E tests failed - check logs for details" >> $GITHUB_STEP_SUMMARY
+          fi
