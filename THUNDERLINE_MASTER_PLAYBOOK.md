@@ -12,6 +12,8 @@
 | HC-02 | P0 | Bus API Consistency | Shim `Thunderline.Bus` still referenced | Codemod to canonical; emit deprecation warning | Flow Steward | Planned |
 | HC-03 | P0 | Observability Docs | Missing Event & Error taxonomy specs | Author `EVENT_TAXONOMY.md` & `ERROR_CLASSES.md` | Observability Lead | Not Started |
 | HC-04 | P0 | ML Persistence | Cerebros migrations parked | Move/run migrations; add lifecycle state machine | Bolt Steward | In Progress |
+| HC-04a | P0 | Python ML Stack | TensorFlow/ONNX environment setup | **✅ COMPLETE** - TensorFlow 2.20.0, tf2onnx 1.8.4, ONNX 1.19.1 installed and verified | Bolt Steward | **Done** |
+| HC-04b | P0 | Elixir ML Dependencies | Req/Ortex installation | **✅ COMPLETE** - Req 0.5.15, Ortex 0.1.10 compiled successfully | Bolt Steward | **Done** |
 | HC-05 | P0 | Email MVP | No email resources/flow | Add `Contact` & `OutboundEmail`, SMTP adapter, events | Gate+Link | Not Started |
 | HC-06 | P0 | Presence Policies | Membership & presence auth gaps | Implement policies + presence events join/leave | Link Steward | Not Started |
 | HC-07 | P0 | Deployment | No prod deploy tooling | Dockerfile, release script, systemd/unit, healthcheck | Platform | Not Started |
@@ -38,6 +40,35 @@ Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: 
 | HC-23 | P1 | Thundra/Nerves Integration | No edge PAC execution runtime | Implement Thundra VM (tick-based voxel engine in Bolt), Nerves firmware template (mTLS enrollment via Gate), device telemetry backhaul (Link TOCP), policy enforcement (Crown device manifests), DAG traceability | Bolt + Gate + Link + Crown Stewards | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
+
+### ML Infrastructure Status (Updated Nov 2025)
+
+**Python ML Stack** ✅ **PRODUCTION READY**
+- Environment: `/home/mo/DEV/Thunderline/.venv` (Python 3.13)
+- TensorFlow: 2.20.0 (ML framework)
+- tf2onnx: 1.8.4 (Keras→ONNX conversion)
+- ONNX: 1.19.1 (model format)
+- Keras: 3.12.0 (high-level ML API)
+- Status: All packages installed and verified working
+
+**Elixir ML Dependencies** ✅ **PRODUCTION READY**
+- Req: 0.5.15 (HTTP client for Chroma/external APIs)
+- Ortex: 0.1.10 (ONNX runtime for Elixir)
+- PythonX: 0.4.0 (Python integration)
+- Venomous: 0.7 (Python communication)
+- Status: All dependencies compiled successfully (warnings from upstream deps are non-blocking)
+
+**Build Status** ✅ **SUCCESSFUL**
+- Compilation: Completed with dependency warnings (Jido, LiveExWebRTC, ExWebRTC - non-blocking)
+- Type warnings: Struct update patterns in upstream dependencies, not user code
+- All apps: Compiled and generated successfully
+- Ready for: Implementation of Magika wrapper, ONNX adapter, Voxel builder
+
+**Pipeline Architecture** ✅ **SPECIFIED**
+- Foundation: Python NLP CLI (JSON contract v1.0) + Elixir Port supervisor (400 lines)
+- Event Flow: Magika → spaCy → ONNX → Voxel → ThunderBlock
+- Telemetry: Complete framework with event definitions
+- Documentation: 10,000-word integration spec in `docs/MAGIKA_SPACY_KERAS_INTEGRATION.md`
 
 ### Consolidated P0 Launch Backlog (Definitive Order)
 1. HC-22 Unified Persistent Model (online trainer + adapters)

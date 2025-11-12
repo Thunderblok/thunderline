@@ -91,6 +91,7 @@ defmodule Thunderline.MixProject do
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
+      {:req, "~> 0.5.0"},
       {:pythonx, "~> 0.4.0"},
       {:venomous, "~> 0.7"},
       {:swoosh, "~> 1.16"},
@@ -142,6 +143,8 @@ defmodule Thunderline.MixProject do
       {:absinthe_phoenix, "~> 2.0"},
       {:absinthe_plug, "~> 1.5"},
       # Neural / ML
+      {:ortex, "~> 0.1.10"},
+
       {:nx, "~> 0.9"},
       {:axon, "~> 0.7"},
       {:exla, "~> 0.9"},

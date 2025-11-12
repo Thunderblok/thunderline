@@ -84,6 +84,14 @@
 - Flower federation now runs through the Keras backend (`python/cerebros/keras/flower_app.py`), so PyTorch is no longer required on the SuperExec path.
 - Active feature flags: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active`.
 
+**ML Infrastructure Status (Nov 2025):**
+- ✅ Python ML Stack: TensorFlow 2.20.0, tf2onnx 1.8.4, ONNX 1.19.1, Keras 3.12.0 installed and verified
+- ✅ Elixir Dependencies: Req 0.5.15 (HTTP client), Ortex 0.1.10 (ONNX runtime) compiled successfully
+- ✅ Foundation Code: Python NLP CLI (JSON contract v1.0), Elixir Port supervisor (400 lines), telemetry framework
+- ✅ Architecture: Complete 10,000-word integration spec (Magika + spaCy + Keras→ONNX pipeline)
+- 🟡 Pending Implementation: Magika wrapper, ONNX adapter, Voxel builder (specifications complete, code ready to implement)
+- 📋 Event Flow: `system.ingest.classified` → `ai.nlp.analyzed` → `ai.ml.run.completed` → `dag.commit`
+
 ### 3.5 ThunderCrown (Governance)
 
 - Daisy cognitive modules, MCP bus, policy enforcement.

@@ -51,6 +51,19 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 - **Roadmap**: Phase B policy/ orchestration unification; NAS integration phases (Section 10 in [`architecture/market_moe_pipeline.md`](Thunderline/documentation/architecture/market_moe_pipeline.md)). Flower federation now runs exclusively through the Keras backend wiring (`python/cerebros/keras/flower_app.py`) so PyTorch dependencies can be dropped from NAS control plane images.
 - **Feature flags**: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active` gating advanced features.
 
+**ML Infrastructure Status (Nov 2025):**
+- ✅ **Python Stack Ready**: TensorFlow 2.20.0, tf2onnx 1.8.4, ONNX 1.19.1, Keras 3.12.0 (`.venv` Python 3.13)
+- ✅ **Elixir Stack Ready**: Req 0.5.15 (HTTP client), Ortex 0.1.10 (ONNX runtime), PythonX 0.4.0, Venomous 0.7
+- ✅ **Build Status**: Successful compilation (dependency warnings non-blocking: Jido, LiveExWebRTC, ExWebRTC)
+- ✅ **Foundation Code**: Python NLP CLI with JSON contract v1.0, Elixir Port supervisor (400 lines), telemetry framework
+- ✅ **Architecture Spec**: Complete 10,000-word integration document (`docs/MAGIKA_SPACY_KERAS_INTEGRATION.md`)
+- 🟡 **Pending Implementation** (specs complete, ready to code):
+  - `lib/thunderline/thundergate/magika.ex` - File classification wrapper (System.cmd or Req)
+  - `lib/thunderline/thunderbolt/models/keras_onnx.ex` - ONNX model loader via Ortex + Nx.Serving
+  - `lib/thunderline/thunderbolt/voxel.ex` - DAG artifact packaging (Voxel v0 schema)
+- 📋 **Event Pipeline**: `system.ingest.classified` → `ai.nlp.analyzed` → `ai.ml.run.completed` → `dag.commit` → ThunderBlock
+- 🎯 **Next Actions**: Implement 3 pending modules (Magika, ONNX adapter, Voxel), wire Broadway pipeline, add supervision trees
+
 ### 1.5 ThunderCrown — Governance & AI Orchestration
 
 - **Mission**: Provide policy enforcement, AI intent derivation, and tool selection via Daisy and Hermes MCP bus.

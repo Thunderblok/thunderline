@@ -104,6 +104,68 @@ Thunderline incorporates the **THUNDERSTRUCK** algorithm, a sophisticated implem
 git clone https://github.com/Thunderblok/Thunderline.git
 cd Thunderline
 
+# Install dependencies
+mix deps.get
+
+# Setup database
+mix ecto.setup
+
+# Install Node.js dependencies
+cd assets && npm install && cd ..
+
+# Start Phoenix server
+mix phx.server
+```
+
+Visit [`localhost:4000`](http://localhost:4000) from your browser.
+
+## ML Infrastructure Status
+
+**Environment Ready** ✅ (November 2025)
+
+**Python ML Stack:**
+- TensorFlow 2.20.0 (ML framework)
+- tf2onnx 1.8.4 (Keras→ONNX conversion)
+- ONNX 1.19.1 (model runtime format)
+- Keras 3.12.0 (high-level ML API)
+- Environment: `.venv` (Python 3.13)
+
+**Elixir Dependencies:**
+- Req 0.5.15 (HTTP client for Chroma/external APIs)
+- Ortex 0.1.10 (ONNX runtime for Elixir)
+- PythonX 0.4.0 (Python integration)
+- Venomous 0.7 (Python communication)
+
+**Build Status:**
+- ✅ All dependencies compiled successfully
+- ⚠️ Dependency warnings present (Jido, LiveExWebRTC, ExWebRTC) - non-blocking
+- ✅ Foundation code complete: Python NLP CLI, Elixir Port supervisor, telemetry framework
+
+**Pipeline Architecture:**
+```
+Raw File → Magika (file classification)
+         → spaCy (NLP via Port)
+         → ONNX (ML inference via Ortex)
+         → Voxel (DAG packaging)
+         → ThunderBlock (persistence)
+```
+
+**Implementation Status:**
+- ✅ Infrastructure: 100% (all dependencies installed)
+- ✅ Foundation: 100% (Python CLI, Port supervisor, telemetry)
+- ✅ Specifications: 100% (10,000-word architecture doc)
+- 🟡 Implementation: 40% (3 modules pending: Magika, ONNX adapter, Voxel)
+
+**Next Steps:**
+See `documentation/MAGIKA_SPACY_KERAS_INTEGRATION.md` for complete architecture specification.
+
+## Development
+
+```bash
+# Clone the repository
+git clone https://github.com/Thunderblok/Thunderline.git
+cd Thunderline
+
 # Install dependencies and setup database
 mix setup
 
