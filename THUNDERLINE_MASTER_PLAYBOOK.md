@@ -71,7 +71,24 @@ Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: 
 - Events: ui.command.ingest.received → system.ingest.classified
 - Telemetry: [:thunderline, :thundergate, :magika, :classify, :*]
 - Status: Production-ready AI file classification with fallback strategies
-- Implementation Progress: 66% (2 modules pending: ONNX adapter, Voxel)
+- Sprint: 2 weeks (Oct 28 - Nov 11, 2025), 7/7 tasks complete, zero errors
+
+**ML Pipeline Roadmap** 🟡 **IN PROGRESS** (33% complete)
+- Execution Plan: `docs/ML_PIPELINE_EXECUTION_ROADMAP.md` (600 lines, comprehensive)
+- Completion: Phase 0 (Magika) ✅, Phases 1-7 pending
+- Execution Order: ONNX first (in-process reliability), then Voxel (DAG truth), spaCy hardened after
+- Timeline: 7-10 days estimated (Phases 1-7)
+- Phases:
+  - Phase 1: Sanity & Guardrails (0.5d) - CI tests, feature flags, telemetry dashboards
+  - Phase 2: ONNX Adapter (2-3d) - Model I/O, KerasONNX via Ortex, Broadway integration
+  - Phase 3: Keras→ONNX (1-2d) - Exporter CLI, equivalence validation, model registry
+  - Phase 4: Voxel Packager (2-3d) - Schema, builder API, persistence, lineage
+  - Phase 5: spaCy Sidecar (1-2d) - Port pool, NLP schema, robustness tests
+  - Phase 6: Observability (0.5d) - Dashboards, SLO alerts
+  - Phase 7: Security (0.5d) - SBOM, checksums, untrusted model gate
+- Assignments: Core Elixir (ONNX/Voxel/spaCy), Python/NLP (Keras/spaCy), DevOps (CI/Grafana/SBOM)
+- Philosophy: *Festina lente* — make haste, slowly
+- Implementation Progress: 33% (Magika ✅, ONNX + Voxel + spaCy pending)
 
 **Build Status** ✅ **SUCCESSFUL**
 - Compilation: Completed with dependency warnings (Jido, LiveExWebRTC, ExWebRTC - non-blocking)
