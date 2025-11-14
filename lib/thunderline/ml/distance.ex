@@ -124,7 +124,43 @@ defmodule Thunderline.ML.Distance do
   """
   @spec kl_divergence(Nx.Tensor.t(), Nx.Tensor.t()) :: float()
   def kl_divergence(p, q) when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
-    raise "Not implemented - Phase 3.3"
+    {p_norm, q_norm} = normalize_distributions(p, q)
+    kl_divergence_impl(p_norm, q_norm) |> Nx.to_number()
+  end
+
+  # ────────────────────────────────────────────────────────────────────
+  # Private Helpers (defnp for numerical compilation)
+  # ────────────────────────────────────────────────────────────────────
+
+  @doc false
+  defnp normalize_distributions(p, q) do
+    # Clamp to non-negative
+    p = Nx.max(p, 0.0)
+    q = Nx.max(q, 0.0)
+
+    # Normalize to sum=1 (with epsilon to avoid division by zero)
+    p_sum = Nx.sum(p)
+    q_sum = Nx.sum(q)
+    p = p / (p_sum + @eps)
+    q = q / (q_sum + @eps)
+
+    # Epsilon smooth to avoid log(0) and ensure all values are in [@eps, 1.0]
+    p = Nx.clip(p, @eps, 1.0)
+    q = Nx.clip(q, @eps, 1.0)
+
+    # Re-normalize after clipping to ensure sum=1.0
+    p = p / Nx.sum(p)
+    q = q / Nx.sum(q)
+
+    {p, q}
+  end
+
+  @doc false
+  defnp kl_divergence_impl(p, q) do
+    # D_KL(P || Q) = Σ P(i) * log(P(i) / Q(i))
+    ratio = p / q
+    log_ratio = Nx.log(ratio)
+    Nx.sum(p * log_ratio)
   end
 
   @doc """
@@ -152,7 +188,14 @@ defmodule Thunderline.ML.Distance do
   """
   @spec cross_entropy(Nx.Tensor.t(), Nx.Tensor.t()) :: float()
   def cross_entropy(p, q) when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
-    raise "Not implemented - Phase 3.3"
+    {p_norm, q_norm} = normalize_distributions(p, q)
+    cross_entropy_impl(p_norm, q_norm) |> Nx.to_number()
+  end
+
+  defnp cross_entropy_impl(p, q) do
+    # H(P, Q) = -Σ P(i) * log(Q(i))
+    log_q = Nx.log(q)
+    Nx.sum(-p * log_q)
   end
 
   @doc """
@@ -180,7 +223,25 @@ defmodule Thunderline.ML.Distance do
   """
   @spec hellinger(Nx.Tensor.t(), Nx.Tensor.t()) :: float()
   def hellinger(p, q) when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
-    raise "Not implemented - Phase 3.3"
+    {p_norm, q_norm} = normalize_distributions(p, q)
+    hellinger_impl(p_norm, q_norm) |> Nx.to_number()
+  end
+
+  defnp hellinger_impl(p, q) do
+    # H(P, Q) = sqrt(1 - Σ sqrt(P(i) * Q(i)))
+    # Alternative formula: (1/√2) * sqrt(Σ (√P(i) - √Q(i))²)
+    # We use the Bhattacharyya coefficient formulation for stability
+    sqrt_p = Nx.sqrt(p)
+    sqrt_q = Nx.sqrt(q)
+
+    # Bhattacharyya coefficient BC = Σ sqrt(P(i) * Q(i))
+    bc = Nx.sum(sqrt_p * sqrt_q)
+
+    # Clamp BC to [0, 1] to avoid numerical issues (BC can be slightly > 1 due to floating point)
+    bc = Nx.clip(bc, 0.0, 1.0)
+
+    # Hellinger distance = sqrt(1 - BC)
+    Nx.sqrt(1.0 - bc)
   end
 
   @doc """
@@ -208,7 +269,26 @@ defmodule Thunderline.ML.Distance do
   """
   @spec js_divergence(Nx.Tensor.t(), Nx.Tensor.t()) :: float()
   def js_divergence(p, q) when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
-    raise "Not implemented - Phase 3.3"
+    {p_norm, q_norm} = normalize_distributions(p, q)
+    js_divergence_impl(p_norm, q_norm) |> Nx.to_number()
+  end
+
+  defnp js_divergence_impl(p, q) do
+    # D_JS(P || Q) = 0.5 * D_KL(P || M) + 0.5 * D_KL(Q || M)
+    # where M = 0.5 * (P + Q)
+    m = 0.5 * (p + q)
+
+    # Normalize M to ensure it's a valid distribution
+    m = m / Nx.sum(m)
+
+    # KL(P || M)
+    kl_pm = kl_divergence_impl(p, m)
+
+    # KL(Q || M)
+    kl_qm = kl_divergence_impl(q, m)
+
+    # JS divergence
+    0.5 * (kl_pm + kl_qm)
   end
 
   @doc """
@@ -249,7 +329,16 @@ defmodule Thunderline.ML.Distance do
           js_divergence: float()
         }
   def all_metrics(p, q) when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
-    raise "Not implemented - Phase 3.3"
+    # Normalize once for all metrics
+    {p_norm, q_norm} = normalize_distributions(p, q)
+
+    # Compute all metrics efficiently
+    %{
+      kl_divergence: kl_divergence_impl(p_norm, q_norm) |> Nx.to_number(),
+      cross_entropy: cross_entropy_impl(p_norm, q_norm) |> Nx.to_number(),
+      hellinger: hellinger_impl(p_norm, q_norm) |> Nx.to_number(),
+      js_divergence: js_divergence_impl(p_norm, q_norm) |> Nx.to_number()
+    }
   end
 
   @doc """
@@ -283,6 +372,42 @@ defmodule Thunderline.ML.Distance do
           :ok | {:error, String.t()}
   def validate_distributions(p, q, opts \\ [])
       when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
-    raise "Not implemented - Phase 3.3"
+    tolerance = Keyword.get(opts, :tolerance, 1.0e-6)
+
+    # Check shape mismatch
+    if Nx.shape(p) != Nx.shape(q) do
+      {:error, "Shape mismatch: P=#{inspect(Nx.shape(p))}, Q=#{inspect(Nx.shape(q))}"}
+    else
+      # Check for negative values
+      p_min = Nx.reduce_min(p) |> Nx.to_number()
+      q_min = Nx.reduce_min(q) |> Nx.to_number()
+
+      cond do
+        p_min < 0 ->
+          {:error, "P contains negative values (min=#{p_min})"}
+
+        q_min < 0 ->
+          {:error, "Q contains negative values (min=#{q_min})"}
+
+        true ->
+          # Check if distributions sum to ~1.0
+          p_sum = Nx.sum(p) |> Nx.to_number()
+          q_sum = Nx.sum(q) |> Nx.to_number()
+
+          p_normalized? = abs(p_sum - 1.0) < tolerance
+          q_normalized? = abs(q_sum - 1.0) < tolerance
+
+          cond do
+            not p_normalized? ->
+              {:error, "P not normalized (sum=#{p_sum}, expected ~1.0 within #{tolerance})"}
+
+            not q_normalized? ->
+              {:error, "Q not normalized (sum=#{q_sum}, expected ~1.0 within #{tolerance})"}
+
+            true ->
+              :ok
+          end
+      end
+    end
   end
 end
