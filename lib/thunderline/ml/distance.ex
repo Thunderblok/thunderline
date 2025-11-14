@@ -128,27 +128,25 @@ defmodule Thunderline.ML.Distance do
     kl_divergence_impl(p_norm, q_norm) |> Nx.to_number()
   end
 
-  # ────────────────────────────────────────────────────────────────────
-  # Private Helpers (defnp for numerical compilation)
-  # ────────────────────────────────────────────────────────────────────
+  # Private implementation functions (defnp for numerical compilation)
 
   @doc false
   defnp normalize_distributions(p, q) do
-    # Clamp to non-negative
+    # Step 1: Clamp to non-negative
     p = Nx.max(p, 0.0)
     q = Nx.max(q, 0.0)
 
-    # Normalize to sum=1 (with epsilon to avoid division by zero)
+    # Step 2: Normalize to sum=1 (with epsilon to avoid division by zero)
     p_sum = Nx.sum(p)
     q_sum = Nx.sum(q)
     p = p / (p_sum + @eps)
     q = q / (q_sum + @eps)
 
-    # Epsilon smooth to avoid log(0) and ensure all values are in [@eps, 1.0]
+    # Step 3: Epsilon smooth to avoid log(0)
     p = Nx.clip(p, @eps, 1.0)
     q = Nx.clip(q, @eps, 1.0)
 
-    # Re-normalize after clipping to ensure sum=1.0
+    # Step 4: Re-normalize after clipping
     p = p / Nx.sum(p)
     q = q / Nx.sum(q)
 
@@ -157,10 +155,43 @@ defmodule Thunderline.ML.Distance do
 
   @doc false
   defnp kl_divergence_impl(p, q) do
-    # D_KL(P || Q) = Σ P(i) * log(P(i) / Q(i))
+    # D_KL(P || Q) = sum(p * log(p / q))
     ratio = p / q
     log_ratio = Nx.log(ratio)
     Nx.sum(p * log_ratio)
+  end
+
+  @doc false
+  defnp cross_entropy_impl(p, q) do
+    # H(P, Q) = -sum(p * log(q))
+    log_q = Nx.log(q)
+    Nx.sum(-p * log_q)
+  end
+
+  @doc false
+  defnp hellinger_impl(p, q) do
+    # H(P, Q) = sqrt(1 - BC) where BC = sum(sqrt(p * q))
+    # Using Bhattacharyya coefficient for numerical stability
+    sqrt_p = Nx.sqrt(p)
+    sqrt_q = Nx.sqrt(q)
+    bc = Nx.sum(sqrt_p * sqrt_q)
+    # Clamp BC to [0, 1] to prevent sqrt(negative) from floating point errors
+    bc = Nx.clip(bc, 0.0, 1.0)
+    Nx.sqrt(1.0 - bc)
+  end
+
+  @doc false
+  defnp js_divergence_impl(p, q) do
+    # JS(P, Q) = 0.5 * (D_KL(P || M) + D_KL(Q || M)) where M = 0.5 * (P + Q)
+    m = 0.5 * (p + q)
+    # Normalize M (should already be close to 1, but ensure it)
+    m = m / Nx.sum(m)
+
+    # Compute KL divergences to midpoint
+    kl_pm = kl_divergence_impl(p, m)
+    kl_qm = kl_divergence_impl(q, m)
+
+    0.5 * (kl_pm + kl_qm)
   end
 
   @doc """
@@ -192,12 +223,6 @@ defmodule Thunderline.ML.Distance do
     cross_entropy_impl(p_norm, q_norm) |> Nx.to_number()
   end
 
-  defnp cross_entropy_impl(p, q) do
-    # H(P, Q) = -Σ P(i) * log(Q(i))
-    log_q = Nx.log(q)
-    Nx.sum(-p * log_q)
-  end
-
   @doc """
   Compute Hellinger distance H(P, Q).
 
@@ -225,23 +250,6 @@ defmodule Thunderline.ML.Distance do
   def hellinger(p, q) when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
     {p_norm, q_norm} = normalize_distributions(p, q)
     hellinger_impl(p_norm, q_norm) |> Nx.to_number()
-  end
-
-  defnp hellinger_impl(p, q) do
-    # H(P, Q) = sqrt(1 - Σ sqrt(P(i) * Q(i)))
-    # Alternative formula: (1/√2) * sqrt(Σ (√P(i) - √Q(i))²)
-    # We use the Bhattacharyya coefficient formulation for stability
-    sqrt_p = Nx.sqrt(p)
-    sqrt_q = Nx.sqrt(q)
-
-    # Bhattacharyya coefficient BC = Σ sqrt(P(i) * Q(i))
-    bc = Nx.sum(sqrt_p * sqrt_q)
-
-    # Clamp BC to [0, 1] to avoid numerical issues (BC can be slightly > 1 due to floating point)
-    bc = Nx.clip(bc, 0.0, 1.0)
-
-    # Hellinger distance = sqrt(1 - BC)
-    Nx.sqrt(1.0 - bc)
   end
 
   @doc """
@@ -273,54 +281,23 @@ defmodule Thunderline.ML.Distance do
     js_divergence_impl(p_norm, q_norm) |> Nx.to_number()
   end
 
-  defnp js_divergence_impl(p, q) do
-    # D_JS(P || Q) = 0.5 * D_KL(P || M) + 0.5 * D_KL(Q || M)
-    # where M = 0.5 * (P + Q)
-    m = 0.5 * (p + q)
-
-    # Normalize M to ensure it's a valid distribution
-    m = m / Nx.sum(m)
-
-    # KL(P || M)
-    kl_pm = kl_divergence_impl(p, m)
-
-    # KL(Q || M)
-    kl_qm = kl_divergence_impl(q, m)
-
-    # JS divergence
-    0.5 * (kl_pm + kl_qm)
-  end
-
   @doc """
-  Compute all distance metrics at once.
+  Computes all distance metrics in a single pass for efficiency.
 
-  Efficient batch computation of KL, cross-entropy, Hellinger, and JS divergence.
-
-  ## Arguments
-
-  - `p` - True distribution (Nx tensor)
-  - `q` - Approximate distribution (Nx tensor)
-
-  ## Returns
-
-  Map with all metrics:
-
-      %{
-        kl_divergence: float(),
-        cross_entropy: float(),
-        hellinger: float(),
-        js_divergence: float()
-      }
+  Returns a map with all four metrics computed from the same normalized pair.
+  More efficient than calling each metric separately.
 
   ## Examples
 
-      metrics = Distance.all_metrics(parzen_hist, model_hist)
-      # => %{
-      #   kl_divergence: 0.123,
-      #   cross_entropy: 1.456,
-      #   hellinger: 0.234,
-      #   js_divergence: 0.067
-      # }
+      iex> p = Nx.tensor([0.5, 0.5])
+      iex> q = Nx.tensor([0.3, 0.7])
+      iex> Distance.all_metrics(p, q)
+      %{
+        kl_divergence: 0.023,
+        cross_entropy: 0.71,
+        hellinger: 0.05,
+        js_divergence: 0.012
+      }
   """
   @spec all_metrics(Nx.Tensor.t(), Nx.Tensor.t()) :: %{
           kl_divergence: float(),
@@ -328,11 +305,9 @@ defmodule Thunderline.ML.Distance do
           hellinger: float(),
           js_divergence: float()
         }
-  def all_metrics(p, q) when is_struct(p, Nx.Tensor) and is_struct(q, Nx.Tensor) do
-    # Normalize once for all metrics
+  def all_metrics(p, q) do
     {p_norm, q_norm} = normalize_distributions(p, q)
 
-    # Compute all metrics efficiently
     %{
       kl_divergence: kl_divergence_impl(p_norm, q_norm) |> Nx.to_number(),
       cross_entropy: cross_entropy_impl(p_norm, q_norm) |> Nx.to_number(),

@@ -136,7 +136,33 @@ defmodule Thunderline.ML.SLASelector do
   """
   @spec init([atom()], keyword()) :: t()
   def init(actions, opts \\ []) when is_list(actions) and length(actions) > 0 do
-    raise "Not implemented - Phase 3.4"
+    alpha = Keyword.get(opts, :alpha, 0.1)
+    v = Keyword.get(opts, :v, 0.05)
+
+    # Validate learning rates
+    unless alpha > 0.0 and alpha <= 1.0 do
+      raise ArgumentError, "alpha must be in (0, 1], got: #{alpha}"
+    end
+
+    unless v > 0.0 and v <= 1.0 do
+      raise ArgumentError, "v must be in (0, 1], got: #{v}"
+    end
+
+    # Initialize uniform probabilities: P(uⱼ) = 1/m for all j
+    m = length(actions)
+    uniform_prob = 1.0 / m
+    probabilities = Map.new(actions, fn action -> {action, uniform_prob} end)
+
+    %__MODULE__{
+      actions: actions,
+      probabilities: probabilities,
+      alpha: alpha,
+      v: v,
+      iteration: 0,
+      reward_history: [],
+      last_distance: nil,
+      best_action: nil
+    }
   end
 
   @doc """
@@ -164,7 +190,53 @@ defmodule Thunderline.ML.SLASelector do
   """
   @spec choose_action(t(), keyword()) :: {t(), atom()}
   def choose_action(%__MODULE__{} = sla, opts \\ []) do
-    raise "Not implemented - Phase 3.4"
+    strategy = Keyword.get(opts, :strategy, :sample)
+    random_seed = Keyword.get(opts, :random_seed)
+
+    # Set random seed for deterministic testing
+    if random_seed, do: :rand.seed(:exsss, {random_seed, random_seed, random_seed})
+
+    chosen_action =
+      case strategy do
+        :greedy ->
+          # Exploitation: choose action with maximum probability
+          {action, _prob} = Enum.max_by(sla.probabilities, fn {_k, v} -> v end)
+          action
+
+        :sample ->
+          # Exploration: roulette wheel selection according to P(uⱼ)
+          rand = :rand.uniform()
+          cumulative_sample(sla.actions, sla.probabilities, rand, 0.0)
+      end
+
+    # Update iteration counter and best_action
+    {best_action, _} = Enum.max_by(sla.probabilities, fn {_k, v} -> v end)
+
+    updated_sla = %__MODULE__{
+      sla
+      | iteration: sla.iteration + 1,
+        best_action: best_action
+    }
+
+    {updated_sla, chosen_action}
+  end
+
+  # Private helper: Roulette wheel selection
+  # Traverse actions, accumulating probabilities until rand threshold crossed
+  @doc false
+  defp cumulative_sample([action | rest], probs, rand, acc) do
+    new_acc = acc + Map.fetch!(probs, action)
+
+    if rand <= new_acc do
+      action
+    else
+      cumulative_sample(rest, probs, rand, new_acc)
+    end
+  end
+
+  # Safety: if we reach end of list (shouldn't happen with proper normalization), return last action
+  defp cumulative_sample([], _probs, _rand, _acc) do
+    raise "cumulative_sample: ran out of actions (probabilities may not sum to 1.0)"
   end
 
   @doc """
@@ -208,7 +280,88 @@ defmodule Thunderline.ML.SLASelector do
   @spec update(t(), atom(), 0 | 1, keyword()) :: t()
   def update(%__MODULE__{} = sla, action, reward, opts \\ [])
       when is_atom(action) and reward in [0, 1] do
-    raise "Not implemented - Phase 3.4"
+    unless action in sla.actions do
+      raise ArgumentError, "unknown action: #{inspect(action)}, valid actions: #{inspect(sla.actions)}"
+    end
+
+    distance = Keyword.get(opts, :distance)
+
+    # Apply Narendra-Thathachar SLA update rules (Li et al. 2007)
+    m = length(sla.actions)
+
+    new_probs =
+      if reward == 1 do
+        # REWARD: chosen action probability increases, others decrease
+        # P_j(t+1) = P_j(t) + α[1 - P_j(t)]
+        # P_i(t+1) = P_i(t) - (α/(m-1))P_i(t)  for i ≠ j
+        reward_update(sla.probabilities, action, sla.alpha, m)
+      else
+        # PENALTY: chosen action probability decreases, others increase
+        # P_j(t+1) = (1-v)P_j(t)
+        # P_i(t+1) = (v/(m-1)) + (1-v)P_i(t)  for i ≠ j
+        penalty_update(sla.probabilities, action, sla.v, m)
+      end
+
+    # Normalize to ensure Σ P(uⱼ) = 1.0 (handle floating point drift)
+    normalized_probs = normalize_probabilities(new_probs)
+
+    # Update reward history (keep last 100 for convergence analysis)
+    timestamp = DateTime.utc_now()
+    new_history = [{action, reward, distance, timestamp} | sla.reward_history] |> Enum.take(100)
+
+    # Determine current best action
+    {best_action, _} = Enum.max_by(normalized_probs, fn {_k, v} -> v end)
+
+    %__MODULE__{
+      sla
+      | probabilities: normalized_probs,
+        reward_history: new_history,
+        last_distance: distance,
+        best_action: best_action
+    }
+  end
+
+  # Private: Reward update (distance improved)
+  @doc false
+  defp reward_update(probs, chosen_action, alpha, m) do
+    Map.new(probs, fn {action, p} ->
+      if action == chosen_action do
+        # Chosen action gains: P_j(t+1) = P_j(t) + α[1 - P_j(t)]
+        {action, p + alpha * (1.0 - p)}
+      else
+        # Others lose proportionally: P_i(t+1) = P_i(t) - (α/(m-1))P_i(t)
+        {action, p - (alpha / (m - 1)) * p}
+      end
+    end)
+  end
+
+  # Private: Penalty update (distance worsened)
+  @doc false
+  defp penalty_update(probs, chosen_action, v, m) do
+    Map.new(probs, fn {action, p} ->
+      if action == chosen_action do
+        # Chosen action loses: P_j(t+1) = (1-v)P_j(t)
+        {action, (1.0 - v) * p}
+      else
+        # Others gain uniformly: P_i(t+1) = (v/(m-1)) + (1-v)P_i(t)
+        {action, v / (m - 1) + (1.0 - v) * p}
+      end
+    end)
+  end
+
+  # Private: Normalize probability distribution to sum to 1.0
+  @doc false
+  defp normalize_probabilities(probs) do
+    total = probs |> Map.values() |> Enum.sum()
+
+    # Handle edge case: if total is 0 (shouldn't happen), reset to uniform
+    if total < 1.0e-10 do
+      m = map_size(probs)
+      uniform = 1.0 / m
+      Map.new(probs, fn {k, _v} -> {k, uniform} end)
+    else
+      Map.new(probs, fn {k, v} -> {k, v / total} end)
+    end
   end
 
   @doc """
@@ -229,7 +382,7 @@ defmodule Thunderline.ML.SLASelector do
   """
   @spec probabilities(t()) :: %{atom() => float()}
   def probabilities(%__MODULE__{} = sla) do
-    raise "Not implemented - Phase 3.4"
+    sla.probabilities
   end
 
   @doc """
@@ -261,7 +414,34 @@ defmodule Thunderline.ML.SLASelector do
   """
   @spec state(t()) :: map()
   def state(%__MODULE__{} = sla) do
-    raise "Not implemented - Phase 3.4"
+    # Find best action and its probability
+    {best_action, best_prob} = Enum.max_by(sla.probabilities, fn {_k, v} -> v end)
+
+    # Calculate Shannon entropy: H = -Σ P(uⱼ) log₂ P(uⱼ)
+    entropy =
+      sla.probabilities
+      |> Map.values()
+      |> Enum.reduce(0.0, fn p, acc ->
+        if p > 1.0e-10, do: acc - p * :math.log2(p), else: acc
+      end)
+
+    # Maximum entropy for uniform distribution
+    max_entropy = :math.log2(length(sla.actions))
+
+    # Convergence metric: 0 = uniform (max entropy), 1 = converged (min entropy)
+    convergence = if max_entropy > 0, do: 1.0 - entropy / max_entropy, else: 1.0
+
+    %{
+      probabilities: sla.probabilities,
+      iteration: sla.iteration,
+      best_action: best_action,
+      best_probability: best_prob,
+      convergence: convergence,
+      entropy: entropy,
+      max_entropy: max_entropy,
+      history_size: length(sla.reward_history),
+      last_distance: sla.last_distance
+    }
   end
 
   @doc """
@@ -290,7 +470,13 @@ defmodule Thunderline.ML.SLASelector do
   """
   @spec converged?(t(), keyword()) :: boolean()
   def converged?(%__MODULE__{} = sla, opts \\ []) do
-    raise "Not implemented - Phase 3.4"
+    threshold = Keyword.get(opts, :threshold, 0.85)
+
+    # Converged if any action probability exceeds threshold
+    # (Proven convergence under stationary environments - Narendra & Thathachar, 1989)
+    sla.probabilities
+    |> Map.values()
+    |> Enum.any?(fn p -> p >= threshold end)
   end
 
   @doc """
@@ -320,7 +506,17 @@ defmodule Thunderline.ML.SLASelector do
   """
   @spec snapshot(t()) :: map()
   def snapshot(%__MODULE__{} = sla) do
-    raise "Not implemented - Phase 3.4"
+    # Serialize key state for voxel metadata persistence
+    # NOTE: reward_history NOT included (ephemeral, can be large)
+    %{
+      actions: sla.actions,
+      probabilities: sla.probabilities,
+      alpha: sla.alpha,
+      v: sla.v,
+      iteration: sla.iteration,
+      best_action: sla.best_action,
+      last_distance: sla.last_distance
+    }
   end
 
   @doc """
@@ -342,6 +538,19 @@ defmodule Thunderline.ML.SLASelector do
   """
   @spec from_snapshot(map()) :: t()
   def from_snapshot(snapshot) when is_map(snapshot) do
-    raise "Not implemented - Phase 3.4"
+    # Restore SLA state from snapshot (e.g., from voxel metadata)
+    actions = Map.fetch!(snapshot, :actions)
+    probs = Map.fetch!(snapshot, :probabilities)
+
+    %__MODULE__{
+      actions: actions,
+      probabilities: probs,
+      alpha: Map.get(snapshot, :alpha, 0.1),
+      v: Map.get(snapshot, :v, 0.05),
+      iteration: Map.get(snapshot, :iteration, 0),
+      best_action: Map.get(snapshot, :best_action),
+      last_distance: Map.get(snapshot, :last_distance),
+      reward_history: []  # Reset history (not persisted)
+    }
   end
 end
