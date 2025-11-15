@@ -1,7 +1,7 @@
-defmodule Thunderline.ML.ParzenTest do
+defmodule Thunderline.Thunderbolt.ML.ParzenTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.ML.Parzen
+  alias Thunderline.Thunderbolt.ML.Parzen
 
   # Fixed seed for deterministic tests
   @seed 42

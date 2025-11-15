@@ -1,7 +1,7 @@
-defmodule Thunderline.ML.DistanceTest do
+defmodule Thunderline.Thunderbolt.ML.DistanceTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.ML.Distance
+  alias Thunderline.Thunderbolt.ML.Distance
 
   # ──────────────────────────────────────────────────────────────────────
   # Setup & Helpers

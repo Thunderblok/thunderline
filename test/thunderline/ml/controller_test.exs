@@ -1,7 +1,7 @@
-defmodule Thunderline.ML.ControllerTest do
+defmodule Thunderline.Thunderbolt.ML.ControllerTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.ML.Controller
+  alias Thunderline.Thunderbolt.ML.Controller
 
   describe "initialization" do
     test "start_supervised! with valid models initializes correctly" do
@@ -148,7 +148,7 @@ defmodule Thunderline.ML.ControllerTest do
       state = Controller.state(pid)
 
       # Good model should have high probability (>70%)
-      final_probs = Thunderline.ML.SLASelector.probabilities(state.sla)
+      final_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(state.sla)
       assert final_probs[:good] > 0.7
       assert state.iteration == 20
     end
@@ -158,7 +158,7 @@ defmodule Thunderline.ML.ControllerTest do
 
       # Initial probabilities
       state0 = Controller.state(pid)
-      initial_probs = Thunderline.ML.SLASelector.probabilities(state0.sla)
+      initial_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(state0.sla)
 
       # Run 10 iterations with model_a consistently better
       Enum.each(1..10, fn _ ->
@@ -175,7 +175,7 @@ defmodule Thunderline.ML.ControllerTest do
 
       # Final probabilities
       state_final = Controller.state(pid)
-      final_probs = Thunderline.ML.SLASelector.probabilities(state_final.sla)
+      final_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(state_final.sla)
 
       # Model A probability should increase
       assert final_probs[:model_a] > initial_probs[:model_a]
@@ -202,7 +202,7 @@ defmodule Thunderline.ML.ControllerTest do
       end)
 
       state = Controller.state(pid)
-      final_probs = Thunderline.ML.SLASelector.probabilities(state.sla)
+      final_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(state.sla)
 
       # Model B should dominate
       assert final_probs[:model_b] > final_probs[:model_a]
@@ -387,8 +387,8 @@ defmodule Thunderline.ML.ControllerTest do
       original_state = Controller.state(pid)
 
       # SLA probabilities should match
-      original_probs = Thunderline.ML.SLASelector.probabilities(original_state.sla)
-      restored_probs = Thunderline.ML.SLASelector.probabilities(restored_state.sla)
+      original_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(original_state.sla)
+      restored_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(restored_state.sla)
 
       assert_in_delta original_probs[:model_a], restored_probs[:model_a], 0.001
       assert_in_delta original_probs[:model_b], restored_probs[:model_b], 0.001
@@ -486,7 +486,7 @@ defmodule Thunderline.ML.ControllerTest do
       end)
 
       state_mid = Controller.state(pid)
-      mid_probs = Thunderline.ML.SLASelector.probabilities(state_mid.sla)
+      mid_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(state_mid.sla)
       # Baseline should be favored
       assert mid_probs[:baseline] > mid_probs[:improved]
 
@@ -505,7 +505,7 @@ defmodule Thunderline.ML.ControllerTest do
       end)
 
       state_final = Controller.state(pid)
-      final_probs = Thunderline.ML.SLASelector.probabilities(state_final.sla)
+      final_probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(state_final.sla)
 
       # Experimental should now be favored
       assert final_probs[:experimental] > final_probs[:baseline]
@@ -541,7 +541,7 @@ defmodule Thunderline.ML.ControllerTest do
       end)
 
       state = Controller.state(pid)
-      probs = Thunderline.ML.SLASelector.probabilities(state.sla)
+      probs = Thunderline.Thunderbolt.ML.SLASelector.probabilities(state.sla)
 
       # With alternating performance, probabilities should be relatively balanced
       assert probs[:model_a] > 0.3

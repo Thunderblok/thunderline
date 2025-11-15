@@ -1,4 +1,4 @@
-defmodule Thunderline.RAG.Ingest do
+defmodule Thunderline.Thunderbolt.RAG.Ingest do
   @moduledoc """
   Document ingestion pipeline for RAG (Retrieval-Augmented Generation).
 
@@ -7,19 +7,19 @@ defmodule Thunderline.RAG.Ingest do
   ## Usage
 
       # Ingest a document
-      {:ok, chunk_ids} = Thunderline.RAG.Ingest.ingest_document(
+      {:ok, chunk_ids} = Thunderline.Thunderbolt.RAG.Ingest.ingest_document(
         "This is a long document...",
         %{source: "docs/README.md", author: "team"}
       )
 
       # Check if RAG is enabled
-      if Thunderline.RAG.Ingest.enabled?() do
+      if Thunderline.Thunderbolt.RAG.Ingest.enabled?() do
         # ... perform RAG operations
       end
   """
 
   require Logger
-  alias Thunderline.RAG.Serving
+  alias Thunderline.Thunderbolt.RAG.Serving
 
   @default_chunk_size 512
   @default_chunk_overlap 50
@@ -89,7 +89,7 @@ defmodule Thunderline.RAG.Ingest do
 
   ## Examples
 
-      iex> Thunderline.RAG.Ingest.chunk_text("Hello world. How are you?", 10, 2)
+      iex> Thunderline.Thunderbolt.RAG.Ingest.chunk_text("Hello world. How are you?", 10, 2)
       {:ok, ["Hello world.", "world. How", "How are you?"]}
   """
   def chunk_text(text, chunk_size, overlap \\ 0) do
@@ -118,7 +118,7 @@ defmodule Thunderline.RAG.Ingest do
 
   ## Examples
 
-      iex> Thunderline.RAG.Ingest.generate_chunk_id("Hello world")
+      iex> Thunderline.Thunderbolt.RAG.Ingest.generate_chunk_id("Hello world")
       "64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
   """
   def generate_chunk_id(chunk_text) do

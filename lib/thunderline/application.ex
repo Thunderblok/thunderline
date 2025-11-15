@@ -137,7 +137,7 @@ defmodule Thunderline.Application do
 
   defp rag_children do
     if Feature.enabled?(:rag_enabled, default: true) do
-      [Thunderline.RAG.Serving]
+      [Thunderline.Thunderbolt.RAG.Serving]
     else
       []
     end
@@ -155,9 +155,9 @@ defmodule Thunderline.Application do
     if Feature.enabled?(:ml_pipeline, default: true) do
       [
         # ML Controller for adaptive model selection
-        {Thunderline.ML.Controller, ml_controller_config()},
+        {Thunderline.Thunderbolt.ML.Controller, ml_controller_config()},
         # Model selection consumer (requires Controller to be started first)
-        {Thunderline.ML.ModelSelectionConsumer, controller_pid: :ml_controller},
+        {Thunderline.Thunderbolt.ML.ModelSelectionConsumer, controller_pid: :ml_controller},
         # File classification consumer
         Thunderline.Thunderflow.Consumers.Classifier
       ]

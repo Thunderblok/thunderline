@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.Controller do
+defmodule Thunderline.Thunderbolt.ML.Controller do
   @moduledoc """
   Phase 3.5: Pure ML Control Loop Orchestration.
 
@@ -84,7 +84,7 @@ defmodule Thunderline.ML.Controller do
   use GenServer
   require Logger
 
-  alias Thunderline.ML.{Parzen, SLASelector, Distance}
+  alias Thunderline.Thunderbolt.ML.{Parzen, SLASelector, Distance}
 
   defstruct [
     :models,

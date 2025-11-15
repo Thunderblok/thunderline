@@ -1,4 +1,4 @@
-defmodule Thunderline.RAG.EmbeddingModel do
+defmodule Thunderline.Thunderbolt.RAG.EmbeddingModel do
   @moduledoc """
   Adapter implementing AshAi.EmbeddingModel behavior.
 
@@ -9,7 +9,7 @@ defmodule Thunderline.RAG.EmbeddingModel do
 
       # In a resource with vectorization:
       vectorize do
-        embedding_model Thunderline.RAG.EmbeddingModel
+        embedding_model Thunderline.Thunderbolt.RAG.EmbeddingModel
         # ...
       end
   """
@@ -22,7 +22,7 @@ defmodule Thunderline.RAG.EmbeddingModel do
   @impl true
   def generate(texts, _opts) when is_list(texts) do
     if Thunderline.Feature.enabled?(:rag_enabled) do
-      case Thunderline.RAG.Serving.embed_batch(texts) do
+      case Thunderline.Thunderbolt.RAG.Serving.embed_batch(texts) do
         {:ok, tensors} ->
           # Convert Nx.Tensor to list of floats for pgvector
           vectors = Enum.map(tensors, &Nx.to_flat_list/1)

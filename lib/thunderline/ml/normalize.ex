@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.Normalize do
+defmodule Thunderline.Thunderbolt.ML.Normalize do
   @moduledoc """
   Normalization utilities for ML input preprocessing.
 

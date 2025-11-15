@@ -1,4 +1,4 @@
-defmodule Thunderline.RAG.Query do
+defmodule Thunderline.Thunderbolt.RAG.Query do
   @moduledoc """
   Query processing and retrieval for RAG (Retrieval-Augmented Generation).
 
@@ -7,14 +7,14 @@ defmodule Thunderline.RAG.Query do
   ## Usage
 
       # Ask a question with RAG
-      {:ok, response, sources} = Thunderline.RAG.Query.ask(
+      {:ok, response, sources} = Thunderline.Thunderbolt.RAG.Query.ask(
         "What is the ThunderBolt domain responsible for?",
         top_k: 3,
         max_tokens: 500
       )
 
       # Build a prompt manually
-      {:ok, prompt} = Thunderline.RAG.Query.build_prompt(
+      {:ok, prompt} = Thunderline.Thunderbolt.RAG.Query.build_prompt(
         "What is ThunderBolt?",
         ["ThunderBolt handles ML compute...", "ThunderBolt uses Nx..."],
         system: "You are a helpful assistant."
@@ -22,7 +22,7 @@ defmodule Thunderline.RAG.Query do
   """
 
   require Logger
-  alias Thunderline.RAG.Serving
+  alias Thunderline.Thunderbolt.RAG.Serving
 
   @default_top_k 3
   @default_max_tokens 1000
@@ -101,7 +101,7 @@ defmodule Thunderline.RAG.Query do
 
   ## Examples
 
-      iex> Thunderline.RAG.Query.build_prompt(
+      iex> Thunderline.Thunderbolt.RAG.Query.build_prompt(
       ...>   "What is Elixir?",
       ...>   ["Elixir is a functional language...", "Elixir runs on BEAM..."]
       ...> )
@@ -137,7 +137,7 @@ defmodule Thunderline.RAG.Query do
 
   ## Examples
 
-      iex> Thunderline.RAG.Query.extract_sources([
+      iex> Thunderline.Thunderbolt.RAG.Query.extract_sources([
       ...>   %{metadata: %{source: "docs/README.md", chunk_index: 0}}
       ...> ])
       [%{source: "docs/README.md", chunk_index: 0}]

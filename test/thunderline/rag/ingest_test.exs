@@ -1,7 +1,7 @@
-defmodule Thunderline.RAG.IngestTest do
+defmodule Thunderline.Thunderbolt.RAG.IngestTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.RAG.Ingest
+  alias Thunderline.Thunderbolt.RAG.Ingest
 
   describe "chunk_text/2" do
     test "splits text into sentence-based chunks" do

@@ -1,7 +1,7 @@
-defmodule Thunderline.ML.KerasONNXTest do
+defmodule Thunderline.Thunderbolt.ML.KerasONNXTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.ML.{KerasONNX, Input, Output}
+  alias Thunderline.Thunderbolt.ML.{KerasONNX, Input, Output}
 
   @moduletag :ml
   @moduletag :onnx

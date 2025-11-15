@@ -1,7 +1,7 @@
 # RAG MVP Acceptance Test - ash_ai + pgvector Implementation
 # Run with: MIX_ENV=dev mix run test_rag_acceptance.exs
 
-alias Thunderline.RAG.Document
+alias Thunderline.Thunderbolt.RAG.Document
 
 IO.puts("\n" <> String.duplicate("=", 80))
 IO.puts("RAG MVP ACCEPTANCE TEST - ash_ai + pgvector")

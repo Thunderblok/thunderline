@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.ModelSelectionConsumer do
+defmodule Thunderline.Thunderbolt.ML.ModelSelectionConsumer do
   @moduledoc """
   Broadway consumer that processes model evaluation events through the ML Controller.
 
@@ -53,7 +53,7 @@ defmodule Thunderline.ML.ModelSelectionConsumer do
 
   ## Configuration
 
-      config :thunderline, Thunderline.ML.ModelSelectionConsumer,
+      config :thunderline, Thunderline.Thunderbolt.ML.ModelSelectionConsumer,
         controller_pid: :ml_controller,
         batch_size: 10,
         batch_timeout: 1_000,
@@ -63,14 +63,14 @@ defmodule Thunderline.ML.ModelSelectionConsumer do
 
   Add to application supervision tree:
 
-      {Thunderline.ML.ModelSelectionConsumer, controller_pid: controller_pid}
+      {Thunderline.Thunderbolt.ML.ModelSelectionConsumer, controller_pid: controller_pid}
   """
 
   use Broadway
 
   alias Broadway.Message
   alias Thunderline.Event
-  alias Thunderline.ML.Controller
+  alias Thunderline.Thunderbolt.ML.Controller
 
   require Logger
 

@@ -1,8 +1,8 @@
-defmodule Thunderline.ML.ModelSelectionConsumerTest do
+defmodule Thunderline.Thunderbolt.ML.ModelSelectionConsumerTest do
   use ExUnit.Case, async: false
 
   alias Thunderline.Event
-  alias Thunderline.ML.{Controller, ModelSelectionConsumer}
+  alias Thunderline.Thunderbolt.ML.{Controller, ModelSelectionConsumer}
 
   setup do
     # Start ML Controller

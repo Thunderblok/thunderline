@@ -1,7 +1,7 @@
-defmodule Thunderline.RAG.CollectionTest do
+defmodule Thunderline.Thunderbolt.RAG.CollectionTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.RAG.Collection
+    alias Thunderline.Thunderbolt.RAG.Document
 
   describe "Ash resource configuration" do
     test "defines ingest action" do

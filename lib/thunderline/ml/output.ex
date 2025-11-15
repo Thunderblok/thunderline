@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.Output do
+defmodule Thunderline.Thunderbolt.ML.Output do
   @moduledoc """
   Normalized output structure for ML inference results.
 

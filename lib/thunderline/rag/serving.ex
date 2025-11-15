@@ -1,4 +1,4 @@
-defmodule Thunderline.RAG.Serving do
+defmodule Thunderline.Thunderbolt.RAG.Serving do
   @moduledoc """
   Manages Nx.Serving processes for RAG (Retrieval-Augmented Generation).
 
@@ -19,10 +19,10 @@ defmodule Thunderline.RAG.Serving do
   ## Usage
 
       # Embed text (returns 768-dim vector)
-      {:ok, embedding} = Thunderline.RAG.Serving.embed("def hello_world")
+      {:ok, embedding} = Thunderline.Thunderbolt.RAG.Serving.embed("def hello_world")
 
       # Generate response with context
-      {:ok, response} = Thunderline.RAG.Serving.generate(
+      {:ok, response} = Thunderline.Thunderbolt.RAG.Serving.generate(
         "What domains does Thunderline have?",
         "ThunderBolt handles ML/compute, ThunderGate handles auth..."
       )
@@ -58,7 +58,7 @@ defmodule Thunderline.RAG.Serving do
 
   ## Examples
 
-      iex> Thunderline.RAG.Serving.embed("def hello_world(): pass")
+      iex> Thunderline.Thunderbolt.RAG.Serving.embed("def hello_world(): pass")
       {:ok, #Nx.Tensor<f32[768]>[0.123, -0.456, ...]>}
   """
   def embed(text) when is_binary(text) do
@@ -77,7 +77,7 @@ defmodule Thunderline.RAG.Serving do
 
   ## Examples
 
-      iex> Thunderline.RAG.Serving.embed_batch(["text 1", "text 2"])
+      iex> Thunderline.Thunderbolt.RAG.Serving.embed_batch(["text 1", "text 2"])
       {:ok, [#Nx.Tensor<...>, #Nx.Tensor<...>]}
   """
   def embed_batch(texts) when is_list(texts) do
@@ -104,7 +104,7 @@ defmodule Thunderline.RAG.Serving do
 
   ## Examples
 
-      iex> Thunderline.RAG.Serving.generate(
+      iex> Thunderline.Thunderbolt.RAG.Serving.generate(
       ...>   "What is ThunderBolt?",
       ...>   "ThunderBolt handles ML compute and Cerebros integration."
       ...> )

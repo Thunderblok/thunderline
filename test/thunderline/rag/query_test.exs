@@ -1,7 +1,7 @@
-defmodule Thunderline.RAG.QueryTest do
+defmodule Thunderline.Thunderbolt.RAG.QueryTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.RAG.Query
+  alias Thunderline.Thunderbolt.RAG.Query
 
   describe "build_prompt/3" do
     test "constructs proper RAG prompt format" do

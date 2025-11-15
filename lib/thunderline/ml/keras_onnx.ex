@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.KerasONNX do
+defmodule Thunderline.Thunderbolt.ML.KerasONNX do
   @moduledoc """
   ONNX model adapter using Ortex for in-process ML inference.
 
@@ -18,7 +18,7 @@ defmodule Thunderline.ML.KerasONNX do
 
   Configure via application environment:
 
-      config :thunderline, Thunderline.ML.KerasONNX,
+      config :thunderline, Thunderline.Thunderbolt.ML.KerasONNX,
         model_dir: "priv/models",
         default_device: :cpu,
         session_cache: true,
@@ -61,7 +61,7 @@ defmodule Thunderline.ML.KerasONNX do
   """
 
   require Logger
-  alias Thunderline.ML.{Input, Output, Normalize}
+  alias Thunderline.Thunderbolt.ML.{Input, Output, Normalize}
 
   @type session :: reference()
   @type model_path :: String.t()

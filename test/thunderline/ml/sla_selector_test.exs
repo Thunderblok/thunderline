@@ -1,7 +1,7 @@
-defmodule Thunderline.ML.SLASelectorTest do
+defmodule Thunderline.Thunderbolt.ML.SLASelectorTest do
   use ExUnit.Case, async: true
 
-  alias Thunderline.ML.SLASelector
+  alias Thunderline.Thunderbolt.ML.SLASelector
 
   describe "init/2" do
     test "initializes with uniform probabilities" do

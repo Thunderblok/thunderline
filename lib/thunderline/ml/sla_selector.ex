@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.SLASelector do
+defmodule Thunderline.Thunderbolt.ML.SLASelector do
   @moduledoc """
   Stochastic Learning Automaton for adaptive model selection.
 

@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.Parzen do
+defmodule Thunderline.Thunderbolt.ML.Parzen do
   @moduledoc """
   Non-parametric density estimator using histogram approximation over PCA-reduced dimensions.
 

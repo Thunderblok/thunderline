@@ -1,4 +1,4 @@
-defmodule Thunderline.RAG.Document do
+defmodule Thunderline.Thunderbolt.RAG.Document do
   @moduledoc """
   RAG Document resource with automatic vectorization.
 
@@ -15,13 +15,13 @@ defmodule Thunderline.RAG.Document do
   ## Examples
 
       # Ingest a document
-      {:ok, doc} = Thunderline.RAG.create_document!(%{
+      {:ok, doc} = Thunderline.Thunderbolt.RAG.create_document!(%{
         content: "ThunderBolt handles ML compute and inference.",
         metadata: %{source: "README.md", section: "Architecture"}
       })
 
       # Semantic search
-      results = Thunderline.RAG.semantic_search!("What does ThunderBolt do?")
+      results = Thunderline.Thunderbolt.RAG.semantic_search!("What does ThunderBolt do?")
   """
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
@@ -43,7 +43,7 @@ defmodule Thunderline.RAG.Document do
     end
 
     strategy :manual
-    embedding_model Thunderline.RAG.EmbeddingModel
+    embedding_model Thunderline.Thunderbolt.RAG.EmbeddingModel
   end
 
   # Authorization - allow all for MVP (add policies later)
@@ -101,7 +101,7 @@ defmodule Thunderline.RAG.Document do
         Logger.info("[RAG.Document] Semantic search: \"#{query_text}\" (limit=#{limit})")
 
         # Generate embedding for query
-        case Thunderline.RAG.EmbeddingModel.generate([query_text], []) do
+        case Thunderline.Thunderbolt.RAG.EmbeddingModel.generate([query_text], []) do
           {:ok, [search_vector]} ->
             Logger.debug(
               "[RAG.Document] Generated query embedding (#{length(search_vector)} dims)"

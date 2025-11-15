@@ -1,4 +1,4 @@
-defmodule Thunderline.NLP.Port do
+defmodule Thunderline.Thunderbolt.NLP.Port do
   @moduledoc """
   Supervised Port bridge to Python spaCy NLP CLI.
 
@@ -9,11 +9,11 @@ defmodule Thunderline.NLP.Port do
 
       # Start under supervision tree
       children = [
-        {Thunderline.NLP.Port, [python_path: "python3", cli_path: "thunderhelm/nlp_cli.py"]}
+        {Thunderline.Thunderbolt.NLP.Port, [python_path: "python3", cli_path: "thunderhelm/nlp_cli.py"]}
       ]
 
       # Analyze text
-      {:ok, result} = Thunderline.NLP.Port.analyze("Apple Inc. in Cupertino")
+      {:ok, result} = Thunderline.Thunderbolt.NLP.Port.analyze("Apple Inc. in Cupertino")
       # => {:ok, %{entities: [...], tokens: [...]}}
 
   ## Contract

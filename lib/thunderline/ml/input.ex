@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.Input do
+defmodule Thunderline.Thunderbolt.ML.Input do
   @moduledoc """
   Normalized input structure for ML inference.
 

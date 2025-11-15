@@ -1,4 +1,4 @@
-defmodule Thunderline.ML.Distance do
+defmodule Thunderline.Thunderbolt.ML.Distance do
   @moduledoc """
   Distance metrics for comparing probability distributions.
 
