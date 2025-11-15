@@ -154,12 +154,29 @@ defmodule Thunderline.Application do
   defp ml_pipeline_children do
     if Feature.enabled?(:ml_pipeline, default: true) do
       [
+        # ML Controller for adaptive model selection
+        {Thunderline.ML.Controller, ml_controller_config()},
+        # Model selection consumer (requires Controller to be started first)
+        {Thunderline.ML.ModelSelectionConsumer, controller_pid: :ml_controller},
         # File classification consumer
         Thunderline.Thunderflow.Consumers.Classifier
       ]
     else
       []
     end
+  end
+
+  defp ml_controller_config do
+    [
+      name: :ml_controller,
+      models: [:model_a, :model_b],  # TODO: Load from config
+      distance_metric: :js_divergence,
+      window_size: 50,
+      sla_params: %{
+        learning_rate: 0.01,
+        penalty_factor: 0.1
+      }
+    ]
   end
 
   defp attach_reward_handler do

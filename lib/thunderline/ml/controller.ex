@@ -1,139 +1,111 @@
 defmodule Thunderline.ML.Controller do
   @moduledoc """
-  Orchestrator GenServer for SLA + Parzen adaptive model selection.
+  Phase 3.5: Pure ML Control Loop Orchestration.
 
-  The Controller implements the 10-step adaptive selection loop that integrates
-  Parzen density estimation, ONNX model execution, distance measurement, and
-  SLA-based learning.
+  Integrates Parzen + Distance + SLASelector into a single adaptive model selection
+  controller. This is the **brainstem** of the ML system - where distributions meet
+  decisions, where learning becomes action.
 
-  ## Architecture
+  ## Purpose
 
-  **One Controller per (PAC, zone, feature_family) tuple**.
+  Accept batches of model outputs + targets → Update Parzen density estimates →
+  Compute distance metrics → Feed rewards/penalties to SLA → Select next best model.
 
-  Controllers are spawned by `Thunderline.ML.ControllerSupervisor` and registered
-  in a `Registry` for lookup.
-
-  ## 10-Step Process Flow
-
-  When `process_batch/3` is called:
-
-  1. **Update Parzen**: Fit density estimator with new batch
-  2. **Choose Model**: SLA selects candidate based on P(u_j)
-  3. **Run ONNX**: Execute inference via `Thunderline.ML.KerasONNX`
-  4. **Model → Histogram**: Convert ONNX outputs to density
-  5. **Compute Distance**: Measure Parzen vs model (KL/Hellinger/etc)
-  6. **Calculate Reward**: 1 if distance improved, 0 otherwise
-  7. **Update SLA**: Adjust probabilities using reward/penalty
-  8. **Build Metadata**: Prepare voxel embedding data
-  9. **Emit Event**: Publish `system.ml.model_selection.updated`
-  10. **Return**: Forward ONNX outputs + metadata downstream
-
-  ## State Management
-
-  Controller state includes:
-
-  - `parzen`: Parzen density estimator
-  - `sla`: SLA selector
-  - `candidate_models`: List of ONNX model specs
-  - `distance_metric`: Which metric to use (:kl, :hellinger, etc)
-  - `last_chosen_model`: Previous model ID
-  - `iteration`: Batch counter
-
-  ## Telemetry
-
-  Emits the following events:
-
-  - `[:ml, :controller, :update, :start]` - Batch processing started
-  - `[:ml, :controller, :update, :stop]` - Measurements: duration, distance, reward
-  - `[:ml, :controller, :model_changed]` - Best model switched
-  - `[:ml, :controller, :converged]` - SLA probabilities stabilized
-
-  ## Usage
+  ## State Structure
 
   ```elixir
-  # Start controller for a specific (PAC, zone, feature_family)
-  {:ok, pid} = Controller.start_link(
-    pac_id: "pac_001",
-    zone_id: "zone_alpha",
-    feature_family: :network_traffic,
-    candidate_models: [
-      %{id: :model_k1, onnx_path: "path/to/k1.onnx"},
-      %{id: :model_k2, onnx_path: "path/to/k2.onnx"},
-      %{id: :model_k3, onnx_path: "path/to/k3.onnx"}
-    ],
-    parzen_opts: [window_size: 300, bins: 20, dims: 2],
-    sla_opts: [alpha: 0.1, v: 0.05],
-    distance_metric: :kl
-  )
-
-  # Process batch
-  batch = Nx.tensor([[1.0, 2.0], [3.0, 4.0], ...])
-  {:ok, result} = Controller.process_batch(pid, batch, %{request_id: "req_123"})
-
-  # Result contains:
-  # %{
-  #   outputs: #Nx.Tensor<...>,          # ONNX model outputs
-  #   metadata: %{
-  #     chosen_model: :model_k2,
-  #     distance: 0.023,
-  #     reward: 1,
-  #     sla_probabilities: %{...},
-  #     iteration: 47
-  #   }
-  # }
-
-  # Get current state snapshot
-  state = Controller.get_state(pid)
+  %__MODULE__{
+    models: [:model_a, :model_b, :model_c],
+    parzen: %{model_a => ParzenState, model_b => ParzenState, ...},
+    sla: SLASelectorState,
+    distance_metric: :js | :kl | :hellinger | :cross_entropy,
+    window_size: 300,
+    last_reward: float() | nil,
+    iteration: non_neg_integer(),
+    meta: %{} # free-form metadata for later integration
+  }
   ```
 
-  ## Integration with Broadway
+  ## Batch Format
 
-  Controllers are invoked by `Thunderline.ML.ControllerConsumer` (Broadway consumer)
-  which routes batches based on (PAC, zone, feature_family) extracted from events.
+  ```elixir
+  %{
+    model_outputs: %{
+      model_a => Nx.tensor([0.7, 0.3]),  # probability distributions
+      model_b => Nx.tensor([0.4, 0.6]),
+      model_c => Nx.tensor([0.5, 0.5])
+    },
+    target_dist: Nx.tensor([0.8, 0.2]),  # expected distribution
+    context: %{correlation_id: "req_123", zone: "alpha"}  # optional
+  }
+  ```
 
-  ## Voxel Embedding
+  ## Process Flow (handle_call :process_batch)
 
-  Metadata from Controller.process_batch/3 is embedded into
-  `Thunderline.Thunderblock.Voxel.mixture_meta` field, creating a persistent
-  record of the learning state at each iteration.
+  1. **Validate Input** - Check all models present, compatible shapes
+  2. **Update Parzen** - Fit each model's density estimator with its output
+  3. **Compute Distances** - Compare each model's Parzen histogram to target
+  4. **Derive Reward** - Best model (lowest distance) gets reward, others penalty
+  5. **Update SLA** - Adjust probabilities based on feedback
+  6. **Choose Next** - SLA selects model for next iteration
+  7. **Emit Telemetry** - Duration, distances, probabilities, convergence
+  8. **Return Response** - chosen_model, probabilities, distances, iteration
+
+  ## Telemetry Events
+
+  - `[:thunderline, :ml, :controller, :process_batch, :start]`
+  - `[:thunderline, :ml, :controller, :process_batch, :stop]`
+  - `[:thunderline, :ml, :controller, :process_batch, :error]`
+
+  Measurements: :batch_size, :num_models, :duration_ms, :avg_distance
+
+  ## Phase 3.5 Scope
+
+  **IN SCOPE:**
+  - Pure ML orchestration loop
+  - GenServer with state management
+  - Snapshot/restore for persistence
+  - Comprehensive tests proving convergence
+
+  **OUT OF SCOPE:**
+  - Broadway/EventBus integration
+  - ONNX runtime execution
+  - Voxel/DAG persistence
+  - Magika/Thundergate wiring
+
+  Those come in Phase 3.6+.
 
   ## References
 
-  - Li et al. (2007). "An Improved Adaptive Parzen Window Approach Based on SLA"
-  - See also: `Thunderline.ML.Parzen`, `Thunderline.ML.SLASelector`, `Thunderline.ML.Distance`
+  - Li et al. (2007) "An Improved Adaptive Parzen Window Approach Based on SLA"
+  - Phase 3 spec: documentation/thunderline/phase_3_*.md
   """
 
   use GenServer
   require Logger
 
-  alias Thunderline.ML.{Parzen, SLASelector, Distance, KerasONNX}
+  alias Thunderline.ML.{Parzen, SLASelector, Distance}
 
-  @typedoc """
-  Controller state.
+  defstruct [
+    :models,
+    :parzen,
+    :sla,
+    :distance_metric,
+    :window_size,
+    :last_reward,
+    :iteration,
+    :meta
+  ]
 
-  Fields:
-  - `pac_id`: PAC identifier
-  - `zone_id`: Zone identifier
-  - `feature_family`: Feature family atom
-  - `parzen`: Parzen density estimator
-  - `sla`: SLA selector
-  - `candidate_models`: List of model specs %{id: atom(), onnx_path: String.t()}
-  - `distance_metric`: Distance metric to use
-  - `last_chosen_model`: Previously selected model
-  - `iteration`: Batch counter
-  - `telemetry_enabled?`: Whether to emit telemetry
-  """
-  @type state :: %{
-          pac_id: String.t(),
-          zone_id: String.t(),
-          feature_family: atom(),
-          parzen: Parzen.t(),
+  @type t :: %__MODULE__{
+          models: [atom()],
+          parzen: %{atom() => Parzen.t()},
           sla: SLASelector.t(),
-          candidate_models: [%{id: atom(), onnx_path: String.t()}],
           distance_metric: Distance.metric(),
-          last_chosen_model: atom() | nil,
+          window_size: pos_integer(),
+          last_reward: float() | nil,
           iteration: non_neg_integer(),
-          telemetry_enabled?: boolean()
+          meta: map()
         }
 
   ## Public API
@@ -141,17 +113,14 @@ defmodule Thunderline.ML.Controller do
   @doc """
   Start a Controller GenServer.
 
-  ## Options
+  ## Options (Phase 3.5 simplified)
 
-  - `:pac_id` - PAC identifier (required)
-  - `:zone_id` - Zone identifier (required)
-  - `:feature_family` - Feature family atom (required)
-  - `:candidate_models` - List of model specs (required)
-  - `:parzen_opts` - Options for Parzen.init/1 (default: [])
-  - `:sla_opts` - Options for SLASelector.init/2 (default: [])
-  - `:distance_metric` - Distance metric (:kl, :hellinger, etc) (default: :kl)
-  - `:telemetry_enabled?` - Emit telemetry events? (default: true)
-  - `:name` - Process name (default: via Registry)
+  - `:models` - List of model identifiers (required, non-empty)
+  - `:distance_metric` - Distance metric (:js, :kl, :hellinger, :cross_entropy) (default: :js)
+  - `:window_size` - Parzen window size (default: 300)
+  - `:alpha` - SLA learning rate (default: 0.1)
+  - `:v` - SLA penalty rate (default: 0.05)
+  - `:name` - Process registration name (optional)
 
   ## Returns
 
@@ -160,199 +129,442 @@ defmodule Thunderline.ML.Controller do
   ## Examples
 
       {:ok, pid} = Controller.start_link(
-        pac_id: "pac_001",
-        zone_id: "zone_alpha",
-        feature_family: :network_traffic,
-        candidate_models: [
-          %{id: :model_k1, onnx_path: "path/to/k1.onnx"},
-          %{id: :model_k2, onnx_path: "path/to/k2.onnx"}
-        ]
+        models: [:model_a, :model_b, :model_c],
+        distance_metric: :js,
+        window_size: 300
       )
   """
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts) do
-    raise "Not implemented - Phase 3.5"
+    {name, opts} = Keyword.pop(opts, :name)
+
+    if name do
+      GenServer.start_link(__MODULE__, opts, name: name)
+    else
+      GenServer.start_link(__MODULE__, opts)
+    end
   end
 
   @doc """
-  Process a batch of data through the 10-step adaptive selection loop.
+  Process a batch through the adaptive selection loop.
 
-  ## Algorithm
+  ## Batch Format
 
-  1. Update Parzen with new batch
-  2. SLA chooses candidate model
-  3. Run ONNX inference via chosen model
-  4. Convert model outputs to histogram
-  5. Compute distance (Parzen vs model)
-  6. Calculate reward (distance improved?)
-  7. Update SLA probabilities
-  8. Build metadata for voxel
-  9. Emit telemetry event
-  10. Return model outputs + metadata
-
-  ## Arguments
-
-  - `controller` - Controller PID or registered name
-  - `batch` - Nx tensor of shape {batch_size, features}
-  - `context` - Request context map (optional)
+  ```elixir
+  %{
+    model_outputs: %{
+      model_a => Nx.tensor([0.7, 0.3]),
+      model_b => Nx.tensor([0.4, 0.6])
+    },
+    target_dist: Nx.tensor([0.8, 0.2]),
+    context: %{correlation_id: "req_123"}  # optional
+  }
+  ```
 
   ## Returns
 
-  `{:ok, result}` where result is:
+  ```elixir
+  {:ok, %{
+    chosen_model: :model_a,
+    probabilities: %{model_a: 0.6, model_b: 0.4},
+    distances: %{model_a: 0.023, model_b: 0.156},
+    iteration: 47,
+    reward_model: :model_a
+  }}
+  ```
 
-      %{
-        outputs: Nx.Tensor.t(),
-        metadata: %{
-          chosen_model: atom(),
-          distance: float(),
-          reward: 0 | 1,
-          sla_probabilities: %{atom() => float()},
-          parzen_snapshot: map(),
-          iteration: integer(),
-          convergence: float() | nil
-        }
-      }
-
-  Or `{:error, reason}`.
+  Or `{:error, reason}` if validation fails.
 
   ## Examples
 
-      batch = Nx.tensor([[1.0, 2.0], [3.0, 4.0]])
-      {:ok, result} = Controller.process_batch(pid, batch, %{request_id: "req_123"})
+      batch = %{
+        model_outputs: %{
+          model_a: Nx.tensor([0.7, 0.3]),
+          model_b: Nx.tensor([0.8, 0.2])
+        },
+        target_dist: Nx.tensor([0.75, 0.25])
+      }
 
-      # Access results
-      outputs = result.outputs
-      chosen_model = result.metadata.chosen_model
-      distance = result.metadata.distance
+      {:ok, result} = Controller.process_batch(pid, batch)
   """
-  @spec process_batch(GenServer.server(), Nx.Tensor.t(), map()) ::
-          {:ok, map()} | {:error, term()}
-  def process_batch(controller, batch, context \\ %{})
-      when is_struct(batch, Nx.Tensor) do
-    raise "Not implemented - Phase 3.5"
+  @spec process_batch(GenServer.server(), map()) :: {:ok, map()} | {:error, term()}
+  def process_batch(controller, batch) when is_map(batch) do
+    GenServer.call(controller, {:process_batch, batch})
   end
 
   @doc """
-  Get current Controller state snapshot.
+  Get current controller state (for inspection/debugging).
 
-  ## Arguments
+  Returns the full state struct.
 
-  - `controller` - Controller PID or registered name
+  ## Examples
+
+      state = Controller.state(pid)
+      # => %Thunderline.ML.Controller{
+      #   models: [:model_a, :model_b],
+      #   iteration: 47,
+      #   ...
+      # }
+  """
+  @spec state(GenServer.server()) :: t()
+  def state(controller) do
+    GenServer.call(controller, :state)
+  end
+
+  @doc """
+  Create a serializable snapshot for persistence.
 
   ## Returns
 
   Map with:
-  - `:pac_id`, `:zone_id`, `:feature_family` - Identifiers
-  - `:iteration` - Current iteration
-  - `:last_chosen_model` - Most recent model
-  - `:sla_state` - SLA probabilities and stats
-  - `:parzen_state` - Parzen histogram summary
-  - `:candidate_models` - List of available models
+  - `:models` - List of model IDs
+  - `:parzen` - Map of {model_id => Parzen.snapshot()}
+  - `:sla` - SLASelector.snapshot()
+  - `:distance_metric`, `:window_size`, `:iteration`, `:last_reward`, `:meta`
 
   ## Examples
 
-      state = Controller.get_state(pid)
-      # => %{
-      #   pac_id: "pac_001",
-      #   zone_id: "zone_alpha",
-      #   feature_family: :network_traffic,
-      #   iteration: 47,
-      #   last_chosen_model: :model_k2,
-      #   sla_state: %{...},
-      #   parzen_state: %{...},
-      #   candidate_models: [...]
-      # }
-  """
-  @spec get_state(GenServer.server()) :: map()
-  def get_state(controller) do
-    raise "Not implemented - Phase 3.5"
-  end
-
-  @doc """
-  Create a full state snapshot for persistence.
-
-  Includes complete Parzen and SLA snapshots suitable for embedding in voxel
-  or checkpointing to disk.
-
-  ## Arguments
-
-  - `controller` - Controller PID or registered name
-
-  ## Returns
-
-  Map with full serializable state.
-
-  ## Examples
-
-      snapshot = Controller.snapshot(pid)
-      # Can be embedded in Voxel.mixture_meta field
+      snap = Controller.snapshot(pid)
+      # Later: restore via from_snapshot/1
   """
   @spec snapshot(GenServer.server()) :: map()
   def snapshot(controller) do
-    raise "Not implemented - Phase 3.5"
+    GenServer.call(controller, :snapshot)
+  end
+
+  @doc """
+  Restore controller state from a snapshot.
+
+  Does NOT create a process - just reconstructs the state struct.
+  Use with `start_link/1` or for testing.
+
+  ## Examples
+
+      snap = Controller.snapshot(pid)
+      restored_state = Controller.from_snapshot(snap)
+      # Can pass to GenServer.init or manual testing
+  """
+  @spec from_snapshot(map()) :: t()
+  def from_snapshot(snapshot) do
+    %__MODULE__{
+      models: snapshot.models,
+      parzen:
+        Enum.into(snapshot.parzen, %{}, fn {model_id, parzen_snap} ->
+          {model_id, Parzen.from_snapshot(parzen_snap)}
+        end),
+      sla: SLASelector.from_snapshot(snapshot.sla),
+      distance_metric: snapshot.distance_metric,
+      window_size: snapshot.window_size,
+      last_reward: snapshot[:last_reward],
+      iteration: snapshot.iteration,
+      meta: snapshot[:meta] || %{}
+    }
   end
 
   ## GenServer Callbacks
 
   @impl true
   def init(opts) do
-    raise "Not implemented - Phase 3.5"
+    # Validate and extract options
+    models = Keyword.fetch!(opts, :models)
+
+    unless is_list(models) and models != [] do
+      raise ArgumentError, "models must be a non-empty list, got: #{inspect(models)}"
+    end
+
+    window_size = Keyword.get(opts, :window_size, 300)
+    distance_metric = Keyword.get(opts, :distance_metric, :js)
+    alpha = Keyword.get(opts, :alpha, 0.1)
+    v = Keyword.get(opts, :v, 0.05)
+
+    # Initialize Parzen map (one per model)
+    parzen =
+      Enum.into(models, %{}, fn model_id ->
+        {model_id,
+         Parzen.init(
+           pac_id: "controller_#{model_id}",
+           feature_family: :probability_distribution,
+           window_size: window_size
+         )}
+      end)
+
+    # Initialize SLA (single for all models)
+    sla = SLASelector.init(models, alpha: alpha, v: v)
+
+    state = %__MODULE__{
+      models: models,
+      parzen: parzen,
+      sla: sla,
+      distance_metric: distance_metric,
+      window_size: window_size,
+      last_reward: nil,
+      iteration: 0,
+      meta: %{}
+    }
+
+    {:ok, state}
   end
 
   @impl true
-  def handle_call({:process_batch, batch, context}, _from, state) do
-    raise "Not implemented - Phase 3.5"
+  def handle_call({:process_batch, batch}, _from, state) do
+    start_time = System.monotonic_time()
+
+    # Emit start telemetry
+    emit_telemetry(:start, %{num_models: length(state.models)}, %{})
+
+    case do_process_batch(batch, state) do
+      {:ok, response, new_state} ->
+        # Emit success telemetry
+        duration = System.monotonic_time() - start_time
+
+        emit_telemetry(
+          :stop,
+          %{
+            duration_ns: duration,
+            num_models: length(state.models),
+            iteration: new_state.iteration
+          },
+          %{
+            chosen_model: response.chosen_model,
+            reward_model: response.reward_model,
+            distances: response.distances
+          }
+        )
+
+        {:reply, {:ok, response}, new_state}
+
+      {:error, reason} = error ->
+        # Emit error telemetry
+        emit_telemetry(:error, %{}, %{reason: reason})
+        {:reply, error, state}
+    end
   end
 
   @impl true
-  def handle_call(:get_state, _from, state) do
-    raise "Not implemented - Phase 3.5"
+  def handle_call(:state, _from, state) do
+    {:reply, state, state}
   end
 
   @impl true
   def handle_call(:snapshot, _from, state) do
-    raise "Not implemented - Phase 3.5"
+    snapshot = %{
+      models: state.models,
+      parzen:
+        Enum.into(state.parzen, %{}, fn {model_id, parzen_state} ->
+          {model_id, Parzen.snapshot(parzen_state)}
+        end),
+      sla: SLASelector.snapshot(state.sla),
+      distance_metric: state.distance_metric,
+      window_size: state.window_size,
+      last_reward: state.last_reward,
+      iteration: state.iteration,
+      meta: state.meta
+    }
+
+    {:reply, snapshot, state}
   end
 
   ## Private Helpers
 
-  # These will be implemented in Phase 3.5
-
+  # Core 8-step orchestration logic
   defp do_process_batch(batch, state) do
-    raise "Not implemented - Phase 3.5"
+    with :ok <- validate_batch(batch, state),
+         {:ok, new_parzen} <- update_all_parzen(batch, state),
+         {:ok, distances} <- compute_all_distances(batch, new_parzen, state),
+         {:ok, reward_model} <- determine_best_model(distances),
+         {:ok, new_sla} <- update_sla_for_all_models(reward_model, distances, state),
+         {:ok, final_sla, chosen_model} <- choose_next_model(new_sla) do
+      # Build response
+      response = %{
+        chosen_model: chosen_model,
+        probabilities: SLASelector.probabilities(final_sla),
+        distances: distances,
+        iteration: final_sla.iteration,
+        reward_model: reward_model
+      }
+
+      # Update state
+      new_state = %{
+        state
+        | parzen: new_parzen,
+          sla: final_sla,
+          last_reward: -distances[reward_model],
+          iteration: state.iteration + 1
+      }
+
+      {:ok, response, new_state}
+    else
+      {:error, _reason} = error -> error
+    end
   end
 
-  defp update_parzen(state, batch) do
-    raise "Not implemented - Phase 3.5"
+  # Step 1: Validate batch structure
+  defp validate_batch(%{model_outputs: outputs, target_dist: target}, state)
+       when is_map(outputs) do
+    # Check all models have outputs
+    missing_models = state.models -- Map.keys(outputs)
+
+    if missing_models != [] do
+      {:error, {:missing_model_output, missing_models}}
+    else
+      # Check target is a tensor
+      if is_struct(target, Nx.Tensor) do
+        # Check all outputs are tensors with compatible shapes
+        validate_output_shapes(outputs, target)
+      else
+        {:error, :invalid_target}
+      end
+    end
   end
 
-  defp choose_model(state) do
-    raise "Not implemented - Phase 3.5"
+  defp validate_batch(_batch, _state) do
+    {:error, :invalid_batch_format}
   end
 
-  defp run_inference(state, model_id, batch) do
-    raise "Not implemented - Phase 3.5"
+  defp validate_output_shapes(outputs, target) do
+    target_shape = Nx.shape(target)
+    target_dims = tuple_size(target_shape)
+
+    # Target should be 1D (classes) or 2D (batch, classes)
+    if target_dims in [1, 2] do
+      # Get expected shape from target
+      expected_shape =
+        case target_dims do
+          1 -> target_shape
+          2 -> elem(target_shape, 1)
+        end
+
+      # Check each output
+      Enum.reduce_while(outputs, :ok, fn {model_id, tensor}, _acc ->
+        unless is_struct(tensor, Nx.Tensor) do
+          {:halt, {:error, {:invalid_output, model_id, "not a tensor"}}}
+        else
+          shape = Nx.shape(tensor)
+          dims = tuple_size(shape)
+
+          # Output should match target dimensionality
+          cond do
+            dims != target_dims ->
+              {:halt, {:error, {:shape_mismatch, model_id, shape, target_shape}}}
+
+            dims == 1 and shape != expected_shape ->
+              {:halt, {:error, {:shape_mismatch, model_id, shape, expected_shape}}}
+
+            dims == 2 and elem(shape, 1) != expected_shape ->
+              {:halt, {:error, {:shape_mismatch, model_id, shape, target_shape}}}
+
+            true ->
+              {:cont, :ok}
+          end
+        end
+      end)
+    else
+      {:error, {:invalid_target_shape, target_shape}}
+    end
   end
 
-  defp outputs_to_histogram(outputs, bins) do
-    raise "Not implemented - Phase 3.5"
+  # Step 2: Update Parzen estimators
+  defp update_all_parzen(%{model_outputs: outputs}, state) do
+    new_parzen =
+      Enum.into(state.models, %{}, fn model_id ->
+        model_output = outputs[model_id]
+        current_parzen = state.parzen[model_id]
+
+        # Ensure model_output is 2D for Parzen.fit
+        # Parzen expects shape {batch_size, feature_dim}
+        # If 1D {classes}, reshape to {1, classes}
+        # If already 2D {batch_size, classes}, use as-is
+        batch =
+          case Nx.shape(model_output) do
+            {_batch_size, _feature_dim} ->
+              # Already 2D, use directly
+              model_output
+
+            {_feature_dim} ->
+              # 1D, add batch dimension
+              Nx.new_axis(model_output, 0)
+          end
+
+        # Fit Parzen with this model's output
+        updated_parzen = Parzen.fit(current_parzen, batch)
+
+        {model_id, updated_parzen}
+      end)
+
+    {:ok, new_parzen}
   end
 
-  defp compute_distance(state, parzen_hist, model_hist) do
-    raise "Not implemented - Phase 3.5"
+  # Step 3: Compute distances
+  defp compute_all_distances(%{model_outputs: outputs, target_dist: target}, _new_parzen, state) do
+    distances =
+      Enum.into(state.models, %{}, fn model_id ->
+        model_output = outputs[model_id]
+
+        # Compute distance between model output and target distribution directly
+        # (not through Parzen - the Parzen tracks density over time but comparison is direct)
+        distance_value =
+          case state.distance_metric do
+            :js -> Distance.js_divergence(model_output, target)
+            :kl -> Distance.kl_divergence(model_output, target)
+            :hellinger -> Distance.hellinger(model_output, target)
+            :cross_entropy -> Distance.cross_entropy(model_output, target)
+          end
+
+        {model_id, Nx.to_number(distance_value)}
+      end)
+
+    {:ok, distances}
   end
 
-  defp calculate_reward(state, current_distance) do
-    raise "Not implemented - Phase 3.5"
+  # Step 4: Determine best model (minimum distance)
+  defp determine_best_model(distances) do
+    {best_model, _min_distance} = Enum.min_by(distances, fn {_k, v} -> v end)
+    {:ok, best_model}
   end
 
-  defp update_sla(state, model_id, reward, distance) do
-    raise "Not implemented - Phase 3.5"
+  # Step 5: Update SLA with reward signals
+  defp update_sla_for_all_models(reward_model, distances, state) do
+    # Update SLA for each model
+    new_sla =
+      Enum.reduce(state.models, state.sla, fn model_id, sla_acc ->
+        # Best model gets reward (1), others get penalty (0)
+        # SLASelector.update/4 expects 0 or 1, not :reward/:penalty atoms
+        reward = if model_id == reward_model, do: 1, else: 0
+        distance = distances[model_id]
+
+        # Pass distance as optional metadata in keyword list
+        SLASelector.update(sla_acc, model_id, reward, distance: distance)
+      end)
+
+    {:ok, new_sla}
   end
 
-  defp build_metadata(state, model_id, distance, reward) do
-    raise "Not implemented - Phase 3.5"
+  # Step 6: Choose next model via SLA
+  defp choose_next_model(sla) do
+    # SLASelector.choose_action/2 returns {updated_sla, chosen_action}
+    # We need both: updated SLA has incremented iteration counter
+    {updated_sla, chosen} = SLASelector.choose_action(sla, strategy: :sample)
+    {:ok, updated_sla, chosen}
   end
+
+  # Telemetry emission
+  defp emit_telemetry(event_type, measurements, metadata) do
+    :telemetry.execute(
+      [:thunderline, :ml, :controller, :process_batch, event_type],
+      measurements,
+      metadata
+    )
+  end
+
+  # Unused helpers (for Phase 3.6+ ONNX integration)
+  defp update_parzen(_state, _batch), do: raise("Use update_all_parzen/2")
+  defp choose_model(_state), do: raise("Use choose_next_model/1")
+  defp run_inference(_state, _model_id, _batch), do: raise("Phase 3.6+ ONNX")
+  defp outputs_to_histogram(_outputs, _bins), do: raise("Use Parzen.histogram/1")
+  defp compute_distance(_state, _p_hist, _m_hist), do: raise("Use compute_all_distances/3")
+  defp calculate_reward(_state, _distance), do: raise("Use determine_best_model/1")
+  defp update_sla(_state, _model_id, _reward, _dist), do: raise("Use update_sla_for_all_models/3")
+  defp build_metadata(_state, _model_id, _dist, _reward), do: raise("Response built in do_process_batch/2")
 
   defp emit_telemetry(state, metadata, duration) do
     raise "Not implemented - Phase 3.5"

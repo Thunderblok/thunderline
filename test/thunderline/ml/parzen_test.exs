@@ -3,6 +3,13 @@ defmodule Thunderline.ML.ParzenTest do
 
   alias Thunderline.ML.Parzen
 
+  # Fixed seed for deterministic tests
+  @seed 42
+
+  defp random_key(offset \\ 0) do
+    Nx.Random.key(@seed + offset)
+  end
+
   describe "init/1" do
     test "initializes with required options" do
       parzen = Parzen.init(pac_id: "pac_123", feature_family: :text)
@@ -55,7 +62,7 @@ defmodule Thunderline.ML.ParzenTest do
   describe "fit/2 - uniform distribution" do
     test "fits uniform data and produces roughly equal bin probabilities" do
       # Generate uniform samples in [0, 1], shape [300, 1]
-      samples = Nx.random_uniform({300, 1}, 0.0, 1.0, type: :f32)
+      {samples, _key} = Nx.Random.uniform(random_key(), 0.0, 1.0, shape: {300, 1}, type: :f32)
 
       parzen =
         Parzen.init(pac_id: "test", feature_family: :uniform)
@@ -82,7 +89,7 @@ defmodule Thunderline.ML.ParzenTest do
   describe "fit/2 - Gaussian distribution" do
     test "fits Gaussian data with more mass in center bins" do
       # Generate Gaussian samples N(0, 1), shape [500, 1]
-      samples = Nx.random_normal({500, 1}, 0.0, 1.0, type: :f32)
+      {samples, _key} = Nx.Random.normal(random_key(1), 0.0, 1.0, shape: {500, 1}, type: :f32)
 
       parzen =
         Parzen.init(pac_id: "test", feature_family: :gaussian, bins: 20)
@@ -108,7 +115,7 @@ defmodule Thunderline.ML.ParzenTest do
 
     test "produces symmetric histogram for symmetric Gaussian" do
       # Large sample for better symmetry
-      samples = Nx.random_normal({1000, 1}, 0.0, 1.0, type: :f32)
+      {samples, _key} = Nx.Random.normal(random_key(2), 0.0, 1.0, shape: {1000, 1}, type: :f32)
 
       parzen =
         Parzen.init(pac_id: "test", feature_family: :gaussian, bins: 20)
@@ -135,17 +142,17 @@ defmodule Thunderline.ML.ParzenTest do
       )
 
       # First batch: 80 samples
-      batch1 = Nx.random_uniform({80, 1}, type: :f32)
+      {batch1, _key} = Nx.Random.uniform(random_key(3), shape: {80, 1}, type: :f32)
       parzen = Parzen.fit(parzen, batch1)
       assert Nx.axis_size(parzen.samples, 0) == 80
 
       # Second batch: 50 samples (total would be 130, exceeds window_size)
-      batch2 = Nx.random_uniform({50, 1}, type: :f32)
+      {batch2, _key} = Nx.Random.uniform(random_key(4), shape: {50, 1}, type: :f32)
       parzen = Parzen.fit(parzen, batch2)
       assert Nx.axis_size(parzen.samples, 0) == 100  # Capped at window_size
 
       # Third batch: 30 more
-      batch3 = Nx.random_uniform({30, 1}, type: :f32)
+      {batch3, _key} = Nx.Random.uniform(random_key(5), shape: {30, 1}, type: :f32)
       parzen = Parzen.fit(parzen, batch3)
       assert Nx.axis_size(parzen.samples, 0) == 100  # Still capped
     end
@@ -184,7 +191,7 @@ defmodule Thunderline.ML.ParzenTest do
     end
 
     test "returns histogram data after fit" do
-      samples = Nx.random_uniform({100, 1}, type: :f32)
+      {samples, _key} = Nx.Random.uniform(random_key(6), shape: {100, 1}, type: :f32)
       parzen = Parzen.init(pac_id: "test", feature_family: :test)
       parzen = Parzen.fit(parzen, samples)
 
@@ -210,7 +217,7 @@ defmodule Thunderline.ML.ParzenTest do
 
     test "returns higher density at distribution center for Gaussian" do
       # Generate Gaussian N(0, 1)
-      samples = Nx.random_normal({500, 1}, 0.0, 1.0, type: :f32)
+      {samples, _key} = Nx.Random.normal(random_key(7), 0.0, 1.0, shape: {500, 1}, type: :f32)
       parzen = Parzen.init(pac_id: "test", feature_family: :gaussian)
       parzen = Parzen.fit(parzen, samples)
 
@@ -227,7 +234,7 @@ defmodule Thunderline.ML.ParzenTest do
     end
 
     test "handles 2D input vectors by squeezing" do
-      samples = Nx.random_uniform({100, 1}, type: :f32)
+      {samples, _key} = Nx.Random.uniform(random_key(8), shape: {100, 1}, type: :f32)
       parzen = Parzen.init(pac_id: "test", feature_family: :test)
       parzen = Parzen.fit(parzen, samples)
 
@@ -242,7 +249,7 @@ defmodule Thunderline.ML.ParzenTest do
 
   describe "snapshot/1 and from_snapshot/1" do
     test "snapshots and restores successfully" do
-      samples = Nx.random_uniform({100, 2}, type: :f32)
+      {samples, _key} = Nx.Random.uniform(random_key(9), shape: {100, 2}, type: :f32)
       parzen = Parzen.init(pac_id: "pac_789", feature_family: :snapshot_test, bins: 25)
       parzen = Parzen.fit(parzen, samples)
 
@@ -289,7 +296,7 @@ defmodule Thunderline.ML.ParzenTest do
     end
 
     test "snapshot doesn't include full sample tensor (lightweight)" do
-      samples = Nx.random_uniform({300, 5}, type: :f32)
+      {samples, _key} = Nx.Random.uniform(random_key(10), shape: {300, 5}, type: :f32)
       parzen = Parzen.init(pac_id: "test", feature_family: :test)
       parzen = Parzen.fit(parzen, samples)
 
@@ -314,7 +321,7 @@ defmodule Thunderline.ML.ParzenTest do
   describe "multi-dimensional features" do
     test "handles high-dimensional input via PCA projection to 1D" do
       # 10-dimensional features
-      samples = Nx.random_normal({200, 10}, 0.0, 1.0, type: :f32)
+      {samples, _key} = Nx.Random.normal(random_key(11), 0.0, 1.0, shape: {200, 10}, type: :f32)
 
       parzen = Parzen.init(pac_id: "test", feature_family: :high_dim, dims: 1)
       parzen = Parzen.fit(parzen, samples)
@@ -332,9 +339,9 @@ defmodule Thunderline.ML.ParzenTest do
 
   describe "telemetry" do
     test "emits telemetry events on fit" do
-      # Attach test handler
+      # Attach test handler with unique ID to avoid cross-test interference
       test_pid = self()
-      handler_id = :parzen_test_handler
+      handler_id = "parzen_test_handler_#{:erlang.unique_integer([:positive])}"
 
       :telemetry.attach_many(
         handler_id,
@@ -343,12 +350,15 @@ defmodule Thunderline.ML.ParzenTest do
           [:thunderline, :ml, :parzen, :fit, :stop]
         ],
         fn event_name, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, event_name, measurements, metadata})
+          # Only send to this specific test process
+          if metadata.pac_id == "telemetry_test" do
+            send(test_pid, {:telemetry, event_name, measurements, metadata})
+          end
         end,
         nil
       )
 
-      samples = Nx.random_uniform({50, 2}, type: :f32)
+      {samples, _key} = Nx.Random.uniform(random_key(12), shape: {50, 2}, type: :f32)
       parzen = Parzen.init(pac_id: "telemetry_test", feature_family: :test)
       _parzen = Parzen.fit(parzen, samples)
 

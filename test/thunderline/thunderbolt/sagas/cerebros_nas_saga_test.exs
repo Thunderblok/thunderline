@@ -16,23 +16,25 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSagaTest do
       assert true
     end
 
-    test "fails when dataset not found" do
-      correlation_id = Thunderline.UUID.v7()
+  test "fails when dataset not found" do
+    correlation_id = Thunderline.UUID.v7()
 
-      inputs = %{
-        dataset_id: "nonexistent",
-        search_space: %{layers: [2, 4], units: [64, 128]},
-        max_trials: 3,
-        correlation_id: correlation_id,
-        causation_id: nil
-      }
+    inputs = %{
+      dataset_id: "nonexistent",
+      search_space: %{layers: [2, 4], units: [64, 128]},
+      max_trials: 3,
+      correlation_id: correlation_id,
+      causation_id: nil
+    }
 
-      result = Reactor.run(CerebrosNASSaga, inputs)
+    result = Reactor.run(CerebrosNASSaga, inputs)
 
-      assert match?({:error, {:dataset_not_found, _}}, result)
-    end
+    # Reactor wraps step errors in Reactor.Error.Invalid
+    assert {:error, %Reactor.Error.Invalid{errors: errors}} = result
+    assert [%Reactor.Error.Invalid.RunStepError{error: {:dataset_not_found, _}}] = errors
+  end
 
-    test "compensates by marking run as failed" do
+  test "compensates by marking run as failed" do
       # TODO: Force proposal generation to fail
       # TODO: Verify ModelRun status set to :failed
       # TODO: Verify compensation telemetry emitted

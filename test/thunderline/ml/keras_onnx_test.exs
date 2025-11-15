@@ -351,10 +351,10 @@ defmodule Thunderline.ML.KerasONNXTest do
       # Create input that will fail normalization
       # (Implementation depends on ML.Normalize behavior)
       input = %Input{
-        data: nil,
-        type: :image,
-        metadata: %{},
-        correlation_id: nil
+        tensor: nil,
+        shape: {1, 224, 224, 3},
+        dtype: :f32,
+        metadata: %{}
       }
 
       result = KerasONNX.infer(session, input)

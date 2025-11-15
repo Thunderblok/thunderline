@@ -375,7 +375,7 @@ defmodule Thunderline.ML.SLASelectorTest do
       state = SLASelector.state(sla)
 
       assert state.probabilities == sla.probabilities
-      assert state.iteration == 1
+      assert state.iteration == 0  # update no longer increments iteration
       assert state.best_action == :model_a
       assert state.best_probability > 0.33
       assert state.convergence >= 0.0 and state.convergence <= 1.0

@@ -3,6 +3,9 @@ import Config
 # Disable Oban completely in test environment to prevent startup conflicts
 config :thunderline, Oban, false
 
+# Disable ML pipeline in tests (individual tests start their own Controllers)
+config :thunderline, :features, ml_pipeline: false
+
 config :thunderline, token_signing_secret: "QnSxy5agB4izHalnSgxl23Q+Gx+Jt+Ve"
 config :thunderline, event_validator_mode: :raise, require_actor_ctx: true
 config :bcrypt_elixir, log_rounds: 1

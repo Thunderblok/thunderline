@@ -207,6 +207,9 @@ defmodule Thunderline.ML.SLASelector do
           # Exploration: roulette wheel selection according to P(uⱼ)
           rand = :rand.uniform()
           cumulative_sample(sla.actions, sla.probabilities, rand, 0.0)
+
+        unknown ->
+          raise ArgumentError, "Unknown strategy: #{inspect(unknown)}. Use :greedy or :sample."
       end
 
     # Update iteration counter and best_action
@@ -312,6 +315,9 @@ defmodule Thunderline.ML.SLASelector do
     # Determine current best action
     {best_action, _} = Enum.max_by(normalized_probs, fn {_k, v} -> v end)
 
+    # Note: We do NOT increment iteration here - that happens in choose_action
+    # which represents completing one decision cycle. update() is called
+    # multiple times per cycle (once per model) to incorporate all rewards.
     %__MODULE__{
       sla
       | probabilities: normalized_probs,
