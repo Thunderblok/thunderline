@@ -60,28 +60,27 @@ defmodule Thunderline.Thunderlink.Domain do
   end
 
   resources do
-    # Support → ThunderLink (social/community features)
+    # Support → ThunderLink
     resource Thunderline.Thunderlink.Resources.Ticket
-
-    # ThunderCom → ThunderLink (communication)
+    # ThunderCom → ThunderLink
     resource Thunderline.Thunderlink.Resources.Channel
     resource Thunderline.Thunderlink.Resources.Community
     resource Thunderline.Thunderlink.Resources.FederationSocket
     resource Thunderline.Thunderlink.Resources.Message
     resource Thunderline.Thunderlink.Resources.Role
 
-    # Voice/WebRTC (migrated from Thundercom – Phase A)
+    # Voice/WebRTC
     resource Thunderline.Thunderlink.Voice.Room
     resource Thunderline.Thunderlink.Voice.Participant
     resource Thunderline.Thunderlink.Voice.Device
 
-    # Commented out until WebRTC implementation is available
-    # resource Thunderlink.Resources.PeerConnection
-    # resource Thunderlink.Resources.MediaStream
-    # resource Thunderlink.Resources.SignalingChannel
-    # resource Thunderlink.Resources.CallSession
-    # resource Thunderlink.Resources.MediaDevice
-    # resource Thunderlink.Resources.StreamRecording
+    # Node Registry & Cluster Topology
+    resource Thunderline.Thunderlink.Resources.Node
+    resource Thunderline.Thunderlink.Resources.Heartbeat
+    resource Thunderline.Thunderlink.Resources.LinkSession
+    resource Thunderline.Thunderlink.Resources.NodeCapability
+    resource Thunderline.Thunderlink.Resources.NodeGroup
+    resource Thunderline.Thunderlink.Resources.NodeGroupMembership
   end
 
   authorization do
