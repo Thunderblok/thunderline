@@ -398,20 +398,8 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
   defp map_optimization_level(:all), do: 99
 
   defp normalize_inputs(inputs) do
-    results =
-      Enum.map(inputs, fn input ->
-        case Input.normalize(input) do
-          {:ok, normalized} -> {:ok, normalized}
-          {:error, reason} -> {:error, {:normalize_failed, reason}}
-        end
-      end)
-
-    if Enum.all?(results, &match?({:ok, _}, &1)) do
-      {:ok, Enum.map(results, fn {:ok, input} -> input end)}
-    else
-      first_error = Enum.find(results, &match?({:error, _}, &1))
-      first_error
-    end
+    # Input.new! already validates inputs, so no additional normalization needed
+    {:ok, inputs}
   end
 
   defp prepare_batch_tensor(inputs) do

@@ -194,6 +194,15 @@ defmodule ThunderlineWeb.Router do
     get "/registry/services/:type", ServiceRegistryController, :index_by_type
     delete "/registry/:id", ServiceRegistryController, :delete
 
+    # ThunderPrism DAG Scratchpad API (Phase 4.0)
+    scope "/thunderprism" do
+      post "/nodes", ThunderprismController, :create_node
+      get "/nodes/:id", ThunderprismController, :get_node
+      get "/graph", ThunderprismController, :get_graph
+      post "/edges", ThunderprismController, :create_edge
+      get "/nodes/:id/edges", ThunderprismController, :get_node_edges
+    end
+
     # Cerebros Job Coordination API
     get "/jobs/poll", CerebrosJobsController, :poll
     patch "/jobs/:id/status", CerebrosJobsController, :update_status

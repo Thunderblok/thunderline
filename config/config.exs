@@ -262,7 +262,9 @@ config :thunderline,
     Thunderline.Thundergate.Domain,
     Thunderline.Thundercom.Domain,
     # Heavy compute & UPM resources now active
-    Thunderline.Thunderbolt.Domain
+    Thunderline.Thunderbolt.Domain,
+    # ThunderPrism - DAG scratchpad for ML decision trails (Phase 4.0)
+    Thunderline.Thunderprism.Domain
   ]
 
 # OPTIONAL (disabled right now):
@@ -453,5 +455,6 @@ config :ash_admin, AshAdmin,
     Thunderline.Thundercrown.Domain,
     Thunderline.Thundergate.Domain,
     Thunderline.Thundercom.Domain,
-    Thunderline.Thunderbolt.Domain
+    Thunderline.Thunderbolt.Domain,
+    Thunderline.Thunderprism.Domain
   ]
