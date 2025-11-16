@@ -121,23 +121,21 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec ensure_node(node_attrs(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def ensure_node(attrs, opts \\ []) do
-    Domain.register_node!(
-      attrs.name,
-      Map.merge(
-        %{
-          role: attrs[:role] || "worker",
-          domain: attrs[:domain] || "thunderlink",
-          cluster_type: attrs[:cluster_type] || "in_cluster",
-          status: :disconnected
-        },
-        Map.take(attrs, [:hotline_peer_id, :did, :meta])
-      ),
-      opts
-    )
-    |> case do
-      {:ok, node} -> {:ok, node}
-      {:error, _} = error -> error
-    end
+    node =
+      Domain.register_node!(
+        attrs.name,
+        Map.merge(
+          %{
+            role: attrs[:role] || "worker",
+            domain: attrs[:domain] || "thunderlink",
+            cluster_type: attrs[:cluster_type] || "in_cluster"
+          },
+          Map.take(attrs, [:hotline_peer_id, :did, :meta])
+        ),
+        opts
+      )
+
+    {:ok, node}
   rescue
     e -> {:error, e}
   end

@@ -1,4 +1,4 @@
-defmodule Thunderline.EventBus.BroadwayProducer do
+defmodule Thunderline.Thunderflow.EventBus.BroadwayProducer do
   @moduledoc """
   Broadway producer that consumes events from the Thunderline EventBus.
 
@@ -10,7 +10,7 @@ defmodule Thunderline.EventBus.BroadwayProducer do
   Pass configuration when starting the Broadway pipeline:
 
       producer: [
-        module: {Thunderline.EventBus.BroadwayProducer,
+        module: {Thunderline.Thunderflow.EventBus.BroadwayProducer,
                  event_pattern: "ui.command.**",
                  bus_name: :default_bus}
       ]

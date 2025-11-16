@@ -1,4 +1,4 @@
-defmodule Thunderline.EventBus.EventBuffer do
+defmodule Thunderline.Thunderflow.EventBus.EventBuffer do
   @moduledoc """
   Rolling in-memory event buffer (ETS) for dashboard streaming.
 

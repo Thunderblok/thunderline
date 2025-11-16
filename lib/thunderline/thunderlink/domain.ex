@@ -75,10 +75,33 @@ defmodule Thunderline.Thunderlink.Domain do
     resource Thunderline.Thunderlink.Voice.Device
 
     # Node Registry & Cluster Topology
-    resource Thunderline.Thunderlink.Resources.Node
-    resource Thunderline.Thunderlink.Resources.Heartbeat
-    resource Thunderline.Thunderlink.Resources.LinkSession
-    resource Thunderline.Thunderlink.Resources.NodeCapability
+    resource Thunderline.Thunderlink.Resources.Node do
+      # Code interfaces for Registry facade
+      define :register_node, action: :register, args: [:name]
+      define :mark_node_online, action: :mark_online
+      define :mark_node_offline, action: :mark_offline
+      define :mark_node_status, action: :update_status, args: [:status]
+      define :online_nodes, action: :online_nodes
+      define :nodes_by_status, action: :read
+      define :nodes_by_role, action: :read
+    end
+
+    resource Thunderline.Thunderlink.Resources.Heartbeat do
+      define :record_heartbeat, action: :record, args: [:node_id, :status]
+      define :recent_heartbeats, action: :recent, args: [{:optional, :minutes}]
+    end
+
+    resource Thunderline.Thunderlink.Resources.LinkSession do
+      define :active_link_sessions, action: :active_sessions
+      define :establish_link_session, action: :mark_established
+      define :update_link_session_metrics, action: :update_metrics
+      define :close_link_session, action: :close
+    end
+
+    resource Thunderline.Thunderlink.Resources.NodeCapability do
+      define :node_capabilities_by_capability, action: :read
+    end
+
     resource Thunderline.Thunderlink.Resources.NodeGroup
     resource Thunderline.Thunderlink.Resources.NodeGroupMembership
   end
