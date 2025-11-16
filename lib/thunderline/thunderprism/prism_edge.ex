@@ -1,12 +1,12 @@
 defmodule Thunderline.Thunderprism.PrismEdge do
   @moduledoc """
   PrismEdge - Connection between PrismNodes in the DAG scratchpad.
-  
+
   Edges represent relationships between ML decision points:
   - Sequential decisions (next iteration)
   - Model transitions (switching between models)
   - Causality chains (decisions that led to other decisions)
-  
+
   Default relation_type is "next" for sequential ML iterations.
   Custom types can be added for more complex relationships.
   """

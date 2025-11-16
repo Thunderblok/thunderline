@@ -1,14 +1,14 @@
 defmodule Thunderline.Thunderprism.PrismNode do
   @moduledoc """
   PrismNode - Individual ML decision point in the DAG scratchpad.
-  
+
   Each node captures:
   - Which PAC (Parzen Adaptive Controller) made the decision
   - Which iteration of the learning process
   - Which model was chosen
   - Model selection probabilities and distances
   - Arbitrary metadata for extensions
-  
+
   Nodes form a graph through PrismEdge connections, creating a visualization
   of the ML decision-making process over time.
   """
