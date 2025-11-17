@@ -1,55 +1,110 @@
 # Thunderline Domain Resource Guide
 
-> Version: 2025-09-25 | Maintainers: Thunderline Architecture Guild
+> Version: 2025-11-17 | Maintainers: Thunderline Architecture Guild
 > Scope: Unified reference for domain responsibilities, canonical resources, contracts, and operational guardrails.
+> Architecture Grade: A (9/10) | Total Resources: ~150 | Active Domains: 8
 
 ## 0. Orientation
 
 - **Purpose**: Provide a single annotated map of Thunderline domains, tying architectural doctrine, resource inventories, and operational controls into a living guide.
 - **Audience**: Platform engineers, domain stewards, SRE/observability teams, governance reviewers, and AI orchestration partners.
 - **Update cadence**: Reviewed each sprint by domain stewards. Changes require PR referencing this guide and related source docs.
-- **Change control**: Updates demand cross-linking with source-of-truth files such as [`architecture/domain_topdown.md`](Thunderline/documentation/architecture/domain_topdown.md) and [`architecture/system_architecture_webrtc.md`](Thunderline/documentation/architecture/system_architecture_webrtc.md).
+- **Change control**: Updates demand cross-linking with source-of-truth files such as [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md), [`THUNDERLINE_DOMAIN_CATALOG.md`](THUNDERLINE_DOMAIN_CATALOG.md), [`architecture/domain_topdown.md`](Thunderline/documentation/architecture/domain_topdown.md) and [`architecture/system_architecture_webrtc.md`](Thunderline/documentation/architecture/system_architecture_webrtc.md).
+- **Architecture status**: Following comprehensive November 17, 2025 review: 8 active domains, ~150 Ash resources, 6 major consolidations completed, clean Ash.Domain usage throughout. See [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md) for detailed findings.
 
 ## 1. Domain Atlas
 
 The Thunderline platform is organized into sovereign domains with explicit contracts. Containers align with the C4 views captured in [`architecture/domain_topdown.md`](Thunderline/documentation/architecture/domain_topdown.md).
 
-### 1.1 ThunderGate — Security, Ingest, Audit
+### 1.1 Thundergate — Security, Authentication, External Services, Federation, Policy, Monitoring
 
-- **Mission**: Enforce authentication, policy decisions, ingress normalization, and audit trails before events enter ThunderFlow.
-- **Key services**: `gateAuth`, `ThunderBridge` ingest facade, Thunderwatch file monitor, audit/error resource emitters.
-- **Primary resources**: `policy_rule`, `alert_rule`, `health_check`, `audit_log` (Ash resources under `Thunderline.Thundergate`).
-- **Event responsibilities**: `ui.command.*` for ingress intents, `system.*` for policy results, `presence.*` for session state; see [`EVENT_TAXONOMY.md`](Thunderline/documentation/EVENT_TAXONOMY.md).
-- **Observability**: Emits `[:thunderline, :security, :]` telemetry and feeds audit logs into ThunderBlock vault.
-- **Backlog highlights**: Implement bridged alias plan and encryption handshake per Honey Badger Phase A10/A6 in [`architecture/honey_badger_consolidation_plan.md`](Thunderline/documentation/architecture/honey_badger_consolidation_plan.md).
+- **Resources**: **19 Ash Resources** across 6 categories
+- **Consolidation**: ThunderStone + ThunderEye + Accounts + ThunderWatch → Thundergate (November 2025)
+- **Mission**: Unified security, authentication, external service integration, federation, policy enforcement, and comprehensive system monitoring.
+- **Extensions**: AshAdmin.Domain
+- **Categories**:
+  - **Authentication & Authorization** (2): User, Token
+  - **External Services** (3): ExternalService, ServiceCredential, ServiceHealthCheck
+  - **Federation** (3): FederationNode, FederationSession, FederationRoute
+  - **Policy** (2): Policy, PolicyRule
+  - **Monitoring** (9): HealthCheck, SystemMetric, LogEntry, AuditLog, AlertConfiguration, DeploymentStatus, ErrorTracking, ServiceDependency, PerformanceSnapshot
+- **Code Interfaces**: User operations (create/read/update), Token management (generate/validate/revoke), Policy operations (evaluate/audit), HealthCheck operations (run/report)
+- **Key Services**: Authentication (sessions, tokens), external integrations (Magika file classification), federation routing, policy evaluation, comprehensive monitoring (9 resources covering health, metrics, logs, alerts, deployments, errors, dependencies, performance)
+- **Event responsibilities**: `ui.command.*` for ingress intents, `system.*` for policy results, `presence.*` for session state, `system.monitoring.*` for observability events; see [`EVENT_TAXONOMY.md`](Thunderline/documentation/EVENT_TAXONOMY.md).
+- **Observability**: Emits `[:thunderline, :security, :]` and `[:thunderline, :monitoring, :]` telemetry, feeds audit logs and metrics into ThunderBlock vault.
+- **Magika Integration**: ExternalService resource manages Magika file classification (Python subprocess via System.cmd or Req HTTP client, outputs JSONB with file_type/mime_type/confidence).
+- **Monitoring Unification**: All ThunderWatch monitoring resources (9 total) now consolidated under Thundergate.Monitoring for unified observability.
 
-### 1.2 ThunderLink — Realtime UX, Voice, Federation
+### 1.2 Thunderlink — Communication, Community, Voice, Node Registry
 
-- **Mission**: Serve communities, channels, PAC homes, and emerging voice/WebRTC experiences.
-- **Key services**: LiveView UI, WebSocket federation client, VoiceChannel signalling, Dashboard ThunderBridge.
-- **Primary resources**: `channel`, `community`, `role`, `message`, `voice_room`, `voice_participant`, `voice_device`, `pac_home`.
-- **Event responsibilities**: Emits `ui.command.*`, `system.voice.*`, and `voice.signal.*` families. Implement constructor enforcement tasks A7/A11 from Honey Badger plan.
+- **Resources**: **14 Ash Resources** across 4 categories
+- **Consolidation**: ThunderCom + ThunderWave → Thunderlink (November 2025) - Unified communication architecture (content + connectivity)
+- **Mission**: Serve communities, channels, support tickets, voice/WebRTC experiences, and distributed node registry.
+- **Extensions**: AshAdmin, AshOban, AshGraphql, AshTypescript.Rpc (4 extensions for comprehensive API exposure)
+- **Categories**:
+  - **Support** (1): Ticket
+  - **Community & Channels** (5): Community, Channel, Message, Role, Membership
+  - **Voice & WebRTC** (3): VoiceRoom, VoiceParticipant, VoiceDevice
+  - **Node Registry** (5): Node, NodeHeartbeat, LinkSession, NodeCapability, NodeMetadata
+- **Code Interfaces**: Node operations (register/update/heartbeat/query), Heartbeat management (record/prune), LinkSession management (create/update/expire), NodeCapability operations (add/remove/query)
+- **GraphQL API**: Ticket system (get_ticket, list_tickets, create_ticket, close_ticket, process_ticket, escalate_ticket queries/mutations)
+- **TypeScript RPC API**: list_tickets, create_ticket (via AshTypescript.Rpc extension)
+- **Key Services**: LiveView UI, WebSocket federation client, VoiceChannel signalling, Dashboard ThunderBridge, distributed node coordination.
+- **Event responsibilities**: Emits `ui.command.*`, `system.voice.*`, `voice.signal.*`, and `system.node.*` families. Constructor enforcement per Honey Badger plan.
 - **Supervision**: Dynamic `RoomPipeline` supervisors transitioning to `Membrane.WebRTC` (see gap analysis in [`architecture/system_architecture_webrtc.md`](Thunderline/documentation/architecture/system_architecture_webrtc.md)).
 - **Feature flags**: Gated by `:voice_input`, `:ai_chat_panel`, `:presence_debug` per [`FEATURE_FLAGS.md`](Thunderline/documentation/FEATURE_FLAGS.md).
+- **Bug #18 Integration**: LinkSession.meta attribute uses AtomMap custom type to preserve Elixir atoms through JSONB storage (Registry constructs with string keys, converts to atoms on load). See `lib/thunderline/thunderblock/types/atom_map.ex`.
 
-### 1.3 ThunderFlow — Event Bus & Pipelines
+### 1.3 Thunderflow — Event Bus & Broadway Pipelines
 
+- **Resources**: **9 Ash Resources** across 7 categories
 - **Mission**: Normalize, route, and persist events via Broadway pipelines, enforcing taxonomy contracts and DLQ policy.
-- **Key services**: `EventBus`, `EventPipeline`, `RealtimePipeline`, `CrossDomainPipeline`, DLQ handlers.
-- **Primary resources**: `event_pipeline`, `realtime_pipeline`, `cross_domain_pipeline`, `dead_letter`, `lineage.edge`.
+- **Extensions**: AshAdmin.Domain
+- **Categories**:
+  - **Event Streams** (2): EventStream, EventSubscription
+  - **System Actions** (1): SystemAction
+  - **Events** (1): Event
+  - **Probe System** (3): Probe, ProbeResult, ProbeAlert
+  - **Features** (1): FeatureWindow
+  - **Lineage** (1): Lineage.Edge
+- **Broadway Pipelines** (4 production pipelines):
+  - **EventPipeline**: General-purpose event processing with batching and backpressure
+  - **CrossDomainPipeline**: Inter-domain event routing with DLQ for failed deliveries
+  - **RealTimePipeline**: Low-latency processing for real-time events
+  - **EventProducer**: Mnesia-backed event production with partition tolerance
+- **Pipeline Features**: Batching, backpressure management, dead letter queues (DLQ), error recovery with exponential backoff + jitter
+- **Key Services**: `EventBus`, Broadway supervisors, DLQ handlers, lineage tracking, probe-based monitoring.
+- **Pipeline Functions**: `start_broadway_pipelines/0` (supervisor initialization), `process_event/3` (event handling with retry logic)
 - **Event responsibilities**: Owns `flow.reactor.*`, ensures every domain obeys correlation/causation rules (Section 13 of [`EVENT_TAXONOMY.md`](Thunderline/documentation/EVENT_TAXONOMY.md)).
 - **Observability**: KPIs `[:flow, :market, :lag_ms]`, retry metrics, DLQ depth dashboards per [`architecture/market_moe_pipeline.md`](Thunderline/documentation/architecture/market_moe_pipeline.md).
 - **Backlog**: Implement taxonomy mix task (Section 14) and DLQ surfacing (Next Enhancements item in domain top-down architecture doc).
 
-### 1.4 ThunderBolt — Compute, ML, Automata
+### 1.4 Thunderbolt — Compute, ML, Task Orchestration, Automata
 
-- **Mission**: Execute computational workloads including ThunderCell CA engine, Lane orchestrators, Model of Experts, and Cerebros bridges.
-- **Key services**: `ThunderCell`, `Lane` orchestrators, expert registries, `ErlangBridge` for neuro handoff, `CerebrosBridge` helpers (`RunOptions`, `Summary`).
-- **Primary resources**: `lane_*`, `workflow_dag`, `thundercell_cluster`, `model_run`, `model_artifact`, `ising_*`, `rag_document` (ash_ai + pgvector); helper coverage enforced by `test/thunderline/thunderbolt/cerebros_bridge/run_options_test.exs` and `cerebros/summary_test.exs`.
+- **Resources**: **50+ Ash Resources** across 11 categories (largest domain)
+- **Consolidation**: ThunderCore + ThunderLane + ThunderMag + ThunderCell + Thunder_Ising → Thunderbolt (5-domain merger)
+- **Mission**: Execute computational workloads including ML training, task orchestration, ThunderCell CA engine, Lane orchestrators, Model of Experts, and Cerebros bridges.
+- **Extensions**: AshAdmin, AshOban, AshJsonApi, AshGraphql (4 extensions for comprehensive API and background job support)
+- **Categories** (11 subsystems):
+  - **Core** (5): Agent, AgentCapability, AgentTask, Workflow, WorkflowExecution
+  - **Ising/VIM** (3): IsingProblem, IsingSolution, VIM.Audit
+  - **Lane** (10): Lane orchestration resources (task management, scheduling, dependencies)
+  - **Task** (3): Task, TaskDependency, TaskResult
+  - **Automata** (5): Automaton, AutomatonState, AutomatonTransition, AutomatonExecution, AutomatonHistory
+  - **Cerebros Bridge** (7): Run, RunOptions, Summary, Checkpoint, Metric, Artifact, ExperimentTag
+  - **RAG** (1): RagChunk (retrieval-augmented generation)
+  - **ML** (6): Model, ModelVersion, TrainingDataset, TrainingRun, Prediction, ModelMetric
+  - **MLflow** (2): Experiment, Run
+  - **UPM** (4): UPMTrainer, UPMSnapshot, UPMAdapter, UPMDriftWindow
+  - **MoE** (3): Expert, ExpertRouter, ExpertMetric
+- **GraphQL API**: core_agents queries and mutations for agent management
+- **Code Interfaces**: TrainingDataset operations (create/read/update, add_samples, export), Agent management, Workflow execution
+- **Key Services**: `ThunderCell` CA engine, `Lane` orchestrators, expert registries, `ErlangBridge` for neuro handoff, `CerebrosBridge` helpers (`RunOptions`, `Summary`).
 - **RAG System**: Native PostgreSQL semantic search via `Document.semantic_search/2` (~7-10ms queries). Feature flag `:rag_enabled` (dev default). See `RAG_REFACTOR_HANDOFF.md` for complete API documentation.
 - **Event responsibilities**: `ml.run.*`, `ai.tool_*`, `dag.commit`, `cmd.workflow.*`; cross-domain dispatch to Flow pipelines.
-- **Roadmap**: Phase B policy/ orchestration unification; NAS integration phases (Section 10 in [`architecture/market_moe_pipeline.md`](Thunderline/documentation/architecture/market_moe_pipeline.md)). Flower federation now runs exclusively through the Keras backend wiring (`python/cerebros/keras/flower_app.py`) so PyTorch dependencies can be dropped from NAS control plane images.
-- **Feature flags**: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active` gating advanced features.
+- **Roadmap**: Phase B policy/orchestration unification; NAS integration phases (Section 10 in [`architecture/market_moe_pipeline.md`](Thunderline/documentation/architecture/market_moe_pipeline.md)). Flower federation runs exclusively through Keras backend wiring (`python/cerebros/keras/flower_app.py`) so PyTorch dependencies dropped from NAS control plane images.
+- **Feature flags**: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active`, `:rag_enabled` gating advanced features.
+- **Recommendation**: **Consider splitting** - Thunderbolt is the largest domain (50+ resources). Potential split: Core/Lane/Task orchestration vs ML/RAG/Cerebros subsystems.
 
 **ML Infrastructure Status (Nov 2025):**
 - ✅ **Python Stack Ready**: TensorFlow 2.20.0, tf2onnx 1.8.4, ONNX 1.19.1, Keras 3.12.0 (`.venv` Python 3.13)

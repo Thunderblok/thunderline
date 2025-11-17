@@ -89,7 +89,7 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
       description "Last activity timestamp"
     end
 
-    attribute :meta, :map do
+    attribute :meta, Thunderline.Thunderblock.Types.AtomMap do
       default %{}
       public? true
       description "Session metadata: protocol version, cipher, peer info, etc."

@@ -163,11 +163,11 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       # Check link session created
       assert session.node_id == node.id
       assert session.remote_node_id == remote_node.id
-      assert session.meta["local_peer_id"] == "local-peer-1"
-      assert session.meta["remote_peer_id"] == "remote-peer-1"
-      assert session.meta["connection_type"] == :direct
+      assert session.meta.local_peer_id == "local-peer-1"
+      assert session.meta.remote_peer_id == "remote-peer-1"
+      assert session.meta.connection_type == :direct
       assert session.established_at != nil
-      assert session.meta["latency_ms"] == 50
+      assert session.meta.latency_ms == 50
     end
 
     @tag :skip

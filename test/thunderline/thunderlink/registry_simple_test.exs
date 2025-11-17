@@ -22,7 +22,7 @@ defmodule Thunderline.Thunderlink.RegistrySimpleTest do
     end
 
     test "updates existing node on subsequent calls" do
-      params2 = %{
+      params = %{
         name: "test-node-9@localhost",
         role: :controller,
         domain: :thunderbolt
