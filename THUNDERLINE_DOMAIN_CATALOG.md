@@ -284,50 +284,67 @@
 
 ### 🍇 ThunderVine Domain  
 - **Location:** `lib/thunderline/thundervine/`  
-- **Purpose:** DAG Workflows, Event Rule Parsing & Compaction (No Ash Domain)  
-- **Status:** ✅ ACTIVE – Workflow utilities operational (utility modules, not an Ash domain)  
-- **Resource Count:** **0 Ash Resources** (utility modules only)
-- **Module Structure:**
+- **Purpose:** Event-driven workflow orchestration with durable lineage tracking  
+- **Status:** ✅ ACTIVE – Domain created Nov 17, 2025 (HC-29)  
+- **Resource Count:** **4 Ash Resources**
+- **Resources:**
+  - **Workflow**: Primary orchestration resource tracking workflow lifecycle and status (`:building` or `:sealed`)
+    - Table: `dag_workflows`
+    - Actions: `:start`, `:seal`, `:update_metadata`
+    - Relationships: `has_many :nodes`, `has_many :edges`, `has_many :snapshots`
+  - **WorkflowNode**: Individual action execution tracking with timing metrics
+    - Table: `dag_nodes`
+    - Actions: `:record_start`, `:mark_success`, `:mark_error`
+    - Calculation: `duration_ms` (time from start to completion)
+  - **WorkflowEdge**: Causal relationships between workflow nodes
+    - Table: `dag_edges`
+    - Edge types: `:causal`, `:follows`, `:child`
+    - Identity: `unique_edge` [workflow_id, from_node_id, to_node_id, edge_type]
+  - **WorkflowSnapshot**: Immutable workflow serialization for replay debugging
+    - Table: `dag_snapshots`
+    - Features: pgvector embedding support for semantic search
+    - Action: `:capture` (creates immutable snapshot of workflow state)
+- **Utility Modules:**
   - `events.ex` - Event definition utilities
   - `spec_parser.ex` - Workflow specification parsing
-  - `workflow_compactor.ex` - Workflow optimization logic
+  - `workflow_compactor.ex` - Workflow optimization logic (GenServer)
   - `workflow_compactor_worker.ex` - Oban worker for async compaction
 - **Key Responsibilities:**
-  - Directed Acyclic Graph (DAG) workflow construction
-  - Event rule parsing & validation
+  - Event-driven workflow orchestration
+  - Durable lineage tracking (audit trail of all operations)
+  - Workflow lifecycle management (start → execute → seal)
+  - Causal relationship tracking between operations
+  - Immutable snapshot capture for replay debugging
+  - Semantic search via pgvector embeddings
   - Workflow compaction & optimization
-  - Vine Ingress rule management
-  - Workflow transformation
   - Async workflow processing via Oban
-- **Notes:** Utility domain without Ash.Domain extension. Provides workflow parsing and compaction services to other domains. Integration verified through Vine-Ingress tests. No policy violations. Consider formalizing as proper Ash domain if resource management needed.
+- **Migration Notes:** Migrated from `ThunderBlock.Resources.DAG*` (Nov 17, 2025, HC-29). Resources renamed for clarity (`DAGWorkflow` → `Workflow`, `DAGNode` → `WorkflowNode`, `DAGEdge` → `WorkflowEdge`, `DAGSnapshot` → `WorkflowSnapshot`). Database tables unchanged (`dag_workflows`, `dag_nodes`, `dag_edges`, `dag_snapshots`). Zero breaking changes, backward compatible.
+- **Benefits of Domain Creation:**
+  - ✅ API Exposure: Can now expose Workflow mutations via GraphQL/JSON:API
+  - ✅ Policy Enforcement: Can define Ash policies for workflow management at domain level
+  - ✅ Clearer Ownership: Workflows conceptually belong to orchestration, not infrastructure
+  - ✅ Improved Naming: "Workflow" is clearer than "DAGWorkflow" for domain users
+  - ✅ Reduced Coupling: ThunderVine no longer depends on ThunderBlock internals
+  - ✅ Exclusive Usage: Verified only ThunderVine uses Workflow resources (migration was straightforward)
 
 ---
 
 ### 🔨 ThunderForge Domain  
-- **Location:** `lib/thunderline/thunderforge/`  
+- **Location:** `lib/thunderline/thunderforge/` (REMOVED Nov 17, 2025)
 - **Purpose:** Centralized Infrastructure Provisioning & Asset Lifecycle (Placeholder)  
-- **Status:** 🚧 PLACEHOLDER – Empty domain, no active resources (Verified Nov 17, 2025)  
-- **Verification:** domain.ex exists with empty resources block (confirmed via direct codebase access)
-- **Resource Count:** **0 Ash Resources** (empty domain.ex)
-- **Files Present:** 3 files (blueprint.ex, factory_run.ex, domain.ex)
-- **Domain Configuration:**
-  ```elixir
-  use Ash.Domain, extensions: [AshAdmin.Domain]
-  resources do
-    # No resources defined yet
-  end
-  ```
-- **Planned Responsibilities:**
-  - Infrastructure provisioning orchestration
-  - Asset lifecycle management
-  - Service deployment automation
-  - Resource configuration management
-  - Environment bootstrapping
-  - Deployment pipeline integration
-- **Agent Recommendation:** Remove for MVP
-  - **Rationale:** Empty placeholder with no implementation, no active usage, low priority for initial release
-  - **Alternative:** Implement resources if needed, or consolidate into ThunderBlock/ThunderBolt
-- **Notes:** ✅ Placeholder CONFIRMED (Nov 17, 2025). Empty domain awaiting implementation decision. Contains only domain.ex with empty resources block. No active functionality. Consider removing for MVP or implementing if infrastructure orchestration is needed.
+- **Status:** ✅ REMOVED – Deleted as part of HC-30 cleanup (Nov 17, 2025)
+- **Previous State:** Empty domain with 3 implementation files (~75 lines total)
+- **Files Removed:** 
+  - domain.ex (empty resources block)
+  - blueprint.ex (25-line YAML parser)
+  - factory_run.ex (40-line telemetry executor)
+- **Removal Rationale:**
+  - Zero production dependencies (verified via comprehensive grep)
+  - Explicitly marked as "orphaned design" in ORPHANED_CODE_REPORT.md
+  - HC-30 recommendation: "Remove for MVP"
+  - HC-24 (future sensor pipeline) can reimplement if needed
+  - Code preserved in git history
+- **Notes:** ✅ REMOVED (Nov 17, 2025). Entire directory deleted after investigation confirmed no active usage. ThunderForge namespace now available for future use if HC-24 sensor pipeline requires it.
 
 ---
 
@@ -411,40 +428,48 @@
 
 ---
 
-### � ThunderVine Namespace
+### ✅ ThunderVine Domain (Implementation Complete)
 - **Location:** `lib/thunderline/thundervine/`
-- **Purpose:** Workflow Orchestration & DAG Processing (Business Logic Layer)
-- **Status:** 🤔 UTILITY NAMESPACE – Architectural decision pending (domain structure TBD)
-- **Resource Count:** **0 Ash Resources** (uses ThunderBlock.Resources.DAGWorkflow/Node/Edge)
-- **Files:** 4 utility modules
-  - `events.ex` - Workflow lifecycle management, DAG resource creation
-  - `spec_parser.ex` - Workflow DSL parser using NimbleParsec
-  - `workflow_compactor.ex` - GenServer for workflow sealing
-  - `workflow_compactor_worker.ex` - Oban worker for compaction jobs
-- **Current Architecture:** "ThunderVine = business logic, ThunderBlock = persistence"
-- **Pattern Analysis:**
-  - Business logic layer calling persistence layer for domain concepts
-  - ThunderVine.Events creates DAGWorkflow/DAGNode/DAGEdge resources
-  - Workflow compactor seals DAG structures
-  - DSL parser generates workflow specifications
-- **Exclusive Usage Verification:**
-  - Only ThunderVine uses DAG resources (17 matches in codebase, all in thundervine/)
-  - No other domains reference DAGWorkflow/DAGNode/DAGEdge
-  - Conceptual ownership: workflows belong to ThunderVine, not infrastructure
-- **Architectural Concerns:**
-  - Can't enforce Ash policies on ThunderBlock's resources from ThunderVine
-  - No API exposure capability (user wants "resources that can be called")
-  - Naming inconsistency (DAGWorkflow vs more intuitive Workflow)
-  - Domain boundary unclear (are workflows ThunderVine's or ThunderBlock's domain?)
-- **Agent Recommendation:** Create ThunderVine.Domain with owned resources
-  - **Rationale:**
-    1. Exclusive usage pattern (only ThunderVine uses DAG resources)
-    2. Conceptual ownership (workflows are ThunderVine's domain concern, not infrastructure)
-    3. API exposure capability (enable RPC/GraphQL for workflow operations)
-    4. Policy enforcement (need Ash policies on workflow resources)
-    5. Clearer naming (Workflow/WorkflowNode/WorkflowEdge vs DAGWorkflow/DAGNode/DAGEdge)
-  - **Migration Path:** Create ThunderVine.Domain, define Workflow resources, migrate DAG resources
-- **Decision Status:** **PENDING** – Architectural decision required (P0 backlog item)
+- **Purpose:** Workflow Orchestration & Event-driven DAG Processing
+- **Status:** ✅ DOMAIN CREATED – Nov 17, 2025 (HC-29)
+- **Resource Count:** **4 Ash Resources** (owns Workflow/WorkflowNode/WorkflowEdge/WorkflowSnapshot)
+- **Implementation Details:**
+  - Created `ThunderVine.Domain` with `Ash.Domain` extension
+  - Migrated 4 resources from `ThunderBlock.Resources.DAG*` → `Thundervine.Resources.Workflow*`
+  - Updated 4 utility modules to reference new resources
+  - Database tables unchanged (dag_workflows, dag_nodes, dag_edges, dag_snapshots)
+  - Zero breaking changes, fully backward compatible
+- **Files:** 9 total (1 domain + 4 resources + 4 utility modules)
+  - `domain.ex` - ThunderVine.Domain definition
+  - `resources/workflow.ex` - Primary orchestration resource
+  - `resources/workflow_node.ex` - Execution tracking with timing
+  - `resources/workflow_edge.ex` - Causal relationships
+  - `resources/workflow_snapshot.ex` - Immutable serialization
+  - `events.ex` - Workflow lifecycle management (updated)
+  - `spec_parser.ex` - Workflow DSL parser (no changes needed)
+  - `workflow_compactor.ex` - GenServer for workflow sealing (updated)
+  - `workflow_compactor_worker.ex` - Oban worker (updated)
+- **Verification Results:**
+  - ✅ Compilation: `mix compile --force` succeeded (zero errors)
+  - ✅ Tests: No regressions (54 tests run, 25 pre-existing failures in ThunderLink)
+  - ✅ Exclusive Usage: Confirmed only ThunderVine uses Workflow resources
+  - ✅ Documentation: All references updated (6 documentation files synchronized)
+- **Benefits Realized:**
+  1. ✅ API Exposure: Can now expose Workflow mutations via GraphQL/JSON:API
+  2. ✅ Policy Enforcement: Can define Ash policies for workflow management
+  3. ✅ Clearer Ownership: Workflows conceptually belong to orchestration domain
+  4. ✅ Improved Naming: "Workflow" clearer than "DAGWorkflow" for users
+  5. ✅ Reduced Coupling: ThunderVine no longer depends on ThunderBlock internals
+  6. ✅ Domain Boundaries: Clear separation between orchestration and infrastructure
+- **Former Architectural Concerns (RESOLVED):**
+  - ✅ Policy enforcement now possible (resources in ThunderVine.Domain)
+  - ✅ API exposure enabled (GraphQL/JSON:API can be configured)
+  - ✅ Naming improved (Workflow vs DAGWorkflow)
+  - ✅ Domain boundary clarified (workflows are ThunderVine's domain)
+- **Decision Status:** ✅ **IMPLEMENTED** – Nov 17, 2025 (HC-29 complete)
+  - See `HC-29_COMPLETION_REPORT.md` for full implementation details
+  - Migration: 5 files created, 10 modified, 4 deleted (+168 net lines)
+  - Verification: Compilation ✅, Tests ✅, Documentation ✅
 
 ---
 
@@ -493,7 +518,7 @@
 |----------------|--------|----------|
 | ✅ Active (Core) | 7 | ThunderBlock (33), ThunderBolt (50+), ThunderCrown (4), ThunderFlow (9), ThunderGate (19), ThunderGrid (5), ThunderLink (14) |
 | ✅ Active (Support) | 2 | ThunderVine (utility), RAG (1 resource) |
-| ⚠️ Placeholder | 1 | ThunderForge (empty domain) |
+| ✅ Removed | 1 | ThunderForge (HC-30 cleanup - Nov 17, 2025) |
 | ⚠️ Deprecated/Consolidated | 3 | ThunderChief (→ThunderCrown), ThunderWatch (→ThunderGate), ThunderCom (→ThunderLink) |
 | ⚠️ Migration In Progress | 2 | ThunderJam (→ThunderGate.RateLimiting), ThunderClock (→ThunderBlock.Timing) |
 
@@ -501,6 +526,7 @@
 **Total Ash Resources:** ~150 across all active domains  
 **Deprecated Domains:** 5 (3 consolidated complete, 2 migrations in progress)  
 **Consolidation Success:** 6 major consolidations completed (ThunderVault→ThunderBlock, 5 domains→ThunderBolt, ThunderChief→ThunderCrown, ThunderCom+ThunderWave→ThunderLink, ThunderStone+ThunderEye+Accounts→ThunderGate, ThunderWatch→ThunderGate)
+**Cleanup Success:** 1 orphaned domain removed (ThunderForge - Nov 17, 2025)
 
 **Note:** Domain count reflects post-consolidation architecture. Resource counts verified through comprehensive domain review (November 17, 2025). All active domains properly configured with Ash.Domain. See `DOMAIN_ARCHITECTURE_REVIEW.md` for detailed findings.  
 

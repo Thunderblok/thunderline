@@ -78,8 +78,8 @@ Comprehensive review with **ground truth verification** of all domains in `lib/t
    - TaskOrchestrator, WorkflowTracker
    - ZoneContainer, SupervisionTree
 
-4. **DAG Workflow** (4 resources):
-   - DAGWorkflow, DAGNode, DAGEdge, DAGSnapshot
+4. **Workflow Orchestration** (4 resources) - **DOMAIN CREATED (Nov 17, 2025)**:
+   - Workflow, WorkflowNode, WorkflowEdge, WorkflowSnapshot (owned by ThunderVine.Domain)
 
 5. **User Constructs** (1 resource):
    - PACHome (Personal Agent Construct home)

@@ -157,7 +157,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
   - **Vault** (13): VaultKnowledgeNode, VaultMemory, VaultQuery, VaultIndex, VaultEmbedding, VaultMetadata, VaultRelation, VaultSnapshot, VaultAudit, VaultPolicy, VaultEncryption, VaultRetention, VaultReplication
   - **Infrastructure** (8): ExecutionContainer, Provisioner, ClusterNode, ResourcePool, CapacityPlan, InfrastructureMetric, ServiceRegistry, NetworkTopology
   - **Orchestration** (4): WorkflowTracker, WorkflowState, WorkflowCheckpoint, WorkflowSchedule
-  - **DAG** (4): DAGNode, DAGEdge, DAGExecution, DAGArtifact
+  - **ThunderVine Workflows** (4): Workflow, WorkflowNode, WorkflowEdge, WorkflowSnapshot
   - **Timing** (4): ScheduledJob, CronExpression, JobExecution, JobHistory
 - **Code Interfaces**: VaultKnowledgeNode operations (delegation pattern for knowledge storage), Checkpoint management (create/restore/list)
 - **Custom Types**: **AtomMap** (`lib/thunderline/thunderblock/types/atom_map.ex`) - Preserves Elixir atoms through PostgreSQL JSONB storage (Bug #18 solution). Storage format converts atom keys to strings for JSONB, converts back to atoms on load for idiomatic Elixir usage.

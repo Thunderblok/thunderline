@@ -5,7 +5,8 @@ defmodule ThunderlineWeb.GraphqlSchema do
     domains: [
       Thunderline.Thunderlink.Domain,
       Thunderline.Thundergrid.Domain,
-      Thunderline.Thunderbolt.Domain
+      Thunderline.Thunderbolt.Domain,
+      Thunderline.Thundervine.Domain
     ]
 
   import_types Absinthe.Plug.Types

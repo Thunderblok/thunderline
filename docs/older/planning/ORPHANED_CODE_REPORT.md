@@ -23,7 +23,7 @@ Identify small, untested, and flagged modules across `lib/thunderline`, categori
 | Thunderline.Thunderlink.Chat.Message.Types.Source | 3 lines | None | ✅ functional enum | **Keep** |
 | Thunderline.UUID | ~50 lines | None | Utility | **Keep (core util)** |
 | Thunderline.PostgresTypes | 16 lines | None | DB integration | **Keep** |
-| Thunderline.Thunderforge.Blueprint | 25 lines | None | Isolated YAML adapter | **Review for merge** |
+| Thunderline.Thunderforge.Blueprint | 25 lines | None | ✅ REMOVED (HC-30 - Nov 17, 2025) | **Completed** |
 | Thunderline.ServiceRegistry | 16 lines | None | Domain entrypoint | **Keep (domain root)** |
 | Jido.Bus.Adapters.InMemory.* (shim) | small | Untested | Shim for missing upstream lib | **Move to deprecated/**
 | Thunderline.EventBus | 16 lines | Legacy alias | Covered indirectly | **Move to deprecated/** |
@@ -35,7 +35,7 @@ Identify small, untested, and flagged modules across `lib/thunderline`, categori
 |---------|---------|----------|----------|
 | Thunderline.ServiceRegistry | core service graph | Critical infra, missing integration tests | **Add test suite** |
 | Thunderline.PostgresTypes | DB glue | Low risk, add stub test only | **Keep** |
-| Thunderline.Thunderforge.* | Pipeline layer incomplete | Orphaned design | **Deprecate if unused** |
+| Thunderline.Thunderforge.* | Pipeline layer incomplete | ✅ REMOVED (HC-30 - Nov 17, 2025) | **Completed** |
 | Thunderline.Support.Jido.InMemory.Subscription | non-core shim | Not maintained upstream | **Deprecate** |
 
 ---

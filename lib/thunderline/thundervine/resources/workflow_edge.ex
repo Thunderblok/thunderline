@@ -14,11 +14,38 @@ defmodule Thunderline.Thundervine.Resources.WorkflowEdge do
   """
   use Ash.Resource,
     domain: Thunderline.Thundervine.Domain,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshGraphql.Resource]
 
   postgres do
     table "dag_edges"
     repo Thunderline.Repo
+  end
+
+  graphql do
+    type :workflow_link  # Renamed from workflow_edge to avoid GraphQL edge type collision
+  end
+
+  policies do
+    # Admin and system bypass
+    bypass actor_attribute_equals(:role, :admin) do
+      authorize_if always()
+    end
+
+    bypass actor_attribute_equals(:role, :system) do
+      authorize_if always()
+    end
+
+    # Authenticated users can create workflow edges
+    policy action_type(:create) do
+      authorize_if AshAuthentication.Checks.Authenticated
+    end
+
+    # Read access for authenticated users
+    policy action_type(:read) do
+      authorize_if AshAuthentication.Checks.Authenticated
+    end
   end
 
   actions do
