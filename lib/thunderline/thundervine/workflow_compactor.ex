@@ -8,7 +8,7 @@ defmodule Thunderline.Thundervine.WorkflowCompactor do
   """
   use GenServer
   require Logger
-  alias Thunderline.Thunderblock.Resources.DAGWorkflow
+  alias Thunderline.Thundervine.Resources.Workflow
   require Ash.Query
   import Ash.Expr
 
@@ -30,7 +30,7 @@ defmodule Thunderline.Thundervine.WorkflowCompactor do
     idle_cutoff = DateTime.utc_now() |> DateTime.add(-state.idle_minutes * 60, :second)
 
     wf_query =
-      DAGWorkflow
+      Workflow
       |> Ash.Query.filter(expr(status == :building and inserted_at < ^idle_cutoff))
       |> Ash.Query.limit(200)
 

@@ -122,11 +122,5 @@ defmodule Thunderline.Thunderblock.Domain do
 
     # PAC user personal construct home (moved from Thunderlink)
     resource Thunderline.Thunderblock.Resources.PACHome
-
-    # Thundervine DAG (durable workflow lineage / memory)
-    resource Thunderline.Thunderblock.Resources.DAGWorkflow
-    resource Thunderline.Thunderblock.Resources.DAGNode
-    resource Thunderline.Thunderblock.Resources.DAGEdge
-    resource Thunderline.Thunderblock.Resources.DAGSnapshot
   end
 end

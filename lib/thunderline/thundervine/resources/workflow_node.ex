@@ -1,9 +1,19 @@
-defmodule Thunderline.Thunderblock.Resources.DAGNode do
+defmodule Thunderline.Thundervine.Resources.WorkflowNode do
   @moduledoc """
-  DAG Node - Atomic step inside a workflow. Links to events & optional VaultAction.
+  WorkflowNode - Atomic step inside a workflow.
+
+  Links to events and optional actions, tracking:
+  - Event name and resource reference
+  - Execution status (pending → success/error)
+  - Correlation/causation IDs for tracing
+  - Timing metrics (started_at, completed_at, duration_ms)
+  - Arbitrary payload data
+
+  Nodes represent individual execution steps in the workflow DAG,
+  with edges defining dependencies between them.
   """
   use Ash.Resource,
-    domain: Thunderline.Thunderblock.Domain,
+    domain: Thunderline.Thundervine.Domain,
     data_layer: AshPostgres.DataLayer
 
   postgres do
@@ -65,7 +75,7 @@ defmodule Thunderline.Thunderblock.Resources.DAGNode do
   end
 
   relationships do
-    belongs_to :workflow, Thunderline.Thunderblock.Resources.DAGWorkflow do
+    belongs_to :workflow, Thunderline.Thundervine.Resources.Workflow do
       source_attribute :workflow_id
       destination_attribute :id
     end

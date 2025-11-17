@@ -1,23 +1,23 @@
 defmodule Thunderline.Thundervine.Events do
   @moduledoc """
-  Thundervine event helpers: persist parsed rules & workflow specs into DAG resources
+  Thundervine event helpers: persist parsed rules & workflow specs into Workflow resources
   and emit lineage commit events.
 
-  This module centralizes DAG write patterns so ingestion & future agent planners
+  This module centralizes workflow write patterns so ingestion & future agent planners
   share the same durability semantics.
   """
   require Logger
   require Ash.Query
-  alias Thunderline.Thunderblock.Resources.{DAGWorkflow, DAGNode, DAGEdge}
+  alias Thunderline.Thundervine.Resources.{Workflow, WorkflowNode, WorkflowEdge}
 
   # Ensure or start a workflow anchored on correlation id (one workflow per run id)
   def ensure_workflow(%{correlation_id: corr} = meta, root_name \\ "ca.session") do
-    case Ash.get(DAGWorkflow, {:unique_correlation, %{correlation_id: corr}}) do
+    case Ash.get(Workflow, {:unique_correlation, %{correlation_id: corr}}) do
       {:ok, wf} ->
         {:ok, wf}
 
       {:error, _} ->
-        DAGWorkflow
+        Workflow
         |> Ash.Changeset.for_create(:start, %{
           source_domain: Map.get(meta, :source_domain, :bolt),
           root_event_name: root_name,
@@ -52,7 +52,7 @@ defmodule Thunderline.Thundervine.Events do
   end
 
   defp create_node(wf, event_name, payload, meta) do
-    DAGNode
+    WorkflowNode
     |> Ash.Changeset.for_create(:record_start, %{
       workflow_id: wf.id,
       event_name: event_name,
@@ -72,7 +72,7 @@ defmodule Thunderline.Thundervine.Events do
     _ = persist_last_node_id(wf, node.id)
 
     if prev_id && prev_id != node.id do
-      DAGEdge
+      WorkflowEdge
       |> Ash.Changeset.for_create(:create, %{
         workflow_id: wf.id,
         from_node_id: prev_id,
@@ -137,7 +137,7 @@ defmodule Thunderline.Thundervine.Events do
       _ ->
         # fallback: attempt fast latest node query (uses workflow_id+inserted_at index)
         latest_query =
-          DAGNode
+          WorkflowNode
           |> Ash.Query.filter(workflow_id: wf.id)
           |> Ash.Query.sort(inserted_at: :desc)
           |> Ash.Query.limit(1)
@@ -149,7 +149,7 @@ defmodule Thunderline.Thundervine.Events do
 
           _ ->
             # final fallback to workflow metadata
-            case Ash.get(DAGWorkflow, wf.id) do
+            case Ash.get(Workflow, wf.id) do
               {:ok, fresh} ->
                 id = get_in(fresh.metadata, ["last_node_id"])
                 if id, do: store_ephemeral(fresh.id, id)

@@ -1,10 +1,21 @@
-defmodule Thunderline.Thunderblock.Resources.DAGSnapshot do
+defmodule Thunderline.Thundervine.Resources.WorkflowSnapshot do
   @moduledoc """
-  DAG Snapshot - Immutable serialized representation of a sealed workflow for replay.
-  Stores ordered node payloads and edge list.
+  WorkflowSnapshot - Immutable serialized representation of a sealed workflow.
+
+  Captures complete workflow state for replay and analysis:
+  - node_order: Ordered list of node IDs (execution sequence)
+  - nodes_payload: Map of node_id → payload data
+  - edges: List of edge maps (dependency graph)
+  - embedding_vector: Optional pgvector for semantic search
+  - metadata: Additional context and tags
+
+  Snapshots enable:
+  - Deterministic workflow replay
+  - Historical analysis and auditing
+  - Semantic similarity search across workflows
   """
   use Ash.Resource,
-    domain: Thunderline.Thunderblock.Domain,
+    domain: Thunderline.Thundervine.Domain,
     data_layer: AshPostgres.DataLayer
 
   postgres do
@@ -38,14 +49,14 @@ defmodule Thunderline.Thunderblock.Resources.DAGSnapshot do
 
     attribute :embedding_vector, {:array, :float},
       allow_nil?: true,
-      description: "Optional pgvector embedding"
+      description: "Optional pgvector embedding for semantic search"
 
     attribute :metadata, :map, allow_nil?: false, default: %{}
     create_timestamp :inserted_at
   end
 
   relationships do
-    belongs_to :workflow, Thunderline.Thunderblock.Resources.DAGWorkflow do
+    belongs_to :workflow, Thunderline.Thundervine.Resources.Workflow do
       source_attribute :workflow_id
       destination_attribute :id
     end

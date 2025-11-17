@@ -7,7 +7,7 @@ defmodule Thunderline.Thundervine.WorkflowCompactorWorker do
   """
   use Oban.Worker, queue: :scheduled_workflows, max_attempts: 1
   require Logger
-  alias Thunderline.Thunderblock.Resources.DAGWorkflow
+  alias Thunderline.Thundervine.Resources.Workflow
   require Ash.Query
   import Ash.Expr
 
@@ -19,7 +19,7 @@ defmodule Thunderline.Thundervine.WorkflowCompactorWorker do
     idle_cutoff = DateTime.utc_now() |> DateTime.add(-idle_minutes * 60, :second)
 
     wf_query =
-      DAGWorkflow
+      Workflow
       |> Ash.Query.filter(expr(status == :building and inserted_at < ^idle_cutoff))
       |> Ash.Query.limit(500)
 

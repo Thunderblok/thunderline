@@ -1,9 +1,19 @@
-defmodule Thunderline.Thunderblock.Resources.DAGEdge do
+defmodule Thunderline.Thundervine.Resources.WorkflowEdge do
   @moduledoc """
-  DAG Edge - Causal link between two node ids within a workflow.
+  WorkflowEdge - Causal link between two nodes within a workflow.
+
+  Defines dependencies in the workflow DAG:
+  - from_node_id: Source node (dependency)
+  - to_node_id: Target node (dependent)
+  - edge_type: Nature of dependency (:causal, :follows, :child)
+
+  Edges enable:
+  - Workflow replay in dependency order
+  - Lineage analysis and impact tracking
+  - Distributed system causality reasoning
   """
   use Ash.Resource,
-    domain: Thunderline.Thunderblock.Domain,
+    domain: Thunderline.Thundervine.Domain,
     data_layer: AshPostgres.DataLayer
 
   postgres do
@@ -30,7 +40,7 @@ defmodule Thunderline.Thunderblock.Resources.DAGEdge do
   end
 
   relationships do
-    belongs_to :workflow, Thunderline.Thunderblock.Resources.DAGWorkflow do
+    belongs_to :workflow, Thunderline.Thundervine.Resources.Workflow do
       source_attribute :workflow_id
       destination_attribute :id
     end
