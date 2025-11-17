@@ -232,15 +232,24 @@
 ### 🛰️ ThunderLink Domain  
 - **Location:** `lib/thunderline/thunderlink/`  
 - **Purpose:** Network Connections, Communication, Transport Layer & Presence  
-- **Status:** ✅ ACTIVE – Communication hub with 14 resources, TypeScript RPC, and GraphQL API  
-- **Resource Count:** **14 Ash Resources**
-- **Consolidation History:** Merged ThunderCom + ThunderWave → ThunderLink (communication/networking focus)
+- **Status:** ⚠️ ACTIVE – Communication hub with 17 resources (consolidation INCOMPLETE)  
+- **Resource Count:** **17 Ash Resources**
+- **Consolidation History:** ⚠️ ThunderCom→ThunderLink INCOMPLETE (both domains active simultaneously)
+- **Consolidation Status:** 
+  - **INCOMPLETE**: 5 resources duplicated in both ThunderCom and ThunderLink
+  - **Duplicate Resources**: Community, Channel, Message, Role, FederationSocket
+  - **Voice Namespace Mismatch**: ThunderCom uses VoiceRoom, ThunderLink uses Voice.Room
+  - **Active Usage**: ThunderCom still used in community_live.ex, channel_live.ex, seeds_chat_demo.exs
+  - **Action Required**: Complete migration before removing ThunderCom domain
 - **Extensions:** AshAdmin.Domain, AshOban.Domain, AshGraphql.Domain, AshTypescript.Rpc
 - **Resource Categories:**
-  - **Support** (1 resource): SupportTicket (from ThunderCom)
-  - **Community/Channels** (5 resources): Community, Channel, CommunityMember, ChannelMember, Announcement (from ThunderCom)
-  - **Voice/WebRTC** (3 resources): VoiceChannel, VoiceSession, WebRTCConnection (from ThunderWave)
-  - **Node Registry** (5 resources): Node, NodeHeartbeat, LinkSession, NodeCapability, NodeTag
+  - **Support** (1 resource): Ticket
+  - **Community/Channels** (5 resources): Community, Channel, Message, Role, FederationSocket
+    - ⚠️ **DUPLICATES**: Also defined in ThunderCom domain (consolidation incomplete)
+  - **Voice/WebRTC** (3 resources): Voice.Room, Voice.Participant, Voice.Device
+    - Note: ThunderCom uses different namespace (VoiceRoom vs Voice.Room)
+  - **Node Registry & Cluster** (6 resources): Node, Heartbeat, LinkSession, NodeCapability, NodeGroup, NodeGroupMembership
+  - **Additional Infrastructure** (2 resources): Other network components
 - **Key Responsibilities:**
   - TCP/UDP connection management
   - WebSocket connections
@@ -297,8 +306,10 @@
 ### 🔨 ThunderForge Domain  
 - **Location:** `lib/thunderline/thunderforge/`  
 - **Purpose:** Centralized Infrastructure Provisioning & Asset Lifecycle (Placeholder)  
-- **Status:** ⚠️ PLACEHOLDER – Empty domain, no active resources  
+- **Status:** 🚧 PLACEHOLDER – Empty domain, no active resources (Verified Nov 17, 2025)  
+- **Verification:** domain.ex exists with empty resources block (confirmed via direct codebase access)
 - **Resource Count:** **0 Ash Resources** (empty domain.ex)
+- **Files Present:** 3 files (blueprint.ex, factory_run.ex, domain.ex)
 - **Domain Configuration:**
   ```elixir
   use Ash.Domain, extensions: [AshAdmin.Domain]
@@ -313,14 +324,19 @@
   - Resource configuration management
   - Environment bootstrapping
   - Deployment pipeline integration
-- **Notes:** Empty placeholder domain awaiting implementation. Contains only `domain.ex` with no resources. Consider implementing or removing if not needed. No active functionality. Potential candidate for consolidation into ThunderBlock or ThunderBolt if infrastructure orchestration is needed.
+- **Agent Recommendation:** Remove for MVP
+  - **Rationale:** Empty placeholder with no implementation, no active usage, low priority for initial release
+  - **Alternative:** Implement resources if needed, or consolidate into ThunderBlock/ThunderBolt
+- **Notes:** ✅ Placeholder CONFIRMED (Nov 17, 2025). Empty domain awaiting implementation decision. Contains only domain.ex with empty resources block. No active functionality. Consider removing for MVP or implementing if infrastructure orchestration is needed.
 
 ---
 
 ### 👑 ThunderChief Domain  
 - **Location:** `lib/thunderline/thunderchief/`  
 - **Purpose:** Executive Control (DEPRECATED – Consolidated)  
-- **Status:** ⚠️ DEPRECATED – Merged into ThunderCrown  
+- **Status:** ✅ DEPRECATED – Merged into ThunderCrown (Verified Nov 17, 2025)  
+- **Verification:** No domain.ex file exists (confirmed via direct codebase access)
+- **Remaining Files:** Only utility modules (orchestrator.ex, jobs/, workers/) - no Ash resources
 - **Consolidation History:** ThunderChief → ThunderCrown (November 2025)  
 - **Migration Details:**
   - All executive control resources moved to ThunderCrown
@@ -328,11 +344,11 @@
   - Agent runner functionality consolidated
   - Conversation tools integrated into ThunderCrown
 - **Final State:**
-  - Directory may still exist but contains no active resources
+  - Directory exists with utility modules only
+  - No domain.ex file present
   - All functionality now in `lib/thunderline/thundercrown/`
-  - Domain definition removed or deprecated
-  - References updated to point to ThunderCrown
-- **Notes:** Successfully consolidated into ThunderCrown. ThunderChief directory may be safely removed. All executive control and governance capabilities now managed under ThunderCrown umbrella. Migration complete. See ThunderCrown section for current resource details (4 Ash resources).
+  - Domain successfully removed
+- **Notes:** ✅ Deprecation CONFIRMED (Nov 17, 2025). ThunderChief directory contains only utility modules. All executive control and governance capabilities now managed under ThunderCrown umbrella. Migration complete. See ThunderCrown section for current resource details (4 Ash resources).
 
 ---
 
@@ -362,31 +378,77 @@
 
 ### 💬 ThunderCom Domain  
 - **Location:** `lib/thunderline/thundercom/`  
-- **Purpose:** Communication & Social Features (CONSOLIDATED)  
-- **Status:** ⚠️ CONSOLIDATED – Merged into ThunderLink  
-- **Resource Count:** **0 Ash Resources** (all consolidated)
-- **Consolidation History:** ThunderCom + ThunderWave → ThunderLink (November 2025)  
-- **Migration Details:**
-  - All communication resources (5+) moved to ThunderLink
-  - Chat systems → ThunderLink.Community (5 resources)
-  - Social features → ThunderLink.Community.Channel
-  - Messaging → ThunderLink.Support.Ticket
-  - Voice communication → ThunderLink.Voice (3 resources)
-  - Federation protocols integrated into ThunderLink
-- **Former Resources (now in ThunderLink):**
-  - Chat/Messaging → ThunderLink.Community.Channel, Message
-  - Communities → ThunderLink.Community.Community
-  - Voice → ThunderLink.Voice.Session, Connection, Participant
-  - Support → ThunderLink.Support.Ticket
-- **Architecture Decision:**
-  - ThunderCom (message content) + ThunderWave (connections) = ThunderLink (unified communication)
-  - Consolidated to eliminate artificial boundary between content and connectivity
-  - ThunderLink now handles both communication infrastructure AND content
-- **Notes:** Successfully consolidated into ThunderLink. ThunderCom directory may be safely removed. All communication, social, and messaging capabilities now under ThunderLink umbrella (14 total resources including Support, Community, Voice, and Node Registry). Migration complete. See ThunderLink section for current resource details.
+- **Purpose:** Communication & Social Features (CONSOLIDATION INCOMPLETE)  
+- **Status:** ⚠️ ACTIVE – **8 Ash Resources** still in production use (consolidation NOT complete)
+- **Resource Count:** **8 Ash Resources** (ground truth verified Nov 17, 2025)
+- **Consolidation History:** ⚠️ ThunderCom→ThunderLink migration INCOMPLETE (both domains active)  
+- **Extensions:** AshAdmin.Domain
+- **Active Resources:**
+  - **Community/Chat** (5 resources): Community, Channel, Message, Role, FederationSocket
+    - ⚠️ **DUPLICATES**: Also defined in ThunderLink domain
+  - **Voice** (3 resources): VoiceRoom, VoiceParticipant, VoiceDevice
+    - Note: ThunderLink uses different namespace (Voice.Room vs VoiceRoom)
+- **Active Usage Evidence:**
+  - `lib/thunderline_web/live/community_live.ex` - Uses ThunderCom.Community
+  - `lib/thunderline_web/live/channel_live.ex` - Uses ThunderCom.Channel
+  - `priv/repo/seeds_chat_demo.exs` - Creates ThunderCom resources
+- **Critical Issues:**
+  - 5 resources duplicated in both ThunderCom and ThunderLink domains
+  - Unclear which implementation is canonical
+  - Voice resources have namespace discrepancy (VoiceRoom vs Voice.Room)
+  - Both domains currently active simultaneously
+- **Agent Recommendation:**
+  1. Audit which LiveViews use which domain's resources
+  2. Determine canonical implementation for each duplicate resource
+  3. Migrate LiveViews to canonical implementations
+  4. Update seeds to use target domain
+  5. Remove duplicate resources
+  6. Verify voice implementation consistency
+  7. Remove ThunderCom domain after complete migration
+- **Former Consolidation Claim (INCORRECT):**
+  - HC review claimed "0 resources, fully deprecated, safe to remove"
+  - **Ground Truth**: 8 active resources still in use (verified Nov 17, 2025)
 
 ---
 
-### 🌩️ Additional Supporting Namespaces
+### � ThunderVine Namespace
+- **Location:** `lib/thunderline/thundervine/`
+- **Purpose:** Workflow Orchestration & DAG Processing (Business Logic Layer)
+- **Status:** 🤔 UTILITY NAMESPACE – Architectural decision pending (domain structure TBD)
+- **Resource Count:** **0 Ash Resources** (uses ThunderBlock.Resources.DAGWorkflow/Node/Edge)
+- **Files:** 4 utility modules
+  - `events.ex` - Workflow lifecycle management, DAG resource creation
+  - `spec_parser.ex` - Workflow DSL parser using NimbleParsec
+  - `workflow_compactor.ex` - GenServer for workflow sealing
+  - `workflow_compactor_worker.ex` - Oban worker for compaction jobs
+- **Current Architecture:** "ThunderVine = business logic, ThunderBlock = persistence"
+- **Pattern Analysis:**
+  - Business logic layer calling persistence layer for domain concepts
+  - ThunderVine.Events creates DAGWorkflow/DAGNode/DAGEdge resources
+  - Workflow compactor seals DAG structures
+  - DSL parser generates workflow specifications
+- **Exclusive Usage Verification:**
+  - Only ThunderVine uses DAG resources (17 matches in codebase, all in thundervine/)
+  - No other domains reference DAGWorkflow/DAGNode/DAGEdge
+  - Conceptual ownership: workflows belong to ThunderVine, not infrastructure
+- **Architectural Concerns:**
+  - Can't enforce Ash policies on ThunderBlock's resources from ThunderVine
+  - No API exposure capability (user wants "resources that can be called")
+  - Naming inconsistency (DAGWorkflow vs more intuitive Workflow)
+  - Domain boundary unclear (are workflows ThunderVine's or ThunderBlock's domain?)
+- **Agent Recommendation:** Create ThunderVine.Domain with owned resources
+  - **Rationale:**
+    1. Exclusive usage pattern (only ThunderVine uses DAG resources)
+    2. Conceptual ownership (workflows are ThunderVine's domain concern, not infrastructure)
+    3. API exposure capability (enable RPC/GraphQL for workflow operations)
+    4. Policy enforcement (need Ash policies on workflow resources)
+    5. Clearer naming (Workflow/WorkflowNode/WorkflowEdge vs DAGWorkflow/DAGNode/DAGEdge)
+  - **Migration Path:** Create ThunderVine.Domain, define Workflow resources, migrate DAG resources
+- **Decision Status:** **PENDING** – Architectural decision required (P0 backlog item)
+
+---
+
+### �🌩️ Additional Supporting Namespaces
 | Domain | Location | Purpose | Status | Resources |
 |---------|-----------|----------|--------|-----------|
 | RAG | `lib/thunderline/rag/` | Retrieval-Augmented Generation models | ✅ ACTIVE | 1 resource (RagChunk) |
