@@ -166,15 +166,15 @@ defmodule Thunderline.Thunderlink.Registry do
   @spec mark_online(String.t(), session_attrs() | nil, Keyword.t()) ::
           {:ok, Node.t()} | {:ok, {Node.t(), LinkSession.t()}} | {:error, term()}
   def mark_online(node_id, session_attrs \\ nil, opts \\ []) do
-    with {:ok, node} <- Domain.mark_node_online!(node_id, opts) do
-      if session_attrs && session_attrs[:remote_node_id] do
-        case create_or_update_link_session(node_id, session_attrs, opts) do
-          {:ok, session} -> {:ok, {node, session}}
-          {:error, _} = error -> error
-        end
-      else
-        {:ok, node}
+    node = Domain.mark_node_online!(node_id, opts)
+
+    if session_attrs && session_attrs[:remote_node_id] do
+      case create_or_update_link_session(node_id, session_attrs, opts) do
+        {:ok, session} -> {:ok, {node, session}}
+        {:error, _} = error -> error
       end
+    else
+      {:ok, node}
     end
   rescue
     e -> {:error, e}
@@ -192,7 +192,7 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec mark_offline(String.t(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def mark_offline(node_id, opts \\ []) do
-    Domain.mark_node_offline!(node_id, opts)
+    {:ok, Domain.mark_node_offline!(node_id, opts)}
   rescue
     e -> {:error, e}
   end
@@ -208,7 +208,7 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec mark_status(String.t(), atom(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def mark_status(node_id, status, opts \\ []) do
-    Domain.mark_node_status!(node_id, status, opts)
+    {:ok, Domain.mark_node_status!(node_id, status, opts)}
   rescue
     e -> {:error, e}
   end
@@ -241,12 +241,15 @@ defmodule Thunderline.Thunderlink.Registry do
   @spec heartbeat(String.t(), heartbeat_metrics(), Keyword.t()) ::
           {:ok, Heartbeat.t()} | {:error, term()}
   def heartbeat(node_id, metrics \\ %{}, opts \\ []) do
-    Domain.record_heartbeat!(
-      node_id,
-      metrics[:status] || :online,
-      Map.take(metrics, [:cpu_load, :mem_used_mb, :latency_ms, :meta]),
-      opts
-    )
+    heartbeat =
+      Domain.record_heartbeat!(
+        node_id,
+        metrics[:status] || :online,
+        Map.take(metrics, [:cpu_load, :mem_used_mb, :latency_ms, :meta]),
+        opts
+      )
+
+    {:ok, heartbeat}
   rescue
     e -> {:error, e}
   end
@@ -308,26 +311,28 @@ defmodule Thunderline.Thunderlink.Registry do
         )
 
       [] ->
-        # Create new session
+        # Create new session using :establish action
+        # Put additional params in meta to preserve them
+        base_meta = attrs[:meta] || %{}
+        
+        # Add params that aren't in the :establish action's accept list
+        full_meta =
+          base_meta
+          |> then(fn m -> if attrs[:local_peer_id], do: Map.put(m, "local_peer_id", attrs[:local_peer_id]), else: m end)
+          |> then(fn m -> if attrs[:remote_peer_id], do: Map.put(m, "remote_peer_id", attrs[:remote_peer_id]), else: m end)
+          |> then(fn m -> if attrs[:connection_type], do: Map.put(m, "connection_type", attrs[:connection_type]), else: m end)
+          |> then(fn m -> if attrs[:weight], do: Map.put(m, "weight", attrs[:weight]), else: m end)
+          |> then(fn m -> if attrs[:latency_ms], do: Map.put(m, "latency_ms", attrs[:latency_ms]), else: m end)
+          |> then(fn m -> if attrs[:bandwidth_mbps], do: Map.put(m, "bandwidth_mbps", attrs[:bandwidth_mbps]), else: m end)
+        
         LinkSession
-        |> Ash.Changeset.for_create(:create, %{
+        |> Ash.Changeset.for_create(:establish, %{
           node_id: node_id,
           remote_node_id: attrs.remote_node_id,
-          session_type: attrs[:session_type] || "cluster",
-          weight: attrs[:weight] || 1.0,
-          latency_ms: attrs[:latency_ms],
-          bandwidth_mbps: attrs[:bandwidth_mbps],
-          meta: attrs[:meta] || %{}
+          session_type: attrs[:session_type] || :cluster,
+          meta: full_meta
         })
         |> Ash.create(opts)
-        |> case do
-          {:ok, session} ->
-            # Mark as established
-            Domain.establish_link_session!(session.id, opts)
-
-          {:error, _} = error ->
-            error
-        end
     end
   rescue
     e -> {:error, e}
@@ -376,20 +381,26 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec list_nodes(Keyword.t()) :: [Node.t()]
   def list_nodes(filters \\ [], opts \\ []) do
+    require Ash.Query
+    import Ash.Expr
     query_opts = build_query_opts(filters, opts)
 
-    cond do
-      filters[:status] ->
-        Domain.nodes_by_status!(filters[:status], query_opts)
+    # Build base query
+    query = Node |> Ash.Query.for_read(:read, %{}, query_opts)
 
-      filters[:role] ->
-        Domain.nodes_by_role!(filters[:role], query_opts)
+    # Apply filters one at a time
+    query =
+      Enum.reduce(filters, query, fn {key, value}, q ->
+        case key do
+          :domain -> Ash.Query.filter(q, expr(domain == ^value))
+          :status -> Ash.Query.filter(q, expr(status == ^value))
+          :role -> Ash.Query.filter(q, expr(role == ^value))
+          :cluster_type -> Ash.Query.filter(q, expr(cluster_type == ^value))
+          _ -> q
+        end
+      end)
 
-      true ->
-        Node
-        |> Ash.Query.for_read(:read, %{}, query_opts)
-        |> Ash.read!(query_opts)
-    end
+    Ash.read!(query, query_opts)
   rescue
     e ->
       Logger.error("Failed to list nodes: #{inspect(e)}")
