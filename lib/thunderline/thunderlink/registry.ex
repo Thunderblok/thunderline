@@ -314,7 +314,7 @@ defmodule Thunderline.Thunderlink.Registry do
         # Create new session using :establish action
         # Put additional params in meta to preserve them
         base_meta = attrs[:meta] || %{}
-        
+
         # Add params that aren't in the :establish action's accept list
         full_meta =
           base_meta
@@ -324,7 +324,7 @@ defmodule Thunderline.Thunderlink.Registry do
           |> then(fn m -> if attrs[:weight], do: Map.put(m, "weight", attrs[:weight]), else: m end)
           |> then(fn m -> if attrs[:latency_ms], do: Map.put(m, "latency_ms", attrs[:latency_ms]), else: m end)
           |> then(fn m -> if attrs[:bandwidth_mbps], do: Map.put(m, "bandwidth_mbps", attrs[:bandwidth_mbps]), else: m end)
-        
+
         LinkSession
         |> Ash.Changeset.for_create(:establish, %{
           node_id: node_id,
