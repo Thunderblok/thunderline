@@ -6,8 +6,8 @@ defmodule ThunderlineWeb.CommunityLive do
   provides quick access to AI assistant & command palette.
   """
   use ThunderlineWeb, :live_view
-  alias Thunderline.Thundercom.Resources.{Community, Channel}
-  alias Thunderline.Thundercom.Domain
+  alias Thunderline.Thunderlink.Resources.{Community, Channel}
+  alias Thunderline.Thunderlink.Domain
   # alias Thunderline.Thundercom.Topics # unused
   import Ash.Expr
   require Ash.Query

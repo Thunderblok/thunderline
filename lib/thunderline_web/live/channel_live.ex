@@ -6,8 +6,8 @@ defmodule ThunderlineWeb.ChannelLive do
   """
   use ThunderlineWeb, :live_view
   # on_mount {ThunderlineWeb.LiveUserAuth, :live_user_required}
-  alias Thunderline.Thundercom.Resources.{Community, Channel, Message}
-  alias Thunderline.Thundercom.Domain
+  alias Thunderline.Thunderlink.Resources.{Community, Channel, Message}
+  alias Thunderline.Thunderlink.Domain
   alias Thunderline.Thunderlink.Topics
   import Thunderline.Thunderlink.Presence.Enforcer, only: [with_presence: 3, with_presence: 4]
   alias ThunderlineWeb.Presence
