@@ -22,11 +22,6 @@ defmodule Thunderline.Thundercom.Domain do
   end
 
   resources do
-    resource Thunderline.Thundercom.Resources.Community
-    resource Thunderline.Thundercom.Resources.Channel
-    resource Thunderline.Thundercom.Resources.Message
-    resource Thunderline.Thundercom.Resources.Role
-    resource Thunderline.Thundercom.Resources.FederationSocket
     # Voice / WebRTC MVP resources
     resource Thunderline.Thundercom.Resources.VoiceRoom
     resource Thunderline.Thundercom.Resources.VoiceParticipant

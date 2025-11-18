@@ -121,7 +121,7 @@ defmodule ThunderlineWeb.CommunityLive do
           </button>
         </div>
       </div>
-      
+
     <!-- Main area placeholder -->
       <div class="flex-1 flex items-center justify-center bg-slate-950/60">
         <div class="text-center max-w-md">

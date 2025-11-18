@@ -190,7 +190,7 @@ defmodule ThunderlineWeb.ChannelLive do
             </button>
           </div>
         </div>
-        
+
     <!-- Messages -->
         <div class="flex-1 flex flex-col">
           <div
@@ -234,7 +234,7 @@ defmodule ThunderlineWeb.ChannelLive do
             </button>
           </form>
         </div>
-        
+
     <!-- AI Thread -->
         <%= if @ai_mode do %>
           <div class="w-80 border-l border-slate-700/40 bg-slate-900/70 backdrop-blur flex flex-col">
