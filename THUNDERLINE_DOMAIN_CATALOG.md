@@ -1,10 +1,10 @@
 # Thunderline Domain Catalog  
-**Audit Date:** November 17, 2025  
+**Audit Date:** November 18, 2025  
 **Auditor:** Domain Architecture Review Team  
 **Status:** ✅ COMPLETE – Full domain review with resource counts and consolidation history  
 **Review Report:** See `DOMAIN_ARCHITECTURE_REVIEW.md` for comprehensive findings  
 **Overall Architecture Grade:** A (9/10)  
-**Total Resources:** ~150 Ash resources across all domains  
+**Total Resources:** ~160 Ash resources across all domains  
 
 ---
 
@@ -229,18 +229,15 @@
 
 ---
 
-### 🛰️ ThunderLink Domain  
 - **Location:** `lib/thunderline/thunderlink/`  
 - **Purpose:** Network Connections, Communication, Transport Layer & Presence  
-- **Status:** ⚠️ ACTIVE – Communication hub with 17 resources (consolidation INCOMPLETE)  
+- **Status:** ✅ ACTIVE – Communication hub with 17 resources (ThunderCom fully consolidated)  
 - **Resource Count:** **17 Ash Resources**
-- **Consolidation History:** ⚠️ ThunderCom→ThunderLink INCOMPLETE (both domains active simultaneously)
+- **Consolidation History:** ThunderCom + ThunderWave → ThunderLink (Completed Nov 18, 2025)
 - **Consolidation Status:** 
-  - **INCOMPLETE**: 5 resources duplicated in both ThunderCom and ThunderLink
-  - **Duplicate Resources**: Community, Channel, Message, Role, FederationSocket
-  - **Voice Namespace Mismatch**: ThunderCom uses VoiceRoom, ThunderLink uses Voice.Room
-  - **Active Usage**: ThunderCom still used in community_live.ex, channel_live.ex, seeds_chat_demo.exs
-  - **Action Required**: Complete migration before removing ThunderCom domain
+  - ✅ Community/Channel stack now single implementation (Community, Channel, Message, Role, FederationSocket)
+  - ✅ Voice namespace unified on `Voice.*` modules; legacy `VoiceRoom` removed
+  - ✅ All LiveViews, seeds, and workers reference ThunderLink resources exclusively
 - **Extensions:** AshAdmin.Domain, AshOban.Domain, AshGraphql.Domain, AshTypescript.Rpc
 - **Resource Categories:**
   - **Support** (1 resource): Ticket
@@ -278,7 +275,7 @@
 - **Bug #18 Integration:**
   - LinkSession.meta uses AtomMap custom type for atom preservation through PostgreSQL JSONB
   - Registry constructs meta with string keys, AtomMap converts to atoms during load
-- **Notes:** Comprehensive communication domain combining networking infrastructure with community features. Successfully consolidated ThunderCom (messaging/community) and ThunderWave (voice/WebRTC). TypeScript RPC enables type-safe frontend integration. Handles both CONNECTIONS (transport, presence, WebSocket) and CONTENT (messages, chat, voice).  
+- **Notes:** Comprehensive communication domain combining networking infrastructure with community features. Consolidation of ThunderCom (messaging/community) and ThunderWave (voice/WebRTC) is complete; ThunderLink is the canonical source for all communications resources. TypeScript RPC enables type-safe frontend integration. Handles both CONNECTIONS (transport, presence, WebSocket) and CONTENT (messages, chat, voice).  
 
 ---
 
@@ -393,38 +390,9 @@
 
 ---
 
-### 💬 ThunderCom Domain  
-- **Location:** `lib/thunderline/thundercom/`  
-- **Purpose:** Communication & Social Features (CONSOLIDATION INCOMPLETE)  
-- **Status:** ⚠️ ACTIVE – **8 Ash Resources** still in production use (consolidation NOT complete)
-- **Resource Count:** **8 Ash Resources** (ground truth verified Nov 17, 2025)
-- **Consolidation History:** ⚠️ ThunderCom→ThunderLink migration INCOMPLETE (both domains active)  
-- **Extensions:** AshAdmin.Domain
-- **Active Resources:**
-  - **Community/Chat** (5 resources): Community, Channel, Message, Role, FederationSocket
-    - ⚠️ **DUPLICATES**: Also defined in ThunderLink domain
-  - **Voice** (3 resources): VoiceRoom, VoiceParticipant, VoiceDevice
-    - Note: ThunderLink uses different namespace (Voice.Room vs VoiceRoom)
-- **Active Usage Evidence:**
-  - `lib/thunderline_web/live/community_live.ex` - Uses ThunderCom.Community
-  - `lib/thunderline_web/live/channel_live.ex` - Uses ThunderCom.Channel
-  - `priv/repo/seeds_chat_demo.exs` - Creates ThunderCom resources
-- **Critical Issues:**
-  - 5 resources duplicated in both ThunderCom and ThunderLink domains
-  - Unclear which implementation is canonical
-  - Voice resources have namespace discrepancy (VoiceRoom vs Voice.Room)
-  - Both domains currently active simultaneously
-- **Agent Recommendation:**
-  1. Audit which LiveViews use which domain's resources
-  2. Determine canonical implementation for each duplicate resource
-  3. Migrate LiveViews to canonical implementations
-  4. Update seeds to use target domain
-  5. Remove duplicate resources
-  6. Verify voice implementation consistency
-  7. Remove ThunderCom domain after complete migration
-- **Former Consolidation Claim (INCORRECT):**
-  - HC review claimed "0 resources, fully deprecated, safe to remove"
-  - **Ground Truth**: 8 active resources still in use (verified Nov 17, 2025)
+-### 💬 ThunderCom Domain  
+- **Status:** ✅ REMOVED – Directory deleted after full consolidation on Nov 18, 2025  
+- **Disposition:** All Community/Channel and Voice resources now live under ThunderLink. Any historical references are preserved in git for audit purposes.
 
 ---
 
@@ -516,17 +484,17 @@
 ## Summary Statistics
 | Classification | Count | Domains |
 |----------------|--------|----------|
-| ✅ Active (Core) | 7 | ThunderBlock (33), ThunderBolt (50+), ThunderCrown (4), ThunderFlow (9), ThunderGate (19), ThunderGrid (5), ThunderLink (14) |
-| ✅ Active (Support) | 2 | ThunderVine (utility), RAG (1 resource) |
-| ✅ Removed | 1 | ThunderForge (HC-30 cleanup - Nov 17, 2025) |
-| ⚠️ Deprecated/Consolidated | 3 | ThunderChief (→ThunderCrown), ThunderWatch (→ThunderGate), ThunderCom (→ThunderLink) |
+| ✅ Active (Core) | 7 | ThunderBlock (33), ThunderBolt (50+), ThunderCrown (4), ThunderFlow (9), ThunderGate (19), ThunderGrid (5), ThunderLink (17) |
+| ✅ Active (Support) | 2 | ThunderVine (4 resources), RAG (1 resource) |
+| ✅ Removed | 2 | ThunderForge (HC-30 cleanup - Nov 17, 2025), ThunderCom (HC-27/28 completion - Nov 18, 2025) |
+| ⚠️ Deprecated/Consolidated | 2 | ThunderChief (→ThunderCrown), ThunderWatch (→ThunderGate) |
 | ⚠️ Migration In Progress | 2 | ThunderJam (→ThunderGate.RateLimiting), ThunderClock (→ThunderBlock.Timing) |
 
 **Total Active Domains:** 8 (7 core + 1 support with resources)  
-**Total Ash Resources:** ~150 across all active domains  
-**Deprecated Domains:** 5 (3 consolidated complete, 2 migrations in progress)  
-**Consolidation Success:** 6 major consolidations completed (ThunderVault→ThunderBlock, 5 domains→ThunderBolt, ThunderChief→ThunderCrown, ThunderCom+ThunderWave→ThunderLink, ThunderStone+ThunderEye+Accounts→ThunderGate, ThunderWatch→ThunderGate)
-**Cleanup Success:** 1 orphaned domain removed (ThunderForge - Nov 17, 2025)
+**Total Ash Resources:** ~160 across all active domains  
+**Deprecated Domains:** 4 (2 consolidated complete, 2 migrations in progress)  
+**Consolidation Success:** 6 major consolidations completed (ThunderVault→ThunderBlock, 5 domains→ThunderBolt, ThunderChief→ThunderCrown, ThunderCom+ThunderWave→ThunderLink, ThunderStone+ThunderEye+Accounts→ThunderGate, ThunderWatch→ThunderGate)  
+**Cleanup Success:** 2 orphaned domains removed (ThunderForge - Nov 17, 2025; ThunderCom - Nov 18, 2025)
 
 **Note:** Domain count reflects post-consolidation architecture. Resource counts verified through comprehensive domain review (November 17, 2025). All active domains properly configured with Ash.Domain. See `DOMAIN_ARCHITECTURE_REVIEW.md` for detailed findings.  
 

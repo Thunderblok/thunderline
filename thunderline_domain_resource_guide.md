@@ -1,8 +1,8 @@
 # Thunderline Domain Resource Guide
 
-> Version: 2025-11-17 | Maintainers: Thunderline Architecture Guild
+> Version: 2025-11-18 | Maintainers: Thunderline Architecture Guild
 > Scope: Unified reference for domain responsibilities, canonical resources, contracts, and operational guardrails.
-> Architecture Grade: A (9/10) | Total Resources: ~150 | Active Domains: 8
+> Architecture Grade: A (9/10) | Total Resources: ~160 | Active Domains: 8
 
 ## 0. Orientation
 
@@ -10,7 +10,7 @@
 - **Audience**: Platform engineers, domain stewards, SRE/observability teams, governance reviewers, and AI orchestration partners.
 - **Update cadence**: Reviewed each sprint by domain stewards. Changes require PR referencing this guide and related source docs.
 - **Change control**: Updates demand cross-linking with source-of-truth files such as [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md), [`THUNDERLINE_DOMAIN_CATALOG.md`](THUNDERLINE_DOMAIN_CATALOG.md), [`architecture/domain_topdown.md`](Thunderline/documentation/architecture/domain_topdown.md) and [`architecture/system_architecture_webrtc.md`](Thunderline/documentation/architecture/system_architecture_webrtc.md).
-- **Architecture status**: Following comprehensive November 17, 2025 review: 8 active domains, ~150 Ash resources, 6 major consolidations completed, clean Ash.Domain usage throughout. See [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md) for detailed findings.
+- **Architecture status**: Following the comprehensive November 18, 2025 review: 8 active domains, ~160 Ash resources, 6 major consolidations completed (ThunderCom removed), clean Ash.Domain usage throughout. See [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md) for detailed findings.
 
 ## 1. Domain Atlas
 
@@ -37,22 +37,18 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 
 ### 1.2 Thunderlink — Communication, Community, Voice, Node Registry
 
-- **Resources**: **17 Ash Resources** across 4 categories (⚠️ Consolidation INCOMPLETE)
-- **Consolidation Status**: ⚠️ ThunderCom→ThunderLink INCOMPLETE (both domains active simultaneously)
-  - **Critical Issue**: 5 resources duplicated in both ThunderCom and ThunderLink domains
-  - **Duplicate Resources**: Community, Channel, Message, Role, FederationSocket
-  - **Voice Namespace Mismatch**: ThunderCom uses VoiceRoom, ThunderLink uses Voice.Room
-  - **Active ThunderCom Usage**: community_live.ex, channel_live.ex, seeds_chat_demo.exs still use ThunderCom
-- **Mission**: Serve communities, channels, support tickets, voice/WebRTC experiences, and distributed node registry.
+- **Resources**: **17 Ash Resources** across 4 categories
+- **Consolidation Status**: ✅ ThunderCom→ThunderLink COMPLETE (Nov 18, 2025)
+  - Community, Channel, Message, Role, FederationSocket, and all voice resources now live exclusively under ThunderLink.
+  - LiveViews (`community_live`, `channel_live`), seeds (`seeds_chat_demo.exs`), and support tooling now use ThunderLink code interfaces.
+  - ThunderCom namespace retired; ThunderLink is the single canonical communication/voice domain.
+- **Mission**: Serve communities, channels, support tickets, voice/WebRTC experiences, and the distributed node registry.
 - **Extensions**: AshAdmin, AshOban, AshGraphql, AshTypescript.Rpc (4 extensions for comprehensive API exposure)
 - **Categories**:
   - **Support** (1): Ticket
   - **Community & Channels** (5): Community, Channel, Message, Role, FederationSocket
-    - ⚠️ **DUPLICATES**: Also defined in ThunderCom domain (consolidation incomplete)
   - **Voice & WebRTC** (3): Voice.Room, Voice.Participant, Voice.Device
-    - Note: ThunderCom uses different namespace (VoiceRoom vs Voice.Room)
   - **Node Registry & Cluster** (6): Node, Heartbeat, LinkSession, NodeCapability, NodeGroup, NodeGroupMembership
-  - **Additional Infrastructure** (2): Other network components
 - **Code Interfaces**: Node operations (register/update/heartbeat/query), Heartbeat management (record/prune), LinkSession management (create/update/expire), NodeCapability operations (add/remove/query)
 - **GraphQL API**: Ticket system (get_ticket, list_tickets, create_ticket, close_ticket, process_ticket, escalate_ticket queries/mutations)
 - **TypeScript RPC API**: list_tickets, create_ticket (via AshTypescript.Rpc extension)
@@ -61,7 +57,6 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 - **Supervision**: Dynamic `RoomPipeline` supervisors transitioning to `Membrane.WebRTC` (see gap analysis in [`architecture/system_architecture_webrtc.md`](Thunderline/documentation/architecture/system_architecture_webrtc.md)).
 - **Feature flags**: Gated by `:voice_input`, `:ai_chat_panel`, `:presence_debug` per [`FEATURE_FLAGS.md`](Thunderline/documentation/FEATURE_FLAGS.md).
 - **Bug #18 Integration**: LinkSession.meta attribute uses AtomMap custom type to preserve Elixir atoms through JSONB storage (Registry constructs with string keys, converts to atoms on load). See `lib/thunderline/thunderblock/types/atom_map.ex`.
-- **Consolidation Action Required**: Complete migration before MVP (P0 backlog item)
 
 ### 1.3 Thunderflow — Event Bus & Broadway Pipelines
 
@@ -194,38 +189,12 @@ The Thunderline platform is organized into sovereign domains with explicit contr
   - Export jobs now managed through Thunderbolt orchestration
 - **Note**: Directory may still exist for backward compatibility, but all active resources are in Thundercrown (4 resources). See Thundercrown section (1.5) for current resource details.
 
-### 1.9 ThunderCom — Communication & Social Features (⚠️ CONSOLIDATION INCOMPLETE)
+### 1.9 ThunderCom — Removed (Nov 18, 2025)
 
-- **Resources**: **8 Ash Resources** (⚠️ Being consolidated into ThunderLink)
-- **Consolidation Status**: ⚠️ **INCOMPLETE** - Both ThunderCom and ThunderLink currently active
-- **Mission**: Legacy communication, community, and social features (being phased into ThunderLink)
-- **Extensions**: AshAdmin.Domain
-- **Categories**:
-  - **Community & Chat** (5): Community, Channel, Message, Role, FederationSocket
-    - ⚠️ **DUPLICATED in ThunderLink** - canonical implementation TBD
-  - **Voice** (3): VoiceRoom, VoiceParticipant, VoiceDevice
-    - Note: ThunderLink uses namespaced Voice.Room (differs from VoiceRoom)
-- **Active Usage** (NOT deprecated):
-  - `lib/thunderline_web/live/community_live.ex`
-  - `lib/thunderline_web/live/channel_live.ex`
-  - `priv/repo/seeds_chat_demo.exs`
-- **Duplicate Resources**: 5 resources also defined in ThunderLink domain:
-  - Community, Channel, Message, Role, FederationSocket
-  - **Issue**: Unclear which implementation is canonical
-  - **Impact**: Potential conflicts, confusion in API usage
-- **Voice Namespace Discrepancy**:
-  - ThunderCom: `VoiceRoom`, `VoiceParticipant`, `VoiceDevice`
-  - ThunderLink: `Voice.Room`, `Voice.Participant`, `Voice.Device`
-  - **Decision Required**: Standardize on one approach
-- **Consolidation Plan** (7 steps):
-  1. Audit which LiveViews use which domain's resources
-  2. Determine canonical implementation for each duplicate
-  3. Migrate LiveViews to canonical implementations
-  4. Update seeds to use target domain
-  5. Remove duplicate resources
-  6. Verify voice implementation consistency
-  7. Remove ThunderCom domain after complete migration
-- **Former HC Review Claim**: "0 resources, fully deprecated" - **INCORRECT** (verified Nov 17, 2025)
+- **Status**: ✅ REMOVED – All communication and voice resources now belong to ThunderLink.
+- **Disposition**: Community/Channel stack, voice/WebRTC components, mailer/notification helpers, LiveViews, and seeds were migrated during HC-27/HC-28. Remaining modules exist only in git history for audit.
+- **Operational Impact**: Feature flags, metrics, and event responsibilities transferred to ThunderLink; dashboard tiles now reference ThunderLink domain IDs.
+- **Documentation Hooks**: Any remaining references should note historical context only (see [`HC-27_28_MIGRATION_PLAN.md`](HC-27_28_MIGRATION_PLAN.md)).
 
 ### 1.10 ThunderVine — Workflow Orchestration (Utility Namespace)
 
@@ -271,21 +240,19 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 
 ## 2. Resource Reference Tables
 
-### 2.1 Active Core Domains (November 17, 2025)
+### 2.1 Active Core Domains (November 18, 2025)
 
 | Domain | Resources | Extensions | Categories | Status |
 |--------|-----------|------------|------------|--------|
 | **Thundergate** | 19 | AshAdmin | Auth (2), External (3), Federation (3), Policy (2), Monitoring (9) | ✅ Active |
-| **Thunderlink** | 17 | AshAdmin, AshOban, AshGraphql, AshTypescript.Rpc | Support (1), Community (5), Voice (3), Registry (6), Infrastructure (2) | ✅ Active (⚠️ Duplicates) |
-| **Thundercom** | 8 | AshAdmin | Community (5), Voice (3) | ⚠️ Consolidation Incomplete |
+| **Thunderlink** | 17 | AshAdmin, AshOban, AshGraphql, AshTypescript.Rpc | Support (1), Community (5), Voice (3), Registry (6), Infrastructure (2) | ✅ Active |
 | **Thunderflow** | 9 | AshAdmin | Streams (2), Actions (1), Events (1), Probes (3), Features (1), Lineage (1) | ✅ Active |
 | **Thunderbolt** | 50+ | AshAdmin, AshOban, AshJsonApi, AshGraphql | Core (5), Ising (3), Lane (10), Task (3), Automata (5), Cerebros (7), RAG (1), ML (6), MLflow (2), UPM (4), MoE (3) | ✅ Active |
 | **Thundercrown** | 4 | AshAdmin, AshAi | UI (1), AgentRunner (1), Conversation (2) | ✅ Active |
 | **Thunderblock** | 33 | AshAdmin | Vault (13), Infrastructure (8), Orchestration (4), DAG (4), Timing (4) | ✅ Active |
 | **Thundergrid** | 5 | AshGraphql, AshJsonApi | Spatial (1), Zones (2), Events (1), State (1) | ✅ Active |
-| **RAG** | 1 | - | Documents (1) | ✅ Active |
 
-**Total Active Resources**: ~150 across 8 domains
+**Total Active Resources**: ~160 across 8 domains
 
 ### 2.2 Support & Utility Domains
 
@@ -302,7 +269,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 | Domain | Status | Consolidated Into | Resources Migrated | Migration Date |
 |--------|--------|-------------------|--------------------|-----------------|
 | **ThunderChief** | ⚠️ Deprecated | Thundercrown | 4 (executive control) | Nov 2025 |
-| **ThunderCom** | ⚠️ In Progress | Thunderlink | 0 of 8 (INCOMPLETE - both domains active) | In Progress |
+| **ThunderCom** | ✅ Complete | Thunderlink | 8 (community + voice stack) | Nov 2025 |
 | **ThunderWatch** | ⚠️ Deprecated | Thundergate.Monitoring | 9 (observability) | Nov 2025 |
 | **ThunderJam** | ⚠️ In Progress | Thundergate.RateLimiting | N/A (rate limiting) | In Progress |
 | **ThunderClock** | ⚠️ In Progress | Thunderblock.Timing | 4 (scheduling) | In Progress |
@@ -316,7 +283,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 | **ThunderEye** | ✅ Complete | Thundergate.Monitoring | 7 (monitoring subset) | Complete |
 | **Accounts** | ✅ Complete | Thundergate | 2 (authentication) | Complete |
 
-**Consolidation Summary**: 5 major consolidations completed, 3 in progress (ThunderCom→ThunderLink INCOMPLETE), 14 legacy domains unified into 8 modern domains.
+**Consolidation Summary**: 6 major consolidations completed, 2 in progress (ThunderJam→Thundergate.RateLimiting and ThunderClock→Thunderblock.Timing), 14 legacy domains unified into 8 modern domains.
 
 **Feature flag crosswalk** (see [`FEATURE_FLAGS.md`](Thunderline/documentation/FEATURE_FLAGS.md)):
 
@@ -363,7 +330,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 - **Flower Power federated training**: Use runbooks in [`docs/flower-power/runbooks/*`](Thunderline/documentation/docs/flower-power/runbooks) and architecture overview in [`docs/flower-power/architecture.md`](Thunderline/documentation/docs/flower-power/architecture.md).
 - **Deprecation monitoring**: Attach to `[:thunderline, :deprecated_module, :used]` telemetry to enforce migration matrix (Phase 3–4 tasks in [`MIGRATIONS.md`](Thunderline/documentation/MIGRATIONS.md)).
 
-## 7. Roadmap and Open Actions (Updated November 17, 2025)
+## 7. Roadmap and Open Actions (Updated November 18, 2025)
 
 | Item | Domain | Priority | Owner | Status |
 |------|--------|----------|-------|--------|
@@ -382,7 +349,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 | Add comprehensive integration tests | All Domains | Medium | QA guild | Ongoing |
 | Documentation expansion (Broadway, ML, spatial algorithms) | Thunderflow, Thunderbolt, Thundergrid | Medium | Doc guild | TODO |
 
-**Architecture Health Metrics** (from November 17, 2025 review):
+**Architecture Health Metrics** (from November 18, 2025 review):
 - Overall Grade: A (9/10)
 - Active Domains: 8 core + support
 - Total Resources: ~150 Ash resources
@@ -416,7 +383,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 
 ---
 
-## 9. November 17, 2025 Architecture Review Summary
+## 9. November 18, 2025 Architecture Review Summary
 
 ### Review Highlights
 
@@ -478,4 +445,4 @@ RAG (1)           → Retrieval-Augmented Generation
 
 ---
 
-_This guide is living documentation. Submit PRs with updated resource tables, bridge inventories, and roadmap actions as domains evolve. Last comprehensive review: November 17, 2025 - Overall Grade: A (9/10)._
+_This guide is living documentation. Submit PRs with updated resource tables, bridge inventories, and roadmap actions as domains evolve. Last comprehensive review: November 18, 2025 - Overall Grade: A (9/10)._ 

@@ -1,34 +1,34 @@
 # 🚀 THUNDERLINE MASTER PLAYBOOK: From Zero to AI Automation
 
-> **Architecture Status (Nov 17, 2025 - Ground Truth Verified)**: Overall Grade **A- (8.5/10)** - 9 active domains, ~168 Ash resources, 5 major consolidations completed, 3 in progress (⚠️ ThunderCom→ThunderLink INCOMPLETE). Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
+> **Architecture Status (Nov 18, 2025 - Ground Truth Verified)**: Overall Grade **A (9/10)** - 8 active domains, ~160 Ash resources, 6 major consolidations completed, 2 in progress (ThunderJam→Thundergate.RateLimiting, ThunderClock→Thunderblock.Timing). Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
 >
 > High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-30). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
 >
-> **Ground Truth Verification (Nov 17, 2025)**: HC review contained inaccuracies. Direct codebase inspection revealed: (1) ThunderCom NOT deprecated - 8 active resources, both domains operational, (2) ThunderLink has 17 resources (not 14) with 5 duplicates, (3) ThunderVine architectural decision pending. See Ground Truth Verification Summary section and HC-27, HC-28, HC-29, HC-30 for details.
+> **Ground Truth Verification (Nov 18, 2025)**: HC review contained inaccuracies. Direct codebase inspection revealed (and now resolved): (1) ThunderCom resources migrated into ThunderLink (HC-27/28 ✅), (2) ThunderLink operates as the single communications domain with 17 resources, (3) ThunderVine architectural decision implemented. See Ground Truth Verification Summary section and HC-27, HC-28, HC-29, HC-30 for details.
 >
-> **Active Domains (Nov 17, 2025 - Verified)**: Thundergate (19), **Thunderlink (17)** ⚠️, **Thundercom (8)** ⚠️, Thunderflow (9), Thunderbolt (50+), Thundercrown (4), Thunderblock (33), Thundergrid (5), Thunderprism (2), RAG (1)
+> **Active Domains (Nov 18, 2025 - Verified)**: Thundergate (19), Thunderlink (17), Thunderflow (9), Thunderbolt (50+), Thundercrown (4), Thunderblock (33), Thundergrid (5), Thunderprism (2), RAG (1)
 > **Consolidations Status**: 
-> - ✅ **Complete (5)**: ThunderVault→Thunderblock, 5 domains→Thunderbolt, ThunderChief→Thundercrown, ThunderStone+ThunderEye+Accounts+ThunderWatch→Thundergate, ThunderWave→Thunderlink
-> - ⚠️ **In Progress (3)**: **ThunderCom→Thunderlink (INCOMPLETE - 8 resources remaining, 5 duplicates, both domains active)**, ThunderJam→Thundergate.RateLimiting, ThunderClock→Thunderblock.Timing
+> - ✅ **Complete (6)**: ThunderVault→Thunderblock, 5 domains→Thunderbolt, ThunderChief→Thundercrown, ThunderStone+ThunderEye+Accounts+ThunderWatch→Thundergate, ThunderWave→Thunderlink, ThunderCom→Thunderlink (HC-27/28 ✅ Nov 18 2025)
+> - ⚠️ **In Progress (2)**: ThunderJam→Thundergate.RateLimiting, ThunderClock→Thunderblock.Timing
 
 ---
 
-## 📊 NOVEMBER 17, 2025 ARCHITECTURE REVIEW SUMMARY
+## 📊 NOVEMBER 18, 2025 ARCHITECTURE REVIEW SUMMARY
 
 ### Domain Architecture Status
 
-**Overall Grade**: **A- (8.5/10)** - Excellent foundation with consolidation work in progress (verified Nov 17, 2025)
+**Overall Grade**: **A (9/10)** - Excellent foundation with consolidation work in progress (verified Nov 18, 2025)
 
-**Active Production Domains** (9 domains, ~168 resources - verified Nov 17, 2025):
+**Active Production Domains** (8 domains, ~160 resources - verified Nov 18, 2025):
 
 1. **Thundergate (19 resources)** - Authentication, External Services, Federation, Policy, Monitoring
    - Extensions: AshAdmin
    - Consolidation: ThunderStone + ThunderEye + Accounts + ThunderWatch → Thundergate (Sep-Nov 2025)
    - Status: ✅ Magika integration complete, monitoring unified
 
-2. **Thunderlink (14 resources)** - Support, Community, Voice Communications, Node Registry
+2. **Thunderlink (17 resources)** - Support, Community, Voice Communications, Node Registry
    - Extensions: AshAdmin, AshOban, AshGraphql, AshTypescript.Rpc
-   - Consolidation: ThunderCom + ThunderWave → Thunderlink (Oct 2025)
+   - Consolidation: ThunderCom + ThunderWave → Thunderlink (complete Nov 18 2025; HC-27/28 ✅)
    - APIs: GraphQL + TypeScript RPC active
    - Bug #18: LinkSession.meta uses AtomMap custom type (keys as atoms)
 
@@ -70,7 +70,7 @@
 - ✅ ThunderVault → Thunderblock (33 resources)
 - ✅ 5 domains → Thunderbolt (ThunderCore, ThunderLane, ThunderMag, ThunderCell, Thunder_Ising)
 - ✅ ThunderChief → Thundercrown (4 resources)
-- ✅ ThunderCom + ThunderWave → Thunderlink (14 resources)
+- ✅ ThunderCom + ThunderWave → Thunderlink (17 resources, completed Nov 18 2025)
 - ✅ ThunderStone + ThunderEye + Accounts + ThunderWatch → Thundergate (19 resources)
 - ✅ UPM integration into Thunderbolt (4 resources)
 - 🔄 ThunderJam → Thundergate.RateLimiting (in progress)
@@ -121,40 +121,35 @@
 | HC-23 | P1 | Thundra/Nerves Integration | Multi-dimensional PAC execution engine (cloud + edge) needed for sovereign agent autonomy | Implement Thundra VM (tick-based voxelized cellular automata in Bolt, 12-zone hexagonal lattice), Nerves firmware template (mTLS enrollment via Gate, local PAC execution), device telemetry backhaul (Link TOCP transport), policy enforcement (Crown device manifests), event DAG traceability (correlation_id/causation_id lineage) | Bolt + Gate + Link + Crown Stewards | Not Started |
 | HC-24 | P1 | Sensor-to-STAC Pipeline | Complete sensor data to knowledge graph to tokenized reward pipeline undefined | Design and implement Thunderforge to Thunderblock flow: Thunderbit ingestion (Nerves devices), decode/assemble workers (Oban), PAC validation (6-dimensional policy checks), DAG commit (knowledge graph), STAC minting (reward function), staking mechanics (sSTAC/STACC), anti-grief patterns (novelty decay, collusion detection), observability (SLOs P50 under 150ms, P95 under 500ms, P99 under 2s). See documentation/architecture/sensor_to_stac_pipeline.md | Forge + Bolt + Block Stewards | Not Started |
 | HC-25 | P1 | ML Optimization Infrastructure | No hyperparameter tuning framework | Implement Tree-structured Parzen Estimator (TPE) for Bayesian optimization: Nx/Scholar core algorithm (200 lines KDE-based), Ash resource (Oko.Tuner.TPEJob for persistence), Oban worker (async execution), Mix task CLI (mix tpe.run), search space support (uniform/lognormal/categorical distributions). Enable automated tuning for Cerebros NAS, Oko classifiers, VIM solvers. See documentation/architecture/tpe_optimizer.md | Bolt Steward | Not Started |
-| HC-26 | P1 | Domain Architecture | 6 consolidations completed, 3 in progress (verified Nov 17, 2025) | **Priority Actions**: (1) Complete ThunderCom→ThunderLink consolidation (HC-27 - 8 resources remaining, 5 duplicates to resolve), (2) Complete ThunderJam→Thundergate.RateLimiting migration, (3) Complete ThunderClock→Thunderblock.Timing migration, (4) Consider splitting Thunderbolt (50+ resources - complexity concern), (5) Decide ThunderVine domain structure (HC-29 - ✅ COMPLETE). **Verification**: Ground truth inspection Nov 17, 2025 revealed HC review inaccuracies - ThunderCom NOT deprecated (8 active resources), ThunderLink has 17 resources (not 14) with 5 duplicates. ThunderForge removed (HC-30 - ✅ COMPLETE). See Ground Truth Verification Summary section and HC-27, HC-28, HC-29, HC-30 for details. See DOMAIN_ARCHITECTURE_REVIEW.md for comprehensive analysis. | Architecture Guild | In Progress | Ongoing |
-| HC-27 | P0 | Domain Consolidation | ThunderCom→ThunderLink incomplete | **Context**: Consolidation assumed complete by HC review but ground truth shows 8 active resources still in ThunderCom domain. **Issue**: Both domains currently active with 5 duplicate resources (Community, Channel, Message, Role, FederationSocket). Voice resources have namespace discrepancy (VoiceRoom vs Voice.Room). LiveViews and seeds still reference ThunderCom. **Action**: (1) Audit which LiveViews use which domain's resources, (2) Determine canonical implementation for each duplicate, (3) Migrate LiveViews to canonical implementations, (4) Update seeds to target domain, (5) Remove duplicate resources, (6) Verify voice implementation consistency, (7) Remove ThunderCom domain after complete migration. **Verification**: Ground truth confirmed Nov 17, 2025 - 8 resources in domain.ex, active usage in community_live.ex, channel_live.ex, seeds_chat_demo.exs. | Gate + Link Stewards | Not Started | Q1 2026 |
-| HC-28 | P0 | Resource Duplication | 5 resources in both domains | **Context**: 5 resources defined in both ThunderCom and ThunderLink domains (Community, Channel, FederationSocket, Message, Role). **Issue**: Unclear which implementation is canonical, potential conflicts, confusion in API usage. **Action**: (1) Compare implementations in both domains for semantic differences, (2) Determine canonical implementation based on usage patterns and completeness, (3) Update all references to use canonical implementation, (4) Remove duplicate resources from non-canonical domain, (5) Verify no breaking changes in LiveViews/GraphQL/RPC. **Verification**: Verified Nov 17, 2025 via direct resource inspection. | Link Steward | Not Started | Q1 2026 |
+| HC-26 | P1 | Domain Architecture | 6 consolidations completed, 2 in progress (verified Nov 18, 2025) | **Priority Actions**: (1) Complete ThunderCom→ThunderLink consolidation (**✅ HC-27/28 delivered Nov 18 2025**), (2) Complete ThunderJam→Thundergate.RateLimiting migration, (3) Complete ThunderClock→Thunderblock.Timing migration, (4) Consider splitting Thunderbolt (50+ resources - complexity concern), (5) Decide ThunderVine domain structure (HC-29 - ✅ COMPLETE). See Ground Truth Verification Summary and HC-27, HC-28, HC-29, HC-30 for details. | Architecture Guild | In Progress | Ongoing |
+| HC-27 | P0 | Domain Consolidation | ThunderCom→ThunderLink consolidation | **Outcome (Nov 18 2025)**: Executed 8-phase plan (verification → LiveView swaps → duplicate removals → voice + support cleanup → domain deletion) removing the ThunderCom domain entirely while preserving shared DB tables. LiveViews now depend solely on ThunderLink, redundancy eliminated, and compilation/tests pass. | Gate + Link Stewards | **✅ COMPLETE** | Nov 18 2025 |
+| HC-28 | P0 | Resource Duplication | Canonicalize ThunderLink resources | **Outcome (Nov 18 2025)**: Selected ThunderLink implementations for Community/Channel/Message/Role/FederationSocket, removed ThunderCom duplicates, verified voice namespace alignment, and recompiled platform with zero regressions. | Link Steward | **✅ COMPLETE** | Nov 18 2025 |
 | HC-29 | P0 | ThunderVine Architecture | ✅ COMPLETE (Nov 17, 2025) | **Implementation**: Created ThunderVine.Domain with 4 owned resources (Workflow, WorkflowNode, WorkflowEdge, WorkflowSnapshot) migrated from ThunderBlock. **Benefits Realized**: API exposure via Ash.Domain, policy enforcement, clearer ownership (orchestration vs infrastructure), improved naming (Workflow vs DAGWorkflow), reduced coupling. **Migration**: 5 files created, 10 files modified, 4 files deleted. Zero breaking changes (same DB tables: dag_workflows, dag_nodes, dag_edges, dag_snapshots). **Verification**: Compilation ✅ (zero errors), Tests ✅ (no new failures), Documentation ✅ (6 files synchronized). See HC-29_COMPLETION_REPORT.md for full details. | Bolt + Block Stewards | ✅ COMPLETE | Nov 17, 2025 |
 | HC-30 | P0 | ThunderForge Cleanup | ✅ COMPLETE (Nov 17, 2025) | **Implementation**: Removed entire ThunderForge directory (3 files, ~75 lines total). **Files Removed**: domain.ex (empty resources block), blueprint.ex (25-line YAML parser), factory_run.ex (40-line telemetry executor). **Verification**: Zero production dependencies confirmed via comprehensive grep, explicitly marked as "orphaned design" in ORPHANED_CODE_REPORT.md. **Rationale**: No active usage, HC-24 (future sensor pipeline) can reimplement if needed, code preserved in git history. **Effort**: 30 minutes total (investigation + removal + documentation). | Platform Team | ✅ COMPLETE | Nov 17, 2025 |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
-### Ground Truth Verification Summary (November 17, 2025)
+### Ground Truth Verification Summary (November 18, 2025)
 
 **Context**: External High Command review (Aug 25, 2025) contained inaccuracies. This summary reflects **verified ground truth** from direct codebase access.
 
 **Critical Findings**:
 
-1. **ThunderCom Consolidation - INCORRECT in HC Review** ⚠️
+1. **ThunderCom Consolidation - RESOLVED (Nov 18 2025)** ✅
    - **HC Review Claim**: "0 resources, fully deprecated, safe to remove"
-   - **Ground Truth**: 8 ACTIVE Ash resources still in production use
-   - **Evidence**: domain.ex exists with 8 resources, LiveViews use ThunderCom (community_live.ex, channel_live.ex), seeds reference ThunderCom
-   - **Impact**: Consolidation INCOMPLETE - both ThunderCom and ThunderLink currently active
-   - **New P0 Items**: HC-27 (consolidation), HC-28 (duplicate resources)
+   - **Ground Truth (Nov 17)**: 8 active resources, LiveViews + seeds still depended on ThunderCom
+   - **Action**: Executed HC-27 migration plan (8 phases) culminating in full removal of `lib/thunderline/thundercom/`, LiveViews pointing to ThunderLink, duplicate seed/voice helpers deleted, and all compilation/tests passing
+   - **Result**: Single communications domain (ThunderLink) with preserved DB tables; consolidation backlog item closed
 
-2. **Resource Duplication Discovered** ⚠️
-   - **Issue**: 5 resources defined in BOTH ThunderCom and ThunderLink
-   - **Duplicates**: Community, Channel, Message, Role, FederationSocket
-   - **Voice Namespace Mismatch**: VoiceRoom vs Voice.Room (unclear if same implementation)
-   - **Impact**: API confusion, potential conflicts, unclear canonical implementation
+2. **Resource Duplication - RESOLVED (Nov 18 2025)** ✅
+   - **Issue (Nov 17)**: Community, Channel, Message, Role, FederationSocket implemented in both domains with namespace drift (VoiceRoom vs Voice.Room)
+   - **Action**: Compared implementations, selected ThunderLink as canonical, removed ThunderCom duplicates, aligned namespace, reran compile/tests
+   - **Result**: Zero duplicate Ash resources; HC-28 closed with supporting documentation
 
-3. **ThunderVine Architecture Decision Pending** 🤔
-   - **Current**: Utility namespace (4 modules, no domain.ex)
-   - **Pattern**: Business logic calling ThunderBlock DAG resources
-   - **Discovery**: Only ThunderVine uses DAG resources (exclusive ownership verified)
-   - **Recommendation**: Create ThunderVine.Domain with owned Workflow resources
-   - **Rationale**: Exclusive usage, conceptual ownership, API exposure need, policy enforcement
-   - **New P0 Item**: HC-29 (architecture decision)
+3. **ThunderVine Architecture Decision IMPLEMENTED** ✅
+   - **Original Finding**: ThunderVine logic operated without a domain boundary while owning DAG resources
+   - **Action**: Created ThunderVine.Domain (HC-29) with Workflow/Node/Edge/Snapshot resources migrated from ThunderBlock without schema changes
+   - **Result**: Clear ownership, policy enforcement surface, API exposure ready
 
 4. **ThunderChief Deprecation - CORRECT** ✅
    - **HC Review Claim**: "Deprecated, merged into ThunderCrown"
@@ -168,25 +163,24 @@ Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: 
    - **New P0 Item**: HC-30 (cleanup decision)
 
 **Updated Resource Counts**:
-- Total Active Domains: 9 (including ThunderCom which should have been 8)
-- Total Resources: ~168 (not ~150 - ThunderCom's 8 resources were uncounted)
-- ThunderLink: 17 resources (not 14 - accounting for duplicates)
-- ThunderCom: 8 active resources (not 0 as claimed)
+- Total Active Domains: 8 (ThunderCom removed Nov 18 2025)
+- Total Resources: ~160 (ThunderLink absorbed 8 migrated resources)
+- ThunderLink: 17 resources (single canonical implementation)
+- ThunderCom: 0 active resources (directory removed; history preserved in git)
 
 **Consolidation Status Updates**:
-- ✅ Complete: 5 consolidations (ThunderVault→Block, 5→Bolt, ThunderChief→Crown, ThunderStone+Eye+Accounts+Watch→Gate)
-- ⚠️ In Progress: 3 consolidations (ThunderCom→Link INCOMPLETE, ThunderJam→Gate, ThunderClock→Block)
+- ✅ Complete: 6 consolidations (ThunderVault→Block, 5→Bolt, ThunderChief→Crown, ThunderStone+Eye+Accounts+Watch→Gate, ThunderCom→Link, ThunderWave→Link)
+- ⚠️ In Progress: 2 consolidations (ThunderJam→Gate, ThunderClock→Block)
 
 **P0 Backlog Impact**:
-- New P0 Items Added: HC-27, HC-28, HC-29, HC-30
-- Updated HC-26: Now reflects accurate consolidation status
-- Estimated Effort: 3-5 days for ThunderCom consolidation completion, 1-2 days for ThunderVine decision, 1 hour for ThunderForge cleanup
+- HC-27 and HC-28 marked **Done** (Nov 18 2025); HC-29 and HC-30 already complete; HC-26 now tracks the remaining two consolidations only
+- Estimated Effort Remaining: ThunderJam (2-3 days), ThunderClock (1-2 days)
 
 **Documentation Updated**:
-- ✅ DOMAIN_ARCHITECTURE_REVIEW.md - Full verification section added, ThunderCom section inserted
-- ✅ THUNDERLINE_DOMAIN_CATALOG.md - ThunderCom updated with active status, ThunderVine analysis added
-- ✅ thunderline_domain_resource_guide.md - Resource counts corrected, consolidation warnings added
-- ✅ THUNDERLINE_MASTER_PLAYBOOK.md - HC backlog items HC-27 through HC-30 added
+- ✅ DOMAIN_ARCHITECTURE_REVIEW.md - Consolidation log appended with HC-27/28 completion notes
+- ✅ THUNDERLINE_DOMAIN_CATALOG.md - ThunderCom section moved to "Removed"; ThunderLink counts refreshed
+- ✅ thunderline_domain_resource_guide.md - Resource counts updated; duplicates removed from diagrams
+- ✅ THUNDERLINE_MASTER_PLAYBOOK.md - This document now tracks HC-27/28 closure
 
 ---
 
