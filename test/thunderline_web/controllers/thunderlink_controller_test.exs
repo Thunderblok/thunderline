@@ -245,7 +245,8 @@ defmodule ThunderlineWeb.ThunderlinkControllerTest do
       conn = get(conn, ~p"/api/thunderlink/nodes/#{n1.id}")
 
       assert json_response(conn, 200)
-      node = json_response(conn, 200)
+      response = json_response(conn, 200)
+      node = response["node"]
 
       assert node["id"] == n1.id
       assert node["name"] == "test-node-1@localhost"
