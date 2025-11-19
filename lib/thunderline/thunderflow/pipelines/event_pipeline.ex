@@ -424,7 +424,6 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   defp idempotency_key(_), do: nil
 
-
   defp maybe_domain_processor(job) do
     case Thunderline.Thunderchief.Orchestrator.enqueue_domain_job(job) do
       %Ecto.Changeset{} = changeset -> changeset

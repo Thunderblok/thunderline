@@ -81,16 +81,17 @@ defmodule Thunderline.Thunderblock.Timing.Scheduler do
     queue = Keyword.get(opts, :queue, "scheduled")
     max_attempts = Keyword.get(opts, :max_attempts, 3)
 
-    scheduled_at = cond do
-      delay_ms = Keyword.get(opts, :delay_ms) ->
-        DateTime.add(DateTime.utc_now(), delay_ms, :millisecond)
+    scheduled_at =
+      cond do
+        delay_ms = Keyword.get(opts, :delay_ms) ->
+          DateTime.add(DateTime.utc_now(), delay_ms, :millisecond)
 
-      scheduled_at = Keyword.get(opts, :scheduled_at) ->
-        scheduled_at
+        scheduled_at = Keyword.get(opts, :scheduled_at) ->
+          scheduled_at
 
-      true ->
-        DateTime.utc_now()
-    end
+        true ->
+          DateTime.utc_now()
+      end
 
     job_params = %{
       module: to_string(module),
@@ -100,11 +101,13 @@ defmodule Thunderline.Thunderblock.Timing.Scheduler do
 
     worker = create_generic_worker()
 
-    case Oban.insert(worker.new(job_params,
-      queue: queue,
-      max_attempts: max_attempts,
-      scheduled_at: scheduled_at
-    )) do
+    case Oban.insert(
+           worker.new(job_params,
+             queue: queue,
+             max_attempts: max_attempts,
+             scheduled_at: scheduled_at
+           )
+         ) do
       {:ok, job} ->
         Logger.info("Scheduled one-time job",
           module: module,
@@ -126,6 +129,7 @@ defmodule Thunderline.Thunderblock.Timing.Scheduler do
           function: function,
           errors: changeset.errors
         )
+
         {:error, changeset}
     end
   end
@@ -141,6 +145,7 @@ defmodule Thunderline.Thunderblock.Timing.Scheduler do
           %{count: 1},
           %{job_id: job_id}
         )
+
         {:ok, job}
 
       error ->
@@ -165,9 +170,11 @@ defmodule Thunderline.Thunderblock.Timing.Scheduler do
 
     case Thunderline.Repo.query(query, [limit]) do
       {:ok, %{rows: rows, columns: columns}} ->
-        jobs = Enum.map(rows, fn row ->
-          Enum.zip(columns, row) |> Map.new()
-        end)
+        jobs =
+          Enum.map(rows, fn row ->
+            Enum.zip(columns, row) |> Map.new()
+          end)
+
         {:ok, jobs}
 
       error ->

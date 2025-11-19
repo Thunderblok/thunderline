@@ -24,7 +24,12 @@ defmodule Thunderline.Thundervine.Resources.WorkflowEdge do
   end
 
   graphql do
-    type :workflow_link  # Renamed from workflow_edge to avoid GraphQL edge type collision
+    # Renamed from workflow_edge to avoid GraphQL edge type collision
+    type :workflow_link
+  end
+
+  actions do
+    defaults [:create, :read]
   end
 
   policies do
@@ -46,10 +51,6 @@ defmodule Thunderline.Thundervine.Resources.WorkflowEdge do
     policy action_type(:read) do
       authorize_if AshAuthentication.Checks.Authenticated
     end
-  end
-
-  actions do
-    defaults [:create, :read]
   end
 
   attributes do

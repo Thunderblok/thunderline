@@ -138,11 +138,12 @@ defmodule Thunderline.Thunderlink.RegistryTest do
 
     test "marks node as online and creates link session", %{node: node} do
       # Create a remote node first
-      {:ok, remote_node} = Registry.ensure_node(%{
-        name: "remote-node@localhost",
-        role: :worker,
-        domain: :thunderbolt
-      })
+      {:ok, remote_node} =
+        Registry.ensure_node(%{
+          name: "remote-node@localhost",
+          role: :worker,
+          domain: :thunderbolt
+        })
 
       link_params = %{
         remote_node_id: remote_node.id,
@@ -404,10 +405,11 @@ defmodule Thunderline.Thunderlink.RegistryTest do
         }
       ]
 
-      created_nodes = Enum.map(nodes, fn params ->
-        {:ok, node} = Registry.ensure_node(params)
-        node
-      end)
+      created_nodes =
+        Enum.map(nodes, fn params ->
+          {:ok, node} = Registry.ensure_node(params)
+          node
+        end)
 
       %{nodes: created_nodes}
     end
@@ -427,6 +429,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       result = Registry.list_nodes(status: :online)
 
       assert length(result) >= 2
+
       if result != [] do
         Enum.each(result, fn node ->
           assert node.status == :online
@@ -438,6 +441,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       result = Registry.list_nodes(role: :worker)
 
       assert length(result) >= 2
+
       if result != [] do
         Enum.each(result, fn node ->
           assert node.role == :worker
@@ -449,6 +453,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       result = Registry.list_nodes(domain: :thunderbolt)
 
       assert length(result) >= 2
+
       if result != [] do
         Enum.each(result, fn node ->
           assert node.domain == :thunderbolt
@@ -460,6 +465,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       result = Registry.list_nodes(cluster_type: :out_of_cluster)
 
       assert length(result) >= 1
+
       Enum.each(result, fn node ->
         assert node.cluster_type == :out_of_cluster
       end)
@@ -469,6 +475,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       result = Registry.list_nodes(domain: :thunderbolt, status: :online)
 
       assert length(result) >= 1
+
       if result != [] do
         Enum.each(result, fn node ->
           assert node.domain == :thunderbolt
@@ -487,40 +494,45 @@ defmodule Thunderline.Thunderlink.RegistryTest do
   describe "graph/0" do
     setup do
       # Create nodes
-      {:ok, node1} = Registry.ensure_node(%{
-        name: "graph-node-1@localhost",
-        cluster_type: :in_cluster,
-        role: :worker,
-        domain: :thunderbolt
-      })
+      {:ok, node1} =
+        Registry.ensure_node(%{
+          name: "graph-node-1@localhost",
+          cluster_type: :in_cluster,
+          role: :worker,
+          domain: :thunderbolt
+        })
 
-      {:ok, node2} = Registry.ensure_node(%{
-        name: "graph-node-2",
-        cluster_type: :out_of_cluster,
-        role: :gateway,
-        domain: :thundergate
-      })
+      {:ok, node2} =
+        Registry.ensure_node(%{
+          name: "graph-node-2",
+          cluster_type: :out_of_cluster,
+          role: :gateway,
+          domain: :thundergate
+        })
 
-      {:ok, node3} = Registry.ensure_node(%{
-        name: "graph-node-3@localhost",
-        cluster_type: :in_cluster,
-        role: :controller,
-        domain: :thunderflow
-      })
+      {:ok, node3} =
+        Registry.ensure_node(%{
+          name: "graph-node-3@localhost",
+          cluster_type: :in_cluster,
+          role: :controller,
+          domain: :thunderflow
+        })
 
       # Mark node1 online with link to node2
-      {:ok, _} = Registry.mark_online(node1.id, %{
-        local_peer_id: "local-1",
-        remote_peer_id: node2.id,
-        connection_type: :direct
-      })
+      {:ok, _} =
+        Registry.mark_online(node1.id, %{
+          local_peer_id: "local-1",
+          remote_peer_id: node2.id,
+          connection_type: :direct
+        })
 
       # Mark node2 online with link to node3
-      {:ok, _} = Registry.mark_online(node2.id, %{
-        local_peer_id: "local-2",
-        remote_peer_id: node3.id,
-        connection_type: :websocket
-      })
+      {:ok, _} =
+        Registry.mark_online(node2.id, %{
+          local_peer_id: "local-2",
+          remote_peer_id: node3.id,
+          connection_type: :websocket
+        })
 
       %{node1: node1, node2: node2, node3: node3}
     end
@@ -569,12 +581,13 @@ defmodule Thunderline.Thunderlink.RegistryTest do
 
     test "handles nodes with no connections" do
       # Create isolated node
-      {:ok, isolated_node} = Registry.ensure_node(%{
-        name: "isolated-node@localhost",
-        cluster_type: :in_cluster,
-        role: :worker,
-        domain: :thunderbolt
-      })
+      {:ok, isolated_node} =
+        Registry.ensure_node(%{
+          name: "isolated-node@localhost",
+          cluster_type: :in_cluster,
+          role: :worker,
+          domain: :thunderbolt
+        })
 
       graph = Registry.graph()
 
@@ -646,16 +659,18 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       Registry.ensure_node(params)
 
       # Time cache lookup
-      {cache_time, _} = :timer.tc(fn ->
-        :ets.lookup(Registry.cache_table(), "cache-perf-test")
-      end)
+      {cache_time, _} =
+        :timer.tc(fn ->
+          :ets.lookup(Registry.cache_table(), "cache-perf-test")
+        end)
 
       # Time database query
-      {db_time, _} = :timer.tc(fn ->
-        Node
-        |> Ash.Query.filter(node_id: "cache-perf-test")
-        |> Ash.read_one!()
-      end)
+      {db_time, _} =
+        :timer.tc(fn ->
+          Node
+          |> Ash.Query.filter(node_id: "cache-perf-test")
+          |> Ash.read_one!()
+        end)
 
       # Cache should be significantly faster (at least 10x)
       assert cache_time < db_time / 10
@@ -672,9 +687,10 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       }
 
       # Spawn multiple concurrent ensure_node calls
-      tasks = Enum.map(1..10, fn _ ->
-        Task.async(fn -> Registry.ensure_node(params) end)
-      end)
+      tasks =
+        Enum.map(1..10, fn _ ->
+          Task.async(fn -> Registry.ensure_node(params) end)
+        end)
 
       results = Enum.map(tasks, &Task.await/1)
 
@@ -700,11 +716,12 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       {:ok, node} = Registry.ensure_node(params)
 
       # Spawn concurrent heartbeats
-      tasks = Enum.map(1..5, fn i ->
-        Task.async(fn ->
-          Registry.heartbeat(node.id, %{cpu_load: i * 0.1})
+      tasks =
+        Enum.map(1..5, fn i ->
+          Task.async(fn ->
+            Registry.heartbeat(node.id, %{cpu_load: i * 0.1})
+          end)
         end)
-      end)
 
       results = Enum.map(tasks, &Task.await/1)
 

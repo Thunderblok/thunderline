@@ -68,7 +68,8 @@ defmodule Thunderline.Repo.Migrations.AddThunderlinkNodeRegistry do
             name: "thunderlink_link_sessions_node_id_fkey",
             type: :uuid,
             on_delete: :delete_all
-          ), null: false
+          ),
+          null: false
 
       add :remote_node_id,
           references(:thunderlink_nodes,
@@ -76,7 +77,8 @@ defmodule Thunderline.Repo.Migrations.AddThunderlinkNodeRegistry do
             name: "thunderlink_link_sessions_remote_node_id_fkey",
             type: :uuid,
             on_delete: :delete_all
-          ), null: false
+          ),
+          null: false
 
       add :session_type, :text, null: false, default: "cluster"
       add :status, :text, null: false, default: "establishing"
@@ -149,7 +151,8 @@ defmodule Thunderline.Repo.Migrations.AddThunderlinkNodeRegistry do
             name: "thunderlink_node_capabilities_node_id_fkey",
             type: :uuid,
             on_delete: :delete_all
-          ), null: false
+          ),
+          null: false
 
       add :capability_key, :text, null: false
       add :capability_value, :text, null: false
@@ -178,7 +181,8 @@ defmodule Thunderline.Repo.Migrations.AddThunderlinkNodeRegistry do
             name: "thunderlink_heartbeats_node_id_fkey",
             type: :uuid,
             on_delete: :delete_all
-          ), null: false
+          ),
+          null: false
 
       add :status, :text, null: false
       add :cpu_load, :float

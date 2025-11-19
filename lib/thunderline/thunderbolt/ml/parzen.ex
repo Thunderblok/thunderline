@@ -216,18 +216,20 @@ defmodule Thunderline.Thunderbolt.ML.Parzen do
     # Build histogram PDF
     {bin_edges, bin_probs} = build_histogram(proj_samples, parzen.bins)
 
-    updated_state = %{parzen |
-      samples: all_samples,
-      proj_samples: proj_samples,
-      pca_mean: pca_mean,
-      pca_basis: pca_basis,
-      bin_edges: bin_edges,
-      bin_probs: bin_probs,
-      last_updated_at: System.system_time(:millisecond)
+    updated_state = %{
+      parzen
+      | samples: all_samples,
+        proj_samples: proj_samples,
+        pca_mean: pca_mean,
+        pca_basis: pca_basis,
+        bin_edges: bin_edges,
+        bin_probs: bin_probs,
+        last_updated_at: System.system_time(:millisecond)
     }
 
     # Emit telemetry stop
     duration = System.monotonic_time() - start_time
+
     :telemetry.execute(
       [:thunderline, :ml, :parzen, :fit, :stop],
       %{duration: duration, batch_size: batch_size},
@@ -277,7 +279,7 @@ defmodule Thunderline.Thunderbolt.ML.Parzen do
     end
   end
 
-    @doc """
+  @doc """
   Compute the estimated density at a given point.
 
   Projects the point using the learned PCA basis and returns
@@ -395,7 +397,8 @@ defmodule Thunderline.Thunderbolt.ML.Parzen do
       window_size: snapshot.window_size,
       dims: snapshot.dims,
       bins: snapshot.bins,
-      samples: nil,  # Don't restore full samples to keep snapshots light
+      # Don't restore full samples to keep snapshots light
+      samples: nil,
       proj_samples: nil,
       pca_basis: if(snapshot.pca_basis, do: Nx.from_binary(snapshot.pca_basis, :f32), else: nil),
       pca_mean: if(snapshot.pca_mean, do: Nx.from_binary(snapshot.pca_mean, :f32), else: nil),
@@ -500,8 +503,13 @@ defmodule Thunderline.Thunderbolt.ML.Parzen do
     bins = length(bin_edges) - 1
 
     cond do
-      value < Enum.at(bin_edges, 0) -> -1
-      value >= Enum.at(bin_edges, bins) -> bins  # Last edge is inclusive
+      value < Enum.at(bin_edges, 0) ->
+        -1
+
+      # Last edge is inclusive
+      value >= Enum.at(bin_edges, bins) ->
+        bins
+
       true ->
         # Binary search
         Enum.reduce_while(0..(bins - 1), -1, fn i, _acc ->

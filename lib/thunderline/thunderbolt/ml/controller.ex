@@ -564,7 +564,9 @@ defmodule Thunderline.Thunderbolt.ML.Controller do
   defp compute_distance(_state, _p_hist, _m_hist), do: raise("Use compute_all_distances/3")
   defp calculate_reward(_state, _distance), do: raise("Use determine_best_model/1")
   defp update_sla(_state, _model_id, _reward, _dist), do: raise("Use update_sla_for_all_models/3")
-  defp build_metadata(_state, _model_id, _dist, _reward), do: raise("Response built in do_process_batch/2")
+
+  defp build_metadata(_state, _model_id, _dist, _reward),
+    do: raise("Response built in do_process_batch/2")
 
   defp emit_telemetry(state, metadata, duration) do
     raise "Not implemented - Phase 3.5"

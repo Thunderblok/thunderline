@@ -16,10 +16,14 @@ defmodule Thunderline.Thunderlink.RegistryBasicTest do
       {:ok, node} = Registry.ensure_node(params)
 
       assert node.name == "worker-1@localhost"
-      assert node.role == :worker  # default
-      assert node.domain == :thunderlink  # default
-      assert node.cluster_type == :in_cluster  # default
-      assert node.status == :connecting  # set by :register action
+      # default
+      assert node.role == :worker
+      # default
+      assert node.domain == :thunderlink
+      # default
+      assert node.cluster_type == :in_cluster
+      # set by :register action
+      assert node.status == :connecting
       assert node.last_seen_at != nil
     end
 

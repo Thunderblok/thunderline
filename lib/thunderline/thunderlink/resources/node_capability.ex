@@ -26,49 +26,15 @@ defmodule Thunderline.Thunderlink.Resources.NodeCapability do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :node_id, :uuid do
-      allow_nil? false
-      public? true
-      description "Node this capability belongs to"
-    end
-
-    attribute :capability_key, :string do
-      allow_nil? false
-      public? true
-      description "Capability key: ml_inference, gpu_available, storage_gb, etc."
-    end
-
-    attribute :capability_value, :string do
-      allow_nil? false
-      public? true
-      description "Capability value (stored as string, parse as needed)"
-    end
-
-    attribute :enabled, :boolean do
-      allow_nil? false
-      default true
-      public? true
-      description "Whether this capability is currently enabled"
-    end
-
-    attribute :meta, :map do
-      default %{}
-      public? true
-      description "Additional metadata about the capability"
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  relationships do
-    belongs_to :node, Thunderline.Thunderlink.Resources.Node do
-      allow_nil? false
-      public? true
-    end
+  code_interface do
+    define :create, args: [:node_id, :capability_key, :capability_value]
+    define :update
+    define :enable
+    define :disable
+    define :for_node, args: [:node_id]
+    define :enabled_for_node, args: [:node_id]
+    define :by_capability, args: [:capability_key]
+    define :ml_inference_nodes
   end
 
   actions do
@@ -124,31 +90,23 @@ defmodule Thunderline.Thunderlink.Resources.NodeCapability do
       argument :capability_value, :string
 
       prepare before_action(fn query, _context ->
-        require Ash.Query
-        key = query.arguments.capability_key
-        query = Ash.Query.filter(query, expr(capability_key == ^key))
+                require Ash.Query
+                key = query.arguments.capability_key
+                query = Ash.Query.filter(query, expr(capability_key == ^key))
 
-        if query.arguments.capability_value do
-          val = query.arguments.capability_value
-          Ash.Query.filter(query, expr(capability_value == ^val))
-        else
-          query
-        end
-      end)
+                if query.arguments.capability_value do
+                  val = query.arguments.capability_value
+                  Ash.Query.filter(query, expr(capability_value == ^val))
+                else
+                  query
+                end
+              end)
     end
 
     read :ml_inference_nodes do
       description "Find nodes with ML inference capability"
       filter expr(capability_key == "ml_inference" and enabled == true)
     end
-  end
-
-  identities do
-    identity :unique_capability_per_node, [:node_id, :capability_key]
-  end
-
-  validations do
-    validate present([:node_id, :capability_key, :capability_value])
   end
 
   policies do
@@ -158,14 +116,56 @@ defmodule Thunderline.Thunderlink.Resources.NodeCapability do
     end
   end
 
-  code_interface do
-    define :create, args: [:node_id, :capability_key, :capability_value]
-    define :update
-    define :enable
-    define :disable
-    define :for_node, args: [:node_id]
-    define :enabled_for_node, args: [:node_id]
-    define :by_capability, args: [:capability_key]
-    define :ml_inference_nodes
+  validations do
+    validate present([:node_id, :capability_key, :capability_value])
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :node_id, :uuid do
+      allow_nil? false
+      public? true
+      description "Node this capability belongs to"
+    end
+
+    attribute :capability_key, :string do
+      allow_nil? false
+      public? true
+      description "Capability key: ml_inference, gpu_available, storage_gb, etc."
+    end
+
+    attribute :capability_value, :string do
+      allow_nil? false
+      public? true
+      description "Capability value (stored as string, parse as needed)"
+    end
+
+    attribute :enabled, :boolean do
+      allow_nil? false
+      default true
+      public? true
+      description "Whether this capability is currently enabled"
+    end
+
+    attribute :meta, :map do
+      default %{}
+      public? true
+      description "Additional metadata about the capability"
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  relationships do
+    belongs_to :node, Thunderline.Thunderlink.Resources.Node do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  identities do
+    identity :unique_capability_per_node, [:node_id, :capability_key]
   end
 end

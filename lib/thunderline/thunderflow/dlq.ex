@@ -58,7 +58,11 @@ defmodule Thunderline.Thunderflow.DLQ do
   @doc """
   Returns a map with the current count, configured threshold, and recent failures.
   """
-  @spec stats(non_neg_integer()) :: %{count: non_neg_integer(), threshold: pos_integer(), recent: list()}
+  @spec stats(non_neg_integer()) :: %{
+          count: non_neg_integer(),
+          threshold: pos_integer(),
+          recent: list()
+        }
   def stats(limit \\ 5) do
     %{
       count: size(),
@@ -74,7 +78,7 @@ defmodule Thunderline.Thunderflow.DLQ do
   def recent(limit \\ 5) do
     tables()
     |> Enum.flat_map(&table_recent(&1, limit))
-    |> Enum.sort_by(& &1.failed_at || &1.created_at || DateTime.utc_now(), {:desc, DateTime})
+    |> Enum.sort_by(&(&1.failed_at || &1.created_at || DateTime.utc_now()), {:desc, DateTime})
     |> Enum.take(limit)
   end
 
@@ -94,6 +98,7 @@ defmodule Thunderline.Thunderflow.DLQ do
   @spec emit_size(non_neg_integer(), map()) :: non_neg_integer()
   def emit_size(count, meta) when is_integer(count) and count >= 0 and is_map(meta) do
     previous = update_last_size(count)
+
     metadata =
       meta
       |> Map.new()
@@ -135,7 +140,10 @@ defmodule Thunderline.Thunderflow.DLQ do
         {:atomic, records} ->
           records
           |> Enum.map(&record_to_entry(&1, attrs, attempts_index, created_at_index, table))
-          |> Enum.sort_by(& &1.failed_at || &1.created_at || DateTime.utc_now(), {:desc, DateTime})
+          |> Enum.sort_by(
+            &(&1.failed_at || &1.created_at || DateTime.utc_now()),
+            {:desc, DateTime}
+          )
           |> Enum.take(limit)
 
         {:aborted, _} ->
@@ -156,7 +164,8 @@ defmodule Thunderline.Thunderflow.DLQ do
     %{
       id: attr_map[:id],
       table: table,
-      attempts: attr_map[:attempts] || Map.get(dlq_meta, "attempt") || Map.get(dlq_meta, :attempt),
+      attempts:
+        attr_map[:attempts] || Map.get(dlq_meta, "attempt") || Map.get(dlq_meta, :attempt),
       created_at: attr_map |> Map.get(:created_at),
       failed_at: dlq_failed_at(dlq_meta) || attr_map |> Map.get(:updated_at),
       reason: dlq_reason(dlq_meta),
@@ -172,8 +181,12 @@ defmodule Thunderline.Thunderflow.DLQ do
 
   defp dlq_failed_at(dlq_meta) do
     case dlq_meta["failed_at"] || dlq_meta[:failed_at] do
-      %DateTime{} = dt -> dt
-      %NaiveDateTime{} = ndt -> DateTime.from_naive!(ndt, "Etc/UTC")
+      %DateTime{} = dt ->
+        dt
+
+      %NaiveDateTime{} = ndt ->
+        DateTime.from_naive!(ndt, "Etc/UTC")
+
       binary when is_binary(binary) ->
         case DateTime.from_iso8601(binary) do
           {:ok, dt, _} -> dt

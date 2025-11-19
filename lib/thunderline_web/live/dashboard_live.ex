@@ -129,7 +129,7 @@ defmodule ThunderlineWeb.DashboardLive do
       Logger.info("CA streaming disabled to prevent memory issues")
 
       # Set up periodic refresh for slower-changing metrics (reduced frequency)
-      :timer.send_interval(10000, self(), :refresh_metrics)
+      :timer.send_interval(10_000, self(), :refresh_metrics)
 
       # Set up real-time telemetry publishing for demo (reduced frequency)
       :timer.send_interval(5000, self(), :publish_telemetry)
@@ -1454,22 +1454,22 @@ defmodule ThunderlineWeb.DashboardLive do
 
     %{
       status: if(system_metrics.connected_nodes > 0, do: :healthy, else: :warning),
-      # TODO: Implement real CPU monitoring
+      # NOTE: Placeholder until live CPU monitoring lands
       cpu_usage: "OFFLINE",
       memory_usage: %{
         used: vm_memory[:total] - vm_memory[:system],
         total: vm_memory[:total]
       },
       disk_io: %{
-        # TODO: Implement disk I/O monitoring
+        # NOTE: Placeholder until disk I/O monitoring is wired up
         read: "OFFLINE",
-        # TODO: Implement disk I/O monitoring
+        # NOTE: Placeholder until disk I/O monitoring is wired up
         write: "OFFLINE"
       },
       network: %{
-        # TODO: Implement network monitoring
+        # NOTE: Placeholder until network monitoring is implemented
         incoming: "OFFLINE",
-        # TODO: Implement network monitoring
+        # NOTE: Placeholder until network monitoring is implemented
         outgoing: "OFFLINE"
       },
       processes: %{
@@ -1521,7 +1521,7 @@ defmodule ThunderlineWeb.DashboardLive do
 
         %{
           type: Enum.random(types),
-          message: "Event #{:rand.uniform(10000)} processed successfully",
+          message: "Event #{:rand.uniform(10_000)} processed successfully",
           source: "RandomizedSource.#{:rand.uniform(100)}",
           status: Enum.random(statuses),
           timestamp: NaiveDateTime.add(NaiveDateTime.utc_now(), -:rand.uniform(300), :second)

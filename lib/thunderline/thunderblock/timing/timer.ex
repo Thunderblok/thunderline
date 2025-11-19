@@ -153,10 +153,14 @@ defmodule Thunderline.Thunderblock.Timing.Timer do
   """
   def list_active do
     timers =
-      :ets.foldl(fn
-        {ref, timer}, acc when is_reference(ref) -> [timer | acc]
-        _other, acc -> acc
-      end, [], @table_name)
+      :ets.foldl(
+        fn
+          {ref, timer}, acc when is_reference(ref) -> [timer | acc]
+          _other, acc -> acc
+        end,
+        [],
+        @table_name
+      )
 
     {:ok, timers}
   end
@@ -166,10 +170,14 @@ defmodule Thunderline.Thunderblock.Timing.Timer do
   """
   def count_active do
     count =
-      :ets.foldl(fn
-        {ref, _timer}, acc when is_reference(ref) -> acc + 1
-        _other, acc -> acc
-      end, 0, @table_name)
+      :ets.foldl(
+        fn
+          {ref, _timer}, acc when is_reference(ref) -> acc + 1
+          _other, acc -> acc
+        end,
+        0,
+        @table_name
+      )
 
     count
   end
@@ -245,17 +253,21 @@ defmodule Thunderline.Thunderblock.Timing.Timer do
 
     # Find expired timers that didn't fire (edge case)
     expired =
-      :ets.foldl(fn
-        {ref, timer}, acc when is_reference(ref) ->
-          if timer.expires_at < now do
-            [ref | acc]
-          else
-            acc
-          end
+      :ets.foldl(
+        fn
+          {ref, timer}, acc when is_reference(ref) ->
+            if timer.expires_at < now do
+              [ref | acc]
+            else
+              acc
+            end
 
-        _other, acc ->
-          acc
-      end, [], @table_name)
+          _other, acc ->
+            acc
+        end,
+        [],
+        @table_name
+      )
 
     # Clean up expired timers
     Enum.each(expired, fn ref ->

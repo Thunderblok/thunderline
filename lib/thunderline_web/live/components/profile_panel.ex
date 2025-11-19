@@ -124,8 +124,8 @@ defmodule ThunderlineWeb.DashboardLive.Components.ProfilePanel do
     cond do
       diff < 60 -> "#{diff}s"
       diff < 3600 -> "#{div(diff, 60)}m"
-      diff < 86400 -> "#{div(diff, 3600)}h"
-      diff < 604_800 -> "#{div(diff, 86400)}d"
+      diff < 86_400 -> "#{div(diff, 3600)}h"
+      diff < 604_800 -> "#{div(diff, 86_400)}d"
       true -> Calendar.strftime(datetime, "%m/%d")
     end
   end

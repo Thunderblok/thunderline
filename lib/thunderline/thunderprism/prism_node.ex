@@ -21,6 +21,26 @@ defmodule Thunderline.Thunderprism.PrismNode do
     repo Thunderline.Repo
   end
 
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [
+        :pac_id,
+        :iteration,
+        :chosen_model,
+        :model_probabilities,
+        :model_distances,
+        :meta,
+        :timestamp
+      ]
+    end
+
+    update :update do
+      accept [:meta, :model_probabilities, :model_distances]
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -73,26 +93,6 @@ defmodule Thunderline.Thunderprism.PrismNode do
     has_many :in_edges, Thunderline.Thunderprism.PrismEdge do
       destination_attribute :to_id
       public? true
-    end
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      accept [
-        :pac_id,
-        :iteration,
-        :chosen_model,
-        :model_probabilities,
-        :model_distances,
-        :meta,
-        :timestamp
-      ]
-    end
-
-    update :update do
-      accept [:meta, :model_probabilities, :model_distances]
     end
   end
 end

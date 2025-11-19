@@ -232,8 +232,8 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
   defp format_bandwidth(_), do: "0B/s"
 
   defp format_uptime(seconds) when is_integer(seconds) do
-    days = div(seconds, 86400)
-    hours = div(rem(seconds, 86400), 3600)
+    days = div(seconds, 86_400)
+    hours = div(rem(seconds, 86_400), 3600)
     minutes = div(rem(seconds, 3600), 60)
 
     cond do

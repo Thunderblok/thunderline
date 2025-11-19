@@ -56,9 +56,13 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
     # Initialize Pythonx runtime if using Pythonx invoker
     if cerebros_bridge_invoker() == :pythonx do
       Logger.info("[AutoMLDriver] Initializing Pythonx runtime...")
+
       case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.init() do
-        :ok -> Logger.info("[AutoMLDriver] Pythonx runtime initialized successfully")
-        {:error, reason} -> Logger.error("[AutoMLDriver] Failed to initialize Pythonx: #{inspect(reason)}")
+        :ok ->
+          Logger.info("[AutoMLDriver] Pythonx runtime initialized successfully")
+
+        {:error, reason} ->
+          Logger.error("[AutoMLDriver] Failed to initialize Pythonx: #{inspect(reason)}")
       end
     end
 

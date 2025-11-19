@@ -73,11 +73,11 @@ defmodule Thunderline.Thunderflow.IntrinsicReward do
   def compute_reward(laps, context \\ %{}, opts \\ [])
 
   def compute_reward(laps, context, opts) when is_list(laps) do
-    if not Feature.enabled?(:reward_signal) do
+    if Feature.enabled?(:reward_signal) do
+      do_compute_reward(laps, context, opts)
+    else
       # Feature disabled - no computation
       0.0
-    else
-      do_compute_reward(laps, context, opts)
     end
   end
 

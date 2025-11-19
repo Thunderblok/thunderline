@@ -100,7 +100,7 @@ defmodule Thunderline.Thundervine.Resources.Workflow do
     attribute :status, :atom do
       allow_nil? false
       default :building
-      constraints [one_of: [:building, :sealed]]
+      constraints one_of: [:building, :sealed]
     end
 
     attribute :metadata, :map do

@@ -49,7 +49,8 @@ defmodule Thunderline.Thundercrown.Policies.UPMPolicy do
   @type policy_result :: :ok | {:error, term()}
 
   # Configuration defaults
-  @default_min_shadow_hours 336  # 14 days
+  # 14 days
+  @default_min_shadow_hours 336
   @default_admin_roles [:system, :upm_admin, :system_admin]
   @default_canary_tenants []
 
@@ -331,10 +332,11 @@ defmodule Thunderline.Thundercrown.Policies.UPMPolicy do
   defp emit_decision(actor, snapshot, tenant, result, start_time) do
     duration = System.monotonic_time(:microsecond) - start_time
 
-    {decision, reason} = case result do
-      :ok -> {:allow, nil}
-      {:error, r} -> {:deny, r}
-    end
+    {decision, reason} =
+      case result do
+        :ok -> {:allow, nil}
+        {:error, r} -> {:deny, r}
+      end
 
     metadata = %{
       decision: decision,

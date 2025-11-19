@@ -217,7 +217,7 @@ defmodule Thunderline.ErlangBridge do
   if Application.compile_env(:thunderline, [:thunderbolt, :enable_non_ising], false) do
     @doc "Evolve neural architecture using genetic algorithms"
     def evolve_architecture(generations, fitness_function) do
-      GenServer.call(__MODULE__, {:evolve_architecture, generations, fitness_function}, 10000)
+      GenServer.call(__MODULE__, {:evolve_architecture, generations, fitness_function}, 10_000)
     end
   else
     @doc "Evolve neural architecture using genetic algorithms (disabled: non-Ising path)"

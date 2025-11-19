@@ -125,8 +125,10 @@ config :thunderline,
   # Cerebros bridge facade configuration (enabled for NAS integration)
   cerebros_bridge: [
     enabled: true,
-    invoker: :pythonx,  # Use pythonx for better performance vs subprocess
-    python_path: ["thunderhelm"],  # Path to cerebros_service.py module
+    # Use pythonx for better performance vs subprocess
+    invoker: :pythonx,
+    # Path to cerebros_service.py module
+    python_path: ["thunderhelm"],
     repo_path:
       System.get_env("CEREBROS_REPO") ||
         Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
@@ -316,7 +318,17 @@ config :tailwind,
 # Configures Elixir's Logger
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [
+    :request_id,
+    :run_id,
+    :failures,
+    :content_type,
+    :confidence,
+    :filename,
+    :room,
+    :message,
+    :reason
+  ]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

@@ -71,7 +71,7 @@ defmodule ThunderlineWeb.MetricsLive do
     <div class="metrics-dashboard">
       <div class="header-section mb-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-4">System Metrics</h1>
-        
+
     <!-- Controls -->
         <div class="bg-white rounded-lg shadow p-4 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -107,7 +107,7 @@ defmodule ThunderlineWeb.MetricsLive do
                 </option>
               </select>
             </div>
-            
+
     <!-- Time Range -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Time Range</label>
@@ -123,7 +123,7 @@ defmodule ThunderlineWeb.MetricsLive do
                 <option value="7d" selected={@time_range == "7d"}>7 days</option>
               </select>
             </div>
-            
+
     <!-- Refresh Rate -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Refresh (seconds)</label>
@@ -138,7 +138,7 @@ defmodule ThunderlineWeb.MetricsLive do
               />
               <span class="text-sm text-gray-500">{@refresh_rate}s</span>
             </div>
-            
+
     <!-- Status -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -162,7 +162,7 @@ defmodule ThunderlineWeb.MetricsLive do
 
             {render_domain_metrics(assigns)}
           </div>
-          
+
     <!-- Performance Graph -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Performance Trends</h2>
@@ -187,7 +187,7 @@ defmodule ThunderlineWeb.MetricsLive do
             </div>
           </div>
         </div>
-        
+
     <!-- Side Panel -->
         <div class="space-y-6">
           <!-- System Overview -->
@@ -223,7 +223,7 @@ defmodule ThunderlineWeb.MetricsLive do
               </div>
             <% end %>
           </div>
-          
+
     <!-- Memory Usage -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Memory Usage</h3>
@@ -274,7 +274,7 @@ defmodule ThunderlineWeb.MetricsLive do
               </div>
             <% end %>
           </div>
-          
+
     <!-- Event Metrics -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Event Processing</h3>
@@ -308,7 +308,7 @@ defmodule ThunderlineWeb.MetricsLive do
               </div>
             <% end %>
           </div>
-          
+
     <!-- Mnesia Status -->
           <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Mnesia Status</h3>
@@ -415,8 +415,8 @@ defmodule ThunderlineWeb.MetricsLive do
   end
 
   defp format_uptime(seconds) when is_integer(seconds) do
-    days = div(seconds, 86400)
-    hours = div(rem(seconds, 86400), 3600)
+    days = div(seconds, 86_400)
+    hours = div(rem(seconds, 86_400), 3600)
     minutes = div(rem(seconds, 3600), 60)
 
     cond do

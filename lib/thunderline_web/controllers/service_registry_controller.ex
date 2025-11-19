@@ -51,9 +51,7 @@ defmodule ThunderlineWeb.ServiceRegistryController do
              capabilities: params["capabilities"] || %{},
              metadata: params["metadata"] || %{}
            }) do
-      Logger.info(
-        "Service registered: #{service.service_id} (#{service.name}) at #{service.url}"
-      )
+      Logger.info("Service registered: #{service.service_id} (#{service.name}) at #{service.url}")
 
       conn
       |> put_status(:created)

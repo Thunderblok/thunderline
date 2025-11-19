@@ -32,83 +32,15 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :node_id, :uuid do
-      allow_nil? false
-      public? true
-      description "Local node ID"
-    end
-
-    attribute :remote_node_id, :uuid do
-      allow_nil? false
-      public? true
-      description "Remote node ID"
-    end
-
-    attribute :session_type, :atom do
-      allow_nil? false
-      default :cluster
-      public? true
-      constraints one_of: [:cluster, :hotline, :service, :tocp]
-      description "Type of connection"
-    end
-
-    attribute :status, :atom do
-      allow_nil? false
-      default :establishing
-      public? true
-      constraints one_of: [:establishing, :established, :degraded, :closed, :failed]
-      description "Session status"
-    end
-
-    attribute :weight, :float do
-      default 1.0
-      public? true
-      description "Connection quality/importance (0.0 - 1.0)"
-    end
-
-    attribute :latency_ms, :integer do
-      public? true
-      description "Current latency in milliseconds"
-    end
-
-    attribute :bandwidth_mbps, :float do
-      public? true
-      description "Available bandwidth in Mbps"
-    end
-
-    attribute :established_at, :utc_datetime_usec do
-      public? true
-      description "When session was established"
-    end
-
-    attribute :last_activity_at, :utc_datetime_usec do
-      public? true
-      description "Last activity timestamp"
-    end
-
-    attribute :meta, Thunderline.Thunderblock.Types.AtomMap do
-      default %{}
-      public? true
-      description "Session metadata: protocol version, cipher, peer info, etc."
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  relationships do
-    belongs_to :node, Thunderline.Thunderlink.Resources.Node do
-      allow_nil? false
-      public? true
-    end
-
-    belongs_to :remote_node, Thunderline.Thunderlink.Resources.Node do
-      allow_nil? false
-      public? true
-    end
+  code_interface do
+    define :establish, args: [:node_id, :remote_node_id, :session_type]
+    define :mark_established
+    define :update_metrics
+    define :mark_degraded
+    define :close
+    define :mark_failed
+    define :for_node, args: [:node_id]
+    define :active_sessions
   end
 
   actions do
@@ -206,14 +138,82 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
     end
   end
 
-  code_interface do
-    define :establish, args: [:node_id, :remote_node_id, :session_type]
-    define :mark_established
-    define :update_metrics
-    define :mark_degraded
-    define :close
-    define :mark_failed
-    define :for_node, args: [:node_id]
-    define :active_sessions
+  attributes do
+    uuid_primary_key :id
+
+    attribute :node_id, :uuid do
+      allow_nil? false
+      public? true
+      description "Local node ID"
+    end
+
+    attribute :remote_node_id, :uuid do
+      allow_nil? false
+      public? true
+      description "Remote node ID"
+    end
+
+    attribute :session_type, :atom do
+      allow_nil? false
+      default :cluster
+      public? true
+      constraints one_of: [:cluster, :hotline, :service, :tocp]
+      description "Type of connection"
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      default :establishing
+      public? true
+      constraints one_of: [:establishing, :established, :degraded, :closed, :failed]
+      description "Session status"
+    end
+
+    attribute :weight, :float do
+      default 1.0
+      public? true
+      description "Connection quality/importance (0.0 - 1.0)"
+    end
+
+    attribute :latency_ms, :integer do
+      public? true
+      description "Current latency in milliseconds"
+    end
+
+    attribute :bandwidth_mbps, :float do
+      public? true
+      description "Available bandwidth in Mbps"
+    end
+
+    attribute :established_at, :utc_datetime_usec do
+      public? true
+      description "When session was established"
+    end
+
+    attribute :last_activity_at, :utc_datetime_usec do
+      public? true
+      description "Last activity timestamp"
+    end
+
+    attribute :meta, Thunderline.Thunderblock.Types.AtomMap do
+      default %{}
+      public? true
+      description "Session metadata: protocol version, cipher, peer info, etc."
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  relationships do
+    belongs_to :node, Thunderline.Thunderlink.Resources.Node do
+      allow_nil? false
+      public? true
+    end
+
+    belongs_to :remote_node, Thunderline.Thunderlink.Resources.Node do
+      allow_nil? false
+      public? true
+    end
   end
 end

@@ -21,7 +21,8 @@ defmodule Thunderline.Thunderblock.RateLimiting.Telemetry do
   require Logger
 
   @table_name :rate_limiting_metrics
-  @aggregation_window_ms 60_000  # 1 minute
+  # 1 minute
+  @aggregation_window_ms 60_000
 
   # Telemetry events we subscribe to
   @events [
@@ -161,7 +162,12 @@ defmodule Thunderline.Thunderblock.RateLimiting.Telemetry do
     increment_bucket_counter(metadata[:bucket], :blocked)
   end
 
-  def handle_event([:thunderline, :rate_limiting, :bucket_created], _measurements, metadata, _config) do
+  def handle_event(
+        [:thunderline, :rate_limiting, :bucket_created],
+        _measurements,
+        metadata,
+        _config
+      ) do
     increment_counter(:buckets_created)
     record_bucket_config(metadata[:bucket], metadata[:config])
   end
@@ -206,20 +212,28 @@ defmodule Thunderline.Thunderblock.RateLimiting.Telemetry do
     # Simple histogram: track min, max, sum, count
     case :ets.lookup(@table_name, key) do
       [] ->
-        :ets.insert(@table_name, {key, %{
-          min: value,
-          max: value,
-          sum: value,
-          count: 1
-        }})
+        :ets.insert(
+          @table_name,
+          {key,
+           %{
+             min: value,
+             max: value,
+             sum: value,
+             count: 1
+           }}
+        )
 
       [{^key, stats}] ->
-        :ets.insert(@table_name, {key, %{
-          min: min(stats.min, value),
-          max: max(stats.max, value),
-          sum: stats.sum + value,
-          count: stats.count + 1
-        }})
+        :ets.insert(
+          @table_name,
+          {key,
+           %{
+             min: min(stats.min, value),
+             max: max(stats.max, value),
+             sum: stats.sum + value,
+             count: stats.count + 1
+           }}
+        )
     end
   end
 
@@ -229,13 +243,18 @@ defmodule Thunderline.Thunderblock.RateLimiting.Telemetry do
 
   defp aggregate_metrics do
     # Collect all counters
-    counters = :ets.foldl(fn
-      {key, value}, acc when is_atom(key) ->
-        Map.put(acc, key, value)
+    counters =
+      :ets.foldl(
+        fn
+          {key, value}, acc when is_atom(key) ->
+            Map.put(acc, key, value)
 
-      _other, acc ->
-        acc
-    end, %{}, @table_name)
+          _other, acc ->
+            acc
+        end,
+        %{},
+        @table_name
+      )
 
     # Collect bucket metrics
     bucket_metrics = collect_bucket_metrics()
@@ -260,30 +279,38 @@ defmodule Thunderline.Thunderblock.RateLimiting.Telemetry do
   end
 
   defp collect_bucket_metrics do
-    :ets.foldl(fn
-      {{:bucket, bucket, key}, value}, acc ->
-        bucket_stats = Map.get(acc, bucket, %{})
-        Map.put(acc, bucket, Map.put(bucket_stats, key, value))
+    :ets.foldl(
+      fn
+        {{:bucket, bucket, key}, value}, acc ->
+          bucket_stats = Map.get(acc, bucket, %{})
+          Map.put(acc, bucket, Map.put(bucket_stats, key, value))
 
-      _other, acc ->
-        acc
-    end, %{}, @table_name)
+        _other, acc ->
+          acc
+      end,
+      %{},
+      @table_name
+    )
   end
 
   defp get_bucket_stats(bucket) do
-    :ets.foldl(fn
-      {{:bucket, ^bucket, key}, value}, acc ->
-        Map.put(acc, key, value)
+    :ets.foldl(
+      fn
+        {{:bucket, ^bucket, key}, value}, acc ->
+          Map.put(acc, key, value)
 
-      {{:bucket_config, ^bucket}, config}, acc ->
-        Map.put(acc, :config, config)
+        {{:bucket_config, ^bucket}, config}, acc ->
+          Map.put(acc, :config, config)
 
-      {{:bucket_tokens, ^bucket}, tokens}, acc ->
-        Map.put(acc, :current_tokens, tokens)
+        {{:bucket_tokens, ^bucket}, tokens}, acc ->
+          Map.put(acc, :current_tokens, tokens)
 
-      _other, acc ->
-        acc
-    end, %{}, @table_name)
+        _other, acc ->
+          acc
+      end,
+      %{},
+      @table_name
+    )
   end
 
   defp schedule_aggregation do

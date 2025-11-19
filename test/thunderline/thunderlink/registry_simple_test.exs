@@ -38,13 +38,14 @@ defmodule Thunderline.Thunderlink.RegistrySimpleTest do
 
   describe "mark_online/2" do
     test "marks node as online and creates link session" do
-      {:ok, node} = Registry.ensure_node(%{
-        name: "online-test@localhost",
-        node_id: "online-1",
-        node_type: :beam,
-        role: :worker,
-        domain: :thunderlink
-      })
+      {:ok, node} =
+        Registry.ensure_node(%{
+          name: "online-test@localhost",
+          node_id: "online-1",
+          node_type: :beam,
+          role: :worker,
+          domain: :thunderlink
+        })
 
       link_params = %{
         peer_node_id: "peer-1",
@@ -61,13 +62,14 @@ defmodule Thunderline.Thunderlink.RegistrySimpleTest do
 
   describe "mark_status/2" do
     test "updates node status" do
-      {:ok, node} = Registry.ensure_node(%{
-        name: "status-test@localhost",
-        node_id: "status-1",
-        node_type: :beam,
-        role: :worker,
-        domain: :thunderlink
-      })
+      {:ok, node} =
+        Registry.ensure_node(%{
+          name: "status-test@localhost",
+          node_id: "status-1",
+          node_type: :beam,
+          role: :worker,
+          domain: :thunderlink
+        })
 
       {:ok, updated} = Registry.mark_status(node.node_id, :degraded)
 
@@ -77,14 +79,15 @@ defmodule Thunderline.Thunderlink.RegistrySimpleTest do
 
   describe "heartbeat/2" do
     test "records heartbeat with metrics" do
-      {:ok, node} = Registry.ensure_node(%{
-        name: "heartbeat-test@localhost",
-        node_id: "hb-1",
-        node_type: :beam,
-        role: :worker,
-        domain: :thunderlink,
-        status: :online
-      })
+      {:ok, node} =
+        Registry.ensure_node(%{
+          name: "heartbeat-test@localhost",
+          node_id: "hb-1",
+          node_type: :beam,
+          role: :worker,
+          domain: :thunderlink,
+          status: :online
+        })
 
       metrics = %{
         cpu_usage: 45.5,
@@ -102,21 +105,23 @@ defmodule Thunderline.Thunderlink.RegistrySimpleTest do
 
   describe "list_nodes/0" do
     test "returns all nodes" do
-      {:ok, _n1} = Registry.ensure_node(%{
-        name: "list-1@localhost",
-        node_id: "list-1",
-        node_type: :beam,
-        role: :worker,
-        domain: :thunderlink
-      })
+      {:ok, _n1} =
+        Registry.ensure_node(%{
+          name: "list-1@localhost",
+          node_id: "list-1",
+          node_type: :beam,
+          role: :worker,
+          domain: :thunderlink
+        })
 
-      {:ok, _n2} = Registry.ensure_node(%{
-        name: "list-2@localhost",
-        node_id: "list-2",
-        node_type: :beam,
-        role: :worker,
-        domain: :thunderlink
-      })
+      {:ok, _n2} =
+        Registry.ensure_node(%{
+          name: "list-2@localhost",
+          node_id: "list-2",
+          node_type: :beam,
+          role: :worker,
+          domain: :thunderlink
+        })
 
       {:ok, nodes} = Registry.list_nodes()
 
@@ -128,27 +133,30 @@ defmodule Thunderline.Thunderlink.RegistrySimpleTest do
 
   describe "graph/0" do
     test "returns topology graph with nodes and links" do
-      {:ok, n1} = Registry.ensure_node(%{
-        name: "graph-1@localhost",
-        node_id: "graph-1",
-        node_type: :beam,
-        role: :worker,
-        domain: :thunderlink
-      })
+      {:ok, n1} =
+        Registry.ensure_node(%{
+          name: "graph-1@localhost",
+          node_id: "graph-1",
+          node_type: :beam,
+          role: :worker,
+          domain: :thunderlink
+        })
 
-      {:ok, n2} = Registry.ensure_node(%{
-        name: "graph-2@localhost",
-        node_id: "graph-2",
-        node_type: :beam,
-        role: :worker,
-        domain: :thunderlink
-      })
+      {:ok, n2} =
+        Registry.ensure_node(%{
+          name: "graph-2@localhost",
+          node_id: "graph-2",
+          node_type: :beam,
+          role: :worker,
+          domain: :thunderlink
+        })
 
       # Create a link
-      {:ok, _} = Registry.mark_online(n1.node_id, %{
-        peer_node_id: n2.node_id,
-        connection_type: :tcp
-      })
+      {:ok, _} =
+        Registry.mark_online(n1.node_id, %{
+          peer_node_id: n2.node_id,
+          connection_type: :tcp
+        })
 
       {:ok, graph} = Registry.graph()
 

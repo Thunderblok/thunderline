@@ -139,7 +139,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.ChatPanel do
     cond do
       diff < 60 -> "#{diff}s"
       diff < 3600 -> "#{div(diff, 60)}m"
-      diff < 86400 -> "#{div(diff, 3600)}h"
+      diff < 86_400 -> "#{div(diff, 3600)}h"
       true -> Calendar.strftime(datetime, "%m/%d")
     end
   end

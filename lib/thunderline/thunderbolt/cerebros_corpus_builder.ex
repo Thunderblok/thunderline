@@ -26,7 +26,6 @@ defmodule Thunderline.Thunderbolt.CerebrosCorpusBuilder do
          {:ok, corpus_path} <- ensure_corpus_directory(dataset_id),
          {:ok, _stage_files} <- generate_stage_csvs(uploads, corpus_path),
          {:ok, _merged_files} <- merge_corpus(corpus_path) do
-
       # Update dataset with corpus path
       TrainingDataset.set_corpus_path!(dataset, corpus_path)
 
@@ -91,10 +90,11 @@ defmodule Thunderline.Thunderbolt.CerebrosCorpusBuilder do
         chunk_document(upload, stage)
       end)
 
-    csv_data = [headers | rows]
-    |> CSV.encode()
-    |> Enum.to_list()
-    |> IO.iodata_to_binary()
+    csv_data =
+      [headers | rows]
+      |> CSV.encode()
+      |> Enum.to_list()
+      |> IO.iodata_to_binary()
 
     File.write(filename, csv_data)
   end
@@ -108,12 +108,18 @@ defmodule Thunderline.Thunderbolt.CerebrosCorpusBuilder do
     |> Enum.with_index()
     |> Enum.map(fn {chunk, idx} ->
       [
-        chunk,                           # input
-        get_output_for_stage(stage),     # output (empty or template)
-        Enum.join(labels, "|"),          # label
-        Integer.to_string(stage),        # stage
-        "#{upload.id}_#{idx}",           # chunk_id
-        upload.filename                  # source
+        # input
+        chunk,
+        # output (empty or template)
+        get_output_for_stage(stage),
+        # label
+        Enum.join(labels, "|"),
+        # stage
+        Integer.to_string(stage),
+        # chunk_id
+        "#{upload.id}_#{idx}",
+        # source
+        upload.filename
       ]
     end)
   end
@@ -125,10 +131,14 @@ defmodule Thunderline.Thunderbolt.CerebrosCorpusBuilder do
     |> Enum.map(&Enum.join/1)
   end
 
-  defp get_output_for_stage(1), do: ""  # Reference docs - no output expected
-  defp get_output_for_stage(2), do: ""  # Communication samples - responses stored separately
-  defp get_output_for_stage(3), do: ""  # Instructions - examples stored separately
-  defp get_output_for_stage(4), do: ""  # Test cases - eval data
+  # Reference docs - no output expected
+  defp get_output_for_stage(1), do: ""
+  # Communication samples - responses stored separately
+  defp get_output_for_stage(2), do: ""
+  # Instructions - examples stored separately
+  defp get_output_for_stage(3), do: ""
+  # Test cases - eval data
+  defp get_output_for_stage(4), do: ""
 
   defp merge_corpus(corpus_path) do
     # Load all 4 stage CSVs
@@ -140,12 +150,13 @@ defmodule Thunderline.Thunderbolt.CerebrosCorpusBuilder do
     # - 2 merge phase files (relevance filtered)
     # - 1 user upsampled file (augmented)
 
-    merged_files = [
-      write_training_corpus(corpus_path, stage_files),
-      write_merge_phase(corpus_path, stage_files),
-      write_upsampled(corpus_path, stage_files)
-    ]
-    |> List.flatten()
+    merged_files =
+      [
+        write_training_corpus(corpus_path, stage_files),
+        write_merge_phase(corpus_path, stage_files),
+        write_upsampled(corpus_path, stage_files)
+      ]
+      |> List.flatten()
 
     {:ok, stage_files ++ merged_files}
   end
@@ -195,7 +206,8 @@ defmodule Thunderline.Thunderbolt.CerebrosCorpusBuilder do
       csv_files
       |> Enum.map(fn file ->
         lines = file |> File.stream!() |> Enum.count()
-        {Path.basename(file), lines - 1}  # Subtract header
+        # Subtract header
+        {Path.basename(file), lines - 1}
       end)
       |> Map.new()
 

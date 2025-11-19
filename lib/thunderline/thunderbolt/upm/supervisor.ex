@@ -192,7 +192,9 @@ defmodule Thunderline.Thunderbolt.UPM.Supervisor do
   defp trainer_supervisor_spec(trainer_id, trainer_opts) do
     %{
       id: {__MODULE__.TrainerSupervisor, trainer_id},
-      start: {Supervisor, :start_link, [trainer_children(trainer_id, trainer_opts), [strategy: :one_for_one]]},
+      start:
+        {Supervisor, :start_link,
+         [trainer_children(trainer_id, trainer_opts), [strategy: :one_for_one]]},
       type: :supervisor,
       restart: :transient
     }

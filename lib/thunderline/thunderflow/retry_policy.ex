@@ -21,7 +21,6 @@ defmodule Thunderline.Thunderflow.RetryPolicy do
           strategy: strategy()
         }
 
-
   @doc """
   Returns the retry policy struct for the given event, message or event name.
   """
@@ -56,7 +55,9 @@ defmodule Thunderline.Thunderflow.RetryPolicy do
   """
   @spec next_delay(t(), pos_integer()) :: non_neg_integer()
   def next_delay(%__MODULE__{strategy: :none}, _attempt), do: 0
-  def next_delay(%__MODULE__{strategy: :exponential}, attempt) when attempt >= 1, do: Backoff.exp(attempt)
+
+  def next_delay(%__MODULE__{strategy: :exponential}, attempt) when attempt >= 1,
+    do: Backoff.exp(attempt)
 
   @doc """
   Returns `true` when the attempt would exceed the retry budget.

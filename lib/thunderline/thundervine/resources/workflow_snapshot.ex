@@ -29,6 +29,22 @@ defmodule Thunderline.Thundervine.Resources.WorkflowSnapshot do
     type :workflow_snapshot
   end
 
+  actions do
+    defaults [:read]
+
+    create :capture do
+      accept [
+        :workflow_id,
+        :version,
+        :node_order,
+        :nodes_payload,
+        :edges,
+        :metadata,
+        :embedding_vector
+      ]
+    end
+  end
+
   policies do
     # Admin and system bypass
     bypass actor_attribute_equals(:role, :admin) do
@@ -47,22 +63,6 @@ defmodule Thunderline.Thundervine.Resources.WorkflowSnapshot do
     # Read access for authenticated users
     policy action_type(:read) do
       authorize_if AshAuthentication.Checks.Authenticated
-    end
-  end
-
-  actions do
-    defaults [:read]
-
-    create :capture do
-      accept [
-        :workflow_id,
-        :version,
-        :node_order,
-        :nodes_payload,
-        :edges,
-        :metadata,
-        :embedding_vector
-      ]
     end
   end
 

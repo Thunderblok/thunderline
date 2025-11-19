@@ -18,8 +18,10 @@ defmodule Thunderline.Workers.CerebrosTrainer do
   require Logger
 
   @cerebros_base_url Application.compile_env(:thunderline, :cerebros_url, "http://localhost:8000")
-  @poll_interval_ms 30_000  # 30 seconds
-  @max_poll_attempts 120    # 1 hour max
+  # 30 seconds
+  @poll_interval_ms 30_000
+  # 1 hour max
+  @max_poll_attempts 120
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"training_dataset_id" => dataset_id, "job_id" => job_id}}) do
@@ -31,7 +33,6 @@ defmodule Thunderline.Workers.CerebrosTrainer do
          {:ok, cerebros_job_id} <- submit_to_cerebros(dataset),
          {:ok, job} <- update_cerebros_job_id(job, cerebros_job_id),
          {:ok, job} <- poll_until_complete(job, cerebros_job_id) do
-
       Logger.info("Cerebros training completed for job #{job_id}")
       {:ok, job}
     else
@@ -42,6 +43,7 @@ defmodule Thunderline.Workers.CerebrosTrainer do
         case get_job(job_id) do
           {:ok, job} ->
             CerebrosTrainingJob.fail!(job, error_message: inspect(reason))
+
           _ ->
             :ok
         end
@@ -55,10 +57,11 @@ defmodule Thunderline.Workers.CerebrosTrainer do
   """
   def enqueue_training(dataset_id, opts \\ []) do
     # Create job record
-    {:ok, job} = CerebrosTrainingJob.create!(%{
-      training_dataset_id: dataset_id,
-      metadata: Keyword.get(opts, :metadata, %{})
-    })
+    {:ok, job} =
+      CerebrosTrainingJob.create!(%{
+        training_dataset_id: dataset_id,
+        metadata: Keyword.get(opts, :metadata, %{})
+      })
 
     # Enqueue Oban job
     %{
@@ -104,7 +107,8 @@ defmodule Thunderline.Workers.CerebrosTrainer do
         csv_files: csv_files,
         config: %{
           phases: 4,
-          checkpoint_format: "onnx"  # or "keras", "tensorflow"
+          # or "keras", "tensorflow"
+          checkpoint_format: "onnx"
         }
       }
 
@@ -149,17 +153,23 @@ defmodule Thunderline.Workers.CerebrosTrainer do
           checkpoint_urls = download_checkpoints(checkpoints, job.id)
 
           # Mark complete
-          {:ok, completed_job} = CerebrosTrainingJob.complete!(job,
-            checkpoint_urls: checkpoint_urls,
-            metrics: metrics
-          )
+          {:ok, completed_job} =
+            CerebrosTrainingJob.complete!(job,
+              checkpoint_urls: checkpoint_urls,
+              metrics: metrics
+            )
 
           {:ok, completed_job}
 
-        {:ok, %{"status" => "running", "phase" => phase, "checkpoint" => checkpoint}} when not is_nil(checkpoint) ->
+        {:ok, %{"status" => "running", "phase" => phase, "checkpoint" => checkpoint}}
+        when not is_nil(checkpoint) ->
           # Phase completed, save checkpoint
           checkpoint_url = download_checkpoint(checkpoint, job.id, phase)
-          CerebrosTrainingJob.update_checkpoint!(job, phase: phase, checkpoint_url: checkpoint_url)
+
+          CerebrosTrainingJob.update_checkpoint!(job,
+            phase: phase,
+            checkpoint_url: checkpoint_url
+          )
 
           # Continue polling
           Process.sleep(@poll_interval_ms)
@@ -192,11 +202,13 @@ defmodule Thunderline.Workers.CerebrosTrainer do
 
   defp download_checkpoint(checkpoint, job_id, phase) do
     checkpoint_url = checkpoint["url"]
-    local_path = Path.join([
-      "/data/checkpoints",
-      job_id,
-      "phase_#{phase}.onnx"
-    ])
+
+    local_path =
+      Path.join([
+        "/data/checkpoints",
+        job_id,
+        "phase_#{phase}.onnx"
+      ])
 
     File.mkdir_p!(Path.dirname(local_path))
 
@@ -207,7 +219,8 @@ defmodule Thunderline.Workers.CerebrosTrainer do
 
       {:error, reason} ->
         Logger.error("Failed to download checkpoint: #{inspect(reason)}")
-        checkpoint_url  # Return URL as fallback
+        # Return URL as fallback
+        checkpoint_url
     end
   end
 

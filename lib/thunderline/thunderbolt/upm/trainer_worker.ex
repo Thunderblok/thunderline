@@ -378,8 +378,11 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
     }
     |> then(&UpmTrainer.update_metrics(state.trainer_id, &1))
     |> case do
-      {:ok, _trainer} -> :ok
-      {:error, reason} -> Logger.error("[UPM.TrainerWorker] Failed to update metrics: #{inspect(reason)}")
+      {:ok, _trainer} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.error("[UPM.TrainerWorker] Failed to update metrics: #{inspect(reason)}")
     end
   end
 
@@ -387,8 +390,11 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
     %{status: status}
     |> then(&UpmTrainer.update_metrics(trainer_id, &1))
     |> case do
-      {:ok, _trainer} -> :ok
-      {:error, reason} -> Logger.error("[UPM.TrainerWorker] Failed to update status: #{inspect(reason)}")
+      {:ok, _trainer} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.error("[UPM.TrainerWorker] Failed to update status: #{inspect(reason)}")
     end
   end
 

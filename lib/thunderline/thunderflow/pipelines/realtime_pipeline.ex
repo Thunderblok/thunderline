@@ -136,8 +136,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
       messages
       |> Enum.map(& &1.data.name)
       |> Enum.frequencies()
-      |> Enum.map(fn {t, c} -> "#{t}:#{c}" end)
-      |> Enum.join(",")
+      |> Enum.map_join(",", fn {t, c} -> "#{t}:#{c}" end)
 
     Logger.debug("Processing #{count} dashboard updates (types=#{types})")
 
@@ -166,8 +165,7 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
             get_in(&1.data.payload, [:websocket_topic]) || "general")
       )
       |> Enum.frequencies()
-      |> Enum.map(fn {t, c} -> "#{t}:#{c}" end)
-      |> Enum.join(",")
+      |> Enum.map_join(",", fn {t, c} -> "#{t}:#{c}" end)
 
     Logger.debug("Processing #{count} WebSocket broadcasts (topics=#{topics})")
 

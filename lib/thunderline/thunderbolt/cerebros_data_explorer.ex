@@ -232,9 +232,10 @@ defmodule Thunderline.Thunderbolt.CerebrosDataExplorer do
     Enum.reduce(column_names, %{}, fn col, acc ->
       values = Enum.map(rows, fn row -> Map.get(row, col, "") end)
 
-      lengths = Enum.map(values, fn val ->
-        if is_binary(val), do: String.length(val), else: 0
-      end)
+      lengths =
+        Enum.map(values, fn val ->
+          if is_binary(val), do: String.length(val), else: 0
+        end)
 
       if Enum.any?(lengths, &(&1 > 0)) do
         stats = %{
@@ -344,7 +345,7 @@ defmodule Thunderline.Thunderbolt.CerebrosDataExplorer do
 
   defp generate_temp_path do
     timestamp = DateTime.utc_now() |> DateTime.to_unix()
-    random = :rand.uniform(10000)
+    random = :rand.uniform(10_000)
     "/tmp/cerebros_corpus_#{timestamp}_#{random}.jsonl"
   end
 end

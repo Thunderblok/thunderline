@@ -19,6 +19,18 @@ defmodule Thunderline.Thunderprism.PrismEdge do
     repo Thunderline.Repo
   end
 
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:from_id, :to_id, :relation_type, :meta]
+    end
+
+    update :update do
+      accept [:meta]
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -56,18 +68,6 @@ defmodule Thunderline.Thunderprism.PrismEdge do
     belongs_to :to_node, Thunderline.Thunderprism.PrismNode do
       source_attribute :to_id
       public? true
-    end
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      accept [:from_id, :to_id, :relation_type, :meta]
-    end
-
-    update :update do
-      accept [:meta]
     end
   end
 end

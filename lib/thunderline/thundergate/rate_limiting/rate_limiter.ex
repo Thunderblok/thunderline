@@ -51,12 +51,14 @@ defmodule Thunderline.Thundergate.RateLimiting.RateLimiter do
     case result do
       {:ok, remaining} ->
         {:ok, remaining}
+
       {:error, :rate_limited} = error ->
         Logger.warning("Rate limit exceeded",
           identifier: identifier,
           bucket: bucket_key,
           metadata: Keyword.get(opts, :metadata, %{})
         )
+
         error
     end
   end
@@ -66,7 +68,7 @@ defmodule Thunderline.Thundergate.RateLimiting.RateLimiter do
   Useful for checking limits before expensive operations.
   """
   @spec get_rate_limit_status(rate_limit_identifier(), bucket_key()) ::
-    {:ok, %{remaining: non_neg_integer(), limit: non_neg_integer(), reset_at: integer()}}
+          {:ok, %{remaining: non_neg_integer(), limit: non_neg_integer(), reset_at: integer()}}
   def get_rate_limit_status(identifier, bucket_key) do
     bucket_config = get_bucket_config(bucket_key)
     Bucket.status(identifier, bucket_key, bucket_config)
@@ -76,7 +78,9 @@ defmodule Thunderline.Thundergate.RateLimiting.RateLimiter do
   Returns violations for the given identifier across all buckets.
   Used by monitoring and security systems.
   """
-  @spec get_rate_limit_violations(rate_limit_identifier()) :: [%{bucket: bucket_key(), violated_at: DateTime.t()}]
+  @spec get_rate_limit_violations(rate_limit_identifier()) :: [
+          %{bucket: bucket_key(), violated_at: DateTime.t()}
+        ]
   def get_rate_limit_violations(identifier) do
     # Query ETS tables for violation records
     bucket_keys = get_configured_buckets()
@@ -109,13 +113,15 @@ defmodule Thunderline.Thundergate.RateLimiting.RateLimiter do
   # Private functions
 
   defp get_bucket_config(bucket_key) do
-    buckets = Application.get_env(:thunderline, Thunderline.Thundergate.RateLimiting, [])
-    |> Keyword.get(:buckets, default_buckets())
+    buckets =
+      Application.get_env(:thunderline, Thunderline.Thundergate.RateLimiting, [])
+      |> Keyword.get(:buckets, default_buckets())
 
     case Keyword.get(buckets, bucket_key) do
       nil ->
         Logger.warning("Unknown rate limit bucket, using defaults", bucket: bucket_key)
         default_bucket_config()
+
       config ->
         config
     end
@@ -148,10 +154,11 @@ defmodule Thunderline.Thundergate.RateLimiting.RateLimiter do
 
     measurements = %{
       duration: duration,
-      remaining: case result do
-        {:ok, remaining} -> remaining
-        {:error, _} -> 0
-      end
+      remaining:
+        case result do
+          {:ok, remaining} -> remaining
+          {:error, _} -> 0
+        end
     }
 
     :telemetry.execute(

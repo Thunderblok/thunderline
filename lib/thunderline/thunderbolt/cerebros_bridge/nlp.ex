@@ -133,13 +133,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
     Logger.debug("Script path: #{@script_path}")
     Logger.debug("Working dir: #{File.cwd!()}")
 
-    port = Port.open({:spawn_executable, python_cmd}, [
-      :binary,
-      :exit_status,
-      {:args, [@script_path]},
-      {:cd, File.cwd!()},
-      :stderr_to_stdout
-    ])
+    port =
+      Port.open({:spawn_executable, python_cmd}, [
+        :binary,
+        :exit_status,
+        {:args, [@script_path]},
+        {:cd, File.cwd!()},
+        :stderr_to_stdout
+      ])
 
     Logger.debug("Port opened: #{inspect(port)}")
 
@@ -171,7 +172,10 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
         end
     after
       5000 ->
-        Logger.warning("Timeout in receive_output. Exit code: #{inspect(exit_code)}, Output: #{inspect(output)}")
+        Logger.warning(
+          "Timeout in receive_output. Exit code: #{inspect(exit_code)}, Output: #{inspect(output)}"
+        )
+
         # Timeout after 5 seconds
         if exit_code != nil do
           # We have exit code, process what we got
@@ -201,8 +205,10 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
           case Jason.decode(json_line) do
             {:ok, %{"error" => error}} ->
               {:error, error}
+
             {:ok, result} ->
               {:ok, result}
+
             {:error, reason} ->
               {:error, {:json_decode_failed, reason, output}}
           end

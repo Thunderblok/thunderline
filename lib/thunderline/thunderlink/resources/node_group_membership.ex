@@ -21,6 +21,36 @@ defmodule Thunderline.Thunderlink.Resources.NodeGroupMembership do
     end
   end
 
+  code_interface do
+    define :add, args: [:node_id, :group_id]
+    define :update
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :add do
+      description "Add node to group"
+      accept [:node_id, :group_id, :meta]
+    end
+
+    update :update do
+      description "Update membership metadata"
+      accept [:meta]
+    end
+  end
+
+  policies do
+    # Allow internal system access
+    bypass always() do
+      authorize_if always()
+    end
+  end
+
+  validations do
+    validate present([:node_id, :group_id])
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -60,37 +90,7 @@ defmodule Thunderline.Thunderlink.Resources.NodeGroupMembership do
     end
   end
 
-  actions do
-    defaults [:read, :destroy]
-
-    create :add do
-      description "Add node to group"
-      accept [:node_id, :group_id, :meta]
-    end
-
-    update :update do
-      description "Update membership metadata"
-      accept [:meta]
-    end
-  end
-
   identities do
     identity :unique_membership, [:node_id, :group_id]
-  end
-
-  validations do
-    validate present([:node_id, :group_id])
-  end
-
-  policies do
-    # Allow internal system access
-    bypass always() do
-      authorize_if always()
-    end
-  end
-
-  code_interface do
-    define :add, args: [:node_id, :group_id]
-    define :update
   end
 end

@@ -221,7 +221,7 @@ defmodule Thunderline.ThunderBridge do
     case get_in(erlang_state, [:thunderbolt_registry, :uptime]) do
       uptime when is_integer(uptime) -> uptime
       # Fallback for now
-      _ -> :rand.uniform(10000)
+      _ -> :rand.uniform(10_000)
     end
   end
 
@@ -384,7 +384,8 @@ defmodule Thunderline.ThunderBridge do
     end
   end
 
-  defp calculate_trend(metrics) when length(metrics) < 2, do: :stable
+  defp calculate_trend([]), do: :stable
+  defp calculate_trend([_]), do: :stable
 
   defp calculate_trend(metrics) do
     recent = Enum.take(metrics, -5)
@@ -404,7 +405,7 @@ defmodule Thunderline.ThunderBridge do
     # Simple health score based on recent performance
     recent_metrics = Enum.take(metrics, -5)
 
-    if length(recent_metrics) == 0 do
+    if recent_metrics == [] do
       1.0
     else
       avg_response = calculate_average(recent_metrics, :response_time)

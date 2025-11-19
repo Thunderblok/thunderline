@@ -84,9 +84,11 @@ defmodule Thunderline.Application do
             Oban.start_queue(queue: :default)
             Oban.start_queue(queue: :ml)
             :ok
+
           _ ->
             :ok
         end
+
       _ ->
         :ok
     end
@@ -169,7 +171,8 @@ defmodule Thunderline.Application do
   defp ml_controller_config do
     [
       name: :ml_controller,
-      models: [:model_a, :model_b],  # TODO: Load from config
+      # TODO: Load from config
+      models: [:model_a, :model_b],
       distance_metric: :js_divergence,
       window_size: 50,
       sla_params: %{

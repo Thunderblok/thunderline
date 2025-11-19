@@ -144,7 +144,6 @@ defmodule Thunderline.MixProject do
       {:absinthe_plug, "~> 1.5"},
       # Neural / ML
       {:ortex, "~> 0.1.10"},
-
       {:nx, "~> 0.9"},
       {:axon, "~> 0.7"},
       {:exla, "~> 0.9"},
@@ -210,7 +209,9 @@ defmodule Thunderline.MixProject do
         []
       end
 
-    base ++ jido_git_deps ++ ash_jido_dep ++ [{:cerebros, path: "/home/mo/DEV/cerebros", override: true}]
+    base ++
+      jido_git_deps ++
+      ash_jido_dep ++ [{:cerebros, path: "/home/mo/DEV/cerebros", override: true}]
   end
 
   defp aliases do

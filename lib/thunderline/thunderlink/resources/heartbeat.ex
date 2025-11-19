@@ -27,6 +27,72 @@ defmodule Thunderline.Thunderlink.Resources.Heartbeat do
     end
   end
 
+  code_interface do
+    define :record, args: [:node_id, :status]
+    define :for_node, args: [:node_id]
+    define :recent, args: [:minutes]
+    define :old_heartbeats, args: [:hours]
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :record do
+      description "Record a heartbeat"
+      accept [:node_id, :status, :cpu_load, :mem_used_mb, :latency_ms, :meta]
+    end
+
+    read :for_node do
+      description "Get heartbeats for a specific node"
+
+      argument :node_id, :uuid do
+        allow_nil? false
+      end
+
+      filter expr(node_id == ^arg(:node_id))
+    end
+
+    read :recent do
+      description "Get heartbeats from the last N minutes (default 60)"
+      argument :minutes, :integer, default: 60
+
+      prepare before_action(fn query, _context ->
+                cutoff = DateTime.add(DateTime.utc_now(), -query.arguments.minutes, :minute)
+                require Ash.Query
+                Ash.Query.filter(query, expr(inserted_at > ^cutoff))
+              end)
+    end
+
+    read :old_heartbeats do
+      description "Get heartbeats older than N hours for compression"
+
+      argument :hours, :integer do
+        allow_nil? false
+        default 24
+      end
+
+      prepare before_action(fn query, _context ->
+                cutoff =
+                  DateTime.utc_now()
+                  |> DateTime.add(-query.arguments.hours * 3600, :second)
+
+                require Ash.Query
+                Ash.Query.filter(query, expr(inserted_at < ^cutoff))
+              end)
+    end
+
+    destroy :bulk_delete do
+      description "Delete multiple heartbeats (for compression job)"
+    end
+  end
+
+  policies do
+    # Allow internal system access
+    bypass always() do
+      authorize_if always()
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -72,71 +138,5 @@ defmodule Thunderline.Thunderlink.Resources.Heartbeat do
       allow_nil? false
       public? true
     end
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :record do
-      description "Record a heartbeat"
-      accept [:node_id, :status, :cpu_load, :mem_used_mb, :latency_ms, :meta]
-    end
-
-    read :for_node do
-      description "Get heartbeats for a specific node"
-
-      argument :node_id, :uuid do
-        allow_nil? false
-      end
-
-      filter expr(node_id == ^arg(:node_id))
-    end
-
-    read :recent do
-      description "Get heartbeats from the last N minutes (default 60)"
-      argument :minutes, :integer, default: 60
-
-      prepare before_action(fn query, _context ->
-        cutoff = DateTime.add(DateTime.utc_now(), -query.arguments.minutes, :minute)
-        require Ash.Query
-        Ash.Query.filter(query, expr(inserted_at > ^cutoff))
-      end)
-    end
-
-    read :old_heartbeats do
-      description "Get heartbeats older than N hours for compression"
-
-      argument :hours, :integer do
-        allow_nil? false
-        default 24
-      end
-
-      prepare before_action(fn query, _context ->
-        cutoff =
-          DateTime.utc_now()
-          |> DateTime.add(-query.arguments.hours * 3600, :second)
-
-        require Ash.Query
-        Ash.Query.filter(query, expr(inserted_at < ^cutoff))
-      end)
-    end
-
-    destroy :bulk_delete do
-      description "Delete multiple heartbeats (for compression job)"
-    end
-  end
-
-  policies do
-    # Allow internal system access
-    bypass always() do
-      authorize_if always()
-    end
-  end
-
-  code_interface do
-    define :record, args: [:node_id, :status]
-    define :for_node, args: [:node_id]
-    define :recent, args: [:minutes]
-    define :old_heartbeats, args: [:hours]
   end
 end

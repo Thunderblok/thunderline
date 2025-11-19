@@ -19,67 +19,16 @@ defmodule Thunderline.ServiceRegistry.Service do
     type :service
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :service_id, :string do
-      allow_nil? false
-      description "Unique identifier for the service (e.g., 'cerebros-1', 'mlflow-main')"
-    end
-
-    attribute :service_type, :atom do
-      allow_nil? false
-      description "Type of service (e.g., :cerebros, :mlflow)"
-      constraints one_of: [:cerebros, :mlflow, :custom]
-    end
-
-    attribute :name, :string do
-      allow_nil? false
-      description "Human-readable name for the service"
-    end
-
-    attribute :host, :string do
-      allow_nil? false
-      description "Hostname or IP address where the service is running"
-      default "localhost"
-    end
-
-    attribute :port, :integer do
-      allow_nil? false
-      description "Port number the service is listening on"
-    end
-
-    attribute :status, :atom do
-      allow_nil? false
-      description "Current status of the service"
-      constraints one_of: [:starting, :healthy, :unhealthy, :stopped]
-      default :starting
-    end
-
-    attribute :capabilities, :map do
-      description "Service capabilities and metadata (e.g., supported models, GPU availability)"
-      default %{}
-    end
-
-    attribute :metadata, :map do
-      description "Additional service metadata"
-      default %{}
-    end
-
-    attribute :last_heartbeat_at, :utc_datetime_usec do
-      description "Timestamp of last heartbeat received from service"
-    end
-
-    attribute :url, :string do
-      description "Full URL to the service (computed from host + port)"
-    end
-
-    create_timestamp :registered_at
-    update_timestamp :updated_at
-  end
-
-  identities do
-    identity :unique_service_id, [:service_id]
+  code_interface do
+    define :register, action: :register
+    define :heartbeat, action: :heartbeat
+    define :mark_unhealthy, action: :mark_unhealthy
+    define :mark_healthy, action: :mark_healthy
+    define :list_by_type, action: :list_by_type, args: [:service_type]
+    define :list_healthy, action: :list_healthy
+    define :find_by_service_id, action: :find_by_service_id, args: [:service_id]
+    define :list, action: :read
+    define :destroy, action: :destroy
   end
 
   actions do
@@ -87,6 +36,7 @@ defmodule Thunderline.ServiceRegistry.Service do
 
     create :register do
       description "Register a new service"
+
       accept [
         :service_id,
         :service_type,
@@ -170,15 +120,66 @@ defmodule Thunderline.ServiceRegistry.Service do
     end
   end
 
-  code_interface do
-    define :register, action: :register
-    define :heartbeat, action: :heartbeat
-    define :mark_unhealthy, action: :mark_unhealthy
-    define :mark_healthy, action: :mark_healthy
-    define :list_by_type, action: :list_by_type, args: [:service_type]
-    define :list_healthy, action: :list_healthy
-    define :find_by_service_id, action: :find_by_service_id, args: [:service_id]
-    define :list, action: :read
-    define :destroy, action: :destroy
+  attributes do
+    uuid_primary_key :id
+
+    attribute :service_id, :string do
+      allow_nil? false
+      description "Unique identifier for the service (e.g., 'cerebros-1', 'mlflow-main')"
+    end
+
+    attribute :service_type, :atom do
+      allow_nil? false
+      description "Type of service (e.g., :cerebros, :mlflow)"
+      constraints one_of: [:cerebros, :mlflow, :custom]
+    end
+
+    attribute :name, :string do
+      allow_nil? false
+      description "Human-readable name for the service"
+    end
+
+    attribute :host, :string do
+      allow_nil? false
+      description "Hostname or IP address where the service is running"
+      default "localhost"
+    end
+
+    attribute :port, :integer do
+      allow_nil? false
+      description "Port number the service is listening on"
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      description "Current status of the service"
+      constraints one_of: [:starting, :healthy, :unhealthy, :stopped]
+      default :starting
+    end
+
+    attribute :capabilities, :map do
+      description "Service capabilities and metadata (e.g., supported models, GPU availability)"
+      default %{}
+    end
+
+    attribute :metadata, :map do
+      description "Additional service metadata"
+      default %{}
+    end
+
+    attribute :last_heartbeat_at, :utc_datetime_usec do
+      description "Timestamp of last heartbeat received from service"
+    end
+
+    attribute :url, :string do
+      description "Full URL to the service (computed from host + port)"
+    end
+
+    create_timestamp :registered_at
+    update_timestamp :updated_at
+  end
+
+  identities do
+    identity :unique_service_id, [:service_id]
   end
 end

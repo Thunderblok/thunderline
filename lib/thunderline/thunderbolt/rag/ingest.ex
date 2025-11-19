@@ -138,7 +138,8 @@ defmodule Thunderline.Thunderbolt.RAG.Ingest do
 
       words
       |> Enum.chunk_every(
-        div(chunk_size, 6),  # Approximate words per chunk
+        # Approximate words per chunk
+        div(chunk_size, 6),
         div(chunk_size, 6) - div(overlap, 6)
       )
       |> Enum.map(&Enum.join(&1, " "))
@@ -169,10 +170,11 @@ defmodule Thunderline.Thunderbolt.RAG.Ingest do
           id: chunk_id,
           text: chunk_text,
           embedding: embedding,
-          metadata: Map.merge(metadata, %{
-            chunk_index: index,
-            chunk_size: String.length(chunk_text)
-          })
+          metadata:
+            Map.merge(metadata, %{
+              chunk_index: index,
+              chunk_size: String.length(chunk_text)
+            })
         }
       end)
 

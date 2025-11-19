@@ -23,7 +23,12 @@ defmodule Thunderline.Repo.Migrations.AddEventLedgerFields do
       add :event_hash, :bytea, comment: "SHA256 hash of canonical event data"
       add :event_signature, :bytea, comment: "ECDSA signature of event_hash (Ed25519)"
       add :key_id, :string, comment: "Signing key identifier for rotation tracking"
-      add :ledger_version, :integer, default: 1, null: false, comment: "Event ledger schema version"
+
+      add :ledger_version, :integer,
+        default: 1,
+        null: false,
+        comment: "Event ledger schema version"
+
       add :previous_hash, :bytea, comment: "SHA256 hash of previous event (chain linkage)"
     end
 

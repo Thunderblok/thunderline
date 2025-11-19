@@ -165,7 +165,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
               # Parse JSON if it's JSON data
               case Jason.decode(decompressed) do
                 {:ok, parsed} -> {:ok, parsed}
-                {:error, _} -> {:ok, decompressed}  # Return raw binary if not JSON
+                # Return raw binary if not JSON
+                {:error, _} -> {:ok, decompressed}
               end
             else
               Logger.error("""
@@ -349,11 +350,12 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
       UpmSnapshot
       |> Ash.Query.filter(trainer_id == ^trainer_id)
 
-    query = if status_filter do
-      Ash.Query.filter(query, status == ^status_filter)
-    else
-      query
-    end
+    query =
+      if status_filter do
+        Ash.Query.filter(query, status == ^status_filter)
+      else
+        query
+      end
 
     query =
       query
@@ -434,11 +436,15 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   @spec cleanup_old_snapshots(binary(), keyword()) :: {:ok, non_neg_integer()} | {:error, term()}
   def cleanup_old_snapshots(trainer_id, opts \\ []) do
     retention_days = Keyword.get(opts, :retention_days, 30)
-    cutoff_date = DateTime.utc_now() |> DateTime.add(-retention_days, :day) |> DateTime.add(-5, :second)
+
+    cutoff_date =
+      DateTime.utc_now() |> DateTime.add(-retention_days, :day) |> DateTime.add(-5, :second)
 
     query =
       UpmSnapshot
-      |> Ash.Query.filter(trainer_id == ^trainer_id and status in [:created, :rolled_back, :archived])
+      |> Ash.Query.filter(
+        trainer_id == ^trainer_id and status in [:created, :rolled_back, :archived]
+      )
       |> Ash.Query.load([:inserted_at])
 
     case Ash.read(query) do
@@ -556,7 +562,8 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   defp delete_snapshot_file(%{storage_path: path}) do
     case File.rm(path) do
       :ok -> :ok
-      {:error, :enoent} -> :ok  # File already gone, that's fine
+      # File already gone, that's fine
+      {:error, :enoent} -> :ok
       {:error, reason} -> {:error, {:file_deletion_failed, reason}}
     end
   end
@@ -564,7 +571,9 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   defp deactivate_previous_active(trainer_id, exclude_id) do
     query =
       UpmSnapshot
-      |> Ash.Query.filter(trainer_id == ^trainer_id and status == :activated and id != ^exclude_id)
+      |> Ash.Query.filter(
+        trainer_id == ^trainer_id and status == :activated and id != ^exclude_id
+      )
 
     case Ash.read(query) do
       {:ok, snapshots} ->
@@ -589,17 +598,17 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
 
   defp emit_activation_event(snapshot, correlation_id) do
     case Thunderline.Event.new(
-      name: "ai.upm.snapshot.activated",
-      source: :bolt,
-      payload: %{
-        snapshot_id: snapshot.id,
-        trainer_id: snapshot.trainer_id,
-        version: snapshot.version,
-        mode: snapshot.mode,
-        checksum: snapshot.checksum
-      },
-      correlation_id: correlation_id
-    ) do
+           name: "ai.upm.snapshot.activated",
+           source: :bolt,
+           payload: %{
+             snapshot_id: snapshot.id,
+             trainer_id: snapshot.trainer_id,
+             version: snapshot.version,
+             mode: snapshot.mode,
+             checksum: snapshot.checksum
+           },
+           correlation_id: correlation_id
+         ) do
       {:ok, event} ->
         # Publish to EventBus for saga/worker consumption
         Thunderline.Thunderflow.EventBus.publish_event(event)
@@ -612,6 +621,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
         )
 
         {:ok, event}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -619,18 +629,19 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
 
   defp emit_rollback_event(snapshot, correlation_id) do
     case Thunderline.Event.new(
-      name: "ai.upm.rollback",
-      source: :bolt,
-      payload: %{
-        snapshot_id: snapshot.id,
-        trainer_id: snapshot.trainer_id,
-        version: snapshot.version,
-        reason: "manual_rollback"
-      },
-      correlation_id: correlation_id
-    ) do
+           name: "ai.upm.rollback",
+           source: :bolt,
+           payload: %{
+             snapshot_id: snapshot.id,
+             trainer_id: snapshot.trainer_id,
+             version: snapshot.version,
+             reason: "manual_rollback"
+           },
+           correlation_id: correlation_id
+         ) do
       {:ok, event} ->
         Thunderline.Thunderflow.EventBus.publish_event(event)
+
       {:error, reason} ->
         {:error, reason}
     end

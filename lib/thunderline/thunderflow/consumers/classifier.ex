@@ -54,11 +54,12 @@ defmodule Thunderline.Thunderflow.Consumers.Classifier do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {Thunderflow.MnesiaProducer,
-          table: Thunderflow.MnesiaProducer,
-          poll_interval: 1_000,
-          max_batch_size: Keyword.get(config, :batch_size, 10),
-          broadway_name: __MODULE__},
+        module:
+          {Thunderflow.MnesiaProducer,
+           table: Thunderflow.MnesiaProducer,
+           poll_interval: 1_000,
+           max_batch_size: Keyword.get(config, :batch_size, 10),
+           broadway_name: __MODULE__},
         concurrency: 1
       ],
       processors: [

@@ -48,14 +48,16 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunWorker do
   # Execute the Reactor saga with proper error handling
   defp execute_saga(args, job) do
     spec = Map.get(args, "spec", %{})
+
     opts = [
       run_id: args["run_id"],
       budget: Map.get(args, "budget", %{}),
       parameters: Map.get(args, "parameters", %{}),
-      meta: Map.merge(Map.get(args, "meta", %{}), %{
-        oban_job_id: job.id,
-        oban_attempt: job.attempt
-      })
+      meta:
+        Map.merge(Map.get(args, "meta", %{}), %{
+          oban_job_id: job.id,
+          oban_attempt: job.attempt
+        })
     ]
 
     case RunSaga.run(spec, opts) do

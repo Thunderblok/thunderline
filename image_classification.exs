@@ -38,7 +38,7 @@ defmodule DemoLive do
             <:failed :let={_reason}>
               <span>Oops, something went wrong!</span>
             </:failed>
-            <span class="text-gray-900 font-medium"><%= label %></span>
+            <span class="text-gray-900 font-medium">{label}</span>
           </.async_result>
         </div>
       </div>

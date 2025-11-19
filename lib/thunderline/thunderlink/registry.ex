@@ -358,12 +358,32 @@ defmodule Thunderline.Thunderlink.Registry do
         # Add params that aren't in the :establish action's accept list
         full_meta =
           base_meta
-          |> then(fn m -> if attrs[:local_peer_id], do: Map.put(m, "local_peer_id", attrs[:local_peer_id]), else: m end)
-          |> then(fn m -> if attrs[:remote_peer_id], do: Map.put(m, "remote_peer_id", attrs[:remote_peer_id]), else: m end)
-          |> then(fn m -> if attrs[:connection_type], do: Map.put(m, "connection_type", attrs[:connection_type]), else: m end)
-          |> then(fn m -> if attrs[:weight], do: Map.put(m, "weight", attrs[:weight]), else: m end)
-          |> then(fn m -> if attrs[:latency_ms], do: Map.put(m, "latency_ms", attrs[:latency_ms]), else: m end)
-          |> then(fn m -> if attrs[:bandwidth_mbps], do: Map.put(m, "bandwidth_mbps", attrs[:bandwidth_mbps]), else: m end)
+          |> then(fn m ->
+            if attrs[:local_peer_id],
+              do: Map.put(m, "local_peer_id", attrs[:local_peer_id]),
+              else: m
+          end)
+          |> then(fn m ->
+            if attrs[:remote_peer_id],
+              do: Map.put(m, "remote_peer_id", attrs[:remote_peer_id]),
+              else: m
+          end)
+          |> then(fn m ->
+            if attrs[:connection_type],
+              do: Map.put(m, "connection_type", attrs[:connection_type]),
+              else: m
+          end)
+          |> then(fn m ->
+            if attrs[:weight], do: Map.put(m, "weight", attrs[:weight]), else: m
+          end)
+          |> then(fn m ->
+            if attrs[:latency_ms], do: Map.put(m, "latency_ms", attrs[:latency_ms]), else: m
+          end)
+          |> then(fn m ->
+            if attrs[:bandwidth_mbps],
+              do: Map.put(m, "bandwidth_mbps", attrs[:bandwidth_mbps]),
+              else: m
+          end)
 
         LinkSession
         |> Ash.Changeset.for_create(:establish, %{
@@ -654,15 +674,15 @@ defmodule Thunderline.Thunderlink.Registry do
 
     case existing do
       %LinkSession{} = session ->
-        with {:ok, session} <- ensure_session_established(session, attrs, opts),
-             {:ok, session} <- maybe_update_session_metrics(session, attrs, opts) do
-          {:ok, session}
+        case ensure_session_established(session, attrs, opts) do
+          {:ok, established} -> maybe_update_session_metrics(established, attrs, opts)
+          error -> error
         end
 
       nil ->
-        with {:ok, session} <- establish_link_session(node_id, attrs, opts),
-             {:ok, session} <- mark_session_established(session, attrs, opts) do
-          {:ok, session}
+        case establish_link_session(node_id, attrs, opts) do
+          {:ok, session} -> mark_session_established(session, attrs, opts)
+          error -> error
         end
     end
   rescue
@@ -703,7 +723,14 @@ defmodule Thunderline.Thunderlink.Registry do
   end
 
   defp link_payload(node, _session_result, attrs) when is_map(attrs) do
-    meta_keys = [:local_peer_id, :remote_peer_id, :latency_ms, :bandwidth_mbps, :weight, :connection_type]
+    meta_keys = [
+      :local_peer_id,
+      :remote_peer_id,
+      :latency_ms,
+      :bandwidth_mbps,
+      :weight,
+      :connection_type
+    ]
 
     meta =
       meta_keys
@@ -839,7 +866,10 @@ defmodule Thunderline.Thunderlink.Registry do
     :ok
   rescue
     e ->
-      Logger.warning("Unexpected error updating last_heartbeat_at for node #{node_id}: #{inspect(e)}")
+      Logger.warning(
+        "Unexpected error updating last_heartbeat_at for node #{node_id}: #{inspect(e)}"
+      )
+
       {:error, e}
   end
 end

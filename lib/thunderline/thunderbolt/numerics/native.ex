@@ -2,6 +2,7 @@ defmodule Thunderline.Thunderbolt.Numerics.Native do
   @moduledoc """
   NIF glue for Rust implementation.
   """
+
   # Temporarily disabled for development
   # use Rustler, otp_app: :thunderline, crate: "cerebros_numerics"
 

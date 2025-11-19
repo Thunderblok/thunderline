@@ -254,8 +254,7 @@ defmodule ThunderlineWeb.TrialDashboardLive do
       end)
 
     [headers | rows]
-    |> Enum.map(&Enum.join(&1, ","))
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn row -> Enum.join(row, ",") end)
   end
 
   defp format_status(:succeeded), do: {"✓", "text-green-400"}
@@ -284,8 +283,7 @@ defmodule ThunderlineWeb.TrialDashboardLive do
     |> String.reverse()
     |> String.split("", trim: true)
     |> Enum.chunk_every(3)
-    |> Enum.map(&Enum.join/1)
-    |> Enum.join(",")
+    |> Enum.map_join(",", fn chunk -> Enum.join(chunk, "") end)
     |> String.reverse()
   end
 

@@ -374,7 +374,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             </div>
           </section>
         </div>
-        
+
     <!-- Column 2: KPIs + Event Flow + Controls -->
         <div class="space-y-6">
           <!-- 3. KPIs -->
@@ -580,7 +580,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             </div>
           </section>
         </div>
-        
+
     <!-- Column 3: Peers + Trends (+ AI assistant) -->
         <div class="space-y-6">
           <!-- 4. Peers -->
@@ -1355,9 +1355,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
 
   @impl true
   def handle_event("ai_send", %{"q" => raw}, socket) do
-    unless feature_enabled?(:ai_chat_panel) do
-      {:noreply, socket}
-    else
+    if feature_enabled?(:ai_chat_panel) do
       q = String.trim(to_string(raw || ""))
 
       if q == "" do
@@ -1371,6 +1369,8 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
         {:noreply,
          socket |> assign(:ai_messages, [ai_msg | msgs]) |> assign_new(:ai_busy, fn -> false end)}
       end
+    else
+      {:noreply, socket}
     end
   end
 

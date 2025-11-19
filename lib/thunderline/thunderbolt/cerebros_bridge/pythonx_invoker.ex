@@ -40,20 +40,20 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
       try do
         # Get Python paths using the Python executable itself
         python_info_script = ~s"""
-import sys
-import sysconfig
-import os
-libdir = sysconfig.get_config_var('LIBDIR')
-ldlibrary = sysconfig.get_config_var('LDLIBRARY')
-# Find the actual .so file
-dl_path = os.path.join(libdir, ldlibrary)
-# Try alternate locations if not found
-if not os.path.exists(dl_path):
-    # Check lib/python3.13/config-*
-    config_dir = f"{sys.prefix}/lib/python{sys.version_info.major}.{sys.version_info.minor}/config-{sys.version_info.major}.{sys.version_info.minor}"
-    dl_path = os.path.join(config_dir, ldlibrary)
-print(f"{dl_path}|{sys.prefix}|{sys.executable}")
-"""
+        import sys
+        import sysconfig
+        import os
+        libdir = sysconfig.get_config_var('LIBDIR')
+        ldlibrary = sysconfig.get_config_var('LDLIBRARY')
+        # Find the actual .so file
+        dl_path = os.path.join(libdir, ldlibrary)
+        # Try alternate locations if not found
+        if not os.path.exists(dl_path):
+            # Check lib/python3.13/config-*
+            config_dir = f"{sys.prefix}/lib/python{sys.version_info.major}.{sys.version_info.minor}/config-{sys.version_info.major}.{sys.version_info.minor}"
+            dl_path = os.path.join(config_dir, ldlibrary)
+        print(f"{dl_path}|{sys.prefix}|{sys.executable}")
+        """
 
         {output, 0} = System.cmd(python_exe, ["-c", python_info_script])
         [dl_path, home_path, exe_path] = String.trim(output) |> String.split("|")
@@ -72,22 +72,29 @@ print(f"{dl_path}|{sys.prefix}|{sys.executable}")
         Logger.info("[CerebrosBridge.PythonxInvoker] Python runtime ready: #{version}")
       rescue
         error ->
-          Logger.error("[CerebrosBridge.PythonxInvoker] Failed to initialize Python: #{inspect(error)}")
+          Logger.error(
+            "[CerebrosBridge.PythonxInvoker] Failed to initialize Python: #{inspect(error)}"
+          )
+
           {:error, error}
       end
     else
       Logger.warning("[CerebrosBridge.PythonxInvoker] No Python executable configured")
     end
 
-    python_path = Application.get_env(:thunderline, :cerebros_bridge, [])
-                  |> Keyword.get(:python_path, ["thunderhelm"])
+    python_path =
+      Application.get_env(:thunderline, :cerebros_bridge, [])
+      |> Keyword.get(:python_path, ["thunderhelm"])
 
-    Logger.info("[CerebrosBridge.PythonxInvoker] Initializing Pythonx with paths: #{inspect(python_path)}")
+    Logger.info(
+      "[CerebrosBridge.PythonxInvoker] Initializing Pythonx with paths: #{inspect(python_path)}"
+    )
 
     try do
       # Add paths to Python's sys.path
       Enum.each(python_path, fn path ->
         abs_path = Path.expand(path)
+
         if File.dir?(abs_path) do
           # Pythonx.eval returns {result, globals}
           {_result, _globals} = Pythonx.eval("import sys; sys.path.insert(0, '#{abs_path}')", %{})
@@ -115,12 +122,17 @@ print(f"{dl_path}|{sys.prefix}|{sys.executable}")
           end
         rescue
           error ->
-            Logger.warning("[CerebrosBridge.PythonxInvoker] NLP service not available: #{inspect(error)}")
+            Logger.warning(
+              "[CerebrosBridge.PythonxInvoker] NLP service not available: #{inspect(error)}"
+            )
         end
 
         :ok
       else
-        Logger.error("[CerebrosBridge.PythonxInvoker] Failed to load cerebros_service: unexpected result #{inspect(decoded)}")
+        Logger.error(
+          "[CerebrosBridge.PythonxInvoker] Failed to load cerebros_service: unexpected result #{inspect(decoded)}"
+        )
+
         {:error, {:module_load_failed, decoded}}
       end
     rescue
@@ -158,13 +170,16 @@ print(f"{dl_path}|{sys.prefix}|{sys.executable}")
             %{duration_ms: duration_ms},
             Map.put(invocation_meta, :ok, true)
           )
+
           {:ok, Map.put(decoded, :duration_ms, duration_ms)}
 
         {:error, error} ->
-          telemetry_error = Map.merge(invocation_meta, %{
-            error: error_to_map(error),
-            duration_ms: duration_ms
-          })
+          telemetry_error =
+            Map.merge(invocation_meta, %{
+              error: error_to_map(error),
+              duration_ms: duration_ms
+            })
+
           :telemetry.execute(@telemetry_base ++ [:exception], %{}, telemetry_error)
           {:error, error}
       end
@@ -183,22 +198,24 @@ print(f"{dl_path}|{sys.prefix}|{sys.executable}")
     Logger.debug("[CerebrosBridge.PythonxInvoker] Opts: #{inspect(opts)}")
 
     # Call Python function with timeout
-    task = Task.Supervisor.async_nolink(Thunderline.TaskSupervisor, fn ->
-      call_python_run_nas(spec, opts)
-    end)
+    task =
+      Task.Supervisor.async_nolink(Thunderline.TaskSupervisor, fn ->
+        call_python_run_nas(spec, opts)
+      end)
 
     case Task.yield(task, timeout_ms) || Task.shutdown(task, :brutal_kill) do
       {:ok, {:ok, result}} ->
-        {:ok, %{
-          returncode: 0,
-          stdout: Jason.encode!(result),
-          stderr: "",
-          stdout_excerpt: excerpt(result),
-          stderr_excerpt: "",
-          attempts: 1,
-          parsed: result,
-          raw: result
-        }}
+        {:ok,
+         %{
+           returncode: 0,
+           stdout: Jason.encode!(result),
+           stderr: "",
+           stdout_excerpt: excerpt(result),
+           stderr_excerpt: "",
+           attempts: 1,
+           parsed: result,
+           raw: result
+         }}
 
       {:ok, {:error, reason}} ->
         {:error, python_error(:start_run, reason, meta)}
@@ -211,18 +228,26 @@ print(f"{dl_path}|{sys.prefix}|{sys.executable}")
       {:error, unexpected_error(:start_run, :error, error, meta)}
   end
 
-  defp attempt_pythonx_invoke(op, _call_spec, _timeout_ms, _meta) when op in [:extract_entities, :tokenize, :analyze_sentiment, :analyze_syntax, :process_text] do
-    {:error, %ErrorClass{
-      origin: :cerebros_bridge,
-      class: :validation,
-      severity: :error,
-      visibility: :external,
-      context: %{
-        reason: :use_nlp_service_directly,
-        op: op,
-        hint: "Use Thunderline.Thunderbolt.CerebrosBridge.NLP module for NLP operations"
-      }
-    }}
+  defp attempt_pythonx_invoke(op, _call_spec, _timeout_ms, _meta)
+       when op in [
+              :extract_entities,
+              :tokenize,
+              :analyze_sentiment,
+              :analyze_syntax,
+              :process_text
+            ] do
+    {:error,
+     %ErrorClass{
+       origin: :cerebros_bridge,
+       class: :validation,
+       severity: :error,
+       visibility: :external,
+       context: %{
+         reason: :use_nlp_service_directly,
+         op: op,
+         hint: "Use Thunderline.Thunderbolt.CerebrosBridge.NLP module for NLP operations"
+       }
+     }}
   end
 
   defp attempt_pythonx_invoke(op, _call_spec, _timeout_ms, _meta) do
@@ -233,13 +258,13 @@ print(f"{dl_path}|{sys.prefix}|{sys.executable}")
     # Use Pythonx's proper data passing mechanism:
     # Pass Elixir data structures via globals, let Pythonx handle encoding
     python_code = """
-import cerebros_service
+    import cerebros_service
 
-# spec and opts are passed from Elixir via globals
-# Pythonx automatically converts them to Python dicts
-result = cerebros_service.run_nas(spec, opts)
-result
-"""
+    # spec and opts are passed from Elixir via globals
+    # Pythonx automatically converts them to Python dicts
+    result = cerebros_service.run_nas(spec, opts)
+    result
+    """
 
     # Pass data through globals - Pythonx.Encoder protocol handles conversion
     globals = %{
@@ -268,7 +293,8 @@ result
     Enum.map(list, &normalize_for_python/1)
   end
 
-  defp normalize_for_python(atom) when is_atom(atom) and not is_nil(atom) and atom not in [true, false] do
+  defp normalize_for_python(atom)
+       when is_atom(atom) and not is_nil(atom) and atom not in [true, false] do
     to_string(atom)
   end
 

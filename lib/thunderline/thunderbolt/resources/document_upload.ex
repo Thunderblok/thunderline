@@ -27,12 +27,12 @@ defmodule Thunderline.Thunderbolt.Resources.DocumentUpload do
     type "document_upload"
 
     routes do
-      base "/document_uploads"
-      get :read
+      base("/document_uploads")
+      get(:read)
       index :read
-      post :create
-      patch :update
-      delete :destroy
+      post(:create)
+      patch(:update)
+      delete(:destroy)
     end
   end
 
@@ -48,6 +48,75 @@ defmodule Thunderline.Thunderbolt.Resources.DocumentUpload do
       create :create_document_upload, :create
       update :update_document_upload, :update
       destroy :destroy_document_upload, :destroy
+    end
+  end
+
+  code_interface do
+    define :create
+    define :read
+    define :update
+    define :destroy
+    define :mark_processed
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      primary? true
+
+      # Arguments for inputs that need validation
+      argument :stage, :integer do
+        allow_nil? false
+        constraints min: 1, max: 4
+      end
+
+      accept [:filename, :file_url, :content, :labels, :training_dataset_id, :metadata]
+
+      # Set stage from argument
+      change set_attribute(:stage, arg(:stage))
+
+      # Increment parent dataset's stage counter AFTER transaction completes
+      # Use after_transaction instead of after_action to avoid atomicity issues
+      change after_transaction(fn changeset, {:ok, record}, _context ->
+               dataset =
+                 Ash.get!(
+                   Thunderline.Thunderbolt.Resources.TrainingDataset,
+                   record.training_dataset_id
+                 )
+
+               # Use positional argument! args: [:stage] means increment_stage!(dataset, stage_value)
+               Thunderline.Thunderbolt.Resources.TrainingDataset.increment_stage!(
+                 dataset,
+                 record.stage
+               )
+
+               {:ok, record}
+             end)
+    end
+
+    update :update do
+      primary? true
+      accept [:filename, :file_url, :content, :labels, :processed, :chunk_count, :metadata]
+    end
+
+    update :mark_processed do
+      accept []
+      change set_attribute(:processed, true)
+    end
+  end
+
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if always()
     end
   end
 
@@ -101,66 +170,6 @@ defmodule Thunderline.Thunderbolt.Resources.DocumentUpload do
     belongs_to :training_dataset, Thunderline.Thunderbolt.Resources.TrainingDataset do
       allow_nil? false
       attribute_writable? true
-    end
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      primary? true
-
-      # Arguments for inputs that need validation
-      argument :stage, :integer do
-        allow_nil? false
-        constraints min: 1, max: 4
-      end
-
-      accept [:filename, :file_url, :content, :labels, :training_dataset_id, :metadata]
-
-      # Set stage from argument
-      change set_attribute(:stage, arg(:stage))
-
-      # Increment parent dataset's stage counter AFTER transaction completes
-      # Use after_transaction instead of after_action to avoid atomicity issues
-      change after_transaction(fn changeset, {:ok, record}, _context ->
-        dataset = Ash.get!(Thunderline.Thunderbolt.Resources.TrainingDataset, record.training_dataset_id)
-        # Use positional argument! args: [:stage] means increment_stage!(dataset, stage_value)
-        Thunderline.Thunderbolt.Resources.TrainingDataset.increment_stage!(dataset, record.stage)
-        {:ok, record}
-      end)
-    end
-
-    update :update do
-      primary? true
-      accept [:filename, :file_url, :content, :labels, :processed, :chunk_count, :metadata]
-    end
-
-    update :mark_processed do
-      accept []
-      change set_attribute(:processed, true)
-    end
-  end
-
-  code_interface do
-    define :create
-    define :read
-    define :update
-    define :destroy
-    define :mark_processed
-  end
-
-  policies do
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    policy action_type(:read) do
-      authorize_if always()
-    end
-
-    policy action_type([:create, :update, :destroy]) do
-      authorize_if always()
     end
   end
 end

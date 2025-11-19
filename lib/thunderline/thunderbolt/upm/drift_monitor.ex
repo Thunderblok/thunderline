@@ -318,11 +318,13 @@ defmodule Thunderline.Thunderbolt.UPM.DriftMonitor do
     end
   end
 
-  defp calculate_drift(shadow_pred, ground_truth) when is_number(shadow_pred) and is_number(ground_truth) do
+  defp calculate_drift(shadow_pred, ground_truth)
+       when is_number(shadow_pred) and is_number(ground_truth) do
     abs(shadow_pred - ground_truth)
   end
 
-  defp calculate_drift(shadow_pred, ground_truth) when is_map(shadow_pred) and is_map(ground_truth) do
+  defp calculate_drift(shadow_pred, ground_truth)
+       when is_map(shadow_pred) and is_map(ground_truth) do
     # For structured predictions, calculate normalized distance
     # Simple implementation: count mismatched keys
     all_keys = MapSet.union(MapSet.new(Map.keys(shadow_pred)), MapSet.new(Map.keys(ground_truth)))

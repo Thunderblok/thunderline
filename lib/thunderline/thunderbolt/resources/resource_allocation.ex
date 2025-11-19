@@ -130,7 +130,7 @@ defmodule Thunderline.Thunderbolt.Resources.ResourceAllocation do
     # Resource limits and constraints
     attribute :cpu_limit_percent, :decimal, default: Decimal.new("50.0")
     attribute :memory_limit_mb, :integer, default: 2048
-    attribute :network_limit_kbps, :integer, default: 10000
+    attribute :network_limit_kbps, :integer, default: 10_000
     attribute :storage_limit_mb, :integer, default: 1024
 
     # Dynamic scaling configuration

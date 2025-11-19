@@ -157,11 +157,12 @@ defmodule Thunderline.Thunderblock.Timing.DelayedExecution do
           max_backoff = Keyword.fetch!(opts, :max_backoff)
           jitter_factor = Keyword.fetch!(opts, :jitter_factor)
 
-          backoff_with_jitter = calculate_backoff(
-            current_backoff,
-            max_backoff,
-            jitter_factor
-          )
+          backoff_with_jitter =
+            calculate_backoff(
+              current_backoff,
+              max_backoff,
+              jitter_factor
+            )
 
           Logger.warning("Task failed, retrying",
             attempt: attempt + 1,
@@ -186,10 +187,10 @@ defmodule Thunderline.Thunderblock.Timing.DelayedExecution do
 
           do_retry(
             fun,
-            Keyword.merge(opts, [
+            Keyword.merge(opts,
               attempt: attempt + 1,
               current_backoff: min(current_backoff * 2, max_backoff)
-            ])
+            )
           )
         else
           # Not retryable or max retries exceeded

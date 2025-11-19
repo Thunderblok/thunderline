@@ -86,7 +86,8 @@ defmodule Thunderline.Thunderbolt.ML.ModelSelectionConsumer do
     controller_pid = Keyword.get(opts, :controller_pid) || Process.whereis(:ml_controller)
 
     unless controller_pid do
-      raise ArgumentError, "ML Controller process not found. Ensure it's started before ModelSelectionConsumer."
+      raise ArgumentError,
+            "ML Controller process not found. Ensure it's started before ModelSelectionConsumer."
     end
 
     Broadway.start_link(__MODULE__,

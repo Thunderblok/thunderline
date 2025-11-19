@@ -206,7 +206,9 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
         Logger.debug("[UPM.AdapterSync] Completed sync for adapter #{adapter_id}")
 
       {:error, reason} ->
-        Logger.error("[UPM.AdapterSync] Failed sync for adapter #{adapter_id}: #{inspect(reason)}")
+        Logger.error(
+          "[UPM.AdapterSync] Failed sync for adapter #{adapter_id}: #{inspect(reason)}"
+        )
     end
 
     {:noreply, %{state | active_syncs: new_active}}
@@ -305,7 +307,7 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
       """)
 
       # Exponential backoff
-      backoff_ms = state.retry_backoff_ms * :math.pow(2, retry_count) |> round()
+      backoff_ms = (state.retry_backoff_ms * :math.pow(2, retry_count)) |> round()
       Process.sleep(backoff_ms)
 
       # Retry

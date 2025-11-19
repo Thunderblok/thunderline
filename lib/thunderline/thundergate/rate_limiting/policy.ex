@@ -33,7 +33,9 @@ defmodule Thunderline.Thundergate.RateLimiting.Policy do
     bucket = Keyword.get(opts, :bucket, :api_calls)
     identifier = get_identifier(actor, opts)
 
-    case RateLimiter.check_rate_limit(identifier, bucket, metadata: %{actor_id: get_actor_id(actor)}) do
+    case RateLimiter.check_rate_limit(identifier, bucket,
+           metadata: %{actor_id: get_actor_id(actor)}
+         ) do
       {:ok, _remaining} -> true
       {:error, :rate_limited} -> false
     end
@@ -65,8 +67,10 @@ defmodule Thunderline.Thundergate.RateLimiting.Policy do
   end
 
   defp get_actor_id(nil), do: nil
+
   defp get_actor_id(actor) when is_map(actor) do
     Map.get(actor, :id) || Map.get(actor, "id")
   end
+
   defp get_actor_id(actor), do: to_string(actor)
 end

@@ -29,7 +29,6 @@ defmodule Thunderline.Thunderbolt.CerebrosModel do
          {:ok, model_format} <- detect_format(checkpoint_path),
          {:ok, serving} <- load_model(checkpoint_path, model_format),
          :ok <- register_model(job_id, serving) do
-
       # Mark as loaded
       CerebrosTrainingJob.mark_model_loaded!(job, model_format: Atom.to_string(model_format))
 
@@ -133,9 +132,11 @@ defmodule Thunderline.Thunderbolt.CerebrosModel do
     if Code.ensure_loaded?(Ortex.Model) do
       case Ortex.Model.load(checkpoint_path) do
         {:ok, model} ->
-          serving = Nx.Serving.new(fn batch ->
-            Ortex.Model.run(model, batch)
-          end)
+          serving =
+            Nx.Serving.new(fn batch ->
+              Ortex.Model.run(model, batch)
+            end)
+
           {:ok, serving}
 
         error ->
@@ -162,10 +163,13 @@ defmodule Thunderline.Thunderbolt.CerebrosModel do
     case File.read(checkpoint_path) do
       {:ok, binary} ->
         model = :erlang.binary_to_term(binary)
-        serving = Nx.Serving.new(fn batch ->
-          # Assuming model is an Axon model
-          Axon.predict(model, batch)
-        end)
+
+        serving =
+          Nx.Serving.new(fn batch ->
+            # Assuming model is an Axon model
+            Axon.predict(model, batch)
+          end)
+
         {:ok, serving}
 
       error ->
@@ -199,26 +203,27 @@ defmodule Thunderline.Thunderbolt.CerebrosModel do
 
     # This would integrate with your MCP tool system
     # For now, just return the tool definition
-    {:ok, %{
-      name: tool_name,
-      description: "Cerebros trained model for embeddings and generation",
-      schema: %{
-        type: "object",
-        properties: %{
-          text: %{type: "string", description: "Input text"},
-          mode: %{type: "string", enum: ["embed", "generate"], default: "embed"}
-        },
-        required: ["text"]
-      },
-      handler: fn params ->
-        case params do
-          %{"text" => text, "mode" => "generate"} ->
-            generate_text(job_id, text)
+    {:ok,
+     %{
+       name: tool_name,
+       description: "Cerebros trained model for embeddings and generation",
+       schema: %{
+         type: "object",
+         properties: %{
+           text: %{type: "string", description: "Input text"},
+           mode: %{type: "string", enum: ["embed", "generate"], default: "embed"}
+         },
+         required: ["text"]
+       },
+       handler: fn params ->
+         case params do
+           %{"text" => text, "mode" => "generate"} ->
+             generate_text(job_id, text)
 
-          %{"text" => text} ->
-            generate_embedding(job_id, text)
-        end
-      end
-    }}
+           %{"text" => text} ->
+             generate_embedding(job_id, text)
+         end
+       end
+     }}
   end
 end

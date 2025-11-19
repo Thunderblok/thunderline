@@ -284,7 +284,8 @@ defmodule Thunderline.Thunderbolt.ML.SLASelector do
   def update(%__MODULE__{} = sla, action, reward, opts \\ [])
       when is_atom(action) and reward in [0, 1] do
     unless action in sla.actions do
-      raise ArgumentError, "unknown action: #{inspect(action)}, valid actions: #{inspect(sla.actions)}"
+      raise ArgumentError,
+            "unknown action: #{inspect(action)}, valid actions: #{inspect(sla.actions)}"
     end
 
     distance = Keyword.get(opts, :distance)
@@ -336,7 +337,7 @@ defmodule Thunderline.Thunderbolt.ML.SLASelector do
         {action, p + alpha * (1.0 - p)}
       else
         # Others lose proportionally: P_i(t+1) = P_i(t) - (α/(m-1))P_i(t)
-        {action, p - (alpha / (m - 1)) * p}
+        {action, p - alpha / (m - 1) * p}
       end
     end)
   end
@@ -556,7 +557,8 @@ defmodule Thunderline.Thunderbolt.ML.SLASelector do
       iteration: Map.get(snapshot, :iteration, 0),
       best_action: Map.get(snapshot, :best_action),
       last_distance: Map.get(snapshot, :last_distance),
-      reward_history: []  # Reset history (not persisted)
+      # Reset history (not persisted)
+      reward_history: []
     }
   end
 end

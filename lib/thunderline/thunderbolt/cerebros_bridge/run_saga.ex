@@ -95,11 +95,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
       case Thunderline.Event.new(event_attrs) do
         {:ok, event} ->
           case EventBus.publish_event(event) do
-            {:ok, published} -> {:ok, published}
+            {:ok, published} ->
+              {:ok, published}
+
             {:error, reason} ->
               Logger.warning("[RunSaga] Could not publish start event: #{inspect(reason)}")
               {:ok, :event_skipped}
           end
+
         {:error, reason} ->
           Logger.warning("[RunSaga] Could not build start event: #{inspect(reason)}")
           {:ok, :event_skipped}
@@ -118,11 +121,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
       case Thunderline.Event.new(event_attrs) do
         {:ok, event} ->
           case EventBus.publish_event(event) do
-            {:ok, _} -> :ok
+            {:ok, _} ->
+              :ok
+
             {:error, reason} ->
               Logger.warning("[RunSaga] Could not publish cancel event: #{inspect(reason)}")
               :ok
           end
+
         {:error, reason} ->
           Logger.warning("[RunSaga] Could not build cancel event: #{inspect(reason)}")
           :ok

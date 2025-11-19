@@ -28,6 +28,68 @@ defmodule Thunderline.Thunderlink.Resources.NodeGroup do
     repo Thunderline.Repo
   end
 
+  code_interface do
+    define :create, args: [:name, :group_type]
+    define :update
+    define :by_type, args: [:group_type]
+    define :root_groups
+    define :children_of, args: [:parent_id]
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      description "Create a new node group"
+      primary? true
+      accept [:name, :group_type, :parent_group_id, :meta]
+    end
+
+    update :update do
+      description "Update group metadata"
+      primary? true
+      accept [:name, :group_type, :parent_group_id, :meta]
+    end
+
+    read :by_type do
+      description "Get groups by type"
+
+      argument :group_type, :atom do
+        allow_nil? false
+        constraints one_of: [:zone, :shard, :region, :role, :project, :custom]
+      end
+
+      filter expr(group_type == ^arg(:group_type))
+    end
+
+    read :root_groups do
+      description "Get top-level groups (no parent)"
+      filter expr(is_nil(parent_group_id))
+    end
+
+    read :children_of do
+      description "Get child groups of a parent"
+
+      argument :parent_id, :uuid do
+        allow_nil? false
+      end
+
+      filter expr(parent_group_id == ^arg(:parent_id))
+    end
+  end
+
+  policies do
+    # Allow internal system access
+    bypass always() do
+      authorize_if always()
+    end
+  end
+
+  validations do
+    validate present([:name])
+    validate one_of(:group_type, [:zone, :shard, :region, :role, :project, :custom])
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -79,69 +141,7 @@ defmodule Thunderline.Thunderlink.Resources.NodeGroup do
     end
   end
 
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      description "Create a new node group"
-      primary? true
-      accept [:name, :group_type, :parent_group_id, :meta]
-    end
-
-    update :update do
-      description "Update group metadata"
-      primary? true
-      accept [:name, :group_type, :parent_group_id, :meta]
-    end
-
-    read :by_type do
-      description "Get groups by type"
-
-      argument :group_type, :atom do
-        allow_nil? false
-        constraints one_of: [:zone, :shard, :region, :role, :project, :custom]
-      end
-
-      filter expr(group_type == ^arg(:group_type))
-    end
-
-    read :root_groups do
-      description "Get top-level groups (no parent)"
-      filter expr(is_nil(parent_group_id))
-    end
-
-    read :children_of do
-      description "Get child groups of a parent"
-
-      argument :parent_id, :uuid do
-        allow_nil? false
-      end
-
-      filter expr(parent_group_id == ^arg(:parent_id))
-    end
-  end
-
   identities do
     identity :unique_name, [:name]
-  end
-
-  validations do
-    validate present([:name])
-    validate one_of(:group_type, [:zone, :shard, :region, :role, :project, :custom])
-  end
-
-  policies do
-    # Allow internal system access
-    bypass always() do
-      authorize_if always()
-    end
-  end
-
-  code_interface do
-    define :create, args: [:name, :group_type]
-    define :update
-    define :by_type, args: [:group_type]
-    define :root_groups
-    define :children_of, args: [:parent_id]
   end
 end

@@ -27,27 +27,6 @@ defmodule Thunderline.Thundervine.Resources.WorkflowNode do
     type :workflow_node
   end
 
-  policies do
-    # Admin and system bypass
-    bypass actor_attribute_equals(:role, :admin) do
-      authorize_if always()
-    end
-
-    bypass actor_attribute_equals(:role, :system) do
-      authorize_if always()
-    end
-
-    # Authenticated users can create and update workflow nodes
-    policy action_type([:create, :update]) do
-      authorize_if AshAuthentication.Checks.Authenticated
-    end
-
-    # Read access for authenticated users
-    policy action_type(:read) do
-      authorize_if AshAuthentication.Checks.Authenticated
-    end
-  end
-
   actions do
     defaults [:read]
 
@@ -73,6 +52,27 @@ defmodule Thunderline.Thundervine.Resources.WorkflowNode do
     update :mark_error do
       accept [:payload]
       change fn cs, ctx -> mark_done(:error).(cs, ctx) end
+    end
+  end
+
+  policies do
+    # Admin and system bypass
+    bypass actor_attribute_equals(:role, :admin) do
+      authorize_if always()
+    end
+
+    bypass actor_attribute_equals(:role, :system) do
+      authorize_if always()
+    end
+
+    # Authenticated users can create and update workflow nodes
+    policy action_type([:create, :update]) do
+      authorize_if AshAuthentication.Checks.Authenticated
+    end
+
+    # Read access for authenticated users
+    policy action_type(:read) do
+      authorize_if AshAuthentication.Checks.Authenticated
     end
   end
 

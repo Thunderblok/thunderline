@@ -37,7 +37,9 @@ case NLP.extract_entities(test_text) do
 
     if result["entities"] do
       Enum.each(result["entities"], fn entity ->
-        IO.puts("  • #{entity["text"]} (#{entity["label"]}) [#{entity["start"]}:#{entity["end"]}]")
+        IO.puts(
+          "  • #{entity["text"]} (#{entity["label"]}) [#{entity["start"]}:#{entity["end"]}]"
+        )
       end)
     end
 
@@ -62,7 +64,9 @@ case NLP.tokenize(test_sentence) do
       result["tokens"]
       |> Enum.take(10)
       |> Enum.each(fn token ->
-        IO.puts("  • #{token["text"]} | POS: #{token["pos"]} | Lemma: #{token["lemma"]} | Stop: #{token["is_stop"]}")
+        IO.puts(
+          "  • #{token["text"]} | POS: #{token["pos"]} | Lemma: #{token["lemma"]} | Stop: #{token["is_stop"]}"
+        )
       end)
     end
 

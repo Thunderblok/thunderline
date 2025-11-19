@@ -11,7 +11,8 @@ defmodule Thunderline.Thundergate.RateLimiting.Bucket do
 
   @table_name :rate_limit_buckets
   @violations_table :rate_limit_violations
-  @cleanup_interval_ms 60_000  # Clean up expired buckets every minute
+  # Clean up expired buckets every minute
+  @cleanup_interval_ms 60_000
 
   # Client API
 
@@ -41,9 +42,10 @@ defmodule Thunderline.Thundergate.RateLimiting.Bucket do
 
       [{^key, tokens, _expires_at}] ->
         # Filter out expired tokens
-        valid_tokens = Enum.filter(tokens, fn {timestamp, _} ->
-          timestamp > window_start
-        end)
+        valid_tokens =
+          Enum.filter(tokens, fn {timestamp, _} ->
+            timestamp > window_start
+          end)
 
         current_count = Enum.sum(Enum.map(valid_tokens, fn {_, count} -> count end))
 
@@ -76,9 +78,10 @@ defmodule Thunderline.Thundergate.RateLimiting.Bucket do
         {:ok, %{remaining: limit, limit: limit, reset_at: now + window_ms}}
 
       [{^key, tokens, expires_at}] ->
-        valid_tokens = Enum.filter(tokens, fn {timestamp, _} ->
-          timestamp > window_start
-        end)
+        valid_tokens =
+          Enum.filter(tokens, fn {timestamp, _} ->
+            timestamp > window_start
+          end)
 
         current_count = Enum.sum(Enum.map(valid_tokens, fn {_, count} -> count end))
         remaining = max(0, limit - current_count)
@@ -94,7 +97,9 @@ defmodule Thunderline.Thundergate.RateLimiting.Bucket do
     violation_key = bucket_key(identifier, bucket_key)
 
     case :ets.lookup(@violations_table, violation_key) do
-      [] -> []
+      [] ->
+        []
+
       [{^violation_key, violations}] ->
         # Return violations from last 5 minutes
         now = System.system_time(:millisecond)
@@ -148,10 +153,11 @@ defmodule Thunderline.Thundergate.RateLimiting.Bucket do
   defp record_violation(identifier, bucket_key, timestamp) do
     key = bucket_key(identifier, bucket_key)
 
-    violations = case :ets.lookup(@violations_table, key) do
-      [] -> [timestamp]
-      [{^key, existing}] -> [timestamp | existing]
-    end
+    violations =
+      case :ets.lookup(@violations_table, key) do
+        [] -> [timestamp]
+        [{^key, existing}] -> [timestamp | existing]
+      end
 
     # Keep only last 100 violations
     trimmed_violations = Enum.take(violations, 100)
@@ -162,9 +168,10 @@ defmodule Thunderline.Thundergate.RateLimiting.Bucket do
     now = System.system_time(:millisecond)
 
     # Delete expired buckets
-    deleted = :ets.select_delete(@table_name, [
-      {{:"$1", :"$2", :"$3"}, [{:<, :"$3", now}], [true]}
-    ])
+    deleted =
+      :ets.select_delete(@table_name, [
+        {{:"$1", :"$2", :"$3"}, [{:<, :"$3", now}], [true]}
+      ])
 
     if deleted > 0 do
       Logger.debug("Cleaned up #{deleted} expired rate limit buckets")
@@ -174,17 +181,21 @@ defmodule Thunderline.Thundergate.RateLimiting.Bucket do
     five_minutes_ago = now - 300_000
 
     # Update violations table
-    :ets.foldl(fn {key, violations}, acc ->
-      recent_violations = Enum.filter(violations, fn ts -> ts > five_minutes_ago end)
+    :ets.foldl(
+      fn {key, violations}, acc ->
+        recent_violations = Enum.filter(violations, fn ts -> ts > five_minutes_ago end)
 
-      if recent_violations == [] do
-        :ets.delete(@violations_table, key)
-      else
-        :ets.insert(@violations_table, {key, recent_violations})
-      end
+        if recent_violations == [] do
+          :ets.delete(@violations_table, key)
+        else
+          :ets.insert(@violations_table, {key, recent_violations})
+        end
 
-      acc
-    end, nil, @violations_table)
+        acc
+      end,
+      nil,
+      @violations_table
+    )
   end
 
   defp schedule_cleanup do

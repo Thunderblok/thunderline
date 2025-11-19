@@ -80,7 +80,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
         pulse_id: contract.pulse_id
       },
       cache_key: {:start_run, contract.run_id, contract.pulse_id},
-      timeout_ms: opts[:timeout_ms] || 300_000  # 5 minutes for NAS
+      # 5 minutes for NAS
+      timeout_ms: opts[:timeout_ms] || 300_000
     )
   end
 

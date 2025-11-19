@@ -133,7 +133,13 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBuffer do
       # Check buffer capacity
       map_size(state.buffer) >= state.max_buffer_size ->
         Logger.warn("[UPM.ReplayBuffer] Buffer full, dropping window: #{window_id}")
-        emit_telemetry(:buffer_full, %{window_id: window_id, buffer_size: map_size(state.buffer)}, state)
+
+        emit_telemetry(
+          :buffer_full,
+          %{window_id: window_id, buffer_size: map_size(state.buffer)},
+          state
+        )
+
         {:noreply, state}
 
       true ->
@@ -152,12 +158,18 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBuffer do
         expected_delay = DateTime.diff(now, window_start, :millisecond)
 
         if expected_delay > state.late_tolerance_ms do
-          emit_telemetry(:late_arrival, %{
-            window_id: window_id,
-            delay_ms: expected_delay
-          }, state)
+          emit_telemetry(
+            :late_arrival,
+            %{
+              window_id: window_id,
+              delay_ms: expected_delay
+            },
+            state
+          )
 
-          Logger.warn("[UPM.ReplayBuffer] Late window arrival: #{window_id} (#{expected_delay}ms)")
+          Logger.warn(
+            "[UPM.ReplayBuffer] Late window arrival: #{window_id} (#{expected_delay}ms)"
+          )
         end
 
         # Add to buffer
@@ -290,7 +302,8 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBuffer do
   defp find_contiguous_sequence(sorted_windows) do
     # Release windows up to the first gap
     # A gap is defined as > 2 * expected window duration
-    window_duration_threshold_ms = 120_000 # 2 minutes
+    # 2 minutes
+    window_duration_threshold_ms = 120_000
 
     {to_release, _} =
       Enum.reduce_while(sorted_windows, {[], nil}, fn entry, {acc, prev_time} ->

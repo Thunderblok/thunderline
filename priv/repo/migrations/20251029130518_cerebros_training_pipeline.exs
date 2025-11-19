@@ -100,7 +100,8 @@ defmodule Thunderline.Repo.Migrations.CerebrosTrainingPipeline do
             type: :uuid,
             on_delete: :nilify_all,
             on_update: :update_all
-          ), null: false
+          ),
+          null: false
     end
   end
 

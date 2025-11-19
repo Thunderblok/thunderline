@@ -39,7 +39,10 @@ defmodule Thunderline.Thundervine.Domain do
       # Workflow mutations
       create Thunderline.Thundervine.Resources.Workflow, :start_workflow, :start
       update Thunderline.Thundervine.Resources.Workflow, :seal_workflow, :seal
-      update Thunderline.Thundervine.Resources.Workflow, :update_workflow_metadata, :update_metadata
+
+      update Thunderline.Thundervine.Resources.Workflow,
+             :update_workflow_metadata,
+             :update_metadata
 
       # WorkflowNode mutations
       create Thunderline.Thundervine.Resources.WorkflowNode, :record_node_start, :record_start
@@ -50,7 +53,9 @@ defmodule Thunderline.Thundervine.Domain do
       create Thunderline.Thundervine.Resources.WorkflowEdge, :create_workflow_edge, :create
 
       # WorkflowSnapshot mutations
-      create Thunderline.Thundervine.Resources.WorkflowSnapshot, :capture_workflow_snapshot, :capture
+      create Thunderline.Thundervine.Resources.WorkflowSnapshot,
+             :capture_workflow_snapshot,
+             :capture
     end
   end
 

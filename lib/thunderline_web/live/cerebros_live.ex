@@ -113,6 +113,7 @@ defmodule ThunderlineWeb.CerebrosLive do
     case Thunderline.Thunderbolt.CerebrosBridge.queue_run(params, spec_payload) do
       {:ok, run_id} ->
         {:noreply, put_flash(socket, :info, "NAS run queued successfully: #{run_id}")}
+
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to queue run: #{inspect(reason)}")}
     end
@@ -122,6 +123,7 @@ defmodule ThunderlineWeb.CerebrosLive do
     case Thunderline.Thunderbolt.CerebrosBridge.cancel_run(run_id) do
       {:ok, _result} ->
         {:noreply, put_flash(socket, :info, "Run #{run_id} cancelled successfully")}
+
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to cancel run: #{inspect(reason)}")}
     end
@@ -132,6 +134,7 @@ defmodule ThunderlineWeb.CerebrosLive do
       {:ok, results} ->
         socket = assign(socket, :results, results)
         {:noreply, put_flash(socket, :info, "Results loaded successfully")}
+
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to load results: #{inspect(reason)}")}
     end
@@ -141,6 +144,7 @@ defmodule ThunderlineWeb.CerebrosLive do
     case Thunderline.Thunderbolt.CerebrosBridge.download_report(run_id) do
       {:ok, report_path} ->
         {:noreply, put_flash(socket, :info, "Report downloaded to: #{report_path}")}
+
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Failed to download report: #{inspect(reason)}")}
     end
@@ -391,7 +395,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               <% end %>
             </div>
           </div>
-
+          
     <!-- Benchmarks -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Benchmarks</h2>
@@ -423,7 +427,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               </div>
             <% end %>
           </div>
-
+          
     <!-- Drift Metrics -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Drift Metrics (Preview)</h2>

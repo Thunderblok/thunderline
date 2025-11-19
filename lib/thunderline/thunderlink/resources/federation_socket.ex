@@ -678,7 +678,7 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
         "encryption_enabled" => true,
         "compression_enabled" => true,
         "heartbeat_interval" => 30,
-        "connection_timeout" => 10000,
+        "connection_timeout" => 10_000,
         "retry_attempts" => 3
       }
     end

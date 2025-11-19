@@ -7,14 +7,14 @@ defmodule Thunderline.Thunderflow.Observability.FanoutAggregator do
 
   Emits metrics for:
   - Per-event fanout counts
-  - P95 fanout distribution  
+  - P95 fanout distribution
   - Coupling trend analysis
 
   ## Usage
 
       # Attach to telemetry on application start
       Thunderline.Thunderflow.Observability.FanoutAggregator.attach()
-      
+
       # Events are automatically tracked when cross-domain pipeline processes them
       # Metrics emitted: [:thunderline, :events, :fanout]
   """
@@ -209,7 +209,7 @@ defmodule Thunderline.Thunderflow.Observability.FanoutAggregator do
   defp calculate_current_stats(table) do
     samples = :ets.tab2list(table)
 
-    if length(samples) == 0 do
+    if samples == [] do
       %{
         total_samples: 0,
         mean_fanout: 0,
