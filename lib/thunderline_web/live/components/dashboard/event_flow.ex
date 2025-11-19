@@ -112,34 +112,54 @@ defmodule ThunderlineWeb.DashboardComponents.EventFlow do
   end
 
   # Domain styling helpers
-  defp domain_card_class(domain) do
-    case normalize_domain(domain) do
-      :thunderbolt -> "bg-blue-900/20 border-blue-500/20 hover:border-blue-400/40"
-      :thunderblock -> "bg-emerald-900/15 border-emerald-500/20 hover:border-emerald-400/40"
-      :thunderflow -> "bg-cyan-900/15 border-cyan-500/20 hover:border-cyan-400/40"
-      :thundergrid -> "bg-indigo-900/20 border-indigo-500/20 hover:border-indigo-400/40"
-      :thundercrown -> "bg-amber-900/20 border-amber-500/20 hover:border-amber-400/40"
-      :thundergate -> "bg-fuchsia-900/20 border-fuchsia-500/20 hover:border-fuchsia-400/40"
-      :thunderlink -> "bg-pink-900/15 border-pink-500/20 hover:border-pink-400/40"
-      :thunderlane -> "bg-teal-900/15 border-teal-500/20 hover:border-teal-400/40"
-      :system -> "bg-gray-800/40 border-gray-600/30 hover:border-gray-500/50"
-      _ -> "bg-slate-800/30 border-slate-600/20 hover:border-slate-500/40"
-    end
-  end
+  @domain_styles %{
+    thunderbolt: %{
+      card: "bg-blue-900/20 border-blue-500/20 hover:border-blue-400/40",
+      pill: "bg-blue-500/15 text-blue-300 ring-blue-400/30"
+    },
+    thunderblock: %{
+      card: "bg-emerald-900/15 border-emerald-500/20 hover:border-emerald-400/40",
+      pill: "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30"
+    },
+    thunderflow: %{
+      card: "bg-cyan-900/15 border-cyan-500/20 hover:border-cyan-400/40",
+      pill: "bg-cyan-500/15 text-cyan-300 ring-cyan-400/30"
+    },
+    thundergrid: %{
+      card: "bg-indigo-900/20 border-indigo-500/20 hover:border-indigo-400/40",
+      pill: "bg-indigo-500/15 text-indigo-300 ring-indigo-400/30"
+    },
+    thundercrown: %{
+      card: "bg-amber-900/20 border-amber-500/20 hover:border-amber-400/40",
+      pill: "bg-amber-500/15 text-amber-300 ring-amber-400/30"
+    },
+    thundergate: %{
+      card: "bg-fuchsia-900/20 border-fuchsia-500/20 hover:border-fuchsia-400/40",
+      pill: "bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-400/30"
+    },
+    thunderlink: %{
+      card: "bg-pink-900/15 border-pink-500/20 hover:border-pink-400/40",
+      pill: "bg-pink-500/15 text-pink-300 ring-pink-400/30"
+    },
+    thunderlane: %{
+      card: "bg-teal-900/15 border-teal-500/20 hover:border-teal-400/40",
+      pill: "bg-teal-500/15 text-teal-300 ring-teal-400/30"
+    },
+    system: %{
+      card: "bg-gray-800/40 border-gray-600/30 hover:border-gray-500/50",
+      pill: "bg-gray-600/30 text-gray-200 ring-gray-400/30"
+    },
+    default: %{
+      card: "bg-slate-800/30 border-slate-600/20 hover:border-slate-500/40",
+      pill: "bg-slate-600/30 text-slate-200 ring-slate-400/30"
+    }
+  }
 
-  defp domain_pill_class(domain) do
-    case normalize_domain(domain) do
-      :thunderbolt -> "bg-blue-500/15 text-blue-300 ring-blue-400/30"
-      :thunderblock -> "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30"
-      :thunderflow -> "bg-cyan-500/15 text-cyan-300 ring-cyan-400/30"
-      :thundergrid -> "bg-indigo-500/15 text-indigo-300 ring-indigo-400/30"
-      :thundercrown -> "bg-amber-500/15 text-amber-300 ring-amber-400/30"
-      :thundergate -> "bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-400/30"
-      :thunderlink -> "bg-pink-500/15 text-pink-300 ring-pink-400/30"
-      :thunderlane -> "bg-teal-500/15 text-teal-300 ring-teal-400/30"
-      :system -> "bg-gray-600/30 text-gray-200 ring-gray-400/30"
-      _ -> "bg-slate-600/30 text-slate-200 ring-slate-400/30"
-    end
+  defp domain_card_class(domain), do: domain_styles(domain).card
+  defp domain_pill_class(domain), do: domain_styles(domain).pill
+
+  defp domain_styles(domain) do
+    Map.get(@domain_styles, normalize_domain(domain), @domain_styles[:default])
   end
 
   defp normalize_domain(nil), do: :unknown

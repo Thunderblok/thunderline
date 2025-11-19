@@ -125,17 +125,16 @@ defmodule ThunderlineWeb.MetricsController do
       :thundereye
     ]
 
-    Enum.map(domains, fn domain ->
+    Enum.map_join(domains, "\n", fn domain ->
       metrics = apply(DashboardMetrics, :"#{domain}_metrics", [])
       generate_domain_specific_metrics(domain, metrics)
     end)
-    |> Enum.join("\n")
   end
 
   defp generate_domain_specific_metrics(domain, metrics) do
     domain_str = to_string(domain)
 
-    Enum.map(metrics, fn {key, value} ->
+    Enum.map_join(metrics, "", fn {key, value} ->
       metric_name = "thunderline_#{domain_str}_#{key}"
       metric_value = format_prometheus_value(value)
 
@@ -145,7 +144,6 @@ defmodule ThunderlineWeb.MetricsController do
       #{metric_name} #{metric_value}
       """
     end)
-    |> Enum.join("")
   end
 
   defp format_prometheus_value(value) when is_number(value), do: value

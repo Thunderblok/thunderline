@@ -159,12 +159,11 @@ defmodule Thunderline.Thundervine.SpecParser do
   defp normalize_token(value) when is_list(value) do
     value
     |> List.flatten()
-    |> Enum.map(fn
+    |> Enum.map_join("", fn
       v when is_binary(v) -> v
       v when is_integer(v) -> <<v>>
       v -> to_string(v)
     end)
-    |> Enum.join()
   end
 
   defp normalize_token(value), do: to_string(value)

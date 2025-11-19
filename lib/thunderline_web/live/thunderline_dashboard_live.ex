@@ -1252,11 +1252,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
 
     smoothed
     |> Enum.with_index()
-    |> Enum.map(fn {val, i} ->
+    |> Enum.map_join(" ", fn {val, i} ->
       y = 60 - rem(val, 50)
       "#{i * 40},#{y}"
     end)
-    |> Enum.join(" ")
   end
 
   defp sparkline_points(_), do: ""
@@ -1485,7 +1484,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     do: {:assistant, "Commands: /help /kpis /events <n>. Ask natural questions about recent ops."}
 
   defp ai_local_router("/kpis", socket) do
-    summary = socket.assigns.kpis |> Enum.map(fn {l, v, _} -> "#{l}=#{v}" end) |> Enum.join(", ")
+    summary = socket.assigns.kpis |> Enum.map_join(", ", fn {l, v, _} -> "#{l}=#{v}" end)
     {:assistant, "Current KPIs: " <> summary}
   end
 
@@ -1508,8 +1507,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
 
     text =
       evs
-      |> Enum.map(fn e -> "#{e.time} #{e.source}: #{String.slice(e.message, 0, 40)}" end)
-      |> Enum.join(" | ")
+      |> Enum.map_join(" | ", fn e -> "#{e.time} #{e.source}: #{String.slice(e.message, 0, 40)}" end)
 
     {:assistant, "Recent events (#{n}): " <> text}
   end
@@ -1541,7 +1539,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     case comp do
       nil ->
         keys = data |> Map.keys() |> Enum.take(3)
-        "#{Map.get(ev, "event_type")} #{Enum.join(Enum.map(keys, &to_string/1), ",")}"
+        "#{Map.get(ev, "event_type")} #{Enum.map_join(keys, ",", &to_string/1)}"
 
       c ->
         "#{Map.get(ev, "event_type")} -> #{c}"
@@ -1551,7 +1549,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   defp summarize_component(data) do
     comp = Map.get(data, "component") || Map.get(data, :component)
     keys = data |> Map.delete("component") |> Map.delete(:component) |> Map.keys() |> Enum.take(3)
-    (comp && to_string(comp) <> ": ") <> Enum.join(Enum.map(keys, &to_string/1), ",")
+    (comp && to_string(comp) <> ": ") <> Enum.map_join(keys, ",", &to_string/1)
   end
 
   defp dashboard_operator(%{email: email}) when is_binary(email) and email != "", do: email

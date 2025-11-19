@@ -207,7 +207,6 @@ defmodule Thunderline.Thunderflow.Events.ClearAllRecords do
     resource_name
     |> Atom.to_string()
     |> String.split("_")
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join("")
+    |> Enum.map_join("", &String.capitalize/1)
   end
 end

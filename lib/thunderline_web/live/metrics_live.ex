@@ -443,8 +443,7 @@ defmodule ThunderlineWeb.MetricsLive do
     |> Enum.chunk_every(3)
     |> Enum.map(&Enum.reverse/1)
     |> Enum.reverse()
-    |> Enum.map(&Enum.join/1)
-    |> Enum.join(",")
+    |> Enum.map_join(",", &Enum.join/1)
   end
 
   defp calculate_memory_percentage(memory, type) do

@@ -230,7 +230,7 @@ defmodule ThunderlineWeb.EventDashboardLive do
 
     rows =
       events
-      |> Enum.map(fn ev ->
+      |> Enum.map_join("\n", fn ev ->
         [
           format_timestamp(ev.timestamp),
           ev.name,
@@ -240,7 +240,6 @@ defmodule ThunderlineWeb.EventDashboardLive do
         ]
         |> Enum.join(",")
       end)
-      |> Enum.join("\n")
 
     header <> rows
   end

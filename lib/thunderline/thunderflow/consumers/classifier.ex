@@ -117,9 +117,8 @@ defmodule Thunderline.Thunderflow.Consumers.Classifier do
   # Private functions
 
   defp process_ingestion_event(event) do
-    with {:ok, validated} <- validate_event(event),
-         {:ok, classification} <- classify_content(validated) do
-      {:ok, classification}
+    with {:ok, validated} <- validate_event(event) do
+      classify_content(validated)
     end
   end
 
