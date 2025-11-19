@@ -342,7 +342,7 @@ defmodule Thunderline.Thunderprism.MLTapTest do
       # With a valid prev_node_id, both node and edge should succeed
       {:ok, task} = MLTap.log_with_edge(node_attrs, prev_node.id)
       {:ok, {node, edge}} = Task.await(task, 5000)
-      
+
       # Both node and edge should be created successfully
       assert node.pac_id == "pac_with_edge"
       assert edge.from_id == prev_node.id
