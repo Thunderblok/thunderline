@@ -128,6 +128,7 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
     update :mark_established do
       description "Mark session as established"
       accept [:weight, :latency_ms, :bandwidth_mbps, :meta]
+      require_atomic? false
 
       change fn changeset, _context ->
         now = DateTime.utc_now()
@@ -142,6 +143,7 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
     update :update_metrics do
       description "Update session metrics"
       accept [:weight, :latency_ms, :bandwidth_mbps]
+      require_atomic? false
 
       change fn changeset, _context ->
         Ash.Changeset.force_change_attribute(changeset, :last_activity_at, DateTime.utc_now())
@@ -150,6 +152,7 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
 
     update :mark_degraded do
       description "Mark session as degraded"
+      require_atomic? false
 
       change fn changeset, _context ->
         changeset
@@ -160,6 +163,7 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
 
     update :close do
       description "Close session gracefully"
+      require_atomic? false
 
       change fn changeset, _context ->
         changeset
@@ -170,6 +174,7 @@ defmodule Thunderline.Thunderlink.Resources.LinkSession do
 
     update :mark_failed do
       description "Mark session as failed"
+      require_atomic? false
 
       change fn changeset, _context ->
         changeset

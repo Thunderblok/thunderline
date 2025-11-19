@@ -17,7 +17,7 @@ defmodule Thunderline.Thunderflow.EventValidator do
   require Logger
   alias Thunderline.Event
 
-  @reserved_prefixes ~w(system. reactor. ui. audit. evt. ml. ai. flow. grid.)
+  @reserved_prefixes ~w(system. reactor. ui. audit. evt. ml. ai. flow. grid. cluster.)
   @uuid_v7_regex ~r/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
   @spec validate(Event.t()) :: :ok | {:error, term()}

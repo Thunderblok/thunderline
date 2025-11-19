@@ -2,7 +2,7 @@
 
 IO.puts("\n=== Creating Chat Demo Data ===\n")
 
-alias Thunderline.Thundercom.Resources.{Channel, Community}
+alias Thunderline.Thunderlink.Resources.{Channel, Community}
 alias Thunderline.Thundergate.Resources.User
 alias Thunderline.Repo
 

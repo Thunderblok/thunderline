@@ -390,6 +390,7 @@ defmodule Thunderline.Event do
     bolt: ["ml.run", "ml.trial", "system", "ai"],
     link: ["ui.command", "system", "ai"],
     crown: ["ai.intent", "system", "ai"],
+    thunderlink: ["cluster.node", "cluster.link", "system"],
     # Block domain intentionally cannot emit ai.intent.* directly
     block: ["system"],
     bridge: ["system", "ui.command", "ai"],

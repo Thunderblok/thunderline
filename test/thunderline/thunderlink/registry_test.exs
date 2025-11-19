@@ -2,8 +2,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
   use Thunderline.DataCase, async: false
 
   alias Thunderline.Thunderlink.Registry
-  alias Thunderline.Thunderlink.Resources.Node
-  alias Thunderline.Thunderblock.Resources.{ThunderlinkNode, ThunderlinkHeartbeat, ThunderlinkLinkSession}
+  alias Thunderline.Thunderlink.Resources.{Node, Heartbeat, LinkSession}
 
   setup do
     # Future: Clear ETS cache before each test when implemented
@@ -653,7 +652,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
 
       # Time database query
       {db_time, _} = :timer.tc(fn ->
-        ThunderlinkNode
+        Node
         |> Ash.Query.filter(node_id: "cache-perf-test")
         |> Ash.read_one!()
       end)
@@ -666,8 +665,8 @@ defmodule Thunderline.Thunderlink.RegistryTest do
   describe "concurrent operations" do
     test "handles concurrent ensure_node calls" do
       params = %{
-        node_id: "concurrent-test",
-        node_type: :beam,
+        name: "concurrent-test@localhost",
+        cluster_type: :in_cluster,
         role: :worker,
         domain: :thunderbolt
       }
@@ -716,7 +715,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
              end)
 
       # Verify all heartbeats recorded
-      {:ok, heartbeats} = Ash.read(ThunderlinkHeartbeat)
+      {:ok, heartbeats} = Ash.read(Heartbeat)
       assert length(heartbeats) >= 5
     end
   end

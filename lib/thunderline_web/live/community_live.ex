@@ -8,7 +8,6 @@ defmodule ThunderlineWeb.CommunityLive do
   use ThunderlineWeb, :live_view
   alias Thunderline.Thunderlink.Resources.{Community, Channel}
   alias Thunderline.Thunderlink.Domain
-  # alias Thunderline.Thundercom.Topics # unused
   import Ash.Expr
   require Ash.Query
 

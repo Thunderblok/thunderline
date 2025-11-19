@@ -111,6 +111,11 @@ defmodule Thunderline.Thunderlink.Resources.Node do
       description "Last heartbeat or activity timestamp"
     end
 
+    attribute :last_heartbeat_at, :utc_datetime_usec do
+      public? true
+      description "Timestamp of the most recent heartbeat"
+    end
+
     attribute :meta, :map do
       default %{}
       public? true
@@ -229,7 +234,11 @@ defmodule Thunderline.Thunderlink.Resources.Node do
       description "Update last_seen_at timestamp"
 
       change fn changeset, _context ->
-        Ash.Changeset.force_change_attribute(changeset, :last_seen_at, DateTime.utc_now())
+        now = DateTime.utc_now()
+
+        changeset
+        |> Ash.Changeset.force_change_attribute(:last_seen_at, now)
+        |> Ash.Changeset.force_change_attribute(:last_heartbeat_at, now)
       end
     end
   end

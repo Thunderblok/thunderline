@@ -267,8 +267,7 @@ defmodule ThunderlineWeb.Router do
         Thunderline.Thunderflow.Domain,
         Thunderline.Thunderlink.Domain,
         Thunderline.Thundercrown.Domain,
-        Thunderline.Thundergate.Domain,
-        Thunderline.Thundercom.Domain
+        Thunderline.Thundergate.Domain
       ]
   end
 

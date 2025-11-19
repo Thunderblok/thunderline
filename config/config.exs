@@ -260,7 +260,6 @@ config :thunderline,
     Thunderline.Thundercrown.Domain,
     # Auth/security domain now enabled for AshAuthentication integration
     Thunderline.Thundergate.Domain,
-    Thunderline.Thundercom.Domain,
     # Heavy compute & UPM resources now active
     Thunderline.Thunderbolt.Domain,
     # ThunderPrism - DAG scratchpad for ML decision trails (Phase 4.0)
@@ -454,7 +453,6 @@ config :ash_admin, AshAdmin,
     Thunderline.Thunderlink.Domain,
     Thunderline.Thundercrown.Domain,
     Thunderline.Thundergate.Domain,
-    Thunderline.Thundercom.Domain,
     Thunderline.Thunderbolt.Domain,
     Thunderline.Thunderprism.Domain
   ]

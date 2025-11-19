@@ -84,6 +84,7 @@ defmodule Thunderline.Thunderlink.Domain do
       define :online_nodes, action: :online_nodes
       define :nodes_by_status, action: :read
       define :nodes_by_role, action: :read
+      define :heartbeat_node, action: :heartbeat
     end
 
     resource Thunderline.Thunderlink.Resources.Heartbeat do

@@ -55,6 +55,9 @@ defmodule Thunderline.Thunderlink.Registry do
   - **Phoenix Channel**: Broadcasts realtime topology updates
   """
 
+  alias Phoenix.PubSub
+  alias Thunderline.Event
+  alias Thunderline.Thunderflow.EventBus
   alias Thunderline.Thunderlink.Domain
   alias Thunderline.Thunderlink.Resources.{Node, Heartbeat, LinkSession, NodeCapability}
 
@@ -91,6 +94,8 @@ defmodule Thunderline.Thunderlink.Registry do
           nodes: [map()],
           links: [map()]
         }
+
+  @cluster_topic "events:cluster"
 
   # ============================================================================
   # Node Lifecycle Management
@@ -135,6 +140,8 @@ defmodule Thunderline.Thunderlink.Registry do
         opts
       )
 
+    emit_cluster_event("cluster.node.registered", node_payload(node))
+
     {:ok, node}
   rescue
     e -> {:error, e}
@@ -168,13 +175,22 @@ defmodule Thunderline.Thunderlink.Registry do
   def mark_online(node_id, session_attrs \\ nil, opts \\ []) do
     node = Domain.mark_node_online!(node_id, opts)
 
-    if session_attrs && session_attrs[:remote_node_id] do
-      case create_or_update_link_session(node_id, session_attrs, opts) do
-        {:ok, session} -> {:ok, {node, session}}
-        {:error, _} = error -> error
-      end
-    else
-      {:ok, node}
+    session_result = maybe_create_link_session(node_id, session_attrs, opts)
+
+    emit_cluster_event("cluster.node.online", node_payload(node))
+
+    if session_attrs do
+      emit_cluster_event(
+        "cluster.link.established",
+        link_payload(node, session_result, session_attrs)
+      )
+    end
+
+    case session_result do
+      {:ok, session} -> {:ok, {node, session}}
+      :skipped -> {:ok, node}
+      nil -> {:ok, node}
+      {:error, _} = error -> error
     end
   rescue
     e -> {:error, e}
@@ -208,7 +224,24 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec mark_status(String.t(), atom(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def mark_status(node_id, status, opts \\ []) do
-    {:ok, Domain.mark_node_status!(node_id, status, opts)}
+    node = Domain.mark_node_status!(node_id, status, opts)
+
+    emit_cluster_event("cluster.node.status_changed", %{
+      node_id: node.id,
+      name: node.name,
+      domain: node.domain,
+      new_status: node.status
+    })
+
+    if status == :offline do
+      emit_cluster_event("cluster.node.offline", %{
+        node_id: node.id,
+        name: node.name,
+        domain: node.domain
+      })
+    end
+
+    {:ok, node}
   rescue
     e -> {:error, e}
   end
@@ -248,6 +281,13 @@ defmodule Thunderline.Thunderlink.Registry do
         Map.take(metrics, [:cpu_load, :mem_used_mb, :latency_ms, :meta]),
         opts
       )
+
+    _ = touch_node_last_heartbeat(node_id, opts)
+
+    emit_cluster_event("cluster.node.heartbeat", %{
+      node_id: node_id,
+      metrics: Map.take(metrics, [:cpu_load, :mem_used_mb, :latency_ms, :meta])
+    })
 
     {:ok, heartbeat}
   rescue
@@ -532,21 +572,20 @@ defmodule Thunderline.Thunderlink.Registry do
   def graph(opts \\ []) do
     include_offline = Keyword.get(opts, :include_offline, false)
 
-    # Get nodes
+    # Load nodes, optionally filtering out offline ones
     nodes =
-      if include_offline do
-        list_nodes([], opts)
-      else
-        online_nodes(opts)
-      end
+      list_nodes([], opts)
+      |> filter_nodes_by_status(include_offline)
+
+    node_ids = MapSet.new(Enum.map(nodes, & &1.id))
 
     # Get active link sessions
     sessions =
       Domain.active_link_sessions!(opts)
       |> Enum.filter(fn session ->
         # Only include sessions where both nodes are in our node list
-        node_ids = Enum.map(nodes, & &1.id)
-        session.node_id in node_ids && session.remote_node_id in node_ids
+        MapSet.member?(node_ids, session.node_id) &&
+          MapSet.member?(node_ids, session.remote_node_id)
       end)
 
     # Build node objects for 3d-force-graph
@@ -571,10 +610,14 @@ defmodule Thunderline.Thunderlink.Registry do
         %{
           source: session.node_id,
           target: session.remote_node_id,
+          node_id: session.node_id,
+          peer_node_id: session.remote_node_id,
           value: session.weight || 1.0,
+          connection_type: session.meta["connection_type"] || session.session_type,
           session_type: session.session_type,
           latency_ms: session.latency_ms,
           bandwidth_mbps: session.bandwidth_mbps,
+          established_at: session.established_at,
           status: to_string(session.status)
         }
       end)
@@ -594,25 +637,36 @@ defmodule Thunderline.Thunderlink.Registry do
   # ============================================================================
 
   defp create_or_update_link_session(node_id, attrs, opts) do
-    # Check if session already exists
-    existing =
-      Domain.active_link_sessions!(opts)
-      |> Enum.find(fn s ->
-        (s.node_id == node_id && s.remote_node_id == attrs.remote_node_id) ||
-          (s.node_id == attrs.remote_node_id && s.remote_node_id == node_id)
-      end)
+    require Ash.Query
+    import Ash.Expr
 
-    if existing do
-      # Update existing
-      Domain.update_link_session_metrics!(
-        existing.id,
-        Map.take(attrs, [:latency_ms, :bandwidth_mbps, :weight, :meta]),
-        opts
+    remote_node_id = attr_value(attrs, :remote_node_id)
+
+    existing =
+      LinkSession
+      |> Ash.Query.filter(
+        (node_id == ^node_id and remote_node_id == ^remote_node_id) or
+          (node_id == ^remote_node_id and remote_node_id == ^node_id)
       )
-    else
-      # Create new
-      establish_link_session(node_id, attrs, opts)
+      |> Ash.Query.limit(1)
+      |> Ash.read!(opts)
+      |> List.first()
+
+    case existing do
+      %LinkSession{} = session ->
+        with {:ok, session} <- ensure_session_established(session, attrs, opts),
+             {:ok, session} <- maybe_update_session_metrics(session, attrs, opts) do
+          {:ok, session}
+        end
+
+      nil ->
+        with {:ok, session} <- establish_link_session(node_id, attrs, opts),
+             {:ok, session} <- mark_session_established(session, attrs, opts) do
+          {:ok, session}
+        end
     end
+  rescue
+    e -> {:error, e}
   end
 
   defp build_query_opts(filters, base_opts) do
@@ -620,5 +674,172 @@ defmodule Thunderline.Thunderlink.Registry do
     filters
     |> Keyword.drop([:status, :role, :cluster_type, :domain])
     |> Keyword.merge(base_opts)
+  end
+
+  defp maybe_create_link_session(_node_id, nil, _opts), do: nil
+
+  defp maybe_create_link_session(_node_id, attrs, _opts) when not is_map(attrs), do: :skipped
+
+  defp maybe_create_link_session(node_id, attrs, opts) do
+    remote_node_id = attr_value(attrs, :remote_node_id)
+
+    if remote_node_id in [nil, ""] do
+      :skipped
+    else
+      normalized_attrs = Map.put(attrs, :remote_node_id, remote_node_id)
+      create_or_update_link_session(node_id, normalized_attrs, opts)
+    end
+  end
+
+  defp link_payload(node, {:ok, %LinkSession{} = session}, _attrs) do
+    %{
+      node_id: node.id,
+      node_name: node.name,
+      remote_node_id: session.remote_node_id,
+      session_id: session.id,
+      connection_type: session.meta["connection_type"] || session.session_type,
+      meta: session.meta || %{}
+    }
+  end
+
+  defp link_payload(node, _session_result, attrs) when is_map(attrs) do
+    meta_keys = [:local_peer_id, :remote_peer_id, :latency_ms, :bandwidth_mbps, :weight, :connection_type]
+
+    meta =
+      meta_keys
+      |> Enum.reduce(ensure_map(attr_value(attrs, :meta)), fn key, acc ->
+        case attr_value(attrs, key) do
+          nil -> acc
+          value -> Map.put(acc, key, value)
+        end
+      end)
+
+    %{
+      node_id: node.id,
+      node_name: node.name,
+      remote_node_id: attr_value(attrs, :remote_node_id),
+      connection_type: attr_value(attrs, :connection_type) || attr_value(attrs, :session_type),
+      meta: meta
+    }
+  end
+
+  defp node_payload(node) do
+    %{
+      node_id: node.id,
+      name: node.name,
+      role: node.role,
+      domain: node.domain,
+      cluster_type: node.cluster_type,
+      status: node.status,
+      meta: node.meta || %{}
+    }
+  end
+
+  defp ensure_session_established(%LinkSession{} = session, attrs, opts) do
+    if session.established_at do
+      {:ok, session}
+    else
+      mark_session_established(session, attrs, opts)
+    end
+  end
+
+  defp mark_session_established(%LinkSession{} = session, attrs, opts) do
+    session
+    |> Ash.Changeset.for_update(:mark_established, establishment_params(attrs))
+    |> Ash.update(opts)
+  end
+
+  defp maybe_update_session_metrics(%LinkSession{} = session, attrs, opts) do
+    metrics = session_metric_attrs(attrs)
+
+    if map_size(metrics) == 0 do
+      {:ok, session}
+    else
+      updated = Domain.update_link_session_metrics!(session.id, metrics, opts)
+      {:ok, updated}
+    end
+  rescue
+    e -> {:error, e}
+  end
+
+  defp establishment_params(attrs) do
+    attrs
+    |> session_metric_attrs()
+    |> maybe_put_meta(attrs)
+  end
+
+  defp session_metric_attrs(attrs) do
+    [:weight, :latency_ms, :bandwidth_mbps]
+    |> Enum.reduce(%{}, fn key, acc ->
+      case attr_value(attrs, key) do
+        nil -> acc
+        value -> Map.put(acc, key, value)
+      end
+    end)
+  end
+
+  defp maybe_put_meta(params, attrs) do
+    meta = ensure_map(attr_value(attrs, :meta))
+
+    if map_size(meta) == 0 do
+      params
+    else
+      Map.put(params, :meta, meta)
+    end
+  end
+
+  defp filter_nodes_by_status(nodes, true), do: nodes
+
+  defp filter_nodes_by_status(nodes, false) do
+    Enum.reject(nodes, &(&1.status == :offline))
+  end
+
+  defp emit_cluster_event(name, payload, opts \\ %{}) when is_binary(name) and is_map(payload) do
+    event_attrs = %{
+      name: name,
+      source: :thunderlink,
+      type: :cluster,
+      payload: payload,
+      meta: Map.merge(%{pipeline: :realtime}, opts[:meta] || %{})
+    }
+
+    case Event.new(event_attrs) do
+      {:ok, event} ->
+        _ = EventBus.publish_event(event)
+        broadcast_cluster_event(event)
+        {:ok, event}
+
+      {:error, reason} ->
+        Logger.warning("Failed to emit cluster event #{name}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp emit_cluster_event(_name, _payload, _opts), do: :error
+
+  defp broadcast_cluster_event(event) do
+    try do
+      PubSub.broadcast(Thunderline.PubSub, @cluster_topic, {:event, event})
+    rescue
+      _ -> :ok
+    end
+  end
+
+  defp attr_value(attrs, key) when is_map(attrs) do
+    Map.get(attrs, key) || Map.get(attrs, Atom.to_string(key))
+  end
+
+  defp attr_value(_attrs, _key), do: nil
+
+  defp ensure_map(value) when is_map(value), do: value
+  defp ensure_map(_), do: %{}
+
+  defp touch_node_last_heartbeat(node_id, opts) do
+    Domain.heartbeat_node!(node_id, opts)
+    :ok
+  rescue
+    e ->
+      Logger.warning("Unexpected error updating last_heartbeat_at for node #{node_id}: #{inspect(e)}")
+      {:error, e}
   end
 end
