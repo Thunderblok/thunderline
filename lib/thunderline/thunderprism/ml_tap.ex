@@ -85,8 +85,8 @@ defmodule Thunderline.Thunderprism.MLTap do
         attrs_with_timestamp =
           Map.put_new_lazy(attrs, :timestamp, fn -> DateTime.utc_now() end)
 
-        # Create PrismNode via Ash domain
-        result = Domain.create_prism_node!(
+        # Create PrismNode via Ash domain (! version returns node directly or raises)
+        node = Domain.create_prism_node!(
           attrs_with_timestamp.pac_id,
           attrs_with_timestamp.iteration,
           attrs_with_timestamp.chosen_model,
@@ -96,35 +96,15 @@ defmodule Thunderline.Thunderprism.MLTap do
           attrs_with_timestamp.timestamp
         )
 
-        {:ok, result}
-
         duration = System.monotonic_time(:microsecond) - start_time
 
-        case result do
-          {:ok, node} ->
-            :telemetry.execute(
-              [:thunderline, :thunderprism, :mltap, :log_success],
-              %{duration_us: duration},
-              %{type: :node, node_id: node.id, pac_id: attrs[:pac_id]}
-            )
+        :telemetry.execute(
+          [:thunderline, :thunderprism, :mltap, :log_success],
+          %{duration_us: duration},
+          %{type: :node, node_id: node.id, pac_id: attrs[:pac_id]}
+        )
 
-            {:ok, node}
-
-          {:error, error} ->
-            :telemetry.execute(
-              [:thunderline, :thunderprism, :mltap, :log_error],
-              %{duration_us: duration},
-              %{type: :node, error: inspect(error), pac_id: attrs[:pac_id]}
-            )
-
-            Logger.warning("MLTap node creation failed",
-              error: inspect(error),
-              pac_id: attrs[:pac_id],
-              iteration: attrs[:iteration]
-            )
-
-            {:error, error}
-        end
+        {:ok, node}
       rescue
         exception ->
           duration = System.monotonic_time(:microsecond) - start_time
@@ -184,42 +164,23 @@ defmodule Thunderline.Thunderprism.MLTap do
         relation_type = Map.get(attrs, :relation_type, "sequential")
         meta = Map.get(attrs, :meta, %{})
 
-        result = Domain.create_prism_edge!(
+        # Create PrismEdge via Ash domain (! version returns edge directly or raises)
+        edge = Domain.create_prism_edge!(
           attrs.from_id,
           attrs.to_id,
           relation_type,
           meta
         )
 
-        {:ok, result}
-
         duration = System.monotonic_time(:microsecond) - start_time
 
-        case result do
-          {:ok, edge} ->
-            :telemetry.execute(
-              [:thunderline, :thunderprism, :mltap, :log_success],
-              %{duration_us: duration},
-              %{type: :edge, edge_id: edge.id}
-            )
+        :telemetry.execute(
+          [:thunderline, :thunderprism, :mltap, :log_success],
+          %{duration_us: duration},
+          %{type: :edge, edge_id: edge.id}
+        )
 
-            {:ok, edge}
-
-          {:error, error} ->
-            :telemetry.execute(
-              [:thunderline, :thunderprism, :mltap, :log_error],
-              %{duration_us: duration},
-              %{type: :edge, error: inspect(error)}
-            )
-
-            Logger.warning("MLTap edge creation failed",
-              error: inspect(error),
-              from_id: attrs[:from_id],
-              to_id: attrs[:to_id]
-            )
-
-            {:error, error}
-        end
+        {:ok, edge}
       rescue
         exception ->
           duration = System.monotonic_time(:microsecond) - start_time
@@ -252,28 +213,29 @@ defmodule Thunderline.Thunderprism.MLTap do
 
   ## Returns
 
-  `{:ok, {node_task, edge_task}}` if prev_node_id provided
-  `{:ok, node_task}` if no previous node
+  `{:ok, task}` - A single task that resolves to:
+    - `{:ok, node}` if prev_node_id is nil
+    - `{:ok, {node, edge}}` if prev_node_id is provided
 
   ## Examples
 
       # First node in sequence
       {:ok, task} = MLTap.log_with_edge(node_attrs, nil)
+      {:ok, node} = Task.await(task, 5000)
 
-      # Subsequent nodes
-      {:ok, {node_task, edge_task}} = MLTap.log_with_edge(node_attrs, prev_node.id)
+      # Subsequent nodes with edge
+      {:ok, task} = MLTap.log_with_edge(node_attrs, prev_node.id)
+      {:ok, {node, edge}} = Task.await(task, 5000)
   """
-  @spec log_with_edge(map(), String.t() | nil) ::
-          {:ok, Task.t()} | {:ok, {Task.t(), Task.t()}}
+  @spec log_with_edge(map(), String.t() | nil) :: {:ok, Task.t()}
   def log_with_edge(node_attrs, prev_node_id \\ nil) do
-    node_task = log_node(node_attrs)
-
-    if prev_node_id do
-      # Wait for node creation to get the ID, then create edge
-      edge_task =
-        Task.async(fn ->
-          case Task.await(node_task, :infinity) do
-            {:ok, node} ->
+    task =
+      Task.async(fn ->
+        # First create the node
+        case Task.await(log_node(node_attrs), :infinity) do
+          {:ok, node} ->
+            if prev_node_id do
+              # Create edge linking to previous node
               edge_attrs = %{
                 from_id: prev_node_id,
                 to_id: node.id,
@@ -281,18 +243,18 @@ defmodule Thunderline.Thunderprism.MLTap do
               }
 
               case Task.await(log_edge(edge_attrs), :infinity) do
-                {:ok, edge} -> {:ok, edge}
-                {:error, error} -> {:error, error}
+                {:ok, edge} -> {:ok, {node, edge}}
+                {:error, error} -> {:error, {:edge_creation_failed, error}}
               end
+            else
+              {:ok, node}
+            end
 
-            {:error, error} ->
-              {:error, {:node_creation_failed, error}}
-          end
-        end)
+          {:error, error} ->
+            {:error, {:node_creation_failed, error}}
+        end
+      end)
 
-      {:ok, {node_task, edge_task}}
-    else
-      {:ok, node_task}
-    end
+    {:ok, task}
   end
 end

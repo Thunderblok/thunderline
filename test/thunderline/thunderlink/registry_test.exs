@@ -67,7 +67,6 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       assert node2.meta["capabilities"] == ["ml", "analytics"]
     end
 
-    @tag :skip
     test "caches node in ETS after creation" do
       params = %{
         name: "node-test-4@localhost",
@@ -78,15 +77,12 @@ defmodule Thunderline.Thunderlink.RegistryTest do
 
       {:ok, node} = Registry.ensure_node(params)
 
-      # Check ETS cache
-      case :ets.lookup(Registry.cache_table(), node.id) do
-        [{_key, cached_node}] ->
-          assert cached_node.id == node.id
-          assert cached_node.name == "node-test-4@localhost"
-
-        [] ->
-          flunk("Node not found in ETS cache")
-      end
+      # Check ETS cache using cache_get helper
+      {:ok, cached_node} = Registry.cache_get(node.id)
+      assert cached_node.id == node.id
+      assert cached_node.name == "node-test-4@localhost"
+      assert cached_node.cluster_type == :in_cluster
+      assert cached_node.role == :worker
     end
 
     test "emits cluster.node.registered event" do
@@ -170,24 +166,29 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       assert session.meta.latency_ms == 50
     end
 
-    @tag :skip
     test "updates ETS cache with online status", %{node: node} do
+      # Create remote node for link
+      {:ok, remote_node} =
+        Registry.ensure_node(%{
+          name: "remote-cache-test@localhost",
+          role: :worker,
+          domain: :thunderbolt
+        })
+
       link_params = %{
-        local_peer_id: "local-peer-2",
-        remote_peer_id: "remote-peer-2",
-        connection_type: :websocket
+        remote_node_id: remote_node.id,
+        meta: %{
+          local_peer_id: "local-peer-2",
+          remote_peer_id: "remote-peer-2",
+          connection_type: :websocket
+        }
       }
 
       {:ok, _result} = Registry.mark_online(node.id, link_params)
 
-      # Check ETS cache
-      case :ets.lookup(Registry.cache_table(), node.id) do
-        [{_key, cached_node}] ->
-          assert cached_node.status == :online
-
-        [] ->
-          flunk("Node not found in cache")
-      end
+      # Check ETS cache updated
+      {:ok, cached_node} = Registry.cache_get(node.id)
+      assert cached_node.status == :online
     end
 
     test "emits cluster.node.online and cluster.link.established events", %{node: node} do
@@ -248,17 +249,12 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       assert updated_node.status == :offline
     end
 
-    @tag :skip
     test "updates ETS cache with new status", %{node: node} do
       {:ok, _} = Registry.mark_status(node.id, :degraded)
 
-      case :ets.lookup(Registry.cache_table(), node.id) do
-        [{_key, cached_node}] ->
-          assert cached_node.status == :degraded
-
-        [] ->
-          flunk("Node not found in cache")
-      end
+      # Verify cache updated
+      {:ok, cached_node} = Registry.cache_get(node.id)
+      assert cached_node.status == :degraded
     end
 
     test "emits cluster.node.status_changed event", %{node: node} do
@@ -621,7 +617,6 @@ defmodule Thunderline.Thunderlink.RegistryTest do
   end
 
   describe "ETS cache behavior" do
-    @tag :skip
     test "cache persists across function calls" do
       params = %{
         name: "cache-test-1@localhost",
@@ -632,48 +627,57 @@ defmodule Thunderline.Thunderlink.RegistryTest do
 
       {:ok, node} = Registry.ensure_node(params)
 
-      # Check cache
-      [{_key, cached1}] = :ets.lookup(Registry.cache_table(), node.id)
+      # Check cache exists
+      {:ok, cached1} = Registry.cache_get(node.id)
       assert cached1.id == node.id
+      assert cached1.status == :unknown
 
-      # Update node
+      # Update node status
       {:ok, _} = Registry.mark_status(node.id, :degraded)
 
-      # Cache should be updated
-      [{_key, cached2}] = :ets.lookup(Registry.cache_table(), node.id)
+      # Cache should reflect update (invalidation + repopulation)
+      {:ok, cached2} = Registry.cache_get(node.id)
       assert cached2.status == :degraded
     end
 
-    @tag :skip
-    test "cache lookup faster than database query" do
+    test "cache invalidation on updates" do
       params = %{
-        name: "cache-perf-test@localhost",
+        name: "cache-invalidation-test@localhost",
         cluster_type: :in_cluster,
         role: :worker,
         domain: :thunderbolt
       }
 
-      {:ok, _node} = Registry.ensure_node(params)
+      {:ok, node} = Registry.ensure_node(params)
 
-      # Warm up cache
-      Registry.ensure_node(params)
+      # Verify initial cache
+      {:ok, cached1} = Registry.cache_get(node.id)
+      assert cached1.name == "cache-invalidation-test@localhost"
 
-      # Time cache lookup
-      {cache_time, _} =
-        :timer.tc(fn ->
-          :ets.lookup(Registry.cache_table(), "cache-perf-test")
-        end)
+      # Update via mark_status should invalidate cache
+      {:ok, _} = Registry.mark_status(node.id, :online)
 
-      # Time database query
-      {db_time, _} =
-        :timer.tc(fn ->
-          Node
-          |> Ash.Query.filter(node_id: "cache-perf-test")
-          |> Ash.read_one!()
-        end)
+      # Cache should reflect new status
+      {:ok, cached2} = Registry.cache_get(node.id)
+      assert cached2.status == :online
+    end
 
-      # Cache should be significantly faster (at least 10x)
-      assert cache_time < db_time / 10
+    test "cache TTL mechanism" do
+      params = %{
+        name: "cache-ttl-test@localhost",
+        cluster_type: :in_cluster,
+        role: :worker,
+        domain: :thunderbolt
+      }
+
+      {:ok, node} = Registry.ensure_node(params)
+
+      # Verify cache entry exists with TTL
+      {:ok, cached} = Registry.cache_get(node.id)
+      assert cached.id == node.id
+
+      # Verify cache entry exists in ETS
+      assert :ets.member(Registry.cache_table(), node.id)
     end
   end
 

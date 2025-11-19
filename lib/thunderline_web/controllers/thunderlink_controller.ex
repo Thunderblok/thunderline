@@ -43,13 +43,8 @@ defmodule ThunderlineWeb.ThunderlinkController do
       }
   """
   def graph(conn, _params) do
-    case Registry.graph() do
-      {:ok, graph_data} ->
-        json(conn, graph_data)
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    graph_data = Registry.graph()
+    json(conn, graph_data)
   end
 
   @doc """
@@ -83,14 +78,8 @@ defmodule ThunderlineWeb.ThunderlinkController do
   """
   def index(conn, params) do
     opts = build_query_opts(params)
-
-    case Registry.list_nodes(opts) do
-      {:ok, nodes} ->
-        json(conn, %{nodes: nodes})
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    nodes = Registry.list_nodes(opts)
+    json(conn, %{nodes: nodes})
   end
 
   @doc """
@@ -152,8 +141,7 @@ defmodule ThunderlineWeb.ThunderlinkController do
   defp maybe_add_filter(opts, _key, ""), do: opts
 
   defp maybe_add_filter(opts, key, value) do
-    filter = Keyword.get(opts, :filter, [])
-    Keyword.put(opts, :filter, [{key, value} | filter])
+    Keyword.put(opts, key, value)
   end
 
   defp parse_load_param(nil), do: []

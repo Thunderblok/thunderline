@@ -16,6 +16,23 @@ defmodule Thunderline.Thunderlink.Resources.Node do
   Used by Thunderlink Registry to provide topology visibility and coordination.
   """
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :name,
+             :role,
+             :domain,
+             :status,
+             :cluster_type,
+             :hotline_peer_id,
+             :did,
+             :last_seen_at,
+             :last_heartbeat_at,
+             :meta,
+             :inserted_at,
+             :updated_at
+           ]}
+
   use Ash.Resource,
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
