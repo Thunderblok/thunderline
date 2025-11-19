@@ -63,6 +63,29 @@ defmodule Thunderline.Thunderlink.Registry do
 
   require Logger
 
+  @cache_table :thunderlink_registry_cache
+  @cache_ttl_ms 30_000  # 30 seconds
+
+  def start_link(_opts \\ []) do
+    case :ets.whereis(@cache_table) do
+      :undefined ->
+        :ets.new(@cache_table, [:set, :public, :named_table, read_concurrency: true])
+        Logger.debug("[Thunderlink.Registry] Started ETS cache table")
+      _ref ->
+        Logger.debug("[Thunderlink.Registry] ETS cache table already exists")
+    end
+    :ignore
+  end
+
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :transient
+    }
+  end
+
   @type node_attrs :: %{
           name: String.t(),
           role: String.t(),
@@ -140,6 +163,7 @@ defmodule Thunderline.Thunderlink.Registry do
         opts
       )
 
+    invalidate_cache(node.id)
     emit_cluster_event("cluster.node.registered", node_payload(node))
 
     {:ok, node}
@@ -174,6 +198,7 @@ defmodule Thunderline.Thunderlink.Registry do
           {:ok, Node.t()} | {:ok, {Node.t(), LinkSession.t()}} | {:error, term()}
   def mark_online(node_id, session_attrs \\ nil, opts \\ []) do
     node = Domain.mark_node_online!(node_id, opts)
+    invalidate_cache(node_id)
 
     session_result = maybe_create_link_session(node_id, session_attrs, opts)
 
@@ -208,6 +233,7 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec mark_offline(String.t(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def mark_offline(node_id, opts \\ []) do
+    invalidate_cache(node_id)
     {:ok, Domain.mark_node_offline!(node_id, opts)}
   rescue
     e -> {:error, e}
@@ -225,6 +251,7 @@ defmodule Thunderline.Thunderlink.Registry do
   @spec mark_status(String.t(), atom(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def mark_status(node_id, status, opts \\ []) do
     node = Domain.mark_node_status!(node_id, status, opts)
+    invalidate_cache(node_id)
 
     emit_cluster_event("cluster.node.status_changed", %{
       node_id: node.id,
@@ -476,6 +503,32 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec get_node(String.t(), Keyword.t()) :: {:ok, Node.t()} | {:error, :not_found}
   def get_node(node_id, opts \\ []) do
+    # Try cache first unless explicitly bypassed
+    bypass_cache = Keyword.get(opts, :bypass_cache, false)
+
+    if bypass_cache do
+      fetch_node_from_db(node_id, opts)
+    else
+      case get_from_cache(node_id) do
+        {:ok, node} ->
+          emit_cache_telemetry(:hit)
+          {:ok, node}
+
+        :miss ->
+          emit_cache_telemetry(:miss)
+          result = fetch_node_from_db(node_id, opts)
+
+          case result do
+            {:ok, node} -> put_in_cache(node_id, node)
+            _ -> :ok
+          end
+
+          result
+      end
+    end
+  end
+
+  defp fetch_node_from_db(node_id, opts) do
     case Ash.get(Node, node_id, opts) do
       {:ok, node} -> {:ok, node}
       {:error, %Ash.Error.Query.NotFound{}} -> {:error, :not_found}
@@ -863,6 +916,7 @@ defmodule Thunderline.Thunderlink.Registry do
 
   defp touch_node_last_heartbeat(node_id, opts) do
     Domain.heartbeat_node!(node_id, opts)
+    invalidate_cache(node_id)
     :ok
   rescue
     e ->
@@ -871,5 +925,52 @@ defmodule Thunderline.Thunderlink.Registry do
       )
 
       {:error, e}
+  end
+
+  # ============================================================================
+  # ETS Cache Helpers
+  # ============================================================================
+
+  defp get_from_cache(node_id) do
+    case :ets.lookup(@cache_table, node_id) do
+      [{^node_id, node, expires_at}] ->
+        if System.monotonic_time(:millisecond) < expires_at do
+          {:ok, node}
+        else
+          :ets.delete(@cache_table, node_id)
+          :miss
+        end
+
+      [] ->
+        :miss
+    end
+  rescue
+    _ -> :miss
+  end
+
+  defp put_in_cache(node_id, node) do
+    expires_at = System.monotonic_time(:millisecond) + @cache_ttl_ms
+    :ets.insert(@cache_table, {node_id, node, expires_at})
+    :ok
+  rescue
+    _ -> :ok
+  end
+
+  defp invalidate_cache(node_id) do
+    :ets.delete(@cache_table, node_id)
+    emit_cache_telemetry(:invalidation)
+    :ok
+  rescue
+    _ -> :ok
+  end
+
+  defp emit_cache_telemetry(event_type) do
+    :telemetry.execute(
+      [:thunderline, :thunderlink, :registry, :cache],
+      %{count: 1},
+      %{event: event_type}
+    )
+  rescue
+    _ -> :ok
   end
 end

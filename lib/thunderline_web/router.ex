@@ -194,6 +194,13 @@ defmodule ThunderlineWeb.Router do
     get "/registry/services/:type", ServiceRegistryController, :index_by_type
     delete "/registry/:id", ServiceRegistryController, :delete
 
+    # Thunderlink Cluster Topology API
+    scope "/thunderlink" do
+      get "/graph", ThunderlinkController, :graph
+      get "/nodes", ThunderlinkController, :index
+      get "/nodes/:id", ThunderlinkController, :show
+    end
+
     # ThunderPrism DAG Scratchpad API (Phase 4.0)
     scope "/thunderprism" do
       post "/nodes", ThunderprismController, :create_node

@@ -71,6 +71,7 @@ defmodule Thunderline.Thunderbolt.ML.ModelSelectionConsumer do
   alias Broadway.Message
   alias Thunderline.Event
   alias Thunderline.Thunderbolt.ML.Controller
+  alias Thunderline.Thunderprism.MLTap
 
   require Logger
 
@@ -256,6 +257,20 @@ defmodule Thunderline.Thunderbolt.ML.ModelSelectionConsumer do
           iteration: result.iteration,
           probabilities: result.probabilities
         )
+
+        # Asynchronously log ML decision to PrismNode DAG (non-blocking)
+        MLTap.log_node(%{
+          pac_id: "ml_controller",
+          iteration: result.iteration,
+          chosen_model: to_string(result.chosen_model),
+          model_probabilities: result.probabilities,
+          model_distances: result.distances,
+          meta: %{
+            reward_model: to_string(result.reward_model),
+            correlation_id: result.correlation_id,
+            causation_id: result.causation_id
+          }
+        })
 
         :ok
 

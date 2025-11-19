@@ -14,7 +14,29 @@ defmodule Thunderline.Thunderprism.Domain do
   use Ash.Domain
 
   resources do
-    resource Thunderline.Thunderprism.PrismNode
-    resource Thunderline.Thunderprism.PrismEdge
+    resource Thunderline.Thunderprism.PrismNode do
+      define :create_prism_node, action: :create, args: [
+        :pac_id,
+        :iteration,
+        :chosen_model,
+        :model_probabilities,
+        :model_distances,
+        :meta,
+        :timestamp
+      ]
+      define :get_prism_node, action: :read, get_by: [:id]
+      define :list_prism_nodes, action: :read
+    end
+
+    resource Thunderline.Thunderprism.PrismEdge do
+      define :create_prism_edge, action: :create, args: [
+        :from_id,
+        :to_id,
+        :relation_type,
+        :meta
+      ]
+      define :get_prism_edge, action: :read, get_by: [:id]
+      define :list_prism_edges, action: :read
+    end
   end
 end
