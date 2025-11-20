@@ -61,7 +61,12 @@ defmodule ThunderlineWeb.ThunderlinkControllerTest do
   end
 
   describe "GET /api/thunderlink/graph" do
-    test "returns graph data in 3d-force-graph format", %{conn: conn, node1: n1, node2: n2, node3: n3} do
+    test "returns graph data in 3d-force-graph format", %{
+      conn: conn,
+      node1: n1,
+      node2: n2,
+      node3: n3
+    } do
       conn = get(conn, ~p"/api/thunderlink/graph")
 
       assert json_response(conn, 200)
@@ -120,9 +125,10 @@ defmodule ThunderlineWeb.ThunderlinkControllerTest do
       data = json_response(conn, 200)
 
       # Find a link with metadata
-      link_with_meta = Enum.find(data["links"], fn link ->
-        Map.has_key?(link, "latency_ms")
-      end)
+      link_with_meta =
+        Enum.find(data["links"], fn link ->
+          Map.has_key?(link, "latency_ms")
+        end)
 
       if link_with_meta do
         assert is_number(link_with_meta["latency_ms"])
@@ -320,9 +326,10 @@ defmodule ThunderlineWeb.ThunderlinkControllerTest do
         })
       end)
 
-      {time_us, conn} = :timer.tc(fn ->
-        get(conn, ~p"/api/thunderlink/graph")
-      end)
+      {time_us, conn} =
+        :timer.tc(fn ->
+          get(conn, ~p"/api/thunderlink/graph")
+        end)
 
       assert json_response(conn, 200)
 
@@ -331,9 +338,10 @@ defmodule ThunderlineWeb.ThunderlinkControllerTest do
     end
 
     test "index endpoint responds quickly", %{conn: conn} do
-      {time_us, conn} = :timer.tc(fn ->
-        get(conn, ~p"/api/thunderlink/nodes")
-      end)
+      {time_us, conn} =
+        :timer.tc(fn ->
+          get(conn, ~p"/api/thunderlink/nodes")
+        end)
 
       assert json_response(conn, 200)
 

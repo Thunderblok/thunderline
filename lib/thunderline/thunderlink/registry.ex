@@ -96,16 +96,19 @@ defmodule Thunderline.Thunderlink.Registry do
   require Logger
 
   @cache_table :thunderlink_registry_cache
-  @cache_ttl_ms 30_000  # 30 seconds
+  # 30 seconds
+  @cache_ttl_ms 30_000
 
   def start_link(_opts \\ []) do
     case :ets.whereis(@cache_table) do
       :undefined ->
         :ets.new(@cache_table, [:set, :public, :named_table, read_concurrency: true])
         Logger.debug("[Thunderlink.Registry] Started ETS cache table")
+
       _ref ->
         Logger.debug("[Thunderlink.Registry] ETS cache table already exists")
     end
+
     :ignore
   end
 

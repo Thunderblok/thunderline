@@ -86,15 +86,16 @@ defmodule Thunderline.Thunderprism.MLTap do
           Map.put_new_lazy(attrs, :timestamp, fn -> DateTime.utc_now() end)
 
         # Create PrismNode via Ash domain (! version returns node directly or raises)
-        node = Domain.create_prism_node!(
-          attrs_with_timestamp.pac_id,
-          attrs_with_timestamp.iteration,
-          attrs_with_timestamp.chosen_model,
-          attrs_with_timestamp.model_probabilities || %{},
-          attrs_with_timestamp.model_distances || %{},
-          Map.get(attrs_with_timestamp, :meta, %{}),
-          attrs_with_timestamp.timestamp
-        )
+        node =
+          Domain.create_prism_node!(
+            attrs_with_timestamp.pac_id,
+            attrs_with_timestamp.iteration,
+            attrs_with_timestamp.chosen_model,
+            attrs_with_timestamp.model_probabilities || %{},
+            attrs_with_timestamp.model_distances || %{},
+            Map.get(attrs_with_timestamp, :meta, %{}),
+            attrs_with_timestamp.timestamp
+          )
 
         duration = System.monotonic_time(:microsecond) - start_time
 
@@ -165,12 +166,13 @@ defmodule Thunderline.Thunderprism.MLTap do
         meta = Map.get(attrs, :meta, %{})
 
         # Create PrismEdge via Ash domain (! version returns edge directly or raises)
-        edge = Domain.create_prism_edge!(
-          attrs.from_id,
-          attrs.to_id,
-          relation_type,
-          meta
-        )
+        edge =
+          Domain.create_prism_edge!(
+            attrs.from_id,
+            attrs.to_id,
+            relation_type,
+            meta
+          )
 
         duration = System.monotonic_time(:microsecond) - start_time
 

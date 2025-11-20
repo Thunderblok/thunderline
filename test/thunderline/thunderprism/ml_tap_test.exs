@@ -55,7 +55,11 @@ defmodule Thunderline.Thunderprism.MLTapTest do
 
       # Verify telemetry emitted
       assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_start], _, _}, 500
-      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_success], measurements, metadata}, 500
+
+      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_success],
+                      measurements, metadata},
+                     500
+
       assert measurements.duration_us > 0
       assert metadata.pac_id == "test_pac"
     end
@@ -91,7 +95,8 @@ defmodule Thunderline.Thunderprism.MLTapTest do
       {:ok, node} = Task.await(task, 5000)
 
       # Truncate to second precision for comparison (Postgres stores with microseconds)
-      assert DateTime.truncate(node.timestamp, :second) == DateTime.truncate(custom_timestamp, :second)
+      assert DateTime.truncate(node.timestamp, :second) ==
+               DateTime.truncate(custom_timestamp, :second)
     end
 
     test "handles errors gracefully without crashing" do
@@ -111,7 +116,9 @@ defmodule Thunderline.Thunderprism.MLTapTest do
       assert {:error, _reason} = result
 
       # Error telemetry emitted
-      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_error], _, metadata}, 500
+      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_error], _, metadata},
+                     500
+
       assert Map.has_key?(metadata, :error)
     end
 
@@ -363,7 +370,9 @@ defmodule Thunderline.Thunderprism.MLTapTest do
 
       task = MLTap.log_node(attrs)
 
-      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_start], _, metadata}, 500
+      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_start], _, metadata},
+                     500
+
       assert metadata.pac_id == "telemetry_test"
 
       Task.await(task, 5000)
@@ -381,7 +390,10 @@ defmodule Thunderline.Thunderprism.MLTapTest do
       task = MLTap.log_node(attrs)
       Task.await(task, 5000)
 
-      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_success], measurements, metadata}, 500
+      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_success],
+                      measurements, metadata},
+                     500
+
       assert measurements.duration_us > 0
       assert metadata.pac_id == "telemetry_success"
       assert Map.has_key?(metadata, :node_id)
@@ -398,7 +410,10 @@ defmodule Thunderline.Thunderprism.MLTapTest do
       task = MLTap.log_node(attrs)
       Task.await(task, 5000)
 
-      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_error], measurements, metadata}, 500
+      assert_receive {:telemetry, [:thunderline, :thunderprism, :mltap, :log_error], measurements,
+                      metadata},
+                     500
+
       assert measurements.duration_us > 0
       assert Map.has_key?(metadata, :error)
     end
