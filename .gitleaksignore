@@ -1,0 +1,17 @@
+# Ignore test keys in JOSE library (cryptography library for JWT)
+# These are example/test keys, not real secrets
+.elixir_ls/build/test/lib/jose/ebin/jose_server.beam:*
+.elixir_ls/build/test/lib/jose/ebin/jose_public_key.beam:*
+_build/**/jose/ebin/*.beam:*
+
+# Ignore any build artifacts
+.elixir_ls/**
+_build/**
+
+# Ignore test fixtures with example keys
+test/fixtures/**
+docs/test/fixtures/**
+
+# Ignore documentation examples
+docs/**/*.md
+README*.md
