@@ -58,9 +58,10 @@ config :opentelemetry_ash,
 #   dependencies = []
 #   """
 
-# Use system Python - it has all standard library modules
+# Use system Python directly - venv python is just a symlink to system python
+# and doesn't have its own libpython, so we need to use system paths consistently
 config :pythonx,
-  python: System.find_executable("python3.13") || System.find_executable("python3")
+  python: "/home/linuxbrew/.linuxbrew/bin/python3.13"
 
 config :spark,
   formatter: [
