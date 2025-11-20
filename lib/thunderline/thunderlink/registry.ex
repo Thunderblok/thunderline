@@ -163,7 +163,8 @@ defmodule Thunderline.Thunderlink.Registry do
         opts
       )
 
-    invalidate_cache(node.id)
+    # Populate cache with the newly created/updated node
+    put_in_cache(node.id, node)
     emit_cluster_event("cluster.node.registered", node_payload(node))
 
     {:ok, node}
@@ -198,7 +199,7 @@ defmodule Thunderline.Thunderlink.Registry do
           {:ok, Node.t()} | {:ok, {Node.t(), LinkSession.t()}} | {:error, term()}
   def mark_online(node_id, session_attrs \\ nil, opts \\ []) do
     node = Domain.mark_node_online!(node_id, opts)
-    invalidate_cache(node_id)
+    put_in_cache(node_id, node)
 
     session_result = maybe_create_link_session(node_id, session_attrs, opts)
 
@@ -233,8 +234,9 @@ defmodule Thunderline.Thunderlink.Registry do
   """
   @spec mark_offline(String.t(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def mark_offline(node_id, opts \\ []) do
-    invalidate_cache(node_id)
-    {:ok, Domain.mark_node_offline!(node_id, opts)}
+    node = Domain.mark_node_offline!(node_id, opts)
+    put_in_cache(node_id, node)
+    {:ok, node}
   rescue
     e -> {:error, e}
   end
@@ -251,7 +253,7 @@ defmodule Thunderline.Thunderlink.Registry do
   @spec mark_status(String.t(), atom(), Keyword.t()) :: {:ok, Node.t()} | {:error, term()}
   def mark_status(node_id, status, opts \\ []) do
     node = Domain.mark_node_status!(node_id, status, opts)
-    invalidate_cache(node_id)
+    put_in_cache(node_id, node)
 
     emit_cluster_event("cluster.node.status_changed", %{
       node_id: node.id,
@@ -928,7 +930,67 @@ defmodule Thunderline.Thunderlink.Registry do
   end
 
   # ============================================================================
-  # ETS Cache Helpers
+  # Public ETS Cache API (for testing)
+  # ============================================================================
+
+  @doc """
+  Get a node from the ETS cache.
+
+  Returns `{:ok, node}` if the node is cached and not expired, `:miss` otherwise.
+  This is primarily used for testing cache behavior.
+
+  ## Examples
+
+      {:ok, node} = Registry.cache_get(node_id)
+      :miss = Registry.cache_get("non-existent-id")
+
+  """
+  @spec cache_get(String.t()) :: {:ok, Node.t()} | :miss
+  def cache_get(node_id), do: get_from_cache(node_id)
+
+  @doc """
+  Put a node into the ETS cache with TTL.
+
+  This is primarily used for testing cache behavior.
+  The node will expire after #{@cache_ttl_ms}ms.
+
+  ## Examples
+
+      :ok = Registry.cache_put(node_id, node)
+
+  """
+  @spec cache_put(String.t(), Node.t()) :: :ok
+  def cache_put(node_id, node), do: put_in_cache(node_id, node)
+
+  @doc """
+  Invalidate a node's cache entry.
+
+  This is primarily used for testing cache behavior.
+
+  ## Examples
+
+      :ok = Registry.cache_invalidate(node_id)
+
+  """
+  @spec cache_invalidate(String.t()) :: :ok
+  def cache_invalidate(node_id), do: invalidate_cache(node_id)
+
+  @doc """
+  Get the name of the ETS cache table.
+
+  This is primarily used for testing cache TTL and direct ETS operations.
+
+  ## Examples
+
+      table_name = Registry.cache_table()
+      :ets.member(table_name, node_id)
+
+  """
+  @spec cache_table() :: atom()
+  def cache_table, do: @cache_table
+
+  # ============================================================================
+  # ETS Cache Helpers (Private)
   # ============================================================================
 
   defp get_from_cache(node_id) do

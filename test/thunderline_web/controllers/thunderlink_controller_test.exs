@@ -36,22 +36,24 @@ defmodule ThunderlineWeb.ThunderlinkControllerTest do
     {:ok, _} =
       Registry.mark_online(node1.id, %{
         remote_node_id: node2.id,
+        latency_ms: 25,
+        bandwidth_mbps: 1000.0,
         meta: %{
           local_peer_id: "peer-1",
           remote_peer_id: "peer-2",
-          connection_type: :direct,
-          latency_ms: 25
+          connection_type: :direct
         }
       })
 
     {:ok, _} =
       Registry.mark_online(node2.id, %{
         remote_node_id: node3.id,
+        latency_ms: 50,
+        bandwidth_mbps: 500.0,
         meta: %{
           local_peer_id: "peer-2",
           remote_peer_id: "peer-3",
-          connection_type: :websocket,
-          latency_ms: 50
+          connection_type: :websocket
         }
       })
 

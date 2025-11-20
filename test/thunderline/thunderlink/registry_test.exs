@@ -630,7 +630,7 @@ defmodule Thunderline.Thunderlink.RegistryTest do
       # Check cache exists
       {:ok, cached1} = Registry.cache_get(node.id)
       assert cached1.id == node.id
-      assert cached1.status == :unknown
+      assert cached1.status == :connecting
 
       # Update node status
       {:ok, _} = Registry.mark_status(node.id, :degraded)
