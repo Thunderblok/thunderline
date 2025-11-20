@@ -46,6 +46,38 @@ defmodule Thunderline.Thunderlink.Registry do
       graph = Registry.graph()
       # => %{nodes: [...], links: [...]}
 
+  ## ETS Cache Layer
+
+  The registry includes a high-performance ETS cache with automatic TTL management:
+
+  - **Purpose**: Reduce database round-trips for frequently accessed nodes
+  - **TTL**: 30 seconds (configurable via `@cache_ttl_ms`)
+  - **Strategy**: Write-through cache - all mutations populate cache immediately
+  - **Public API**: 4 functions for testing and advanced use cases:
+    - `cache_get/1` - Retrieve node from cache
+    - `cache_put/2` - Manually populate cache
+    - `cache_invalidate/1` - Remove node from cache
+    - `cache_table/0` - Get ETS table name for direct access
+
+  ### Cache Population Pattern
+
+  All node mutations automatically populate the cache:
+
+      # ensure_node/1, mark_online/2, mark_offline/1, mark_status/2
+      def operation(params) do
+        node = Domain.db_operation!(params)
+        put_in_cache(node.id, node)  # ← Immediate cache population
+        emit_cluster_event(...)
+        {:ok, node}
+      end
+
+  ### Cache Behavior
+
+  - **Cache Hit**: Returns `{:ok, node}` with fresh data
+  - **Cache Miss**: Returns `:miss`, caller should fetch from DB
+  - **TTL Expiry**: Automatic cleanup on next access
+  - **Concurrency**: ETS table configured with `read_concurrency: true`
+
   ## Integration Points
 
   - **Thundergate**: Calls `ensure_node/1` on WebRTC handshake
@@ -59,7 +91,7 @@ defmodule Thunderline.Thunderlink.Registry do
   alias Thunderline.Event
   alias Thunderline.Thunderflow.EventBus
   alias Thunderline.Thunderlink.Domain
-  alias Thunderline.Thunderlink.Resources.{Node, Heartbeat, LinkSession, NodeCapability}
+  alias Thunderline.Thunderlink.Resources.{Heartbeat, LinkSession, Node, NodeCapability}
 
   require Logger
 
@@ -900,11 +932,9 @@ defmodule Thunderline.Thunderlink.Registry do
   defp emit_cluster_event(_name, _payload, _opts), do: :error
 
   defp broadcast_cluster_event(event) do
-    try do
-      PubSub.broadcast(Thunderline.PubSub, @cluster_topic, {:event, event})
-    rescue
-      _ -> :ok
-    end
+    PubSub.broadcast(Thunderline.PubSub, @cluster_topic, {:event, event})
+  rescue
+    _ -> :ok
   end
 
   defp attr_value(attrs, key) when is_map(attrs) do
