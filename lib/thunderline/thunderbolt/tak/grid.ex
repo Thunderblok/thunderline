@@ -138,9 +138,11 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
   """
   def from_tensor(%__MODULE__{} = grid, %Nx.Tensor{} = tensor) do
     # Extract alive cells from tensor
-    shape = Nx.shape(tensor)
-    flat_data = Nx.to_flat_list(tensor)
-
+    # GPU kernel may add batch/channel dimensions - squeeze them
+    squeezed = Nx.squeeze(tensor)
+    shape = Nx.shape(squeezed)
+    flat_data = Nx.to_flat_list(squeezed)
+    
     cells = case shape do
       {height, width} ->
         # 2D grid

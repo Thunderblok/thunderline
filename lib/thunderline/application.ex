@@ -34,6 +34,7 @@ defmodule Thunderline.Application do
            Thunderline.Thunderflow.Blackboard,
            Thunderline.Thunderlink.Registry,
            Thunderline.ServiceRegistry.HealthMonitor,
+           Thundervine.Supervisor,
            ThunderlineWeb.Presence,
            maybe_oban_child(),
            ThunderlineWeb.Endpoint

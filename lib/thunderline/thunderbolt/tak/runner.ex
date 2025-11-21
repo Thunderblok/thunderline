@@ -87,6 +87,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
     ruleset = Map.fetch!(opts, :ruleset)
     tick_ms = Map.get(opts, :tick_ms, 50)
     gpu_enabled? = Map.get(opts, :gpu_enabled?, false)
+    enable_recording? = Map.get(opts, :enable_recording?, true)
 
     grid = TAK.Grid.new(size)
 
@@ -105,6 +106,20 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
         avg_gen_time_ms: 0
       }
     }
+
+    # Start Thundervine event recorder for this run
+    if enable_recording? do
+      case Thundervine.Supervisor.start_recorder(run_id: run_id) do
+        {:ok, _pid} ->
+          Logger.info("[TAK.Runner] Started Thundervine recorder for run_id=#{run_id}")
+
+        {:error, {:already_started, _pid}} ->
+          Logger.debug("[TAK.Runner] Thundervine recorder already started for run_id=#{run_id}")
+
+        {:error, reason} ->
+          Logger.warning("[TAK.Runner] Failed to start Thundervine recorder: #{inspect(reason)}")
+      end
+    end
 
     schedule_tick(tick_ms)
 
