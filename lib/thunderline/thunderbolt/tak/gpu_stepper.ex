@@ -10,16 +10,16 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
   ## Phase 2 Implementation
 
   Status: ✅ COMPLETE - GPU kernels validated
-  
+
   ### Benchmark Results (CPU Backend - EXLA :host)
   - 2D (100×100): ~59 gen/sec
-  - 3D (50×50×50): ~31 gen/sec  
+  - 3D (50×50×50): ~31 gen/sec
   - 2D (200×200): ~50 gen/sec
-  
+
   ### Expected GPU Performance (CUDA/ROCm)
   - 2D (100×100): >1000 gen/sec (17x speedup)
   - 3D (100×100×100): >500 gen/sec (16x speedup)
-  
+
   CPU benchmarks validate implementation correctness. GPU acceleration will provide
   20-50x speedup for production workloads once CUDA/ROCm is configured.
 
@@ -113,16 +113,16 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
     # Get grid shape and check dimensions
     shape = Nx.shape(grid)
     rank = Nx.rank(grid)
-    
+
     case rank do
       2 ->
         # 2D evolution (Moore neighborhood: 8 neighbors)
         evolve_2d(grid, born, survive)
-      
+
       3 ->
         # 3D evolution (Moore neighborhood: 26 neighbors)
         evolve_3d(grid, born, survive)
-      
+
       _ ->
         # Unsupported dimension, return grid unchanged
         grid
@@ -182,7 +182,7 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
   defnp create_moore_kernel_3d() do
     # Create 3x3x3 kernel with all 1s
     kernel = Nx.broadcast(1, {3, 3, 3})
-    
+
     # Set center to 0 (don't count self)
     kernel
     |> Nx.put_slice([1, 1, 1], Nx.tensor([[[0]]]))
@@ -207,13 +207,13 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
   defnp check_rule_match(neighbors, rule_values) do
     # Expand neighbors for broadcasting
     neighbors_expanded = Nx.new_axis(neighbors, -1)
-    
+
     # Expand rule values for broadcasting
     rule_expanded = Nx.reshape(rule_values, {1, 1, 1, Nx.size(rule_values)})
-    
+
     # Check if neighbors match any rule value
     matches = neighbors_expanded == rule_expanded
-    
+
     # Reduce: true if any rule matches
     Nx.any(matches, axes: [-1])
   end
@@ -261,11 +261,11 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
     # Benchmark: measure actual performance
     Logger.info("[TAK.GPUStepper] Benchmarking (#{generations} generations)...")
     start_time = System.monotonic_time(:millisecond)
-    
+
     _final_grid = Enum.reduce(1..generations, warmup_grid, fn _i, g ->
       evolve(g, born, survive)
     end)
-    
+
     end_time = System.monotonic_time(:millisecond)
     total_time_ms = end_time - start_time
     avg_time_ms = total_time_ms / generations
@@ -283,7 +283,7 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
     }
 
     Logger.info("[TAK.GPUStepper] Benchmark complete: #{stats.gen_per_sec} gen/sec (target: >1000)")
-    
+
     stats
   end
 
@@ -301,7 +301,7 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
   """
   def gpu_info do
     backend = Nx.default_backend()
-    
+
     %{
       default_backend: backend,
       backend: inspect(backend),

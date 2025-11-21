@@ -18,7 +18,7 @@ IO.puts("🎯 2D Conway Benchmark (100x100, B3/S23)")
 IO.puts(String.duplicate("-", 60))
 
 result_2d = GPUStepper.benchmark(
-  {100, 100}, 
+  {100, 100},
   [3],        # born
   [2, 3],     # survive
   generations: 1000,
@@ -36,7 +36,7 @@ IO.puts("🎯 3D Conway Benchmark (50x50x50, B567/S456)")
 IO.puts(String.duplicate("-", 60))
 
 result_3d = GPUStepper.benchmark(
-  {50, 50, 50}, 
+  {50, 50, 50},
   [5, 6, 7],  # born
   [4, 5, 6],  # survive
   generations: 100,
@@ -54,8 +54,8 @@ IO.puts("🔥 Stress Test (200x200)")
 IO.puts(String.duplicate("-", 60))
 
 result_large = GPUStepper.benchmark(
-  {200, 200}, 
-  [3], 
+  {200, 200},
+  [3],
   [2, 3],
   generations: 500,
   warmup: 10

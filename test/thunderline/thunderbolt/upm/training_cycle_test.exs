@@ -1,7 +1,7 @@
 defmodule Thunderline.Thunderbolt.Upm.TrainingCycleTest do
   @moduledoc """
   End-to-end integration tests for the complete UPM training workflow.
-  
+
   Tests the interaction between:
   - FeatureWindow creation
   - ReplayBuffer buffering and release

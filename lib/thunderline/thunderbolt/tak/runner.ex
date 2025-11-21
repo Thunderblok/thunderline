@@ -235,10 +235,10 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
         # For now, create empty tensor matching dimensions
         # Phase 3 will implement Grid.to_tensor/1
         Nx.broadcast(0, grid.size)
-      
+
       %Nx.Tensor{} ->
         grid
-      
+
       _ ->
         Nx.broadcast(0, {10, 10})
     end
@@ -246,7 +246,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
     # Evolve using GPU kernel
     born = Map.get(ruleset, :born, [3])
     survive = Map.get(ruleset, :survive, [2, 3])
-    
+
     Thunderline.Thunderbolt.TAK.GPUStepper.evolve(tensor, born, survive)
   end
 
