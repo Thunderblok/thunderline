@@ -23,7 +23,7 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
     test "converts empty 2D grid to tensor" do
       grid = Grid.new({3, 4})
       tensor = Grid.to_tensor(grid)
-      
+
       assert Nx.shape(tensor) == {4, 3}
       assert Nx.type(tensor) == {:u, 8}
       assert Nx.to_flat_list(tensor) == List.duplicate(0, 12)
@@ -38,10 +38,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
           {2, 2} => 1   # bottom-right
         }
       }
-      
+
       tensor = Grid.to_tensor(grid)
       assert Nx.shape(tensor) == {3, 3}
-      
+
       # Verify alive cells
       flat = Nx.to_flat_list(tensor)
       expected = [
@@ -55,7 +55,7 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
     test "converts empty 3D grid to tensor" do
       grid = Grid.new({2, 3, 4})
       tensor = Grid.to_tensor(grid)
-      
+
       assert Nx.shape(tensor) == {2, 3, 4}
       assert Nx.type(tensor) == {:u, 8}
       assert Nx.to_flat_list(tensor) == List.duplicate(0, 24)
@@ -69,10 +69,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
           {1, 1, 1} => 1   # opposite corner
         }
       }
-      
+
       tensor = Grid.to_tensor(grid)
       assert Nx.shape(tensor) == {2, 2, 2}
-      
+
       flat = Nx.to_flat_list(tensor)
       # z=0, y=0: [1, 0]  z=0, y=1: [0, 0]
       # z=1, y=0: [0, 0]  z=1, y=1: [0, 1]
@@ -84,16 +84,16 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
   describe "from_tensor/2" do
     test "converts tensor back to 2D grid" do
       original = Grid.new({3, 3})
-      
+
       # Create tensor with specific pattern
       tensor = Nx.tensor([
         [1, 0, 1],
         [0, 1, 0],
         [1, 0, 1]
       ], type: :u8)
-      
+
       grid = Grid.from_tensor(original, tensor)
-      
+
       assert grid.size == {3, 3}
       assert grid.cells == %{
         {0, 0} => 1, {2, 0} => 1,
@@ -104,15 +104,15 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
 
     test "converts tensor back to 3D grid" do
       original = Grid.new({2, 2, 2})
-      
+
       # Create tensor with corners alive
       tensor = Nx.tensor([
         [[1, 0], [0, 0]],  # z=0
         [[0, 0], [0, 1]]   # z=1
       ], type: :u8)
-      
+
       grid = Grid.from_tensor(original, tensor)
-      
+
       assert grid.size == {2, 2, 2}
       assert grid.cells == %{
         {0, 0, 0} => 1,
@@ -129,10 +129,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
           {3, 2} => 1
         }
       }
-      
+
       tensor = Grid.to_tensor(original)
       recovered = Grid.from_tensor(original, tensor)
-      
+
       assert recovered.cells == original.cells
       assert recovered.size == original.size
     end
@@ -146,10 +146,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
           {3, 2, 2} => 1
         }
       }
-      
+
       tensor = Grid.to_tensor(original)
       recovered = Grid.from_tensor(original, tensor)
-      
+
       assert recovered.cells == original.cells
       assert recovered.size == original.size
     end
@@ -159,7 +159,7 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
     test "detects no changes between identical grids" do
       grid1 = %Grid{size: {3, 3}, cells: %{{1, 1} => 1}}
       grid2 = %Grid{size: {3, 3}, cells: %{{1, 1} => 1}}
-      
+
       deltas = Grid.compute_deltas(grid1, grid2)
       assert deltas == []
     end
@@ -167,10 +167,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
     test "detects cell birth" do
       grid1 = %Grid{size: {3, 3}, cells: %{}}
       grid2 = %Grid{size: {3, 3}, cells: %{{1, 1} => 1, {2, 2} => 1}}
-      
+
       deltas = Grid.compute_deltas(grid1, grid2)
       assert length(deltas) == 2
-      
+
       assert %{coord: {1, 1}, old: 0, new: 1} in deltas
       assert %{coord: {2, 2}, old: 0, new: 1} in deltas
     end
@@ -178,10 +178,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
     test "detects cell death" do
       grid1 = %Grid{size: {3, 3}, cells: %{{1, 1} => 1, {2, 2} => 1}}
       grid2 = %Grid{size: {3, 3}, cells: %{}}
-      
+
       deltas = Grid.compute_deltas(grid1, grid2)
       assert length(deltas) == 2
-      
+
       assert %{coord: {1, 1}, old: 1, new: 0} in deltas
       assert %{coord: {2, 2}, old: 1, new: 0} in deltas
     end
@@ -189,10 +189,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
     test "detects mixed changes" do
       grid1 = %Grid{size: {3, 3}, cells: %{{0, 0} => 1, {1, 1} => 1}}
       grid2 = %Grid{size: {3, 3}, cells: %{{1, 1} => 1, {2, 2} => 1}}
-      
+
       deltas = Grid.compute_deltas(grid1, grid2)
       assert length(deltas) == 2
-      
+
       # (0,0) died, (2,2) born, (1,1) unchanged
       assert %{coord: {0, 0}, old: 1, new: 0} in deltas
       assert %{coord: {2, 2}, old: 0, new: 1} in deltas
@@ -205,16 +205,16 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
         size: {3, 3},
         cells: %{{1, 1} => 1}
       }
-      
+
       # Evolve to blinker pattern
       evolved_tensor = Nx.tensor([
         [0, 1, 0],
         [0, 1, 0],
         [0, 1, 0]
       ], type: :u8)
-      
+
       deltas = Grid.compute_deltas_from_tensor(original, evolved_tensor)
-      
+
       # Center cell stays, top and bottom cells born
       assert length(deltas) == 2
       assert %{coord: {1, 0}, old: 0, new: 1} in deltas
@@ -245,10 +245,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
     test "increments generation counter" do
       grid = Grid.new({3, 3})
       assert Grid.generation(grid) == 0
-      
+
       grid = Grid.increment_generation(grid)
       assert Grid.generation(grid) == 1
-      
+
       grid = Grid.increment_generation(grid)
       assert Grid.generation(grid) == 2
     end

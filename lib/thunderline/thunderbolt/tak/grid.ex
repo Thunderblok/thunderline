@@ -99,7 +99,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
     # Create tensor from grid dimensions
     # cells map: %{{x, y} => 1, {x2, y2} => 1, ...} (only alive cells stored)
     # Convert to full tensor (0 = dead, 1 = alive)
-    
+
     case size do
       {width, height} ->
         # 2D grid
@@ -107,10 +107,10 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
                    x <- 0..(width - 1) do
           Map.get(cells, {x, y}, 0)
         end
-        
+
         Nx.tensor(data, type: :u8)
         |> Nx.reshape({height, width})
-      
+
       {depth, height, width} ->
         # 3D grid
         data = for z <- 0..(depth - 1),
@@ -118,7 +118,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
                    x <- 0..(width - 1) do
           Map.get(cells, {x, y, z}, 0)
         end
-        
+
         Nx.tensor(data, type: :u8)
         |> Nx.reshape({depth, height, width})
     end
@@ -140,7 +140,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
     # Extract alive cells from tensor
     shape = Nx.shape(tensor)
     flat_data = Nx.to_flat_list(tensor)
-    
+
     cells = case shape do
       {height, width} ->
         # 2D grid
@@ -155,7 +155,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
             acc
           end
         end)
-      
+
       {depth, height, width} ->
         # 3D grid
         flat_data
@@ -171,7 +171,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
           end
         end)
     end
-    
+
     %{grid | cells: cells}
   end
 
@@ -227,12 +227,12 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
       MapSet.new(Map.keys(old_cells)),
       MapSet.new(Map.keys(new_cells))
     )
-    
+
     all_coords
     |> Enum.reduce([], fn coord, acc ->
       old_val = Map.get(old_cells, coord, 0)
       new_val = Map.get(new_cells, coord, 0)
-      
+
       if old_val != new_val do
         [%{coord: coord, old: old_val, new: new_val} | acc]
       else

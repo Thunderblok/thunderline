@@ -39,10 +39,10 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
 
       # Step 4: Compute deltas
       deltas = TAK.Grid.compute_deltas(grid, new_grid)
-      
+
       # Should have some changes (glider evolves)
       assert length(deltas) > 0
-      
+
       # All deltas should have proper structure
       for delta <- deltas do
         assert Map.has_key?(delta, :coord)
@@ -56,11 +56,11 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
 
     test "empty grid stays empty" do
       grid = TAK.Grid.new({5, 5})
-      
+
       tensor = TAK.Grid.to_tensor(grid)
       evolved = TAK.GPUStepper.evolve(tensor, [3], [2, 3])
       new_grid = TAK.Grid.from_tensor(grid, evolved)
-      
+
       deltas = TAK.Grid.compute_deltas(grid, new_grid)
       assert deltas == []
     end
@@ -76,11 +76,11 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
           {2, 2} => 1
         }
       }
-      
+
       tensor = TAK.Grid.to_tensor(grid)
       evolved = TAK.GPUStepper.evolve(tensor, [3], [2, 3])
       new_grid = TAK.Grid.from_tensor(grid, evolved)
-      
+
       deltas = TAK.Grid.compute_deltas(grid, new_grid)
       assert deltas == []
     end
@@ -95,20 +95,20 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
           {2, 3} => 1
         }
       }
-      
+
       tensor = TAK.Grid.to_tensor(grid)
       evolved = TAK.GPUStepper.evolve(tensor, [3], [2, 3])
       new_grid = TAK.Grid.from_tensor(grid, evolved)
-      
+
       # Should become horizontal
       expected_cells = %{
         {1, 2} => 1,
         {2, 2} => 1,
         {3, 2} => 1
       }
-      
+
       assert new_grid.cells == expected_cells
-      
+
       deltas = TAK.Grid.compute_deltas(grid, new_grid)
       # 6 changes: 3 cells die, 3 cells born
       assert length(deltas) == 4  # Actually 4 because center stays
@@ -124,16 +124,16 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
           {2, 3, 2} => 1
         }
       }
-      
+
       tensor = TAK.Grid.to_tensor(grid)
       assert Nx.shape(tensor) == {5, 5, 5}
-      
+
       # 3D rules (example)
       evolved = TAK.GPUStepper.evolve(tensor, [5, 6, 7], [4, 5, 6])
       new_grid = TAK.Grid.from_tensor(grid, evolved)
-      
+
       assert new_grid.size == {5, 5, 5}
-      
+
       deltas = TAK.Grid.compute_deltas(grid, new_grid)
       # Should have changes in 3D space
       assert is_list(deltas)
@@ -142,13 +142,13 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
     test "large grid performance sanity check" do
       # Ensure large grids don't crash
       grid = TAK.Grid.new({100, 100})
-      
+
       tensor = TAK.Grid.to_tensor(grid)
       assert Nx.shape(tensor) == {100, 100}
-      
+
       evolved = TAK.GPUStepper.evolve(tensor, [3], [2, 3])
       new_grid = TAK.Grid.from_tensor(grid, evolved)
-      
+
       assert new_grid.size == {100, 100}
     end
   end
@@ -159,14 +159,14 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
         size: {3, 3},
         cells: %{{1, 1} => 1}
       }
-      
+
       grid2 = %TAK.Grid{
         size: {3, 3},
         cells: %{{0, 0} => 1, {2, 2} => 1}
       }
-      
+
       deltas = TAK.Grid.compute_deltas(grid1, grid2)
-      
+
       # Verify format matches what Thundervine.TAKEventRecorder expects
       for delta <- deltas do
         assert is_tuple(delta.coord)
