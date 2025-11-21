@@ -1,4 +1,7 @@
 import Config
+
+# Import TAK configuration
+import_config "tak.exs"
 config :ash, policies: [show_policy_breakdowns?: true]
 
 config :thunderline,
