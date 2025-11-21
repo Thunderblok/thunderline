@@ -122,24 +122,23 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
   def handle_info(:tick, state) do
     start_time = System.monotonic_time(:millisecond)
 
-    # Phase 2: Use GPU-accelerated evolution if enabled
-    result = if state.gpu_enabled? do
-      gpu_evolve(state.grid, state.ruleset)
+    # Phase 3: GPU-accelerated evolution with proper Grid↔Tensor bridge
+    {deltas, new_grid} = if state.gpu_enabled? do
+      # GPU path: Grid → Tensor → GPU evolve → Tensor → Grid
+      evolved_tensor = gpu_evolve(state.grid, state.ruleset)
+      deltas = compute_deltas_from_tensor(state.grid, evolved_tensor)
+      new_grid = TAK.Grid.from_tensor(state.grid, evolved_tensor)
+                |> TAK.Grid.increment_generation()
+      {deltas, new_grid}
     else
       # Fallback to existing Bolt.CA.Stepper
-      TAK.evolve_gpu(state.grid, state.ruleset)
-    end
-
-    {deltas, new_grid} = case result do
-      {:ok, d, g} -> {d, g}
-      %Nx.Tensor{} = tensor_grid ->
-        # GPU returned tensor, compute deltas
-        deltas = compute_deltas_from_tensor(state.grid, tensor_grid)
-        grid = %{state.grid | cells: %{}, generation: state.grid.generation + 1}
-        {deltas, grid}
-      _ ->
-        Logger.warning("[TAK.Runner] Evolution failed, using previous grid")
-        {[], state.grid}
+      result = TAK.evolve_gpu(state.grid, state.ruleset)
+      case result do
+        {:ok, d, g} -> {d, g}
+        _ ->
+          Logger.warning("[TAK.Runner] Evolution failed, using previous grid")
+          {[], state.grid}
+      end
     end
 
     gen_time_ms = System.monotonic_time(:millisecond) - start_time
@@ -226,22 +225,10 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
     Map.put(stats, :avg_gen_time_ms, new_avg)
   end
 
-  # GPU evolution helper (Phase 2)
+  # GPU evolution helper (Phase 2+3)
   defp gpu_evolve(grid, ruleset) do
-    # Convert to Nx tensor based on grid type
-    # Use runtime struct check to avoid compile-time cyclic dependency
-    tensor = case grid do
-      %{__struct__: struct_name} when struct_name == Thunderline.Thunderbolt.TAK.Grid ->
-        # For now, create empty tensor matching dimensions
-        # Phase 3 will implement Grid.to_tensor/1
-        Nx.broadcast(0, grid.size)
-
-      %Nx.Tensor{} ->
-        grid
-
-      _ ->
-        Nx.broadcast(0, {10, 10})
-    end
+    # Convert Grid to Nx tensor using Phase 3 implementation
+    tensor = TAK.Grid.to_tensor(grid)
 
     # Evolve using GPU kernel
     born = Map.get(ruleset, :born, [3])
@@ -250,11 +237,8 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
     Thunderline.Thunderbolt.TAK.GPUStepper.evolve(tensor, born, survive)
   end
 
-  # Compute delta changes from tensor evolution
-  defp compute_deltas_from_tensor(_old_grid, _new_tensor) do
-    # Phase 2: Implement delta compression
-    # For now, return empty deltas (UI won't update but won't crash)
-    # Phase 3 will implement proper delta calculation
-    []
+  # Compute delta changes from tensor evolution (Phase 3)
+  defp compute_deltas_from_tensor(old_grid, new_tensor) do
+    TAK.Grid.compute_deltas_from_tensor(old_grid, new_tensor)
   end
 end

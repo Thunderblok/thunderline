@@ -84,35 +84,95 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
   end
 
   @doc """
-  Convert ThunderCell.Cluster cell processes to Nx tensor.
+  Convert Grid struct to Nx tensor.
 
   Phase 3 implementation. Returns GPU-friendly tensor representation.
+  Supports both 2D and 3D grids.
 
   ## Examples
 
-      {:ok, cluster_pid} = ThunderCell.Cluster.start_link(dimensions: {100, 100, 100})
-      tensor = TAK.Grid.to_tensor(cluster_pid)
-      # => #Nx.Tensor<u8[100][100][100]>
+      grid = TAK.Grid.new({100, 100})
+      tensor = TAK.Grid.to_tensor(grid)
+      # => #Nx.Tensor<u8[100][100]>
   """
-  def to_tensor(cluster_pid) when is_pid(cluster_pid) do
-    # Phase 3: Query all cells from cluster, convert to Nx tensor
-    # For now, return placeholder
-    {:error, :not_implemented_phase_3}
+  def to_tensor(%__MODULE__{size: size, cells: cells}) do
+    # Create tensor from grid dimensions
+    # cells map: %{{x, y} => 1, {x2, y2} => 1, ...} (only alive cells stored)
+    # Convert to full tensor (0 = dead, 1 = alive)
+    
+    case size do
+      {width, height} ->
+        # 2D grid
+        data = for y <- 0..(height - 1),
+                   x <- 0..(width - 1) do
+          Map.get(cells, {x, y}, 0)
+        end
+        
+        Nx.tensor(data, type: :u8)
+        |> Nx.reshape({height, width})
+      
+      {depth, height, width} ->
+        # 3D grid
+        data = for z <- 0..(depth - 1),
+                   y <- 0..(height - 1),
+                   x <- 0..(width - 1) do
+          Map.get(cells, {x, y, z}, 0)
+        end
+        
+        Nx.tensor(data, type: :u8)
+        |> Nx.reshape({depth, height, width})
+    end
   end
 
   @doc """
-  Apply GPU-evolved tensor back to ThunderCell.Cluster cell processes.
+  Create new Grid from evolved Nx tensor.
 
-  Phase 3 implementation. Updates cell states from tensor.
+  Phase 3 implementation. Converts tensor back to Grid struct.
+  Only stores alive cells (value = 1) for memory efficiency.
 
   ## Examples
 
+      tensor = TAK.Grid.to_tensor(grid)
       updated_tensor = TAK.GPUStepper.evolve(tensor, born, survive)
-      :ok = TAK.Grid.update_from_tensor(cluster_pid, updated_tensor)
+      new_grid = TAK.Grid.from_tensor(grid, updated_tensor)
   """
-  def update_from_tensor(cluster_pid, _tensor) when is_pid(cluster_pid) do
-    # Phase 3: Extract changes from tensor, update cell processes
-    {:error, :not_implemented_phase_3}
+  def from_tensor(%__MODULE__{} = grid, %Nx.Tensor{} = tensor) do
+    # Extract alive cells from tensor
+    shape = Nx.shape(tensor)
+    flat_data = Nx.to_flat_list(tensor)
+    
+    cells = case shape do
+      {height, width} ->
+        # 2D grid
+        flat_data
+        |> Enum.with_index()
+        |> Enum.reduce(%{}, fn {value, idx}, acc ->
+          if value == 1 do
+            x = rem(idx, width)
+            y = div(idx, width)
+            Map.put(acc, {x, y}, 1)
+          else
+            acc
+          end
+        end)
+      
+      {depth, height, width} ->
+        # 3D grid
+        flat_data
+        |> Enum.with_index()
+        |> Enum.reduce(%{}, fn {value, idx}, acc ->
+          if value == 1 do
+            x = rem(idx, width)
+            y = rem(div(idx, width), height)
+            z = div(idx, width * height)
+            Map.put(acc, {x, y, z}, 1)
+          else
+            acc
+          end
+        end)
+    end
+    
+    %{grid | cells: cells}
   end
 
   @doc """
@@ -145,5 +205,56 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
   """
   def increment_generation(%__MODULE__{} = grid) do
     %{grid | generation: grid.generation + 1}
+  end
+
+  @doc """
+  Compute delta changes between two grids.
+
+  Returns list of cells that changed (born or died).
+  Used for efficient PubSub broadcasting and Thundervine event emission.
+
+  ## Examples
+
+      deltas = TAK.Grid.compute_deltas(old_grid, new_grid)
+      # => [
+      #   %{coord: {5, 10}, old: 0, new: 1},  # cell born
+      #   %{coord: {8, 12}, old: 1, new: 0}   # cell died
+      # ]
+  """
+  def compute_deltas(%__MODULE__{cells: old_cells}, %__MODULE__{cells: new_cells}) do
+    # Find all coordinates that changed
+    all_coords = MapSet.union(
+      MapSet.new(Map.keys(old_cells)),
+      MapSet.new(Map.keys(new_cells))
+    )
+    
+    all_coords
+    |> Enum.reduce([], fn coord, acc ->
+      old_val = Map.get(old_cells, coord, 0)
+      new_val = Map.get(new_cells, coord, 0)
+      
+      if old_val != new_val do
+        [%{coord: coord, old: old_val, new: new_val} | acc]
+      else
+        acc
+      end
+    end)
+  end
+
+  @doc """
+  Compute delta changes from tensor evolution.
+
+  Compares original grid cells with evolved tensor state.
+  Returns minimal set of changed cells for efficient broadcasting.
+
+  ## Examples
+
+      tensor = TAK.Grid.to_tensor(grid)
+      evolved = TAK.GPUStepper.evolve(tensor, born, survive)
+      deltas = TAK.Grid.compute_deltas_from_tensor(grid, evolved)
+  """
+  def compute_deltas_from_tensor(%__MODULE__{} = old_grid, %Nx.Tensor{} = new_tensor) do
+    new_grid = from_tensor(old_grid, new_tensor)
+    compute_deltas(old_grid, new_grid)
   end
 end
