@@ -97,18 +97,28 @@ defmodule Thundervine.TAKEventRecorder do
     #   run_id: run_id,
     #   seq: seq,
     #   generation: gen,
-    #   cells: deltas,
+    #   cells: deltas,  # list of %{coord: {x,y}, old: int, new: int}
     #   timestamp: ts
     # }
 
     new_stats = update_in(state.stats.events_received, &(&1 + 1))
+
+    # Normalize cells to diffs format (coord -> voxel_id)
+    diffs =
+      Enum.map(msg.cells, fn cell ->
+        %{
+          voxel_id: cell.coord,
+          old: cell.old,
+          new: cell.new
+        }
+      end)
 
     # Convert PubSub message to TAKChunkEvolved event
     event = %TAKChunkEvolved{
       zone_id: state.zone_id,
       chunk_id: {0, 0, 0},  # Default chunk - could be extracted from run metadata
       tick_id: msg.generation,
-      diffs: msg.cells,
+      diffs: diffs,
       rule_hash: compute_rule_hash(state.run_id),
       meta: %{
         run_id: msg.run_id,
@@ -130,7 +140,7 @@ defmodule Thundervine.TAKEventRecorder do
       {:error, reason} ->
         Logger.warning("[TAKEventRecorder] Failed to persist event: #{inspect(reason)}")
 
-        new_stats = update_in(new_stats.events_failed, &(&1 + 1))
+        new_stats = update_in(new_stats, [:events_failed], &(&1 + 1))
         {:noreply, %{state | stats: new_stats}}
     end
   end
@@ -152,7 +162,9 @@ defmodule Thundervine.TAKEventRecorder do
       meta: event.meta || %{}
     }
 
-    TAKChunkEvent.create(attrs, authorize?: false)
+    TAKChunkEvent
+    |> Ash.Changeset.for_create(:create, attrs)
+    |> Ash.create(domain: Thunderline.Thundervine.Domain, authorize?: false)
   end
 
   defp compute_rule_hash(run_id) do

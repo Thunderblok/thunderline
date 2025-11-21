@@ -1,11 +1,12 @@
 defmodule Thundervine.TAKChunkState do
   use Ash.Resource,
+    domain: Thunderline.Thundervine.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshResource]
 
   postgres do
     table "tak_chunk_states"
-    repo Thundervine.Repo
+    repo Thunderline.Repo
   end
 
   attributes do

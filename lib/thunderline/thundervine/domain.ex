@@ -60,9 +60,14 @@ defmodule Thunderline.Thundervine.Domain do
   end
 
   resources do
+    # Workflow resources
     resource Thunderline.Thundervine.Resources.Workflow
     resource Thunderline.Thundervine.Resources.WorkflowNode
     resource Thunderline.Thundervine.Resources.WorkflowEdge
     resource Thunderline.Thundervine.Resources.WorkflowSnapshot
+
+    # TAK persistence resources
+    resource Thundervine.TAKChunkEvent
+    resource Thundervine.TAKChunkState
   end
 end

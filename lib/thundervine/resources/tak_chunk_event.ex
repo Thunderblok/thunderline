@@ -1,11 +1,12 @@
 defmodule Thundervine.TAKChunkEvent do
   use Ash.Resource,
+    domain: Thunderline.Thundervine.Domain,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshResource]
 
   postgres do
     table "tak_chunk_events"
-    repo Thundervine.Repo
+    repo Thunderline.Repo
   end
 
   attributes do
@@ -24,6 +25,10 @@ defmodule Thundervine.TAKChunkEvent do
   end
 
   actions do
-    defaults [:read, :create]
+    defaults [:read]
+
+    create :create do
+      accept [:zone_id, :chunk_coords, :tick_id, :diffs, :rule_hash, :meta]
+    end
   end
 end

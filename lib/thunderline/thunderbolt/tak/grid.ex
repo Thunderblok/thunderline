@@ -142,7 +142,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
     squeezed = Nx.squeeze(tensor)
     shape = Nx.shape(squeezed)
     flat_data = Nx.to_flat_list(squeezed)
-    
+
     cells = case shape do
       {height, width} ->
         # 2D grid
