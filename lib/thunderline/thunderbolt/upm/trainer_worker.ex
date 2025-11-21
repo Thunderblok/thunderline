@@ -264,10 +264,42 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
   end
 
   @impl true
+  def handle_info(%Thunderline.Event{name: "system.feature_window.created"} = event, state) do
+    # Extract window ID from event payload
+    window_id = event.payload["window_id"] || event.payload[:window_id]
+
+    if window_id do
+      # Add to replay buffer for ordered processing
+      ReplayBuffer.add(state.replay_buffer, window_id, event.payload)
+
+      :telemetry.execute(
+        [:upm, :trainer, :event_received],
+        %{count: 1},
+        %{trainer_id: state.trainer_id, window_id: window_id, event_name: event.name}
+      )
+
+      Logger.debug("[UPM.TrainerWorker] Received feature window event: #{window_id}")
+    else
+      Logger.warn("[UPM.TrainerWorker] Received feature window event without window_id: #{inspect(event)}")
+    end
+
+    {:noreply, state}
+  end
+
+  # Handle legacy event format for backward compatibility
   def handle_info({:event_bus, %{name: "system.feature_window.created", payload: payload}}, state) do
-    window_id = payload["window_id"]
-    # Add to replay buffer for ordered processing
-    ReplayBuffer.add(state.replay_buffer, window_id, payload)
+    window_id = payload["window_id"] || payload[:window_id]
+
+    if window_id do
+      ReplayBuffer.add(state.replay_buffer, window_id, payload)
+
+      :telemetry.execute(
+        [:upm, :trainer, :event_received],
+        %{count: 1},
+        %{trainer_id: state.trainer_id, window_id: window_id}
+      )
+    end
+
     {:noreply, state}
   end
 
@@ -284,15 +316,20 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
   # Private Helpers
 
   defp ensure_trainer(name, tenant_id, mode) do
-    case Ash.read(UpmTrainer, filter: [name: name, tenant_id: tenant_id]) do
+    require Ash.Query
+
+    UpmTrainer
+    |> Ash.Query.filter(name == ^name and tenant_id == ^tenant_id)
+    |> Ash.read(tenant: tenant_id)
+    |> case do
       {:ok, [trainer]} ->
         {:ok, trainer}
 
       {:ok, []} ->
         # Create new trainer
-        %{name: name, tenant_id: tenant_id, mode: mode}
-        |> UpmTrainer.register()
-        |> Ash.create()
+        UpmTrainer
+        |> Ash.Changeset.for_create(:register, %{name: name, tenant_id: tenant_id, mode: mode})
+        |> Ash.create(tenant: tenant_id)
 
       {:error, reason} ->
         {:error, reason}
@@ -301,10 +338,10 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
 
   defp subscribe_to_windows do
     # Subscribe to ThunderFlow feature window events via PubSub
-    # EventBus publishes to "events:<event_type>" topics as fallback
+    # EventBus publishes to Mnesia tables, but also broadcasts via PubSub as fallback
     Phoenix.PubSub.subscribe(Thunderline.PubSub, "events:feature_window")
-    Phoenix.PubSub.subscribe(Thunderline.PubSub, "system:feature_window:created")
-    Logger.debug("[UPM.TrainerWorker] Subscribed to feature window events")
+    Phoenix.PubSub.subscribe(Thunderline.PubSub, "system.feature_window.created")
+    Logger.info("[UPM.TrainerWorker] Subscribed to feature window events")
     :ok
   end
 
@@ -322,21 +359,32 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
 
   defp do_process_window(window_id, state) do
     # Fetch feature window from ThunderFlow
-    case Ash.get(FeatureWindow, window_id) do
+    case Ash.get(FeatureWindow, window_id, tenant: state.tenant_id) do
       {:ok, window} ->
-        # Perform SGD update
-        {loss, updated_params} = sgd_update(window, state.model_params, state.learning_rate)
+        # Extract features and labels from window
+        features = window.features || %{}
+        labels = window.labels
 
-        new_state = %{
-          state
-          | model_params: updated_params,
-            window_count: state.window_count + 1,
-            total_loss: state.total_loss + loss,
-            last_window_id: window_id,
-            status: :training
-        }
+        # Only train on filled windows with labels
+        if window.status == :filled and labels do
+          # Perform SGD update
+          {loss, updated_params} = sgd_update(window, state.model_params, state.learning_rate)
 
-        {:ok, new_state}
+          new_state = %{
+            state
+            | model_params: updated_params,
+              window_count: state.window_count + 1,
+              total_loss: state.total_loss + loss,
+              last_window_id: window_id,
+              status: :training
+          }
+
+          {:ok, new_state}
+        else
+          # Skip unfilled windows
+          Logger.debug("[UPM.TrainerWorker] Skipping unfilled window: #{window_id} (status: #{window.status})")
+          {:ok, state}
+        end
 
       {:error, reason} ->
         {:error, {:window_fetch_failed, reason}}
