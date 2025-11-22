@@ -10,7 +10,9 @@ defmodule ThunderlineWeb.CerebrosJobsController do
   - GET /api/datasets/:id/corpus - Get dataset corpus path
   """
   use ThunderlineWeb, :controller
-  alias Thunderline.Cerebros.Training.{Job, Dataset}
+  alias Thunderline.Thunderbolt.Resources.{CerebrosTrainingJob, TrainingDataset}
+  alias Thunderline.Thunderbolt.Domain
+  require Ash.Query
   require Logger
 
   action_fallback ThunderlineWeb.FallbackController
@@ -50,9 +52,8 @@ defmodule ThunderlineWeb.CerebrosJobsController do
   def update_status(conn, %{"id" => id} = params) do
     Logger.info("Updating job #{id} status to: #{params["status"]}")
 
-    with {:ok, job} <- Job.by_id(id),
-         update_params <- build_status_update_params(params),
-         {:ok, updated_job} <- Job.update_status(job, update_params) do
+    with {:ok, job} <- get_job_by_id(id),
+         {:ok, _updated_job} <- update_job_status(job, params) do
       Logger.info("Job #{id} status updated successfully")
       render(conn, :ok, %{})
     end
@@ -76,9 +77,9 @@ defmodule ThunderlineWeb.CerebrosJobsController do
   def update_metrics(conn, %{"id" => id} = params) do
     Logger.debug("Updating job #{id} metrics")
 
-    with {:ok, job} <- Job.by_id(id),
+    with {:ok, job} <- get_job_by_id(id),
          update_params <- build_metrics_update_params(job, params),
-         {:ok, updated_job} <- Job.update_progress(job, update_params) do
+         {:ok, _updated_job} <- update_job(job, update_params) do
       render(conn, :ok, %{})
     end
   end
@@ -96,11 +97,10 @@ defmodule ThunderlineWeb.CerebrosJobsController do
   def add_checkpoint(conn, %{"id" => id, "checkpoint_url" => checkpoint_url}) do
     Logger.info("Adding checkpoint to job #{id}: #{checkpoint_url}")
 
-    with {:ok, job} <- Job.by_id(id),
-         current_checkpoints <- job.checkpoint_urls || [],
-         new_checkpoints <- current_checkpoints ++ [checkpoint_url],
-         {:ok, updated_job} <-
-           Job.update_progress(job, %{checkpoint_urls: new_checkpoints}) do
+    with {:ok, job} <- get_job_by_id(id),
+         phase <- Map.get(conn.params, "phase", job.phase || 0),
+         {:ok, _updated_job} <-
+           CerebrosTrainingJob.update_checkpoint(job, phase, checkpoint_url, domain: Domain) do
       render(conn, :ok, %{})
     end
   end
@@ -115,7 +115,7 @@ defmodule ThunderlineWeb.CerebrosJobsController do
   def get_corpus(conn, %{"id" => id}) do
     Logger.debug("Fetching corpus path for dataset: #{id}")
 
-    with {:ok, dataset} <- Dataset.by_id(id),
+    with {:ok, dataset} <- get_dataset_by_id(id),
          {:ok, corpus_path} <- verify_corpus_exists(dataset) do
       render(conn, :corpus, corpus_path: corpus_path, dataset: dataset)
     end
@@ -123,10 +123,56 @@ defmodule ThunderlineWeb.CerebrosJobsController do
 
   # Private functions
 
+  defp get_job_by_id(id) do
+    CerebrosTrainingJob
+    |> Ash.Query.filter(id == ^id)
+    |> Ash.Query.limit(1)
+    |> Ash.read_one(domain: Domain)
+  end
+
+  defp get_dataset_by_id(id) do
+    TrainingDataset
+    |> Ash.Query.filter(id == ^id)
+    |> Ash.Query.limit(1)
+    |> Ash.read_one(domain: Domain)
+  end
+
+  defp update_job(job, params) do
+    job
+    |> Ash.Changeset.for_update(:update, params)
+    |> Ash.update(domain: Domain)
+  end
+
+  defp update_job_status(job, params) do
+    status_atom = String.to_existing_atom(params["status"])
+    
+    case status_atom do
+      :running ->
+        CerebrosTrainingJob.start(job, domain: Domain)
+        
+      :completed ->
+        checkpoint_urls = params["checkpoint_urls"] || job.checkpoint_urls || []
+        metrics = params["metrics"] || job.metrics || %{}
+        CerebrosTrainingJob.complete(job, checkpoint_urls, metrics, domain: Domain)
+        
+      :failed ->
+        error_message = params["error_message"] || "Unknown error"
+        CerebrosTrainingJob.fail(job, error_message, domain: Domain)
+        
+      _ ->
+        update_job(job, build_status_update_params(params))
+    end
+  end
+
   defp get_next_queued_job do
-    Job.list_queued!()
-    |> Enum.sort_by(& &1.created_at, {:asc, DateTime})
-    |> List.first()
+    case CerebrosTrainingJob
+         |> Ash.Query.filter(status == :queued)
+         |> Ash.Query.sort(inserted_at: :asc)
+         |> Ash.Query.limit(1)
+         |> Ash.read_one(domain: Domain) do
+      {:ok, job} -> job
+      {:error, _} -> nil
+    end
   end
 
   defp build_status_update_params(params) do

@@ -8,7 +8,6 @@ defmodule ThunderlineWeb.CerebrosJobsJSON do
       id: job.id,
       training_dataset_id: job.training_dataset_id,
       model_id: job.model_id,
-      tokenizer_id: job.tokenizer_id,
       status: job.status,
       hyperparameters: job.hyperparameters,
       metadata: job.metadata,
@@ -18,8 +17,11 @@ defmodule ThunderlineWeb.CerebrosJobsJSON do
       started_at: job.started_at,
       completed_at: job.completed_at,
       checkpoint_urls: job.checkpoint_urls,
+      current_checkpoint_url: job.current_checkpoint_url,
       fine_tuned_model: job.fine_tuned_model,
-      created_at: job.created_at,
+      model_loaded: job.model_loaded,
+      model_format: job.model_format,
+      inserted_at: job.inserted_at,
       updated_at: job.updated_at
     }
   end
