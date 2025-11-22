@@ -11,56 +11,81 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
     * NoPolicyInLink
     * NoEventsOutsideFlow (emission entrypoints)
   """
-  @behaviour Credo.Check
+  use Credo.Check,
+    category: :warning,
+    base_priority: :normal,
+    explanations: [
+      check: """
+      Domain guardrails enforce Thunderline's ANVIL architecture principles.
+
+      This check ensures:
+      - Direct Repo calls only occur in the Block domain or migrations
+      - Policy references don't leak into the Link domain
+      - Event emissions use the canonical EventBus.publish_event/1 API
+      """,
+      params: []
+    ],
+    tags: [:domain, :architecture]
+
   alias Credo.{Issue, SourceFile}
 
-  @impl true
-  def category, do: severity()
-  @impl true
-  def base_priority, do: 0
-  @impl true
-  def param_names, do: []
-  @impl true
-  def run(%SourceFile{filename: filename} = source_file, _params) do
+  @doc false
+  def run(source_file, params) do
+    issue_meta = IssueMeta.for(source_file, params)
+    filename = source_file.filename
     text = SourceFile.source(source_file)
 
-    issues =
-      []
-      |> check_repo_calls(filename, text)
-      |> check_policy_in_link(filename, text)
-      |> check_event_emission(filename, text)
-
-    {:ok, issues}
+    []
+    |> check_repo_calls(filename, text, issue_meta)
+    |> check_policy_in_link(filename, text, issue_meta)
+    |> check_event_emission(filename, text, issue_meta)
   end
 
-  defp check_repo_calls(issues, filename, text) do
+  defp check_repo_calls(issues, filename, text, issue_meta) do
     allow? =
       String.contains?(filename, "/thunderblock/") or
         String.contains?(filename, "/priv/repo/migrations/")
 
     if String.contains?(text, "Repo.") and not allow? do
-      [issue(issues, filename, "Direct Repo call outside Block domain")]
+      [
+        format_issue(
+          issue_meta,
+          message: "Direct Repo call outside Block domain",
+          trigger: "Repo",
+          line_no: 1
+        )
+        | issues
+      ]
     else
       issues
     end
   end
 
-  defp check_policy_in_link(issues, filename, text) do
+  defp check_policy_in_link(issues, filename, text, issue_meta) do
     if String.contains?(filename, "/thunderlink/") and String.contains?(text, "Policy.") do
-      [issue(issues, filename, "Policy reference inside Link domain")]
+      [
+        format_issue(
+          issue_meta,
+          message: "Policy reference inside Link domain",
+          trigger: "Policy",
+          line_no: 1
+        )
+        | issues
+      ]
     else
       issues
     end
   end
 
-  defp check_event_emission(issues, filename, text) do
+  defp check_event_emission(issues, filename, text, issue_meta) do
     cond do
       String.contains?(text, "EventBus.emit") ->
         [
-          issue(
-            issues,
-            filename,
-            "Deprecated EventBus.emit usage detected (replace with publish_event/1)"
+          format_issue(
+            issue_meta,
+            message: "Deprecated EventBus.emit usage detected (replace with publish_event/1)",
+            trigger: "EventBus.emit",
+            line_no: 1
           )
           | issues
         ]
@@ -68,10 +93,12 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
       String.contains?(text, "EventBus.publish_event(") and
           not String.contains?(filename, "/thunderflow/") ->
         [
-          issue(
-            issues,
-            filename,
-            "Event emission outside Flow domain (publish_event/1 should be invoked by Flow-centric modules or clearly justified)"
+          format_issue(
+            issue_meta,
+            message:
+              "Event emission outside Flow domain (publish_event/1 should be invoked by Flow-centric modules or clearly justified)",
+            trigger: "EventBus.publish_event",
+            line_no: 1
           )
           | issues
         ]
@@ -79,24 +106,5 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
       true ->
         issues
     end
-  end
-
-  defp issue(issues, filename, message) do
-    [
-      %Issue{category: severity(), filename: filename, message: message, trigger: message}
-      | issues
-    ]
-  end
-
-  defp severity do
-    # Escalate to :error in any CI context or when explicit env toggle set.
-    # This moves guardrails from advisory -> enforcing without requiring every
-    # pipeline to remember REPO_ONLY_ENFORCE. MIX_ENV=ci or CI=true triggers.
-    enforce? =
-      System.get_env("REPO_ONLY_ENFORCE") in ["1", "true", "TRUE"] or
-        System.get_env("CI") in ["1", "true", "TRUE"] or
-        System.get_env("MIX_ENV") == "ci"
-
-    if enforce?, do: :error, else: :warning
   end
 end
