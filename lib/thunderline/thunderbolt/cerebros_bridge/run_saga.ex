@@ -23,7 +23,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
   use Reactor, extensions: [Reactor.Dsl]
   require Logger
 
-  alias Thunderline.Thunderbolt.CerebrosBridge.{Client, PythonxInvoker}
+  alias Thunderline.Thunderbolt.CerebrosBridge.{Client, PythonxInvoker, SnexInvoker}
   alias Thunderline.Thunderflow.EventBus
 
   @doc """
@@ -161,8 +161,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
         }
       }
 
-      # Call Python via PythonxInvoker
-      case PythonxInvoker.invoke(:start_run, python_args, timeout_ms: 30_000) do
+      # Call Python via configured invoker (Snex or Pythonx)
+      invoker = get_invoker()
+      Logger.info("[RunSaga] Using #{inspect(invoker)} for NAS run #{run_id}")
+
+      case invoker.invoke(:start_run, python_args, timeout_ms: 30_000) do
         {:ok, result} ->
           Logger.info("[RunSaga] NAS run completed: #{run_id}")
           # Extract the parsed Python result from the wrapper
@@ -271,5 +274,14 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
     end
   end
 
-  defp validate_result(_), do: {:error, :not_a_map}
+  defp validate_result(_), do: {:error, :invalid_result_format}
+
+  # Get the configured Python invoker module
+  defp get_invoker do
+    case Application.get_env(:thunderline, :cerebros_bridge, []) |> Keyword.get(:invoker, :pythonx) do
+      :snex -> SnexInvoker
+      :pythonx -> PythonxInvoker
+      other -> raise "Unsupported invoker: #{inspect(other)}"
+    end
+  end
 end

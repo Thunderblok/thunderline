@@ -53,17 +53,32 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
 
     Logger.info("[AutoMLDriver] Started")
 
-    # Initialize Pythonx runtime if using Pythonx invoker
-    if cerebros_bridge_invoker() == :pythonx do
-      Logger.info("[AutoMLDriver] Initializing Pythonx runtime...")
+    # Initialize Snex runtime if using Snex invoker
+    case cerebros_bridge_invoker() do
+      :snex ->
+        Logger.info("[AutoMLDriver] Initializing Snex runtime (GIL-free)...")
 
-      case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.init() do
-        :ok ->
-          Logger.info("[AutoMLDriver] Pythonx runtime initialized successfully")
+        case Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker.init() do
+          :ok ->
+            Logger.info("[AutoMLDriver] Snex runtime initialized successfully")
 
-        {:error, reason} ->
-          Logger.error("[AutoMLDriver] Failed to initialize Pythonx: #{inspect(reason)}")
-      end
+          {:error, reason} ->
+            Logger.error("[AutoMLDriver] Failed to initialize Snex: #{inspect(reason)}")
+        end
+
+      :pythonx ->
+        Logger.info("[AutoMLDriver] Initializing Pythonx runtime...")
+
+        case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.init() do
+          :ok ->
+            Logger.info("[AutoMLDriver] Pythonx runtime initialized successfully")
+
+          {:error, reason} ->
+            Logger.error("[AutoMLDriver] Failed to initialize Pythonx: #{inspect(reason)}")
+        end
+
+      other ->
+        Logger.info("[AutoMLDriver] Using #{other} invoker (no initialization needed)")
     end
 
     {:ok, state}

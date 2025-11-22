@@ -47,21 +47,10 @@ config :ash,
 config :opentelemetry_ash,
   trace_types: [:custom, :action, :flow]
 
-# Configure Pythonx with UV initialization for Python runtime
-# Temporarily disabled to use system Python
-# config :pythonx, :uv_init,
-#   pyproject_toml: """
-#   [project]
-#   name = "thunderline"
-#   version = "0.0.0"
-#   requires-python = ">=3.10"
-#   dependencies = []
-#   """
-
-# Use system Python directly - venv python is just a symlink to system python
-# and doesn't have its own libpython, so we need to use system paths consistently
-config :pythonx,
-  python: "/home/linuxbrew/.linuxbrew/bin/python3.13"
+# Legacy Pythonx configuration (deprecated - using Snex now for GIL-free operation)
+# Kept for potential fallback mode via cerebros_bridge.invoker = :pythonx
+# config :pythonx,
+#   python: "/home/linuxbrew/.linuxbrew/bin/python3.13"
 
 config :spark,
   formatter: [
@@ -121,13 +110,13 @@ config :thunderline,
   numerics_adapter: Thunderline.Thunderbolt.Numerics.Adapters.ElixirFallback,
   numerics_sidecar_url:
     System.get_env("THUNDERLINE_NUMERICS_SIDECAR_URL") || "http://localhost:8089",
-  # Pythonx configuration for Python integration (used by Cerebros bridge)
-  pythonx_enabled: true,
+  # Snex configuration for Python integration (GIL-free!)
+  snex_enabled: true,
   # Cerebros bridge facade configuration (enabled for NAS integration)
   cerebros_bridge: [
     enabled: true,
-    # Use pythonx for better performance vs subprocess
-    invoker: :pythonx,
+    # Use snex for GIL-free parallel training (vs pythonx or subprocess)
+    invoker: :snex,
     # Path to cerebros_service.py module
     python_path: ["thunderhelm"],
     repo_path:
