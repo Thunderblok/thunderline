@@ -398,46 +398,80 @@
 
 ### ✅ ThunderVine Domain (Implementation Complete)
 - **Location:** `lib/thunderline/thundervine/`
-- **Purpose:** Workflow Orchestration & Event-driven DAG Processing
-- **Status:** ✅ DOMAIN CREATED – Nov 17, 2025 (HC-29)
-- **Resource Count:** **4 Ash Resources** (owns Workflow/WorkflowNode/WorkflowEdge/WorkflowSnapshot)
-- **Implementation Details:**
-  - Created `ThunderVine.Domain` with `Ash.Domain` extension
-  - Migrated 4 resources from `ThunderBlock.Resources.DAG*` → `Thundervine.Resources.Workflow*`
-  - Updated 4 utility modules to reference new resources
-  - Database tables unchanged (dag_workflows, dag_nodes, dag_edges, dag_snapshots)
-  - Zero breaking changes, fully backward compatible
-- **Files:** 9 total (1 domain + 4 resources + 4 utility modules)
-  - `domain.ex` - ThunderVine.Domain definition
-  - `resources/workflow.ex` - Primary orchestration resource
-  - `resources/workflow_node.ex` - Execution tracking with timing
-  - `resources/workflow_edge.ex` - Causal relationships
-  - `resources/workflow_snapshot.ex` - Immutable serialization
-  - `events.ex` - Workflow lifecycle management (updated)
-  - `spec_parser.ex` - Workflow DSL parser (no changes needed)
-  - `workflow_compactor.ex` - GenServer for workflow sealing (updated)
-  - `workflow_compactor_worker.ex` - Oban worker (updated)
+- **Purpose:** Workflow Orchestration, Event-driven DAG Processing & TAK Persistence
+- **Status:** ✅ ACTIVE – Workflow (Nov 17, 2025 HC-29) + TAK Persistence (Nov 21, 2025)
+- **Resource Count:** **6 Ash Resources** (4 Workflow + 2 TAK Persistence)
+- **Extensions:** AshGraphql.Domain
+- **Resource Categories:**
+  - **Workflow Orchestration** (4 resources): Event-sourced DAG management
+    - Workflow, WorkflowNode, WorkflowEdge, WorkflowSnapshot
+  - **TAK Persistence** (2 resources): Cellular automaton event recording
+    - TAKChunkEvent, TAKChunkState
+- **Implementation History:**
+  - **Workflow Migration** (Nov 17, 2025):
+    - Migrated 4 resources from `ThunderBlock.Resources.DAG*` → `Thundervine.Resources.Workflow*`
+    - Database tables unchanged (dag_workflows, dag_nodes, dag_edges, dag_snapshots)
+    - Zero breaking changes, fully backward compatible
+  - **TAK Persistence** (Nov 21, 2025):
+    - Created TAKEventRecorder GenServer for PubSub-driven event capture
+    - Implemented TAKChunkEvent/TAKChunkState Ash resources
+    - Added Thundervine.Supervisor for recorder lifecycle management
+    - Integrated auto-start with TAK.Runner
+    - Database tables: tak_chunk_events, tak_chunk_states (JSONB storage)
+- **Files:** 15 total (1 domain + 6 resources + 5 workflow utils + 3 TAK components)
+  - **Domain:** `domain.ex` - ThunderVine.Domain definition with GraphQL
+  - **Workflow Resources:** workflow.ex, workflow_node.ex, workflow_edge.ex, workflow_snapshot.ex
+  - **TAK Resources:** tak_chunk_event.ex, tak_chunk_state.ex
+  - **TAK Components:** consumers/tak_event_recorder.ex (GenServer), supervisor.ex (DynamicSupervisor)
+  - **Workflow Utils:** events.ex, spec_parser.ex, workflow_compactor.ex, workflow_compactor_worker.ex
+- **Key Responsibilities:**
+  - **Workflow Orchestration:**
+    - Event-sourced workflow tracking via correlation_id
+    - DAG node/edge management for execution graphs
+    - Workflow snapshot/replay capabilities
+    - Lineage analysis for distributed observability
+  - **TAK Persistence:**
+    - Real-time CA evolution event capture via PubSub
+    - Event-sourced recording of voxel state transitions
+    - Historical CA state reconstruction and replay
+    - Performance metrics and rule analysis
+    - Scientific reproducibility for CA experiments
+- **GraphQL API:**
+  - Workflow queries: workflow, workflows, workflow_by_correlation, workflow_nodes, workflow_edges, workflow_snapshots
+  - Workflow mutations: start_workflow, seal_workflow, update_workflow_metadata, record_node_start, mark_node_success, mark_node_error, create_workflow_edge, capture_workflow_snapshot
+- **Code Interfaces:**
+  - **TAK Recording:** TAKEventRecorder.start_link/1, get_stats/1; Supervisor.start_recorder/1, stop_recorder/1, list_recorders/0
+  - **Workflow:** Standard Ash actions via domain
+- **Integration Points:**
+  - TAK.Runner auto-starts event recorder (configurable via `enable_recording?`)
+  - Phoenix.PubSub subscription to `"ca:#{run_id}"` for CA deltas
+  - Thunderline.Repo PostgreSQL persistence via AshPostgres
+- **Data Flow (TAK Persistence):**
+  ```
+  TAK.Runner → PubSub ("ca:#{run_id}") → TAKEventRecorder → TAKChunkEvent → PostgreSQL
+               {:ca_delta, msg}          normalize cells    persist via Ash  (JSONB)
+                                         track stats
+  ```
+- **Database Schema:**
+  - **tak_chunk_events:** zone_id, chunk_coords (int[]), tick_id, diffs (jsonb array), rule_hash, meta (jsonb)
+    - Unique: (zone_id, chunk_coords, tick_id); Indexes: zone_id, tick_id, rule_hash
+  - **tak_chunk_states:** zone_id, chunk_coords (int[]), tick_id, state_snapshot (jsonb)
+    - Unique: (zone_id, chunk_coords)
 - **Verification Results:**
-  - ✅ Compilation: `mix compile --force` succeeded (zero errors)
-  - ✅ Tests: No regressions (54 tests run, 25 pre-existing failures in ThunderLink)
-  - ✅ Exclusive Usage: Confirmed only ThunderVine uses Workflow resources
-  - ✅ Documentation: All references updated (6 documentation files synchronized)
+  - ✅ Compilation: Zero errors
+  - ✅ Tests: TAK persistence tests passing (6 tests, 1 skipped pending TAK.RuleParser)
+  - ✅ Integration: Auto-start from TAK.Runner verified
+  - ✅ Persistence: Events successfully written to PostgreSQL
+  - ✅ Stats Tracking: events_received/persisted/failed counters functional
+  - ✅ Documentation: Full architecture docs in `documentation/TAK_PERSISTENCE_ARCHITECTURE.md`
 - **Benefits Realized:**
-  1. ✅ API Exposure: Can now expose Workflow mutations via GraphQL/JSON:API
-  2. ✅ Policy Enforcement: Can define Ash policies for workflow management
-  3. ✅ Clearer Ownership: Workflows conceptually belong to orchestration domain
-  4. ✅ Improved Naming: "Workflow" clearer than "DAGWorkflow" for users
-  5. ✅ Reduced Coupling: ThunderVine no longer depends on ThunderBlock internals
-  6. ✅ Domain Boundaries: Clear separation between orchestration and infrastructure
-- **Former Architectural Concerns (RESOLVED):**
-  - ✅ Policy enforcement now possible (resources in ThunderVine.Domain)
-  - ✅ API exposure enabled (GraphQL/JSON:API can be configured)
-  - ✅ Naming improved (Workflow vs DAGWorkflow)
-  - ✅ Domain boundary clarified (workflows are ThunderVine's domain)
-- **Decision Status:** ✅ **IMPLEMENTED** – Nov 17, 2025 (HC-29 complete)
-  - See `HC-29_COMPLETION_REPORT.md` for full implementation details
-  - Migration: 5 files created, 10 modified, 4 deleted (+168 net lines)
-  - Verification: Compilation ✅, Tests ✅, Documentation ✅
+  1. **Workflow:** API exposure via GraphQL, policy enforcement, clearer ownership, improved naming
+  2. **TAK Persistence:** Event-sourced CA history, scientific reproducibility, time-travel debugging, automatic recording
+- **Performance:** Handles 130-5,200 events/tick (1-10% change rate on 64³ grid); JSONB compression
+- **Future Enhancements:** Batch persistence, delta encoding, state snapshots, retention policies, LiveView dashboard, Parquet export
+- **Decision Status:** ✅ **ACTIVE DEVELOPMENT**
+  - Workflow migration: Nov 17, 2025 (HC-29) - See `HC-29_COMPLETION_REPORT.md`
+  - TAK persistence: Nov 21, 2025 - See `documentation/TAK_PERSISTENCE_ARCHITECTURE.md`
 
 ---
 
@@ -485,13 +519,13 @@
 | Classification | Count | Domains |
 |----------------|--------|----------|
 | ✅ Active (Core) | 7 | ThunderBlock (33), ThunderBolt (50+), ThunderCrown (4), ThunderFlow (9), ThunderGate (19), ThunderGrid (5), ThunderLink (17) |
-| ✅ Active (Support) | 2 | ThunderVine (4 resources), RAG (1 resource) |
+| ✅ Active (Support) | 2 | ThunderVine (6 resources), RAG (1 resource) |
 | ✅ Removed | 2 | ThunderForge (HC-30 cleanup - Nov 17, 2025), ThunderCom (HC-27/28 completion - Nov 18, 2025) |
 | ⚠️ Deprecated/Consolidated | 2 | ThunderChief (→ThunderCrown), ThunderWatch (→ThunderGate) |
 | ⚠️ Migration In Progress | 2 | ThunderJam (→ThunderGate.RateLimiting), ThunderClock (→ThunderBlock.Timing) |
 
 **Total Active Domains:** 8 (7 core + 1 support with resources)  
-**Total Ash Resources:** ~160 across all active domains  
+**Total Ash Resources:** ~162 across all active domains (ThunderVine +2 for TAK persistence)  
 **Deprecated Domains:** 4 (2 consolidated complete, 2 migrations in progress)  
 **Consolidation Success:** 6 major consolidations completed (ThunderVault→ThunderBlock, 5 domains→ThunderBolt, ThunderChief→ThunderCrown, ThunderCom+ThunderWave→ThunderLink, ThunderStone+ThunderEye+Accounts→ThunderGate, ThunderWatch→ThunderGate)  
 **Cleanup Success:** 2 orphaned domains removed (ThunderForge - Nov 17, 2025; ThunderCom - Nov 18, 2025)

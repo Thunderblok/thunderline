@@ -575,6 +575,10 @@ Thunderline development follows rigorous engineering standards with comprehensiv
 - **[CODEBASE_AUDIT_2025.md](CODEBASE_AUDIT_2025.md)** - Latest audit findings and verification
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development workflow and guidelines
 
+**TAK Persistence** (Thundervine Domain):
+- **[TAK_PERSISTENCE_ARCHITECTURE.md](documentation/TAK_PERSISTENCE_ARCHITECTURE.md)** - Complete architecture for cellular automaton event recording
+- **[TAK_PERSISTENCE_QUICKSTART.md](documentation/TAK_PERSISTENCE_QUICKSTART.md)** - Quick start guide with code examples
+
 **⚠️ Important**: Always use the file-by-file audit methodology in `HOW_TO_AUDIT.md` for any architectural assessment. GitHub search alone cannot determine production status or resource counts.
 
 ### Automated Maintenance & Release Workflow
