@@ -145,20 +145,20 @@ defmodule ThunderlineWeb.CerebrosJobsController do
 
   defp update_job_status(job, params) do
     status_atom = String.to_existing_atom(params["status"])
-    
+
     case status_atom do
       :running ->
         CerebrosTrainingJob.start(job, domain: Domain)
-        
+
       :completed ->
         checkpoint_urls = params["checkpoint_urls"] || job.checkpoint_urls || []
         metrics = params["metrics"] || job.metrics || %{}
         CerebrosTrainingJob.complete(job, checkpoint_urls, metrics, domain: Domain)
-        
+
       :failed ->
         error_message = params["error_message"] || "Unknown error"
         CerebrosTrainingJob.fail(job, error_message, domain: Domain)
-        
+
       _ ->
         update_job(job, build_status_update_params(params))
     end
