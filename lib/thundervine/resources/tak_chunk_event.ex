@@ -1,8 +1,7 @@
 defmodule Thundervine.TAKChunkEvent do
   use Ash.Resource,
     domain: Thunderline.Thundervine.Domain,
-    data_layer: AshPostgres.DataLayer,
-    extensions: [AshResource]
+    data_layer: AshPostgres.DataLayer
 
   postgres do
     table "tak_chunk_events"
@@ -14,7 +13,7 @@ defmodule Thundervine.TAKChunkEvent do
     attribute :zone_id, :string, allow_nil?: false
     attribute :chunk_coords, {:array, :integer}, allow_nil?: false
     attribute :tick_id, :integer, allow_nil?: false
-    attribute :diffs, :map, allow_nil?: false
+    attribute :diffs, {:array, :map}, allow_nil?: false
     attribute :rule_hash, :string, allow_nil?: false
     attribute :meta, :map
     create_timestamp :inserted_at

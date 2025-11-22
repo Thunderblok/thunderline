@@ -101,7 +101,7 @@ defmodule Thundervine.TAKEventRecorder do
     #   timestamp: ts
     # }
 
-    new_stats = update_in(state.stats.events_received, &(&1 + 1))
+    new_stats = update_in(state.stats, [:events_received], &(&1 + 1))
 
     # Normalize cells to diffs format (coord -> voxel_id)
     diffs =

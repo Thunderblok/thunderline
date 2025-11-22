@@ -259,6 +259,8 @@ config :thunderline,
     Thunderline.Thunderflow.Domain,
     # Realtime messaging / channels
     Thunderline.Thunderlink.Domain,
+    # TAK persistence & event recording
+    Thunderline.Thundervine.Domain,
     # Re-enabled to host AshAI-powered orchestration & MCP resources
     Thunderline.Thundercrown.Domain,
     # Auth/security domain now enabled for AshAuthentication integration
