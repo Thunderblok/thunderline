@@ -14,7 +14,7 @@ defmodule ThunderlineWeb.TrialDashboardLive do
   use ThunderlineWeb, :live_view
 
   alias Thunderline.Thunderbolt.Resources.{ModelRun, ModelTrial}
-  alias Ash.Query
+  require Ash.Query
 
   @impl true
   def mount(_params, _session, socket) do

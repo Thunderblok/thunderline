@@ -319,7 +319,7 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
     Ash.Changeset.change_attribute(changeset, :version, current_version + 1)
   end
 
-  defp generate_signature(changeset, ruleset) do
+  defp generate_signature(_changeset, ruleset) do
     # Generate cryptographic signature for ruleset integrity
     ruleset_data = serialize_for_signature(ruleset)
     signature = :crypto.sign(:eddsa, :ed25519, ruleset_data, get_signing_key())

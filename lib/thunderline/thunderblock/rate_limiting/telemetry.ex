@@ -177,7 +177,7 @@ defmodule Thunderline.Thunderblock.RateLimiting.Telemetry do
     update_gauge({:bucket_tokens, metadata[:bucket]}, measurements[:tokens_after])
   end
 
-  def handle_event([:thunderline, :timing, event], measurements, metadata, _config)
+  def handle_event([:thunderline, :timing, event], measurements, _metadata, _config)
       when event in [:timer_created, :timer_fired, :timer_cancelled] do
     increment_counter(:"timing_#{event}")
 
@@ -262,7 +262,7 @@ defmodule Thunderline.Thunderblock.RateLimiting.Telemetry do
     # Calculate rates
     total_checks = Map.get(counters, :total_checks, 0)
     total_allowed = Map.get(counters, :total_allowed, 0)
-    total_blocked = Map.get(counters, :total_blocked, 0)
+    _total_blocked = Map.get(counters, :total_blocked, 0)
 
     allow_rate =
       if total_checks > 0 do

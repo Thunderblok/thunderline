@@ -154,7 +154,7 @@ defmodule Thunderline.Thunderflow.DLQ do
     end
   end
 
-  defp record_to_entry(record, attrs, attempts_index, created_at_index, table) do
+  defp record_to_entry(record, attrs, _attempts_index, _created_at_index, table) do
     values = Tuple.to_list(record) |> tl()
     attr_map = Enum.zip(attrs, values) |> Map.new()
 

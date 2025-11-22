@@ -8,7 +8,7 @@ defmodule Thunderline.Thunderflow.Telemetry.LegacyBlackboardWatch do
   """
   @table :legacy_blackboard_watch
 
-  def start_link(opts) do
+  def start_link(_opts) do
     Task.start_link(fn ->
       Process.flag(:trap_exit, true)
       ensure_table()

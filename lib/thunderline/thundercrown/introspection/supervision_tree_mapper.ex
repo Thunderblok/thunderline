@@ -63,7 +63,7 @@ defmodule Thunderline.Thundercrown.Introspection.SupervisionTreeMapper do
   Maps an individual child process to an ExRoseTree structure.
   """
   @spec map_child_to_tree({atom(), pid() | :undefined, atom(), list()}) :: ExRoseTree.t()
-  def map_child_to_tree({id, pid, type, modules}) when is_pid(pid) do
+  def map_child_to_tree({id, pid, type, _modules}) when is_pid(pid) do
     case type do
       :supervisor ->
         # Recursively map supervisor children

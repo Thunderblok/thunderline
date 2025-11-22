@@ -89,7 +89,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
     gpu_enabled? = Map.get(opts, :gpu_enabled?, false)
     enable_recording? = Map.get(opts, :enable_recording?, true)
 
-    grid = TAK.Grid.new(size)
+    grid = Grid.new(size)
 
     state = %{
       run_id: run_id,
@@ -142,12 +142,12 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
       # GPU path: Grid → Tensor → GPU evolve → Tensor → Grid
       evolved_tensor = gpu_evolve(state.grid, state.ruleset)
       deltas = compute_deltas_from_tensor(state.grid, evolved_tensor)
-      new_grid = TAK.Grid.from_tensor(state.grid, evolved_tensor)
-                |> TAK.Grid.increment_generation()
+      new_grid = Grid.from_tensor(state.grid, evolved_tensor)
+                |> Grid.increment_generation()
       {deltas, new_grid}
     else
       # Fallback to existing Bolt.CA.Stepper
-      result = TAK.evolve_gpu(state.grid, state.ruleset)
+      result = Thunderline.Thunderbolt.TAK.evolve_gpu(state.grid, state.ruleset)
       case result do
         {:ok, d, g} -> {d, g}
         _ ->
@@ -162,7 +162,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
     msg = %{
       run_id: state.run_id,
       seq: state.seq + 1,
-      generation: TAK.Grid.generation(new_grid),
+      generation: Grid.generation(new_grid),
       cells: deltas,
       timestamp: DateTime.utc_now()
     }
@@ -243,7 +243,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
   # GPU evolution helper (Phase 2+3)
   defp gpu_evolve(grid, ruleset) do
     # Convert Grid to Nx tensor using Phase 3 implementation
-    tensor = TAK.Grid.to_tensor(grid)
+    tensor = Grid.to_tensor(grid)
 
     # Evolve using GPU kernel
     born = Map.get(ruleset, :born, [3])
@@ -254,6 +254,6 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
 
   # Compute delta changes from tensor evolution (Phase 3)
   defp compute_deltas_from_tensor(old_grid, new_tensor) do
-    TAK.Grid.compute_deltas_from_tensor(old_grid, new_tensor)
+    Grid.compute_deltas_from_tensor(old_grid, new_tensor)
   end
 end

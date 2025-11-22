@@ -25,7 +25,7 @@ defmodule Thunderline.Thunderflow.Probing.Engine do
     do_loop(spec, prompt, nil, nil, 0, [])
   end
 
-  defp do_loop(%{laps: laps} = spec, _prompt, _prev_emb, _baseline, lap, acc) when lap >= laps,
+  defp do_loop(%{laps: laps} = _spec, _prompt, _prev_emb, _baseline, lap, acc) when lap >= laps,
     do: Enum.reverse(acc)
 
   defp do_loop(spec, prompt, prev_emb, baseline_dist, lap, acc) do

@@ -660,12 +660,12 @@ defmodule Thunderline.Thundergrid.Resources.GridResource do
     changeset
   end
 
-  defp update_spatial_resource_index(resource) do
+  defp update_spatial_resource_index(_resource) do
     # Implementation would update spatial indexing systems
     :ok
   end
 
-  defp apply_spatial_effects(resource) do
+  defp apply_spatial_effects(_resource) do
     # Implementation would apply resource effects to surrounding area
     :ok
   end

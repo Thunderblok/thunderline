@@ -422,7 +422,7 @@ defmodule Thunderline.Thunderbolt.ML.Parzen do
     cov = Nx.divide(cov, n - 1)
 
     # SVD to get principal components
-    {_u, s, v} = Nx.LinAlg.svd(cov, full_matrices?: false)
+    {_u, _s, v} = Nx.LinAlg.svd(cov, full_matrices?: false)
 
     # Take top 'dims' components (columns of V)
     # V shape is [D, D], we want [D, dims]

@@ -11,7 +11,7 @@ defmodule Thunderline.Thundercrown.Jobs.ScheduledWorkflowProcessor do
   require Logger
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args} = job) do
+  def perform(%Oban.Job{args: args} = _job) do
     Logger.info("Processing scheduled workflow: #{inspect(args)}")
 
     case args do

@@ -168,7 +168,7 @@ defmodule Thunderline.Thunderblock.Retention.Sweeper do
     end
   end
 
-  defp maybe_delete(entries, _delete_fun, _batch_size, true), do: {:ok, 0}
+  defp maybe_delete(_entries, _delete_fun, _batch_size, true), do: {:ok, 0}
 
   defp maybe_delete(entries, delete_fun, batch_size, false) do
     entries

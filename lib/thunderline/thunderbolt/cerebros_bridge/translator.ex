@@ -249,7 +249,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
 
   defp normalize_value(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
   defp normalize_value(%NaiveDateTime{} = dt), do: NaiveDateTime.to_iso8601(dt)
-  defp normalize_value(%struct{} = value), do: contract_to_map(value)
+  defp normalize_value(%_struct{} = value), do: contract_to_map(value)
 
   defp normalize_value(%{} = value),
     do: Enum.into(value, %{}, fn {k, v} -> {k, normalize_value(v)} end)

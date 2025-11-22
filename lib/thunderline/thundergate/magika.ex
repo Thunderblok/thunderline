@@ -147,7 +147,7 @@ defmodule Thunderline.Thundergate.Magika do
           emit_error_telemetry(error, start_time, metadata)
           {:error, error}
 
-        {:error, reason} = error ->
+        {:error, reason} = _error ->
           Logger.warning("Magika CLI failed, using extension fallback",
             reason: inspect(reason),
             path: path

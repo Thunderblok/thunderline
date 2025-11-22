@@ -94,7 +94,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
     emit_progress(:start, %{mode: :legacy_opts})
 
     case simple_search(opts) do
-      {:ok, result} = ok ->
+      {:ok, result} = _ok ->
         emit_progress(:complete, result)
         {:ok, normalize_result(result)}
 
@@ -124,7 +124,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
       end
 
     case result do
-      {:ok, res} = ok ->
+      {:ok, res} = _ok ->
         emit_progress(:complete, res)
         {:ok, normalize_result(res)}
 
@@ -178,7 +178,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
 
   defp normalize_input(opts, _opts) when is_list(opts), do: {:legacy_opts, opts}
 
-  defp normalize_input(spec, opts) when is_binary(spec) do
+  defp normalize_input(spec, _opts) when is_binary(spec) do
     case Validator.validate_spec(spec) do
       %{status: :error, errors: errors} = validation ->
         {:error, {:invalid_spec, errors || validation}}

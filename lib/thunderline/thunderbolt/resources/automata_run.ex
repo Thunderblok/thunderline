@@ -5,6 +5,7 @@ defmodule Thunderline.Thunderbolt.Resources.AutomataRun do
     data_layer: Ash.DataLayer.Ets,
     authorizers: [Ash.Policy.Authorizer]
 
+  require Logger
   alias Thunderline.Thunderbolt.CA.RunnerSupervisor
 
   resource do
