@@ -32,9 +32,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
   @doc """
   Initialize Snex interpreter with Cerebros service module loaded.
 
-  This should be called during application startup.
+  This should be called during application startup. Returns the interpreter and base env.
   """
-  @spec init() :: :ok | {:error, term()}
+  @spec init() :: {:ok, {pid(), Snex.env()}} | {:error, term()}
   def init do
     python_paths = Application.get_env(:thunderline, :cerebros_bridge, [])
                    |> Keyword.get(:python_path, ["thunderhelm"])
@@ -50,30 +50,42 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
       end
     end)
 
-    # Add paths to Python sys.path
-    for path <- abs_paths do
+    # Build sys.path initialization script
+    sys_path_init = Enum.map_join(abs_paths, "\n", fn path ->
       if File.exists?(path) do
         Logger.info("[CerebrosBridge.SnexInvoker] Adding to sys.path: #{path}")
-
-        # Use Snex to modify sys.path
-        Snex.Interpreter.run("""
-        import sys
-        if '#{path}' not in sys.path:
-            sys.path.insert(0, '#{path}')
-        """)
+        "sys.path.insert(0, '#{path}')"
       else
         Logger.warning("[CerebrosBridge.SnexInvoker] Path not found: #{path}")
+        ""
       end
-    end
+    end)
 
-    # Test loading cerebros_service
-    case Snex.Interpreter.run("import cerebros_service; cerebros_service") do
-      {:ok, _module} ->
-        Logger.info("[CerebrosBridge.SnexInvoker] Successfully loaded cerebros_service module")
-        :ok
+    # Create init script that adds paths and imports cerebros_service
+    init_script = """
+    import sys
+    #{sys_path_init}
+    import cerebros_service
+    """
+
+    # Start interpreter directly with system Python, avoiding uv/pyproject requirement
+    python_executable = "/home/linuxbrew/.linuxbrew/bin/python3.13"
+    
+    case Snex.Interpreter.start_link(python: python_executable, init_script: init_script) do
+      {:ok, interpreter} ->
+        # Create base environment
+        case Snex.make_env(interpreter) do
+          {:ok, env} ->
+            Logger.info("[CerebrosBridge.SnexInvoker] Snex interpreter initialized successfully")
+            {:ok, {interpreter, env}}
+
+          {:error, error} ->
+            Logger.error("[CerebrosBridge.SnexInvoker] Failed to create base environment: #{inspect(error)}")
+            {:error, error}
+        end
 
       {:error, error} ->
-        Logger.error("[CerebrosBridge.SnexInvoker] Failed to load cerebros_service: #{inspect(error)}")
+        Logger.error("[CerebrosBridge.SnexInvoker] Failed to start interpreter: #{inspect(error)}")
         {:error, error}
     end
   rescue
@@ -204,46 +216,55 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
   end
 
   defp call_snex_run_nas(spec, opts) do
-    # Snex.Interpreter.run allows passing variables and getting results
-    # Much cleaner than Pythonx's eval approach!
+    # Get or create interpreter and environment
+    with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
+         {:ok, env} <- Snex.make_env(interpreter) do
+      
+      python_code = """
+      # cerebros_service already imported in init_script
+      # Call the training function
+      result = cerebros_service.run_nas(spec, opts)
+      """
 
-    python_code = """
-    import cerebros_service
-    import json
+      # Prepare variables - Snex uses JSON serialization by default
+      variables = %{
+        "spec" => normalize_for_python(spec),
+        "opts" => normalize_for_python(opts)
+      }
 
-    # Parse JSON strings to Python dicts
-    spec_dict = json.loads(spec_json)
-    opts_dict = json.loads(opts_json)
+      # Run Python code with variables and return result
+      case Snex.pyeval(env, python_code, variables, returning: "result") do
+        {:ok, result} ->
+          {:ok, result}
 
-    # Call the training function
-    result = cerebros_service.run_nas(spec_dict, opts_dict)
-
-    # Return result as JSON string
-    json.dumps(result)
-    """
-
-    # Prepare variables - Snex handles basic types well
-    variables = %{
-      "spec_json" => Jason.encode!(normalize_for_python(spec)),
-      "opts_json" => Jason.encode!(normalize_for_python(opts))
-    }
-
-    # Run Python code with variables
-    case Snex.Interpreter.run(python_code, variables) do
-      {:ok, result_json} when is_binary(result_json) ->
-        decoded = Jason.decode!(result_json)
-        {:ok, decoded}
-
-      {:ok, result} ->
-        # If result is not JSON string, try to use it directly
-        {:ok, result}
-
-      {:error, error} ->
-        {:error, {:snex_call_failed, error}}
+        {:error, error} ->
+          {:error, {:snex_call_failed, error}}
+      end
+    else
+      {:error, reason} ->
+        {:error, {:interpreter_start_failed, reason}}
     end
   rescue
     error ->
       {:error, {:snex_call_failed, error}}
+  end
+
+  # Get or start the Snex interpreter (cached in process dictionary for simplicity)
+  defp get_or_start_interpreter do
+    case Process.get(:snex_interpreter) do
+      nil ->
+        case init() do
+          {:ok, {interpreter, env}} = result ->
+            Process.put(:snex_interpreter, {interpreter, env})
+            result
+
+          error ->
+            error
+        end
+
+      cached ->
+        {:ok, cached}
+    end
   end
 
   # Normalize Elixir data for Python encoding

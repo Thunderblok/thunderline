@@ -59,7 +59,7 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
         Logger.info("[AutoMLDriver] Initializing Snex runtime (GIL-free)...")
 
         case Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker.init() do
-          :ok ->
+          {:ok, {_interpreter, _env}} ->
             Logger.info("[AutoMLDriver] Snex runtime initialized successfully")
 
           {:error, reason} ->
