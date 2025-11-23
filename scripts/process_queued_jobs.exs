@@ -28,7 +28,7 @@ defmodule QueuedJobsProcessor do
 
   def process_job_sync(job) do
     Logger.info("Processing job #{job.id} - #{job.metadata["experiment_name"]}")
-    
+
     spec = %{
       model_id: job.model_id,
       dataset_id: job.training_dataset_id,
@@ -50,38 +50,38 @@ defmodule QueuedJobsProcessor do
 
   def process_all_sequentially do
     jobs = list_queued_jobs()
-    
+
     IO.puts("\n" <> String.duplicate("=", 80))
     IO.puts("Found #{length(jobs)} queued jobs")
     IO.puts(String.duplicate("=", 80) <> "\n")
-    
+
     start_time = System.monotonic_time(:millisecond)
-    
+
     results = Enum.map(jobs, fn job ->
       job_start = System.monotonic_time(:millisecond)
       result = process_job_sync(job)
       job_end = System.monotonic_time(:millisecond)
-      
+
       {result, job_end - job_start}
     end)
-    
+
     end_time = System.monotonic_time(:millisecond)
     total_time = end_time - start_time
-    
+
     print_results(results, total_time, "Sequential")
     results
   end
 
   def process_all_parallel(max_concurrency \\ 3) do
     jobs = list_queued_jobs()
-    
+
     IO.puts("\n" <> String.duplicate("=", 80))
     IO.puts("Found #{length(jobs)} queued jobs")
     IO.puts("Processing with max concurrency: #{max_concurrency}")
     IO.puts(String.duplicate("=", 80) <> "\n")
-    
+
     start_time = System.monotonic_time(:millisecond)
-    
+
     results =
       jobs
       |> Task.async_stream(
@@ -89,7 +89,7 @@ defmodule QueuedJobsProcessor do
           job_start = System.monotonic_time(:millisecond)
           result = process_job_sync(job)
           job_end = System.monotonic_time(:millisecond)
-          
+
           {result, job_end - job_start}
         end,
         max_concurrency: max_concurrency,
@@ -101,10 +101,10 @@ defmodule QueuedJobsProcessor do
         {:ok, result} -> result
         {:exit, reason} -> {{:error, :unknown, reason}, 0}
       end)
-    
+
     end_time = System.monotonic_time(:millisecond)
     total_time = end_time - start_time
-    
+
     print_results(results, total_time, "Parallel (concurrency=#{max_concurrency})")
     results
   end
@@ -113,13 +113,13 @@ defmodule QueuedJobsProcessor do
     IO.puts("\n" <> String.duplicate("=", 80))
     IO.puts("Results - #{mode}")
     IO.puts(String.duplicate("=", 80))
-    
+
     successful = Enum.count(results, fn {{status, _, _}, _} -> status == :ok end)
     failed = Enum.count(results, fn {{status, _, _}, _} -> status == :error end)
-    
+
     job_times = Enum.map(results, fn {_, time} -> time end)
     avg_job_time = if length(job_times) > 0, do: Enum.sum(job_times) / length(job_times), else: 0
-    
+
     IO.puts("Total jobs: #{length(results)}")
     IO.puts("Successful: #{successful}")
     IO.puts("Failed: #{failed}")
@@ -133,30 +133,30 @@ defmodule QueuedJobsProcessor do
     IO.puts("\n" <> String.duplicate("#", 80))
     IO.puts("# GIL-Free Parallel Execution Comparison Test")
     IO.puts(String.duplicate("#", 80) <> "\n")
-    
+
     jobs = list_queued_jobs()
-    
+
     if length(jobs) == 0 do
       IO.puts("⚠️  No queued jobs found. Cannot run comparison test.")
       :no_jobs
     else
       IO.puts("Testing with #{length(jobs)} jobs...\n")
-      
+
       # Sequential baseline
       IO.puts("🔹 Running SEQUENTIAL execution...")
       seq_results = process_all_sequentially()
-      
+
       # Give system time to stabilize
       Process.sleep(2000)
-      
+
       # Parallel execution
       IO.puts("\n🔹 Running PARALLEL execution (concurrency=3)...")
       par_results = process_all_parallel(3)
-      
+
       IO.puts("\n" <> String.duplicate("#", 80))
       IO.puts("# Comparison Complete")
       IO.puts(String.duplicate("#", 80))
-      
+
       {seq_results, par_results}
     end
   end
@@ -169,25 +169,25 @@ if System.get_env("AUTO_RUN") == "true" do
   QueuedJobsProcessor.compare_execution_modes()
 else
   IO.puts("""
-  
+
   ✨ Queued Jobs Processor Loaded
-  
+
   Available functions:
-  
+
     QueuedJobsProcessor.list_queued_jobs()
       - List all queued training jobs
-  
+
     QueuedJobsProcessor.process_all_sequentially()
       - Process all jobs one at a time (baseline)
-  
+
     QueuedJobsProcessor.process_all_parallel(max_concurrency \\\\ 3)
       - Process jobs in parallel (tests GIL-free execution)
-  
+
     QueuedJobsProcessor.compare_execution_modes()
       - Run both sequential and parallel, compare results
-  
+
   Example:
     iex> QueuedJobsProcessor.compare_execution_modes()
-  
+
   """)
 end
