@@ -23,6 +23,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
   require Logger
   require Ash.Query
 
+  alias Thunderline.ObanHelpers
   alias Thunderline.Thunderbolt.MLflow.{Client, Experiment, Run}
   alias Thunderline.Thunderbolt.Resources.{ModelTrial, ModelRun}
   alias Thunderline.Repo
@@ -112,7 +113,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
   def sync_trial_to_mlflow(trial_id, opts \\ []) do
     %{action: "sync_trial_to_mlflow", trial_id: trial_id}
     |> new(opts)
-    |> Oban.insert()
+    |> ObanHelpers.insert_job()
   end
 
   @doc """
@@ -121,7 +122,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
   def sync_mlflow_to_trial(mlflow_run_id, opts \\ []) do
     %{action: "sync_mlflow_to_trial", mlflow_run_id: mlflow_run_id}
     |> new(opts)
-    |> Oban.insert()
+    |> ObanHelpers.insert_job()
   end
 
   @doc """
@@ -130,7 +131,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
   def sync_experiment(experiment_id, opts \\ []) do
     %{action: "sync_experiment", experiment_id: experiment_id}
     |> new(opts)
-    |> Oban.insert()
+    |> ObanHelpers.insert_job()
   end
 
   @doc """
@@ -139,7 +140,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
   def create_run(trial_id, experiment_id, opts \\ []) do
     %{action: "create_run", trial_id: trial_id, experiment_id: experiment_id}
     |> new(opts)
-    |> Oban.insert()
+    |> ObanHelpers.insert_job()
   end
 
   # -- Sync implementation --

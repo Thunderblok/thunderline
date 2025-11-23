@@ -378,6 +378,7 @@ retention_cron =
 config :thunderline, Oban,
   repo: Thunderline.Repo,
   testing: :disabled,
+  peer: {Oban.Peers.Database, [interval: :timer.seconds(30)]},
   plugins: [{Oban.Plugins.Cron, crontab: compactor_cron ++ retention_cron}, Oban.Plugins.Pruner],
   queues: [
     default: 10,
@@ -385,10 +386,14 @@ config :thunderline, Oban,
     scheduled_workflows: 3,
     heavy_compute: 2,
     ml: [limit: 4],
+    mlflow_sync: [limit: 3],
+    hpo_trials: [limit: 2],
     probe: 2,
     chat_responses: [limit: 10],
     conversations: [limit: 10],
-    retention: [limit: 2]
+    retention: [limit: 2],
+    domain_events: [limit: 5],
+    cerebros_training: [limit: 10]
   ]
 
 config :jido_action,

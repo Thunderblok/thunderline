@@ -220,24 +220,37 @@ if not is_nil(cerebros_toggle) do
   config :thunderline, :cerebros_bridge, Keyword.put(base_bridge, :enabled, cerebros_toggle)
 
   # When Cerebros is enabled, we need Oban to run background jobs
-  # Override dev.exs's "config :thunderline, Oban, false" by re-enabling Oban
+  # Note: We don't override Oban config here because config.exs already has
+  # the correct peer configuration with start_delay. Runtime.exs only needs
+  # to re-enable Oban if it was disabled in dev.exs
   if cerebros_toggle do
     # Get base Oban config from config.exs (queues, plugins, etc.)
     base_oban = Application.get_env(:thunderline, Oban, [])
 
-    # Only override if it was disabled (false) - preserve existing config otherwise
-    if base_oban == false or base_oban == [] do
-      # Re-enable with manual mode to prevent race condition with Repo startup
-      # Using testing: :manual means Oban won't start plugins/queues until explicitly started
-      # This avoids the race where Oban queries Repo before ETS tables are registered
+    # Only re-enable if it was explicitly disabled (false), otherwise preserve config.exs
+    if base_oban == false do
+      # Re-enable with manual mode if it was disabled
       config :thunderline, Oban,
         repo: Thunderline.Repo,
         testing: :manual,
+        peer: {Oban.Peers.Database, [interval: :timer.seconds(30)]},
         queues: [
           default: 10,
-          ml: [limit: 4]
+          cross_domain: 5,
+          scheduled_workflows: 3,
+          heavy_compute: 2,
+          ml: [limit: 4],
+          mlflow_sync: [limit: 3],
+          hpo_trials: [limit: 2],
+          probe: 2,
+          chat_responses: [limit: 10],
+          conversations: [limit: 10],
+          retention: [limit: 2],
+          domain_events: [limit: 5],
+          cerebros_training: [limit: 10]
         ]
     end
+    # If base_oban is already a list, config.exs settings (including start_delay) are preserved
   end
 end
 

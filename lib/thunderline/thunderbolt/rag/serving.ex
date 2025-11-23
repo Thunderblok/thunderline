@@ -172,8 +172,30 @@ defmodule Thunderline.Thunderbolt.RAG.Serving do
     Logger.info("[RAG.Serving] Loading embedding model: #{@embed_model_repo}")
 
     # Load the model (sentence-transformers models work out of the box with Bumblebee)
-    {:ok, model_info} = Bumblebee.load_model({:hf, @embed_model_repo})
-    {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, @embed_model_repo})
+    # Handle timeout errors gracefully instead of crashing
+    model_info =
+      case Bumblebee.load_model({:hf, @embed_model_repo}) do
+        {:ok, model} ->
+          model
+
+        {:error, reason} ->
+          Logger.error(
+            "[RAG.Serving] Failed to load embedding model: #{inspect(reason)}. " <>
+              "RAG features will be disabled. Set TL_ENABLE_RAG=false to skip RAG initialization."
+          )
+
+          raise "Failed to load RAG embedding model: #{inspect(reason)}"
+      end
+
+    tokenizer =
+      case Bumblebee.load_tokenizer({:hf, @embed_model_repo}) do
+        {:ok, tok} ->
+          tok
+
+        {:error, reason} ->
+          Logger.error("[RAG.Serving] Failed to load tokenizer: #{inspect(reason)}")
+          raise "Failed to load RAG tokenizer: #{inspect(reason)}"
+      end
 
     serving =
       Bumblebee.Text.text_embedding(model_info, tokenizer,

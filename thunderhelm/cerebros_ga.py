@@ -31,13 +31,13 @@ class Individual:
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "layers": self.layers,
+            "layers": [int(x) for x in self.layers],  # Convert numpy int64 to Python int
             "activation": self.activation,
             "optimizer": self.optimizer,
-            "learning_rate": self.learning_rate,
-            "dropout_rate": self.dropout_rate,
-            "batch_size": self.batch_size,
-            "fitness": self.fitness
+            "learning_rate": float(self.learning_rate),
+            "dropout_rate": float(self.dropout_rate),
+            "batch_size": int(self.batch_size),
+            "fitness": float(self.fitness)
         }
 
 
