@@ -70,7 +70,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
 
     # Start interpreter directly with system Python, avoiding uv/pyproject requirement
     python_executable = "/home/linuxbrew/.linuxbrew/bin/python3.13"
-    
+
     case Snex.Interpreter.start_link(python: python_executable, init_script: init_script) do
       {:ok, interpreter} ->
         # Create base environment
@@ -219,7 +219,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
     # Get or create interpreter and environment
     with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
          {:ok, env} <- Snex.make_env(interpreter) do
-      
+
       python_code = """
       # cerebros_service already imported in init_script
       # Call the training function
