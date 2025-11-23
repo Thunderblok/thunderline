@@ -297,8 +297,11 @@ def individual_to_model_spec(individual) -> Dict[str, Any]:
     The individual format depends on the Cerebros implementation.
     This extracts the architecture specification.
     """
-    # This is implementation-specific
-    # For now return a generic spec
+    # If individual has to_dict method, use it (our GA implementation)
+    if hasattr(individual, 'to_dict'):
+        return individual.to_dict()
+    
+    # Fallback for unknown format
     return {
         "architecture": str(individual),
         "type": "neural_network"
@@ -310,11 +313,16 @@ def format_population_history(history: List) -> List[Dict]:
     Format population history for JSON serialization
     """
     formatted = []
-    for i, generation_data in enumerate(history):
-        formatted.append({
-            "generation": i,
-            "data": str(generation_data)  # Convert to string for safety
-        })
+    for generation_data in history:
+        # If already a dict, use it directly (our GA implementation)
+        if isinstance(generation_data, dict):
+            formatted.append(generation_data)
+        else:
+            # Fallback for unknown format
+            formatted.append({
+                "generation": len(formatted),
+                "data": str(generation_data)
+            })
     return formatted
 
 

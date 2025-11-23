@@ -222,11 +222,12 @@ defmodule Thunderline.Thunderflow.Consumers.Classifier do
     }
 
     dlq_event_attrs = %{
-      type: "system.dlq.classification_failed",
-      source: "thunderflow.consumers.classifier",
-      data: %{
+      name: "system.dlq.classification_failed",
+      source: :flow,
+      payload: %{
         error: inspect(message.status),
-        event_id: extract_event_id(message.data)
+        event_id: extract_event_id(message.data),
+        processor: "thunderflow.consumers.classifier"
       },
       metadata: error_metadata
     }

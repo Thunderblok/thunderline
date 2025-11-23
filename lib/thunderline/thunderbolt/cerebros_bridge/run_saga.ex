@@ -230,7 +230,21 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
         }
       }
 
-      EventBus.publish_event(event_attrs)
+      case Thunderline.Event.new(event_attrs) do
+        {:ok, event} ->
+          case EventBus.publish_event(event) do
+            {:ok, published} ->
+              {:ok, published}
+
+            {:error, reason} ->
+              Logger.warning("[RunSaga] Could not publish complete event: #{inspect(reason)}")
+              {:ok, :event_skipped}
+          end
+
+        {:error, reason} ->
+          Logger.warning("[RunSaga] Could not build complete event: #{inspect(reason)}")
+          {:ok, :event_skipped}
+      end
     end
   end
 

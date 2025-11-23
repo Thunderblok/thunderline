@@ -439,6 +439,7 @@ defmodule Thunderline.Event do
   end
 
   defp infer_name_from_type(nil), do: nil
+  defp infer_name_from_type(type) when is_binary(type), do: type
   defp infer_name_from_type(type) when is_atom(type), do: "system.unknown." <> to_string(type)
 
   defp name_to_type(name) when is_binary(name) do
