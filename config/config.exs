@@ -234,7 +234,6 @@ config :thunderline,
     admin_roles: [:system, :upm_admin, :system_admin]
   ],
   ash_domains: [
-    Thunderline.Accounts,
     Thunderline.Thunderlink.Chat,
     # === SLIM MODE ACTIVE ===
     # For the current milestone we only need the core runtime needed to ship
@@ -378,13 +377,12 @@ retention_cron =
     ]
   end
 
-# Oban configuration - TEMPORARILY DISABLED due to race condition
-# TODO: Fix supervision tree ordering before re-enabling
-# config :thunderline, Oban,
-#   repo: Thunderline.Repo,
-#   queues: [default: 10, cerebros_training: 10]
-
-config :thunderline, Oban, false
+# Oban configuration - started after Repo in supervision tree to avoid race conditions
+# get_dynamic_repo allows Oban to re-lookup the repo after compilation/restarts
+config :thunderline, Oban,
+  repo: Thunderline.Repo,
+  get_dynamic_repo: fn -> Thunderline.Repo end,
+  queues: [default: 10, cerebros_training: 10]
 
 config :jido_action,
   default_registry: System.get_env("JIDO_DEFAULT_REGISTRY", "agentjido.catalog"),

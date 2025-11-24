@@ -1,0 +1,73 @@
+# Example values for spinning up the Thunderline dashboard + NAS test run stack.
+# Enables Postgres, MinIO, MLflow, and the Cerebros runner alongside web/worker pods.
+# Designed for staging clusters where an operator will launch runs from the dashboard UI.
+
+image:
+  repository: thunderline/app
+  tag: "2.1.0"
+
+# Turn on Cerebros bridge + ML NAS experience for the dashboard run.
+env:
+  CEREBROS_ENABLED: "true"
+  CEREBROS_MODE: "remote"
+  CEREBROS_URL: "http://thunderline-cerebros:8088"
+  CEREBROS_REMOTE_URL: "http://thunderline-cerebros:8088"
+  MLFLOW_TRACKING_URI: "http://thunderline-mlflow:5000"
+  FEATURES: "ml_nas,cerebros_bridge,ai_chat_panel"
+
+  secrets:
+    DATABASE_URL: "ecto://postgres:postgres@thunderline-postgresql:5432/thunderline"
+    MINIO_ENDPOINT: "http://thunderline-minio:9000"
+    MINIO_ACCESS_KEY: "minio"
+    MINIO_SECRET_KEY: "minio123"
+    AWS_ACCESS_KEY_ID: "minio"
+    AWS_SECRET_ACCESS_KEY: "minio123"
+    MLFLOW_S3_ENDPOINT_URL: "http://thunderline-minio:9000"
+
+web:
+  env:
+    START_ENDPOINT: "true"
+    START_OBAN: "true"
+    START_COMPUTE: "false"
+
+worker:
+  env:
+    START_ENDPOINT: "false"
+    START_OBAN: "true"
+    START_COMPUTE: "false"
+
+# Bring along the supporting data services.
+postgresql:
+  enabled: true
+  auth:
+    username: postgres
+    password: postgres
+    database: thunderline
+
+minio:
+  enabled: true
+  auth:
+    rootUser: minio
+    rootPassword: minio123
+  defaultBuckets: "thunderline-artifacts"
+
+mlflow:
+  enabled: true
+  backendStoreUri: "sqlite:////data/mlflow.db"
+  artifactRoot: "s3://thunderline-artifacts/mlflow"
+  env:
+    AWS_ACCESS_KEY_ID: "minio"
+    AWS_SECRET_ACCESS_KEY: "minio123"
+    MLFLOW_S3_ENDPOINT_URL: "http://thunderline-minio:9000"
+  persistence:
+    enabled: true
+    size: 10Gi
+
+cerebrosRunner:
+  enabled: true
+  env:
+    MLFLOW_EXPERIMENT_NAME: "thunderline-dashboard"
+
+# Optional: Livebook workspace for orchestration helpers (disabled by default)
+livebook:
+  enabled: false

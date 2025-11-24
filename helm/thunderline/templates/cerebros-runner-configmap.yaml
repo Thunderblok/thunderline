@@ -1,0 +1,11 @@
+{{- if and .Values.cerebrosRunner.enabled .Values.cerebrosRunner.pipPackages }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-cerebros-runner
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+data:
+  cerebros_runner.py: |
+{{ (.Files.Get "files/cerebros_runner.py") | indent 4 }}
+{{- end }}

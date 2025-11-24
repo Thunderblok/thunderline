@@ -1,0 +1,6 @@
+opentelemetryCollector:
+  enabled: true
+
+env:
+  secrets:
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://thunderline-otelcol:4317"

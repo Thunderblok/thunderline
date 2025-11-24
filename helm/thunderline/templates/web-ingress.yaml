@@ -1,0 +1,36 @@
+{{- if and .Values.web.enabled .Values.web.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-web
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+  {{- with .Values.web.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.web.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    {{- range .Values.web.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path | quote }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ include "thunderhelm.fullname" $ }}-web
+                port:
+                  number: {{ $.Values.web.service.port }}
+          {{- end }}
+    {{- end }}
+  {{- if .Values.web.ingress.tls }}
+  tls:
+    {{- toYaml .Values.web.ingress.tls | nindent 4 }}
+  {{- end }}
+{{- end }}

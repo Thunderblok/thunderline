@@ -1,0 +1,18 @@
+{{- if and .Values.mlflow.enabled .Values.mlflow.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-mlflow
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mlflow
+spec:
+  type: {{ .Values.mlflow.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "thunderhelm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mlflow
+  ports:
+    - name: http
+      port: {{ .Values.mlflow.service.port | default 5000 }}
+      targetPort: http
+{{- end }}

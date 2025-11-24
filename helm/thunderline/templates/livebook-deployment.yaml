@@ -1,0 +1,77 @@
+{{- if .Values.livebook.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-livebook
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: livebook
+spec:
+  replicas: {{ .Values.livebook.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "thunderhelm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: livebook
+  template:
+    metadata:
+      labels:
+        {{- include "thunderhelm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: livebook
+      {{- with .Values.livebook.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: livebook
+          image: "{{ .Values.livebook.image.repository }}:{{ .Values.livebook.image.tag }}"
+          imagePullPolicy: {{ .Values.livebook.image.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: LIVEBOOK_PORT
+              value: {{ .Values.livebook.port | quote }}
+            - name: LIVEBOOK_IP
+              value: "0.0.0.0"
+            {{- range $k, $v := (default (dict) .Values.livebook.env) }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          {{- if or .Values.livebook.secrets.password .Values.livebook.secrets.secretKeyBase .Values.livebook.secrets.cookie }}
+          envFrom:
+            - secretRef:
+                name: {{ include "thunderhelm.fullname" . }}-livebook
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.livebook.port }}
+          {{- if .Values.livebook.persistence.enabled }}
+          volumeMounts:
+            - name: livebook-data
+              mountPath: /data
+          {{- end }}
+          {{- with .Values.livebook.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if .Values.livebook.persistence.enabled }}
+      volumes:
+        - name: livebook-data
+          persistentVolumeClaim:
+            claimName: {{ include "thunderhelm.fullname" . }}-livebook
+      {{- end }}
+      {{- with .Values.livebook.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.livebook.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.livebook.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

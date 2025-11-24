@@ -1,0 +1,35 @@
+# Example overlay to expose Livebook with TLS via cert-manager.
+# Apply with:
+#   helm upgrade --install thunderline Thunderline/thunderhelm/deploy/chart -n thunder \
+#     -f Thunderline/thunderhelm/deploy/chart/examples/values-hpo-demo.yaml \
+#     -f Thunderline/thunderhelm/deploy/chart/examples/values-livebook-tls.yaml
+# or combine with your own base values.
+
+livebook:
+  enabled: true
+  secrets:
+    # Helm template enforces that a password is present when ingress is enabled.
+    password: "change-me-now"
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: livebook.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: livebook-tls
+        hosts:
+          - livebook.example.com
+    certManager:
+      enabled: true
+      clusterIssuer: "letsencrypt-prod"
+      secretName: "livebook-tls"
+      dnsNames:
+        - livebook.example.com
+      duration: "2160h"        # 90 days
+      renewBefore: "360h"      # 15 days

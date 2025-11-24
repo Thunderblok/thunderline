@@ -1,0 +1,63 @@
+{{- if .Values.opentelemetryCollector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-otelcol
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: otelcol
+spec:
+  replicas: {{ .Values.opentelemetryCollector.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "thunderhelm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: otelcol
+  template:
+    metadata:
+      labels:
+        {{- include "thunderhelm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: otelcol
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: otelcol
+          image: "{{ .Values.opentelemetryCollector.image.repository }}:{{ .Values.opentelemetryCollector.image.tag }}"
+          imagePullPolicy: {{ .Values.opentelemetryCollector.image.pullPolicy | default "IfNotPresent" }}
+          args:
+            - "--config=/conf/collector-config.yaml"
+          ports:
+            - name: otlp-grpc
+              containerPort: {{ .Values.opentelemetryCollector.service.grpcPort | default 4317 }}
+            - name: otlp-http
+              containerPort: {{ .Values.opentelemetryCollector.service.httpPort | default 4318 }}
+          volumeMounts:
+            - name: collector-config
+              mountPath: /conf/collector-config.yaml
+              subPath: collector-config.yaml
+          {{- with .Values.opentelemetryCollector.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: collector-config
+          configMap:
+            name: {{ include "thunderhelm.fullname" . }}-otelcol
+            items:
+              - key: collector-config.yaml
+                path: collector-config.yaml
+      {{- with .Values.opentelemetryCollector.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.opentelemetryCollector.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.opentelemetryCollector.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

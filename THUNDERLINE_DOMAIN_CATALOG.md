@@ -1,10 +1,11 @@
 # Thunderline Domain Catalog  
-**Audit Date:** November 18, 2025  
+**Audit Date:** November 24, 2025  
 **Auditor:** Domain Architecture Review Team  
 **Status:** ✅ COMPLETE – Full domain review with resource counts and consolidation history  
-**Review Report:** See `DOMAIN_ARCHITECTURE_REVIEW.md` for comprehensive findings  
+**Review Report:** See `DOMAIN_ARCHITECTURE_REVIEW.md` and `COMPREHENSIVE_DOMAIN_ARCHITECTURE_ANALYSIS.md`  
 **Overall Architecture Grade:** A (9/10)  
-**Total Resources:** ~160 Ash resources across all domains  
+**Total Resources:** ~162 Ash resources across all domains  
+**Active Domains:** 9 (Block, Bolt, Crown, Flow, Gate, Grid, Link, Vine, Prism)  
 
 ---
 
@@ -326,7 +327,64 @@
 
 ---
 
-### 🔨 ThunderForge Domain  
+### � ThunderPrism Domain  
+- **Location:** `lib/thunderline/thunderprism/`  
+- **Purpose:** ML Decision Trail DAG – Persistent "memory rails" for ML decision tracking  
+- **Status:** ✅ ACTIVE – Minimal implementation with 2 resources  
+- **Resource Count:** **2 Ash Resources**
+- **Created:** Phase 4.0 (November 15, 2025)
+- **Extensions:** None (plain Ash.Domain)
+- **Resource Categories:**
+  - **Decision Nodes** (1 resource): PrismNode - Individual ML decision points
+  - **Decision Edges** (1 resource): PrismEdge - Connections between decision nodes
+- **Key Responsibilities:**
+  - ML decision trail tracking and visualization
+  - PAC (Personal Autonomous Controller) iteration history
+  - Model selection recording (chosen model, probabilities, distances)
+  - Decision graph construction for AI context querying
+  - Meta-learning insights from decision patterns
+  - Sequential decision relationship tracking
+- **PrismNode Attributes:**
+  - `pac_id` - Personal Autonomous Controller identifier
+  - `iteration` - Decision iteration number
+  - `chosen_model` - Selected model identifier
+  - `model_probabilities` - Model selection probabilities (map)
+  - `model_distances` - Distance metrics for model selection (map)
+  - `meta` - Additional metadata (map)
+  - `timestamp` - Decision timestamp
+- **PrismEdge Attributes:**
+  - `from_id` - Source node UUID
+  - `to_id` - Target node UUID
+  - `relation_type` - Edge type (sequential, causal, etc.)
+  - `meta` - Additional relationship metadata (map)
+- **Code Interfaces:**
+  - `create_prism_node/7` - Record ML decision point
+  - `get_prism_node/1` - Retrieve node by ID
+  - `list_prism_nodes/0` - Query all nodes
+  - `create_prism_edge/4` - Create node relationship
+  - `get_prism_edge/1` - Retrieve edge by ID
+  - `list_prism_edges/0` - Query all edges
+- **Use Cases:**
+  - Track ML agent decision-making over time
+  - Visualize decision trees for debugging
+  - Query historical decisions for pattern analysis
+  - Build knowledge graph of ML reasoning paths
+  - Enable AI assistants to understand past decisions
+- **Integration Points:**
+  - **ThunderBolt**: Records ML decisions during model selection
+  - **ThunderCrown**: Queries decision history for governance policies
+  - **ThunderFlow**: Could emit decision events for observability
+- **Future Enhancements:**
+  - GraphQL API exposure for decision visualization
+  - Embedding vectors for semantic search (pgvector)
+  - Decision replay and what-if analysis
+  - Pattern detection across decision trails
+  - Integration with UPM drift detection
+- **Notes:** Minimal but functional domain for ML explainability. Provides persistent memory of ML decision-making process. DAG structure enables graph traversal and pattern discovery. Consider adding to ThunderBolt domain if functionality overlaps significantly, or expand as standalone ML observability domain.
+
+---
+
+### �🔨 ThunderForge Domain  
 - **Location:** `lib/thunderline/thunderforge/` (REMOVED Nov 17, 2025)
 - **Purpose:** Centralized Infrastructure Provisioning & Asset Lifecycle (Placeholder)  
 - **Status:** ✅ REMOVED – Deleted as part of HC-30 cleanup (Nov 17, 2025)

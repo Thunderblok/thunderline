@@ -1,0 +1,88 @@
+# Example values for a federation (Flower) demo with Thunderhelm
+# - Web + Worker enabled
+# - Federation (Flower) server enabled (demo bootstrap)
+# - No ingress (use port-forward)
+# - Secrets are example defaults; change for your environment
+
+image:
+  repository: thunderline/app
+  tag: "2.1.0"
+  pullPolicy: IfNotPresent
+
+env:
+  MINIO_BUCKET: "thunderline-artifacts"
+  SERVICE_NAME: "thunderline"
+  LOG_LEVEL: "info"
+  FEATURES: ""  # e.g. "enable_ndjson"
+
+  secrets:
+    DATABASE_URL: "ecto://postgres:postgres@postgres:5432/thunderline"
+    MINIO_ENDPOINT: "http://minio:9000"
+    MINIO_ACCESS_KEY: "minio"
+    MINIO_SECRET_KEY: "minio123"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""   # e.g. http://otel-collector:4317
+  OTEL_EXPORTER_OTLP_HEADERS: ""
+
+web:
+  enabled: true
+  replicas: 1
+  env:
+    ROLE: "web"
+    START_ENDPOINT: "true"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 4000
+  ingress:
+    enabled: false
+
+worker:
+  enabled: true
+  replicas: 1
+  env:
+    ROLE: "worker"
+    START_ENDPOINT: "false"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+
+# Enable the Flower federation demo server
+federation:
+  enabled: true
+  replicas: 1
+  image:
+    repository: python
+    tag: "3.11-slim"
+    pullPolicy: IfNotPresent
+  port: 8081
+  # Demo: install flwr[simulation] and start the Thunderline Keras Flower server
+  command:
+    - /bin/sh
+    - -c
+  args:
+    - |
+      pip install --no-cache-dir "flwr[simulation]" && \
+      pip install --no-cache-dir -e /workspace/app/python && \
+      flwr server-app cerebros.keras.flower_app:server_app --rest-server 0.0.0.0:8081
+  env: {}
+  service:
+    enabled: true
+    type: ClusterIP
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: false
+
+# Optional dependencies remain disabled in this example; provide externally
+postgresql:
+  enabled: false
+minio:
+  enabled: false
+opentelemetryCollector:
+  enabled: false
+kubePrometheusStack:
+  enabled: false

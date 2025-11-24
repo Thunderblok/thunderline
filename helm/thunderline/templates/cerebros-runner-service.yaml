@@ -1,0 +1,18 @@
+{{- if and .Values.cerebrosRunner.enabled .Values.cerebrosRunner.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-cerebros
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cerebros
+spec:
+  type: {{ .Values.cerebrosRunner.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "thunderhelm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: cerebros
+  ports:
+    - name: http
+      port: {{ .Values.cerebrosRunner.service.port | default 8088 }}
+      targetPort: http
+{{- end }}

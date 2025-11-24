@@ -1,0 +1,18 @@
+{{- if and .Values.federation.enabled .Values.federation.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-federation
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: federation
+spec:
+  type: {{ .Values.federation.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "thunderhelm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: federation
+  ports:
+    - name: grpc
+      port: {{ .Values.federation.port }}
+      targetPort: grpc
+{{- end }}

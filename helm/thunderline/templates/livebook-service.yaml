@@ -1,0 +1,18 @@
+{{- if and .Values.livebook.enabled .Values.livebook.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-livebook
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: livebook
+spec:
+  type: {{ .Values.livebook.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "thunderhelm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: livebook
+  ports:
+    - name: http
+      port: {{ .Values.livebook.service.port | default 8080 }}
+      targetPort: http
+{{- end }}

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: thunderhelm
+description: Helm chart for deploying Thunderline (web/worker) and optional Flower federation runtime.
+type: application
+version: 0.2.0
+appVersion: "2.1.0"
+
+keywords:
+  - thunderline
+  - ash
+  - phoenix
+  - federated-learning
+  - flower
+  - otel
+
+home: https://github.com/Thunderblok/Thunderline
+maintainers:
+  - name: OKO Holding
+    email: ops@oko.example

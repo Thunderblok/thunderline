@@ -1,0 +1,18 @@
+{{- if and .Values.web.enabled .Values.web.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-web
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  type: {{ .Values.web.service.type }}
+  selector:
+    {{- include "thunderhelm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+  ports:
+    - name: http
+      port: {{ .Values.web.service.port }}
+      targetPort: http
+{{- end }}

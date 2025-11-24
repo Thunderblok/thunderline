@@ -1,0 +1,86 @@
+Thank you for installing Thunderhelm!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+This chart deploys:
+- Thunderline web (Phoenix endpoint)
+- Thunderline worker (pipelines/Oban)
+- Optional Flower federation server (Python; disabled by default)
+- ConfigMap/Secret with shared environment
+- Optional Ingress for the web service
+
+Next steps
+
+1) Verify resources
+  kubectl get all -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+2) Provide required secrets (if not set yet)
+  # Example (DEV) update with secrets:
+  helm upgrade --install {{ .Release.Name }} {{ .Chart.Name }} -n {{ .Release.Namespace }} \
+    --set env.secrets.DATABASE_URL="ecto://postgres:postgres@postgres:5432/thunderline" \
+    --set env.secrets.MINIO_ENDPOINT="http://minio:9000" \
+    --set env.secrets.MINIO_ACCESS_KEY="minio" \
+    --set env.secrets.MINIO_SECRET_KEY="minio123"
+
+3) Access the web service
+  - Service (ClusterIP): {{ include "thunderhelm.fullname" . }}-web:{{ .Values.web.service.port }}
+  - If Ingress is enabled, update your DNS/hosts for the configured hostname(s).
+
+  # Port-forward (if no ingress)
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "thunderhelm.fullname" . }}-web {{ .Values.web.service.port }}:{{ .Values.web.service.port }}
+  # Then open: http://localhost:{{ .Values.web.service.port }}
+
+4) Enable federation (Flower) demo server (optional)
+  helm upgrade --install {{ .Release.Name }} {{ .Chart.Name }} -n {{ .Release.Namespace }} \
+    --set federation.enabled=true \
+    --set federation.service.enabled=true
+
+  # Port-forward (for testing)
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "thunderhelm.fullname" . }}-federation {{ .Values.federation.port }}:{{ .Values.federation.port }}
+  # Default server address: 0.0.0.0:{{ .Values.federation.port }} (inside cluster)
+
+5) Observability
+  - If you have an OTLP collector, set:
+    env.secrets.OTEL_EXPORTER_OTLP_ENDPOINT
+    env.secrets.OTEL_EXPORTER_OTLP_HEADERS (optional)
+  - Expose Prometheus/Grafana separately (or add as optional dependencies in a fork).
+
+Common issues
+
+- Pods CrashLoopBackOff (web/worker)
+  Ensure DATABASE_URL is set and Postgres is reachable.
+  Check logs:
+    kubectl logs deploy/{{ include "thunderhelm.fullname" . }}-web -n {{ .Release.Namespace }} -c web
+    kubectl logs deploy/{{ include "thunderhelm.fullname" . }}-worker -n {{ .Release.Namespace }} -c worker
+
+- Flower federation not starting
+  The default demo container installs flwr[simulation] and the Thunderline Keras backend at runtime. For production, build a hardened image with pinned dependencies and set:
+    federation.image.repository, federation.image.tag
+    federation.command / federation.args (if needed)
+    Bundled code must expose `cerebros.keras.flower_app` for Flower to import.
+
+- Ingress not reachable
+  Verify your ingress controller (className), DNS, and TLS secrets.
+
+Troubleshooting commands
+
+- Render manifests locally:
+  helm template {{ .Release.Name }} {{ .Chart.Name }} -n {{ .Release.Namespace }}
+
+- Lint chart:
+  helm lint {{ .Chart.Name }}
+
+- Describe resources:
+  kubectl describe deploy/{{ include "thunderhelm.fullname" . }}-web -n {{ .Release.Namespace }}
+  kubectl describe deploy/{{ include "thunderhelm.fullname" . }}-worker -n {{ .Release.Namespace }}
+
+Uninstall
+
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+Notes
+
+- The web container must expose/bind the HTTP port set by values.web.service.port (default 4000).
+- Set ROLE and feature flags via values.web.env / values.worker.env (already defaulted).
+- Secrets are stored as stringData in {{ include "thunderhelm.fullname" . }}-secrets; rotate per your security policy.

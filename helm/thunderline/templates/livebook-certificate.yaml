@@ -1,0 +1,30 @@
+{{- $ingress := .Values.livebook.ingress -}}
+{{- if and .Values.livebook.enabled $ingress.enabled $ingress.certManager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-livebook
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+spec:
+  secretName: {{ default (printf "%s-livebook-tls" (include "thunderhelm.fullname" .)) $ingress.certManager.secretName }}
+  issuerRef:
+    name: {{ required "Set livebook.ingress.certManager.clusterIssuer when enabling cert-manager integration." $ingress.certManager.clusterIssuer }}
+    kind: {{ default "ClusterIssuer" $ingress.certManager.issuerKind }}
+  {{- if $ingress.certManager.duration }}
+  duration: {{ $ingress.certManager.duration }}
+  {{- end }}
+  {{- if $ingress.certManager.renewBefore }}
+  renewBefore: {{ $ingress.certManager.renewBefore }}
+  {{- end }}
+  dnsNames:
+    {{- if gt (len $ingress.certManager.dnsNames) 0 }}
+      {{- range $ingress.certManager.dnsNames }}
+    - {{ . }}
+      {{- end }}
+    {{- else }}
+      {{- range $ingress.hosts }}
+    - {{ .host }}
+      {{- end }}
+    {{- end }}
+{{- end }}

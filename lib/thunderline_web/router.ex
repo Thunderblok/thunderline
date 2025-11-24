@@ -107,6 +107,9 @@ defmodule ThunderlineWeb.Router do
       # Cerebros & Raincatcher (drift lab) interface (runtime feature-gated inside LiveView)
       live "/cerebros", CerebrosLive, :index
 
+      # Training Prompt Interface - Submit text-based training jobs with UPM/MLflow integration
+      live "/training/prompt", TrainingPromptLive, :index
+
       # Interactive neural network playground (inspired by external visualizer)
       if System.get_env("ENABLE_NN_PLAYGROUND") == "true" do
         live "/nn", NNPlaygroundLive, :index

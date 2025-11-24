@@ -1,0 +1,52 @@
+{{- if and .Values.livebook.enabled .Values.livebook.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-livebook
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+  {{- with .Values.livebook.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.livebook.ingress.className }}
+  ingressClassName: {{ .Values.livebook.ingress.className }}
+  {{- end }}
+  {{- $ingress := .Values.livebook.ingress }}
+  {{- if $ingress.tls }}
+  tls:
+    {{- range $ingress.tls }}
+    - hosts: {{ toYaml .hosts | nindent 8 }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- else if $ingress.certManager.enabled }}
+  tls:
+    - secretName: {{ default (printf "%s-livebook-tls" (include "thunderhelm.fullname" .)) $ingress.certManager.secretName }}
+      hosts:
+        {{- if $ingress.certManager.dnsNames }}
+          {{- range $ingress.certManager.dnsNames }}
+        - {{ . }}
+          {{- end }}
+        {{- else }}
+          {{- range $ingress.hosts }}
+        - {{ .host }}
+          {{- end }}
+        {{- end }}
+  {{- end }}
+  rules:
+    {{- range $ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ include "thunderhelm.fullname" $ }}-livebook
+                port:
+                  number: {{ $.Values.livebook.service.port | default 8080 }}
+          {{- end }}
+    {{- end }}
+{{- end }}

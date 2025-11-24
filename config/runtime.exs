@@ -220,15 +220,25 @@ cerebros_toggle =
 if not is_nil(cerebros_toggle) do
   base_bridge = Application.get_env(:thunderline, :cerebros_bridge, [])
   config :thunderline, :cerebros_bridge, Keyword.put(base_bridge, :enabled, cerebros_toggle)
+end
 
-  # When Cerebros is enabled, we need Oban to run background jobs
-  # Note: We don't override Oban config here because config.exs already has
-  # the correct peer configuration with start_delay. Runtime.exs only needs
-  # to re-enable Oban if it was disabled in dev.exs
-  if cerebros_toggle do
-    # Get base Oban config from config.exs (queues, plugins, etc.)
-    # Runtime Oban config removed - will be handled by igniter
-  end
+# ------------------------------------------------------------
+# Oban Configuration (Runtime)
+# Configured at runtime to prevent Ecto.Repo.Registry race condition.
+# The peer option with start_delay ensures Oban waits for Repo to be ready.
+# Set TL_ENABLE_OBAN=1 or CEREBROS_ENABLED=1 to enable.
+# ------------------------------------------------------------
+oban_enabled =
+  System.get_env("TL_ENABLE_OBAN") in ["1", "true", "TRUE"] or
+    System.get_env("CEREBROS_ENABLED") in ["1", "true", "TRUE"]
+
+if oban_enabled and config_env() != :test do
+  config :thunderline, Oban,
+    repo: Thunderline.Repo,
+    queues: [cerebros_training: 10],
+    plugins: []
+else
+  config :thunderline, Oban, false
 end
 
 if config_env() == :prod do

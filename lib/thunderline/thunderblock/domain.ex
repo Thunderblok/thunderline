@@ -122,5 +122,8 @@ defmodule Thunderline.Thunderblock.Domain do
 
     # PAC user personal construct home (moved from Thunderlink)
     resource Thunderline.Thunderblock.Resources.PACHome
+
+    # Domain Activation Registry (Phase 1 - Tick System)
+    resource Thunderline.Thunderblock.Resources.ActiveDomainRegistry
   end
 end

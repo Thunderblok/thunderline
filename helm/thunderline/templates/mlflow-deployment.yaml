@@ -1,0 +1,76 @@
+{{- if .Values.mlflow.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thunderhelm.fullname" . }}-mlflow
+  labels:
+    {{- include "thunderhelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mlflow
+spec:
+  replicas: {{ .Values.mlflow.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "thunderhelm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mlflow
+  template:
+    metadata:
+      labels:
+        {{- include "thunderhelm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mlflow
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mlflow
+          image: "{{ .Values.mlflow.image.repository }}:{{ .Values.mlflow.image.tag }}"
+          imagePullPolicy: {{ .Values.mlflow.image.pullPolicy | default "IfNotPresent" }}
+          command:
+            - mlflow
+            - server
+          args:
+            - --host
+            - 0.0.0.0
+            - --port
+            - {{ .Values.mlflow.port | quote }}
+            - --backend-store-uri
+            - {{ .Values.mlflow.backendStoreUri | quote }}
+            - --default-artifact-root
+            - {{ .Values.mlflow.artifactRoot | quote }}
+          env:
+            {{- range $k, $v := (default (dict) .Values.mlflow.env) }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mlflow.port }}
+          {{- if .Values.mlflow.persistence.enabled }}
+          volumeMounts:
+            - name: mlflow-data
+              mountPath: /data
+          {{- end }}
+          {{- with .Values.mlflow.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if .Values.mlflow.persistence.enabled }}
+      volumes:
+        - name: mlflow-data
+          persistentVolumeClaim:
+            claimName: {{ include "thunderhelm.fullname" . }}-mlflow
+      {{- end }}
+      {{- with .Values.mlflow.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mlflow.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mlflow.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

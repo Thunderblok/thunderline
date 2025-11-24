@@ -9,8 +9,7 @@ config :thunderline,
   require_actor_ctx: false,
   token_signing_secret: "YZHEbja+m4hn1VwozT3JnDna3MHse+qS"
 
-# Oban is now controlled by runtime.exs based on CEREBROS_ENABLED flag
-# Removed: config :thunderline, Oban, false
+# Oban configuration moved to runtime.exs to prevent Repo initialization race
 
 # Configure the AshPostgres repo
 db_url = System.get_env("DATABASE_URL")
@@ -124,6 +123,9 @@ config :thunderline, :market_ingest, log_every: 50
 
 # Enable dev routes for dashboard and mailbox
 config :thunderline, dev_routes: true, token_signing_secret: "vadctdmv/MrdcKdJvG1Bl3woZoYMGKXL"
+
+# Enable LiveDebugger for development debugging
+config :live_debugger, enabled: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"

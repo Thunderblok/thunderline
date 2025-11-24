@@ -1,0 +1,343 @@
+# Global overrides
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Thunderline application image (build/push your image then set these)
+image:
+  repository: thunderline/app    # e.g. ghcr.io/yourorg/thunderline
+  tag: "2.1.0"
+  pullPolicy: IfNotPresent
+
+# Common environment (projected to web/worker pods via ConfigMap/Secret)
+env:
+  # Non-secret settings
+  MINIO_BUCKET: "thunderline-artifacts"
+  SERVICE_NAME: "thunderline"
+  LOG_LEVEL: "info"
+  # Points to the Elixir release configuration used during bootstrapping
+  RELEASE_CONFIG_FILE: "/app/config/releases.exs"
+  # Cerebros + MLflow integration defaults (override per environment)
+  CEREBROS_MODE: "remote"
+  CEREBROS_URL: "http://thunderline-cerebros:8088"
+  CEREBROS_SCRIPT: "/app/priv/cerebros_bridge_stub.py"
+  CEREBROS_REMOTE_URL: "http://thunderline-cerebros:8088"
+  CEREBROS_ENABLED: "false"
+  MLFLOW_TRACKING_URI: "http://thunderline-mlflow:5000"
+  # Optional: feature flags (comma separated or individual env per feature)
+  FEATURES: ""  # e.g. "enable_ndjson,thundervine_lineage"
+
+  # Secrets (populated via Kubernetes Secret in templates)
+  secrets:
+    DATABASE_URL: ""             # e.g. ecto://postgres:postgres@postgres:5432/thunderline
+    MINIO_ENDPOINT: ""           # e.g. http://minio:9000
+    MINIO_ACCESS_KEY: ""
+    MINIO_SECRET_KEY: ""
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""  # e.g. http://otel-collector:4317
+    OTEL_EXPORTER_OTLP_HEADERS: ""   # optional: "authorization=Bearer <token>"
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: false
+
+# Web (Phoenix Endpoint) Deployment/Service
+web:
+  enabled: true
+  replicas: 1
+
+  env:
+    ROLE: "web"
+    START_ENDPOINT: "true"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+
+  podAnnotations: {}
+  podLabels: {}
+
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 4000
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: thunderline.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    # - secretName: thunderline-tls
+    #   hosts:
+    #     - thunderline.local
+
+# Worker Deployment (no Service; runs event pipelines, Oban, etc.)
+worker:
+  enabled: true
+  replicas: 1
+
+  env:
+    ROLE: "worker"
+    START_ENDPOINT: "false"
+    START_COMPUTE: "false"
+    START_OBAN: "true"
+
+  podAnnotations: {}
+  podLabels: {}
+
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Optional Federation runtime (Flower server) as Python Deployment/Service
+federation:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: python
+    tag: "3.11-slim"
+    pullPolicy: IfNotPresent
+
+  # Port Flower server will bind to
+  port: 8081
+
+  # Command/args to start the Thunderline Keras Flower server (override in prod with a baked image)
+  command:
+    - /bin/sh
+    - -c
+  args:
+    - |
+      pip install --no-cache-dir "flwr[simulation]" && \
+      pip install --no-cache-dir -e /workspace/app/python && \
+      flwr server-app cerebros.keras.flower_app:server_app --rest-server 0.0.0.0:8081
+
+  env: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  service:
+    enabled: true
+    type: ClusterIP
+
+# Optional Cerebros proposal/training runner (FastAPI) for remote mode demos
+cerebrosRunner:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: python
+    tag: "3.11-slim"
+    pullPolicy: IfNotPresent
+
+  port: 8088
+
+  # Additional pip packages to install before launching the runner (full Cerebros POC)
+  pipPackages:
+    - "tensorflow>=2.15.0"
+    - "transformers"
+    - "scikit-learn"
+    - "pandas"
+    - "numpy"
+    - "mlflow"
+    - "optuna"
+    - "pendulum"
+    - "cerebros-python"
+    - "mlflow==2.14.1"
+    - "numpy==1.26.4"
+    - "pandas==2.2.2"
+    - "pydantic==2.7.4"
+    - "requests==2.32.3"
+
+  env: {}
+
+  podAnnotations: {}
+
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8088
+
+# Optional MLflow tracking server
+mlflow:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: ghcr.io/mlflow/mlflow
+    tag: "v2.14.1"
+    pullPolicy: IfNotPresent
+
+  port: 5000
+
+  backendStoreUri: "sqlite:////data/mlflow.db"
+  artifactRoot: "s3://thunderline-artifacts/mlflow"
+
+  env: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  persistence:
+    enabled: false
+    size: 10Gi
+    storageClass: ""
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 5000
+
+# Optional Livebook workspace for interactive orchestration
+livebook:
+  enabled: false
+  replicas: 1
+
+  image:
+    repository: ghcr.io/livebook-dev/livebook
+    tag: "0.12.1"
+    pullPolicy: IfNotPresent
+
+  port: 8080
+
+  env: {}
+  secrets:
+    password: ""
+    secretKeyBase: ""
+    cookie: ""
+
+  podAnnotations: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  persistence:
+    enabled: false
+    size: 5Gi
+    storageClass: ""
+
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8080
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: livebook.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    certManager:
+      enabled: false
+      clusterIssuer: ""
+      issuerKind: "ClusterIssuer"
+      secretName: ""
+      dnsNames: []
+      duration: ""
+      renewBefore: ""
+
+# Optional subcharts (set enabled=true to bring dependencies)
+postgresql:
+  enabled: false
+  auth:
+    username: postgres
+    password: postgres
+    database: thunderline
+
+minio:
+  enabled: false
+  auth:
+    rootUser: minio
+    rootPassword: minio123
+  defaultBuckets: "thunderline-artifacts"
+
+opentelemetryCollector:
+  enabled: false
+  replicas: 1
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.106.0"
+    pullPolicy: IfNotPresent
+  service:
+    enabled: true
+    type: ClusterIP
+    grpcPort: 4317
+    httpPort: 4318
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch: {}
+    exporters:
+      logging:
+        loglevel: info
+    service:
+      telemetry:
+        logs:
+          level: "info"
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging]
+
+kubePrometheusStack:
+  enabled: false
+
+# Probes
+probes:
+  web:
+    liveness:
+      path: /health
+      initialDelaySeconds: 20
+      periodSeconds: 10
+    readiness:
+      path: /
+      initialDelaySeconds: 10
+      periodSeconds: 10
+  worker:
+    liveness:
+      initialDelaySeconds: 20
+      periodSeconds: 10
+    readiness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+# Image pull secrets
+imagePullSecrets: []
+

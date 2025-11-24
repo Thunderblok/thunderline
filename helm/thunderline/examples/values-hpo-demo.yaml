@@ -1,0 +1,96 @@
+# Example values enabling the Cerebros runner, MLflow tracking server, and Livebook workspace.
+# Combine with the default chart values or override selectively via --set/--values.
+
+image:
+  repository: thunderline/app
+  tag: "2.1.0"
+
+env:
+  MINIO_BUCKET: "thunderline-artifacts"
+  SERVICE_NAME: "thunderline"
+  LOG_LEVEL: "info"
+  CEREBROS_MODE: "remote"
+  CEREBROS_ENABLED: "true"
+  FEATURES: "ml_nas,cerebros_bridge"
+
+  secrets:
+    DATABASE_URL: "ecto://postgres:postgres@postgres:5432/thunderline"
+    MINIO_ENDPOINT: "http://minio:9000"
+    MINIO_ACCESS_KEY: "minio"
+    MINIO_SECRET_KEY: "minio123"
+    AWS_ACCESS_KEY_ID: "minio"
+    AWS_SECRET_ACCESS_KEY: "minio123"
+    MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://thunderline-otelcol:4317"
+    SECRET_KEY_BASE: "thunderline-secret-key-base-for-phoenix-sessions-must-be-at-least-64-chars-long"
+    TOKEN_SIGNING_SECRET: "thunderline-token-signing-secret-for-jwt-tokens-must-be-secure-value"
+    LIVEBOOK_PASSWORD: "thunderline123"
+
+web:
+  env:
+    START_ENDPOINT: "true"
+    START_OBAN: "true"
+    START_COMPUTE: "false"
+
+worker:
+  env:
+    START_ENDPOINT: "false"
+    START_OBAN: "true"
+    START_COMPUTE: "false"
+
+postgresql:
+  enabled: true
+  auth:
+    username: postgres
+    password: postgres
+    database: thunderline
+
+minio:
+  enabled: true
+  auth:
+    rootUser: minio
+    rootPassword: minio123
+  defaultBuckets: "thunderline-artifacts"
+
+mlflow:
+  enabled: true
+  backendStoreUri: "sqlite:////data/mlflow.db"
+  artifactRoot: "s3://thunderline-artifacts/mlflow"
+  env:
+    AWS_ACCESS_KEY_ID: "minio"
+    AWS_SECRET_ACCESS_KEY: "minio123"
+    MLFLOW_S3_ENDPOINT_URL: "http://minio:9000"
+  persistence:
+    enabled: true
+    size: 10Gi
+
+opentelemetryCollector:
+  enabled: true
+
+cerebrosRunner:
+  enabled: true
+  image:
+    repository: thunderline/cerebros-runner
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    MLFLOW_EXPERIMENT_NAME: "thunderline-livebook"
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "4"
+    limits:
+      memory: "16Gi"
+      cpu: "8"
+  # Clear pipPackages since they're baked into the image
+  pipPackages: []
+
+livebook:
+  enabled: true
+  secrets:
+    password: "supersecret123"
+  env:
+    LIVEBOOK_TOKEN_ENABLED: "false"
+    LIVEBOOK_DEFAULT_RUNTIME: "attached:thunderline"
+  ingress:
+    enabled: false # combine with values-livebook-tls.yaml to expose Livebook securely
