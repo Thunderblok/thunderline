@@ -1,14 +1,14 @@
 defmodule Thunderline.Thundergate.Supervisor do
   @moduledoc """
   ThunderGate domain supervisor with tick-based activation.
-  
+
   GATE is the guardian - authentication, authorization, service registry, health.
   Activates on tick 2 after core infrastructure is stable.
   """
-  
+
   use Supervisor
   @behaviour Thunderline.Thunderblock.DomainActivation
-  
+
   require Logger
 
   def start_link(init_arg) do
@@ -16,7 +16,7 @@ defmodule Thunderline.Thundergate.Supervisor do
     |> tap(fn
       {:ok, _pid} ->
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
-        
+
       {:error, reason} ->
         Logger.error("[Thundergate.Supervisor] Failed to start: #{inspect(reason)}")
     end)

@@ -1,14 +1,14 @@
 defmodule Thunderline.Thunderbolt.Supervisor do
   @moduledoc """
   ThunderBolt domain supervisor with tick-based activation.
-  
+
   BOLT is the orchestrator - cellular automata, lanes, workflows, DAG execution.
   Activates on tick 3 after Gate and Link are stable.
   """
-  
+
   use Supervisor
   @behaviour Thunderline.Thunderblock.DomainActivation
-  
+
   require Logger
 
   def start_link(init_arg) do
@@ -16,7 +16,7 @@ defmodule Thunderline.Thunderbolt.Supervisor do
     |> tap(fn
       {:ok, _pid} ->
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
-        
+
       {:error, reason} ->
         Logger.error("[Thunderbolt.Supervisor] Failed to start: #{inspect(reason)}")
     end)

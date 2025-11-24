@@ -1,14 +1,14 @@
 defmodule Thunderline.Thunderlink.Supervisor do
   @moduledoc """
   ThunderLink domain supervisor with tick-based activation.
-  
+
   LINK is the connector - presence, registry, real-time communications.
   Activates on tick 2 alongside ThunderGate.
   """
-  
+
   use Supervisor
   @behaviour Thunderline.Thunderblock.DomainActivation
-  
+
   require Logger
 
   def start_link(init_arg) do
@@ -16,7 +16,7 @@ defmodule Thunderline.Thunderlink.Supervisor do
     |> tap(fn
       {:ok, _pid} ->
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
-        
+
       {:error, reason} ->
         Logger.error("[Thunderlink.Supervisor] Failed to start: #{inspect(reason)}")
     end)

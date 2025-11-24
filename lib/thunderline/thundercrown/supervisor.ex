@@ -1,14 +1,14 @@
 defmodule Thunderline.Thundercrown.Supervisor do
   @moduledoc """
   ThunderCrown domain supervisor with tick-based activation.
-  
+
   CROWN is the sovereign - orchestration, permissions, AI coordination, MCP.
   Activates on tick 4 after core domains are stable.
   """
-  
+
   use Supervisor
   @behaviour Thunderline.Thunderblock.DomainActivation
-  
+
   require Logger
 
   def start_link(init_arg) do
@@ -16,7 +16,7 @@ defmodule Thunderline.Thundercrown.Supervisor do
     |> tap(fn
       {:ok, _pid} ->
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
-        
+
       {:error, reason} ->
         Logger.error("[Thundercrown.Supervisor] Failed to start: #{inspect(reason)}")
     end)

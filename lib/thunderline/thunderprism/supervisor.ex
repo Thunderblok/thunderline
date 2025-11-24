@@ -1,14 +1,14 @@
 defmodule Thunderline.Thunderprism.Supervisor do
   @moduledoc """
   Thunderprism domain supervisor with tick-based activation.
-  
+
   PRISM is the visual intelligence layer - ML decision DAGs, visualization nodes, AI context trails.
   Activates on tick 7 after all data domains (Grid, Vine, Flow) are stable and queryable.
   """
-  
+
   use Supervisor
   @behaviour Thunderline.Thunderblock.DomainActivation
-  
+
   require Logger
 
   def start_link(init_arg) do
@@ -16,7 +16,7 @@ defmodule Thunderline.Thunderprism.Supervisor do
     |> tap(fn
       {:ok, _pid} ->
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
-        
+
       {:error, reason} ->
         Logger.error("[Thunderprism.Supervisor] Failed to start: #{inspect(reason)}")
     end)

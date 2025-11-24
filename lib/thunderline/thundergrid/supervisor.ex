@@ -1,14 +1,14 @@
 defmodule Thunderline.Thundergrid.Supervisor do
   @moduledoc """
   Thundergrid domain supervisor with tick-based activation.
-  
+
   GRID is the spatial & GraphQL layer - coordinate systems, zone management, GraphQL API.
   Activates on tick 6 after auth (Gate), presence (Link), and data persistence (Vine) are ready.
   """
-  
+
   use Supervisor
   @behaviour Thunderline.Thunderblock.DomainActivation
-  
+
   require Logger
 
   def start_link(init_arg) do
@@ -16,7 +16,7 @@ defmodule Thunderline.Thundergrid.Supervisor do
     |> tap(fn
       {:ok, _pid} ->
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
-        
+
       {:error, reason} ->
         Logger.error("[Thundergrid.Supervisor] Failed to start: #{inspect(reason)}")
     end)
