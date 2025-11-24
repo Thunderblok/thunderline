@@ -53,9 +53,9 @@ defmodule Thunderline.Application do
         ml_pipeline_children()
 
     # Infrastructure that does NOT need DB access - safe to start early
+    # NOTE: EventBuffer and Blackboard moved to Thunderflow.Supervisor (tick-based activation)
     infrastructure_early = [
-      Thunderline.Thunderflow.EventBuffer,
-      Thunderline.Thunderflow.Blackboard,
+      Thunderline.Thunderflow.Supervisor,
       Thunderline.Thunderlink.Registry,
       Thundervine.Supervisor,
       ThunderlineWeb.Presence
