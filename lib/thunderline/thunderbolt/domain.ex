@@ -135,5 +135,10 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.MoE.DecisionTrace
     # NAS export job & dataset slicing belongs with orchestration/ML side
     resource Thunderline.Export.TrainingSlice
+
+    # ONNX Inference (MCP tool integration)
+    resource Thunderline.Thunderbolt.Resources.OnnxInference do
+      define :infer, action: :infer, args: [:model_path, :input, :metadata]
+    end
   end
 end

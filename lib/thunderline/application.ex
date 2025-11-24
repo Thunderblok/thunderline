@@ -44,20 +44,32 @@ defmodule Thunderline.Application do
       Thunderline.Thunderlink.TickGenerator
     ]
 
-    # Domain-specific children that may need DB
+    # Domain-specific children that may need DB (excluding Cerebros - starts after Oban)
     domains =
-      cerebros_children() ++
-        saga_children() ++
+      saga_children() ++
         rag_children() ++
         upm_children() ++
         ml_pipeline_children()
 
     # Infrastructure that does NOT need DB access - safe to start early
-    # NOTE: EventBuffer and Blackboard moved to Thunderflow.Supervisor (tick-based activation)
+    # NOTE: All domain supervisors use tick-based activation (Phase 3+: OPERATION BLAZING VINE EXTENDED)
     infrastructure_early = [
+      # Tick 1: Core flow & state
       Thunderline.Thunderflow.Supervisor,
-      Thunderline.Thunderlink.Registry,
+      # Tick 2: Authentication & presence
+      Thunderline.Thundergate.Supervisor,
+      Thunderline.Thunderlink.Supervisor,
+      # Tick 3: Orchestration engine
+      Thunderline.Thunderbolt.Supervisor,
+      # Tick 4: AI sovereignty
+      Thunderline.Thundercrown.Supervisor,
+      # Tick 5: DAG persistence
       Thundervine.Supervisor,
+      # Tick 6: Spatial & GraphQL
+      Thunderline.Thundergrid.Supervisor,
+      # Tick 7: Visual intelligence
+      Thunderline.Thunderprism.Supervisor,
+      # Non-domain infrastructure
       ThunderlineWeb.Presence
     ]
 
@@ -65,9 +77,9 @@ defmodule Thunderline.Application do
     jobs = [maybe_oban_child()]
 
     # Infrastructure that DOES need DB access - start after Oban
-    infrastructure_late = [
-      Thunderline.Thundergate.ServiceRegistry.HealthMonitor
-    ]
+    # NOTE: HealthMonitor now started by Thundergate.Supervisor
+    # Cerebros needs Repo for metrics/checkpoints - start after Oban
+    infrastructure_late = cerebros_children()
 
     # Web endpoint - starts last
     web = [ThunderlineWeb.Endpoint]

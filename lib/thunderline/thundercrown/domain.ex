@@ -64,6 +64,9 @@ defmodule Thunderline.Thundercrown.Domain do
          :run_digest
 
     tool :conversation_reply, Thunderline.Thundercrown.Resources.ConversationAgent, :respond
+
+    # ONNX Model Inference - UPM snapshots, Cerebros checkpoints, etc.
+    tool :onnx_infer, Thunderline.Thunderbolt.Resources.OnnxInference, :infer
   end
 
   resources do

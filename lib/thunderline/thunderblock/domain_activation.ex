@@ -190,10 +190,7 @@ defmodule Thunderline.Thunderblock.DomainActivation do
         domain_name = module.domain_name()
         activation_tick = module.activation_tick()
 
-        # Subscribe to tick broadcasts
-        Phoenix.PubSub.subscribe(Thunderline.PubSub, "system:domain_tick")
-
-        # Start activation listener GenServer
+        # Start activation listener GenServer (it will subscribe to ticks in its init/1)
         {:ok, _pid} =
           DynamicSupervisor.start_child(
             Thunderline.TaskSupervisor,
@@ -202,10 +199,6 @@ defmodule Thunderline.Thunderblock.DomainActivation do
              domain_name: domain_name,
              activation_tick: activation_tick}
           )
-
-        Logger.info(
-          "[DomainActivation] #{domain_name} subscribed, will activate at tick #{activation_tick}"
-        )
 
         :ok
       else
@@ -286,6 +279,13 @@ defmodule Thunderline.Thunderblock.DomainActivation do
       module = Keyword.fetch!(opts, :module)
       domain_name = Keyword.fetch!(opts, :domain_name)
       activation_tick = Keyword.fetch!(opts, :activation_tick)
+
+      # CRITICAL: Subscribe to tick events in THIS process (not the supervisor)
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "system:domain_tick")
+
+      Logger.info(
+        "[DomainActivation] #{domain_name} subscribed, will activate at tick #{activation_tick}"
+      )
 
       state = %{
         module: module,
