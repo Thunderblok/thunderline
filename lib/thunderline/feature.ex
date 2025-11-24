@@ -12,34 +12,11 @@ defmodule Thunderline.Feature do
   """
 
   @compile {:no_warn_undefined, Application}
-  # Compile-time snapshot (default baseline)
-  @features (fn v ->
-               cond do
-                 is_map(v) ->
-                   v
-
-                 is_list(v) ->
-                   cond do
-                     v == [] ->
-                       %{}
-
-                     Enum.all?(v, &is_atom/1) ->
-                       Map.new(v, &{&1, true})
-
-                     Enum.all?(v, fn
-                       {k, _} when is_atom(k) -> true
-                       _ -> false
-                     end) ->
-                       Map.new(v)
-
-                     true ->
-                       %{}
-                   end
-
-                 true ->
-                   %{}
-               end
-             end).(Application.compile_env(:thunderline, :features, []))
+  # Runtime baseline - read from application env at runtime for flexibility
+  # No longer using compile_env to allow features to change without recompilation
+  defp base_features do
+    normalize_features(Application.get_env(:thunderline, :features, []))
+  end
 
   @doc """
   Return true if the feature `flag` is enabled.
@@ -51,9 +28,8 @@ defmodule Thunderline.Feature do
   def enabled?(flag, opts \\ []) when is_atom(flag) do
     case Process.get({:thunderline_flag_override, flag}) do
       nil ->
-        # Allow runtime application env overrides (so demo/prod can enable flags without recompiling)
-        runtime_map = normalize_features(Application.get_env(:thunderline, :features, []))
-        Map.get(runtime_map, flag, Map.get(@features, flag, Keyword.get(opts, :default, false)))
+        # Read from runtime application env
+        Map.get(base_features(), flag, Keyword.get(opts, :default, false))
 
       override ->
         override
@@ -79,10 +55,10 @@ defmodule Thunderline.Feature do
   end
 
   @doc """
-  Return map of all compile-time feature flags (ignores overrides).
+  Return map of all feature flags (ignores overrides).
   """
   @spec all() :: map()
-  def all, do: @features
+  def all, do: base_features()
 
   # Internal helpers
   defp normalize_features(v) do

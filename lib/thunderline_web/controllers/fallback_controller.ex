@@ -5,8 +5,10 @@ defmodule ThunderlineWeb.FallbackController do
   See `Phoenix.Controller.action_fallback/1` for more details.
   """
   use Phoenix.Controller
+  require Logger
 
   def call(conn, {:error, %Ash.Error.Invalid{errors: errors} = error}) do
+    Logger.error("Ash Invalid Error: #{inspect(error, pretty: true)}")
     # Check if this is actually a "not found" error disguised as invalid
     if Enum.any?(errors, &is_not_found_error?/1) do
       conn

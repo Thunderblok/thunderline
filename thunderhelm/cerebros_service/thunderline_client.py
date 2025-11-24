@@ -79,8 +79,14 @@ class ThunderlineClient:
 
         url = f"{self.base_url}/api/registry/register"
         logger.info(f"Registering service: {service_id} at {url}")
+        logger.debug(f"Registration payload: {data}")
 
         response = self.session.post(url, json=data)
+        
+        if not response.ok:
+            logger.error(f"Registration failed with status {response.status_code}")
+            logger.error(f"Response body: {response.text}")
+        
         response.raise_for_status()
 
         service_data = response.json()

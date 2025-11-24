@@ -44,7 +44,7 @@ defmodule ThunderlineWeb.ServiceRegistryController do
     with {:ok, service} <-
            Service.register(%{
              service_id: params["service_id"],
-             service_type: String.to_existing_atom(params["service_type"]),
+             service_type: params["service_type"],
              name: params["name"],
              host: params["host"] || "localhost",
              port: params["port"],
@@ -112,8 +112,7 @@ defmodule ThunderlineWeb.ServiceRegistryController do
   GET /api/registry/services/type/:type
   """
   def list_by_type(conn, %{"type" => type}) do
-    service_type = String.to_existing_atom(type)
-    services = Service.list_by_type!(service_type)
+    services = Service.list_by_type!(type)
     render(conn, :services, services: services)
   end
 
@@ -143,6 +142,6 @@ defmodule ThunderlineWeb.ServiceRegistryController do
   end
 
   defp parse_status(nil), do: nil
-  defp parse_status(status) when is_atom(status), do: status
-  defp parse_status(status) when is_binary(status), do: String.to_existing_atom(status)
+  defp parse_status(status) when is_binary(status), do: status
+  defp parse_status(status) when is_atom(status), do: to_string(status)
 end

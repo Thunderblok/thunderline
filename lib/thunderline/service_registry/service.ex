@@ -47,9 +47,12 @@ defmodule Thunderline.ServiceRegistry.Service do
         :metadata
       ]
 
+      validate {Ash.Resource.Validation.OneOf, attribute: :service_type, values: ["cerebros", "mlflow", "custom"]}
+      validate {Ash.Resource.Validation.OneOf, attribute: :status, values: ["starting", "healthy", "unhealthy", "stopped"]}
+
       change fn changeset, _context ->
         changeset
-        |> Ash.Changeset.change_attribute(:status, :starting)
+        |> Ash.Changeset.change_attribute(:status, "starting")
         |> Ash.Changeset.change_attribute(:last_heartbeat_at, DateTime.utc_now())
       end
 
@@ -84,7 +87,7 @@ defmodule Thunderline.ServiceRegistry.Service do
 
       change fn changeset, _context ->
         changeset
-        |> Ash.Changeset.change_attribute(:status, :unhealthy)
+        |> Ash.Changeset.change_attribute(:status, "unhealthy")
       end
     end
 
@@ -94,21 +97,21 @@ defmodule Thunderline.ServiceRegistry.Service do
 
       change fn changeset, _context ->
         changeset
-        |> Ash.Changeset.change_attribute(:status, :healthy)
+        |> Ash.Changeset.change_attribute(:status, "healthy")
         |> Ash.Changeset.change_attribute(:last_heartbeat_at, DateTime.utc_now())
       end
     end
 
     read :list_by_type do
       description "List services by type"
-      argument :service_type, :atom, allow_nil?: false
+      argument :service_type, :string, allow_nil?: false
 
       filter expr(service_type == ^arg(:service_type))
     end
 
     read :list_healthy do
       description "List all healthy services"
-      filter expr(status == :healthy)
+      filter expr(status == "healthy")
     end
 
     read :find_by_service_id do
@@ -128,10 +131,9 @@ defmodule Thunderline.ServiceRegistry.Service do
       description "Unique identifier for the service (e.g., 'cerebros-1', 'mlflow-main')"
     end
 
-    attribute :service_type, :atom do
+    attribute :service_type, :string do
       allow_nil? false
-      description "Type of service (e.g., :cerebros, :mlflow)"
-      constraints one_of: [:cerebros, :mlflow, :custom]
+      description "Type of service (e.g., 'cerebros', 'mlflow')"
     end
 
     attribute :name, :string do
@@ -146,15 +148,14 @@ defmodule Thunderline.ServiceRegistry.Service do
     end
 
     attribute :port, :integer do
-      allow_nil? false
-      description "Port number the service is listening on"
+      allow_nil? true
+      description "Port number the service is listening on (optional for worker services)"
     end
 
-    attribute :status, :atom do
+    attribute :status, :string do
       allow_nil? false
       description "Current status of the service"
-      constraints one_of: [:starting, :healthy, :unhealthy, :stopped]
-      default :starting
+      default "starting"
     end
 
     attribute :capabilities, :map do
