@@ -74,10 +74,12 @@ end
 # Optional: route Logger console backend to stderr when LOG_STDERR=1 for diagnosing
 # piping/STDOUT issues (safe no-op in normal operation).
 if System.get_env("LOG_STDERR") == "1" do
-  config :logger, :console, device: :standard_error
+  config :logger, :default_handler, config: [type: :standard_error]
 end
 
-config :logger, level: :debug, backends: [:console]
+# Use new handler-based logger config (replaces deprecated :backends)
+config :logger, :default_handler,
+  level: :debug
 
 # ------------------------------------------------------------
 # Magika Configuration
@@ -225,32 +227,7 @@ if not is_nil(cerebros_toggle) do
   # to re-enable Oban if it was disabled in dev.exs
   if cerebros_toggle do
     # Get base Oban config from config.exs (queues, plugins, etc.)
-    base_oban = Application.get_env(:thunderline, Oban, [])
-
-    # Only re-enable if it was explicitly disabled (false), otherwise preserve config.exs
-    if base_oban == false do
-      # Re-enable with manual mode if it was disabled
-      config :thunderline, Oban,
-        repo: Thunderline.Repo,
-        testing: :manual,
-        peer: {Oban.Peers.Database, [interval: :timer.seconds(30)]},
-        queues: [
-          default: 10,
-          cross_domain: 5,
-          scheduled_workflows: 3,
-          heavy_compute: 2,
-          ml: [limit: 4],
-          mlflow_sync: [limit: 3],
-          hpo_trials: [limit: 2],
-          probe: 2,
-          chat_responses: [limit: 10],
-          conversations: [limit: 10],
-          retention: [limit: 2],
-          domain_events: [limit: 5],
-          cerebros_training: [limit: 10]
-        ]
-    end
-    # If base_oban is already a list, config.exs settings (including start_delay) are preserved
+    # Runtime Oban config removed - will be handled by igniter
   end
 end
 

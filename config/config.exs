@@ -6,6 +6,7 @@
 
 # General application configuration
 import Config
+
 config :ash_oban, pro?: false
 
 ## AshTypescript configuration (typed TS client & RPC)
@@ -254,6 +255,8 @@ config :thunderline,
     Thunderline.Thundercrown.Domain,
     # Auth/security domain now enabled for AshAuthentication integration
     Thunderline.Thundergate.Domain,
+    # Service registry for external service coordination
+    Thunderline.Thundergate.ServiceRegistry,
     # Heavy compute & UPM resources now active
     Thunderline.Thunderbolt.Domain,
     # ThunderPrism - DAG scratchpad for ML decision trails (Phase 4.0)
@@ -375,26 +378,13 @@ retention_cron =
     ]
   end
 
-config :thunderline, Oban,
-  repo: Thunderline.Repo,
-  testing: :disabled,
-  peer: {Oban.Peers.Database, [interval: :timer.seconds(30)]},
-  plugins: [{Oban.Plugins.Cron, crontab: compactor_cron ++ retention_cron}, Oban.Plugins.Pruner],
-  queues: [
-    default: 10,
-    cross_domain: 5,
-    scheduled_workflows: 3,
-    heavy_compute: 2,
-    ml: [limit: 4],
-    mlflow_sync: [limit: 3],
-    hpo_trials: [limit: 2],
-    probe: 2,
-    chat_responses: [limit: 10],
-    conversations: [limit: 10],
-    retention: [limit: 2],
-    domain_events: [limit: 5],
-    cerebros_training: [limit: 10]
-  ]
+# Oban configuration - TEMPORARILY DISABLED due to race condition
+# TODO: Fix supervision tree ordering before re-enabling
+# config :thunderline, Oban,
+#   repo: Thunderline.Repo,
+#   queues: [default: 10, cerebros_training: 10]
+
+config :thunderline, Oban, false
 
 config :jido_action,
   default_registry: System.get_env("JIDO_DEFAULT_REGISTRY", "agentjido.catalog"),

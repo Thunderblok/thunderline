@@ -1,4 +1,4 @@
-defmodule Thunderline.ServiceRegistry.Service do
+defmodule Thunderline.Thundergate.ServiceRegistry.Service do
   @moduledoc """
   Resource representing a registered service in the Thunderline ecosystem.
 
@@ -6,7 +6,7 @@ defmodule Thunderline.ServiceRegistry.Service do
   This enables service discovery, health monitoring, and coordination.
   """
   use Ash.Resource,
-    domain: Thunderline.ServiceRegistry,
+    domain: Thunderline.Thundergate.ServiceRegistry,
     data_layer: AshPostgres.DataLayer,
     extensions: [AshGraphql.Resource]
 
@@ -48,7 +48,7 @@ defmodule Thunderline.ServiceRegistry.Service do
       ]
 
       validate {Ash.Resource.Validation.OneOf, attribute: :service_type, values: ["cerebros", "mlflow", "custom"]}
-      validate {Ash.Resource.Validation.OneOf, attribute: :status, values: ["starting", "healthy", "unhealthy", "stopped"]}
+      validate {Ash.Resource.Validation.OneOf, attribute: :status, values: ["starting", "healthy", "unhealthy", "stopped", "busy"]}
 
       change fn changeset, _context ->
         changeset
@@ -76,30 +76,22 @@ defmodule Thunderline.ServiceRegistry.Service do
       description "Update service heartbeat (called periodically by service)"
       accept [:status, :capabilities, :metadata]
 
-      change fn changeset, _context ->
-        Ash.Changeset.change_attribute(changeset, :last_heartbeat_at, DateTime.utc_now())
-      end
+      change set_attribute(:last_heartbeat_at, &DateTime.utc_now/0)
     end
 
     update :mark_unhealthy do
       description "Mark service as unhealthy (called by health check)"
       accept []
 
-      change fn changeset, _context ->
-        changeset
-        |> Ash.Changeset.change_attribute(:status, "unhealthy")
-      end
+      change set_attribute(:status, "unhealthy")
     end
 
     update :mark_healthy do
       description "Mark service as healthy"
       accept []
 
-      change fn changeset, _context ->
-        changeset
-        |> Ash.Changeset.change_attribute(:status, "healthy")
-        |> Ash.Changeset.change_attribute(:last_heartbeat_at, DateTime.utc_now())
-      end
+      change set_attribute(:status, "healthy")
+      change set_attribute(:last_heartbeat_at, &DateTime.utc_now/0)
     end
 
     read :list_by_type do

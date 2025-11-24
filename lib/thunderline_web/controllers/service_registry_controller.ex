@@ -12,7 +12,7 @@ defmodule ThunderlineWeb.ServiceRegistryController do
   - DELETE /api/registry/:service_id - Deregister service
   """
   use ThunderlineWeb, :controller
-  alias Thunderline.ServiceRegistry.Service
+  alias Thunderline.Thundergate.ServiceRegistry.Service
   require Logger
 
   action_fallback ThunderlineWeb.FallbackController
@@ -62,7 +62,7 @@ defmodule ThunderlineWeb.ServiceRegistryController do
   @doc """
   Send heartbeat for a service.
 
-  PATCH /api/registry/:service_id/heartbeat
+  PATCH /api/registry/:id/heartbeat
 
   Body:
   {
@@ -71,7 +71,7 @@ defmodule ThunderlineWeb.ServiceRegistryController do
     "metadata": {...}
   }
   """
-  def heartbeat(conn, %{"service_id" => service_id} = params) do
+  def heartbeat(conn, %{"id" => service_id} = params) do
     Logger.debug("Heartbeat from service: #{service_id}")
 
     with {:ok, service} <- Service.find_by_service_id(service_id),

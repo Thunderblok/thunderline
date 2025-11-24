@@ -1,4 +1,4 @@
-defmodule Thunderline.Events.TAKChunkEvolved do
+defmodule Thunderline.Thunderbolt.Events.TAKChunkEvolved do
   @moduledoc """
   Event payload emitted by TAK when a chunk evolves for a tick.
 

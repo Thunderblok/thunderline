@@ -31,7 +31,7 @@ defmodule Thundervine.TAKEventRecorder do
   use GenServer
   require Logger
 
-  alias Thunderline.Events.TAKChunkEvolved
+  alias Thunderline.Thunderbolt.Events.TAKChunkEvolved
   alias Thundervine.TAKChunkEvent
 
   @type state :: %{

@@ -103,14 +103,14 @@ defmodule Thunderline.MixProject do
       {:ash_graphql, "~> 1.0"},
       {:ash_rate_limiter, "~> 0.1.1"},
       {:ash_json_api, "~> 1.0"},
-      {:ash_oban, "~> 0.5"},
+      {:ash_oban, "~> 0.6"},
       {:ash_events, "~> 0.5"},
       {:opentelemetry_ash, "~> 0.1.3"},
       {:ash_state_machine, "~> 0.2"},
       {:ash_admin, "~> 0.13"},
-      {:ash_ai, "~> 0.2"},
+      {:ash_ai, "~> 0.4"},
       # Type-safe TS client & RPC bridge
-      {:ash_typescript, "~> 0.6"},
+      {:ash_typescript, "~> 0.8"},
       # Additional deps
       {:broadway, "~> 1.0"},
       {:picosat_elixir, "~> 0.2"},

@@ -1,4 +1,4 @@
-defmodule Thunderline.ServiceRegistry.HealthMonitor do
+defmodule Thunderline.Thundergate.ServiceRegistry.HealthMonitor do
   @moduledoc """
   GenServer that monitors service health by checking for stale heartbeats.
 
@@ -7,7 +7,7 @@ defmodule Thunderline.ServiceRegistry.HealthMonitor do
   """
   use GenServer
   require Logger
-  alias Thunderline.ServiceRegistry.Service
+  alias Thunderline.Thundergate.ServiceRegistry.Service
 
   @heartbeat_check_interval :timer.seconds(30)
   @stale_threshold :timer.seconds(90)
