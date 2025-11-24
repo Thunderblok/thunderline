@@ -37,7 +37,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
   @spec init() :: {:ok, {pid(), Snex.env()}} | {:error, term()}
   def init do
     python_paths = Application.get_env(:thunderline, :cerebros_bridge, [])
-                   |> Keyword.get(:python_path, ["python_services"])
+                   |> Keyword.get(:python_path, ["python/cerebros", "python/cerebros/core", "python/cerebros/service"])
 
     Logger.info("[CerebrosBridge.SnexInvoker] Initializing with paths: #{inspect(python_paths)}")
 
