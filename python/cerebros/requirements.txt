@@ -1,0 +1,28 @@
+# Cerebros - Combined Python Dependencies
+#
+# Install with: pip install -r requirements.txt
+
+# === Core ML Frameworks ===
+tensorflow>=2.12.0
+numpy>=1.23.0
+
+# === NAS & Training ===
+# (cerebros core dependencies)
+scikit-learn>=1.0.0
+pandas>=1.5.0
+
+# === ONNX Conversion & Inference ===
+tf2onnx>=1.14.0
+onnx>=1.14.0
+onnxruntime>=1.15.0
+
+# === Tokenizer Support ===
+transformers>=4.30.0
+
+# === HTTP/Service ===
+requests>=2.28.0
+flask>=2.0.0
+
+# === Utilities ===
+tqdm>=4.64.0
+pyyaml>=6.0

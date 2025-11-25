@@ -1,0 +1,296 @@
+/* Cerebros Model Evaluation System Styles */
+
+.cerebros-app {
+  min-height: 100vh;
+  background: oklch(var(--b1));
+}
+
+.cerebros-header {
+  background: oklch(var(--b2));
+  border-bottom: 1px solid oklch(var(--bc) / 0.1);
+  padding: 1.5rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cerebros-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: oklch(var(--bc));
+  margin-bottom: 1rem;
+}
+
+.cerebros-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cerebros-nav button {
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid oklch(var(--bc) / 0.2);
+  background: transparent;
+  color: oklch(var(--bc) / 0.7);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cerebros-nav button:hover {
+  background: oklch(var(--b3));
+  color: oklch(var(--bc));
+  border-color: oklch(var(--bc) / 0.3);
+}
+
+.cerebros-nav button.active {
+  background: oklch(var(--p));
+  color: oklch(var(--pc));
+  border-color: oklch(var(--p));
+}
+
+.cerebros-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Loading spinner */
+.cerebros-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+/* Empty states */
+.cerebros-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: oklch(var(--bc) / 0.6);
+}
+
+.cerebros-empty h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Error states */
+.cerebros-error {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: oklch(var(--er) / 0.1);
+  border: 1px solid oklch(var(--er) / 0.3);
+  color: oklch(var(--er));
+  margin-bottom: 1rem;
+}
+
+/* Success states */
+.cerebros-success {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: oklch(var(--su) / 0.1);
+  border: 1px solid oklch(var(--su) / 0.3);
+  color: oklch(var(--su));
+  margin-bottom: 1rem;
+}
+
+/* Cards */
+.cerebros-card {
+  background: oklch(var(--b2));
+  border-radius: 0.5rem;
+  border: 1px solid oklch(var(--bc) / 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.cerebros-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: oklch(var(--bc));
+  margin-bottom: 1rem;
+}
+
+/* Tables */
+.cerebros-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cerebros-table th {
+  background: oklch(var(--b3));
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid oklch(var(--bc) / 0.1);
+}
+
+.cerebros-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid oklch(var(--bc) / 0.05);
+}
+
+.cerebros-table tr:hover {
+  background: oklch(var(--b3) / 0.5);
+}
+
+/* Status badges */
+.cerebros-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.cerebros-badge-pending {
+  background: oklch(var(--wa) / 0.2);
+  color: oklch(var(--wa));
+}
+
+.cerebros-badge-running {
+  background: oklch(var(--in) / 0.2);
+  color: oklch(var(--in));
+}
+
+.cerebros-badge-completed {
+  background: oklch(var(--su) / 0.2);
+  color: oklch(var(--su));
+}
+
+.cerebros-badge-errored {
+  background: oklch(var(--er) / 0.2);
+  color: oklch(var(--er));
+}
+
+/* Model output display */
+.cerebros-output {
+  background: oklch(var(--b3));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.cerebros-output pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.cerebros-output code {
+  background: oklch(var(--b1));
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+}
+
+/* Metrics display */
+.cerebros-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.cerebros-metric {
+  background: oklch(var(--b3));
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.cerebros-metric-label {
+  font-size: 0.875rem;
+  color: oklch(var(--bc) / 0.6);
+  margin-bottom: 0.25rem;
+}
+
+.cerebros-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: oklch(var(--bc));
+}
+
+/* Feedback section */
+.cerebros-feedback {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid oklch(var(--bc) / 0.1);
+}
+
+.cerebros-feedback-form {
+  background: oklch(var(--b3));
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.cerebros-feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cerebros-feedback-item {
+  background: oklch(var(--b2));
+  border: 1px solid oklch(var(--bc) / 0.1);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.cerebros-feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.cerebros-feedback-user {
+  font-weight: 600;
+  color: oklch(var(--bc));
+}
+
+.cerebros-feedback-date {
+  font-size: 0.875rem;
+  color: oklch(var(--bc) / 0.5);
+}
+
+.cerebros-feedback-rating {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.cerebros-feedback-comment {
+  color: oklch(var(--bc) / 0.8);
+  line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cerebros-header {
+    padding: 1rem;
+  }
+
+  .cerebros-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .cerebros-nav {
+    flex-direction: column;
+  }
+
+  .cerebros-nav button {
+    width: 100%;
+  }
+
+  .cerebros-main {
+    padding: 1rem;
+  }
+
+  .cerebros-metrics {
+    grid-template-columns: 1fr;
+  }
+}

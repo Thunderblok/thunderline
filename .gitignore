@@ -61,7 +61,8 @@ catch_output
 
 # Local cloned/external projects (kept out of main repo)
 Raincatcher/
-cerebros/
+# Limit cerebros ignore rule to the repo root so python/cerebros is tracked
+/cerebros/
 thunder_axon_integration/
 cerebros_core/
 copyparty/
