@@ -353,11 +353,24 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
   # Private functions
 
   defp resolve_model_path(path) do
-    if Path.type(path) == :absolute do
-      path
-    else
-      model_dir = Application.get_env(:thunderline, __MODULE__)[:model_dir] || "priv/models"
-      Path.join(model_dir, path)
+    model_dir = Application.get_env(:thunderline, __MODULE__)[:model_dir] || "priv/models"
+
+    cond do
+      # Absolute path - use as-is
+      Path.type(path) == :absolute ->
+        path
+
+      # Already starts with model_dir - use as-is
+      String.starts_with?(path, model_dir) ->
+        path
+
+      # Already starts with priv/ - use as-is
+      String.starts_with?(path, "priv/") ->
+        path
+
+      # Just a filename - prepend model_dir
+      true ->
+        Path.join(model_dir, path)
     end
   end
 
@@ -374,19 +387,11 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
     end
   end
 
-  defp do_load_model(path, opts) do
-    # Extract Ortex-compatible options
-    ortex_opts = [
-      execution_providers: Keyword.get(opts, :execution_providers),
-      optimization_level: map_optimization_level(Keyword.get(opts, :optimization_level)),
-      intra_op_num_threads: Keyword.get(opts, :intra_op_num_threads),
-      inter_op_num_threads: Keyword.get(opts, :inter_op_num_threads)
-    ]
-
-    case Ortex.load(path, ortex_opts) do
-      {:ok, model} -> {:ok, model}
-      {:error, reason} -> {:error, {:ortex_load_failed, reason}}
-    end
+  defp do_load_model(path, _opts) do
+    # Ortex.load returns the model directly (not {:ok, model})
+    # Options like execution_providers are not supported in current Ortex version
+    model = Ortex.load(path)
+    {:ok, model}
   rescue
     error ->
       {:error, {:ortex_exception, error}}
@@ -404,20 +409,34 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
 
   defp prepare_batch_tensor(inputs) do
     # Extract data from normalized inputs
-    # For now, assume inputs are already Nx tensors or can be converted
-    # In production, this would handle different input types (image/text/tabular)
+    # ML.Input uses :tensor field, not :data
     tensors =
       Enum.map(inputs, fn input ->
-        case input.data do
-          %Nx.Tensor{} = tensor -> tensor
-          binary when is_binary(binary) -> Nx.tensor(binary)
-          list when is_list(list) -> Nx.tensor(list)
-          _ -> raise "Unsupported data type for ONNX inference"
+        case input do
+          %{tensor: %Nx.Tensor{} = tensor} ->
+            # Ensure BinaryBackend for Ortex compatibility
+            Nx.backend_transfer(tensor, Nx.BinaryBackend)
+
+          %{data: %Nx.Tensor{} = tensor} ->
+            # Legacy support for old format
+            Nx.backend_transfer(tensor, Nx.BinaryBackend)
+
+          %{data: list} when is_list(list) ->
+            Nx.tensor(list, backend: Nx.BinaryBackend)
+
+          _ ->
+            raise "Unsupported input format for ONNX inference"
         end
       end)
 
-    # Stack into batch
-    batch_tensor = Nx.stack(tensors)
+    # Stack into batch (if multiple inputs)
+    batch_tensor =
+      if length(tensors) == 1 do
+        hd(tensors)
+      else
+        Nx.stack(tensors)
+      end
+
     {:ok, batch_tensor}
   rescue
     error ->
@@ -425,10 +444,18 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
   end
 
   defp do_inference(session, input_tensor) do
-    # Run ONNX inference
+    # Ortex.run returns a tuple of output tensors directly (not {:ok, tensor})
+    # For single-output models, we get {output_tensor}
     case Ortex.run(session, input_tensor) do
-      {:ok, output_tensor} -> {:ok, output_tensor}
-      {:error, reason} -> {:error, {:inference_failed, reason}}
+      {output_tensor} ->
+        # Transfer from Ortex.Backend to BinaryBackend for further processing
+        output = Nx.backend_transfer(output_tensor, Nx.BinaryBackend)
+        {:ok, output}
+
+      outputs when is_tuple(outputs) ->
+        # Multiple outputs - take the first one (logits)
+        output = outputs |> elem(0) |> Nx.backend_transfer(Nx.BinaryBackend)
+        {:ok, output}
     end
   rescue
     error ->
@@ -442,21 +469,32 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
     outputs =
       0..(batch_size - 1)
       |> Enum.map(fn idx ->
-        prediction = Nx.slice_along_axis(output_tensor, idx, 1, axis: 0)
-        input = Enum.at(inputs, idx)
+        # Slice the output for this batch item
+        prediction =
+          if batch_size == 1 do
+            output_tensor
+          else
+            Nx.slice_along_axis(output_tensor, idx, 1, axis: 0)
+          end
 
-        Output.new(
-          Nx.to_list(prediction),
-          "onnx_model",
-          0.0,
-          %{
+        shape = Nx.shape(prediction)
+        dtype = Nx.type(prediction)
+
+        # Build Output struct directly (Output.new! validates shape/dtype)
+        %Output{
+          tensor: prediction,
+          shape: shape,
+          dtype: dtype,
+          inference_time_us: 0,
+          metadata: %{
             model_version: "1.0",
             batch_size: batch_size,
+            batch_index: idx,
             device: "cpu",
+            correlation_id: correlation_id,
             timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
-          },
-          correlation_id || input.correlation_id
-        )
+          }
+        }
       end)
 
     {:ok, outputs}

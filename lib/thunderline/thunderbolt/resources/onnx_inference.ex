@@ -180,7 +180,27 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
   defp build_ml_input(%{data: data}) when is_list(data) do
     try do
       # Convert nested lists to Nx tensor
-      tensor = Nx.tensor(data)
+      # Use s64 (int64) for token-based models, f32 for others
+      tensor = Nx.tensor(data, type: :s64, backend: Nx.BinaryBackend)
+
+      input = %Thunderline.Thunderbolt.ML.Input{
+        tensor: tensor,
+        dtype: Nx.type(tensor),
+        shape: Nx.shape(tensor),
+        metadata: %{}
+      }
+
+      {:ok, input}
+    rescue
+      error ->
+        {:error, {:tensor_conversion_failed, error}}
+    end
+  end
+
+  defp build_ml_input(%{data: data, dtype: dtype}) when is_list(data) do
+    try do
+      # Use specified dtype
+      tensor = Nx.tensor(data, type: dtype, backend: Nx.BinaryBackend)
 
       input = %Thunderline.Thunderbolt.ML.Input{
         tensor: tensor,
@@ -204,7 +224,10 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
   defp extract_predictions(%Thunderline.Thunderbolt.ML.Output{} = output) do
     %{
       tensor: Nx.to_list(output.tensor),
-      meta: output.meta
+      shape: output.shape,
+      dtype: output.dtype,
+      inference_time_us: output.inference_time_us,
+      metadata: output.metadata
     }
   end
 
