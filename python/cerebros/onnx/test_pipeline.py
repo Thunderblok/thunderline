@@ -4,7 +4,7 @@ Test Script for Cerebros ONNX Conversion and Inference
 
 This script verifies the complete pipeline:
 1. Load a Keras model
-2. Convert to ONNX
+2. Convert to ONNX (manual method, bypasses tf2onnx NumPy 2.0 issues)
 3. Run inference on both
 4. Compare outputs
 5. Test text generation
@@ -13,7 +13,8 @@ Usage:
     python test_onnx_pipeline.py model.keras tokenizer/
 
 Requirements:
-    pip install tensorflow tf2onnx onnx onnxruntime transformers numpy
+    pip install tensorflow onnx onnxruntime transformers numpy
+    # Note: Does NOT require tf2onnx (we build ONNX manually)
 """
 
 import sys
@@ -21,17 +22,157 @@ import os
 import tempfile
 import numpy as np
 
+
+def build_onnx_from_keras(keras_model, seq_len: int = 40):
+    """
+    Build ONNX model manually from Keras weights.
+    Bypasses tf2onnx to avoid NumPy 2.0 compatibility issues.
+    """
+    import onnx
+    from onnx import helper, TensorProto, numpy_helper
+    
+    nodes = []
+    initializers = []
+    current_input = "input_ids"
+    node_idx = 0
+    output_dim = None
+    
+    for layer in keras_model.layers:
+        layer_type = type(layer).__name__
+        layer_name = layer.name
+        weights = layer.get_weights()
+        
+        if not weights:
+            continue
+            
+        if layer_type == 'Embedding':
+            embed_weights = weights[0]
+            embed_init = numpy_helper.from_array(
+                embed_weights.astype(np.float32),
+                name=f"{layer_name}_weights"
+            )
+            initializers.append(embed_init)
+            
+            output_name = f"{layer_name}_output"
+            gather_node = helper.make_node(
+                'Gather',
+                inputs=[f"{layer_name}_weights", current_input],
+                outputs=[output_name],
+                name=f"Gather_{node_idx}",
+                axis=0
+            )
+            nodes.append(gather_node)
+            current_input = output_name
+            node_idx += 1
+            
+        elif layer_type == 'GlobalAveragePooling1D' or 'pool' in layer_name.lower():
+            output_name = f"{layer_name}_output"
+            pool_node = helper.make_node(
+                'ReduceMean',
+                inputs=[current_input],
+                outputs=[output_name],
+                name=f"Pool_{node_idx}",
+                axes=[1],
+                keepdims=0
+            )
+            nodes.append(pool_node)
+            current_input = output_name
+            node_idx += 1
+            
+        elif layer_type == 'Dense':
+            kernel = weights[0]
+            bias = weights[1] if len(weights) > 1 else None
+            activation = layer.activation.__name__ if hasattr(layer, 'activation') else 'linear'
+            output_dim = kernel.shape[1]
+            
+            kernel_init = numpy_helper.from_array(
+                kernel.astype(np.float32),
+                name=f"{layer_name}_kernel"
+            )
+            initializers.append(kernel_init)
+            
+            matmul_output = f"{layer_name}_matmul"
+            matmul_node = helper.make_node(
+                'MatMul',
+                inputs=[current_input, f"{layer_name}_kernel"],
+                outputs=[matmul_output],
+                name=f"MatMul_{node_idx}"
+            )
+            nodes.append(matmul_node)
+            current_input = matmul_output
+            node_idx += 1
+            
+            if bias is not None:
+                bias_init = numpy_helper.from_array(
+                    bias.astype(np.float32),
+                    name=f"{layer_name}_bias"
+                )
+                initializers.append(bias_init)
+                
+                add_output = f"{layer_name}_add"
+                add_node = helper.make_node(
+                    'Add',
+                    inputs=[current_input, f"{layer_name}_bias"],
+                    outputs=[add_output],
+                    name=f"Add_{node_idx}"
+                )
+                nodes.append(add_node)
+                current_input = add_output
+                node_idx += 1
+            
+            if activation == 'relu':
+                act_output = f"{layer_name}_relu"
+                relu_node = helper.make_node(
+                    'Relu',
+                    inputs=[current_input],
+                    outputs=[act_output],
+                    name=f"Relu_{node_idx}"
+                )
+                nodes.append(relu_node)
+                current_input = act_output
+                node_idx += 1
+    
+    # Final output
+    identity_node = helper.make_node(
+        'Identity',
+        inputs=[current_input],
+        outputs=["logits"],
+        name="Output"
+    )
+    nodes.append(identity_node)
+    
+    input_tensor = helper.make_tensor_value_info(
+        "input_ids", TensorProto.INT64, [None, seq_len]
+    )
+    output_tensor = helper.make_tensor_value_info(
+        "logits", TensorProto.FLOAT, [None, output_dim]
+    )
+    
+    graph = helper.make_graph(
+        nodes,
+        "cerebros_model",
+        [input_tensor],
+        [output_tensor],
+        initializers
+    )
+    
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+    model.ir_version = 7
+    onnx.checker.check_model(model)
+    
+    return model
+
 def test_conversion(keras_path: str, tokenizer_path: str):
     """Test the complete ONNX conversion and inference pipeline."""
     
     import tensorflow as tf
-    import tf2onnx
     import onnx
     import onnxruntime as ort
     from transformers import AutoTokenizer
     
     print("="*60)
     print("🧪 Cerebros ONNX Pipeline Test")
+    print("   (Using manual ONNX build - bypasses tf2onnx)")
     print("="*60)
     
     # Configuration (should match training)
@@ -72,25 +213,13 @@ def test_conversion(keras_path: str, tokenizer_path: str):
     print(f"   ✓ Vocabulary size: {VOCAB_SIZE}")
     print(f"   ✓ Pad token ID: {PAD_TOKEN_ID}")
     
-    # Step 3: Convert to ONNX
-    print("\n🔄 Step 3: Converting to ONNX...")
+    # Step 3: Convert to ONNX (manual method)
+    print("\n🔄 Step 3: Converting to ONNX (manual build)...")
     onnx_path = tempfile.mktemp(suffix=".onnx")
     
-    input_signature = [
-        tf.TensorSpec(shape=(None, MAX_SEQ_LENGTH), dtype=tf.int32, name="input_ids")
-    ]
-    
-    model_proto, _ = tf2onnx.convert.from_keras(
-        keras_model,
-        input_signature=input_signature,
-        opset=14,
-        output_path=onnx_path
-    )
+    onnx_model = build_onnx_from_keras(keras_model, MAX_SEQ_LENGTH)
+    onnx.save(onnx_model, onnx_path)
     print(f"   ✓ ONNX model saved to: {onnx_path}")
-    
-    # Verify ONNX model
-    onnx_model = onnx.load(onnx_path)
-    onnx.checker.check_model(onnx_model)
     print(f"   ✓ ONNX model verification passed!")
     
     # Step 4: Load ONNX for inference
@@ -123,11 +252,13 @@ def test_conversion(keras_path: str, tokenizer_path: str):
         else:
             tokens = tokens[:MAX_SEQ_LENGTH]
         
-        input_array = np.array([tokens], dtype=np.int32)
+        # Keras uses int32, ONNX uses int64
+        keras_input = np.array([tokens], dtype=np.int32)
+        onnx_input = np.array([tokens], dtype=np.int64)
         
         # Run both models
-        keras_output = keras_model(tf.constant(input_array), training=False).numpy()
-        onnx_output = ort_session.run([output_name], {input_name: input_array})[0]
+        keras_output = keras_model(tf.constant(keras_input), training=False).numpy()
+        onnx_output = ort_session.run([output_name], {input_name: onnx_input})[0]
         
         # Compare
         max_diff = np.max(np.abs(keras_output - onnx_output))
@@ -158,7 +289,8 @@ def test_conversion(keras_path: str, tokenizer_path: str):
             else:
                 padded = padded[-MAX_SEQ_LENGTH:]
             
-            input_array = np.array([padded], dtype=np.int32)
+            # ONNX uses int64
+            input_array = np.array([padded], dtype=np.int64)
             
             # Get logits
             logits = ort_session.run([output_name], {input_name: input_array})[0][0]
