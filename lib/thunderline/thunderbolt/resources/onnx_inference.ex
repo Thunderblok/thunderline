@@ -179,9 +179,12 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
   # Build ML.Input struct from raw input map
   defp build_ml_input(%{data: data}) when is_list(data) do
     try do
-      # Convert nested lists to Nx tensor
-      # Use s64 (int64) for token-based models, f32 for others
-      tensor = Nx.tensor(data, type: :s64, backend: Nx.BinaryBackend)
+      # Convert to Nx tensor - ensure we have batch dimension
+      # If data is 1D (e.g., [1, 2, 3]), wrap in batch: [[1, 2, 3]]
+      data_for_tensor = ensure_batch_dimension(data)
+
+      # Use s64 (int64) for token-based models
+      tensor = Nx.tensor(data_for_tensor, type: :s64, backend: Nx.BinaryBackend)
 
       input = %Thunderline.Thunderbolt.ML.Input{
         tensor: tensor,
@@ -195,6 +198,17 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
       error ->
         {:error, {:tensor_conversion_failed, error}}
     end
+  end
+
+  # Ensure data has batch dimension (2D for sequence models)
+  defp ensure_batch_dimension([first | _] = data) when is_list(first) do
+    # Already has batch dimension (e.g., [[1,2,3], [4,5,6]])
+    data
+  end
+
+  defp ensure_batch_dimension(data) when is_list(data) do
+    # Single sequence - wrap in batch: [1,2,3] -> [[1,2,3]]
+    [data]
   end
 
   defp build_ml_input(%{data: data, dtype: dtype}) when is_list(data) do

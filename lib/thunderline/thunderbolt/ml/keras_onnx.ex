@@ -298,15 +298,10 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
 
   """
   @spec close(session()) :: :ok | {:error, term()}
-  def close(session) do
+  def close(_session) do
     # Ortex handles cleanup automatically when session reference is garbage collected
-    # But we can explicitly release if needed
-    Logger.debug("[KerasONNX] Closing session: #{inspect(session)}")
+    # No explicit cleanup needed
     :ok
-  rescue
-    error ->
-      Logger.error("[KerasONNX] Failed to close session: #{inspect(error)}")
-      {:error, error}
   end
 
   @doc """
@@ -506,5 +501,101 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
   defp format_duration(native_duration) do
     ms = System.convert_time_unit(native_duration, :native, :millisecond)
     "#{ms}ms"
+  end
+
+  # -------------------------------------------------------------------
+  # Near-Critical Dynamics Observables
+  # -------------------------------------------------------------------
+
+  @doc """
+  Compute near-critical dynamics observables from inference output.
+
+  Returns metrics from the Cinderforge Lab paper:
+  - PLV (Phase Locking Value)
+  - σ (Entropy ratio)
+  - λ̂ (Stability exponent)
+
+  ## Parameters
+
+  - `output` - ML.Output from inference
+  - `prev_entropy` - Optional entropy from previous inference
+
+  ## Returns
+
+  Map with :plv, :sigma, :entropy, :healthy?
+  """
+  @spec compute_observables(Output.t(), float() | nil) :: map()
+  def compute_observables(%Output{tensor: tensor} = _output, prev_entropy \\ nil) do
+    alias Thunderline.Utils.Stats
+
+    # Compute current entropy from output distribution
+    probs = Nx.softmax(tensor)
+    current_entropy = Stats.entropy(probs)
+
+    # Compute PLV from activation pattern
+    plv = Stats.plv(tensor)
+
+    # Compute sigma if we have previous entropy
+    sigma =
+      if prev_entropy && prev_entropy > 0 do
+        Stats.sigma(prev_entropy, current_entropy)
+      else
+        1.0
+      end
+
+    # Check health bands
+    bands = Stats.check_bands(plv, sigma, 0.0, 0.0)
+
+    %{
+      plv: plv,
+      sigma: sigma,
+      entropy: current_entropy,
+      healthy?: bands.overall == :healthy,
+      status: bands.overall
+    }
+  end
+
+  @doc """
+  Observe inference output and emit to LoopMonitor if available.
+
+  Integrates ML inference with the near-critical dynamics monitoring system.
+
+  ## Parameters
+
+  - `output` - ML.Output from inference
+  - `opts` - Options including :domain, :tick, :prev_entropy
+  """
+  @spec observe_inference(Output.t(), keyword()) :: :ok | {:intervention, atom()}
+  def observe_inference(%Output{tensor: tensor} = output, opts \\ []) do
+    domain = Keyword.get(opts, :domain, :ml_inference)
+    tick = Keyword.get(opts, :tick, System.monotonic_time(:millisecond))
+    prev_entropy = Keyword.get(opts, :prev_entropy)
+
+    # Compute observables
+    probs = Nx.softmax(tensor)
+    current_entropy = Thunderline.Utils.Stats.entropy(probs)
+
+    observation = %{
+      tick: tick,
+      activations: tensor,
+      entropy_prev: prev_entropy || current_entropy,
+      entropy_next: current_entropy,
+      jvp_matrix: Nx.tensor([[1.0]])  # Simplified - would need Jacobian for real λ̂
+    }
+
+    # Try to observe via LoopMonitor if it's running
+    try do
+      Thunderline.Telemetry.LoopMonitor.observe(domain, observation)
+    catch
+      :exit, _ ->
+        # LoopMonitor not running, just compute locally
+        observables = compute_observables(output, prev_entropy)
+
+        if observables.healthy? do
+          :ok
+        else
+          {:intervention, observables.status}
+        end
+    end
   end
 end

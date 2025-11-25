@@ -35,7 +35,15 @@ defmodule Thunderline.Thunderflow.Supervisor do
     children = [
       # These were previously started in infrastructure_early
       {Thunderline.Thunderflow.EventBuffer, []},
-      {Thunderline.Thunderflow.Blackboard, []}
+      {Thunderline.Thunderflow.Blackboard, []},
+      # Near-critical dynamics monitoring (Cinderforge Lab paper)
+      {Thunderline.Telemetry.LoopMonitor, [name: Thunderline.Telemetry.LoopMonitor]},
+      {Thunderline.Telemetry.TickObserver, [
+        name: Thunderline.Telemetry.TickObserver,
+        loop_monitor: Thunderline.Telemetry.LoopMonitor,
+        observe_interval: 5,
+        auto_irope: true
+      ]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -70,6 +78,22 @@ defmodule Thunderline.Thunderflow.Supervisor do
     # Log every 10 ticks for visibility
     if rem(tick_count, 10) == 0 do
       Logger.debug("[Thunderflow] Health check at tick #{tick_count}")
+
+      # Get LoopMonitor summary if available
+      if Process.whereis(Thunderline.Telemetry.LoopMonitor) do
+        summary = Thunderline.Telemetry.LoopMonitor.summary()
+
+        :telemetry.execute(
+          [:thunderline, :thunderflow, :health_check],
+          %{
+            tick: tick_count,
+            healthy_domains: summary.healthy_count,
+            total_domains: summary.total_count,
+            health_ratio: summary.health_ratio
+          },
+          %{domain: "thunderflow"}
+        )
+      end
     end
 
     # Update state with current tick
