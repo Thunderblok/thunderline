@@ -71,27 +71,40 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
     # Start interpreter directly with system Python, avoiding uv/pyproject requirement
     python_executable = "/home/linuxbrew/.linuxbrew/bin/python3.13"
 
-    case Snex.Interpreter.start_link(python: python_executable, init_script: init_script) do
-      {:ok, interpreter} ->
-        # Create base environment
-        case Snex.make_env(interpreter) do
-          {:ok, env} ->
-            Logger.info("[CerebrosBridge.SnexInvoker] Snex interpreter initialized successfully")
-            {:ok, {interpreter, env}}
+    # Use a minimal init_script that doesn't import cerebros_service
+    # We'll do lazy imports when actually needed
+    minimal_init_script = """
+    import sys
+    #{sys_path_init}
+    """
 
-          {:error, error} ->
-            Logger.error("[CerebrosBridge.SnexInvoker] Failed to create base environment: #{inspect(error)}")
-            {:error, error}
-        end
+    try do
+      case Snex.Interpreter.start_link(python: python_executable, init_script: minimal_init_script) do
+        {:ok, interpreter} ->
+          # Create base environment
+          case Snex.make_env(interpreter) do
+            {:ok, env} ->
+              Logger.info("[CerebrosBridge.SnexInvoker] Snex interpreter initialized successfully")
+              {:ok, {interpreter, env}}
 
-      {:error, error} ->
-        Logger.error("[CerebrosBridge.SnexInvoker] Failed to start interpreter: #{inspect(error)}")
-        {:error, error}
+            {:error, error} ->
+              Logger.error("[CerebrosBridge.SnexInvoker] Failed to create base environment: #{inspect(error)}")
+              {:error, error}
+          end
+
+        {:error, error} ->
+          Logger.error("[CerebrosBridge.SnexInvoker] Failed to start interpreter: #{inspect(error)}")
+          {:error, error}
+      end
+    rescue
+      error ->
+        Logger.error("[CerebrosBridge.SnexInvoker] Initialization error: #{Exception.message(error)}")
+        {:error, {:init_failed, Exception.message(error)}}
+    catch
+      kind, reason ->
+        Logger.error("[CerebrosBridge.SnexInvoker] Caught #{kind}: #{inspect(reason)}")
+        {:error, {:init_failed, reason}}
     end
-  rescue
-    error ->
-      Logger.error("[CerebrosBridge.SnexInvoker] Initialization error: #{inspect(error)}")
-      {:error, error}
   end
 
   @doc """

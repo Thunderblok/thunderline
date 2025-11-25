@@ -48,37 +48,53 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
   def init(_opts) do
     state = %{
       studies: %{},
-      active_trials: %{}
+      active_trials: %{},
+      python_ready?: false
     }
 
     Logger.info("[AutoMLDriver] Started")
 
-    # Initialize Snex runtime if using Snex invoker
-    case cerebros_bridge_invoker() do
-      :snex ->
-        Logger.info("[AutoMLDriver] Initializing Snex runtime (GIL-free)...")
+    # Initialize Python runtime based on configured invoker - but don't crash on failure
+    state = try do
+      case cerebros_bridge_invoker() do
+        :snex ->
+          Logger.info("[AutoMLDriver] Initializing Snex runtime (GIL-free)...")
 
-        case Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker.init() do
-          {:ok, {_interpreter, _env}} ->
-            Logger.info("[AutoMLDriver] Snex runtime initialized successfully")
+          case Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker.init() do
+            {:ok, {_interpreter, _env}} ->
+              Logger.info("[AutoMLDriver] Snex runtime initialized successfully")
+              %{state | python_ready?: true}
 
-          {:error, reason} ->
-            Logger.error("[AutoMLDriver] Failed to initialize Snex: #{inspect(reason)}")
-        end
+            {:error, reason} ->
+              Logger.warning("[AutoMLDriver] Snex init failed (non-fatal): #{inspect(reason)}")
+              state
+          end
 
-      :pythonx ->
-        Logger.info("[AutoMLDriver] Initializing Pythonx runtime...")
+        :pythonx ->
+          Logger.info("[AutoMLDriver] Initializing Pythonx runtime...")
 
-        case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.init() do
-          :ok ->
-            Logger.info("[AutoMLDriver] Pythonx runtime initialized successfully")
+          case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.init() do
+            :ok ->
+              Logger.info("[AutoMLDriver] Pythonx runtime initialized successfully")
+              %{state | python_ready?: true}
 
-          {:error, reason} ->
-            Logger.error("[AutoMLDriver] Failed to initialize Pythonx: #{inspect(reason)}")
-        end
+            {:error, reason} ->
+              Logger.warning("[AutoMLDriver] Pythonx init failed (non-fatal): #{inspect(reason)}")
+              state
+          end
 
-      other ->
-        Logger.info("[AutoMLDriver] Using #{other} invoker (no initialization needed)")
+        other ->
+          Logger.info("[AutoMLDriver] Using #{other} invoker (no initialization needed)")
+          state
+      end
+    rescue
+      error ->
+        Logger.warning("[AutoMLDriver] Python init raised (non-fatal): #{Exception.message(error)}")
+        state
+    catch
+      kind, reason ->
+        Logger.warning("[AutoMLDriver] Python init caught #{kind} (non-fatal): #{inspect(reason)}")
+        state
     end
 
     {:ok, state}

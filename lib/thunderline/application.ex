@@ -178,6 +178,8 @@ defmodule Thunderline.Application do
   defp ml_pipeline_children do
     if Feature.enabled?(:ml_pipeline, default: true) do
       [
+        # ONNX Model Server - persistent model sessions
+        {Thunderline.Thunderbolt.ML.ModelServer, model_server_config()},
         # ML Controller for adaptive model selection
         {Thunderline.Thunderbolt.ML.Controller, ml_controller_config()},
         # Model selection consumer (requires Controller to be started first)
@@ -188,6 +190,15 @@ defmodule Thunderline.Application do
     else
       []
     end
+  end
+
+  defp model_server_config do
+    [
+      max_models: 10,
+      model_dir: "priv/models",
+      preload: Application.get_env(:thunderline, :preload_models, []),
+      health_check_interval: :timer.minutes(5)
+    ]
   end
 
   defp ml_controller_config do

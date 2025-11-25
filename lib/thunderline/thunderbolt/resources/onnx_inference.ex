@@ -98,9 +98,10 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
 
         start_time = System.monotonic_time(:millisecond)
 
+        # Use ModelServer for persistent sessions (no reload each time)
         result =
           with {:ok, session} <-
-                 Thunderline.Thunderbolt.ML.KerasONNX.load!(model_path),
+                 Thunderline.Thunderbolt.ML.ModelServer.get_session(model_path),
                {:ok, ml_input} <- build_ml_input(input),
                {:ok, ml_output} <-
                  Thunderline.Thunderbolt.ML.KerasONNX.infer(
@@ -121,9 +122,7 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
               "[OnnxInference] Success: model=#{model_path}, duration=#{duration_ms}ms"
             )
 
-            # Close session after use
-            _ = Thunderline.Thunderbolt.ML.KerasONNX.close(session)
-
+            # NOTE: Session stays in ModelServer cache - no close needed
             {:ok, ml_output}
           else
             {:error, reason} = error ->
