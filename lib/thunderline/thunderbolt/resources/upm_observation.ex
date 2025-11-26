@@ -25,6 +25,13 @@ defmodule Thunderline.Thunderbolt.Resources.UpmObservation do
 
   - **entropy**: Shannon entropy of activation distribution
 
+  ## Multi-Manifold Clustering (HC-22A)
+
+  - **manifold_id**: Cluster assignment from UMAP/HDBSCAN analysis
+  - **cluster_stability**: Stability score [0.0-1.0] of current assignment
+  - **manifold_distance**: Distance to manifold centroid in embedding space
+  - **simplex_degree**: Degree in simplex graph (connectivity measure)
+
   ## Usage
 
       # Created by LoopMonitor after each observation
@@ -37,6 +44,8 @@ defmodule Thunderline.Thunderbolt.Resources.UpmObservation do
         lambda: -0.05,
         rtau: 0.8,
         entropy: 2.3,
+        manifold_id: 3,
+        cluster_stability: 0.87,
         band_status: :healthy
       })
 
@@ -76,6 +85,7 @@ defmodule Thunderline.Thunderbolt.Resources.UpmObservation do
       index [:pac_id, :domain, :tick], name: "upm_observations_pac_domain_tick_idx"
       index [:band_status], name: "upm_observations_band_status_idx"
       index [:inserted_at], name: "upm_observations_inserted_at_idx"
+      index [:manifold_id], name: "upm_observations_manifold_id_idx"
     end
   end
 
@@ -103,6 +113,10 @@ defmodule Thunderline.Thunderbolt.Resources.UpmObservation do
         :lambda,
         :rtau,
         :entropy,
+        :manifold_id,
+        :cluster_stability,
+        :manifold_distance,
+        :simplex_degree,
         :band_status,
         :intervention_triggered,
         :intervention_type,
@@ -196,6 +210,27 @@ defmodule Thunderline.Thunderbolt.Resources.UpmObservation do
     attribute :entropy, :float do
       description "Shannon entropy of activation distribution"
       constraints min: 0.0
+    end
+
+    # --- Multi-Manifold Clustering (HC-22A) ---
+
+    attribute :manifold_id, :integer do
+      description "Cluster/manifold assignment from UMAP/HDBSCAN analysis"
+    end
+
+    attribute :cluster_stability, :float do
+      description "Stability score for current cluster assignment [0.0-1.0]"
+      constraints min: 0.0, max: 1.0
+    end
+
+    attribute :manifold_distance, :float do
+      description "Distance to nearest manifold centroid (embedding space)"
+      constraints min: 0.0
+    end
+
+    attribute :simplex_degree, :integer do
+      description "Degree in simplex graph (number of connected neighbors)"
+      constraints min: 0
     end
 
     # --- Health Status ---
