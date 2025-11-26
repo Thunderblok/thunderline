@@ -99,6 +99,7 @@
 | HC-04 | P0 | ML Persistence | Cerebros migrations parked | Move/run migrations; add lifecycle state machine | Bolt Steward | In Progress (50+ resources active) |
 | HC-04a | P0 | Python ML Stack | TensorFlow/ONNX environment setup | **✅ COMPLETE** - TensorFlow 2.20.0, tf2onnx 1.8.4, ONNX 1.19.1 installed and verified | Bolt Steward | **Done** |
 | HC-04b | P0 | Elixir ML Dependencies | Req/Ortex installation | **✅ COMPLETE** - Req 0.5.15, Ortex 0.1.10 compiled successfully | Bolt Steward | **Done** |
+| HC-04d | P0 | Persistent ONNX Sessions | ModelServer for cached inference | **✅ COMPLETE** (Nov 25) - GenServer/ETS cache, 3000x speedup (~11μs vs ~36ms), LRU eviction, cerebros models operational | Bolt Steward | **Done** |
 | HC-04c | P0 | Magika Integration | AI file classification missing | **✅ COMPLETE** - Core wrapper (420 lines), unit tests (11 cases), integration tests (6 scenarios), Broadway pipeline, EventBus bridge, configuration, supervision, documentation. Production-ready. See `docs/MAGIKA_QUICK_START.md` | Gate Steward | **Done** |
 | HC-05 | P0 | Email MVP | No email resources/flow | Add `Contact` & `OutboundEmail`, SMTP adapter, events | Gate+Link | Not Started |
 | HC-06 | P0 | Presence Policies | Membership & presence auth gaps | Implement policies + presence events join/leave | Link Steward | Not Started |

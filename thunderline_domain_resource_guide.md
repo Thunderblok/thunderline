@@ -106,7 +106,8 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 - **RAG System**: Native PostgreSQL semantic search via `Document.semantic_search/2` (~7-10ms queries). Feature flag `:rag_enabled` (dev default). See `RAG_REFACTOR_HANDOFF.md` for complete API documentation.
 - **Event responsibilities**: `ml.run.*`, `ai.tool_*`, `dag.commit`, `cmd.workflow.*`; cross-domain dispatch to Flow pipelines.
 - **Roadmap**: Phase B policy/orchestration unification; NAS integration phases (Section 10 in [`architecture/market_moe_pipeline.md`](Thunderline/documentation/architecture/market_moe_pipeline.md)). Flower federation runs exclusively through Keras backend wiring (`python/cerebros/keras/flower_app.py`) so PyTorch dependencies dropped from NAS control plane images.
-- **Feature flags**: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active`, `:rag_enabled` gating advanced features.
+- **Feature flags**: `:ml_nas`, `:signal_stack`, `:vim`, `:vim_active`, `:rag_enabled`, `:ml_pipeline` gating advanced features.
+- **ModelServer** (Nov 25, 2025): Persistent ONNX session cache via GenServer/ETS. Cache hits in ~11μs vs ~36ms fresh load (3000x speedup). Supports preload, on-demand loading, LRU eviction. Models: `cerebros_trained.onnx`, `cerebros_mini.onnx`.
 - **Recommendation**: **Consider splitting** - Thunderbolt is the largest domain (50+ resources). Potential split: Core/Lane/Task orchestration vs ML/RAG/Cerebros subsystems.
 
 **ML Infrastructure Status (Nov 2025):**

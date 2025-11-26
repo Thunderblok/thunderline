@@ -12,7 +12,7 @@ case Process.whereis(ModelServer) do
     # Start ModelServer manually if not running
     {:ok, pid} = ModelServer.start_link([])
     IO.puts("ModelServer started: #{inspect(pid)}")
-    
+
   pid ->
     IO.puts("ModelServer already running: #{inspect(pid)}")
 end

@@ -78,6 +78,12 @@
 - **GraphQL API:**
   - Queries: core_agents (list/get)
   - Mutations: core_agents (create/update/destroy)
+- **ML.ModelServer** (Nov 25, 2025):
+  - Persistent ONNX session cache via GenServer/ETS
+  - Cache hits: ~11μs vs ~36ms fresh load (3000x speedup)
+  - APIs: `get_session/1`, `preload/1`, `evict/1`, `infer/2`, `stats/0`, `list_models/0`
+  - Models: cerebros_trained.onnx, cerebros_mini.onnx, cerebros_mini_v2.onnx
+  - LRU eviction when max_models (default 10) reached
 - **Code Interfaces:**
   - TrainingDataset (create_training_dataset!, freeze_dataset!, update_corpus_path!)
   - CoreAgent management

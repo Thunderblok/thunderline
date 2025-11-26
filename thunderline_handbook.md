@@ -89,7 +89,9 @@
 - ✅ Elixir Dependencies: Req 0.5.15 (HTTP client), Ortex 0.1.10 (ONNX runtime) compiled successfully
 - ✅ Foundation Code: Python NLP CLI (JSON contract v1.0), Elixir Port supervisor (400 lines), telemetry framework
 - ✅ Architecture: Complete 10,000-word integration spec (Magika + spaCy + Keras→ONNX pipeline)
-- 🟡 Pending Implementation: Magika wrapper, ONNX adapter, Voxel builder (specifications complete, code ready to implement)
+- ✅ **ModelServer**: Persistent ONNX session cache via GenServer/ETS (3000x speedup: ~11μs cache hit vs ~36ms fresh load)
+- ✅ **ONNX Models**: cerebros_trained.onnx, cerebros_mini.onnx, cerebros_mini_v2.onnx operational
+- ✅ **OnnxInference**: Ash resource integrated with ModelServer for MCP tool exposure
 - 📋 Event Flow: `system.ingest.classified` → `ai.nlp.analyzed` → `ai.ml.run.completed` → `dag.commit`
 
 ### 3.5 ThunderCrown (Governance)
