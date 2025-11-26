@@ -31,7 +31,7 @@ defmodule Thunderline.Thunderbolt.UPM.Supervisor do
   require Logger
 
   alias Thunderline.Feature
-  alias Thunderline.Thunderbolt.UPM.{TrainerWorker, DriftMonitor, AdapterSync}
+  alias Thunderline.Thunderbolt.UPM.{TrainerWorker, DriftMonitor, AdapterSync, ObservationRecorder}
 
   @doc """
   Starts the UPM supervisor.
@@ -125,7 +125,10 @@ defmodule Thunderline.Thunderbolt.UPM.Supervisor do
        name: __MODULE__.TrainersSupervisor, strategy: :one_for_one, max_restarts: 10},
 
       # Global AdapterSync worker (handles all snapshot distribution)
-      {AdapterSync, []}
+      {AdapterSync, []},
+
+      # ObservationRecorder (bridges LoopMonitor → UpmObservation)
+      {ObservationRecorder, []}
     ]
 
     # Start supervision tree

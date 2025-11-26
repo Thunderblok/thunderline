@@ -129,6 +129,7 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.Resources.UpmSnapshot
     resource Thunderline.Thunderbolt.Resources.UpmAdapter
     resource Thunderline.Thunderbolt.Resources.UpmDriftWindow
+    resource Thunderline.Thunderbolt.Resources.UpmObservation
 
     # Phase 0 MoE + Decision trace resources
     resource Thunderline.MoE.Expert
