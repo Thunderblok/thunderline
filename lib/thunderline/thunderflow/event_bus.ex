@@ -161,7 +161,7 @@ defmodule Thunderline.Thunderflow.EventBus do
     {table, priority} = table_and_priority(pipeline, ev.priority)
 
     try do
-      Thunderflow.MnesiaProducer.enqueue_event(table, ev,
+      Thunderline.Thunderflow.MnesiaProducer.enqueue_event(table, ev,
         pipeline_type: pipeline,
         priority: priority
       )
@@ -220,10 +220,10 @@ defmodule Thunderline.Thunderflow.EventBus do
 
   defp table_and_priority(pipeline, priority) do
     case pipeline do
-      :general -> {Thunderflow.MnesiaProducer, priority}
-      :cross_domain -> {Thunderflow.CrossDomainEvents, priority}
-      :realtime -> {Thunderflow.RealTimeEvents, priority}
-      _ -> {Thunderflow.MnesiaProducer, priority || :normal}
+      :general -> {Thunderline.Thunderflow.MnesiaProducer, priority}
+      :cross_domain -> {Thunderline.Thunderflow.CrossDomainEvents, priority}
+      :realtime -> {Thunderline.Thunderflow.RealTimeEvents, priority}
+      _ -> {Thunderline.Thunderflow.MnesiaProducer, priority || :normal}
     end
   end
 

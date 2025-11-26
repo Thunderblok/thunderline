@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.SystemEvent do
+defmodule Thunderline.Thunderblock.Resources.SystemEvent do
   @moduledoc """
   System-wide event tracking and coordination
   Replaces direct cross-domain calls with event-driven patterns

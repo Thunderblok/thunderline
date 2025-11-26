@@ -200,11 +200,11 @@ defmodule Thunderline.Thunderlink.Resources.Community do
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        community = Ash.get!(Thunderblock.Resources.Community, input.arguments.id)
+        community = Ash.get!(Thunderline.Thunderblock.Resources.ExecutionTenant, input.arguments.id)
 
         community
         |> Ash.Changeset.for_update(:internal_activate)
-        |> Thunderblock.Domain.update!()
+        |> Thunderline.Thunderblock.Domain.update!()
 
         # Start community services
         start_community_services(community)
@@ -245,8 +245,8 @@ defmodule Thunderline.Thunderlink.Resources.Community do
       end
 
       run fn input, _context ->
-        case Thunderblock.Domain
-             |> Ash.get(Thunderblock.Resources.Community, input.arguments.id) do
+        case Thunderline.Thunderblock.Domain
+             |> Ash.get(Thunderline.Thunderblock.Resources.ExecutionTenant, input.arguments.id) do
           {:ok, community} ->
             {:ok, updated_community} =
               community
@@ -254,7 +254,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
                 user_id: input.arguments.user_id,
                 role: input.arguments.role
               })
-              |> Thunderblock.Domain.update()
+              |> Thunderline.Thunderblock.Domain.update()
 
             # Provision PAC home for new member
             provision_pac_home(community, input.arguments.user_id)
@@ -327,15 +327,15 @@ defmodule Thunderline.Thunderlink.Resources.Community do
       end
 
       run fn input, _context ->
-        case Thunderblock.Domain
-             |> Ash.get(Thunderblock.Resources.Community, input.arguments.id) do
+        case Thunderline.Thunderblock.Domain
+             |> Ash.get(Thunderline.Thunderblock.Resources.ExecutionTenant, input.arguments.id) do
           {:ok, community} ->
             {:ok, updated_community} =
               community
               |> Ash.Changeset.for_update(:_internal_remove_member, %{
                 user_id: input.arguments.user_id
               })
-              |> Thunderblock.Domain.update()
+              |> Thunderline.Thunderblock.Domain.update()
 
             # Cleanup PAC home and resources
             cleanup_member_resources(community, input.arguments.user_id)
@@ -388,8 +388,8 @@ defmodule Thunderline.Thunderlink.Resources.Community do
       returns :struct
 
       run fn input, _context ->
-        case Thunderblock.Domain
-             |> Ash.get(Thunderblock.Resources.Community, input.arguments.id) do
+        case Thunderline.Thunderblock.Domain
+             |> Ash.get(Thunderline.Thunderblock.Resources.ExecutionTenant, input.arguments.id) do
           {:ok, community} ->
             # Calculate health score based on activity
             metrics = input.arguments.community_metrics || %{}
@@ -404,7 +404,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
                 channel_count: input.arguments.channel_count,
                 pac_home_count: input.arguments.pac_home_count
               })
-              |> Thunderblock.Domain.update!()
+              |> Thunderline.Thunderblock.Domain.update!()
 
             {:ok, updated_community}
 
@@ -426,13 +426,13 @@ defmodule Thunderline.Thunderlink.Resources.Community do
       returns :struct
 
       run fn input, _context ->
-        case Thunderblock.Domain
-             |> Ash.get(Thunderblock.Resources.Community, input.arguments.id) do
+        case Thunderline.Thunderblock.Domain
+             |> Ash.get(Thunderline.Thunderblock.Resources.ExecutionTenant, input.arguments.id) do
           {:ok, community} ->
             updated_community =
               community
               |> Ash.Changeset.for_update(:_suspend_internal, %{})
-              |> Thunderblock.Domain.update!()
+              |> Thunderline.Thunderblock.Domain.update!()
 
             # Suspend community services
             suspend_community_services(updated_community)
@@ -721,12 +721,12 @@ defmodule Thunderline.Thunderlink.Resources.Community do
 
   # ===== RELATIONSHIPS =====
   relationships do
-    belongs_to :cluster_node, Thunderblock.Resources.ClusterNode do
+    belongs_to :cluster_node, Thunderline.Thunderblock.Resources.ClusterNode do
       source_attribute :cluster_node_id
       destination_attribute :id
     end
 
-    belongs_to :zone_container, Thunderblock.Resources.ZoneContainer do
+    belongs_to :zone_container, Thunderline.Thunderblock.Resources.ZoneContainer do
       source_attribute :execution_zone_id
       destination_attribute :id
     end
@@ -747,7 +747,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
       destination_attribute :community_id
     end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
+    has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
       destination_attribute :target_resource_id
       filter expr(target_resource_type == :community)
     end
@@ -778,7 +778,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
   defp provision_community_zone(community) do
     # Create dedicated execution zone for community
     {:ok, zone} =
-      Thunderblock.Resources.ZoneContainer.create(%{
+      Thunderline.Thunderblock.Resources.ZoneContainer.create(%{
         zone_name: "community_#{community.community_slug}",
         zone_type: :community,
         cluster_node_id: community.cluster_node_id,

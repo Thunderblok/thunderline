@@ -236,7 +236,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
             last_message_at: DateTime.utc_now(),
             channel_metrics: updated_metrics
           })
-          |> Thunderblock.Domain.update!()
+          |> Thunderline.Thunderblock.Domain.update!()
 
         # Create message record
         create_channel_message(updated_channel, input.arguments)
@@ -672,11 +672,11 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
     end
 
     # TODO: Add ChannelParticipant resource and relationship
-    # has_many :channel_participants, Thunderblock.Resources.ChannelParticipant do
+    # has_many :channel_participants, Thunderline.Thunderblock.Resources.ChannelParticipant do
     #   destination_attribute :channel_id
     # end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
+    has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
       destination_attribute :target_resource_id
       filter expr(target_resource_type == :channel)
     end

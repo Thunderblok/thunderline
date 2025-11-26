@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.SupervisionTree do
+defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
   @moduledoc """
   SupervisionTree Resource - Fault Isolation & Recovery
 

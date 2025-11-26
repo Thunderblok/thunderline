@@ -793,14 +793,14 @@ defmodule Thunderline.Thunderlink.Resources.Role do
       destination_attribute :id
     end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
+    has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
       destination_attribute :target_resource_id
       filter expr(target_resource_type == :role)
     end
 
     # Note: In a full implementation, would have many-to-many with users
     # many_to_many :users, Thunderbit.Resources.User do
-    #   through Thunderblock.Resources.UserRole
+    #   through Thunderline.Thunderblock.Resources.UserRole
     # end
   end
 

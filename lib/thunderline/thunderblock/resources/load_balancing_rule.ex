@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.LoadBalancingRule do
+defmodule Thunderline.Thunderblock.Resources.LoadBalancingRule do
   @moduledoc """
   Load balancing rules and policies for distributed coordination
   """

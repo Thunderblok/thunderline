@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.ZoneContainer do
+defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
   @moduledoc """
   ZoneContainer Resource - Zone Management & Supervision
 

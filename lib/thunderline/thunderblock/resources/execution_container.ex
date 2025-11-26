@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.ExecutionContainer do
+defmodule Thunderline.Thunderblock.Resources.ExecutionContainer do
   @moduledoc """
   Execution Container Management Resource
 

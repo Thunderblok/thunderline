@@ -1,4 +1,4 @@
-defmodule Thunderflow.BroadwayIntegration do
+defmodule Thunderline.Thunderflow.BroadwayIntegration do
   @moduledoc """
   Broadway Integration Plan for Thunderline Event Architecture
 

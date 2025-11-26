@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.DistributedState do
+defmodule Thunderline.Thunderblock.Resources.DistributedState do
   @moduledoc """
   Distributed state synchronization resource
   Provides persistent, queryable alternative to Memento tables

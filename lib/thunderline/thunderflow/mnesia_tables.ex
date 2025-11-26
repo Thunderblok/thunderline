@@ -1,4 +1,4 @@
-defmodule Thunderflow.CrossDomainEvents do
+defmodule Thunderline.Thunderflow.CrossDomainEvents do
   @moduledoc """
   Mnesia table for storing cross-domain events.
   """
@@ -19,7 +19,7 @@ defmodule Thunderflow.CrossDomainEvents do
     type: :ordered_set
 end
 
-defmodule Thunderflow.RealTimeEvents do
+defmodule Thunderline.Thunderflow.RealTimeEvents do
   @moduledoc """
   Mnesia table for storing real-time events.
   """

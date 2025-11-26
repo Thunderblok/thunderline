@@ -850,13 +850,13 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
       destination_attribute :id
     end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
+    has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
       destination_attribute :target_resource_id
       filter expr(target_resource_type == :federation_socket)
     end
 
     # Note: In full implementation, would relate to federated messages
-    # has_many :federated_messages, Thunderblock.Resources.FederatedMessage do
+    # has_many :federated_messages, Thunderline.Thunderblock.Resources.FederatedMessage do
     #   destination_attribute :federation_socket_id
     # end
   end

@@ -21,9 +21,9 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
       name: __MODULE__,
       producer: [
         module:
-          {Thunderflow.MnesiaProducer,
+          {Thunderline.Thunderflow.MnesiaProducer,
            [
-             table: Thunderflow.MnesiaProducer,
+             table: Thunderline.Thunderflow.MnesiaProducer,
              poll_interval: 1000,
              max_batch_size: 50,
              broadway_name: __MODULE__

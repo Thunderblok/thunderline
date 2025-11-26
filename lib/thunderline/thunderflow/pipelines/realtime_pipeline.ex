@@ -19,9 +19,9 @@ defmodule Thunderline.Thunderflow.Pipelines.RealTimePipeline do
       name: __MODULE__,
       producer: [
         module:
-          {Thunderflow.MnesiaProducer,
+          {Thunderline.Thunderflow.MnesiaProducer,
            [
-             table: Thunderflow.RealTimeEvents,
+             table: Thunderline.Thunderflow.RealTimeEvents,
              # Very fast polling for real-time events
              poll_interval: 100,
              max_batch_size: 100,

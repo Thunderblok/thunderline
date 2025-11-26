@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.TaskOrchestrator do
+defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
   @moduledoc """
   Task Orchestration and Workflow Management Resource
 

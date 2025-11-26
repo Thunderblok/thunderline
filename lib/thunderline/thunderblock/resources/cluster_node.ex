@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.ClusterNode do
+defmodule Thunderline.Thunderblock.Resources.ClusterNode do
   @moduledoc """
   Cluster node tracking and health monitoring
   Replaces in-memory cluster state with persistent Ash resource

@@ -1,4 +1,4 @@
-defmodule Thunderflow.MnesiaProducer do
+defmodule Thunderline.Thunderflow.MnesiaProducer do
   @moduledoc """
   Broadway producer that uses Mnesia (via Memento) as the message queue.
 
@@ -508,14 +508,14 @@ defmodule Thunderflow.MnesiaProducer do
     # Provide extended attribute values if the table expects them
     extended_values =
       case table do
-        Thunderflow.CrossDomainEvents ->
+        Thunderline.Thunderflow.CrossDomainEvents ->
           %{
             from_domain:
               Map.get(incoming_data, :from_domain) || Map.get(incoming_data, "from_domain"),
             to_domain: Map.get(incoming_data, :to_domain) || Map.get(incoming_data, "to_domain")
           }
 
-        Thunderflow.RealTimeEvents ->
+        Thunderline.Thunderflow.RealTimeEvents ->
           %{
             event_type: Map.get(incoming_data, :type) || Map.get(incoming_data, "type"),
             latency_requirement: Map.get(incoming_data, :latency_requirement) || :normal

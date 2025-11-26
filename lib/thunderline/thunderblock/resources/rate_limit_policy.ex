@@ -1,4 +1,4 @@
-defmodule Thunderblock.Resources.RateLimitPolicy do
+defmodule Thunderline.Thunderblock.Resources.RateLimitPolicy do
   @moduledoc """
   Rate limiting policies for system protection
   Integrates with Hammer for distributed rate limiting

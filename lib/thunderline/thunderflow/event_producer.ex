@@ -1,4 +1,4 @@
-defmodule Thunderflow.EventProducer do
+defmodule Thunderline.Thunderflow.EventProducer do
   @moduledoc """
   Event Producer for Broadway Pipelines
 
