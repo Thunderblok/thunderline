@@ -146,8 +146,10 @@ USER app
 # Expose Phoenix port
 EXPOSE 4000
 
-# HEALTHCHECK (simple TCP check)
-HEALTHCHECK --interval=30s --timeout=3s --retries=5 CMD nc -z localhost 4000 || exit 1
+# HEALTHCHECK using HTTP liveness endpoint (more reliable than TCP)
+# /healthz is a lightweight check confirming the VM is responsive
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -sf http://localhost:4000/healthz || exit 1
 
 # Use exec form; expand app name at build time
 ENTRYPOINT ["/app/bin/thunderline"]

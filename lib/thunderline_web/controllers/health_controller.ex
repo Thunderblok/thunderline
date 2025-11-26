@@ -1,24 +1,54 @@
 defmodule ThunderlineWeb.HealthController do
   @moduledoc """
-  HealthController - System health check endpoint
+  HealthController - System health check endpoints for container orchestration.
 
-  Provides health status for:
-  - System components
-  - Database connectivity
-  - External dependencies
-  - Service availability
+  Provides Kubernetes-style health probes:
+  - `/health` (alias `/healthz`) - Liveness probe: Is the process alive?
+  - `/ready` (alias `/readyz`) - Readiness probe: Can the service handle traffic?
+
+  Liveness checks are lightweight (process alive, basic VM).
+  Readiness checks include database, mnesia, broadway, pubsub connectivity.
   """
 
   use ThunderlineWeb, :controller
 
-  alias Thunderline.DashboardMetrics
+  @doc """
+  Liveness probe - lightweight check that the VM is responsive.
+  Returns 200 if the process can respond, 503 otherwise.
+  Used by orchestrators to determine if the container should be restarted.
+  """
+  def liveness(conn, _params) do
+    # Liveness is intentionally minimal - just confirm the VM is responsive
+    conn
+    |> put_status(200)
+    |> json(%{
+      status: :alive,
+      timestamp: DateTime.utc_now(),
+      node: Node.self(),
+      version: app_version()
+    })
+  end
 
   @doc """
-  Basic health check endpoint
+  Readiness probe - comprehensive check that the service can handle traffic.
+  Returns 200 if all dependencies are healthy, 503 otherwise.
+  Used by orchestrators to determine if traffic should be routed to this instance.
+  """
+  def readiness(conn, _params) do
+    health_status = perform_health_check()
+    status_code = if health_status.status == :healthy, do: 200, else: 503
+
+    conn
+    |> put_status(status_code)
+    |> json(health_status)
+  end
+
+  @doc """
+  Full health check endpoint (backward compatible with existing /health).
+  Equivalent to readiness probe with additional metadata.
   """
   def check(conn, _params) do
     health_status = perform_health_check()
-
     status_code = if health_status.status == :healthy, do: 200, else: 503
 
     conn
@@ -109,5 +139,9 @@ defmodule ThunderlineWeb.HealthController do
     rescue
       _ -> :error
     end
+  end
+
+  defp app_version do
+    Application.spec(:thunderline, :vsn) |> to_string()
   end
 end

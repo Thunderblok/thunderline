@@ -176,6 +176,7 @@ defmodule ThunderlineWeb.Router do
     get "/metrics", MetricsController, :index
     get "/cerebros/metrics", CerebrosMetricsController, :show
     get "/health", HealthController, :check
+    get "/ready", HealthController, :readiness
     get "/domains/:domain/stats", DomainStatsController, :show
 
     # ML Events API (Phase 2B: Spectral Norm Integration)
@@ -279,6 +280,19 @@ defmodule ThunderlineWeb.Router do
         Thunderline.Thundercrown.Domain,
         Thunderline.Thundergate.Domain
       ]
+  end
+
+  # Kubernetes-style health probes (no auth required, minimal overhead)
+  # These are at root level for container orchestration compatibility
+  scope "/", ThunderlineWeb do
+    pipe_through :api
+
+    # Liveness probe - lightweight, confirms VM is responsive
+    get "/healthz", HealthController, :liveness
+    get "/livez", HealthController, :liveness
+
+    # Readiness probe - confirms service can handle traffic
+    get "/readyz", HealthController, :readiness
   end
 
   if Application.compile_env(:thunderline, :dev_routes) do

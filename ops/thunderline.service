@@ -1,0 +1,76 @@
+# Thunderline Systemd Unit File
+# ==============================
+#
+# Installation:
+#   1. Copy to /etc/systemd/system/thunderline.service
+#   2. Create environment file at /etc/thunderline/env
+#   3. sudo systemctl daemon-reload
+#   4. sudo systemctl enable thunderline
+#   5. sudo systemctl start thunderline
+#
+# Environment file (/etc/thunderline/env) should contain:
+#   DATABASE_URL=postgres://user:pass@host:5432/thunderline_prod
+#   SECRET_KEY_BASE=<64+ char secret>
+#   PHX_HOST=thunderline.example.com
+#   PORT=4000
+#
+# See ops/env.example for full list of environment variables.
+#
+[Unit]
+Description=Thunderline AI Platform
+Documentation=https://github.com/agentjido/thunderline
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=exec
+User=thunderline
+Group=thunderline
+WorkingDirectory=/opt/thunderline
+
+# Environment configuration
+EnvironmentFile=/etc/thunderline/env
+
+# Release binary location
+ExecStart=/opt/thunderline/bin/thunderline start
+ExecStop=/opt/thunderline/bin/thunderline stop
+ExecReload=/opt/thunderline/bin/thunderline restart
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+# Allow writing to specific directories
+ReadWritePaths=/opt/thunderline/var /var/log/thunderline
+
+# Resource limits
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# OOM handling - try to survive
+OOMScoreAdjust=-100
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=thunderline
+
+[Install]
+WantedBy=multi-user.target
