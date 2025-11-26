@@ -71,6 +71,7 @@ defmodule Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
       accept [:training_dataset_id, :model_id, :hyperparameters, :metadata]
 
       change set_attribute(:status, :queued)
+      change after_action(&emit_job_created/2)
     end
 
     update :update do
@@ -97,6 +98,7 @@ defmodule Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
 
       change set_attribute(:status, :running)
       change set_attribute(:started_at, &DateTime.utc_now/0)
+      change after_action(&emit_job_started/2)
     end
 
     update :complete do
@@ -104,6 +106,7 @@ defmodule Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
 
       change set_attribute(:status, :completed)
       change set_attribute(:completed_at, &DateTime.utc_now/0)
+      change after_action(&emit_job_completed/2)
     end
 
     update :fail do
@@ -111,6 +114,7 @@ defmodule Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
 
       change set_attribute(:status, :failed)
       change set_attribute(:completed_at, &DateTime.utc_now/0)
+      change after_action(&emit_job_failed/2)
     end
 
     update :update_checkpoint do
@@ -254,5 +258,27 @@ defmodule Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
       allow_nil? false
       attribute_writable? true
     end
+  end
+
+  # HC-20A: Event emission hooks for Automat Bridge pattern
+
+  defp emit_job_created(_changeset, job) do
+    Thunderline.Cerebros.Automat.emit_job_created(job)
+    {:ok, job}
+  end
+
+  defp emit_job_started(_changeset, job) do
+    Thunderline.Cerebros.Automat.emit_job_started(job)
+    {:ok, job}
+  end
+
+  defp emit_job_completed(_changeset, job) do
+    Thunderline.Cerebros.Automat.emit_job_completed(job)
+    {:ok, job}
+  end
+
+  defp emit_job_failed(_changeset, job) do
+    Thunderline.Cerebros.Automat.emit_job_failed(job)
+    {:ok, job}
   end
 end
