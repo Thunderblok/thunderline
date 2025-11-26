@@ -1,14 +1,14 @@
 defmodule Thunderline.Thundervine.Supervisor do
   @moduledoc """
   Thundervine domain supervisor with tick-based activation.
-  
+
   VINE is the DAG persistence layer - TAK event recording, workflow DAGs, pattern analysis.
   Activates on tick 5 after core orchestration (Bolt) is stable.
   """
-  
+
   use Supervisor
   @behaviour Thunderline.Thunderblock.DomainActivation
-  
+
   require Logger
 
   def start_link(init_arg) do
@@ -16,7 +16,7 @@ defmodule Thunderline.Thundervine.Supervisor do
     |> tap(fn
       {:ok, _pid} ->
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
-        
+
       {:error, reason} ->
         Logger.error("[Thunderline.Thundervine.Supervisor] Failed to start: #{inspect(reason)}")
     end)
