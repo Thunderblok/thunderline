@@ -93,7 +93,7 @@
 
 | ID | Priority | Theme | Gap / Finding | Action (Decision) | Owner (TBD) | Status |
 |----|----------|-------|---------------|-------------------|-------------|--------|
-| HC-01 | P0 | Event Core | No unified publish helper | Implement `Thunderline.EventBus.publish_event/1` (validation + telemetry span) | Flow Steward | In Progress |
+| HC-01 | P0 | Event Core | No unified publish helper | **✅ COMPLETE** (Nov 25) - `EventBus.publish_event/1` with validation, OTel spans, telemetry. CI gated via `mix thunderline.events.lint`. Tests: `event_bus_test.exs`, `event_bus_telemetry_test.exs` | Flow Steward | **Done** |
 | HC-02 | P0 | Bus API Consistency | Shim `Thunderline.Bus` still referenced | Codemod to canonical; emit deprecation warning | Flow Steward | Planned |
 | HC-03 | P0 | Observability Docs | Missing Event & Error taxonomy specs | Author `EVENT_TAXONOMY.md` & `ERROR_CLASSES.md` | Observability Lead | Not Started |
 | HC-04 | P0 | ML Persistence | Cerebros migrations parked | Move/run migrations; add lifecycle state machine | Bolt Steward | In Progress (50+ resources active) |
