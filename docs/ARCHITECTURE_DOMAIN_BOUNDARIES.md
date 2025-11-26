@@ -37,9 +37,16 @@ ThunderVine **orchestrates** but does NOT own the DAG resources. Persistence liv
 Thunderline.Thundervine.Events.persist_workflow(spec)
 
 # ...but resources live in ThunderBlock
-Thunderline.Thunderblock.Resources.DAGWorkflow
-Thunderline.Thunderblock.Resources.DAGNode
-Thunderline.Thunderblock.Resources.DAGEdge
+### ThunderBlock (Infrastructure & Persistence)
+
+(DAG resources moved to ThunderVine domain as of Nov 17, 2025 - see HC-29)
+
+### ThunderVine (Workflow Orchestration)
+
+Thunderline.Thundervine.Resources.Workflow
+Thunderline.Thundervine.Resources.WorkflowNode
+Thunderline.Thundervine.Resources.WorkflowEdge
+Thunderline.Thundervine.Resources.WorkflowSnapshot
 ```
 
 This separation follows **domain boundaries**: ThunderVine = business logic, ThunderBlock = persistence.
