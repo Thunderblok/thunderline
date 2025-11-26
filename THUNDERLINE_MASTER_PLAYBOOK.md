@@ -103,7 +103,7 @@
 | HC-04c | P0 | Magika Integration | AI file classification missing | **✅ COMPLETE** - Core wrapper (420 lines), unit tests (11 cases), integration tests (6 scenarios), Broadway pipeline, EventBus bridge, configuration, supervision, documentation. Production-ready. See `docs/MAGIKA_QUICK_START.md` | Gate Steward | **Done** |
 | HC-05 | P0 | Email MVP | No email resources/flow | Add `Contact` & `OutboundEmail`, SMTP adapter, events | Gate+Link | Not Started |
 | HC-06 | P0 | Presence Policies | Membership & presence auth gaps | Implement policies + presence events join/leave | Link Steward | Not Started |
-| HC-07 | P0 | Deployment | No prod deploy tooling | Dockerfile, release script, systemd/unit, healthcheck | Platform | Not Started |
+| HC-07 | P0 | Deployment | No prod deploy tooling | **✅ COMPLETE** (Nov 26) - Dockerfile enhanced (HTTP healthcheck), `scripts/release.sh` (build script), `ops/thunderline.service` (systemd unit + security hardening), `ops/env.example` (config template). K8s-style probes: `/healthz`, `/livez` (liveness), `/readyz`, `/api/ready` (readiness), `/api/health` (full check). | Platform | **Done** |
 | HC-08 | P0 | CI/CD Depth | Missing release pipeline, PLT cache, audit | Extend GH Actions (release, dialyzer cache, hex.audit) | Platform | Planned |
 | HC-09 | P0 | Error Handling | No classifier & DLQ policy | Central error classifier + Broadway DLQ + metrics | Flow Steward | Not Started |
 | HC-10 | P0 | Feature Flags | Flags undocumented | `FEATURE_FLAGS.md` (ENABLE_UPS, ENABLE_NDJSON, features.ml_nas, etc.) | Platform | Planned |
