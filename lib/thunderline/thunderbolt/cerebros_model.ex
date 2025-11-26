@@ -128,22 +128,27 @@ defmodule Thunderline.Thunderbolt.CerebrosModel do
   end
 
   defp load_model(checkpoint_path, :onnx) do
-    # ONNX loading via Ortex (if available)
-    if Code.ensure_loaded?(Ortex.Model) do
-      case Ortex.Model.load(checkpoint_path) do
-        {:ok, model} ->
-          serving =
-            Nx.Serving.new(fn batch ->
-              Ortex.Model.run(model, batch)
-            end)
+    # ONNX loading delegated to Cerebros.Bridge (HC-20 boundary)
+    alias Thunderline.Cerebros.Bridge
 
-          {:ok, serving}
+    # Generate a model name from the checkpoint path
+    model_name = Path.basename(checkpoint_path, ".onnx")
 
-        error ->
-          error
-      end
-    else
-      {:error, :ortex_not_available}
+    case Bridge.load_model(model_name, path: checkpoint_path) do
+      {:ok, _info} ->
+        # Create a serving that delegates inference to the Bridge
+        serving =
+          Nx.Serving.new(fn batch ->
+            case Bridge.run_inference(model_name, batch) do
+              {:ok, result} -> result
+              {:error, reason} -> raise "Inference failed: #{inspect(reason)}"
+            end
+          end)
+
+        {:ok, serving}
+
+      error ->
+        error
     end
   end
 
