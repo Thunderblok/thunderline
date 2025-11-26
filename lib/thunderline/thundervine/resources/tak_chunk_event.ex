@@ -1,4 +1,11 @@
-defmodule Thundervine.TAKChunkEvent do
+defmodule Thunderline.Thundervine.Resources.TAKChunkEvent do
+  @moduledoc """
+  Ash resource for persisting TAK chunk evolution events.
+  
+  Records state transitions in cellular automata chunks,
+  enabling replay and analysis of CA evolution patterns.
+  """
+  
   use Ash.Resource,
     domain: Thunderline.Thundervine.Domain,
     data_layer: AshPostgres.DataLayer

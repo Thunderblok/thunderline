@@ -1,4 +1,12 @@
-defmodule Thundervine.TAKChunkState do
+defmodule Thunderline.Thundervine.Resources.TAKChunkState do
+  @moduledoc """
+  Ash resource for persisting TAK chunk state snapshots.
+  
+  Stores the current state of cellular automata chunks,
+  enabling efficient state reconstruction without replaying
+  all historical events.
+  """
+  
   use Ash.Resource,
     domain: Thunderline.Thundervine.Domain,
     data_layer: AshPostgres.DataLayer

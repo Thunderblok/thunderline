@@ -67,7 +67,7 @@ defmodule Thunderline.Thundervine.Domain do
     resource Thunderline.Thundervine.Resources.WorkflowSnapshot
 
     # TAK persistence resources
-    resource Thundervine.TAKChunkEvent
-    resource Thundervine.TAKChunkState
+    resource Thunderline.Thundervine.Resources.TAKChunkEvent
+    resource Thunderline.Thundervine.Resources.TAKChunkState
   end
 end

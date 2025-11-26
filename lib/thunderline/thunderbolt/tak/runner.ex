@@ -109,7 +109,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
 
     # Start Thundervine event recorder for this run
     if enable_recording? do
-      case Thundervine.Supervisor.start_recorder(run_id: run_id) do
+      case Thunderline.Thundervine.Supervisor.start_recorder(run_id: run_id) do
         {:ok, _pid} ->
           Logger.info("[TAK.Runner] Started Thundervine recorder for run_id=#{run_id}")
 

@@ -1,4 +1,4 @@
-defmodule Thundervine.TAKEventRecorder do
+defmodule Thunderline.Thundervine.TAKEventRecorder do
   @moduledoc ~S"""
   GenServer that subscribes to TAK Runner PubSub streams and persists
   chunk evolution events to Thundervine.
@@ -12,18 +12,18 @@ defmodule Thundervine.TAKEventRecorder do
        ↓
   Convert to TAKChunkEvolved event
        ↓
-  Persist to Thundervine.TAKChunkEvent resource
+  Persist to Thunderline.Thundervine.Resources.TAKChunkEvent resource
   ```
 
   ## Usage
 
   ```elixir
   # Start recorder for a specific TAK run
-  {:ok, pid} = Thundervine.TAKEventRecorder.start_link(run_id: "my_run")
+  {:ok, pid} = Thunderline.Thundervine.TAKEventRecorder.start_link(run_id: "my_run")
 
   # Or start via supervisor (automatically subscribes)
   children = [
-    {Thundervine.TAKEventRecorder, run_id: "my_run"}
+    {Thunderline.Thundervine.TAKEventRecorder, run_id: "my_run"}
   ]
   ```
   """
@@ -32,7 +32,7 @@ defmodule Thundervine.TAKEventRecorder do
   require Logger
 
   alias Thunderline.Thunderbolt.Events.TAKChunkEvolved
-  alias Thundervine.TAKChunkEvent
+  alias Thunderline.Thundervine.Resources.TAKChunkEvent
 
   @type state :: %{
           run_id: String.t(),
@@ -53,7 +53,7 @@ defmodule Thundervine.TAKEventRecorder do
   """
   def start_link(opts) do
     run_id = Keyword.fetch!(opts, :run_id)
-    name = Keyword.get(opts, :name, {:via, Registry, {Thundervine.Registry, {__MODULE__, run_id}}})
+    name = Keyword.get(opts, :name, {:via, Registry, {Thunderline.Thundervine.Registry, {__MODULE__, run_id}}})
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 

@@ -19,35 +19,28 @@ The Thunderline codebase has grown organically with **442 Elixir files** across 
 
 ## 1. Critical Issues
 
-### 1.1 Duplicate `thundervine` Folders
+### 1.1 Duplicate `thundervine` Folders ✅ RESOLVED (Nov 26, 2025)
 
-**Problem:** Two separate implementations exist:
+**Status:** COMPLETE
 
-| Location | Namespace | Content | Status |
-|----------|-----------|---------|--------|
-| `lib/thundervine/` | `Thundervine.*` | TAK event recording (5 files) | Active |
-| `lib/thunderline/thundervine/` | `Thunderline.Thundervine.*` | Workflow DAG (9 files) | Active |
+**What was done:**
+- Migrated all modules from `lib/thundervine/` to `lib/thunderline/thundervine/`
+- Renamed `Thundervine.*` namespace to `Thunderline.Thundervine.*`
+- Updated domain.ex to reference new resource paths
+- Updated `application.ex` to use `Thunderline.Thundervine.Supervisor`
+- Updated `thunderbolt/tak/runner.ex` reference
+- Deleted old `lib/thundervine/` folder
 
-**Impact:** Confusing architecture, potential import conflicts, unclear ownership.
+**Files created in canonical location:**
+- `lib/thunderline/thundervine/supervisor.ex`
+- `lib/thunderline/thundervine/replay.ex`
+- `lib/thunderline/thundervine/tak_event_recorder.ex`
+- `lib/thunderline/thundervine/resources/tak_chunk_event.ex`
+- `lib/thunderline/thundervine/resources/tak_chunk_state.ex`
 
-**Recommendation:** Consolidate into single `lib/thunderline/thundervine/` with proper `Thunderline.Thundervine.*` namespace:
-```
-lib/thunderline/thundervine/
-├── domain.ex                  # Existing
-├── resources/
-│   ├── workflow.ex           # Existing
-│   ├── workflow_node.ex      # Existing
-│   ├── workflow_edge.ex      # Existing
-│   ├── workflow_snapshot.ex  # Existing
-│   ├── tak_chunk_event.ex    # MOVE from lib/thundervine/
-│   └── tak_chunk_state.ex    # MOVE from lib/thundervine/
-├── consumers/
-│   └── tak_event_recorder.ex # MOVE from lib/thundervine/
-├── replay.ex                  # MOVE from lib/thundervine/
-└── supervisor.ex              # MERGE (both have supervisors)
-```
-
-**Effort:** 2-3 hours
+**Documentation references (may need manual update):**
+- `documentation/TAK_ENHANCEMENT_SUMMARY.md` - Uses old `Thundervine.Replay` references
+- `documentation/TAK_PERSISTENCE_QUICKSTART.md` - Uses old `Thundervine.TAKChunkEvent` references
 
 ### 1.2 Test File in `lib/`
 

@@ -1,4 +1,4 @@
-defmodule Thundervine.Replay do
+defmodule Thunderline.Thundervine.Replay do
   @moduledoc """
   Query and replay capabilities for TAK event history.
 
@@ -18,7 +18,7 @@ defmodule Thundervine.Replay do
   """
 
   require Ash.Query
-  alias Thundervine.TAKChunkEvent
+  alias Thunderline.Thundervine.Resources.TAKChunkEvent
 
   @doc """
   Reconstruct CA state at a specific tick by replaying events.

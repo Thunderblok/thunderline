@@ -64,7 +64,7 @@ defmodule Thunderline.Application do
       # Tick 4: AI sovereignty
       Thunderline.Thundercrown.Supervisor,
       # Tick 5: DAG persistence
-      Thundervine.Supervisor,
+      Thunderline.Thundervine.Supervisor,
       # Tick 6: Spatial & GraphQL
       Thunderline.Thundergrid.Supervisor,
       # Tick 7: Visual intelligence

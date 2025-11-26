@@ -1,4 +1,4 @@
-defmodule Thundervine.Supervisor do
+defmodule Thunderline.Thundervine.Supervisor do
   @moduledoc """
   Thundervine domain supervisor with tick-based activation.
   
@@ -18,7 +18,7 @@ defmodule Thundervine.Supervisor do
         Thunderline.Thunderblock.DomainActivation.Helpers.maybe_activate(__MODULE__)
         
       {:error, reason} ->
-        Logger.error("[Thundervine.Supervisor] Failed to start: #{inspect(reason)}")
+        Logger.error("[Thunderline.Thundervine.Supervisor] Failed to start: #{inspect(reason)}")
     end)
   end
 
@@ -26,10 +26,10 @@ defmodule Thundervine.Supervisor do
   def init(_init_arg) do
     children = [
       # Registry for TAKEventRecorder instances
-      {Registry, keys: :unique, name: Thundervine.Registry},
+      {Registry, keys: :unique, name: Thunderline.Thundervine.Registry},
 
       # DynamicSupervisor for TAK event recorders
-      {DynamicSupervisor, name: Thundervine.EventRecorderSupervisor, strategy: :one_for_one}
+      {DynamicSupervisor, name: Thunderline.Thundervine.EventRecorderSupervisor, strategy: :one_for_one}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -94,20 +94,20 @@ defmodule Thundervine.Supervisor do
 
   ## Examples
 
-      {:ok, pid} = Thundervine.Supervisor.start_recorder(run_id: "my_run")
+      {:ok, pid} = Thunderline.Thundervine.Supervisor.start_recorder(run_id: "my_run")
   """
   def start_recorder(opts) do
-    spec = {Thundervine.TAKEventRecorder, opts}
-    DynamicSupervisor.start_child(Thundervine.EventRecorderSupervisor, spec)
+    spec = {Thunderline.Thundervine.TAKEventRecorder, opts}
+    DynamicSupervisor.start_child(Thunderline.Thundervine.EventRecorderSupervisor, spec)
   end
 
   @doc """
   Stop a TAKEventRecorder for a specific run.
   """
   def stop_recorder(run_id) do
-    case Registry.lookup(Thundervine.Registry, {Thundervine.TAKEventRecorder, run_id}) do
+    case Registry.lookup(Thunderline.Thundervine.Registry, {Thunderline.Thundervine.TAKEventRecorder, run_id}) do
       [{pid, _}] ->
-        DynamicSupervisor.terminate_child(Thundervine.EventRecorderSupervisor, pid)
+        DynamicSupervisor.terminate_child(Thunderline.Thundervine.EventRecorderSupervisor, pid)
 
       [] ->
         {:error, :not_found}
@@ -118,9 +118,9 @@ defmodule Thundervine.Supervisor do
   List all active TAK event recorders.
   """
   def list_recorders do
-    Registry.select(Thundervine.Registry, [{{:"$1", :"$2", :"$3"}, [], [:"$1"]}])
+    Registry.select(Thunderline.Thundervine.Registry, [{{:"$1", :"$2", :"$3"}, [], [:"$1"]}])
     |> Enum.filter(fn
-      {Thundervine.TAKEventRecorder, _run_id} -> true
+      {Thunderline.Thundervine.TAKEventRecorder, _run_id} -> true
       _ -> false
     end)
     |> Enum.map(fn {_module, run_id} -> run_id end)
