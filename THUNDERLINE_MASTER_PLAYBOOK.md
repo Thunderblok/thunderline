@@ -95,7 +95,7 @@
 |----|----------|-------|---------------|-------------------|-------------|--------|
 | HC-01 | P0 | Event Core | No unified publish helper | **✅ COMPLETE** (Nov 25) - `EventBus.publish_event/1` with validation, OTel spans, telemetry. CI gated via `mix thunderline.events.lint`. Tests: `event_bus_test.exs`, `event_bus_telemetry_test.exs` | Flow Steward | **Done** |
 | HC-02 | P0 | Bus API Consistency | Shim `Thunderline.Bus` still referenced | Codemod to canonical; emit deprecation warning | Flow Steward | Planned |
-| HC-03 | P0 | Observability Docs | Missing Event & Error taxonomy specs | Author `EVENT_TAXONOMY.md` & `ERROR_CLASSES.md` | Observability Lead | Not Started |
+| HC-03 | P0 | Observability Docs | Missing Event & Error taxonomy specs | **✅ COMPLETE** (Nov 25) - `documentation/EVENT_TAXONOMY.md` (naming rules, domain→category, registered events, reliability, validation) + `documentation/ERROR_CLASSES.md` (classification, retry policies, DLQ) | Observability Lead | **Done** |
 | HC-04 | P0 | ML Persistence | Cerebros migrations parked | Move/run migrations; add lifecycle state machine | Bolt Steward | In Progress (50+ resources active) |
 | HC-04a | P0 | Python ML Stack | TensorFlow/ONNX environment setup | **✅ COMPLETE** - TensorFlow 2.20.0, tf2onnx 1.8.4, ONNX 1.19.1 installed and verified | Bolt Steward | **Done** |
 | HC-04b | P0 | Elixir ML Dependencies | Req/Ortex installation | **✅ COMPLETE** - Req 0.5.15, Ortex 0.1.10 compiled successfully | Bolt Steward | **Done** |
