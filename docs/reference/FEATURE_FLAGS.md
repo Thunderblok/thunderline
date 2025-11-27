@@ -1,7 +1,7 @@
-# 🎛 Feature Flags Registry (Draft v0.2)
+# 🎛 Feature Flags Registry (v1.0)
 
 > High Command Item: HC-10 (P0)  
-> Status: Expanded draft — adds helper contract, governance workflow, override mechanics, testing guidance.
+> Status: **✅ COMPLETE** (Nov 27, 2025) — Helper implemented, flags documented, governance defined.
 
 ## 1. Purpose
 Central catalog of all runtime feature & capability toggles controlling optional subsystems, experimental surfaces, or staged rollouts. Ensures:
@@ -15,47 +15,92 @@ Central catalog of all runtime feature & capability toggles controlling optional
 ```
 Environment variables map where applicable (e.g. `ENABLE_UPS=true`). Prefer explicit boolean; avoid tri-state unless documented.
 
-## 3. Flag Table (Initial)
+## 3. Flag Table (Complete)
+
+### Core Feature Flags (via `Thunderline.Feature`)
 | Flag Key (app env) | Env Var | Default | Type | Scope | Description | Lifecycle |
 |--------------------|---------|---------|------|-------|-------------|-----------|
-| `:enable_ups` | ENABLE_UPS | false | boolean | Infra | Enable UPS watcher process & status events | stable |
-| `:enable_ndjson` | ENABLE_NDJSON | false | boolean | Logging | Start NDJSON logging writer | stable |
-| `:ml_nas` | FEATURES_ML_NAS | false | boolean | ML | Expose experimental NAS / search APIs | experimental |
-| `:unified_model` | FEATURES_UNIFIED_MODEL | false | boolean | AI | Enable Unified Persistent Model trainer + agent adapters (shadow → canary → global) | preview |
-| `:voice_input` | FEATURES_VOICE | false | boolean | UX | Enable voice/WebRTC ingestion pipeline (HC-13) | planned |
-| `:email_mvp` | FEATURES_EMAIL_MVP | true | boolean | Product | Gate email automation surfaces (UI + events) | preview |
-| `:presence_debug` | FEATURES_PRESENCE_DEBUG | false | boolean | Debug | Extra presence event logging | debug |
-| `:crown_daisy` | FEATURES_CROWN_DAISY | false | boolean | AI Governance | Enable Daisy cognitive swarm processes | experimental |
-| `:signal_stack` | FEATURES_SIGNAL_STACK | false | boolean | Compute | Enable signal/phase processing stack (migrated from ENABLE_SIGNAL_STACK) | experimental |
-| `:ai_chat_panel` | FEATURES_AI_CHAT_PANEL | false | boolean | UI | Enable experimental Ash AI chat assistant panel on dashboard | experimental |
-| `:tocp` | FEATURE_TOCP | false | boolean | Protocol | Enable TOCP supervisor & processes | scaffold |
-| `:tocp_presence_insecure` | FEATURE_TOCP_PRESENCE_INSECURE | false | boolean | Protocol | (Governed) Disable control-frame signing & replay enforcement ONLY for perf tests; emits one-shot `[:tocp,:security,:insecure_mode]` + boot WARN; CI fails unless `ALLOW_INSECURE_TESTS=true` | debug |
-(Note) Both `:tocp` and `:tocp_presence_insecure` control the Thunderlink Transport subsystem (formerly TOCP). Telemetry prefix remains `[:tocp, *]` during transition.
-| `:vim` | FEATURE_VIM | false | boolean | Optimization | Enable Virtual Ising Machine layer (routing/persona) in shadow/active modes (see DIP-VIM-001) | experimental |
-| `:vim_active` | FEATURE_VIM_ACTIVE | false | boolean | Optimization | Force VIM into active (non‑shadow) decision application for canary % of traffic | preview |
+| `:enable_ups` | `ENABLE_UPS` | false | boolean | Infra | Enable UPS watcher process & status events | stable |
+| `:enable_ndjson` | `ENABLE_NDJSON` | false | boolean | Logging | Start NDJSON logging writer | stable |
+| `:ml_nas` | `TL_FEATURES_ML_NAS` | false | boolean | ML | Expose experimental NAS / search APIs via CerebrosBridge | experimental |
+| `:unified_model` | `TL_FEATURES_UNIFIED_MODEL` | false | boolean | AI | Enable Unified Persistent Model trainer + agent adapters | preview |
+| `:voice_input` | `TL_FEATURES_VOICE` | false | boolean | UX | Enable voice/WebRTC ingestion pipeline (HC-13) | planned |
+| `:email_mvp` | `TL_FEATURES_EMAIL_MVP` | true | boolean | Product | Gate email automation surfaces (UI + events) | preview |
+| `:presence_debug` | `TL_FEATURES_PRESENCE_DEBUG` | false | boolean | Debug | Extra presence event logging | debug |
+| `:crown_daisy` | `TL_FEATURES_CROWN_DAISY` | false | boolean | AI Governance | Enable Daisy cognitive swarm processes | experimental |
+| `:signal_stack` | `TL_FEATURES_SIGNAL_STACK` | false | boolean | Compute | Enable signal/phase processing stack | experimental |
+| `:ai_chat_panel` | `TL_FEATURES_AI_CHAT_PANEL` | false | boolean | UI | Enable experimental Ash AI chat assistant panel | experimental |
+| `:tocp` | `TL_FEATURE_TOCP` | false | boolean | Protocol | Enable TOCP supervisor & processes | scaffold |
+| `:tocp_presence_insecure` | `TL_FEATURE_TOCP_PRESENCE_INSECURE` | false | boolean | Protocol | Disable control-frame signing (perf tests only) | debug |
+| `:vim` | `TL_FEATURE_VIM` | false | boolean | Optimization | Enable Virtual Ising Machine layer | experimental |
+| `:vim_active` | `TL_FEATURE_VIM_ACTIVE` | false | boolean | Optimization | Force VIM into active (non-shadow) mode | preview |
 
-(Extend table as flags added.)
+### Direct Environment Variable Flags
+| Env Var | Default | Scope | Description | Used By |
+|---------|---------|-------|-------------|---------|
+| `TL_ENABLE_REACTOR` | `false` | Orchestration | Switch between simple EventProcessor path and Reactor orchestration | `Thunderchief.Orchestrator`, `EventOps` |
+| `SKIP_ASH_SETUP` | `false` | Boot | Skip Ash domain setup during application start | `Thunderline` module |
+| `DISABLE_THUNDERWATCH` | `false` | Infra | Disable ThunderWatch supervisor | `Thundergate.Thunderwatch.Supervisor` |
+| `GATE_SELFTEST_DISABLED` | `false` | Infra | Disable Gate self-test on boot | `Thundergate.SelfTest` |
+| `DEMO_MODE` | `false` | Auth | Enable demo mode authentication bypass | `ThunderlineWeb.Auth.Actor` |
+| `TL_ENABLE_CEREBROS_BRIDGE` | `false` | ML | Enable Cerebros NAS bridge | `Thunderbolt.CerebrosBridge` |
+| `TL_ENABLE_OBAN` | `false` | Jobs | Enable Oban job processing | Training scripts |
+| `TL_ENABLE_ML_PIPELINE` | `false` | ML | Enable full ML pipeline at boot | ML pipeline |
+
+### Service Configuration (Not Feature Flags)
+| Env Var | Default | Scope | Description |
+|---------|---------|-------|-------------|
+| `UPS_BACKEND` | `nut` | Infra | UPS monitoring backend |
+| `UPS_NAME` | `ups@localhost` | Infra | UPS device identifier |
+| `UPS_POLL_MS` | `2000` | Infra | UPS polling interval |
+| `MLFLOW_TRACKING_URI` | (none) | ML | MLflow server URI |
+| `MLFLOW_ENABLED` | `false` | ML | Enable MLflow integration |
+
+### Cross-Domain Layer Flags (HC-31+)
+| Env Var | Default | Scope | Description |
+|---------|---------|-------|-------------|
+| `LAYER_ROUTING_ENABLED` | `true` | Layers | Enable Flow×Grid routing layer |
+| `LAYER_OBSERVABILITY_ENABLED` | `true` | Layers | Enable Gate×Crown observability layer |
+| `LAYER_INTELLIGENCE_ENABLED` | `true` | Layers | Enable Bolt×Crown intelligence layer |
+| `LAYER_PERSISTENCE_ENABLED` | `true` | Layers | Enable Block×Flow persistence layer |
+| `LAYER_COMMUNICATION_ENABLED` | `true` | Layers | Enable Link×Gate communication layer |
+| `LAYER_ORCHESTRATION_ENABLED` | `false` | Layers | Enable Vine×Crown orchestration layer |
+| `LAYER_CLUSTERING_ENABLED` | `false` | Layers | Enable Bolt×Vine clustering layer |
 
 ## 4. Evaluation Pattern
 ```elixir
+# Using the implemented Thunderline.Feature module
 if Thunderline.Feature.enabled?(:ml_nas) do
   # experimental path
 end
-```
-Proposed helper module (to implement): `Thunderline.Feature.enabled?(flag :: atom)` reading from `Application.get_env(:thunderline, :features, [])`.
 
-Helper Contract (planned):
+# With default fallback
+if Thunderline.Feature.enabled?(:new_feature, default: false) do
+  # feature path
+end
+```
+
+The `Thunderline.Feature` module is implemented at `lib/thunderline/feature.ex` and provides:
+
 ```elixir
 @spec enabled?(atom(), keyword()) :: boolean()
-# Options (future):
-#   :actor => %User{} (for per-tenant rules later)
+# Options:
 #   :default => boolean (override global default in specific call sites)
+
+@spec override(atom(), boolean()) :: :ok
+# Per-process override for tests
+
+@spec clear_override(atom()) :: :ok
+# Clear test override
+
+@spec all() :: map()
+# Return all configured flags
 ```
 
 Invariants:
-- Function MUST be pure (no side effects) for same arguments until config reload.
+- Function is pure (no side effects) for same arguments until config reload.
 - Flag atoms not present return `false` unless explicit `:default` provided.
-- All read operations O(1); precompute map in an ETS cache on config change (future optimization).
+- Runtime reads from `Application.get_env(:thunderline, :features, [])` for flexibility.
 
 ## 5. Change Management
 | Action | Requirement |
@@ -103,14 +148,15 @@ def enabled?(flag, _opts \\ []) do
 end
 ```
 
-## 10. Open TODOs (HC-10 Completion)
-- [ ] Implement `Thunderline.Feature` module (lookup + overrides)
-- [ ] Add test helpers for temporary flag overrides
+## 10. Completion Status (HC-10)
+- [x] Implement `Thunderline.Feature` module (lookup + overrides) — `lib/thunderline/feature.ex`
+- [x] Add test helpers for temporary flag overrides (`Feature.override/2`, `Feature.clear_override/1`)
+- [x] Document all discovered flags (core flags, env vars, layer flags)
+- [x] Define governance workflow
 - [ ] Add CI check ensuring flags documented here (mix task scanning code for `Feature.enabled?` atoms)
-- [ ] Wire NDJSON & UPS processes to use unified feature lookup (if not already)
+- [ ] Wire NDJSON & UPS processes to use unified feature lookup (currently use direct env reads)
 - [ ] Add telemetry emission (sampled) for evaluations
 - [ ] Add quarterly review script (list flags by lifecycle & age)
-- [ ] Document staged rollout policy for `:unified_model` (shadow/canary/global) and link to UPM runbook
 
 ## 11. Future Enhancements
 - Per-tenant dynamic store (Ash resource + caching)

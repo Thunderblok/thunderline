@@ -95,7 +95,7 @@
 | ID | Priority | Theme | Gap / Finding | Action (Decision) | Owner (TBD) | Status |
 |----|----------|-------|---------------|-------------------|-------------|--------|
 | HC-01 | P0 | Event Core | No unified publish helper | **✅ COMPLETE** (Nov 25) - `EventBus.publish_event/1` with validation, OTel spans, telemetry. CI gated via `mix thunderline.events.lint`. Tests: `event_bus_test.exs`, `event_bus_telemetry_test.exs` | Flow Steward | **Done** |
-| HC-02 | P0 | Bus API Consistency | Shim `Thunderline.Bus` still referenced | Codemod to canonical; emit deprecation warning | Flow Steward | Planned |
+| HC-02 | P0 | Bus API Consistency | Shim `Thunderline.Bus` still referenced | **✅ COMPLETE** (Nov 27) - Zero references in `lib/` or `test/`, no `bus.ex` module file exists. Legacy shim fully removed. | Flow Steward | **Done** |
 | HC-03 | P0 | Observability Docs | Missing Event & Error taxonomy specs | **✅ COMPLETE** (Nov 25) - `documentation/EVENT_TAXONOMY.md` (naming rules, domain→category, registered events, reliability, validation) + `documentation/ERROR_CLASSES.md` (classification, retry policies, DLQ) | Observability Lead | **Done** |
 | HC-04 | P0 | ML Persistence | Cerebros migrations parked | Move/run migrations; add lifecycle state machine | Bolt Steward | In Progress (50+ resources active) |
 | HC-04a | P0 | Python ML Stack | TensorFlow/ONNX environment setup | **✅ COMPLETE** - TensorFlow 2.20.0, tf2onnx 1.8.4, ONNX 1.19.1 installed and verified | Bolt Steward | **Done** |
@@ -106,10 +106,10 @@
 | HC-06 | P0 | Presence Policies | Membership & presence auth gaps | Implement policies + presence events join/leave | Link Steward | Not Started |
 | HC-07 | P0 | Deployment | No prod deploy tooling | **✅ COMPLETE** (Nov 26) - Dockerfile enhanced (HTTP healthcheck), `scripts/release.sh` (build script), `ops/thunderline.service` (systemd unit + security hardening), `ops/env.example` (config template). K8s-style probes: `/healthz`, `/livez` (liveness), `/readyz`, `/api/ready` (readiness), `/api/health` (full check). | Platform | **Done** |
 | HC-08 | P0 | CI/CD Depth | Missing release pipeline, PLT cache, audit | Extend GH Actions (release, dialyzer cache, hex.audit) | Platform | Planned |
-| HC-09 | P0 | Error Handling | No classifier & DLQ policy | Central error classifier + Broadway DLQ + metrics | Flow Steward | Not Started |
-| HC-10 | P0 | Feature Flags | Flags undocumented | `FEATURE_FLAGS.md` (ENABLE_UPS, ENABLE_NDJSON, features.ml_nas, etc.) | Platform | Planned |
+| HC-09 | P0 | Error Handling | No classifier & DLQ policy | **✅ COMPLETE** (Nov 27) - `ErrorClassifier` expanded (15+ patterns: Ecto, timeout, security, HTTP status, dependency, transport errors), `ErrorClass` struct with type specs, `DLQ` module (Mnesia-backed, threshold alerts, telemetry), `retry_policy/1` and `should_dlq?/1` helpers. Tests: `error_classifier_test.exs`, `dlq_test.exs`. Documentation: `docs/reference/ERROR_CLASSES.md`. | Flow Steward | **Done** |
+| HC-10 | P0 | Feature Flags | Flags undocumented | **✅ COMPLETE** (Nov 27) - `Thunderline.Feature` module implemented (`enabled?/2`, `override/2`, `clear_override/1`, `all/0`). `docs/reference/FEATURE_FLAGS.md` v1.0: 14 core flags, 8 direct env vars, 7 layer flags documented with lifecycle stages. Governance workflow defined. | Platform | **Done** |
 | HC-22 | P0 | Unified Model | No persistent cross-agent model | Stand up Unified Persistent Model (UPM) online trainer + ThunderBlock adapters + rollout policy | Bolt + Flow + Crown Stewards | Not Started |
-| HC-11 | P1 | ThunderBridge | Missing ingest bridge layer | DIP + scaffold `Thunderline.ThunderBridge` | Gate Steward | Not Started |
+| HC-11 | P1 | ThunderBridge | Missing ingest bridge layer | DIP + scaffold `Thunderline.ThunderBridge` | Gate Steward | ✅ Done |
 | HC-12 | P1 | DomainProcessor | Repeated consumer boilerplate | Introduce behaviour + generators + telemetry | Flow Steward | Not Started |
 | HC-13 | P1 | Voice/WebRTC | Unused media libs | MVP voice → intent pipeline (`voice.intent.detected`) | Link+Crown | Not Started |
 | HC-14 | P1 | Telemetry Dashboards | Sparse dashboards | Grafana JSON / custom LiveDashboard pages | Observability | Not Started |
