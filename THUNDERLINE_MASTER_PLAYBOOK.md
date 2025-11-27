@@ -110,7 +110,7 @@
 | HC-10 | P0 | Feature Flags | Flags undocumented | **✅ COMPLETE** (Nov 27) - `Thunderline.Feature` module implemented (`enabled?/2`, `override/2`, `clear_override/1`, `all/0`). `docs/reference/FEATURE_FLAGS.md` v1.0: 14 core flags, 8 direct env vars, 7 layer flags documented with lifecycle stages. Governance workflow defined. | Platform | **Done** |
 | HC-22 | P0 | Unified Model | No persistent cross-agent model | Stand up Unified Persistent Model (UPM) online trainer + ThunderBlock adapters + rollout policy | Bolt + Flow + Crown Stewards | Not Started |
 | HC-11 | P1 | ThunderBridge | Missing ingest bridge layer | DIP + scaffold `Thunderline.ThunderBridge` | Gate Steward | ✅ Done |
-| HC-12 | P1 | DomainProcessor | Repeated consumer boilerplate | Introduce behaviour + generators + telemetry | Flow Steward | Not Started |
+| HC-12 | P1 | DomainProcessor | Repeated consumer boilerplate | **✅ COMPLETE** (Nov 27) - `Thunderline.Thunderflow.DomainProcessor` behaviour + `__using__` macro. Eliminates ~200 lines of Broadway boilerplate per pipeline. Features: auto-telemetry on message/batch start/stop/error, DLQ routing via EventBus, `do_*` overridable config hooks, `normalize_event/1`, `broadcast/2`, `enqueue_job/3` helpers. Example: `ExampleDomainPipeline` (~80 lines vs ~300). Tests: `domain_processor_test.exs`. | Flow Steward | **Done** |
 | HC-13 | P1 | Voice/WebRTC | Unused media libs | MVP voice → intent pipeline (`voice.intent.detected`) | Link+Crown | Not Started |
 | HC-14 | P1 | Telemetry Dashboards | Sparse dashboards | Grafana JSON / custom LiveDashboard pages | Observability | Not Started |
 | HC-15 | P1 | Security Hardening | API keys, encryption coverage | API key resource + cloak coverage matrix | Gate Steward | Not Started |
