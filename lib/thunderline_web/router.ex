@@ -107,6 +107,9 @@ defmodule ThunderlineWeb.Router do
       # Cerebros & Raincatcher (drift lab) interface (runtime feature-gated inside LiveView)
       live "/cerebros", CerebrosLive, :index
 
+      # ThunderPrism 3D DAG Visualizer - ML decision trail exploration
+      live "/thunderprism", ThunderprismLive, :index
+
       # Training Prompt Interface - Submit text-based training jobs with UPM/MLflow integration
       live "/training/prompt", TrainingPromptLive, :index
 

@@ -10,6 +10,7 @@ import { CAVisualization } from "./hooks/ca_visualization"
 import { Whiteboard } from "./hooks/whiteboard"
 import { MetricsChart } from "./hooks/metrics_chart"
 import { EventFlow } from "./hooks/event_flow"
+import { ThunderPrismGraph } from "./hooks/thunderprism_graph"
 
 // Simple auto-scroll hook for chat & event flow streams
 // TODO: Enhance with user scroll lock (pause autoscroll while user hovering / scrolled up)
@@ -30,6 +31,7 @@ let Hooks = {
   Whiteboard,
   MetricsChart,
   EventFlow,
+  ThunderPrismGraph,
   AutoScroll,
   Tabs: {
     mounted() {

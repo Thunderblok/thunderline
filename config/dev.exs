@@ -76,7 +76,9 @@ config :thunderline, :features,
   ml_nas: true,
   cerebros_bridge: true,
   reward_signal: true,
-  rag_enabled: true
+  rag_enabled: true,
+  # Disable ml_pipeline in dev until MnesiaProducer is implemented
+  ml_pipeline: false
 
 dev_cerebros_bridge_config =
   Application.compile_env(:thunderline, :cerebros_bridge, [])

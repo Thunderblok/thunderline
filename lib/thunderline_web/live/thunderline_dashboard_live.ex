@@ -197,7 +197,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       <header class="flex items-center gap-3 mb-5">
         <h1 class="text-lg font-semibold tracking-wide">Thunderline Dashboard</h1>
         <span class="text-[11px] text-surface-muted">realtime systems view</span>
-        <a href="#" class="ml-auto link text-xs text-surface-subtle hover:text-surface-strong">
+        <a href="/thunderprism" class="ml-auto btn btn-ghost btn-xs text-cyan-400">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 mr-1"></span> Prism DAG
+        </a>
+        <a href="#" class="link text-xs text-surface-subtle hover:text-surface-strong">
           docs
         </a>
         <%= if can_admin?(@current_user) do %>
