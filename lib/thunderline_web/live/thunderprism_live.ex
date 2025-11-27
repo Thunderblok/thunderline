@@ -28,8 +28,12 @@ defmodule ThunderlineWeb.ThunderprismLive do
       Phoenix.PubSub.subscribe(Thunderline.PubSub, @pubsub_topic)
     end
 
+    # Ensure current_scope is assigned (may be set by AshAuthentication.Phoenix.LiveSession on_mount)
+    current_scope = Map.get(socket.assigns, :current_scope)
+
     socket =
       socket
+      |> assign_new(:current_scope, fn -> current_scope end)
       |> assign(:page_title, "ThunderPrism DAG")
       |> assign(:selected_node, nil)
       |> assign(:pac_filter, nil)
@@ -133,6 +137,10 @@ defmodule ThunderlineWeb.ThunderprismLive do
                 <button phx-click="refresh_graph" class="btn btn-primary btn-sm w-full mt-2">
                   <.icon name="hero-arrow-path" class="w-4 h-4" /> Refresh
                 </button>
+
+                <button phx-click="generate_test_data" class="btn btn-secondary btn-sm w-full mt-2">
+                  <.icon name="hero-beaker" class="w-4 h-4" /> Generate Test Data
+                </button>
               </div>
             </div>
 
@@ -226,13 +234,13 @@ defmodule ThunderlineWeb.ThunderprismLive do
             </div>
           </div>
 
-          <!-- 3D Graph Container -->
+          <!-- 3D Graph Container - React Three Fiber -->
           <div class="lg:col-span-3">
             <div class="card bg-base-300 shadow-xl h-[calc(100vh-8rem)]">
               <div class="card-body p-0 overflow-hidden rounded-2xl">
                 <div
-                  id="thunderprism-graph"
-                  phx-hook="ThunderPrismGraph"
+                  id="thunderprism-root"
+                  phx-hook="ThunderPrismReact"
                   phx-update="ignore"
                   data-pac-id={@pac_filter || ""}
                   data-limit={@limit}
@@ -333,6 +341,47 @@ defmodule ThunderlineWeb.ThunderprismLive do
     {:noreply, socket}
   end
 
+  def handle_event("generate_test_data", _params, socket) do
+    # Generate sample PAC decision nodes
+    pac_ids = ["pac_alpha", "pac_beta", "pac_gamma"]
+    models = [:model_a, :model_b, :model_c, :model_d]
+
+    # Create nodes for each PAC with sequential iterations
+    created_nodes =
+      for pac_id <- pac_ids, iteration <- 1..10 do
+        chosen = Enum.random(models)
+        probs = generate_model_probs(models, chosen)
+        dists = generate_model_distances(models, chosen)
+
+        attrs = %{
+          pac_id: pac_id,
+          iteration: iteration,
+          chosen_model: chosen,
+          model_probabilities: probs,
+          model_distances: dists,
+          timestamp: DateTime.utc_now(),
+          meta: %{
+            "generated" => true,
+            "seed" => :rand.uniform(1000)
+          }
+        }
+
+        Thunderline.Thunderprism.MLTap.log_node(attrs)
+      end
+
+    # Wait briefly for async tasks
+    Process.sleep(500)
+
+    # Reload graph and update PAC IDs
+    socket =
+      socket
+      |> load_pac_ids()
+      |> push_event("graph_updated", load_graph_data(socket.assigns.pac_filter, socket.assigns.limit))
+      |> put_flash(:info, "Generated #{length(created_nodes)} test nodes!")
+
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_info({:prism_node_created, _node}, socket) do
     # Real-time update when new nodes are created
@@ -424,4 +473,38 @@ defmodule ThunderlineWeb.ThunderprismLive do
 
   defp parse_int(val, _default) when is_integer(val), do: val
   defp parse_int(_, default), do: default
+
+  defp generate_model_probs(models, chosen) do
+    # Give chosen model highest probability
+    base_probs =
+      models
+      |> Enum.map(fn model ->
+        if model == chosen do
+          {model, 0.5 + :rand.uniform() * 0.3}
+        else
+          {model, :rand.uniform() * 0.2}
+        end
+      end)
+      |> Map.new()
+
+    # Normalize to sum to 1.0
+    total = base_probs |> Map.values() |> Enum.sum()
+    Map.new(base_probs, fn {k, v} -> {k, Float.round(v / total, 3)} end)
+  end
+
+  defp generate_model_distances(models, chosen) do
+    # Give chosen model lowest distance
+    models
+    |> Enum.map(fn model ->
+      dist =
+        if model == chosen do
+          :rand.uniform() * 0.1
+        else
+          0.1 + :rand.uniform() * 0.4
+        end
+
+      {model, Float.round(dist, 4)}
+    end)
+    |> Map.new()
+  end
 end

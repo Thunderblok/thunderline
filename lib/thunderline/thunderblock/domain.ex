@@ -89,18 +89,18 @@ defmodule Thunderline.Thunderblock.Domain do
 
   resources do
     # Original ThunderBlock resources
-    resource Thunderblock.Resources.ExecutionContainer
-    resource Thunderblock.Resources.TaskOrchestrator
-    resource Thunderblock.Resources.ZoneContainer
-    resource Thunderblock.Resources.SupervisionTree
+    resource Thunderline.Thunderblock.Resources.ExecutionContainer
+    resource Thunderline.Thunderblock.Resources.TaskOrchestrator
+    resource Thunderline.Thunderblock.Resources.ZoneContainer
+    resource Thunderline.Thunderblock.Resources.SupervisionTree
 
     # Renamed: Thunderblock.Resources.Community -> Thunderline.Thunderblock.Resources.ExecutionTenant
     resource Thunderline.Thunderblock.Resources.ExecutionTenant
-    resource Thunderblock.Resources.ClusterNode
-    resource Thunderblock.Resources.DistributedState
-    resource Thunderblock.Resources.LoadBalancingRule
-    resource Thunderblock.Resources.RateLimitPolicy
-    resource Thunderblock.Resources.SystemEvent
+    resource Thunderline.Thunderblock.Resources.ClusterNode
+    resource Thunderline.Thunderblock.Resources.DistributedState
+    resource Thunderline.Thunderblock.Resources.LoadBalancingRule
+    resource Thunderline.Thunderblock.Resources.RateLimitPolicy
+    resource Thunderline.Thunderblock.Resources.SystemEvent
     resource Thunderline.Thunderblock.Resources.RetentionPolicy
 
     # ThunderChief Orchestration (integrated into ThunderBlock)
