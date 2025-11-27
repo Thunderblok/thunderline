@@ -1,12 +1,13 @@
 # 🚀 THUNDERLINE MASTER PLAYBOOK: From Zero to AI Automation
 
-> **Architecture Status (Nov 18, 2025 - Ground Truth Verified)**: Overall Grade **A (9/10)** - 8 active domains, ~160 Ash resources, 6 major consolidations completed, 2 in progress (ThunderJam→Thundergate.RateLimiting, ThunderClock→Thunderblock.Timing). Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
+> **Architecture Status (Nov 27, 2025 - HC-Quantum Update)**: Overall Grade **A (9/10)** - 8 active domains, ~160 Ash resources, 6 major consolidations completed, 2 in progress. **NEW**: Cross-Domain Functional Layers architecture (HC-31/32/33) defining 6 capability layers across domain pairs. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
 >
-> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-30). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
+> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-37). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
 >
 > **Ground Truth Verification (Nov 18, 2025)**: HC review contained inaccuracies. Direct codebase inspection revealed (and now resolved): (1) ThunderCom resources migrated into ThunderLink (HC-27/28 ✅), (2) ThunderLink operates as the single communications domain with 17 resources, (3) ThunderVine architectural decision implemented. See Ground Truth Verification Summary section and HC-27, HC-28, HC-29, HC-30 for details.
 >
-> **Active Domains (Nov 18, 2025 - Verified)**: Thundergate (19), Thunderlink (17), Thunderflow (9), Thunderbolt (50+), Thundercrown (4), Thunderblock (33), Thundergrid (5), Thunderprism (2), RAG (1)
+> **Active Domains (Nov 27, 2025)**: Thundergate (19), Thunderlink (17), Thunderflow (9), Thunderbolt (50+), Thundercrown (4), Thunderblock (33), Thundergrid (5), Thunderprism (2), RAG (1)
+> **Cross-Domain Layers**: Routing (Flow×Grid), Observability (Gate×Crown), Intelligence (Bolt×Crown), Persistence (Block×Flow), Communication (Link×Gate), Orchestration (Vine×Crown)
 > **Consolidations Status**: 
 > - ✅ **Complete (6)**: ThunderVault→Thunderblock, 5 domains→Thunderbolt, ThunderChief→Thundercrown, ThunderStone+ThunderEye+Accounts+ThunderWatch→Thundergate, ThunderWave→Thunderlink, ThunderCom→Thunderlink (HC-27/28 ✅ Nov 18 2025)
 > - ⚠️ **In Progress (2)**: ThunderJam→Thundergate.RateLimiting, ThunderClock→Thunderblock.Timing
@@ -127,8 +128,256 @@
 | HC-28 | P0 | Resource Duplication | Canonicalize ThunderLink resources | **Outcome (Nov 18 2025)**: Selected ThunderLink implementations for Community/Channel/Message/Role/FederationSocket, removed ThunderCom duplicates, verified voice namespace alignment, and recompiled platform with zero regressions. | Link Steward | **✅ COMPLETE** | Nov 18 2025 |
 | HC-29 | P0 | ThunderVine Architecture | ✅ COMPLETE (Nov 17, 2025) | **Implementation**: Created ThunderVine.Domain with 4 owned resources (Workflow, WorkflowNode, WorkflowEdge, WorkflowSnapshot) migrated from ThunderBlock. **Benefits Realized**: API exposure via Ash.Domain, policy enforcement, clearer ownership (orchestration vs infrastructure), improved naming (Workflow vs DAGWorkflow), reduced coupling. **Migration**: 5 files created, 10 files modified, 4 files deleted. Zero breaking changes (same DB tables: dag_workflows, dag_nodes, dag_edges, dag_snapshots). **Verification**: Compilation ✅ (zero errors), Tests ✅ (no new failures), Documentation ✅ (6 files synchronized). See HC-29_COMPLETION_REPORT.md for full details. | Bolt + Block Stewards | ✅ COMPLETE | Nov 17, 2025 |
 | HC-30 | P0 | ThunderForge Cleanup | ✅ COMPLETE (Nov 17, 2025) | **Implementation**: Removed entire ThunderForge directory (3 files, ~75 lines total). **Files Removed**: domain.ex (empty resources block), blueprint.ex (25-line YAML parser), factory_run.ex (40-line telemetry executor). **Verification**: Zero production dependencies confirmed via comprehensive grep, explicitly marked as "orphaned design" in ORPHANED_CODE_REPORT.md. **Rationale**: No active usage, HC-24 (future sensor pipeline) can reimplement if needed, code preserved in git history. **Effort**: 30 minutes total (investigation + removal + documentation). | Platform Team | ✅ COMPLETE | Nov 17, 2025 |
+| **HC-31** | **P0** | **Multimodal Routing Layer** | No multi-channel event bus for PAC-state routing | **HC-Quantum-01**: Implement multi-channel bus (8-32 logical channels), routing profiles (6 presets: `fast_volatile`, `durable_ordered`, `broadcast_fanout`, `ml_pipeline`, `realtime_stream`, `audit_log`), channel manager GenServer, admin CLI (`mix thunderline.channels.*`), telemetry per-channel. **Files**: `lib/thunderline/thundergrid/multi_channel_bus.ex`, `routing_profile.ex`, `multi_mode_dispatcher.ex`. Cross-domain layer: **Flow×Grid** (event routing + spatial/channel topology). | Flow + Grid Stewards | Not Started |
+| **HC-32** | **P0** | **PAC-State Swapping** | No hot-swap mechanism for agent state transfer | **HC-Quantum-02**: PAC state extraction (serialize running agent memory), state fusion (merge/diff algorithms), swap service (atomic handoff between channels/zones), rollback on failure, telemetry for swap latency/success. **Files**: `lib/thunderline/thundergrid/state_swapper.ex`, `state_fusion.ex`, `state_extractor.ex`. Enables live agent migration, A/B personality testing, checkpoint/restore. | Grid + Block Stewards | Not Started |
+| **HC-33** | **P0** | **Dynamic Routing Profiles** | Static routing insufficient for adaptive workloads | **HC-Quantum-03**: Profile registry (CRUD for routing configs), auto-switching (telemetry-driven profile selection), Cerebros compute channels (ML inference routing), canary routing (percentage-based traffic split), profile inheritance (base + overlay). **Files**: `lib/thunderline/thundergrid/routing_profiles/*.ex`, `profile_registry.ex`, `auto_switcher.ex`. Cross-domain layer: **Crown×Flow** (governance + routing policy). | Crown + Flow Stewards | Not Started |
+| **HC-34** | **P1** | **Simplex-Path Clustering Core** | No manifold-aware clustering for swarm intelligence | **Research-01**: Implement LAPD (Largest Angle Path Distance) algorithm for robust multi-manifold clustering. **Components**: (1) Snex Python interop for SciPy Delaunay triangulation + path distance computation, (2) Nx/EXLA alternative backend (future), (3) Ash resource `Thunderbolt.Cluster` with membership tracking, (4) Automatic intrinsic dimension estimation, (5) Denoising via η-cutoff (elbow method). **Complexity**: Quasi-linear in sample size, exponential in intrinsic dimension d. **Files**: `lib/thunderline/thunderbolt/clustering/simplex_paths.ex`, `lapd_engine.ex`, `cluster_resource.ex`. Cross-domain layer: **Bolt×Block** (ML compute + persistence). | Bolt + Block Stewards | Not Started |
+| **HC-35** | **P1** | **Clustering Orchestration** | No automated clustering lifecycle management | **Research-02**: Orchestrate clustering via Thunderchief/Thunderflow. **Components**: (1) AshOban worker for periodic clustering jobs, (2) Thunderflow pipeline DAG (data collection → clustering → result broadcast), (3) Event emission (`clusters:running`, `clusters:completed`, `clusters:updated`), (4) Trigger points (timed schedule, agent count threshold, manual), (5) Thundergrid zone-level data aggregation (`collect_zone_data/0`), (6) Cluster coordinator assignment per sub-swarm. **Integration**: Thundercell automata hooks for "Cluster now" state-machine action. Cross-domain layer: **Flow×Crown** (orchestration + governance). | Flow + Crown Stewards | Not Started |
+| **HC-36** | **P1** | **Clustering Visualization** | No UI for cluster insights and control | **Research-03**: Thunderprism cluster dashboard. **Components**: (1) Swarm Clusters panel (ID, size, health metrics, color-coded), (2) Real-time PubSub updates on `clusters:updated`, (3) Drill-down to member agents, (4) Manual "Recluster Now" button with loading state, (5) Parameter tuning UI (intrinsic dimension d, neighborhood size, denoising η), (6) Cluster-based command broadcast ("Send to Cluster X"), (7) Optional 2D PCA projection visualization. **LiveView**: Subscribe to cluster events, refresh on change. Cross-domain layer: **Prism×Link** (UI + connectivity). | Prism + Link Stewards | Not Started |
+| **HC-37** | **P1** | **Clustering Memory Integration** | Clusters not represented in knowledge graph | **Research-04**: Thundervine/Thunderblock cluster persistence. **Components**: (1) Cluster MemoryNode in Thundervine graph (links to member agents), (2) Cluster centroid embeddings in pgvector for similarity search, (3) Agent→Cluster hub edges (avoid N² clique explosion), (4) Temporal DAG evolution (cluster snapshots over time, `evolves_to` edges), (5) `cluster_runs` audit table (timestamp, params, summary), (6) Agent schema extension (`cluster_id` field), (7) Bulk Ash action for cluster assignment updates. Cross-domain layer: **Vine×Block** (memory graph + persistence). | Vine + Block Stewards | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
+
+---
+
+## 🔀 CROSS-DOMAIN FUNCTIONAL LAYERS (Nov 27, 2025)
+
+**Concept**: Individual domains own resources and actions, but certain capabilities emerge from domain *combinations*. These "functional layers" are implemented via coordinated modules across domains without creating new Ash domains.
+
+### Layer Architecture
+
+| Layer | Domains | Responsibility | Key Modules |
+|-------|---------|----------------|-------------|
+| **Routing Layer** | Flow × Grid | Multi-channel event routing, spatial topology, channel management | `Thundergrid.MultiChannelBus`, `Thunderflow.EventBus`, `Thundergrid.MultiModeDispatcher` |
+| **Observability Layer** | Gate × Crown | Telemetry aggregation, policy-aware metrics, audit trails, health checks | `Thundergate.Telemetry`, `Thundercrown.AuditLog`, `Thundergate.HealthCheck` |
+| **Intelligence Layer** | Bolt × Crown | ML inference + governance, model deployment policies, compute quotas | `Thunderbolt.ModelServer`, `Thundercrown.ModelPolicy`, `Thunderbolt.CerebrosBridge` |
+| **Persistence Layer** | Block × Flow | Event sourcing, state snapshots, lineage tracking, DLQ management | `Thunderblock.MemoryVault`, `Thunderflow.EventStore`, `Thunderblock.LineageDAG` |
+| **Clustering Layer** | Bolt × Vine | Manifold discovery, swarm sub-grouping, knowledge clustering | `Thunderbolt.SimplexPaths`, `Thundervine.ClusterMemory`, `Thunderbolt.LAPDEngine` |
+| **Communication Layer** | Link × Gate | External messaging, federation, API gateway, rate limiting | `Thunderlink.TOCP`, `Thundergate.Federation`, `Thundergate.RateLimiter` |
+| **Orchestration Layer** | Vine × Crown | Workflow execution, policy enforcement on DAGs, approval gates | `Thundervine.WorkflowRunner`, `Thundercrown.ApprovalGate`, `Thundervine.Scheduler` |
+
+### Implementation Pattern
+
+```elixir
+# Layers are NOT new Ash domains - they're coordination points
+# Example: Routing Layer coordinator
+
+defmodule Thunderline.Layers.Routing do
+  @moduledoc """
+  Cross-domain coordination for Flow × Grid routing layer.
+  Provides unified API for multi-channel event routing.
+  """
+  
+  alias Thunderline.Thunderflow.EventBus
+  alias Thunderline.Thundergrid.{MultiChannelBus, RoutingProfile}
+  
+  def route_event(event, opts \\ []) do
+    channel = Keyword.get(opts, :channel, :default)
+    profile = Keyword.get(opts, :profile, :durable_ordered)
+    
+    with {:ok, resolved_channel} <- MultiChannelBus.resolve_channel(channel),
+         {:ok, config} <- RoutingProfile.get(profile),
+         {:ok, routed} <- EventBus.publish_event(event, config) do
+      {:ok, %{event: routed, channel: resolved_channel, profile: profile}}
+    end
+  end
+end
+```
+
+### Layer Activation
+
+Layers activate based on which domains are loaded. Feature flags control layer availability:
+
+| Layer | Required Domains | Feature Flag | Default |
+|-------|-----------------|--------------|---------|
+| Routing | Flow, Grid | `LAYER_ROUTING_ENABLED` | `true` |
+| Observability | Gate, Crown | `LAYER_OBSERVABILITY_ENABLED` | `true` |
+| Intelligence | Bolt, Crown | `LAYER_INTELLIGENCE_ENABLED` | `true` |
+| Persistence | Block, Flow | `LAYER_PERSISTENCE_ENABLED` | `true` |
+| Communication | Link, Gate | `LAYER_COMMUNICATION_ENABLED` | `true` |
+| Orchestration | Vine, Crown | `LAYER_ORCHESTRATION_ENABLED` | `false` |
+| Clustering | Bolt, Vine | `LAYER_CLUSTERING_ENABLED` | `false` |
+
+### HC-Quantum Roadmap (Multi-Channel Routing)
+
+**Phase 1 (Week 1)**: HC-31 - Multi-Channel Bus
+- [ ] `Thundergrid.MultiChannelBus` GenServer (channel registry, lifecycle)
+- [ ] `Thundergrid.RoutingProfile` (6 preset profiles + custom)
+- [ ] `Thundergrid.MultiModeDispatcher` (fan-out, round-robin, priority)
+- [ ] Mix tasks: `mix thunderline.channels.list|create|delete|stats`
+- [ ] Telemetry: `[:thunderline, :grid, :channel, :*]`
+
+**Phase 2 (Week 2)**: HC-32 - PAC-State Swapping
+- [ ] `Thundergrid.StateExtractor` (serialize agent memory to portable format)
+- [ ] `Thundergrid.StateFusion` (merge/diff algorithms for state combination)
+- [ ] `Thundergrid.StateSwapper` (atomic swap service with rollback)
+- [ ] Checkpoint/restore for agent migration
+- [ ] Telemetry: `[:thunderline, :grid, :swap, :*]`
+
+**Phase 3 (Week 3)**: HC-33 - Dynamic Routing Profiles
+- [ ] `Thundergrid.ProfileRegistry` (CRUD, inheritance, versioning)
+- [ ] `Thundergrid.AutoSwitcher` (telemetry-driven profile selection)
+- [ ] `Thundergrid.CanaryRouter` (percentage-based traffic split)
+- [ ] Cerebros compute channel integration
+- [ ] Crown policy hooks for routing governance
+
+---
+
+### 🧬 HC-Research Roadmap: Simplex-Path Clustering (Nov 27, 2025)
+
+**Mission**: Deploy robust multi-manifold clustering (LAPD - Largest Angle Path Distance) for dynamic swarm orchestration. Enables automatic discovery of natural sub-swarms and knowledge clusters without manual tuning.
+
+**Algorithm Overview**: Simplex Paths builds a graph of d-simplices using local neighborhoods, computes largest-angle path distances yielding a distance matrix that cleanly separates same-group vs different-group points. Quasi-linear complexity in sample size; proven ability to separate intersecting manifolds.
+
+**Data Flow**:
+```
+Agent States / Memory Vectors → [Thunderflow Pipeline] → Clustering Module (Thunderbolt)
+    → Clusters Identified → [Thunderflow Events] → Thunderchief Orchestration
+    → Thundergrid Zone Coordination → [Thunderprism UI] → Visualization
+```
+
+#### Phase 1 (Week 1-2): Foundation & Prototype — HC-34
+
+**Core Algorithm Integration**:
+- [ ] Snex Python environment setup (SciPy, scikit-learn, clustering code)
+- [ ] `Thunderbolt.Clustering.SimplexPaths` module (Elixir wrapper)
+- [ ] `Thunderbolt.Clustering.LAPDEngine` (Python interop via Snex)
+- [ ] Ash resource: `Thunderbolt.Resources.Cluster` (id, timestamp, metrics)
+- [ ] Ash resource: `Thunderbolt.Resources.ClusterMembership` (agent↔cluster)
+- [ ] Agent schema extension: `cluster_id` field (nullable)
+- [ ] Database migrations for cluster tables
+- [ ] Smoke test: manual trigger via IEx
+
+**Key Files**:
+```
+lib/thunderline/thunderbolt/clustering/
+├── simplex_paths.ex      # Main clustering interface
+├── lapd_engine.ex        # Snex Python bridge
+├── cluster_resource.ex   # Ash resource definition
+└── membership.ex         # Agent↔Cluster linking
+```
+
+**Success Criteria**: Manual `Thunderbolt.Clustering.run()` produces cluster assignments stored in DB.
+
+#### Phase 2 (Week 3-4): Orchestration & Automation — HC-35
+
+**Thunderchief/Thunderflow Integration**:
+- [ ] AshOban worker: `ClusteringWorker` (periodic or event-triggered)
+- [ ] Thunderflow pipeline DAG: `DataPrep → RunClustering → PostUpdate`
+- [ ] Event emission: `clusters:running`, `clusters:completed`, `clusters:updated`
+- [ ] Trigger configuration: timed (every N ticks), threshold (swarm size +20%), manual
+- [ ] `Thundergrid.collect_zone_data/0` for live in-memory state aggregation
+- [ ] Cluster coordinator assignment (lead agent per cluster)
+- [ ] Thundercell automata hook: `{:cluster_now}` state-machine action
+- [ ] Telemetry: `[:thunderline, :bolt, :clustering, :*]`
+
+**Orchestration Pattern**:
+```elixir
+# Thunderchief scheduling
+defmodule Thunderline.Thunderbolt.Workers.ClusteringWorker do
+  use Oban.Worker, queue: :clustering, max_attempts: 3
+
+  @impl true
+  def perform(%Oban.Job{args: args}) do
+    with {:ok, data} <- gather_agent_vectors(),
+         {:ok, clusters} <- SimplexPaths.run(data, args),
+         {:ok, _} <- persist_clusters(clusters),
+         :ok <- broadcast_cluster_update(clusters) do
+      {:ok, %{clusters: length(clusters)}}
+    end
+  end
+end
+```
+
+**Success Criteria**: Clustering runs automatically on schedule, events broadcast to PubSub.
+
+#### Phase 3 (Week 5-6): Visualization & Control — HC-36
+
+**Thunderprism Dashboard**:
+- [ ] Swarm Clusters panel (LiveView component)
+- [ ] Real-time PubSub subscription to `clusters:updated`
+- [ ] Cluster table: ID, member count, centroid preview, health score
+- [ ] Drill-down: click cluster → show member agents
+- [ ] "Recluster Now" button with loading state
+- [ ] Parameter tuning controls (intrinsic dimension d, neighborhood k, denoising η)
+- [ ] Cluster-based command: "Broadcast to Cluster X"
+- [ ] Optional: 2D PCA projection visualization (SVG or Canvas)
+
+**LiveView Structure**:
+```elixir
+defmodule ThunderlineWeb.ClusterDashboardLive do
+  use ThunderlineWeb, :live_view
+
+  def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "clusters:updated")
+    end
+    {:ok, assign(socket, clusters: load_clusters(), clustering_status: :idle)}
+  end
+
+  def handle_info({:clusters_updated, clusters}, socket) do
+    {:noreply, assign(socket, clusters: clusters)}
+  end
+end
+```
+
+**Success Criteria**: Live UI shows clusters, updates in real-time, manual trigger works.
+
+#### Phase 4 (Week 7+): Memory Integration & Evolution — HC-37
+
+**Thundervine/Thunderblock Integration**:
+- [ ] Cluster MemoryNode in Thundervine graph (hub node per cluster)
+- [ ] Cluster centroid embeddings in pgvector (similarity search)
+- [ ] `cluster_runs` audit table (historical tracking)
+- [ ] Temporal DAG: `evolves_to` edges between cluster snapshots
+- [ ] Agent behavior integration: read `my_cluster_id` in automata
+- [ ] Cluster-aware policies in Thundercrown (e.g., "if cluster > 40% agents, trigger diversity")
+- [ ] Adaptive triggering: skip clustering if clusters stable
+
+**Memory Graph Pattern**:
+```
+[Agent A] ──belongs_to──▶ [Cluster C1 Node]
+[Agent B] ──belongs_to──▶ [Cluster C1 Node]
+[Cluster C1 @ T1] ──evolves_to──▶ [Cluster C1 @ T2]
+```
+
+**Success Criteria**: Clusters persisted in knowledge graph, queryable via similarity search.
+
+#### Implementation Notes
+
+**Snex Python Interop**:
+```elixir
+# lib/thunderline/thunderbolt/clustering/lapd_engine.ex
+defmodule Thunderline.Thunderbolt.Clustering.LAPDEngine do
+  @moduledoc "Python bridge for LAPD clustering via Snex"
+
+  def run(data, opts \\ []) do
+    d = Keyword.get(opts, :intrinsic_dimension, 2)
+    k = Keyword.get(opts, :neighbors, 10)
+    eta = Keyword.get(opts, :denoising_threshold, 0.1)
+
+    case Snex.call(:clustering_env, :simplex_paths, :run_lapd, [data, d, k, eta]) do
+      {:ok, labels} -> {:ok, labels}
+      {:error, reason} -> {:error, {:python_error, reason}}
+    end
+  end
+end
+```
+
+**Edge Cases**:
+- **Single cluster**: Handle gracefully (all agents in cluster 1)
+- **N clusters = N agents**: Treat as "no structure found", skip persistence
+- **High dimensionality**: PCA preprocessing to reduce to manageable d
+- **Noisy data**: Tune η parameter via elbow method
+- **Large datasets**: Chunking by zone if > 10k agents
+
+**Telemetry Events**:
+```elixir
+[:thunderline, :bolt, :clustering, :start]    # {agent_count, params}
+[:thunderline, :bolt, :clustering, :stop]     # {duration_ms, cluster_count}
+[:thunderline, :bolt, :clustering, :error]    # {reason}
+[:thunderline, :prism, :cluster_ui, :trigger] # {source: :manual | :auto}
+```
 
 ### Ground Truth Verification Summary (November 18, 2025)
 
