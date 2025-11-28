@@ -2,7 +2,7 @@
 
 > **Architecture Status (Nov 27, 2025 - HC-Quantum Update)**: Overall Grade **A (9/10)** - 8 active domains, ~160 Ash resources, 6 major consolidations completed, 2 in progress. **NEW**: Cross-Domain Functional Layers architecture (HC-31/32/33) defining 6 capability layers across domain pairs. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
 >
-> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-37). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
+> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-45). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
 >
 > **Ground Truth Verification (Nov 18, 2025)**: HC review contained inaccuracies. Direct codebase inspection revealed (and now resolved): (1) ThunderCom resources migrated into ThunderLink (HC-27/28 ✅), (2) ThunderLink operates as the single communications domain with 17 resources, (3) ThunderVine architectural decision implemented. See Ground Truth Verification Summary section and HC-27, HC-28, HC-29, HC-30 for details.
 >
@@ -135,6 +135,14 @@
 | **HC-35** | **P1** | **Clustering Orchestration** | No automated clustering lifecycle management | **Research-02**: Orchestrate clustering via Thunderchief/Thunderflow. **Components**: (1) AshOban worker for periodic clustering jobs, (2) Thunderflow pipeline DAG (data collection → clustering → result broadcast), (3) Event emission (`clusters:running`, `clusters:completed`, `clusters:updated`), (4) Trigger points (timed schedule, agent count threshold, manual), (5) Thundergrid zone-level data aggregation (`collect_zone_data/0`), (6) Cluster coordinator assignment per sub-swarm. **Integration**: Thundercell automata hooks for "Cluster now" state-machine action. Cross-domain layer: **Flow×Crown** (orchestration + governance). | Flow + Crown Stewards | Not Started |
 | **HC-36** | **P1** | **Clustering Visualization** | No UI for cluster insights and control | **Research-03**: Thunderprism cluster dashboard. **Components**: (1) Swarm Clusters panel (ID, size, health metrics, color-coded), (2) Real-time PubSub updates on `clusters:updated`, (3) Drill-down to member agents, (4) Manual "Recluster Now" button with loading state, (5) Parameter tuning UI (intrinsic dimension d, neighborhood size, denoising η), (6) Cluster-based command broadcast ("Send to Cluster X"), (7) Optional 2D PCA projection visualization. **LiveView**: Subscribe to cluster events, refresh on change. Cross-domain layer: **Prism×Link** (UI + connectivity). | Prism + Link Stewards | Not Started |
 | **HC-37** | **P1** | **Clustering Memory Integration** | Clusters not represented in knowledge graph | **Research-04**: Thundervine/Thunderblock cluster persistence. **Components**: (1) Cluster MemoryNode in Thundervine graph (links to member agents), (2) Cluster centroid embeddings in pgvector for similarity search, (3) Agent→Cluster hub edges (avoid N² clique explosion), (4) Temporal DAG evolution (cluster snapshots over time, `evolves_to` edges), (5) `cluster_runs` audit table (timestamp, params, summary), (6) Agent schema extension (`cluster_id` field), (7) Bulk Ash action for cluster assignment updates. Cross-domain layer: **Vine×Block** (memory graph + persistence). | Vine + Block Stewards | Not Started |
+| **HC-38** | **P0** | **Cerebros-DiffLogic Integration** | No unified compute pipeline for voxel-automata optimization | **DIRECTIVE**: Integrate Thunderbolt voxel automata + Cerebros TPE orchestration + DiffLogic CA. **Components**: (1) Event protocol (`bolt.pac.compute.request/response`, `bolt.ca.rule.update`), (2) LoopMonitor criticality metrics (PLV, entropy, λ̂), (3) Multivariate TPE via Optuna (Python), (4) DiffLogic gradient-based rule updates, (5) OTel tracing across Elixir↔Python boundary. **Goal**: Self-optimizing CA system at "edge of chaos". Cross-domain layer: **Bolt×Flow** (ML + events). See §HC-Cerebros-DiffLogic Directive. | Bolt + Flow Stewards | Not Started |
+| **HC-39** | **P0** | **PAC Compute Event Protocol** | No formal schema for PAC task routing | **Cerebros-01**: Define event schemas (`PACComputeRequest`, `PACComputeResponse`, `CAVoxelUpdate`) with versioning. **Components**: (1) Ash resource `Thunderbolt.PACComputeTask` (task lifecycle), (2) JSON schema validation, (3) OTel context propagation, (4) Broadway consumer for Python responses, (5) EventBus taxonomy entries (`bolt.pac.*`). Cross-domain layer: **Bolt×Flow**. | Bolt Steward | Not Started |
+| **HC-40** | **P0** | **LoopMonitor Criticality Metrics** | CA criticality not measured | **Cerebros-02**: Implement criticality sensors in CA.Stepper. **Metrics**: (1) Phase-Locking Value (PLV) for synchrony, (2) Permutation entropy for complexity, (3) Langton's λ̂ (non-quiescent rule fraction), (4) Lyapunov exponent estimation. **Output**: Attach to `bolt.ca.metrics.snapshot` events, telemetry `[:thunderline, :bolt, :ca, :criticality]`. | Bolt Steward | Not Started |
+| **HC-41** | **P1** | **Cerebros TPE Orchestration** | No Bayesian hyperparameter tuning | **Cerebros-03**: Python service for multivariate TPE. **Components**: (1) Optuna `TPESampler(multivariate=True)` for coupled params, (2) Trial database (Postgres or Optuna storage), (3) Event consumer for `PACComputeRequest`, (4) Result emission via `PACComputeResponse`, (5) Auto-scaling worker pool (Celery/asyncio). **Tunes**: PAC topology, rule weights, mutation rates. | Bolt + Platform | Not Started |
+| **HC-42** | **P1** | **DiffLogic CA Rule Learning** | CA rules not differentiable | **Cerebros-04**: Treat voxel-update rules as differentiable parameters. **Components**: (1) Float-parameterized rule tables in Thunderbolt, (2) Gradient computation in Python (DiffLogic-style), (3) `CAVoxelUpdate` delta-events with rule patches, (4) Quantization layer for discrete execution, (5) Stability guards (clamp updates, detect divergence). **Goal**: Gradient descent on emergent patterns. | Bolt Steward | Not Started |
+| **HC-43** | **P1** | **Agent0 Co-Evolution Loop** | No self-improving agent training | **Agent0-01**: Curriculum+Executor LLM co-evolution. **Components**: (1) Ash resources `CurriculumAgent`, `ExecutorAgent`, (2) Snex Python bridge for RL updates (GRPO/ADPO), (3) Zero-shot bootstrapping (no external data), (4) Episodic training with uncertainty×tool-use rewards, (5) ONNX model export/import via Ortex. **Goal**: Self-reinforcing training cycle. | Bolt + Crown Stewards | Not Started |
+| **HC-44** | **P1** | **Agent0 Swarm Orchestration** | No multi-agent parallel execution | **Agent0-02**: Swarm scheduling in Thunderflow/Thunderchief. **Components**: (1) Reactor DAG for agent-spawn nodes, (2) Dynamic scaling (GenStage backpressure, K8s HPA), (3) Routing heuristics (round-robin, skill-based), (4) Task patterns (batching, sharding, voting), (5) Result aggregation and scoring. Cross-domain layer: **Flow×Crown**. | Flow + Crown Stewards | Not Started |
+| **HC-45** | **P1** | **Event-Driven Agent Triggers** | No automata-based agent activation | **Agent0-03**: Thundercell triggers for agent spawning. **Components**: (1) Voxel state sensors (entropy burst, event-band), (2) Thunderbolt automata watchers, (3) Cool-off periods and rate limits, (4) Nerves edge constraints (central check-in), (5) LoopMonitor integration for runaway prevention. | Bolt + Gate Stewards | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
@@ -155,6 +163,7 @@ Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: 
 | **Clustering Layer** | Bolt × Vine | Manifold discovery, swarm sub-grouping, knowledge clustering | `Thunderbolt.SimplexPaths`, `Thundervine.ClusterMemory`, `Thunderbolt.LAPDEngine` |
 | **Communication Layer** | Link × Gate | External messaging, federation, API gateway, rate limiting | `Thunderlink.TOCP`, `Thundergate.Federation`, `Thundergate.RateLimiter` |
 | **Orchestration Layer** | Vine × Crown | Workflow execution, policy enforcement on DAGs, approval gates | `Thundervine.WorkflowRunner`, `Thundercrown.ApprovalGate`, `Thundervine.Scheduler` |
+| **Compute Layer** | Bolt × Flow | PAC task routing, CA criticality optimization, TPE/DiffLogic integration | `Thunderbolt.CerebrosBridge`, `Thunderbolt.LoopMonitor`, `Thunderbolt.CA.DiffLogicRules` |
 
 ### Implementation Pattern
 
@@ -197,6 +206,7 @@ Layers activate based on which domains are loaded. Feature flags control layer a
 | Communication | Link, Gate | `LAYER_COMMUNICATION_ENABLED` | `true` |
 | Orchestration | Vine, Crown | `LAYER_ORCHESTRATION_ENABLED` | `false` |
 | Clustering | Bolt, Vine | `LAYER_CLUSTERING_ENABLED` | `false` |
+| Compute | Bolt, Flow | `LAYER_COMPUTE_ENABLED` | `false` |
 
 ### HC-Quantum Roadmap (Multi-Channel Routing)
 
@@ -378,6 +388,428 @@ end
 [:thunderline, :bolt, :clustering, :error]    # {reason}
 [:thunderline, :prism, :cluster_ui, :trigger] # {source: :manual | :auto}
 ```
+
+---
+
+### 🧠 HC-Cerebros-DiffLogic Directive: Adaptive Voxel-Automata Pipeline (Nov 28, 2025)
+
+**Mission**: Seamlessly fuse Thunderline's Thunderbolt execution layer (voxel automata, event triggers), the Cerebros multivariate TPE orchestration framework, and Google's Differentiable Logic CA model into a unified, adaptive compute pipeline. The integrated system routes PAC tasks between Elixir and Python workers, uses automata-chunk triggers to invoke model updates, and evolves voxel-automata rules towards criticality via both Bayesian tuning and differentiable gradient updates.
+
+**References**:
+- [DiffLogic CA (Google Research)](https://google-research.github.io/self-organising-systems/difflogic-ca/) - Differentiable logic for cellular automata
+- [ES Hyperscale](https://eshyperscale.github.io/) - Evolutionary strategies at scale
+- [Agent0 Paper (arXiv)](https://arxiv.org/html/2511.16043v1) - Co-evolutionary LLM agent training
+
+#### System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         THUNDERLINE ADAPTIVE CA PIPELINE                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌────────────────┐    Events     ┌────────────────┐    Results            │
+│  │  THUNDERBOLT   │ ──────────▶  │    CEREBROS    │ ──────────▶           │
+│  │  Voxel Automata │  PACCompute  │  Python TPE    │  Updated              │
+│  │  + LoopMonitor  │   Request    │  + DiffLogic   │  Params               │
+│  └────────┬───────┘              └────────┬───────┘                        │
+│           │                               │                                 │
+│           │ Metrics                       │ Gradients                       │
+│           │ (PLV, λ, H)                   │ (rule Δ)                        │
+│           ▼                               ▼                                 │
+│  ┌────────────────────────────────────────────────────────────┐            │
+│  │                    THUNDERFLOW EVENT BUS                    │            │
+│  │  bolt.pac.compute.request → bolt.pac.compute.response      │            │
+│  │  bolt.ca.metrics.snapshot → bolt.ca.rule.update            │            │
+│  └────────────────────────────────────────────────────────────┘            │
+│                                                                              │
+│  ┌────────────────┐              ┌────────────────┐                        │
+│  │  OPENTELEMETRY │◀────────────▶│   PROMETHEUS   │                        │
+│  │  Trace Context │   Metrics    │   + Grafana    │                        │
+│  └────────────────┘              └────────────────┘                        │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Event Protocol Specification
+
+**PACComputeRequest** (Elixir → Python):
+```json
+{
+  "task_id": "<UUID v7>",
+  "agent_id": "<PAC_ID>",
+  "world_state": {
+    "grid_size": [32, 32, 32],
+    "active_cells": 1847,
+    "state_hash": "sha256:...",
+    "features": {"density": 0.23, "cluster_count": 7}
+  },
+  "metrics": {
+    "plv": 0.85,
+    "entropy": 3.2,
+    "lambda_hat": 0.47,
+    "lyapunov": 0.02
+  },
+  "trigger_event": "entropy_threshold_breach",
+  "timestamp": 1732780800,
+  "trace_context": {"trace_id": "...", "span_id": "..."}
+}
+```
+
+**PACComputeResponse** (Python → Elixir):
+```json
+{
+  "task_id": "<UUID v7>",
+  "status": "success",
+  "updated_params": {
+    "rule_weights": {"birth": [0.1, 0.3, 0.2], "survival": [0.4, 0.5]},
+    "mutation_rate": 0.05,
+    "neighborhood_radius": 2
+  },
+  "metrics": {
+    "loss": 0.12,
+    "improvement": 0.05,
+    "tpe_trial_id": 42
+  },
+  "timestamp": 1732780805,
+  "trace_context": {"trace_id": "...", "span_id": "..."}
+}
+```
+
+**CAVoxelUpdate** (Gradient patches):
+```json
+{
+  "task_id": "<UUID v7>",
+  "rule_deltas": {
+    "kernel_0": [[0.01, -0.02], [0.03, 0.00]],
+    "bias": 0.001
+  },
+  "learning_rate": 0.001,
+  "clip_norm": 1.0,
+  "timestamp": 1732780810
+}
+```
+
+#### Criticality Metrics (LoopMonitor)
+
+| Metric | Description | Target Range | Computation |
+|--------|-------------|--------------|-------------|
+| **PLV** | Phase-Locking Value (synchrony) | 0.3–0.7 | `mean(cos(phase_diff))` across oscillatory cells |
+| **Entropy (H)** | Permutation entropy (complexity) | 2.5–4.0 | Bandt-Pompe on time series of cell states |
+| **λ̂** | Langton's lambda (criticality) | 0.2–0.5 | Fraction of non-quiescent transition rules |
+| **Lyapunov** | Lyapunov exponent (chaos) | 0.0–0.1 | Divergence rate of perturbed trajectories |
+
+**Critical Edge Detection**:
+```elixir
+defmodule Thunderline.Thunderbolt.LoopMonitor.CriticalityDetector do
+  @target_lambda 0.37  # Langton's edge-of-chaos
+  @plv_band {0.35, 0.65}
+  @entropy_band {2.8, 3.8}
+
+  def at_critical_edge?(metrics) do
+    %{plv: plv, entropy: h, lambda_hat: lambda} = metrics
+    
+    lambda_ok = abs(lambda - @target_lambda) < 0.1
+    plv_ok = plv >= elem(@plv_band, 0) and plv <= elem(@plv_band, 1)
+    entropy_ok = h >= elem(@entropy_band, 0) and h <= elem(@entropy_band, 1)
+    
+    lambda_ok and plv_ok and entropy_ok
+  end
+  
+  def drift_direction(metrics) do
+    cond do
+      metrics.lambda_hat < 0.2 -> :too_ordered
+      metrics.lambda_hat > 0.5 -> :too_chaotic
+      metrics.entropy < 2.5 -> :low_complexity
+      metrics.entropy > 4.5 -> :high_complexity
+      true -> :stable
+    end
+  end
+end
+```
+
+#### TPE Orchestration (Cerebros Python)
+
+**Multivariate TPE with Optuna**:
+```python
+# cerebros/tpe_orchestrator.py
+import optuna
+from optuna.samplers import TPESampler
+
+class CerebrosTPE:
+    def __init__(self, storage_url: str):
+        self.sampler = TPESampler(
+            multivariate=True,  # Coupled parameter optimization
+            group=True,         # Group related parameters
+            n_startup_trials=10
+        )
+        self.study = optuna.create_study(
+            study_name="thunderbolt_ca_optimization",
+            sampler=self.sampler,
+            storage=storage_url,
+            load_if_exists=True,
+            direction="minimize"  # Minimize distance from critical edge
+        )
+    
+    def suggest_params(self, trial: optuna.Trial) -> dict:
+        return {
+            "birth_threshold": trial.suggest_float("birth_threshold", 0.1, 0.5),
+            "survival_threshold": trial.suggest_float("survival_threshold", 0.2, 0.6),
+            "mutation_rate": trial.suggest_float("mutation_rate", 0.01, 0.2, log=True),
+            "neighborhood_radius": trial.suggest_int("neighborhood_radius", 1, 3),
+            "diffusion_rate": trial.suggest_float("diffusion_rate", 0.0, 0.3),
+        }
+    
+    def compute_objective(self, metrics: dict) -> float:
+        """Distance from critical edge (lower = better)"""
+        target_lambda = 0.37
+        target_entropy = 3.2
+        target_plv = 0.5
+        
+        lambda_dist = abs(metrics["lambda_hat"] - target_lambda)
+        entropy_dist = abs(metrics["entropy"] - target_entropy) / 2.0
+        plv_dist = abs(metrics["plv"] - target_plv)
+        
+        return lambda_dist + entropy_dist + plv_dist
+```
+
+#### DiffLogic CA Integration
+
+**Differentiable Rule Parameters**:
+```elixir
+defmodule Thunderline.Thunderbolt.CA.DiffLogicRules do
+  @moduledoc """
+  Differentiable rule representation for gradient-based CA optimization.
+  Rules are stored as float tensors, quantized for execution.
+  """
+  
+  defstruct [:kernel_weights, :bias, :temperature, :version]
+  
+  def new(opts \\ []) do
+    %__MODULE__{
+      kernel_weights: Nx.broadcast(0.5, {3, 3, 3}),  # 3D neighborhood
+      bias: 0.0,
+      temperature: 1.0,  # For soft quantization
+      version: 1
+    }
+  end
+  
+  def apply_gradient_update(rules, deltas, learning_rate \\ 0.001) do
+    new_weights = Nx.add(
+      rules.kernel_weights,
+      Nx.multiply(deltas.kernel_weights, learning_rate)
+    )
+    
+    # Clamp to valid range
+    new_weights = Nx.clip(new_weights, 0.0, 1.0)
+    
+    %{rules | 
+      kernel_weights: new_weights,
+      bias: rules.bias + deltas.bias * learning_rate,
+      version: rules.version + 1
+    }
+  end
+  
+  def quantize_for_execution(rules) do
+    # Soft quantization via temperature-scaled sigmoid
+    Nx.sigmoid(Nx.divide(rules.kernel_weights, rules.temperature))
+    |> Nx.greater(0.5)
+    |> Nx.as_type(:u8)
+  end
+end
+```
+
+**Python Gradient Computation**:
+```python
+# cerebros/difflogic_engine.py
+import torch
+import torch.nn.functional as F
+
+class DiffLogicCA(torch.nn.Module):
+    """Differentiable cellular automaton with learnable rules."""
+    
+    def __init__(self, kernel_size=3, channels=1):
+        super().__init__()
+        self.kernel = torch.nn.Parameter(
+            torch.randn(channels, channels, kernel_size, kernel_size, kernel_size) * 0.1
+        )
+        self.bias = torch.nn.Parameter(torch.zeros(1))
+        self.temperature = 1.0
+    
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        """Single CA step with differentiable rules."""
+        # Convolve with learned kernel
+        neighborhood = F.conv3d(state, self.kernel, padding="same")
+        
+        # Soft activation (differentiable approximation of threshold)
+        activation = torch.sigmoid((neighborhood + self.bias) / self.temperature)
+        
+        return activation
+    
+    def compute_gradients(self, state: torch.Tensor, target_metrics: dict) -> dict:
+        """Compute gradients toward target criticality metrics."""
+        state.requires_grad_(True)
+        
+        # Run forward pass
+        next_state = self.forward(state)
+        
+        # Compute differentiable proxy for criticality
+        # (simplified: variance as proxy for edge-of-chaos)
+        variance = torch.var(next_state)
+        target_variance = 0.25  # ~0.5 mean with good spread
+        
+        loss = (variance - target_variance) ** 2
+        loss.backward()
+        
+        return {
+            "kernel_deltas": self.kernel.grad.numpy().tolist(),
+            "bias_delta": float(self.bias.grad),
+            "loss": float(loss)
+        }
+```
+
+#### Implementation Phases
+
+**Phase 1 (Week 1-2): Event Protocol & Resources — HC-39**
+- [ ] Ash resource: `Thunderbolt.Resources.PACComputeTask` (id, agent_id, status, request, response, created_at)
+- [ ] Event taxonomy entries: `bolt.pac.compute.request`, `bolt.pac.compute.response`, `bolt.ca.rule.update`
+- [ ] JSON schema validation (via Jason + custom validator)
+- [ ] Broadway consumer: `Thunderbolt.CerebrosBridge.ResponseConsumer`
+- [ ] OTel context propagation in event metadata
+- [ ] Snex serialization helpers (Elixir struct ↔ Python dict)
+- [ ] Unit tests: event roundtrip, schema validation
+
+**Phase 2 (Week 2-3): LoopMonitor Metrics — HC-40**
+- [ ] `Thunderbolt.LoopMonitor.CriticalityMetrics` module
+- [ ] PLV computation (phase coherence across oscillatory cells)
+- [ ] Permutation entropy (Bandt-Pompe algorithm)
+- [ ] Langton's λ̂ calculation (rule table analysis)
+- [ ] Lyapunov exponent estimation (optional, compute-heavy)
+- [ ] `bolt.ca.metrics.snapshot` event emission on tick
+- [ ] Telemetry: `[:thunderline, :bolt, :ca, :criticality]`
+- [ ] Grafana dashboard panel for criticality metrics
+
+**Phase 3 (Week 3-4): Cerebros TPE Service — HC-41**
+- [ ] Python service skeleton (`cerebros/tpe_service.py`)
+- [ ] Optuna TPESampler configuration (multivariate=True)
+- [ ] Trial database setup (Postgres via SQLAlchemy or Optuna storage)
+- [ ] Event consumer (asyncio or Celery worker)
+- [ ] `PACComputeResponse` emission
+- [ ] Auto-scaling configuration (worker pool sizing)
+- [ ] Integration test: end-to-end TPE trial
+- [ ] OTel instrumentation for Python spans
+
+**Phase 4 (Week 4-5): DiffLogic Integration — HC-42**
+- [ ] `Thunderbolt.CA.DiffLogicRules` Elixir module
+- [ ] Float-parameterized rule representation
+- [ ] Python `DiffLogicCA` module (PyTorch)
+- [ ] Gradient computation toward target metrics
+- [ ] `CAVoxelUpdate` event schema
+- [ ] Rule delta application in Elixir
+- [ ] Quantization layer for execution
+- [ ] Stability guards (gradient clipping, divergence detection)
+- [ ] Integration test: gradient→rule update→execution
+
+**Phase 5 (Week 5-6): Agent0 Co-Evolution — HC-43**
+- [ ] Ash resources: `CurriculumAgent`, `ExecutorAgent`
+- [ ] Python co-evolution loop (curriculum task generation, executor solving)
+- [ ] Zero-shot bootstrapping (no pre-training data)
+- [ ] Uncertainty × tool-use reward computation
+- [ ] GRPO/ADPO policy updates
+- [ ] ONNX export/import via Ortex
+- [ ] Episodic training with LoopMonitor metrics
+- [ ] Self-reinforcing cycle: executor improvement → harder curriculum
+
+**Phase 6 (Week 6-7): Swarm Orchestration — HC-44**
+- [ ] Reactor DAG for agent-spawn workflow
+- [ ] Dynamic scaling integration (GenStage backpressure)
+- [ ] Routing heuristics (round-robin, skill-based assignment)
+- [ ] Task patterns: batching, sharding, voting
+- [ ] Result aggregation and scoring
+- [ ] Thunderchief integration for real-time coordination
+
+**Phase 7 (Week 7-8): Trigger Mechanisms — HC-45**
+- [ ] Voxel state sensors (entropy burst, event-band detection)
+- [ ] Thunderbolt automata watchers
+- [ ] Cool-off periods and rate limiting
+- [ ] Nerves edge constraints (central check-in requirement)
+- [ ] LoopMonitor runaway prevention
+- [ ] Audit logging for trigger events
+
+#### Telemetry & Observability
+
+**Elixir Telemetry Events**:
+```elixir
+[:thunderline, :bolt, :pac, :request, :start]     # {task_id, agent_id}
+[:thunderline, :bolt, :pac, :request, :stop]      # {duration_ms, status}
+[:thunderline, :bolt, :pac, :response, :received] # {task_id, tpe_trial_id}
+[:thunderline, :bolt, :ca, :criticality]          # {plv, entropy, lambda_hat}
+[:thunderline, :bolt, :ca, :rule_update]          # {version, delta_norm}
+[:thunderline, :bolt, :difflogic, :gradient]      # {loss, learning_rate}
+```
+
+**OTel Span Naming**:
+```
+thunderbolt.pac.publish_request    # Elixir: emit PACComputeRequest
+cerebros.pac.handle_request        # Python: process request
+cerebros.tpe.suggest_params        # Python: TPE parameter suggestion
+cerebros.difflogic.compute_grad    # Python: gradient computation
+thunderbolt.pac.apply_response     # Elixir: apply updates
+thunderbolt.ca.step                # Elixir: CA execution step
+```
+
+#### Operational Guidelines
+
+**Modularity**: Each component (voxel engine, LoopMonitor, Cerebros TPE, DiffLogic) is an independent service/GenServer. Backends are swappable (GPU PyTorch ↔ CPU-only).
+
+**Scaling**: 
+- Elixir: GenStage/Broadway for event production/consumption
+- Python: Celery workers or asyncio pools for TPE parallelism
+- K8s HPA for auto-scaling based on queue depth
+
+**Resilience**:
+- Events are idempotent (task_id deduplication)
+- TPE trials have retry semantics
+- Failed gradients trigger rollback to previous rule version
+
+**Security**:
+- Event bus authentication via existing token credentials
+- Python workers authenticate with API keys
+- No direct Elixir↔Python library calls (message-only boundary)
+
+#### Key Files
+
+```
+lib/thunderline/thunderbolt/
+├── cerebros_bridge/
+│   ├── invoker.ex              # Snex bridge to Python
+│   ├── response_consumer.ex    # Broadway for responses
+│   └── serialization.ex        # Event serialization
+├── ca/
+│   ├── difflogic_rules.ex      # Differentiable rule params
+│   ├── stepper.ex              # CA execution (existing)
+│   └── runner.ex               # CA runner (existing)
+├── loop_monitor/
+│   ├── criticality_detector.ex # PLV, entropy, λ computation
+│   ├── metrics.ex              # Metric structs
+│   └── telemetry.ex            # Metric emission
+└── resources/
+    ├── pac_compute_task.ex     # Ash resource for tasks
+    ├── curriculum_agent.ex     # Agent0 curriculum agent
+    └── executor_agent.ex       # Agent0 executor agent
+
+python/cerebros/
+├── tpe_service.py              # Main TPE orchestrator
+├── tpe_orchestrator.py         # Optuna integration
+├── difflogic_engine.py         # DiffLogic CA (PyTorch)
+├── event_consumer.py           # Event bus consumer
+├── event_producer.py           # Response emission
+└── agent0/
+    ├── curriculum.py           # Curriculum agent
+    ├── executor.py             # Executor agent
+    └── co_evolution.py         # Training loop
+```
+
+---
 
 ### Ground Truth Verification Summary (November 18, 2025)
 
