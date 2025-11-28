@@ -1,8 +1,8 @@
 # Thunderline Domain Resource Guide
 
-> Version: 2025-11-18 | Maintainers: Thunderline Architecture Guild
+> Version: 2025-11-28 | Maintainers: Thunderline Architecture Guild
 > Scope: Unified reference for domain responsibilities, canonical resources, contracts, and operational guardrails.
-> Architecture Grade: A (9/10) | Total Resources: ~160 | Active Domains: 8
+> Architecture Grade: A (9/10) | Total Resources: ~160 | 12-Domain Pantheon (10 active, 3 pending)
 
 ## 0. Orientation
 
@@ -10,15 +10,53 @@
 - **Audience**: Platform engineers, domain stewards, SRE/observability teams, governance reviewers, and AI orchestration partners.
 - **Update cadence**: Reviewed each sprint by domain stewards. Changes require PR referencing this guide and related source docs.
 - **Change control**: Updates demand cross-linking with source-of-truth files such as [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md), [`THUNDERLINE_DOMAIN_CATALOG.md`](THUNDERLINE_DOMAIN_CATALOG.md), [`architecture/domain_topdown.md`](Thunderline/documentation/architecture/domain_topdown.md) and [`architecture/system_architecture_webrtc.md`](Thunderline/documentation/architecture/system_architecture_webrtc.md).
-- **Architecture status**: Following the comprehensive November 18, 2025 review: 8 active domains, ~160 Ash resources, 6 major consolidations completed (ThunderCom removed), clean Ash.Domain usage throughout. See [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md) for detailed findings.
+- **Architecture status**: Following the November 28, 2025 12-Domain Pantheon definition: 12 canonical domains (10 active, 3 pending creation), ~160 Ash resources, clean Ash.Domain usage throughout. See [`THUNDERLINE_MASTER_PLAYBOOK.md`](../../THUNDERLINE_MASTER_PLAYBOOK.md) HC-46/47/48/49 for implementation plan.
+
+## 0.1 12-Domain Pantheon Overview (Nov 28, 2025)
+
+| # | Domain | Focus | Status |
+|---|--------|-------|--------|
+| 1️⃣ | **Thundercore** | Tick emanation, system clock, identity kernel | 🆕 HC-46 |
+| 2️⃣ | **Thunderpac** | PAC lifecycle, state containers, role/intent | 🆕 HC-47 |
+| 3️⃣ | **Thundercrown** | Governance + Orchestration, policy, sagas | ✅ Active |
+| 4️⃣ | **Thunderbolt** | ML + Automata execution, Cerebros | ✅ Active (50+) |
+| 5️⃣ | **Thundergate** | Security, IAM, boundaries | ✅ Active (19) |
+| 6️⃣ | **Thunderblock** | Persistence, vaults, ledgers | ✅ Active (33) |
+| 7️⃣ | **Thunderflow** | Events, telemetry, DAGs | ✅ Active (9) |
+| 8️⃣ | **Thundergrid** | GraphQL/API contracts | ✅ Active (5) |
+| 9️⃣ | **Thundervine** | DAG workflows, orchestration | ✅ Active (6) |
+| 🔟 | **Thunderprism** | UI/UX, cognition, creativity | ✅ Active (2) |
+| 1️⃣1️⃣ | **Thunderlink** | Communication, federation | ✅ Active (17) |
+| 1️⃣2️⃣ | **Thunderwall** | Entropy boundary, decay, GC | 🆕 HC-48 |
+
+**System Cycle**: Core → Wall (Spark to containment)
 
 ## 1. Domain Atlas
 
 The Thunderline platform is organized into sovereign domains with explicit contracts. Containers align with the C4 views captured in [`architecture/domain_topdown.md`](Thunderline/documentation/architecture/domain_topdown.md).
 
+### 1.0 Thundercore — System Clock, Identity Kernel (PENDING HC-46)
+
+- **Resources**: TBD (pending creation)
+- **Pantheon Position**: #1 — Origin/Seedpoint domain
+- **Mission**: Tick emanation, system clock, identity kernel, PAC seedpoint ignition
+- **Planned Components**: TickEmitter (GenServer), IdentityKernel (resource), SystemClock (service)
+- **Event Categories**: `core.tick.*`, `core.identity.*`
+- **Symbolic Mapping**: Seedpoint / Identity Core (Metatron's 1st Domain)
+
+### 1.0a Thunderpac — PAC Lifecycle (PENDING HC-47)
+
+- **Resources**: TBD (pending creation)
+- **Pantheon Position**: #2 — Soul Container domain
+- **Mission**: PAC lifecycle management, state containers, role/intent management
+- **Planned Components**: PAC (resource), PACRole, PACIntent, lifecycle state machine
+- **Event Categories**: `pac.lifecycle.*`, `pac.state.*`, `pac.intent.*`
+- **Migration Source**: Extract PAC-related resources from Thunderbolt/Thunderblock
+
 ### 1.1 Thundergate — Security, Authentication, External Services, Federation, Policy, Monitoring
 
 - **Resources**: **19 Ash Resources** across 6 categories
+- **Pantheon Position**: #5 — Security/IAM domain
 - **Consolidation**: ThunderStone + ThunderEye + Accounts + ThunderWatch → Thundergate (November 2025)
 - **Mission**: Unified security, authentication, external service integration, federation, policy enforcement, and comprehensive system monitoring.
 - **Extensions**: AshAdmin.Domain
@@ -384,15 +422,48 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 
 ---
 
-## 9. November 18, 2025 Architecture Review Summary
+## 9. Architecture Review History
 
-### Review Highlights
+### 9.1 November 28, 2025 — 12-Domain Pantheon Definition
+
+**Status**: Canonical domain architecture defined by High Command
+
+**12-Domain Pantheon Established**:
+| Domain | Focus | Implementation Status |
+|--------|-------|----------------------|
+| **Thundercore** | Tick emanation, identity kernel | 🆕 Pending HC-46 |
+| **Thunderpac** | PAC lifecycle, state containers | 🆕 Pending HC-47 |
+| **Thundercrown** | Governance + orchestration (absorbed Chief) | ✅ Active |
+| **Thunderbolt** | ML + automata, Cerebros | ✅ Active (50+) |
+| **Thundergate** | Security, IAM, boundaries | ✅ Active (19) |
+| **Thunderblock** | Persistence, vaults, ledgers | ✅ Active (33) |
+| **Thunderflow** | Events, telemetry | ✅ Active (9) |
+| **Thundergrid** | GraphQL/API contracts | ✅ Active (5) |
+| **Thundervine** | DAG workflows | ✅ Active (6) |
+| **Thunderprism** | UI/UX, cognition | ✅ Active (2) |
+| **Thunderlink** | Communication, federation | ✅ Active (17) |
+| **Thunderwall** | Entropy boundary, GC, archive | 🆕 Pending HC-48 |
+
+**Key Consolidations**:
+- **Thunderlit → Thundercore**: Identity + tick = unified temporal/identity origin
+- **Thunderchief → Thundercrown**: Orchestration + governance = unified authority (HC-49)
+
+**System Cycle**: Core → Wall (Spark to containment)
+
+**Domain Vectors**:
+- Crown → Bolt: Policy to execution
+- Flow → Grid → Prism: IO to surface to UX
+- Pac → Block → Vine: State to persistence to orchestration
+
+**Implementation Plan**: HC-46 through HC-49 in [`THUNDERLINE_MASTER_PLAYBOOK.md`](../../THUNDERLINE_MASTER_PLAYBOOK.md)
+
+### 9.2 November 18, 2025 Architecture Review Summary
 
 **Comprehensive Domain Review Completed**: Full audit of all 19+ domains with detailed resource counts, consolidation histories, and architectural validation. See [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md) for complete findings.
 
 **Overall Architecture Grade**: **A (9/10)** - Excellent foundation with room for documentation enhancement
 
-**Key Achievements**:
+**Key Achievements (Pre-Pantheon)**:
 - ✅ 8 active production domains with ~150 Ash resources
 - ✅ 6 major consolidations completed (14 legacy domains unified)
 - ✅ Zero Repo violations detected (proper Ash boundary enforcement)

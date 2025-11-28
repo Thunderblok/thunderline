@@ -3,7 +3,10 @@
 Goal: Fast, safe edits in a Phoenix + Ash + Event + Oban + (optional) Reactor system.
 
 ## Big Picture
-Phoenix shell + Ash domains: Block (persistence), Bolt, Crown, Flow (events), Gate, Grid, Link. Only Block touches raw `Repo`; everywhere else use Ash actions. Events flow through `Thunderline.Thunderflow.*`; async work = Oban jobs. Optional saga path if `TL_ENABLE_REACTOR=true`.
+Phoenix shell + 12-Domain Pantheon: **Core** (tick/identity), **Pac** (PAC lifecycle), **Crown** (governance+orchestration), **Bolt** (ML/automata), **Gate** (security), **Block** (persistence), **Flow** (events), **Grid** (API), **Vine** (DAG), **Prism** (UX), **Link** (communication), **Wall** (entropy/GC). Only Block touches raw `Repo`; everywhere else use Ash actions. Events flow through `Thunderline.Thunderflow.*`; async work = Oban jobs. Optional saga path if `TL_ENABLE_REACTOR=true`.
+
+**System Cycle**: Core → Wall (Spark to containment)
+**Domain Vectors**: Crown→Bolt (policy→execute), Flow→Grid→Prism (IO→surface→UX), Pac→Block→Vine (state→persist→orchestrate)
 
 ## Always Do
 1. Start new behavior inside correct domain folder (`lib/thunderline/<domain>`).

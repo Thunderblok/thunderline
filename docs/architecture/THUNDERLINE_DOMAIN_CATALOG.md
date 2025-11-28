@@ -1,11 +1,67 @@
 # Thunderline Domain Catalog  
-**Audit Date:** November 24, 2025  
+**Audit Date:** November 28, 2025  
 **Auditor:** Domain Architecture Review Team  
-**Status:** ✅ COMPLETE – Full domain review with resource counts and consolidation history  
+**Status:** ✅ UPDATED – 12-Domain Pantheon architecture defined  
 **Review Report:** See `DOMAIN_ARCHITECTURE_REVIEW.md` and `COMPREHENSIVE_DOMAIN_ARCHITECTURE_ANALYSIS.md`  
 **Overall Architecture Grade:** A (9/10)  
 **Total Resources:** ~162 Ash resources across all domains  
-**Active Domains:** 9 (Block, Bolt, Crown, Flow, Gate, Grid, Link, Vine, Prism)  
+**Canonical Domains:** 12 (Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall)  
+**Active Domains:** 10 (Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, RAG)  
+**Pending Domains:** 3 (Core - HC-46, Pac - HC-47, Wall - HC-48)
+
+---
+
+## ⚡ 12-DOMAIN PANTHEON (Nov 28, 2025)
+
+| # | Domain | Focus | Status |
+|---|--------|-------|--------|
+| 1️⃣ | **Thundercore** | Tick emanation, system clock, identity kernel, PAC ignition | 🆕 HC-46 |
+| 2️⃣ | **Thunderpac** | PAC lifecycle, state containers, role/intent management | 🆕 HC-47 |
+| 3️⃣ | **Thundercrown** | Governance + Orchestration, policy, authorization, saga coordination | ✅ Active |
+| 4️⃣ | **Thunderbolt** | ML + Automata execution, loop monitors, CA, Cerebros | ✅ Active (50+) |
+| 5️⃣ | **Thundergate** | Security, IAM, crypto, OAuth, boundaries, keys, rate limiting | ✅ Active (19) |
+| 6️⃣ | **Thunderblock** | Persistence runtime, vaults, ledgers, data substrates | ✅ Active (33) |
+| 7️⃣ | **Thunderflow** | Signal/event flow, telemetry, causal DAGs, criticality hooks | ✅ Active (9) |
+| 8️⃣ | **Thundergrid** | GraphQL interface, boundary contracts, data shape APIs | ✅ Active (5) |
+| 9️⃣ | **Thundervine** | DAG workflows, macrostructure graphs, orchestration edges | ✅ Active (6) |
+| 🔟 | **Thunderprism** | UI/UX, cognition layer, creativity, reflexive thought | ✅ Active (2) |
+| 1️⃣1️⃣ | **Thunderlink** | Communication, federation, WebRTC, TOCP transport | ✅ Active (17) |
+| 1️⃣2️⃣ | **Thunderwall** | System boundary, decay, GC, overflow, archive, entropy sink | 🆕 HC-48 |
+
+**System Cycle**: Core → Wall (Spark to containment)  
+**Policy Vector**: Crown → Bolt (Governance → Execution)  
+**IO Vector**: Flow → Grid → Prism (Events → API → UX)  
+**State Vector**: Pac → Block → Vine (Lifecycle → Persistence → Orchestration)
+
+---
+
+### 🌟 ThunderCore Domain (PENDING - HC-46)
+- **Location:** `lib/thunderline/thundercore/` (to be created)
+- **Purpose:** Tick emanation, system clock, identity kernel, PAC seedpoint ignition
+- **Status:** 🆕 PENDING – Domain creation tracked in HC-46
+- **Pantheon Position:** #1 – Origin/Seedpoint domain
+- **Planned Resources:**
+  - `TickEmitter` - System heartbeat GenServer
+  - `IdentityKernel` - PAC seedpoint resource
+  - `SystemClock` - Monotonic time service
+- **Event Categories:** `core.tick.*`, `core.identity.*`
+- **Symbolic Mapping:** Seedpoint / Identity Core (Metatron's 1st Domain)
+
+---
+
+### 🎭 ThunderPac Domain (PENDING - HC-47)
+- **Location:** `lib/thunderline/thunderpac/` (to be created)
+- **Purpose:** PAC lifecycle management, state containers, role/intent management
+- **Status:** 🆕 PENDING – Domain creation tracked in HC-47
+- **Pantheon Position:** #2 – Soul Container domain
+- **Planned Resources:**
+  - `PAC` - Primary autonomous controller state container
+  - `PACRole` - Role definitions and permissions
+  - `PACIntent` - Intent management and tracking
+  - Lifecycle state machine: `:dormant`, `:active`, `:suspended`, `:archived`
+- **Migration Source:** Extract PAC-related resources from Thunderbolt/Thunderblock
+- **Event Categories:** `pac.lifecycle.*`, `pac.state.*`, `pac.intent.*`
+- **Symbolic Mapping:** Soul Container / Ascension Flow
 
 ---
 
@@ -13,6 +69,7 @@
 - **Location:** `lib/thunderline/thunderblock/`  
 - **Purpose:** Persistence, Storage, Infrastructure, Timing & Scheduling  
 - **Status:** ✅ ACTIVE – Core persistence layer with 33 resources  
+- **Pantheon Position:** #6 – Persistence runtime
 - **Resource Count:** **33 Ash Resources**
 - **Consolidation History:** Merged ThunderVault → ThunderBlock (storage/persistence focus)
 - **Extensions:** AshAdmin.Domain
@@ -454,9 +511,27 @@
 
 ---
 
--### 💬 ThunderCom Domain  
+### 💬 ThunderCom Domain  
 - **Status:** ✅ REMOVED – Directory deleted after full consolidation on Nov 18, 2025  
 - **Disposition:** All Community/Channel and Voice resources now live under ThunderLink. Any historical references are preserved in git for audit purposes.
+
+---
+
+### 🧱 ThunderWall Domain (PENDING - HC-48)
+- **Location:** `lib/thunderline/thunderwall/` (to be created)
+- **Purpose:** System boundary, decay processing, garbage collection, overflow handling, entropy sink
+- **Status:** 🆕 PENDING – Domain creation tracked in HC-48
+- **Pantheon Position:** #12 – Entropy boundary (the "Black Hole Portal")
+- **Planned Resources:**
+  - `DecayProcessor` - Archive expired resources
+  - `OverflowHandler` - Reject stream management
+  - `EntropyMetrics` - System decay telemetry
+  - `GCScheduler` - Garbage collection coordination
+  - `ArchiveRecord` - Archived data tracking
+- **Event Categories:** `wall.decay.*`, `wall.archive.*`, `wall.overflow.*`
+- **Cross-Domain Role:** Final destination for all domains' expired/rejected data
+- **Symbolic Mapping:** Entropy Boundary / Void / Garbage Collector (12th domain outer ring)
+- **Notes:** Thunderwall completes the system cycle (Core → Wall = Spark to containment). Handles all loss, entropy, archives, and reject streams. Conceptually the "black hole portal" where expired data goes.
 
 ---
 
@@ -464,6 +539,7 @@
 - **Location:** `lib/thunderline/thundervine/`
 - **Purpose:** Workflow Orchestration, Event-driven DAG Processing & TAK Persistence
 - **Status:** ✅ ACTIVE – Workflow (Nov 17, 2025 HC-29) + TAK Persistence (Nov 21, 2025)
+- **Pantheon Position:** #9 – DAG workflows, macrostructure graphs
 - **Resource Count:** **6 Ash Resources** (4 Workflow + 2 TAK Persistence)
 - **Extensions:** AshGraphql.Domain
 - **Resource Categories:**
@@ -579,22 +655,30 @@
 
 ---
 
-## Summary Statistics
+## Summary Statistics (12-Domain Pantheon - Nov 28, 2025)
+
 | Classification | Count | Domains |
 |----------------|--------|----------|
-| ✅ Active (Core) | 7 | ThunderBlock (33), ThunderBolt (50+), ThunderCrown (4), ThunderFlow (9), ThunderGate (19), ThunderGrid (5), ThunderLink (17) |
+| ✅ Active (Core) | 8 | ThunderBlock (33), ThunderBolt (50+), ThunderCrown (4+Chief), ThunderFlow (9), ThunderGate (19), ThunderGrid (5), ThunderLink (17), ThunderPrism (2) |
 | ✅ Active (Support) | 2 | ThunderVine (6 resources), RAG (1 resource) |
+| 🆕 Pending (New) | 3 | ThunderCore (HC-46), ThunderPac (HC-47), ThunderWall (HC-48) |
 | ✅ Removed | 2 | ThunderForge (HC-30 cleanup - Nov 17, 2025), ThunderCom (HC-27/28 completion - Nov 18, 2025) |
-| ⚠️ Deprecated/Consolidated | 2 | ThunderChief (→ThunderCrown), ThunderWatch (→ThunderGate) |
+| ⚠️ Consolidated | 2 | ThunderChief (→ThunderCrown HC-49), ThunderWatch (→ThunderGate) |
 | ⚠️ Migration In Progress | 2 | ThunderJam (→ThunderGate.RateLimiting), ThunderClock (→ThunderBlock.Timing) |
 
-**Total Active Domains:** 8 (7 core + 1 support with resources)  
-**Total Ash Resources:** ~162 across all active domains (ThunderVine +2 for TAK persistence)  
-**Deprecated Domains:** 4 (2 consolidated complete, 2 migrations in progress)  
-**Consolidation Success:** 6 major consolidations completed (ThunderVault→ThunderBlock, 5 domains→ThunderBolt, ThunderChief→ThunderCrown, ThunderCom+ThunderWave→ThunderLink, ThunderStone+ThunderEye+Accounts→ThunderGate, ThunderWatch→ThunderGate)  
-**Cleanup Success:** 2 orphaned domains removed (ThunderForge - Nov 17, 2025; ThunderCom - Nov 18, 2025)
+**12-Domain Pantheon Target:** Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall  
+**Currently Active:** 10 domains (Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, RAG)  
+**Pending Creation:** 3 domains (Core, Pac, Wall - HC-46/47/48)  
+**Total Ash Resources:** ~162 across all active domains  
+**Consolidation Status:** ThunderChief → ThunderCrown (HC-49 - pending completion)  
 
-**Note:** Domain count reflects post-consolidation architecture. Resource counts verified through comprehensive domain review (November 17, 2025). All active domains properly configured with Ash.Domain. See `DOMAIN_ARCHITECTURE_REVIEW.md` for detailed findings.  
+**System Cycle Model:**
+- **Spark → Containment**: Core → Wall (full lifecycle)
+- **Policy → Execute**: Crown → Bolt (governance to execution)
+- **IO → Surface → UX**: Flow → Grid → Prism (events to interface)
+- **State → Persist → Orchestrate**: Pac → Block → Vine (lifecycle management)
+
+**Note:** Domain architecture transitioning from 8-domain legacy to 12-Domain Pantheon. See `THUNDERLINE_MASTER_PLAYBOOK.md` HC-46 through HC-49 for implementation plan.
 
 ---
 
@@ -609,4 +693,4 @@
 
 ---
 
-**✅ Deliverable ready:** `docs: domain catalog audited (Cerebros extraction noted)`
+**✅ Deliverable ready:** `docs: domain catalog updated for 12-Domain Pantheon (Nov 28, 2025)`

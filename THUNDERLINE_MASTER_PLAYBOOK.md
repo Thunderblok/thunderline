@@ -1,16 +1,95 @@
 # 🚀 THUNDERLINE MASTER PLAYBOOK: From Zero to AI Automation
 
-> **Architecture Status (Nov 27, 2025 - HC-Quantum Update)**: Overall Grade **A (9/10)** - 8 active domains, ~160 Ash resources, 6 major consolidations completed, 2 in progress. **NEW**: Cross-Domain Functional Layers architecture (HC-31/32/33) defining 6 capability layers across domain pairs. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
+> **Architecture Status (Nov 28, 2025 - 12-Domain Pantheon Update)**: Overall Grade **A (9/10)** - **12 canonical domains** defined, ~160 Ash resources, domain restructuring in progress. **NEW**: 12-Domain Pantheon architecture (HC-46/47/48/49) establishing final domain model. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
 >
-> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-45). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
+> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-49). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
 >
 > **Ground Truth Verification (Nov 18, 2025)**: HC review contained inaccuracies. Direct codebase inspection revealed (and now resolved): (1) ThunderCom resources migrated into ThunderLink (HC-27/28 ✅), (2) ThunderLink operates as the single communications domain with 17 resources, (3) ThunderVine architectural decision implemented. See Ground Truth Verification Summary section and HC-27, HC-28, HC-29, HC-30 for details.
 >
-> **Active Domains (Nov 27, 2025)**: Thundergate (19), Thunderlink (17), Thunderflow (9), Thunderbolt (50+), Thundercrown (4), Thunderblock (33), Thundergrid (5), Thunderprism (2), RAG (1)
-> **Cross-Domain Layers**: Routing (Flow×Grid), Observability (Gate×Crown), Intelligence (Bolt×Crown), Persistence (Block×Flow), Communication (Link×Gate), Orchestration (Vine×Crown)
-> **Consolidations Status**: 
-> - ✅ **Complete (6)**: ThunderVault→Thunderblock, 5 domains→Thunderbolt, ThunderChief→Thundercrown, ThunderStone+ThunderEye+Accounts+ThunderWatch→Thundergate, ThunderWave→Thunderlink, ThunderCom→Thunderlink (HC-27/28 ✅ Nov 18 2025)
-> - ⚠️ **In Progress (2)**: ThunderJam→Thundergate.RateLimiting, ThunderClock→Thunderblock.Timing
+> **12-Domain Pantheon (Nov 28, 2025)**: Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall
+> **Cross-Domain Layers**: Routing (Flow×Grid), Observability (Gate×Crown), Intelligence (Bolt×Crown), Persistence (Block×Flow), Communication (Link×Gate), Orchestration (Vine×Crown), Compute (Bolt×Flow)
+> **Domain Restructure Status**: 
+> - ✅ **Active (10)**: Thundercrown (merged Chief), Thunderbolt (50+), Thundergate (19), Thunderblock (33), Thunderflow (9), Thundergrid (5→API focus), Thundervine (6), Thunderprism (2), Thunderlink (17), RAG (1)
+> - 🆕 **New Domains (HC-46/47)**: Thundercore (tick/identity), Thunderpac (PAC lifecycle), Thunderwall (entropy/GC)
+> - ✅ **Consolidation (HC-49)**: Thunderchief → Thundercrown (orchestration + governance unified)
+
+---
+
+## ⚡ 12-DOMAIN THUNDERLINE PANTHEON (Nov 28, 2025)
+
+**Mission**: Establish the canonical 12-domain architecture for Thunderline, providing clear ownership boundaries, symbolic alignment, and operational coherence.
+
+### Domain Registry
+
+| # | Domain | Focus | Symbolic Mapping | Status |
+|---|--------|-------|------------------|--------|
+| 1️⃣ | **Thundercore** | Tick emanation, system clock, identity kernel, PAC ignition | Seedpoint / Identity Core (Metatron's 1st Domain) | 🆕 HC-46 |
+| 2️⃣ | **Thunderpac** | PAC lifecycle, state containers, role/intent management | Soul Container / Ascension Flow | 🆕 HC-47 |
+| 3️⃣ | **Thundercrown** | Governance + Orchestration (absorbed Chief), policy, authorization, saga coordination | Crown Oversight / Structure (Mental-Buddhic) | ✅ Active |
+| 4️⃣ | **Thunderbolt** | ML + Automata execution, loop monitors, CA intervention, Cerebros | Execution / Will / Fire (Key + Flame) | ✅ Active (50+) |
+| 5️⃣ | **Thundergate** | Security, IAM, crypto, OAuth, boundaries, keys, rate limiting | Security / Network IAM (Cyber Shield) | ✅ Active (19) |
+| 6️⃣ | **Thunderblock** | Persistence runtime, vaults, ledgers, data substrates | Persistence / Data (Cloud + DB layer) | ✅ Active (33) |
+| 7️⃣ | **Thunderflow** | Signal/event flow, telemetry, causal DAGs, criticality hooks | Flow / Communication (Color bands) | ✅ Active (9) |
+| 8️⃣ | **Thundergrid** | GraphQL interface, boundary contracts, data shape APIs | API / Connection Nexus (Heart/Throat) | ✅ Active (5) |
+| 9️⃣ | **Thundervine** | DAG workflows, macrostructure graphs, orchestration edges | DAG / Roots-Workflow (Biocultural ecology) | ✅ Active (6) |
+| 🔟 | **Thunderprism** | UI/UX, cognition layer, creativity, reflexive thought, code editing | Creativity / Reflexivity (Ambition, Relevance) | ✅ Active (2) |
+| 1️⃣1️⃣ | **Thunderlink** | Communication, federation, WebRTC, TOCP transport | Communication / Federation (External Interface) | ✅ Active (17) |
+| 1️⃣2️⃣ | **Thunderwall** | System boundary, decay, GC, overflow, archive, entropy sink | Entropy Boundary / Void (Black Hole Portal) | 🆕 HC-48 |
+
+### System Cycle Model
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        THUNDERLINE CYCLE                            │
+│                                                                     │
+│   ┌─────────┐                                        ┌─────────┐   │
+│   │  CORE   │ ─────── Spark to containment ──────── │  WALL   │   │
+│   │ (Tick)  │                                        │(Entropy)│   │
+│   └────┬────┘                                        └────▲────┘   │
+│        │                                                  │        │
+│        ▼                                                  │        │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐             │        │
+│   │   PAC   │ ─► │  CROWN  │ ─► │  BOLT   │ ────────────┘        │
+│   │ (State) │    │(Govern) │    │(Execute)│                       │
+│   └────┬────┘    └─────────┘    └────┬────┘                       │
+│        │                              │                            │
+│        ▼                              ▼                            │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐                       │
+│   │  BLOCK  │ ◄─ │  VINE   │ ◄─ │  FLOW   │                       │
+│   │(Persist)│    │  (DAG)  │    │ (Event) │                       │
+│   └────┬────┘    └─────────┘    └────┬────┘                       │
+│        │                              │                            │
+│        ▼                              ▼                            │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐                       │
+│   │  GATE   │ ─► │  GRID   │ ─► │  PRISM  │ ─► UI/Output          │
+│   │(Security│    │  (API)  │    │  (UX)   │                       │
+│   └─────────┘    └────┬────┘    └─────────┘                       │
+│                       │                                            │
+│                       ▼                                            │
+│                  ┌─────────┐                                       │
+│                  │  LINK   │ ─► External/Federation                │
+│                  │ (Comms) │                                       │
+│                  └─────────┘                                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Domain Vectors
+
+| Vector | Domains | Flow Description |
+|--------|---------|------------------|
+| **Policy→Execute** | Crown → Chief (absorbed) → Bolt | Governance decisions flow to execution layer |
+| **IO→Surface→UX** | Flow → Grid → Prism | Events route through API to user interface |
+| **State→Persist→Orchestrate** | Pac → Block → Vine | Stateful computational lifelines |
+| **Spark→Containment** | Core → Wall | Full system lifecycle (ignition to entropy) |
+
+### Key Consolidations (Nov 28, 2025)
+
+| Source | Target | Rationale |
+|--------|--------|-----------|
+| **Thunderchief** | **Thundercrown** | Orchestration + Governance = unified authority (HC-49) |
+| **Thunderlit** (concept) | **Thundercore** | Identity kernel + tick emanation = temporal/identity origin |
+| **N/A** | **Thunderpac** | PAC lifecycle extracted from scattered Bolt/Block resources |
+| **N/A** | **Thunderwall** | Entropy boundary, decay, GC - the "black hole portal" |
 
 ---
 
@@ -143,12 +222,16 @@
 | **HC-43** | **P1** | **Agent0 Co-Evolution Loop** | No self-improving agent training | **Agent0-01**: Curriculum+Executor LLM co-evolution. **Components**: (1) Ash resources `CurriculumAgent`, `ExecutorAgent`, (2) Snex Python bridge for RL updates (GRPO/ADPO), (3) Zero-shot bootstrapping (no external data), (4) Episodic training with uncertainty×tool-use rewards, (5) ONNX model export/import via Ortex. **Goal**: Self-reinforcing training cycle. | Bolt + Crown Stewards | Not Started |
 | **HC-44** | **P1** | **Agent0 Swarm Orchestration** | No multi-agent parallel execution | **Agent0-02**: Swarm scheduling in Thunderflow/Thunderchief. **Components**: (1) Reactor DAG for agent-spawn nodes, (2) Dynamic scaling (GenStage backpressure, K8s HPA), (3) Routing heuristics (round-robin, skill-based), (4) Task patterns (batching, sharding, voting), (5) Result aggregation and scoring. Cross-domain layer: **Flow×Crown**. | Flow + Crown Stewards | Not Started |
 | **HC-45** | **P1** | **Event-Driven Agent Triggers** | No automata-based agent activation | **Agent0-03**: Thundercell triggers for agent spawning. **Components**: (1) Voxel state sensors (entropy burst, event-band), (2) Thunderbolt automata watchers, (3) Cool-off periods and rate limits, (4) Nerves edge constraints (central check-in), (5) LoopMonitor integration for runaway prevention. | Bolt + Gate Stewards | Not Started |
+| **HC-46** | **P0** | **Thundercore Domain** | No unified tick/identity origin | **Pantheon-01**: Create Thundercore domain for tick emanation, system clock, identity kernel, PAC ignition. **Components**: (1) `Thundercore.Domain` Ash domain, (2) `TickEmitter` GenServer (system heartbeat), (3) `IdentityKernel` resource (PAC seedpoints), (4) `SystemClock` monotonic time service, (5) Event categories `core.tick.*`, `core.identity.*`. **Files**: `lib/thunderline/thundercore/`. | Core Steward | Not Started |
+| **HC-47** | **P0** | **Thunderpac Domain** | PAC lifecycle scattered across domains | **Pantheon-02**: Create Thunderpac domain for PAC lifecycle management. **Components**: (1) `Thunderpac.Domain` Ash domain, (2) Extract PAC resources from Thunderbolt/Thunderblock, (3) `PAC` resource (state containers), (4) `PACRole` (role definitions), (5) `PACIntent` (intent management), (6) Lifecycle state machine (`:dormant`, `:active`, `:suspended`, `:archived`). **Files**: `lib/thunderline/thunderpac/`. | Pac Steward | Not Started |
+| **HC-48** | **P0** | **Thunderwall Domain** | No entropy/decay boundary | **Pantheon-03**: Create Thunderwall domain for system boundary, entropy sink, GC. **Components**: (1) `Thunderwall.Domain` Ash domain, (2) `DecayProcessor` (archive expired resources), (3) `OverflowHandler` (reject stream management), (4) `EntropyMetrics` (system decay telemetry), (5) `GCScheduler` (garbage collection coordination), (6) Event categories `wall.decay.*`, `wall.archive.*`. **Files**: `lib/thunderline/thunderwall/`. Cross-domain: **Wall = final destination for all domains' expired/rejected data**. | Wall Steward | Not Started |
+| **HC-49** | **P0** | **Crown←Chief Consolidation** | Orchestration split from governance | **Pantheon-04**: Complete Thunderchief → Thundercrown merger. **Components**: (1) Move remaining Thunderchief modules to Thundercrown, (2) Update all `Thunderchief.*` references to `Thundercrown.*`, (3) Delete Thunderchief domain directory, (4) Update imports/aliases across codebase, (5) Event categories `chief.*` → `crown.*`. **Rationale**: Orchestration + Governance = unified authority (saga planners + policy = single control plane). | Crown Steward | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
 ---
 
-## 🔀 CROSS-DOMAIN FUNCTIONAL LAYERS (Nov 27, 2025)
+## 🔀 CROSS-DOMAIN FUNCTIONAL LAYERS (Nov 28, 2025)
 
 **Concept**: Individual domains own resources and actions, but certain capabilities emerge from domain *combinations*. These "functional layers" are implemented via coordinated modules across domains without creating new Ash domains.
 
