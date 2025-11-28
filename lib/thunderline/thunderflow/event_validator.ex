@@ -17,7 +17,14 @@ defmodule Thunderline.Thunderflow.EventValidator do
   require Logger
   alias Thunderline.Event
 
+  # Reserved prefixes are special system event families that should only be used
+  # by their designated subsystems. Non-reserved prefixes (like voice., entity., etc.)
+  # are allowed for domain-specific events.
   @reserved_prefixes ~w(system. reactor. ui. audit. evt. ml. ai. flow. grid. cluster.)
+
+  # Additional allowed prefixes for domain events (not reserved, freely usable)
+  @allowed_prefixes ~w(voice. entity. agent. tick. paq. memory. narrative. world. event. action. knowledge.)
+
   @uuid_v7_regex ~r/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
   @spec validate(Event.t()) :: :ok | {:error, term()}
@@ -74,10 +81,25 @@ defmodule Thunderline.Thunderflow.EventValidator do
   end
 
   defp valid_reserved?(name) do
-    # Allow names that start with any reserved family. If you want to allow
-    # additional non-reserved families (e.g., "ai."), adjust @reserved_prefixes
-    # or extend this function accordingly.
-    Enum.any?(@reserved_prefixes, &String.starts_with?(name, &1))
+    # Event names must either:
+    # 1. Start with a reserved prefix (system events from designated subsystems)
+    # 2. Start with an allowed domain prefix (voice., entity., etc.)
+    # 3. Use a simple dotted name (e.g., "domain.action") without reserved collision
+    all_known_prefixes = @reserved_prefixes ++ @allowed_prefixes
+
+    cond do
+      # Explicitly known prefix - allowed
+      Enum.any?(all_known_prefixes, &String.starts_with?(name, &1)) ->
+        true
+
+      # If not a known prefix, check it's not trying to use reserved "subsystem" patterns
+      # Allow generic domain.action or domain.sub.action patterns
+      String.match?(name, ~r/^[a-z_]+\.[a-z_.]+$/) ->
+        true
+
+      true ->
+        false
+    end
   end
 
   defp handle_failure(ev, reason) do
