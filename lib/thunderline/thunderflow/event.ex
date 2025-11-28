@@ -386,10 +386,10 @@ defmodule Thunderline.Event do
 
   @allowed_categories_by_domain %{
     gate: ["ui.command", "system", "presence"],
-    flow: ["flow.reactor", "system", "ai"],
+    flow: ["flow.reactor", "system", "ai", "voice.intent"],
     bolt: ["ml.run", "ml.trial", "system", "ai"],
-    link: ["ui.command", "system", "ai"],
-    crown: ["ai.intent", "system", "ai"],
+    link: ["ui.command", "system", "ai", "voice.signal", "voice.room"],
+    crown: ["ai.intent", "system", "ai", "voice.intent"],
     thunderlink: ["cluster.node", "cluster.link", "system"],
     # Block domain intentionally cannot emit ai.intent.* directly
     block: ["system"],
