@@ -217,8 +217,8 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
 
   defp infer_domain_from_payload(%{domain: d}) when is_binary(d), do: d
   defp infer_domain_from_payload(%{"domain" => d}) when is_binary(d), do: d
-  defp infer_domain_from_payload(%{agent_id: _}), do: "thunderchief"
-  defp infer_domain_from_payload(%{"agent_id" => _}), do: "thunderchief"
+  defp infer_domain_from_payload(%{agent_id: _}), do: "thundercrown"
+  defp infer_domain_from_payload(%{"agent_id" => _}), do: "thundercrown"
   defp infer_domain_from_payload(%{message_id: _}), do: "thunderblock"
   defp infer_domain_from_payload(_), do: "unknown"
 
@@ -425,7 +425,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
   defp idempotency_key(_), do: nil
 
   defp maybe_domain_processor(job) do
-    case Thunderline.Thunderchief.Orchestrator.enqueue_domain_job(job) do
+    case Thunderline.Thundercrown.Orchestrator.enqueue_domain_job(job) do
       %Ecto.Changeset{} = changeset -> changeset
       %Oban.Job{} = changeset -> changeset
       nil -> job

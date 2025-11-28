@@ -115,7 +115,7 @@ defmodule Thunderline.Thunderflow.EventBus do
   end
 
   defp extract_domains_from_topic(topic) do
-    # Parse topic patterns like "thunderchief:to:thunderbridge" or "domain:from:to"
+    # Parse topic patterns like "thundercrown:to:thunderbridge" or "domain:from:to"
     case String.split(topic, ":") do
       [from_domain, "to", to_domain] -> {from_domain, to_domain}
       ["domain", from_domain, to_domain] -> {from_domain, to_domain}

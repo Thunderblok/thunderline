@@ -45,7 +45,8 @@ defmodule ThunderlineWeb.DomainStatsController do
       "thunderblock_vault" -> {:ok, get_thunderblock_vault_stats()}
       "thundercom" -> {:ok, get_thundercom_stats()}
       "thundereye" -> {:ok, get_thundereye_stats()}
-      "thunderchief" -> {:ok, get_thunderchief_stats()}
+      # thunderchief consolidated into thundercrown (HC-49)
+      "thunderchief" -> {:ok, get_thundercrown_stats()}
       "thunderflow" -> {:ok, get_thunderflow_stats()}
       "thunderstone" -> {:ok, get_thunderstone_stats()}
       "thunderlink" -> {:ok, get_thunderlink_stats()}
@@ -190,17 +191,18 @@ defmodule ThunderlineWeb.DomainStatsController do
     })
   end
 
-  defp get_thunderchief_stats do
-    base_metrics = DashboardMetrics.thunderchief_metrics()
+  defp get_thundercrown_stats do
+    base_metrics = DashboardMetrics.thundercrown_metrics()
 
     Map.merge(base_metrics, %{
-      domain: "thunderchief",
-      description: "Job scheduling and workflow management",
+      domain: "thundercrown",
+      description: "Governance, orchestration, and cross-domain coordination",
       capabilities: [
         "Job orchestration",
-        "Worker management",
-        "Queue processing",
-        "Workflow automation"
+        "Workflow management",
+        "Cross-domain coordination",
+        "AI governance",
+        "Policy enforcement"
       ],
       last_updated: DateTime.utc_now(),
       health_status: determine_health_status(base_metrics)
@@ -252,23 +254,6 @@ defmodule ThunderlineWeb.DomainStatsController do
         "Data transfer",
         "Connection pooling",
         "Latency optimization"
-      ],
-      last_updated: DateTime.utc_now(),
-      health_status: determine_health_status(base_metrics)
-    })
-  end
-
-  defp get_thundercrown_stats do
-    base_metrics = DashboardMetrics.thundercrown_metrics()
-
-    Map.merge(base_metrics, %{
-      domain: "thundercrown",
-      description: "Governance and supreme authority management",
-      capabilities: [
-        "System governance",
-        "Policy management",
-        "Authority delegation",
-        "Compliance monitoring"
       ],
       last_updated: DateTime.utc_now(),
       health_status: determine_health_status(base_metrics)

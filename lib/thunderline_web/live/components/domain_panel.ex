@@ -112,13 +112,13 @@ defmodule ThunderlineWeb.DashboardLive.Components.DomainPanel do
               color="yellow"
             />
             <.metric_row label="Response" value="#{@metrics[:response_time]}ms" color="blue" />
-          <% :thunderchief -> %>
-            <.metric_row label="UI Panels" value={@metrics[:ui_panels]} color="cyan" />
-            <.metric_row label="Controls" value={@metrics[:active_controls]} color="green" />
-            <.metric_row label="Sessions" value={@metrics[:user_sessions]} color="blue" />
+          <% :thundercrown -> %>
+            <.metric_row label="Workflows" value={@metrics[:active_workflows]} color="cyan" />
+            <.metric_row label="Queued" value={@metrics[:queued_tasks]} color="green" />
+            <.metric_row label="Cross-Domain" value={@metrics[:cross_domain_jobs]} color="blue" />
             <.metric_row
-              label="Health"
-              value={format_percentage(@metrics[:dashboard_health])}
+              label="Completion"
+              value={"#{@metrics[:completion_rate]}%"}
               color="purple"
             />
           <% :thunderflow -> %>
@@ -207,7 +207,7 @@ defmodule ThunderlineWeb.DashboardLive.Components.DomainPanel do
   defp domain_icon(:thunderblock_vault), do: "🗄️"
   defp domain_icon(:thundercom), do: "📡"
   defp domain_icon(:thundereye), do: "👁️"
-  defp domain_icon(:thunderchief), do: "👑"
+  defp domain_icon(:thundercrown), do: "👑"
   defp domain_icon(:thunderflow), do: "🌊"
   defp domain_icon(:thunderstone), do: "🗿"
   defp domain_icon(:thunderlink), do: "🔗"

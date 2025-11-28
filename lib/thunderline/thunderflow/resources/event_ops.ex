@@ -25,7 +25,7 @@ defmodule Thunderline.Thunderflow.Resources.EventOps do
       run fn input, _ctx ->
         event = get_in(input, [:arguments, :event])
 
-        result = Thunderline.Thunderchief.Orchestrator.dispatch_event(event)
+        result = Thunderline.Thundercrown.Orchestrator.dispatch_event(event, "thunderflow")
 
         case result do
           {:ok, _} -> {:ok, %{status: :processed}}

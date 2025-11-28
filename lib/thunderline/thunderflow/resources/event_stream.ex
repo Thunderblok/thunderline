@@ -125,7 +125,7 @@ defmodule Thunderline.Thunderflow.Resources.EventStream do
                     :thundercom,
                     :thunderbit,
                     :thunderflow,
-                    :thunderchief,
+                    # thunderchief consolidated into thundercrown (HC-49)
                     :thundercrown,
                     :thunderblock,
                     :thunderbolt,

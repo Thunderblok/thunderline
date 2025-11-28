@@ -23,7 +23,7 @@ defmodule Thunderline.Thundercrown.Resources.OrchestrationUI do
 
       run fn input, _context ->
         # Trigger cross-domain orchestration via Oban
-        job_args = %{
+        params = %{
           source_domain: input.arguments.source_domain,
           target_domain: input.arguments.target_domain,
           operation_type: input.arguments.operation_type,
@@ -31,12 +31,7 @@ defmodule Thunderline.Thundercrown.Resources.OrchestrationUI do
           payload: input.arguments.payload
         }
 
-        case Thunderchief.Domain.enqueue_job(%{
-               queue: :cross_domain,
-               worker: "cross_domain_orchestrator",
-               args: job_args,
-               priority: priority_to_int(input.arguments.priority)
-             }) do
+        case Thunderline.Thundercrown.Orchestrator.enqueue_cross_domain_job(params) do
           {:ok, job} ->
             {:ok, %{job_id: job.id, status: :enqueued}}
 

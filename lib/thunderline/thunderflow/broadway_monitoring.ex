@@ -307,7 +307,7 @@ defmodule Thunderline.BroadwayMonitoring do
             type: :load_test_cross_domain,
             source: :flow,
             payload:
-              Map.merge(base_payload, %{from_domain: "thunderchief", to_domain: "thundercom"}),
+              Map.merge(base_payload, %{from_domain: "thundercrown", to_domain: "thundercom"}),
             target_domain: "thundercom"
           })
 
@@ -360,7 +360,7 @@ defmodule Thunderline.BroadwayMonitoring do
 
   defp test_cross_domain_events do
     test_event = %{
-      from_domain: "thunderchief",
+      from_domain: "thundercrown",
       to_domain: "thundercom",
       message: "test_cross_domain_message",
       timestamp: DateTime.utc_now()

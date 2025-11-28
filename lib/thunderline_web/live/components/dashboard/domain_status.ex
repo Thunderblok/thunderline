@@ -158,11 +158,11 @@ defmodule ThunderlineWeb.DashboardComponents.DomainStatus do
   defp domain_icon(:thunderblock_vault), do: "🗄️"
   defp domain_icon(:thundercom), do: "📡"
   defp domain_icon(:thundereye), do: "👁️"
-  defp domain_icon(:thunderchief), do: "👑"
+  # thunderchief consolidated into thundercrown (HC-49)
+  defp domain_icon(:thundercrown), do: "👑"
   defp domain_icon(:thunderflow), do: "🌊"
   defp domain_icon(:thunderstone), do: "🗿"
   defp domain_icon(:thunderlink), do: "🔗"
-  defp domain_icon(:thundercrown), do: "👑"
   defp domain_icon(_), do: "⚙️"
 
   defp healthy_count(domains) do

@@ -1016,12 +1016,12 @@ defmodule ThunderlineWeb.DashboardLive do
       thunderblock_vault: DashboardMetrics.thunderblock_vault_metrics(),
       thundercom: DashboardMetrics.thundercom_metrics(),
       thundereye: DashboardMetrics.thundereye_metrics(),
-      thunderchief: DashboardMetrics.thunderchief_metrics(),
+      # thunderchief consolidated into thundercrown (HC-49)
+      thundercrown: DashboardMetrics.thundercrown_metrics(),
       thunderflow: DashboardMetrics.thunderflow_metrics(),
       thunderstone: DashboardMetrics.thunderstone_metrics(),
       thunderlink: DashboardMetrics.thunderlink_metrics(),
-      thunderlane: DashboardMetrics.thunderlane_metrics(),
-      thundercrown: DashboardMetrics.thundercrown_metrics()
+      thunderlane: DashboardMetrics.thunderlane_metrics()
     }
 
     # Get automata state for 3D visualization
@@ -1301,11 +1301,11 @@ defmodule ThunderlineWeb.DashboardLive do
       {:thunderblock_vault, "🗄️"},
       {:thundercom, "📡"},
       {:thundereye, "👁️"},
-      {:thunderchief, "👑"},
+      # thunderchief consolidated into thundercrown (HC-49)
+      {:thundercrown, "👑"},
       {:thunderflow, "🌊"},
       {:thunderstone, "🗿"},
-      {:thunderlink, "🔗"},
-      {:thundercrown, "👑"}
+      {:thunderlink, "🔗"}
     ]
   end
 

@@ -99,7 +99,8 @@ defmodule ThunderlineWeb.Router do
       # Removed legacy /thundervault route (vault now part of thunderblock domain metrics)
       live "/thundercom", DashboardLive, :thundercom
       live "/thundereye", DashboardLive, :thundereye
-      live "/thunderchief", DashboardLive, :thunderchief
+      # Legacy /thunderchief -> /thundercrown redirect (HC-49 consolidation)
+      live "/thunderchief", DashboardLive, :thundercrown
       live "/thunderflow", DashboardLive, :thunderflow
       live "/thunderstone", DashboardLive, :thunderstone
       live "/thunderlink", DashboardLive, :thunderlink

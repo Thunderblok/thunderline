@@ -268,8 +268,8 @@ defmodule Thunderline.DashboardMetrics do
     }
   end
 
-  @doc "Get ThunderChief metrics"
-  def thunderchief_metrics do
+  @doc "Get ThunderCrown orchestration metrics"
+  def thundercrown_metrics do
     # Get real Oban metrics
     oban_stats = get_oban_stats()
     workflow_stats = get_workflow_stats()
@@ -284,6 +284,13 @@ defmodule Thunderline.DashboardMetrics do
       failed_workflows: workflow_stats.failed_workflows,
       engine_status: determine_engine_status(oban_stats, workflow_stats)
     }
+  end
+
+  @deprecated "Use thundercrown_metrics/0. The thunderchief_* naming is being removed; will be deleted after deprecation window."
+  @doc "(DEPRECATED) Get ThunderChief metrics – use thundercrown_metrics/0"
+  def thunderchief_metrics do
+    Logger.warning("DEPRECATED call to thunderchief_metrics/0 – use thundercrown_metrics/0")
+    thundercrown_metrics()
   end
 
   defp get_oban_stats do
@@ -508,19 +515,6 @@ defmodule Thunderline.DashboardMetrics do
       latency_avg: "OFFLINE",
       # TODO: Implement stability scoring
       network_stability: "OFFLINE"
-    }
-  end
-
-  @doc "Get ThunderCrown metrics"
-  def thundercrown_metrics do
-    %{
-      # TODO: Implement governance tracking
-      governance_actions: "OFFLINE",
-      # TODO: Implement policy monitoring
-      policy_updates: "OFFLINE",
-      # TODO: Implement compliance scoring
-      compliance_score: "OFFLINE",
-      authority_level: :offline
     }
   end
 
