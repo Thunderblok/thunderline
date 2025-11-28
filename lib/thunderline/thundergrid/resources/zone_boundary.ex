@@ -278,9 +278,8 @@ defmodule Thunderline.Thundergrid.Resources.ZoneBoundary do
 
   validations do
     validate present([:boundary_name, :zone_id, :adjacent_zone_id])
-    # TODO: Implement Thundergrid.Validations module
-    # validate {Thundergrid.Validations, :valid_boundary_points}, on: [:create, :update]
-    # validate {Thundergrid.Validations, :different_zones}, on: [:create, :update]
+    validate Thunderline.Thundergrid.Validations.ValidBoundaryPoints
+    validate Thunderline.Thundergrid.Validations.DifferentZones
   end
 
   attributes do

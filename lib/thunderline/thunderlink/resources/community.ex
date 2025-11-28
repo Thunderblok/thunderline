@@ -535,9 +535,8 @@ defmodule Thunderline.Thunderlink.Resources.Community do
   # ===== VALIDATIONS =====
   validations do
     validate present([:community_name, :community_slug, :owner_id])
-    # validate {Thunderblock.Validations, :valid_community_slug}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :resource_limits_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :owner_in_members}, on: [:create, :add_member, :remove_member]
+    validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :community_slug}
+    validate Thunderline.Thunderblock.Validations.ValidResourceLimits
   end
 
   # ===== ATTRIBUTES =====

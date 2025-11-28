@@ -611,10 +611,9 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
   # ===== VALIDATIONS =====
   validations do
     validate present([:socket_name, :socket_slug, :community_id])
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :valid_federation_socket_slug}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :federation_config_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :valid_target_specification}, on: [:create, :update]
+    validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :socket_slug}
+    validate Thunderline.Thunderblock.Validations.ValidFederationConfig
+    validate Thunderline.Thunderblock.Validations.ValidTargetSpec
   end
 
   # ===== ATTRIBUTES =====

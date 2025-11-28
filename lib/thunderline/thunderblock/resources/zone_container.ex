@@ -535,9 +535,8 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
   # ===== VALIDATIONS =====
   validations do
     validate present([:zone_name, :zone_type, :cluster_node_id])
-    # validate {Thunderblock.Validations, :valid_zone_name}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :valid_coordinates}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :capacity_config_structure}, on: [:create, :update]
+    validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :zone_name}
+    validate {Thunderline.Thunderblock.Validations.ValidConfigStructure, field: :capacity_config}
   end
 
   # ===== ATTRIBUTES =====

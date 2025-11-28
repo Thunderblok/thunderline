@@ -576,9 +576,9 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
   # ===== VALIDATIONS =====
   validations do
     validate present([:tree_name, :tree_type, :zone_container_id])
-    # validate {Thunderblock.Validations, :valid_tree_name}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :valid_child_specs}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :supervision_hierarchy}, on: [:create, :update]
+    validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :tree_name}
+    validate Thunderline.Thunderblock.Validations.ValidChildSpecs
+    validate {Thunderline.Thunderblock.Validations.ValidHierarchy, field: :hierarchy_level, max: 10}
   end
 
   # ===== ATTRIBUTES =====

@@ -317,7 +317,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
       {:ok, snapshot} ->
         case UpmSnapshot.rollback(snapshot.id) do
           {:ok, updated_snapshot} ->
-            Logger.warn("""
+            Logger.warning("""
             [UPM.SnapshotManager] Rolled back to snapshot
               id: #{snapshot_id}
               trainer_id: #{snapshot.trainer_id}

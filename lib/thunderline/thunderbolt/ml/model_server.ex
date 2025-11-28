@@ -226,7 +226,7 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
           {:reply, :ok, state}
 
         {:error, reason} = error ->
-          Logger.warn("[ModelServer] Failed to preload #{model_name}: #{inspect(reason)}")
+          Logger.warning("[ModelServer] Failed to preload #{model_name}: #{inspect(reason)}")
           {:reply, error, state}
       end
     end
@@ -309,7 +309,7 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
         {:noreply, state}
 
       {:error, reason} ->
-        Logger.warn("[ModelServer] Preload failed for #{model_name}: #{inspect(reason)}")
+        Logger.warning("[ModelServer] Preload failed for #{model_name}: #{inspect(reason)}")
         {:noreply, state}
     end
   end

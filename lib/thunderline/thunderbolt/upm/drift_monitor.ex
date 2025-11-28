@@ -289,7 +289,7 @@ defmodule Thunderline.Thunderbolt.UPM.DriftMonitor do
 
   defp evaluate_window(state) do
     if length(state.comparisons) < state.sample_size do
-      Logger.warn("""
+      Logger.warning("""
       [UPM.DriftMonitor] Insufficient samples for evaluation
         expected: #{state.sample_size}
         actual: #{length(state.comparisons)}
@@ -372,7 +372,7 @@ defmodule Thunderline.Thunderbolt.UPM.DriftMonitor do
   end
 
   defp trigger_quarantine(drift_window, stats) do
-    Logger.warn("""
+    Logger.warning("""
     [UPM.DriftMonitor] QUARANTINE TRIGGERED
       window_id: #{drift_window.id}
       trainer_id: #{drift_window.trainer_id}

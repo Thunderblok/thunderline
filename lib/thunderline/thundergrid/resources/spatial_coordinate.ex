@@ -278,9 +278,8 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
 
   validations do
     validate present([:hex_q, :hex_r])
-    # TODO: Implement Thundergrid.Validations module
-    # validate {Thundergrid.Validations, :valid_hex_coordinates}, on: [:create, :update]
-    # validate {Thundergrid.Validations, :valid_sub_hex_range}, on: [:create, :update]
+    validate Thunderline.Thundergrid.Validations.ValidHexCoordinates
+    validate Thunderline.Thundergrid.Validations.ValidSubHexRange
   end
 
   attributes do

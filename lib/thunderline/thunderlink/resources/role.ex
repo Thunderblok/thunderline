@@ -576,11 +576,10 @@ defmodule Thunderline.Thunderlink.Resources.Role do
   # ===== VALIDATIONS =====
   validations do
     validate present([:role_name, :role_slug, :community_id, :created_by])
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :valid_role_slug}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :permissions_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :channel_overrides_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :role_hierarchy_valid}, on: [:create, :update]
+    validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :role_slug}
+    validate Thunderline.Thunderblock.Validations.ValidPermissions
+    validate Thunderline.Thunderblock.Validations.ValidChannelPermissions
+    validate {Thunderline.Thunderblock.Validations.ValidHierarchy, field: :hierarchy_level, max: 100}
   end
 
   # ===== ATTRIBUTES =====

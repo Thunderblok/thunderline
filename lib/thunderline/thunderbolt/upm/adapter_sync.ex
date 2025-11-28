@@ -299,7 +299,7 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
 
   defp handle_sync_failure(adapter_id, snapshot_id, reason, retry_count, state) do
     if retry_count < state.max_retries do
-      Logger.warn("""
+      Logger.warning("""
       [UPM.AdapterSync] Sync failed, retrying
         adapter_id: #{adapter_id}
         attempt: #{retry_count + 1}/#{state.max_retries}

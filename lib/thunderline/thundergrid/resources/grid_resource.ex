@@ -412,9 +412,8 @@ defmodule Thunderline.Thundergrid.Resources.GridResource do
 
   validations do
     validate present([:resource_name, :resource_type, :hex_coordinates])
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thundergrid.Validations, :valid_resource_coordinates}, on: [:create, :update]
-    # validate {Thundergrid.Validations, :valid_quantity_data}, on: [:create, :update]
+    validate Thunderline.Thundergrid.Validations.ValidResourceCoordinates
+    validate Thunderline.Thundergrid.Validations.ValidQuantityData
   end
 
   attributes do

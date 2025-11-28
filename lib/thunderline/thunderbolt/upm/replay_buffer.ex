@@ -132,7 +132,7 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBuffer do
 
       # Check buffer capacity
       map_size(state.buffer) >= state.max_buffer_size ->
-        Logger.warn("[UPM.ReplayBuffer] Buffer full, dropping window: #{window_id}")
+        Logger.warning("[UPM.ReplayBuffer] Buffer full, dropping window: #{window_id}")
 
         emit_telemetry(
           :buffer_full,
@@ -167,7 +167,7 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBuffer do
             state
           )
 
-          Logger.warn(
+          Logger.warning(
             "[UPM.ReplayBuffer] Late window arrival: #{window_id} (#{expected_delay}ms)"
           )
         end
@@ -340,7 +340,7 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBuffer do
         send(pid, {:replay_buffer, :ready, entry.window_id})
 
       [] ->
-        Logger.warn("[UPM.ReplayBuffer] Trainer not found: #{trainer_id}")
+        Logger.warning("[UPM.ReplayBuffer] Trainer not found: #{trainer_id}")
     end
   end
 

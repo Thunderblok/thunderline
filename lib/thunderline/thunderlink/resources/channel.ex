@@ -474,8 +474,8 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
   # ===== VALIDATIONS =====
   validations do
     validate present([:channel_name, :channel_slug, :community_id, :created_by])
-    # validate {Thunderblock.Validations, :valid_channel_slug}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :channel_permissions_structure}, on: [:create, :update]
+    validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :channel_slug}
+    validate Thunderline.Thunderblock.Validations.ValidChannelPermissions
   end
 
   # ===== ATTRIBUTES =====

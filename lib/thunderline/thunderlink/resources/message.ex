@@ -579,10 +579,7 @@ defmodule Thunderline.Thunderlink.Resources.Message do
   # ===== VALIDATIONS =====
   validations do
     validate present([:content, :sender_id, :channel_id])
-    # TODO: Fix validation syntax - :edit is not valid in Ash 3.x
-    # validate {Thunderblock.Validations, :message_content_appropriate}, on: [:create, :edit]
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :valid_attachments}, on: [:create, :update]
+    validate Thunderline.Thunderblock.Validations.ValidAttachments
   end
 
   # ===== ATTRIBUTES =====

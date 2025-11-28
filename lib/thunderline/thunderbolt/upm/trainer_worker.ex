@@ -280,7 +280,7 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
 
       Logger.debug("[UPM.TrainerWorker] Received feature window event: #{window_id}")
     else
-      Logger.warn("[UPM.TrainerWorker] Received feature window event without window_id: #{inspect(event)}")
+      Logger.warning("[UPM.TrainerWorker] Received feature window event without window_id: #{inspect(event)}")
     end
 
     {:noreply, state}

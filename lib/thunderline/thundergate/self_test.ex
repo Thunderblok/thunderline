@@ -27,7 +27,7 @@ defmodule Thunderline.Thundergate.SelfTest do
         Logger.info("Gate self-test passed (401 confirmed)")
 
       :ok_forbidden ->
-        Logger.warn(
+        Logger.warning(
           "Gate self-test acceptable (403) — refine policy to return 401 for unauthenticated, 403 for unauthorized."
         )
 

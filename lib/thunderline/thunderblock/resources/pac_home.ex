@@ -636,11 +636,9 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
   # ===== VALIDATIONS =====
   validations do
     validate present([:home_name, :home_slug, :owner_id, :community_id])
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :valid_pac_home_slug}, on: [:create, :update]
-    # TODO: Fix validation syntax for Ash 3.x
-    # validate {Thunderblock.Validations, :resource_limits_structure}, on: [:create, :update]
-    # validate {Thunderblock.Validations, :pac_config_structure}, on: [:create, :update]
+    validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :home_slug}
+    validate Thunderline.Thunderblock.Validations.ValidResourceLimits
+    validate {Thunderline.Thunderblock.Validations.ValidConfigStructure, field: :pac_config}
   end
 
   # ===== ATTRIBUTES =====
