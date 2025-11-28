@@ -1,14 +1,24 @@
 # HC TODO Sweep - Technical Debt Remediation Tracker
 
-**Created**: 2025-01-XX (HC Review Response)  
+**Created**: November 28, 2025 (HC Review Response)  
 **Status**: IN PROGRESS  
 **Context**: High Command external review identified loose ends across the codebase
+
+**Related Documents**:
+- [HC_ARCHITECTURE_SYNTHESIS.md](HC_ARCHITECTURE_SYNTHESIS.md) - Full HC architecture consolidation
+- [THUNDERLINE_MASTER_PLAYBOOK.md](../THUNDERLINE_MASTER_PLAYBOOK.md) - Master playbook
 
 ---
 
 ## Executive Summary
 
 This document tracks the systematic cleanup of TODOs, stub implementations, and domain naming inconsistencies identified in the HC external review.
+
+### Quick Stats
+- **P0 Critical**: 1 completed (HC-49 Domain Consolidation)
+- **P1 High**: ~15 items (Ash 3.x, Saga stubs)
+- **P2 Medium**: ~10 items (Stubs, ML integration)
+- **P3 Low**: ~30 items (Dashboard metrics, docs)
 
 ---
 
@@ -138,3 +148,122 @@ From HC External Review:
 > "Domain fragmentation & naming inconsistencies – The codebase still references old domain names (e.g., separate Thunderchief and Thundercrown implementations)"
 
 This sweep addresses both concerns systematically.
+
+---
+
+## 🆕 NEW: HC Architecture Directives (Nov 28, 2025)
+
+The following HC items were extracted from High Command strategic discussions and documented in [HC_ARCHITECTURE_SYNTHESIS.md](HC_ARCHITECTURE_SYNTHESIS.md):
+
+### HC-60: Thunderbit Resource & Stepper
+**Priority**: P1 | **Owner**: Bolt Steward | **Status**: Not Started
+
+Create foundational Thunderbit infrastructure:
+- [ ] `Thunderbolt.Thunderbit` struct with full state vector
+- [ ] `Thunderbolt.CA.Stepper` basic CA step execution
+- [ ] `Thunderbolt.CA.Neighborhood` 3D neighborhood computation
+- [ ] Unit tests: state evolution, neighborhood
+
+### HC-61: CAT Transform Primitives
+**Priority**: P1 | **Owner**: Bolt Steward | **Status**: Not Started
+
+Implement Cellular Automata Transforms:
+- [ ] `Thunderbolt.CATTransform` module
+- [ ] Basis function generation from CA evolution
+- [ ] Forward/inverse transform
+- [ ] Compression mode (sparse coefficients)
+- [ ] Unit tests: orthogonality, reconstruction
+
+### HC-62: NCA Kernel Infrastructure
+**Priority**: P1 | **Owner**: Bolt Steward | **Status**: Not Started
+
+Neural CA kernel system:
+- [ ] `Thunderbolt.NCAKernel` Ash resource
+- [ ] `Thunderbolt.NCAEngine.step/3` execution
+- [ ] ONNX integration via Ortex
+- [ ] Training curriculum (signal propagation task)
+- [ ] Telemetry: `[:thunderline, :bolt, :nca, :*]`
+
+### HC-63: LCA Kernel Infrastructure  
+**Priority**: P1 | **Owner**: Bolt Steward | **Status**: Not Started
+
+Latent CA (mesh-agnostic) kernels:
+- [ ] `Thunderbolt.LCAKernel` Ash resource
+- [ ] `Thunderbolt.LCAEngine.step/2`
+- [ ] kNN graph construction
+- [ ] Embedding network execution
+- [ ] Unit tests: mesh-agnostic operation
+
+### HC-64: TPE Search Space Extension
+**Priority**: P2 | **Owner**: Bolt + Crown Stewards | **Status**: Not Started
+
+Extend Cerebros TPE for CAT/NCA:
+- [ ] CAT hyperparameter definitions (rule_id, dims, alphabet, radius, window, time_depth)
+- [ ] NCA/LCA hyperparameter definitions
+- [ ] Cerebros bridge extensions
+- [ ] Trial lifecycle events
+
+### HC-65: Training Loop Integration
+**Priority**: P2 | **Owner**: Bolt Steward | **Status**: Not Started
+
+Complete training pipeline:
+- [ ] Multi-task curriculum definition
+- [ ] LoopMonitor as auxiliary loss
+- [ ] Kernel registration on success
+- [ ] Telemetry dashboards
+
+### HC-66: Co-Lex Ordering Service
+**Priority**: P2 | **Owner**: Bolt + Block Stewards | **Status**: Not Started
+
+O(n) space, O(1) time state ordering:
+- [ ] Forward-stable reduction (Paige-Tarjan)
+- [ ] Co-lex extension computation (Becker et al.)
+- [ ] Infimum/supremum graphs + Forward Visit
+- [ ] Conflict depth arrays (φ, ψ)
+- [ ] `Thunderbolt.CoLex.compare/3` O(1) comparator
+- [ ] Integration with Thundervine DAG
+
+### HC-67: WebRTC Circuit Integration
+**Priority**: P2 | **Owner**: Link + Bolt Stewards | **Status**: Not Started
+
+Bridge CA routing to WebRTC:
+- [ ] CA signaling → WebRTC establishment
+- [ ] ICE over CA channel
+- [ ] `Thunderlink.CACircuitManager` lifecycle
+- [ ] Fallback/rerouting on path degradation
+
+### HC-68: Security Layer
+**Priority**: P2 | **Owner**: Gate + Bolt Stewards | **Status**: Not Started
+
+CAT-based security:
+- [ ] CAT encryption implementation
+- [ ] Key fragment distribution across voxels
+- [ ] Per-hop obfuscation
+- [ ] Geometric secrecy validation
+
+---
+
+## Key Architecture Concepts (Reference)
+
+### The CA Lattice Insight
+> **"The CA is the map, not the carrier."**
+
+The cellular automaton lattice handles:
+- Routing paths
+- Trust shapes
+- Session-key diffusion
+- Relay neighborhoods
+- Load balancing
+
+WebRTC/WebTransport handles actual payload transport.
+
+### Thunderbit State Vector
+Each voxel maintains: `{ϕ_phase, σ_flow, λ̂_sensitivity, trust_score, presence_vector, relay_weight, key_fragment}`
+
+### Four Research Threads
+1. **3D CA Lattice** → Routing oracle, presence fields
+2. **Neural CA (NCA)** → Trainable universal compute
+3. **Latent CA (LCA)** → Mesh-agnostic, any topology
+4. **CAT Transforms** → Orthogonal basis, compression, crypto
+
+See [HC_ARCHITECTURE_SYNTHESIS.md](HC_ARCHITECTURE_SYNTHESIS.md) for full details.

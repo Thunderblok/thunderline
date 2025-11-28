@@ -2,15 +2,17 @@
 
 > **Architecture Status (Nov 28, 2025 - 12-Domain Pantheon Update)**: Overall Grade **A (9/10)** - **12 canonical domains** defined, ~160 Ash resources, domain restructuring in progress. **NEW**: 12-Domain Pantheon architecture (HC-46/47/48/49) establishing final domain model. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
 >
-> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-49). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
+> High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-68). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
 >
 > **Ground Truth Verification (Nov 18, 2025)**: HC review contained inaccuracies. Direct codebase inspection revealed (and now resolved): (1) ThunderCom resources migrated into ThunderLink (HC-27/28 ✅), (2) ThunderLink operates as the single communications domain with 17 resources, (3) ThunderVine architectural decision implemented. See Ground Truth Verification Summary section and HC-27, HC-28, HC-29, HC-30 for details.
 >
+> **HC Architecture Synthesis (Nov 28, 2025)**: New comprehensive reference [`docs/HC_ARCHITECTURE_SYNTHESIS.md`](docs/HC_ARCHITECTURE_SYNTHESIS.md) consolidates all High Command strategic directives on CA Lattice, NCA/LCA kernels, CAT transforms, and Cerebros integration.
+>
 > **12-Domain Pantheon (Nov 28, 2025)**: Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall
-> **Cross-Domain Layers**: Routing (Flow×Grid), Observability (Gate×Crown), Intelligence (Bolt×Crown), Persistence (Block×Flow), Communication (Link×Gate), Orchestration (Vine×Crown), Compute (Bolt×Flow)
+> **Cross-Domain Layers**: Routing (Flow×Grid), Observability (Gate×Crown), Intelligence (Bolt×Crown), Persistence (Block×Flow), Communication (Link×Gate), Orchestration (Vine×Crown), Compute (Bolt×Flow), **Lattice (Bolt×Link×Gate)**, **Transform (Bolt×Block)**
 > **Domain Restructure Status**: 
 > - ✅ **Active (10)**: Thundercrown (merged Chief), Thunderbolt (50+), Thundergate (19), Thunderblock (33), Thunderflow (9), Thundergrid (5→API focus), Thundervine (6), Thunderprism (2), Thunderlink (17), RAG (1)
-> - 🆕 **New Domains (HC-46/47)**: Thundercore (tick/identity), Thunderpac (PAC lifecycle), Thunderwall (entropy/GC)
+> - 🆕 **New Domains (HC-46/47/48)**: Thundercore (tick/identity), Thunderpac (PAC lifecycle), Thunderwall (entropy/GC)
 > - ✅ **Consolidation (HC-49)**: Thunderchief → Thundercrown (orchestration + governance unified)
 
 ---
@@ -235,6 +237,16 @@
 | **HC-56** | **P1** | **EventProp Training** | No event-based gradient computation for SNN | **Neuro-03**: Implement EventProp-style sparse backpropagation for SNN parameter tuning. **Components**: (1) Exact gradients computed only at discrete spike events (not dense time steps), (2) Weight + delay co-optimization, (3) Recurrent SNN support (delay loops), (4) Python bridge (Snex) for gradient computation, (5) Integration with Cerebros TPE for architecture search. **Target**: Train spike thresholds, leak rates, synaptic delays on temporal tasks (speech, sensor sequences). **Metrics**: Memory <50% of BPTT, runtime up to 26× faster. Cross-domain: **Bolt×Flow** (training + events). | Bolt + Flow Stewards | Not Started |
 | **HC-57** | **P1** | **Cerebros SNN Priors** | TPE search space lacks SNN-specific axes | **Neuro-04**: Extend Cerebros TPE search space for spiking/photonic architectures. **New axes**: (1) `spike_threshold` (0.5–2.0), (2) `leak_rate` (0.8–0.99), (3) `trainable_delays_enabled` (bool), (4) `max_delay_ticks` (1–16), (5) `perturbation_strength` (0.001–0.1), (6) `layer_decorrelation_method` (noise/dropout/phase_shift). **Constraints**: PLV ∈ [0.3, 0.6] as objective constraint (healthy criticality). **Integration**: Use LoopMonitor metrics as TPE objective signals, inject noise during architecture evaluation to select error-tolerant designs. Cross-domain: **Bolt×Crown** (ML + governance). | Bolt + Crown Stewards | Not Started |
 | **HC-58** | **P1** | **Spike Train Parser** | No event-driven signal→spike conversion | **Neuro-05**: Neuromorphic signal processing for Thunderforge. **Components**: (1) `Thunderbolt.Signal.SpikingParser` (threshold-crossing detector → spike stream), (2) Learned delay insertion for predictive timing (e.g., anticipate rhythmic beats), (3) On-device SNN inference for signal classification (arrhythmia, anomaly detection), (4) Spike event injection into ThunderCell CA (instead of raw values), (5) Hilbert phase coupling on spike trains. **Benefits**: Dramatically reduced bandwidth, focus computation on salient moments, Nerves-compatible (low memory). **Events**: `signal.spike.*`. Cross-domain: **Bolt×Link** (signal + transport). | Bolt + Link Stewards | Not Started |
+| **HC-59** | **P0** | **HC-49 Consolidation** | Thunderchief → Thundercrown migration | ✅ **COMPLETE** (Nov 28, 2025): Domain consolidation executed. Orchestrator moved, legacy domain deleted, 12+ files updated, backward compat routes in place. See `docs/HC_TODO_SWEEP.md`. | Crown Steward | **Done** |
+| **HC-60** | **P1** | **Thunderbit Resource & Stepper** | No formal Thunderbit definition | **CA-Lattice-01**: Create foundational Thunderbit infrastructure. **Components**: (1) `Thunderbolt.Thunderbit` struct with full state vector (ϕ_phase, σ_flow, λ̂_sensitivity, trust_score, presence_vector, relay_weight, key_fragment), (2) `Thunderbolt.CA.Stepper` basic CA step execution, (3) `Thunderbolt.CA.Neighborhood` 3D neighborhood computation. See `docs/HC_ARCHITECTURE_SYNTHESIS.md`. Cross-domain: **Bolt**. | Bolt Steward | Not Started |
+| **HC-61** | **P1** | **CAT Transform Primitives** | No CA-based signal encoding | **CA-Lattice-02**: Implement Cellular Automata Transforms for signal representation, compression, encryption. **Components**: (1) `Thunderbolt.CATTransform` module with forward/inverse transforms, (2) Basis function generation from CA evolution, (3) Compression mode (sparse coefficients), (4) CAT encryption with avalanche property. **Goal**: Unified encoding for Thunderbit state → storage/transport. Cross-domain: **Bolt×Block**. | Bolt Steward | Not Started |
+| **HC-62** | **P1** | **NCA Kernel Infrastructure** | No trainable CA rules | **CA-Lattice-03**: Neural CA kernel system. **Components**: (1) `Thunderbolt.NCAKernel` Ash resource, (2) `Thunderbolt.NCAEngine.step/3` execution via Ortex/ONNX, (3) Training curriculum (signal propagation, logic gates, memory), (4) LoopMonitor as auxiliary loss (PLV/λ̂ targets). **Goal**: Universal compute substrate via learned CA rules. Cross-domain: **Bolt×Crown**. | Bolt Steward | Not Started |
+| **HC-63** | **P1** | **LCA Kernel Infrastructure** | CA rules require fixed topology | **CA-Lattice-04**: Latent CA (mesh-agnostic) kernels. **Components**: (1) `Thunderbolt.LCAKernel` Ash resource, (2) `Thunderbolt.LCAEngine.step/2` with kNN graph, (3) Embedding network for latent neighborhood. **Goal**: CA rules that work on ANY mesh/topology/geometry. Cross-domain: **Bolt**. | Bolt Steward | Not Started |
+| **HC-64** | **P2** | **TPE Search Space Extension** | Cerebros lacks CAT/NCA hyperparams | **CA-Lattice-05**: Extend Cerebros TPE for CA architecture search. **Components**: (1) CAT hyperparameters (rule_id, dims, alphabet, radius, window, time_depth), (2) NCA/LCA hyperparameters, (3) Trial lifecycle events (cat.*, nca.*, lca.*). **Goal**: Automated discovery of optimal CA basis families. Cross-domain: **Bolt×Crown**. | Bolt + Crown Stewards | Not Started |
+| **HC-65** | **P2** | **Training Loop Integration** | No NCA/LCA training pipeline | **CA-Lattice-06**: Complete training pipeline. **Components**: (1) Multi-task curriculum definition, (2) LoopMonitor as auxiliary loss, (3) Kernel registration on success, (4) Telemetry dashboards for CA training. Cross-domain: **Bolt×Flow**. | Bolt Steward | Not Started |
+| **HC-66** | **P2** | **Co-Lex Ordering Service** | No O(1) state comparison for automata | **CA-Lattice-07**: Implement co-lex ordering from SODA/ESA research. **Components**: (1) Forward-stable reduction (Paige-Tarjan), (2) Co-lex extension (Becker et al.), (3) Infimum/supremum graphs + Forward Visit, (4) `Thunderbolt.CoLex.compare/3` O(1) comparator. **Goal**: Linear-space BWT-style indexing for automata/DAGs. Cross-domain: **Bolt×Block×Vine**. | Bolt + Block Stewards | Not Started |
+| **HC-67** | **P2** | **WebRTC Circuit Integration** | CA signaling not bridged to WebRTC | **CA-Lattice-08**: Bridge CA route discovery to WebRTC circuits. **Components**: (1) CA lattice converges → `ca.channel.established`, (2) ICE exchange over CA channel, (3) `Thunderlink.CACircuitManager` lifecycle, (4) Auto-rerouting on path degradation. Cross-domain: **Link×Bolt**. | Link + Bolt Stewards | Not Started |
+| **HC-68** | **P2** | **CAT Security Layer** | No CA-based crypto layer | **CA-Lattice-09**: CAT-based security primitives. **Components**: (1) CAT encryption implementation, (2) Key fragment distribution across voxels, (3) Per-hop XOR obfuscation, (4) Geometric secrecy validation (only path-aware endpoints reconstruct). Cross-domain: **Gate×Bolt**. | Gate + Bolt Stewards | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
@@ -517,6 +529,76 @@ python/cerebros/service/snn_priors.py                    # HC-57 (Phase 4)
 
 ---
 
+## 🌐 CA ARCHITECTURE VISION: THE ROSETTA STONE (Nov 28, 2025)
+
+**Full Reference**: [`docs/HC_ARCHITECTURE_SYNTHESIS.md`](docs/HC_ARCHITECTURE_SYNTHESIS.md)
+
+### The Core Insight
+
+> **"The CA is the map, not the carrier."**
+
+Instead of pushing bytes through the cellular automaton lattice:
+1. **CA handles**: Routing paths, trust shapes, session-key diffusion, relay neighborhoods, load balancing
+2. **WebRTC handles**: Actual high-bandwidth payload transport
+3. **The CA becomes**: A self-adapting SDN (Software-Defined Network) map
+
+### Four Research Threads Unified
+
+| Thread | Contribution | Integration Point |
+|--------|--------------|-------------------|
+| **3D CA Lattice** | Routing oracle, presence fields, secure mesh | `Thunderbolt.Thunderbit` grid |
+| **Neural CA (NCA)** | Trainable local rules, universal compute | `Thunderbolt.NCAKernel` |
+| **Latent CA (LCA)** | Mesh-agnostic, any topology | `Thunderbolt.LCAKernel` |
+| **CAT Transforms** | Orthogonal basis, compression, crypto | `Thunderbolt.CATTransform` |
+| **Co-Lex Ordering** | O(1) state comparison, BWT indexing | `Thunderbolt.CoLex` service |
+
+### Thunderbit State Vector
+
+Each voxel cell in the 3D lattice maintains:
+
+```elixir
+%Thunderbit{
+  coord: {x, y, z},          # 3D position
+  ϕ_phase: float,            # Phase for PLV synchrony
+  σ_flow: float,             # Propagatability / connectivity
+  λ̂_sensitivity: float,      # Local FTLE (chaos/stability)
+  trust_score: float,        # Trust level for routing
+  presence_vector: map,      # PAC presence fields
+  relay_weight: float,       # Load balancing weight
+  key_fragment: binary,      # Crypto key shard
+  channel_id: uuid | nil,    # Active channel
+  cat_coefficients: binary   # CAT transform encoding
+}
+```
+
+### Cerebros TPE Integration
+
+The TPE search space now includes CAT/NCA hyperparameters:
+
+| Category | Parameters |
+|----------|------------|
+| **θ_CAT** | rule_id, dims, alphabet_size, radius, window_shape, time_depth, basis_type, boundary_condition |
+| **θ_wiring** | lattice_connectivity, coupling_strength, update_schedule, zone_overlap |
+| **θ_model** | Standard neural network hyperparameters (input = CAT coefficients) |
+
+**Objective Function**:
+```
+y = α·task_loss + β·reconstruction_error + γ·(1-compression_ratio) + δ·instability_penalty
+```
+
+### Implementation Phases
+
+| Phase | HC Items | Focus |
+|-------|----------|-------|
+| **1** | HC-60, HC-61 | Thunderbit struct, CAT primitives |
+| **2** | HC-62, HC-63 | NCA/LCA kernel infrastructure |
+| **3** | HC-40 | LoopMonitor criticality metrics |
+| **4** | HC-64, HC-65 | TPE search space, training loop |
+| **5** | HC-66 | Co-Lex ordering service |
+| **6** | HC-67, HC-68 | WebRTC circuits, security layer |
+
+---
+
 ## 🔀 CROSS-DOMAIN FUNCTIONAL LAYERS (Nov 28, 2025)
 
 **Concept**: Individual domains own resources and actions, but certain capabilities emerge from domain *combinations*. These "functional layers" are implemented via coordinated modules across domains without creating new Ash domains.
@@ -534,6 +616,7 @@ python/cerebros/service/snn_priors.py                    # HC-57 (Phase 4)
 | **Orchestration Layer** | Vine × Crown | Workflow execution, policy enforcement on DAGs, approval gates | `Thundervine.WorkflowRunner`, `Thundercrown.ApprovalGate`, `Thundervine.Scheduler` |
 | **Compute Layer** | Bolt × Flow | PAC task routing, CA criticality optimization, TPE/DiffLogic integration | `Thunderbolt.CerebrosBridge`, `Thunderbolt.LoopMonitor`, `Thunderbolt.CA.DiffLogicRules` |
 | **Lattice Layer** | Bolt × Link × Gate | CA routing fabric, WebRTC circuits, geometric crypto | `Thunderbolt.Thunderbit`, `Thunderlink.CACircuit`, `Thundergate.CASession` |
+| **Transform Layer** | Bolt × Block | CAT encoding, coefficient storage, signal compression | `Thunderbolt.CATTransform`, `Thunderblock.CATStore`, `Thunderbolt.NCAKernel` |
 
 ### Implementation Pattern
 
