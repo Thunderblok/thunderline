@@ -230,6 +230,11 @@
 | **HC-51** | **P0** | **CA Channel Mesh Resources** | No Ash resources for CA channels | **Lattice-02**: Define Ash resources for CA communication. **Resources**: (1) `Thunderbolt.CAChannel` (id, path coords, rule version, key_id, ttl_ticks), (2) `Thunderbolt.CAEndpoint` (pac_id, coord, presence_state), (3) `Thundervine.CARoute` (DAG edge for channel topology), (4) `Thundergate.CASession` (session keys, DTLS state). **Actions**: `create_channel`, `teardown_channel`, `refresh_keys`, `reroute_path`. **Queries**: `list_channels_for_pac`, `get_channel_health`, `find_path`. | Bolt + Vine + Gate Stewards | Not Started |
 | **HC-52** | **P1** | **WebRTC Circuit Layer** | CA signaling not integrated with WebRTC | **Lattice-03**: Bridge CA route discovery to WebRTC circuit establishment. **Flow**: (1) CA lattice converges on stable path → (2) `ca.channel.established` event → (3) ICE candidate exchange over CA channel → (4) Thundergate key negotiation → (5) WebRTC DataChannel/MediaChannel opened → (6) Bulk traffic bypasses CA (uses WebRTC). **Components**: `Thunderlink.CACircuitManager` (lifecycle), `Thunderlink.ICEOverCA` (signaling adapter), `Thunderbolt.PresenceField` (endpoint discovery). **Fallback**: If CA route collapses → auto-resignaling → new circuit. Cross-domain: **Link×Bolt**. | Link + Bolt Stewards | Not Started |
 | **HC-53** | **P1** | **CA Lattice Visualization** | No 3D view of Thunderbit lattice | **Lattice-04**: Thunderprism 3D lattice debugger. **Components**: (1) LiveView + Three.js/WebGL for 3D voxel rendering, (2) Real-time PubSub subscription to `ca.tick.*` events, (3) Channel highlighting (active paths glow), (4) Slow-motion replay mode, (5) "Paint path" tool for manual route definition, (6) Metrics overlay (PLV, entropy, λ̂ per region). **Dev UI**: Watch signals propagate wave-by-wave. | Prism Steward | Not Started |
+| **HC-54** | **P0** | **SNN Thunderbit Mode** | No spiking neuron dynamics in CA cells | **Neuro-01**: Extend CACell with spiking neuron dynamics (LIF model, trainable delays). **Components**: (1) `Thunderbolt.SpikingCell` struct (membrane_potential, spike_threshold, leak_rate, refractory_period, delay_queue), (2) Trainable per-neighbor synaptic delays (Paper 1 key insight: delays extend intrinsic memory), (3) Event-driven sparse updates (cells compute only on spike events), (4) EventProp-compatible gradient hooks for delay learning, (5) Multi-spike support per tick. **Benefits**: <50% memory vs frame-based, 26× faster than BPTT for SNN training, improved temporal pattern recognition. **Events**: `snn.spike.*`, `snn.delay.update`. Cross-domain: **Bolt** (CA extension). See §SNN/Photonic Research Integration. | Bolt Steward | Not Started |
+| **HC-55** | **P0** | **Perturbation Layer** | No error tolerance for deep CA stacks | **Neuro-02**: Photonic-inspired decorrelation for error-tolerant deep automata. **Components**: (1) `Thunderbolt.CA.Perturbation` module (inject controlled noise between layers), (2) Per-cell random phase offset to break propagation redundancy (Paper 2 SLiM chip insight), (3) LoopMonitor integration: if λ̂ > 0 (divergent) → increase perturbation strength, (4) Zone-to-zone decorrelation transforms on event handoff, (5) Periodic re-normalization/reset steps to clear accumulated drift. **Goal**: Stack 100+ CA layers without error amplification. **Telemetry**: `[:thunderline, :bolt, :ca, :perturbation]`. Cross-domain: **Bolt×Flow** (CA + observability). | Bolt Steward | Not Started |
+| **HC-56** | **P1** | **EventProp Training** | No event-based gradient computation for SNN | **Neuro-03**: Implement EventProp-style sparse backpropagation for SNN parameter tuning. **Components**: (1) Exact gradients computed only at discrete spike events (not dense time steps), (2) Weight + delay co-optimization, (3) Recurrent SNN support (delay loops), (4) Python bridge (Snex) for gradient computation, (5) Integration with Cerebros TPE for architecture search. **Target**: Train spike thresholds, leak rates, synaptic delays on temporal tasks (speech, sensor sequences). **Metrics**: Memory <50% of BPTT, runtime up to 26× faster. Cross-domain: **Bolt×Flow** (training + events). | Bolt + Flow Stewards | Not Started |
+| **HC-57** | **P1** | **Cerebros SNN Priors** | TPE search space lacks SNN-specific axes | **Neuro-04**: Extend Cerebros TPE search space for spiking/photonic architectures. **New axes**: (1) `spike_threshold` (0.5–2.0), (2) `leak_rate` (0.8–0.99), (3) `trainable_delays_enabled` (bool), (4) `max_delay_ticks` (1–16), (5) `perturbation_strength` (0.001–0.1), (6) `layer_decorrelation_method` (noise/dropout/phase_shift). **Constraints**: PLV ∈ [0.3, 0.6] as objective constraint (healthy criticality). **Integration**: Use LoopMonitor metrics as TPE objective signals, inject noise during architecture evaluation to select error-tolerant designs. Cross-domain: **Bolt×Crown** (ML + governance). | Bolt + Crown Stewards | Not Started |
+| **HC-58** | **P1** | **Spike Train Parser** | No event-driven signal→spike conversion | **Neuro-05**: Neuromorphic signal processing for Thunderforge. **Components**: (1) `Thunderbolt.Signal.SpikingParser` (threshold-crossing detector → spike stream), (2) Learned delay insertion for predictive timing (e.g., anticipate rhythmic beats), (3) On-device SNN inference for signal classification (arrhythmia, anomaly detection), (4) Spike event injection into ThunderCell CA (instead of raw values), (5) Hilbert phase coupling on spike trains. **Benefits**: Dramatically reduced bandwidth, focus computation on salient moments, Nerves-compatible (low memory). **Events**: `signal.spike.*`. Cross-domain: **Bolt×Link** (signal + transport). | Bolt + Link Stewards | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
@@ -407,6 +412,108 @@ end
 - **HC-40 (LoopMonitor)**: PLV/entropy metrics apply to CA channel health
 - **HC-23 (Nerves)**: Edge devices participate in lattice as Thunderbit nodes
 - **HC-13 (Voice/WebRTC)**: Voice streams use CA-discovered WebRTC circuits
+
+---
+
+## 🧠 SNN/PHOTONIC RESEARCH INTEGRATION (Jan 2025)
+
+**Research Sources**: Two Nature papers driving next-generation Thunderbolt architecture:
+1. **Event-Based Delay Learning in SNNs** - Event-driven training, learnable synaptic delays, EventProp framework (<50% memory, 26× faster than BPTT)
+2. **Hundred-Layer Photonic Deep Learning** - SLiM chip design, propagation redundancy breaks via perturbations, 100+ layer depth, decorrelation for error tolerance
+
+### Key Insights Mapped to Thunderline
+
+| Paper Concept | Thunderline Application | Target Module |
+|---------------|------------------------|---------------|
+| **Learnable Synaptic Delays** | Trainable spike timing in CA cells | `SpikingCell` (HC-54) |
+| **EventProp (Sparse Backprop)** | Memory-efficient training for SNN mode | `EventProp` (HC-56) |
+| **SLiM Perturbations** | Noise injection to decorrelate error paths | `Perturbation` (HC-55) |
+| **Propagation Redundancy** | λ̂ monitoring → adaptive perturbation | `LoopMonitor` (HC-40) |
+| **Sub-50% Memory** | Event-sparse representation in Thunderbits | `SpikingParser` (HC-58) |
+| **TPE Prior Extension** | Cerebros search space for delay/perturbation hyperparams | `SNN Priors` (HC-57) |
+
+### Architecture: Spiking Thunderbit Mode
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SPIKING THUNDERBIT MODE                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐       │
+│  │  Token      │────▶│  Spiking    │────▶│  PLV        │       │
+│  │  Stream     │     │  Encoder    │     │  Monitor    │       │
+│  └─────────────┘     └──────┬──────┘     └──────┬──────┘       │
+│                             │                   │               │
+│                             ▼                   ▼               │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              SPIKING THUNDERBIT LATTICE                 │   │
+│  │  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐           │   │
+│  │  │ LIF │──│ LIF │──│ LIF │──│ LIF │──│ LIF │           │   │
+│  │  │ τ_d │  │ τ_d │  │ τ_d │  │ τ_d │  │ τ_d │  (delays) │   │
+│  │  └──┬──┘  └──┬──┘  └──┬──┘  └──┬──┘  └──┬──┘           │   │
+│  │     │        │        │        │        │              │   │
+│  │     └────────┴────────┼────────┴────────┘              │   │
+│  │                       ▼                                │   │
+│  │              ┌─────────────────┐                       │   │
+│  │              │  Perturbation   │ ◀── λ̂ feedback       │   │
+│  │              │  Layer (SLiM)   │                       │   │
+│  │              └────────┬────────┘                       │   │
+│  └───────────────────────┼─────────────────────────────────┘   │
+│                          ▼                                      │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                   LOOP MONITOR (HC-40)                  │   │
+│  │  • PLV Aggregator      • Permutation Entropy            │   │
+│  │  • Langton's λ̂         • Local Lyapunov Exponent        │   │
+│  │  • Criticality Events  • Telemetry: bolt.ca.criticality │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                          │                                      │
+│                          ▼                                      │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                 CEREBROS SNN PRIORS (HC-57)             │   │
+│  │  • τ_membrane: [5ms, 50ms]    • τ_delay: [1ms, 20ms]    │   │
+│  │  • perturb_σ: [0.001, 0.1]    • noise_type: uniform/gauss │  │
+│  │  • λ̂_target: [0.25, 0.35]    • train_mode: eventprop    │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation Phases
+
+| Phase | HC Item | Component | Dependencies | Priority |
+|-------|---------|-----------|--------------|----------|
+| **1** | HC-40 | `LoopMonitor` - PLV aggregator, permutation entropy, λ̂, Lyapunov | PLV, Hilbert (existing) | P0 |
+| **2** | HC-54 | `SpikingCell` - LIF neurons, trainable delays, spike timing | CACell (extend) | P0 |
+| **3** | HC-55 | `Perturbation` - SLiM-style decorrelation, noise injection | LoopMonitor (HC-40) | P0 |
+| **4** | HC-57 | `SNN Priors` - TPE search space extension for SNN hyperparams | Cerebros.TPE | P1 |
+| **5** | HC-58 | `SpikingParser` - Neuromorphic signal processing, spike train → events | Sensor (existing) | P1 |
+| **6** | HC-56 | `EventProp` - Sparse backprop training (optional Axon integration) | SpikingCell (HC-54) | P1 |
+
+### File Locations
+
+```
+lib/thunderline/thunderbolt/signal/loop_monitor.ex       # HC-40 (Phase 1)
+lib/thunderline/thunderbolt/thundercell/spiking_cell.ex  # HC-54 (Phase 2)
+lib/thunderline/thunderbolt/ca/perturbation.ex           # HC-55 (Phase 3)
+lib/thunderline/thunderbolt/signal/spiking_parser.ex     # HC-58 (Phase 5)
+python/cerebros/service/snn_priors.py                    # HC-57 (Phase 4)
+```
+
+### Integration Points with Existing Infrastructure
+
+**Signal Processing** (existing):
+- `PLV.plv/1` → feeds LoopMonitor for phase coherence
+- `Hilbert.step/2` → instantaneous phase extraction
+- `Sensor` GenServer → event emission pattern for spike trains
+
+**Cerebros Bridge** (existing):
+- `CerebrosBridge` → NAS orchestration for SNN hyperparameters
+- `ModelServer` → ONNX session management (potential spike model export)
+- `HPOExecutor` → Oban worker pattern for SNN training jobs
+
+**CA Infrastructure** (existing):
+- `CACell` → extend for LIF dynamics (membrane potential, refractory)
+- `CAEngine` → coordination for spiking lattice
+- `Stepper` → step function extension for spike propagation
 
 ---
 
