@@ -359,7 +359,7 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
             batch_timeout: @__dp_batch_timeout
           ]
 
-          Keyword.merge(base, do_batcher_config(batcher))
+          {batcher, Keyword.merge(base, do_batcher_config(batcher))}
         end)
       end
 
@@ -413,15 +413,25 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
   def normalize_event(%Thunderline.Event{} = event), do: {:ok, event}
 
   def normalize_event(event) when is_map(event) do
+    source_raw = Map.get(event, :source) || Map.get(event, "source") || :unknown
+    source = if is_binary(source_raw), do: String.to_existing_atom(source_raw), else: source_raw
+
+    type_raw = Map.get(event, :type) || Map.get(event, "type") || :unknown
+    type = if is_binary(type_raw), do: String.to_existing_atom(type_raw), else: type_raw
+
     attrs = %{
       name: Map.get(event, :name) || Map.get(event, "name") || "unknown",
-      type: Map.get(event, :type) || Map.get(event, "type") || :unknown,
-      source: Map.get(event, :source) || Map.get(event, "source") || :unknown,
+      type: type,
+      source: source,
       payload: Map.get(event, :payload) || Map.get(event, "payload") || %{},
       meta: Map.get(event, :meta) || Map.get(event, "meta") || %{}
     }
 
     Thunderline.Event.new(attrs)
+  rescue
+    ArgumentError ->
+      # String.to_existing_atom failed - invalid source
+      {:error, {:invalid_source, Map.get(event, :source) || Map.get(event, "source")}}
   end
 
   def normalize_event(other) do

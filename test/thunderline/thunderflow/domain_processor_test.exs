@@ -124,9 +124,9 @@ defmodule Thunderline.Thunderflow.DomainProcessorTest do
     test "passes through Event structs unchanged" do
       {:ok, event} =
         Event.new(%{
-          name: "test.event",
-          type: :test,
-          source: :test,
+          name: "system.event.test",
+          type: :system,
+          source: :flow,
           payload: %{foo: "bar"}
         })
 
@@ -135,35 +135,35 @@ defmodule Thunderline.Thunderflow.DomainProcessorTest do
 
     test "converts map with atom keys to Event" do
       map = %{
-        name: "test.event",
-        type: :test,
-        source: :test,
+        name: "system.event.test",
+        type: :system,
+        source: :flow,
         payload: %{data: 123}
       }
 
       assert {:ok, %Event{} = event} = DomainProcessor.normalize_event(map)
-      assert event.name == "test.event"
-      assert event.type == :test
+      assert event.name == "system.event.test"
+      assert event.type == :system
       assert event.payload == %{data: 123}
     end
 
     test "converts map with string keys to Event" do
       map = %{
-        "name" => "string.event",
+        "name" => "system.string.event",
         "type" => "string_type",
-        "source" => "string_source",
+        "source" => "flow",
         "payload" => %{"key" => "value"}
       }
 
       assert {:ok, %Event{} = event} = DomainProcessor.normalize_event(map)
-      assert event.name == "string.event"
+      assert event.name == "system.string.event"
     end
 
     test "handles missing fields with defaults" do
-      map = %{name: "minimal.event"}
+      map = %{name: "system.minimal.event"}
 
       assert {:ok, %Event{} = event} = DomainProcessor.normalize_event(map)
-      assert event.name == "minimal.event"
+      assert event.name == "system.minimal.event"
       assert event.type == :unknown
       assert event.source == :unknown
       assert event.payload == %{}
