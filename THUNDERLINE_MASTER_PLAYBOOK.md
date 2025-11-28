@@ -226,8 +226,187 @@
 | **HC-47** | **P0** | **Thunderpac Domain** | PAC lifecycle scattered across domains | **Pantheon-02**: Create Thunderpac domain for PAC lifecycle management. **Components**: (1) `Thunderpac.Domain` Ash domain, (2) Extract PAC resources from Thunderbolt/Thunderblock, (3) `PAC` resource (state containers), (4) `PACRole` (role definitions), (5) `PACIntent` (intent management), (6) Lifecycle state machine (`:dormant`, `:active`, `:suspended`, `:archived`). **Files**: `lib/thunderline/thunderpac/`. | Pac Steward | Not Started |
 | **HC-48** | **P0** | **Thunderwall Domain** | No entropy/decay boundary | **Pantheon-03**: Create Thunderwall domain for system boundary, entropy sink, GC. **Components**: (1) `Thunderwall.Domain` Ash domain, (2) `DecayProcessor` (archive expired resources), (3) `OverflowHandler` (reject stream management), (4) `EntropyMetrics` (system decay telemetry), (5) `GCScheduler` (garbage collection coordination), (6) Event categories `wall.decay.*`, `wall.archive.*`. **Files**: `lib/thunderline/thunderwall/`. Cross-domain: **Wall = final destination for all domains' expired/rejected data**. | Wall Steward | Not Started |
 | **HC-49** | **P0** | **Crown←Chief Consolidation** | Orchestration split from governance | **Pantheon-04**: Complete Thunderchief → Thundercrown merger. **Components**: (1) Move remaining Thunderchief modules to Thundercrown, (2) Update all `Thunderchief.*` references to `Thundercrown.*`, (3) Delete Thunderchief domain directory, (4) Update imports/aliases across codebase, (5) Event categories `chief.*` → `crown.*`. **Rationale**: Orchestration + Governance = unified authority (saga planners + policy = single control plane). | Crown Steward | Not Started |
+| **HC-50** | **P0** | **ThunderCell Lattice Communications** | No CA-based communication fabric | **Lattice-01**: Implement hybrid CA/WebRTC communication layer. **Architecture**: (1) 3D hexagonal Thunderbit lattice as routing/signaling fabric, (2) WebRTC for high-bandwidth payload transport, (3) CA rules for presence detection, route discovery, topology healing. **Components**: `Thunderbolt.Thunderbit` (voxel cell struct), `Thunderbolt.CAChannel` (lattice path definition), `Thunderbolt.CAStepper` (automaton tick engine), `Thunderlink.CACircuit` (WebRTC over CA routes). **Security**: mTLS/DTLS tunnels, per-hop XOR encryption, geometric secrecy (only path-aware endpoints reconstruct). **Events**: `ca.channel.*`, `ca.presence.*`, `ca.route.*`. Cross-domain: **Bolt×Link×Gate** (CA compute + transport + crypto). See §ThunderCell Lattice Architecture. | Bolt + Link + Gate Stewards | Not Started |
+| **HC-51** | **P0** | **CA Channel Mesh Resources** | No Ash resources for CA channels | **Lattice-02**: Define Ash resources for CA communication. **Resources**: (1) `Thunderbolt.CAChannel` (id, path coords, rule version, key_id, ttl_ticks), (2) `Thunderbolt.CAEndpoint` (pac_id, coord, presence_state), (3) `Thundervine.CARoute` (DAG edge for channel topology), (4) `Thundergate.CASession` (session keys, DTLS state). **Actions**: `create_channel`, `teardown_channel`, `refresh_keys`, `reroute_path`. **Queries**: `list_channels_for_pac`, `get_channel_health`, `find_path`. | Bolt + Vine + Gate Stewards | Not Started |
+| **HC-52** | **P1** | **WebRTC Circuit Layer** | CA signaling not integrated with WebRTC | **Lattice-03**: Bridge CA route discovery to WebRTC circuit establishment. **Flow**: (1) CA lattice converges on stable path → (2) `ca.channel.established` event → (3) ICE candidate exchange over CA channel → (4) Thundergate key negotiation → (5) WebRTC DataChannel/MediaChannel opened → (6) Bulk traffic bypasses CA (uses WebRTC). **Components**: `Thunderlink.CACircuitManager` (lifecycle), `Thunderlink.ICEOverCA` (signaling adapter), `Thunderbolt.PresenceField` (endpoint discovery). **Fallback**: If CA route collapses → auto-resignaling → new circuit. Cross-domain: **Link×Bolt**. | Link + Bolt Stewards | Not Started |
+| **HC-53** | **P1** | **CA Lattice Visualization** | No 3D view of Thunderbit lattice | **Lattice-04**: Thunderprism 3D lattice debugger. **Components**: (1) LiveView + Three.js/WebGL for 3D voxel rendering, (2) Real-time PubSub subscription to `ca.tick.*` events, (3) Channel highlighting (active paths glow), (4) Slow-motion replay mode, (5) "Paint path" tool for manual route definition, (6) Metrics overlay (PLV, entropy, λ̂ per region). **Dev UI**: Watch signals propagate wave-by-wave. | Prism Steward | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
+
+---
+
+## ⚡ THUNDERCELL LATTICE COMMUNICATION ARCHITECTURE (Nov 28, 2025)
+
+**Mission**: Build a hybrid CA/WebRTC communication fabric where the cellular automaton lattice handles routing, signaling, and identity while WebRTC provides high-bandwidth payload transport.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    THUNDERCELL LATTICE ARCHITECTURE                         │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                     LAYER 3: THUNDERLINE                            │   │
+│   │         Policy • PAC Semantics • Domain Behavior • DAG Lineage      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                    ▲                                        │
+│                                    │                                        │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                     LAYER 2: WebRTC PAYLOAD                         │   │
+│   │         High-bandwidth • Low-latency • DTLS/SRTP • DataChannels     │   │
+│   │                    (Thunderlink.CACircuit)                          │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                    ▲                                        │
+│                                    │ Signaling/Route Discovery              │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                     LAYER 1: CA LATTICE                             │   │
+│   │    Routing • Identity • Obfuscation • Multiplexing • Presence       │   │
+│   │                  (Thunderbolt.Thunderbit Grid)                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Domain Responsibilities
+
+| Domain | CA Lattice Role |
+|--------|-----------------|
+| **Thundercore** | Universe clock, tick alignment, base lattice coordinates |
+| **Thunderbolt** | CA rules, Thunderbit structs, stepper, channel templates |
+| **Thunderpac** | PAC-owned channels, key material, channel creation policies |
+| **Thundervine** | Channel graph (CARoute edges), overlay routing table |
+| **Thundergate** | Crypto: key exchange, session keys, mTLS/DTLS management |
+| **Thunderflow** | Events: `ca.channel.*`, `ca.presence.*`, health monitoring |
+| **Thundergrid** | API: `send_message/2`, `list_channels/1`, GraphQL exposure |
+| **Thunderprism** | 3D visualization, path painting, slow-motion debug |
+| **Thunderlink** | WebRTC circuits, ICE negotiation, TURN fallback |
+| **Thunderwall** | Boundary damping, mix zones, channel decay/shredding |
+
+### Thunderbit Structure
+
+```elixir
+defmodule Thunderbolt.Thunderbit do
+  @moduledoc "Single voxel cell in the 3D CA lattice"
+  @enforce_keys [:coord]
+  defstruct [
+    :coord,           # {x, y, z} position in lattice
+    :state,           # Nx tensor or bitfield (few bits/words)
+    :channel_id,      # Active channel ID (nil if idle)
+    :key_id,          # Reference to Thundergate session key
+    :neighbors,       # Precomputed neighbor coords (6 in-plane + temporal)
+    :presence,        # :vacant | :occupied | :forwarding
+    :route_tags       # Bloom filter of destination IDs
+  ]
+end
+```
+
+### CA Channel Definition
+
+```elixir
+defmodule Thunderbolt.CAChannel do
+  @moduledoc "A routed path through the Thunderbit lattice"
+  use Ash.Resource
+
+  attributes do
+    uuid_primary_key :id
+    attribute :name, :string           # e.g. "chan:pacA→pacB:123"
+    attribute :path, {:array, :map}    # [{x,y,z}, ...] coordinates
+    attribute :rule, :atom             # :waveguide_v1, :broadcast_v1, etc.
+    attribute :key_id, :string         # Thundergate session key reference
+    attribute :ttl_ticks, :integer     # Channel lifetime in CA ticks
+    attribute :status, :atom           # :establishing | :active | :degraded | :teardown
+    timestamps()
+  end
+
+  relationships do
+    belongs_to :source_pac, Thunderpac.PAC
+    belongs_to :dest_pac, Thunderpac.PAC
+  end
+end
+```
+
+### Communication Flow
+
+```
+1. PRESENCE DISCOVERY
+   ┌──────────┐    CA tick    ┌──────────┐    CA tick    ┌──────────┐
+   │  PAC A   │ ─────────────▶│ Lattice  │◀───────────── │  PAC B   │
+   │ (beacon) │               │  (wave)  │               │ (beacon) │
+   └──────────┘               └──────────┘               └──────────┘
+         │                          │                          │
+         ▼                          ▼                          ▼
+   presence_field ───────▶ route converges ◀─────── presence_field
+
+2. CHANNEL ESTABLISHMENT
+   PAC A ──[ca.channel.request]──▶ CA Lattice ──[ca.channel.established]──▶ PAC B
+              │                                           │
+              └──────────── Thundervine DAG ──────────────┘
+                         (CARoute edge stored)
+
+3. WEBRTC CIRCUIT UPGRADE
+   PAC A ──[ICE offer via CA]──▶ PAC B
+   PAC A ◀──[ICE answer via CA]── PAC B
+   PAC A ◀═══[WebRTC DataChannel]═══▶ PAC B  (bulk traffic)
+
+4. ONGOING OPERATION
+   CA Lattice: heartbeat, topology healing, reroute signals
+   WebRTC: payload transport, audio/video, sensor streams
+   Thunderflow: ca.channel.health events, PLV/λ̂ metrics
+```
+
+### Security Model
+
+| Layer | Security Mechanism |
+|-------|-------------------|
+| **Transport** | mTLS between Thunderblocks, DTLS for WebRTC |
+| **Per-hop** | XOR encryption with lattice-derived keys |
+| **Geometric** | Only path-aware endpoints can reconstruct signals |
+| **Session** | Ephemeral keys negotiated via Thundergate |
+| **Zero-trust** | Cells never store plaintext; all forwarding is opaque |
+
+### CA Primitives
+
+| Primitive | Description | CA State Encoding |
+|-----------|-------------|-------------------|
+| **Presence beacon** | One-bit "alive" signal | `state[0]` = presence bit |
+| **Data packet** | Multi-bit symbol with sequencing | `state[1..N]` = payload chunk |
+| **Route tag** | Destination/next-hop identifier | `route_tags` bloom filter |
+| **Ack token** | Reverse propagation for receipt confirmation | `state[N+1]` = ack bit |
+| **Channel ID** | Stream multiplexing identifier | `channel_id` field |
+
+### Performance Characteristics
+
+| Metric | CA Lattice | WebRTC Circuit |
+|--------|------------|----------------|
+| **Throughput** | Low (signaling only) | High (Mbps+) |
+| **Latency** | Tick-bounded | Sub-100ms |
+| **Use case** | Routing, presence, obfuscation | Payload, media, bulk data |
+| **Security** | Geometric + crypto | DTLS/SRTP |
+
+### Fallback & Resilience
+
+```elixir
+# Automatic reroute on path degradation
+def handle_event({:ca, :channel, :degraded}, %{channel_id: id}, socket) do
+  with {:ok, channel} <- CAChannel.get(id),
+       {:ok, new_path} <- find_alternate_path(channel),
+       {:ok, _} <- CAChannel.update(channel, %{path: new_path, status: :rerouting}) do
+    # WebRTC circuit will auto-reconnect via new signaling path
+    {:ok, :rerouted}
+  else
+    {:error, :no_path} ->
+      # Fallback to Cerebros cloud relay
+      CerebrosBridge.request_relay(channel)
+  end
+end
+```
+
+### Integration with Existing HC Items
+
+- **HC-38 (Cerebros-DiffLogic)**: CA rules can be gradient-tuned for optimal routing
+- **HC-40 (LoopMonitor)**: PLV/entropy metrics apply to CA channel health
+- **HC-23 (Nerves)**: Edge devices participate in lattice as Thunderbit nodes
+- **HC-13 (Voice/WebRTC)**: Voice streams use CA-discovered WebRTC circuits
 
 ---
 
@@ -247,6 +426,7 @@ Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: 
 | **Communication Layer** | Link × Gate | External messaging, federation, API gateway, rate limiting | `Thunderlink.TOCP`, `Thundergate.Federation`, `Thundergate.RateLimiter` |
 | **Orchestration Layer** | Vine × Crown | Workflow execution, policy enforcement on DAGs, approval gates | `Thundervine.WorkflowRunner`, `Thundercrown.ApprovalGate`, `Thundervine.Scheduler` |
 | **Compute Layer** | Bolt × Flow | PAC task routing, CA criticality optimization, TPE/DiffLogic integration | `Thunderbolt.CerebrosBridge`, `Thunderbolt.LoopMonitor`, `Thunderbolt.CA.DiffLogicRules` |
+| **Lattice Layer** | Bolt × Link × Gate | CA routing fabric, WebRTC circuits, geometric crypto | `Thunderbolt.Thunderbit`, `Thunderlink.CACircuit`, `Thundergate.CASession` |
 
 ### Implementation Pattern
 
