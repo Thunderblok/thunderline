@@ -49,15 +49,11 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   require Logger
   alias Thunderline.Thunderbolt.Sagas.Base
   alias Thunderline.Thundergate.Resources.User
-
-  middlewares do
-    middleware Thunderline.Thunderbolt.Sagas.TelemetryMiddleware
-    middleware Reactor.Middleware.Telemetry
-  end
   alias Thunderline.Thunderblock.Resources.VaultUser
 
   # Emit telemetry for all steps (start/stop events)
   middlewares do
+    middleware Thunderline.Thunderbolt.Sagas.TelemetryMiddleware
     middleware Reactor.Middleware.Telemetry
   end
 
