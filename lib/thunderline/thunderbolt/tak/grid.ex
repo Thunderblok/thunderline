@@ -144,7 +144,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
     flat_data = Nx.to_flat_list(squeezed)
 
     cells = case shape do
-      {height, width} ->
+      {_height, width} ->
         # 2D grid
         flat_data
         |> Enum.with_index()
@@ -158,7 +158,7 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
           end
         end)
 
-      {depth, height, width} ->
+      {_depth, height, width} ->
         # 3D grid
         flat_data
         |> Enum.with_index()

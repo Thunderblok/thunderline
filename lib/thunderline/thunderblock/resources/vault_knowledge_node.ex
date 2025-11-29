@@ -1067,47 +1067,47 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   end
 
   # ===== PRIVATE FUNCTIONS =====
-  defp link_knowledge_resources(node) do
+  defp link_knowledge_resources(_node) do
     # Link memory records and embedding vectors
     :ok
   end
 
-  defp calculate_graph_metrics(node) do
+  defp calculate_graph_metrics(_node) do
     # Calculate centrality and other graph metrics
     :ok
   end
 
-  defp schedule_knowledge_indexing(node) do
+  defp schedule_knowledge_indexing(_node) do
     # Schedule knowledge indexing job
     :ok
   end
 
-  defp recalculate_network_metrics(node) do
+  defp recalculate_network_metrics(_node) do
     # Recalculate metrics for connected nodes
     :ok
   end
 
-  defp merge_duplicate_node_data(duplicate_ids) do
+  defp merge_duplicate_node_data(_duplicate_ids) do
     # Merge data from duplicate nodes
     {[], []}
   end
 
-  defp mark_nodes_as_duplicates(node_ids, consolidated_into_id) do
+  defp mark_nodes_as_duplicates(_node_ids, _consolidated_into_id) do
     # Mark nodes as consolidated duplicates
     :ok
   end
 
-  defp calculate_access_frequency(access_patterns) do
+  defp calculate_access_frequency(_access_patterns) do
     # Calculate access frequency metric
     0.0
   end
 
-  defp update_access_patterns(patterns, access_type, user_context) do
+  defp update_access_patterns(patterns, _access_type, _user_context) do
     # Update access pattern tracking
     patterns
   end
 
-  defp cleanup_knowledge_references(node) do
+  defp cleanup_knowledge_references(_node) do
     # Clean up references to deleted knowledge node
     :ok
   end

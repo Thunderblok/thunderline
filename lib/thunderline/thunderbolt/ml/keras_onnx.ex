@@ -61,7 +61,7 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
   """
 
   require Logger
-  alias Thunderline.Thunderbolt.ML.{Input, Output, Normalize}
+  alias Thunderline.Thunderbolt.ML.{Input, Output}
 
   @type session :: reference()
   @type model_path :: String.t()
@@ -392,10 +392,11 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
       {:error, {:ortex_exception, error}}
   end
 
-  defp map_optimization_level(:none), do: 0
-  defp map_optimization_level(:basic), do: 1
-  defp map_optimization_level(:extended), do: 2
-  defp map_optimization_level(:all), do: 99
+  @doc false
+  def map_optimization_level(:none), do: 0
+  def map_optimization_level(:basic), do: 1
+  def map_optimization_level(:extended), do: 2
+  def map_optimization_level(:all), do: 99
 
   defp normalize_inputs(inputs) do
     # Input.new! already validates inputs, so no additional normalization needed

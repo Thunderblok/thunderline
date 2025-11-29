@@ -25,7 +25,6 @@ defmodule Thunderline.Thunderbolt.NLP.Port do
   use GenServer
   require Logger
 
-  alias Thunderline.Event
   alias Thunderline.Thunderflow.Telemetry
 
   @max_retries 3

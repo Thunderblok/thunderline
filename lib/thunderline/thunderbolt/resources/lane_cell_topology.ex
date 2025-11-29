@@ -404,7 +404,7 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
         |> Ash.Changeset.for_update(:update, %{status: :error})
         |> Ash.update()
         |> case do
-          {:ok, t} -> {:error, "Partitioning failed: #{reason}"}
+          {:ok, _t} -> {:error, "Partitioning failed: #{reason}"}
           error -> error
         end
     end

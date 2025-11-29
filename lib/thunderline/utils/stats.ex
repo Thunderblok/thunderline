@@ -25,8 +25,6 @@ defmodule Thunderline.Utils.Stats do
   - Target regime: PLV ∈ [0.3, 0.6], σ ≈ 1.0, λ̂ ≤ 0
   """
 
-  import Nx.Defn
-
   # Target bands for healthy dynamics
   @plv_min 0.3
   @plv_max 0.6

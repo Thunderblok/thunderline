@@ -50,7 +50,6 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
   use Reactor, extensions: [Reactor.Dsl]
 
   require Logger
-  alias Thunderline.Thunderbolt.Sagas.Base
   alias Thunderline.Thunderbolt.Resources.UpmSnapshot
   alias Thunderline.Thunderbolt.Resources.UpmAdapter
   alias Thunderline.Thunderbolt.Resources.UpmDriftWindow

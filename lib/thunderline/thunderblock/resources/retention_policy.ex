@@ -11,9 +11,6 @@ defmodule Thunderline.Thunderblock.Resources.RetentionPolicy do
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer
 
-  alias Ash.Changeset
-  import Ash.Resource.Change.Builtins
-
   postgres do
     table "thunderblock_retention_policies"
     repo Thunderline.Repo

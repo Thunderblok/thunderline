@@ -111,7 +111,7 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
   """
   defn evolve_kernel(grid, born, survive) do
     # Get grid shape and check dimensions
-    shape = Nx.shape(grid)
+    _shape = Nx.shape(grid)
     rank = Nx.rank(grid)
 
     case rank do

@@ -208,7 +208,9 @@ defmodule Thunderline.Thunderbolt.RAG.Serving do
     Logger.info("[RAG.Serving] Embedding serving ready: #{inspect(@embed_serving_name)}")
   end
 
-  defp start_generate_serving do
+  # Reserved for Phase 3.6+ generation model
+  @doc false
+  def start_generate_serving do
     Logger.info("[RAG.Serving] Loading generation model: #{@generate_model_repo}")
 
     {:ok, model_info} = Bumblebee.load_model({:hf, @generate_model_repo})

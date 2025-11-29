@@ -268,7 +268,7 @@ defmodule Thunderline.Thunderbolt.Continuous.Interpolation do
         avg / length(nearest_4)
 
       _ ->
-        [{x0, y0}, {x1, y1}, {x2, y2}, {x3, y3}] =
+        [{_x0, y0}, {x1, y1}, {x2, y2}, {_x3, y3}] =
           Enum.sort_by(nearest_4, fn {px, _} -> px end)
 
         # Catmull-Rom parameter

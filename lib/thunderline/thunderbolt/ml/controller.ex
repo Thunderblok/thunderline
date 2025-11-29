@@ -556,27 +556,7 @@ defmodule Thunderline.Thunderbolt.ML.Controller do
     )
   end
 
-  # Unused helpers (for Phase 3.6+ ONNX integration)
-  defp update_parzen(_state, _batch), do: raise("Use update_all_parzen/2")
-  defp choose_model(_state), do: raise("Use choose_next_model/1")
-  defp run_inference(_state, _model_id, _batch), do: raise("Phase 3.6+ ONNX")
-  defp outputs_to_histogram(_outputs, _bins), do: raise("Use Parzen.histogram/1")
-  defp compute_distance(_state, _p_hist, _m_hist), do: raise("Use compute_all_distances/3")
-  defp calculate_reward(_state, _distance), do: raise("Use determine_best_model/1")
-  defp update_sla(_state, _model_id, _reward, _dist), do: raise("Use update_sla_for_all_models/3")
-
-  defp build_metadata(_state, _model_id, _dist, _reward),
-    do: raise("Response built in do_process_batch/2")
-
-  defp emit_telemetry(state, metadata, duration) do
-    raise "Not implemented - Phase 3.5"
-  end
-
-  defp emit_model_changed_event(state, old_model, new_model) do
-    raise "Not implemented - Phase 3.5"
-  end
-
-  defp emit_convergence_event(state) do
-    raise "Not implemented - Phase 3.5"
-  end
+  # Phase 3.6+ stubs removed - see update_all_parzen/2, choose_next_model/1,
+  # compute_all_distances/3, determine_best_model/1, update_sla_for_all_models/3
+  # for active implementations
 end

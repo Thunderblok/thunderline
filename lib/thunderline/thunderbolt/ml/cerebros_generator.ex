@@ -249,7 +249,7 @@ defmodule Thunderline.Thunderbolt.ML.CerebrosGenerator do
     end
   end
 
-  defp apply_repetition_penalty(logits, token_ids, penalty) when penalty == 1.0, do: logits
+  defp apply_repetition_penalty(logits, _token_ids, penalty) when penalty == 1.0, do: logits
 
   defp apply_repetition_penalty(logits, token_ids, penalty) do
     unique_tokens = Enum.uniq(token_ids)

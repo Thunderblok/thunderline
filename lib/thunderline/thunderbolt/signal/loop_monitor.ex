@@ -170,7 +170,7 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
 
       # Count pattern frequencies
       freqs = Enum.frequencies(patterns)
-      total = map_size(freqs) |> max(1)
+      _num_unique = map_size(freqs) |> max(1)
       count = Enum.count(patterns)
 
       # Compute normalized entropy

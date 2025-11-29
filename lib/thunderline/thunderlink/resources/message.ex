@@ -818,12 +818,12 @@ defmodule Thunderline.Thunderlink.Resources.Message do
     reply_to_id
   end
 
-  defp update_channel_message_stats(channel_id) do
+  defp update_channel_message_stats(_channel_id) do
     # Update channel's message count and last message timestamp
     :ok
   end
 
-  defp update_thread_stats(thread_root_id) do
+  defp update_thread_stats(_thread_root_id) do
     # Update thread statistics
     :ok
   end
@@ -835,7 +835,7 @@ defmodule Thunderline.Thunderlink.Resources.Message do
     end
   end
 
-  defp moderate_message_content(message) do
+  defp moderate_message_content(_message) do
     # Run content moderation checks
     :ok
   end
@@ -897,27 +897,27 @@ defmodule Thunderline.Thunderlink.Resources.Message do
     )
   end
 
-  defp notify_moderation_team(message) do
+  defp notify_moderation_team(_message) do
     # Notify moderation team of flagged message
     :ok
   end
 
-  defp send_mention_notification(user_id, message) do
+  defp send_mention_notification(_user_id, _message) do
     # Send notification to mentioned user
     :ok
   end
 
-  defp process_pac_command(message) do
+  defp process_pac_command(_message) do
     # Process PAC coordination command
     :ok
   end
 
-  defp process_ai_response(message) do
+  defp process_ai_response(_message) do
     # Process AI-generated response
     :ok
   end
 
-  defp process_federation_message(message) do
+  defp process_federation_message(_message) do
     # Process federated message from another realm
     :ok
   end

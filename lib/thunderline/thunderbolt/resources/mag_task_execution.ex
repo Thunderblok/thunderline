@@ -7,8 +7,6 @@ defmodule Thunderline.Thunderbolt.Resources.MagTaskExecution do
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: AshPostgres.DataLayer
 
-  import Ash.Resource.Change.Builtins
-
   postgres do
     table "thundermag_task_executions"
     repo Thunderline.Repo

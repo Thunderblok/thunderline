@@ -197,7 +197,7 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
 
             {:reply, {:ok, session}, state}
 
-          {:error, reason} = error ->
+          {:error, _reason} = error ->
             {:reply, error, state}
         end
 

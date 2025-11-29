@@ -17,8 +17,6 @@ defmodule Thunderline.ThunderMemory do
   use GenServer
   require Logger
 
-  alias :mnesia, as: Mnesia
-
   # Table definitions for ThunderMemory storage
   defmodule AgentTable do
     @moduledoc "Mnesia table for agent data"

@@ -13,7 +13,6 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
 
   @default_timeout_ms 15_000
   @default_max_retries 0
-  @rescue_errors [RuntimeError, ArgumentError]
 
   @doc """
   Invoke the Cerebros bridge operation with retries and structured telemetry.

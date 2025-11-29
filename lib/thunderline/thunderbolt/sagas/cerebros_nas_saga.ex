@@ -52,7 +52,6 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
   use Reactor, extensions: [Reactor.Dsl]
 
   require Logger
-  alias Thunderline.Thunderbolt.Sagas.Base
   alias Thunderline.Thunderbolt.Resources.ModelRun
   alias Thunderline.Thunderbolt.ML.ModelArtifact
   alias Thunderline.Thunderbolt.ML.TrainingDataset

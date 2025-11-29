@@ -25,8 +25,7 @@ defmodule Thunderline.Thunderbolt.MLflow.SyncWorker do
 
   alias Thunderline.ObanHelpers
   alias Thunderline.Thunderbolt.MLflow.{Client, Experiment, Run}
-  alias Thunderline.Thunderbolt.Resources.{ModelTrial, ModelRun}
-  alias Thunderline.Repo
+  alias Thunderline.Thunderbolt.Resources.ModelTrial
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"action" => "sync_trial_to_mlflow", "trial_id" => trial_id}}) do

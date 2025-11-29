@@ -292,7 +292,7 @@ defmodule Thunderline.Thunderbolt.MLflow.Client do
 
   # -- HTTP helpers --
 
-  defp get(path, params \\ []) do
+  defp get(path, params) do
     url = tracking_uri() <> path
 
     Req.get(url, params: params, receive_timeout: Config.request_timeout())

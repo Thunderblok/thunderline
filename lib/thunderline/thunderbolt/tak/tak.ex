@@ -150,7 +150,7 @@ defmodule Thunderline.Thunderbolt.TAK do
       onnx_binary = TAK.to_onnx(grid, ruleset)
       File.write!("snapshot.onnx", onnx_binary)
   """
-  def to_onnx(grid, ruleset) do
+  def to_onnx(_grid, _ruleset) do
     # Phase 5: Implement TAK.Serializer.to_onnx/2
     {:error, :not_implemented_phase_5}
   end

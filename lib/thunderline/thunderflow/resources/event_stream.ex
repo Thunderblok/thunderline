@@ -11,8 +11,6 @@ defmodule Thunderline.Thunderflow.Resources.EventStream do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshJsonApi.Resource, AshOban.Resource]
 
-  import Ash.Resource.Change.Builtins
-
   postgres do
     table "thunderflow_event_streams"
     repo Thunderline.Repo

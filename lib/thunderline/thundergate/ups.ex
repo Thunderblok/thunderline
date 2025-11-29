@@ -4,7 +4,6 @@ defmodule Thunderline.Thundergate.UPS do
   emits status events to the bus. Old module remains as deprecated delegate.
   """
   use GenServer
-  alias Thunderline.EventBus, as: Bus
   alias Thunderline.Thunderbolt.Signal.Sensor
   require Logger
   # Removed unused @legacy attribute (legacy module retained for reference)

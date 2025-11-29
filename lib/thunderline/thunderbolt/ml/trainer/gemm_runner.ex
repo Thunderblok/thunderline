@@ -47,7 +47,7 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.GemmRunner do
 
     latencies_ms =
       for i <- 1..repeats do
-        {time_us, res} =
+        {time_us, _res} =
           :timer.tc(fn ->
             case Thunderline.Thunderbolt.Numerics.gemm_fp16_acc32(a16, b16, m: m, n: n, k: k) do
               {:ok, _c16} -> :ok

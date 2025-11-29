@@ -27,7 +27,7 @@ defmodule Thunderline.Dev.CredoChecks.DomainGuardrails do
     ],
     tags: [:domain, :architecture]
 
-  alias Credo.{Issue, SourceFile}
+  alias Credo.SourceFile
 
   @doc false
   def run(source_file, params) do

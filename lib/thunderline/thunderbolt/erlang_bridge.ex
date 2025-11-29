@@ -26,8 +26,6 @@ defmodule Thunderline.ErlangBridge do
   use GenServer
   require Logger
 
-  alias Thunderline.EventBus
-
   # Client API
 
   @doc "Start the Erlang bridge GenServer"

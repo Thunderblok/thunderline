@@ -9,8 +9,6 @@ defmodule Thunderline.Thunderflow.Observability.NDJSON do
 
   alias __MODULE__, as: NDJSON
 
-  @legacy Thunderline.Log.NDJSON
-
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
 
   def init(opts) do

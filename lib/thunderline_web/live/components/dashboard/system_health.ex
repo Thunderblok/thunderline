@@ -7,7 +7,6 @@ defmodule ThunderlineWeb.DashboardComponents.SystemHealth do
   """
 
   use Phoenix.Component
-  import ThunderlineWeb.CoreComponents
 
   attr :health, :map, required: true
 

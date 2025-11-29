@@ -143,7 +143,8 @@ defmodule Thunderline.Thunderbolt.Continuous.Storage do
   @spec to_finch_format(Tensor.t()) :: map()
   def to_finch_format(%Tensor{dims: dims, intervals: intervals, default: default}) do
     # Convert intervals to COO (Coordinate) format
-    {coords, values} = intervals_to_coo(intervals, dims)
+    # Note: coords/values computed for future sparse export, currently using interval_list format
+    {_coords, _values} = intervals_to_coo(intervals, dims)
 
     # Calculate bounding shape
     shape = calculate_bounding_shape(intervals, dims)

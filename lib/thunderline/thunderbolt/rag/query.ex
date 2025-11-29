@@ -160,7 +160,7 @@ defmodule Thunderline.Thunderbolt.RAG.Query do
     """
   end
 
-  defp search_vector_db(query_embedding, top_k, collection) do
+  defp search_vector_db(_query_embedding, top_k, collection) do
     # In a real implementation, this would query Chroma or similar
     # For now, simulate retrieval with empty results
     Logger.debug("Searching vector DB",

@@ -13,7 +13,6 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     extensions: [AshStateMachine, AshJsonApi.Resource, AshOban, AshGraphql.Resource],
     notifiers: [Ash.Notifier.PubSub]
 
-  alias Ash.Changeset
   alias Thunderline.Thunderbolt.Domain
 
   # ============================================================================
@@ -822,7 +821,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     r = Ash.Changeset.get_argument(changeset, :hex_r)
 
     # If hex_s isn't provided we compute it as -q - r (axial coordinate invariant)
-    s = Ash.Changeset.get_argument(changeset, :hex_s) || -(q + r)
+    # s coordinate validated but unused in 2x2 region computation
+    _s = Ash.Changeset.get_argument(changeset, :hex_s) || -(q + r)
 
     # Build a 2x2 region around the provided hex for simplicity
     start_q = q - 1

@@ -5,7 +5,7 @@ defmodule Thunderline.Thunderflow.Probing.Attractor do
   Adapts the Raincatcher attractor summary pipeline to operate on
   embeddings queried from the database instead of NDJSON logs.
   """
-  alias Thunderline.Thunderflow.Resources.{ProbeLap, ProbeAttractorSummary, ProbeRun}
+  alias Thunderline.Thunderflow.Resources.{ProbeLap, ProbeRun}
 
   @type opts :: [m: pos_integer(), tau: pos_integer(), min_points: pos_integer()]
 
@@ -199,7 +199,7 @@ defmodule Thunderline.Thunderflow.Probing.Attractor do
   defp lyapunov_rosenstein([], _opts), do: %{lyap: 0.0, r2: 0.0, window: {0, 0}}
   defp lyapunov_rosenstein([_], _opts), do: %{lyap: 0.0, r2: 0.0, window: {0, 0}}
 
-  defp lyapunov_rosenstein(delay_vectors, opts) do
+  defp lyapunov_rosenstein(delay_vectors, _opts) do
     max_h = min(25, length(delay_vectors) - 2)
 
     if max_h < 2,

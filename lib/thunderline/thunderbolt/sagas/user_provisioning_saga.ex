@@ -47,7 +47,6 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   use Reactor, extensions: [Reactor.Dsl]
 
   require Logger
-  alias Thunderline.Thunderbolt.Sagas.Base
   alias Thunderline.Thundergate.Resources.User
   alias Thunderline.Thunderblock.Resources.VaultUser
 
@@ -296,7 +295,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
 
   defp validate_email_format(_), do: {:error, :invalid_email_format}
 
-  defp create_community_membership(user, context) do
+  defp create_community_membership(user, _context) do
     # Check if ThunderLink is available and create membership
     if Code.ensure_loaded?(Thunderline.Thunderlink.Resources.CommunityMember) do
       # Get or create default community
