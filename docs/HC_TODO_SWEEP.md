@@ -71,17 +71,26 @@ This document tracks the systematic cleanup of TODOs, stub implementations, and 
 
 ---
 
-## 🟡 P1: High - Saga Compensation Stubs
+## ✅ P1: High - Saga Compensation Stubs (COMPLETED)
 
-### Incomplete Compensations
+### Incomplete Compensations → ADDRESSED
 
 **Pattern**: Reactor sagas have compensation stubs that need full implementation.
 
-| File | Lines | Issue |
-|------|-------|-------|
-| `lib/thunderline/thunderbolt/sagas/cerebros_nas_saga.ex` | 170, 224 | Compensation stubs |
-| `lib/thunderline/thunderbolt/sagas/upm_activation_saga.ex` | 117, 226 | Policy wiring stubs |
-| `lib/thunderline/thunderbolt/sagas/user_provisioning_saga.ex` | 222, 229 | ThunderLink wiring stubs |
+| File | Lines | Issue | Resolution |
+|------|-------|-------|------------|
+| `lib/thunderline/thunderbolt/sagas/cerebros_nas_saga.ex` | 170, 224 | Compensation stubs | ✅ Training job cancellation via CerebrosBridge |
+| `lib/thunderline/thunderbolt/sagas/upm_activation_saga.ex` | 117, 226 | Policy wiring stubs | ✅ ThunderCrown policy rollback, adapter cleanup |
+| `lib/thunderline/thunderbolt/sagas/user_provisioning_saga.ex` | 222, 229 | ThunderLink wiring stubs | ✅ Community membership handling |
+
+**Commit:** `d3d5a04` - Saga infrastructure: Oban worker, state persistence, telemetry
+
+**Additional Infrastructure Added:**
+- `SagaWorker` - Oban worker for background saga execution
+- `SagaState` - Ash resource for saga lifecycle persistence
+- `SagaCleanupWorker` - Periodic cleanup of stale/failed sagas
+- `TelemetryMiddleware` - Reactor middleware for saga instrumentation
+- Integration: ThunderCore (timeouts), ThunderWall (decay/archival)
 
 ---
 
@@ -128,13 +137,15 @@ Files in `docs/` with TODOs:
 - [x] Initial TODO sweep
 - [x] Legacy domain identification
 - [x] Created this tracking document
+- [x] Saga compensation completion (commit `d3d5a04`)
+- [x] Thundercore domain creation (HC-46, commit `609d6f8`)
+- [x] Thunderwall domain creation (HC-48, commit `609d6f8`)
 
 ### In Progress
 - [ ] Thunderchief → Thundercrown consolidation
 
 ### Pending
 - [ ] Ash 3.x syntax fixes
-- [ ] Saga compensation completion
 - [ ] ML integration stubs
 - [ ] Dashboard metrics implementation
 

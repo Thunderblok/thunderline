@@ -4,10 +4,10 @@
 **Status:** ✅ UPDATED – 12-Domain Pantheon architecture defined  
 **Review Report:** See `DOMAIN_ARCHITECTURE_REVIEW.md` and `COMPREHENSIVE_DOMAIN_ARCHITECTURE_ANALYSIS.md`  
 **Overall Architecture Grade:** A (9/10)  
-**Total Resources:** ~162 Ash resources across all domains  
+**Total Resources:** ~165 Ash resources across all domains  
 **Canonical Domains:** 12 (Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall)  
-**Active Domains:** 10 (Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, RAG)  
-**Pending Domains:** 3 (Core - HC-46, Pac - HC-47, Wall - HC-48)
+**Active Domains:** 12 (Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall)  
+**Pending Domains:** 1 (Pac - HC-47)
 
 ---
 
@@ -15,10 +15,10 @@
 
 | # | Domain | Focus | Status |
 |---|--------|-------|--------|
-| 1️⃣ | **Thundercore** | Tick emanation, system clock, identity kernel, PAC ignition | 🆕 HC-46 |
+| 1️⃣ | **Thundercore** | Tick emanation, system clock, identity kernel, PAC ignition | ✅ Active (3) |
 | 2️⃣ | **Thunderpac** | PAC lifecycle, state containers, role/intent management | 🆕 HC-47 |
 | 3️⃣ | **Thundercrown** | Governance + Orchestration, policy, authorization, saga coordination | ✅ Active |
-| 4️⃣ | **Thunderbolt** | ML + Automata execution, loop monitors, CA, Cerebros | ✅ Active (50+) |
+| 4️⃣ | **Thunderbolt** | ML + Automata execution, loop monitors, CA, Cerebros, Sagas | ✅ Active (51+) |
 | 5️⃣ | **Thundergate** | Security, IAM, crypto, OAuth, boundaries, keys, rate limiting | ✅ Active (19) |
 | 6️⃣ | **Thunderblock** | Persistence runtime, vaults, ledgers, data substrates | ✅ Active (33) |
 | 7️⃣ | **Thunderflow** | Signal/event flow, telemetry, causal DAGs, criticality hooks | ✅ Active (9) |
@@ -26,7 +26,7 @@
 | 9️⃣ | **Thundervine** | DAG workflows, macrostructure graphs, orchestration edges | ✅ Active (6) |
 | 🔟 | **Thunderprism** | UI/UX, cognition layer, creativity, reflexive thought | ✅ Active (2) |
 | 1️⃣1️⃣ | **Thunderlink** | Communication, federation, WebRTC, TOCP transport | ✅ Active (17) |
-| 1️⃣2️⃣ | **Thunderwall** | System boundary, decay, GC, overflow, archive, entropy sink | 🆕 HC-48 |
+| 1️⃣2️⃣ | **Thunderwall** | System boundary, decay, GC, overflow, archive, entropy sink | ✅ Active (3) |
 
 **System Cycle**: Core → Wall (Spark to containment)  
 **Policy Vector**: Crown → Bolt (Governance → Execution)  
@@ -35,16 +35,26 @@
 
 ---
 
-### 🌟 ThunderCore Domain (PENDING - HC-46)
-- **Location:** `lib/thunderline/thundercore/` (to be created)
+### 🌟 ThunderCore Domain (ACTIVE - HC-46 Complete)
+- **Location:** `lib/thunderline/thundercore/`
 - **Purpose:** Tick emanation, system clock, identity kernel, PAC seedpoint ignition
-- **Status:** 🆕 PENDING – Domain creation tracked in HC-46
+- **Status:** ✅ ACTIVE – Core temporal and identity services
 - **Pantheon Position:** #1 – Origin/Seedpoint domain
-- **Planned Resources:**
-  - `TickEmitter` - System heartbeat GenServer
-  - `IdentityKernel` - PAC seedpoint resource
-  - `SystemClock` - Monotonic time service
-- **Event Categories:** `core.tick.*`, `core.identity.*`
+- **Resource Count:** **3 Ash Resources**
+- **Extensions:** AshAdmin.Domain
+- **Resources:**
+  - `TickEmission` - Captures system tick events with sequence, cycle, phase tracking
+  - `IdentityKernel` - PAC seedpoint resource with entropy, signature, origin tracking
+  - `SystemClockSnapshot` - Point-in-time system state captures
+- **GenServers:**
+  - `TickEmitter` - System heartbeat GenServer emitting at configurable intervals
+  - `SystemClock` - Monotonic time service with deadline/elapsed calculations
+- **Event Categories:** `core.tick.*`, `core.identity.*`, `core.clock.*`
+- **Key Functions:**
+  - `SystemClock.now/0` - Current monotonic time
+  - `SystemClock.deadline/1` - Create deadline from duration
+  - `SystemClock.elapsed/1` - Time since reference point
+  - `SystemClock.snapshot!/0` - Persist current clock state
 - **Symbolic Mapping:** Seedpoint / Identity Core (Metatron's 1st Domain)
 
 ---
@@ -103,9 +113,9 @@
 
 ### ⚙️ ThunderBolt Domain  
 - **Location:** `lib/thunderline/thunderbolt/`  
-- **Purpose:** ML/AI Execution, Processing, HPO, AutoML & Numeric Computation  
-- **Status:** ✅ ACTIVE – Largest domain with 50+ resources across multiple ML subsystems  
-- **Resource Count:** **50+ Ash Resources** (consider splitting in future)
+- **Purpose:** ML/AI Execution, Processing, HPO, AutoML, Numeric Computation & Saga Orchestration  
+- **Status:** ✅ ACTIVE – Largest domain with 51+ resources across multiple ML subsystems  
+- **Resource Count:** **51+ Ash Resources** (consider splitting in future)
 - **Consolidation History:** Merged ThunderCore + ThunderLane + ThunderMag + ThunderCell + Thunder_Ising → ThunderBolt
 - **Extensions:** AshAdmin.Domain, AshOban.Domain, AshJsonApi.Domain, AshGraphql.Domain
 - **Resource Categories:**
@@ -120,6 +130,19 @@
   - **MLflow** (2 resources): Experiment tracking integration
   - **UPM** (4 resources): Unified project management, drift detection
   - **MoE** (3 resources): Mixture of Experts routing
+  - **Sagas** (1 resource): SagaState for saga lifecycle persistence
+- **Saga Infrastructure:**
+  - `SagaState` - Ash resource tracking saga execution lifecycle
+    - Statuses: pending, running, completed, failed, halted, retrying, cancelled
+    - Checkpoint support for halted saga resume
+    - Correlation ID for cross-saga tracing
+  - `SagaWorker` - Oban worker for background saga execution
+    - Queue: `:saga_execution`, max_attempts: 5
+    - Timeout integration via ThunderCore `SystemClock.deadline/1`
+    - Failed saga registration with ThunderWall `DecayProcessor`
+  - `SagaCleanupWorker` - Periodic cleanup of stale/failed sagas
+  - `TelemetryMiddleware` - Reactor middleware for saga instrumentation
+  - Saga implementations: UserProvisioningSaga, UpmActivationSaga, CerebrosNasSaga
 - **Key Responsibilities:**
   - ML workflow execution & orchestration
   - Hyperparameter Optimization (HPO) execution
@@ -517,19 +540,32 @@
 
 ---
 
-### 🧱 ThunderWall Domain (PENDING - HC-48)
-- **Location:** `lib/thunderline/thunderwall/` (to be created)
+### 🧱 ThunderWall Domain (ACTIVE - HC-48 Complete)
+- **Location:** `lib/thunderline/thunderwall/`
 - **Purpose:** System boundary, decay processing, garbage collection, overflow handling, entropy sink
-- **Status:** 🆕 PENDING – Domain creation tracked in HC-48
+- **Status:** ✅ ACTIVE – Entropy management and archival services
 - **Pantheon Position:** #12 – Entropy boundary (the "Black Hole Portal")
-- **Planned Resources:**
-  - `DecayProcessor` - Archive expired resources
-  - `OverflowHandler` - Reject stream management
-  - `EntropyMetrics` - System decay telemetry
-  - `GCScheduler` - Garbage collection coordination
-  - `ArchiveRecord` - Archived data tracking
+- **Resource Count:** **3 Ash Resources**
+- **Extensions:** AshAdmin.Domain
+- **Resources:**
+  - `DecayEntry` - Tracks resources pending decay with configurable TTL
+  - `ArchiveEntry` - Archived data records with metadata preservation
+  - `EntropyMetrics` - System-wide decay and archival telemetry
+- **GenServers:**
+  - `DecayProcessor` - Processes decay queue, archives expired resources
+  - `OverflowHandler` - Manages reject streams, prevents system overload
+- **Oban Workers:**
+  - `DecayWorker` - Background decay processing
+  - `ArchiveWorker` - Async archival operations
 - **Event Categories:** `wall.decay.*`, `wall.archive.*`, `wall.overflow.*`
-- **Cross-Domain Role:** Final destination for all domains' expired/rejected data
+- **Key Functions:**
+  - `DecayProcessor.register/3` - Register resource for future decay
+  - `DecayProcessor.process_expired/0` - Process all expired entries
+  - `OverflowHandler.handle_overflow/2` - Route overflow to archive/reject
+- **Cross-Domain Integration:**
+  - Receives failed sagas from SagaWorker for archival
+  - SagaCleanupWorker uses ArchiveEntry for old failed saga storage
+  - All domains can register resources for managed decay
 - **Symbolic Mapping:** Entropy Boundary / Void / Garbage Collector (12th domain outer ring)
 - **Notes:** Thunderwall completes the system cycle (Core → Wall = Spark to containment). Handles all loss, entropy, archives, and reject streams. Conceptually the "black hole portal" where expired data goes.
 

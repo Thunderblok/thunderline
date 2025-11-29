@@ -48,16 +48,27 @@ The architecture integrates Entity-Component-System (ECSx) patterns with Ash's d
 
 ### Domain-Driven Excellence
 
-Thunderline is architected around seven specialized domains (with auxiliary merge/legacy surfaces), each handling distinct aspects of the intelligent system:
+Thunderline is architected around **twelve specialized domains** (the "Pantheon"), each handling distinct aspects of the intelligent system:
 
-- **ThunderBlock**: Secure data persistence and infrastructure management
-- **ThunderBolt**: High-performance compute and processing acceleration
-- **ThunderCrown**: AI governance, orchestration and decision architecture
-- **ThunderFlow**: Event streaming and data pipeline coordination
-- **ThunderGate**: External system integrations, security and gateway services
-- **ThunderGrid**: Spatial management and coordinate systems
-- **ThunderLink**: Federation protocols and inter-system communication
-  - (See `Docs/architecture/domain_topdown.md` for the full top-down container & flow map; `Docs/architecture/system_architecture_webrtc.md` for voice/WebRTC path.)
+#### Core Infrastructure Domains
+- **ThunderCore** *(#1)*: System clock, tick emanation, identity kernels, PAC seedpoint ignition
+- **ThunderWall** *(#12)*: Entropy sink, decay processing, archival, garbage collection
+
+#### Active Domains
+- **ThunderBlock** *(#6)*: Secure data persistence and infrastructure management
+- **ThunderBolt** *(#4)*: High-performance compute, ML execution, saga orchestration
+- **ThunderCrown** *(#3)*: AI governance, orchestration and decision architecture
+- **ThunderFlow** *(#7)*: Event streaming and data pipeline coordination
+- **ThunderGate** *(#5)*: External system integrations, security and gateway services
+- **ThunderGrid** *(#8)*: Spatial management, GraphQL interface, coordinate systems
+- **ThunderVine** *(#9)*: DAG workflows, orchestration edges, TAK persistence
+- **ThunderPrism** *(#10)*: ML decision trails, UX cognition layer
+- **ThunderLink** *(#11)*: Federation protocols, WebRTC, inter-system communication
+
+#### Pending Domains
+- **ThunderPac** *(#2)*: PAC lifecycle, state containers, role/intent management
+
+(See `docs/architecture/THUNDERLINE_DOMAIN_CATALOG.md` for the full domain inventory)
 
 ### Event-Driven Foundation
 
@@ -88,6 +99,43 @@ Thunderline incorporates the **THUNDERSTRUCK** algorithm, a sophisticated implem
 - **Federation Protocols**: Multi-node coordination and distributed consensus
 - **Behavioral Intelligence**: Agent-based processing with learning capabilities
 - **Spatial Computing**: Hexagonal coordinate systems for complex spatial relationships
+- **Saga Orchestration**: Oban-backed saga execution with state persistence and compensation
+
+### Saga Infrastructure
+
+Thunderline includes a production-grade saga orchestration system built on Reactor with Oban-based execution:
+
+- **SagaWorker**: Oban worker (`queue: :saga_execution`) for background saga execution
+  - Timeout integration via ThunderCore `SystemClock.deadline/1`
+  - State persistence via `SagaState` Ash resource
+  - Automatic retry with configurable `max_attempts: 5`
+  - Failed saga registration with ThunderWall `DecayProcessor`
+
+- **SagaState**: Persistent state tracking across saga lifecycle
+  - Status flow: `pending → running → completed|failed|halted|retrying|cancelled`
+  - Checkpoint support for halted saga resume
+  - Correlation ID for cross-saga tracing
+
+- **SagaCleanupWorker**: Periodic Oban job for saga hygiene
+  - Marks stale sagas (>1hr running) as failed
+  - Archives old failed sagas (>7d) via ThunderWall `ArchiveEntry`
+  - Deletes old cancelled sagas (>1d)
+
+- **TelemetryMiddleware**: Reactor middleware for instrumentation
+  - Events: `[:thunderline, :saga, :start|:complete|:error|:halt]`
+  - Step-level tracking with duration metrics
+  - EventBus integration for cross-domain visibility
+
+Example saga dispatch:
+
+```elixir
+# Enqueue a saga for background execution
+{:ok, job} = Thunderline.Thunderbolt.Sagas.SagaWorker.enqueue(
+  Thunderline.Thunderbolt.Sagas.UserProvisioningSaga,
+  %{user_id: user_id, template_id: template_id},
+  correlation_id: "user-#{user_id}-provision"
+)
+```
 
 ## Getting Started
 
