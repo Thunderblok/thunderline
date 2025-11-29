@@ -247,6 +247,12 @@
 | **HC-66** | **P2** | **Co-Lex Ordering Service** | No O(1) state comparison for automata | **CA-Lattice-07**: Implement co-lex ordering from SODA/ESA research. **Components**: (1) Forward-stable reduction (Paige-Tarjan), (2) Co-lex extension (Becker et al.), (3) Infimum/supremum graphs + Forward Visit, (4) `Thunderbolt.CoLex.compare/3` O(1) comparator. **Goal**: Linear-space BWT-style indexing for automata/DAGs. Cross-domain: **Bolt×Block×Vine**. | Bolt + Block Stewards | Not Started |
 | **HC-67** | **P2** | **WebRTC Circuit Integration** | CA signaling not bridged to WebRTC | **CA-Lattice-08**: Bridge CA route discovery to WebRTC circuits. **Components**: (1) CA lattice converges → `ca.channel.established`, (2) ICE exchange over CA channel, (3) `Thunderlink.CACircuitManager` lifecycle, (4) Auto-rerouting on path degradation. Cross-domain: **Link×Bolt**. | Link + Bolt Stewards | Not Started |
 | **HC-68** | **P2** | **CAT Security Layer** | No CA-based crypto layer | **CA-Lattice-09**: CAT-based security primitives. **Components**: (1) CAT encryption implementation, (2) Key fragment distribution across voxels, (3) Per-hop XOR obfuscation, (4) Geometric secrecy validation (only path-aware endpoints reconstruct). Cross-domain: **Gate×Bolt**. | Gate + Bolt Stewards | Not Started |
+| **HC-69** | **P1** | **Continuous Tensor Abstraction** | No real-valued indexing for spatial/temporal computation | **Research-CTA-01**: Implement continuous tensor operations for Thunderline spatial computing. **Research Source**: Won et al. "The Continuous Tensor Abstraction: Where Indices are Real" (OOPSLA 2025). **Components**: (1) Piecewise-constant tensor representation, (2) Real-valued index operations (`A[3.14]`), (3) Continuous algebra expressions (`C(x,y) = A(x,y) * B(x,y)`), (4) Finite-time infinite domain processing. **Applications**: ThunderGrid radius search (9.2x speedup potential), genomic interval queries, NeRF interpolation, PAC continuous state spaces. Cross-domain: **Grid×Bolt×Block**. See §Continuous Tensor Integration Directive. | Grid + Bolt Stewards | Not Started |
+| **HC-70** | **P1** | **Continuous ThunderGrid Indexing** | Grid cells use discrete indices only | **CTA-02**: Real-valued spatial coordinates in ThunderGrid. **Components**: (1) `Thundergrid.ContinuousTensor` module (piecewise-constant storage), (2) Continuous hexagonal coordinate interpolation, (3) Radius search with real-valued bounds, (4) k-NN queries using continuous distance metrics. **Benefits**: ~60x fewer LoC vs hand-implemented, 9.2x speedup on 2D radius search. Cross-domain: **Grid×Bolt**. | Grid Steward | Not Started |
+| **HC-71** | **P1** | **Continuous PAC State Manifolds** | PAC states are discrete enums | **CTA-03**: Continuous state representations for PAC lifecycle. **Components**: (1) State manifold embeddings (continuous `:dormant` → `:active` transitions), (2) Smooth interpolation between PAC configurations, (3) Gradient-based state optimization, (4) Continuous phase tracking in ThunderCore. **Integration**: PAC lifecycle transitions as continuous functions, not discrete jumps. Cross-domain: **Pac×Core×Bolt**. | Pac + Core Stewards | Not Started |
+| **HC-72** | **P1** | **Continuous Event Timestamps** | Event timing is discrete ticks | **CTA-04**: Real-valued temporal indexing in ThunderFlow. **Components**: (1) Continuous timestamp algebra, (2) Sub-tick event interpolation, (3) Temporal range queries with real bounds, (4) Event stream continuous aggregations. **Benefits**: Precise temporal causality, smoother event flow analysis. Cross-domain: **Flow×Core**. | Flow + Core Stewards | Not Started |
+| **HC-73** | **P2** | **Continuous CA Field Dynamics** | CA cells use integer coordinates | **CTA-05**: Continuous spatial fields for Thunderbit lattice. **Components**: (1) Continuous field representation (ϕ, σ, λ̂ as smooth functions), (2) Real-valued neighbor interpolation, (3) Gradient flows between voxel cells, (4) Continuous CAT coefficient storage. **Goal**: CA rules operating on continuous spatial fields. Cross-domain: **Bolt×Block**. | Bolt Steward | Not Started |
+| **HC-74** | **P2** | **Finch.jl Interop Layer** | No connection to Finch sparse compiler | **CTA-06**: Bridge to Finch.jl for optimized sparse tensor operations. **Components**: (1) Protocol for Elixir→Julia tensor exchange, (2) Galley scheduler integration for query optimization, (3) Sparse format translation (CSC/CSR/COO), (4) Nx tensor ↔ Finch tensor conversion. **Benefits**: 1000x speedup on sparse operations via Galley optimizer. Cross-domain: **Bolt**. | Bolt Steward | Not Started |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
@@ -526,6 +532,425 @@ python/cerebros/service/snn_priors.py                    # HC-57 (Phase 4)
 - `CACell` → extend for LIF dynamics (membrane potential, refractory)
 - `CAEngine` → coordination for spiking lattice
 - `Stepper` → step function extension for spike propagation
+
+---
+
+## 📐 CONTINUOUS TENSOR ABSTRACTION INTEGRATION (Nov 29, 2025)
+
+**Research Source**: Won, Ahrens, Collin, Emer, Amarasinghe. "The Continuous Tensor Abstraction: Where Indices are Real" (OOPSLA 2025). [arXiv:2407.01742](https://arxiv.org/abs/2407.01742)
+
+**Mission**: Extend Thunderline's spatial and temporal computing to support real-valued indices, enabling continuous tensor operations across ThunderGrid, ThunderCore, ThunderFlow, and ThunderBolt domains.
+
+### The Core Insight
+
+> **"Indices can take real-number values"** — `A[3.14]` is valid.
+
+Traditional tensors use discrete integer indices. Continuous tensors extend this to real numbers, enabling:
+- **Computational Geometry**: Spatial queries with real-valued bounds
+- **Signal Processing**: Continuous-time representations
+- **Graphics/ML**: Trilinear interpolation, NeRF rendering
+- **State Machines**: Smooth transitions between discrete states
+
+### Piecewise-Constant Representation
+
+The key insight enabling finite-time computation over infinite domains:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│              PIECEWISE-CONSTANT TENSOR                          │
+│                                                                 │
+│   Value                                                         │
+│     │                                                           │
+│  v3 ├───────────────────┐                                       │
+│     │                   │                                       │
+│  v2 ├─────────┐         │         ┌─────────                    │
+│     │         │         │         │                             │
+│  v1 ├─┐       │         │         │                             │
+│     │ │       │         │         │                             │
+│     └─┴───────┴─────────┴─────────┴─────────▶ x (real)          │
+│       x1      x2        x3        x4                            │
+│                                                                 │
+│   A[2.5] = v2  (constant within interval)                       │
+│   A[3.7] = v3  (piecewise lookup)                               │
+│                                                                 │
+│   Storage: O(k) where k = number of intervals                   │
+│   Lookup: O(log k) via binary search                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Performance Benchmarks (from Paper)
+
+| Application | Speedup | LoC Reduction | Description |
+|-------------|---------|---------------|-------------|
+| **2D Radius Search** | 9.20x | ~60x | Spatial queries in point clouds |
+| **Genomic Interval Overlap** | 1.22x | ~18x | BED file intersection operations |
+| **NeRF Trilinear Interpolation** | 1.69x | ~6x | Neural radiance field rendering |
+
+### Thunderline Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│               CONTINUOUS TENSOR LAYER                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐        │
+│   │ ThunderGrid │    │ ThunderCore │    │ ThunderFlow │        │
+│   │             │    │             │    │             │        │
+│   │ Continuous  │    │ Continuous  │    │ Continuous  │        │
+│   │ Spatial     │    │ Temporal    │    │ Event       │        │
+│   │ Coordinates │    │ Clock       │    │ Timestamps  │        │
+│   └──────┬──────┘    └──────┬──────┘    └──────┬──────┘        │
+│          │                  │                  │                │
+│          └──────────────────┼──────────────────┘                │
+│                             │                                   │
+│                             ▼                                   │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │              Thunderbolt.ContinuousTensor               │   │
+│   │                                                         │   │
+│   │  • Piecewise-constant storage                           │   │
+│   │  • Real-valued index operations                         │   │
+│   │  • Continuous algebra expressions                       │   │
+│   │  • Automatic kernel generation                          │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                             │                                   │
+│                             ▼                                   │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │              ThunderBlock Persistence                   │   │
+│   │                                                         │   │
+│   │  • Interval-based storage format                        │   │
+│   │  • Efficient serialization                              │   │
+│   │  • pgvector integration for embeddings                  │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Domain-Specific Applications
+
+#### ThunderGrid: Continuous Spatial Indexing (HC-70)
+
+**Current**: Discrete hexagonal grid cells with integer coordinates.
+**Enhanced**: Real-valued spatial coordinates with continuous interpolation.
+
+```elixir
+# Before: Discrete cell lookup
+cell = Thundergrid.get_cell(3, 4, 5)  # Integer coords only
+
+# After: Continuous spatial query
+cells = Thundergrid.radius_search(
+  center: {3.14, 4.72, 5.99},  # Real coords
+  radius: 2.5,                  # Real radius
+  metric: :euclidean
+)
+
+# Continuous field sampling
+value = Thundergrid.sample_field(:temperature, {x, y, z})  # Interpolated
+```
+
+**Implementation**:
+```elixir
+defmodule Thunderline.Thundergrid.ContinuousTensor do
+  @moduledoc """
+  Piecewise-constant tensor for continuous spatial indexing.
+  Based on Won et al. 2025 Continuous Tensor Abstraction.
+  """
+  
+  defstruct [:intervals, :values, :dims, :default]
+  
+  @type interval :: {float(), float()}  # [start, end)
+  @type t :: %__MODULE__{
+    intervals: [interval()],
+    values: [term()],
+    dims: pos_integer(),
+    default: term()
+  }
+  
+  @doc "Create continuous tensor from discrete samples"
+  @spec from_samples([{float(), term()}]) :: t()
+  def from_samples(samples) do
+    # Sort by coordinate, merge adjacent equal values
+    sorted = Enum.sort_by(samples, fn {coord, _} -> coord end)
+    {intervals, values} = merge_intervals(sorted)
+    %__MODULE__{intervals: intervals, values: values, dims: 1, default: nil}
+  end
+  
+  @doc "Index with real-valued coordinate"
+  @spec get(t(), float()) :: term()
+  def get(%__MODULE__{intervals: intervals, values: values, default: default}, x) do
+    case binary_search_interval(intervals, x) do
+      {:ok, idx} -> Enum.at(values, idx)
+      :not_found -> default
+    end
+  end
+  
+  @doc "Continuous algebra: C(x) = A(x) * B(x)"
+  @spec multiply(t(), t()) :: t()
+  def multiply(a, b) do
+    # Compute intersection of interval structures
+    merged_intervals = intersect_intervals(a.intervals, b.intervals)
+    values = Enum.map(merged_intervals, fn interval ->
+      get(a, midpoint(interval)) * get(b, midpoint(interval))
+    end)
+    %__MODULE__{intervals: merged_intervals, values: values, dims: 1, default: nil}
+  end
+  
+  @doc "Radius search with real-valued bounds"
+  @spec radius_search(t(), float(), float()) :: [{interval(), term()}]
+  def radius_search(tensor, center, radius) do
+    lower = center - radius
+    upper = center + radius
+    
+    tensor.intervals
+    |> Enum.with_index()
+    |> Enum.filter(fn {{start, stop}, _idx} ->
+      intervals_overlap?({start, stop}, {lower, upper})
+    end)
+    |> Enum.map(fn {{start, stop}, idx} ->
+      {{start, stop}, Enum.at(tensor.values, idx)}
+    end)
+  end
+end
+```
+
+#### ThunderCore: Continuous Temporal Service (HC-72)
+
+**Current**: Discrete tick-based time emanation.
+**Enhanced**: Real-valued timestamps with sub-tick precision.
+
+```elixir
+# Before: Discrete tick
+tick = Thundercore.SystemClock.current_tick()  # Integer
+
+# After: Continuous time
+time = Thundercore.SystemClock.now_continuous()  # Float (nanoseconds)
+
+# Temporal range queries
+events = Thundercore.events_in_range(
+  from: 1732780800.123,  # Real timestamp
+  to: 1732780805.789,    # Real timestamp
+  resolution: :nanosecond
+)
+```
+
+#### ThunderFlow: Continuous Event Algebra (HC-72)
+
+**Current**: Events have discrete timestamps.
+**Enhanced**: Continuous temporal aggregations and causal analysis.
+
+```elixir
+# Continuous event stream aggregation
+aggregated = Thunderflow.aggregate_continuous(
+  stream: events,
+  window: {t1, t2},  # Real-valued bounds
+  function: :mean,
+  interpolation: :linear
+)
+
+# Causal density analysis
+density = Thunderflow.causal_density(
+  events,
+  point: 1732780803.5,  # Real-valued query point
+  bandwidth: 1.0
+)
+```
+
+#### ThunderPac: Continuous State Manifolds (HC-71)
+
+**Current**: PAC lifecycle is discrete enum (`:dormant`, `:active`, etc.).
+**Enhanced**: Continuous state space enabling smooth transitions.
+
+```elixir
+# Before: Discrete state transition
+PAC.transition(pac, :active)  # Jump
+
+# After: Continuous state evolution
+PAC.evolve_state(pac, %{
+  target: :active,
+  trajectory: :sigmoid,  # Smooth transition curve
+  duration_ms: 1000
+})
+
+# Query intermediate state
+current = PAC.state_at(pac, t)  # Returns continuous state vector
+# => %{activity: 0.73, dormancy: 0.27, ...}
+```
+
+#### ThunderBolt: Continuous CA Fields (HC-73)
+
+**Current**: CA cells at integer grid coordinates.
+**Enhanced**: Continuous field dynamics with real-valued interpolation.
+
+```elixir
+# Continuous Thunderbit field
+field = Thunderbolt.ContinuousField.new(
+  bounds: {{0.0, 100.0}, {0.0, 100.0}, {0.0, 100.0}},
+  resolution: 0.1
+)
+
+# Sample at any real coordinate
+phi = Thunderbolt.ContinuousField.sample(field, :phase, {3.14, 2.72, 1.41})
+
+# Gradient flow between cells
+gradient = Thunderbolt.ContinuousField.gradient(field, :trust_score, coord)
+```
+
+### Implementation Phases
+
+| Phase | HC Items | Focus | Timeline |
+|-------|----------|-------|----------|
+| **1** | HC-69 | Core `ContinuousTensor` module in Thunderbolt | Week 1-2 |
+| **2** | HC-70 | ThunderGrid continuous spatial indexing | Week 2-3 |
+| **3** | HC-72 | ThunderFlow/Core continuous temporal | Week 3-4 |
+| **4** | HC-71 | ThunderPac continuous state manifolds | Week 4-5 |
+| **5** | HC-73 | ThunderBolt continuous CA fields | Week 5-6 |
+| **6** | HC-74 | Finch.jl interop (optional) | Week 6+ |
+
+### Phase 1: Core Implementation (HC-69)
+
+**Files to Create**:
+```
+lib/thunderline/thunderbolt/continuous/
+├── tensor.ex              # Core ContinuousTensor struct
+├── algebra.ex             # Continuous algebra operations
+├── storage.ex             # Piecewise-constant storage format
+├── kernel_generator.ex    # Automatic kernel generation
+└── serialization.ex       # Persistence format
+```
+
+**Key Deliverables**:
+- [ ] `Thunderbolt.ContinuousTensor` struct with piecewise-constant storage
+- [ ] Real-valued index operations (`get/2`, `set/3`)
+- [ ] Continuous algebra (`add/2`, `multiply/2`, `convolve/2`)
+- [ ] Automatic kernel generation for common patterns
+- [ ] Telemetry: `[:thunderline, :bolt, :continuous, :*]`
+- [ ] Unit tests: index operations, algebra, edge cases
+
+**Ash Resource** (optional persistence):
+```elixir
+defmodule Thunderline.Thunderbolt.Resources.ContinuousTensorStore do
+  use Ash.Resource
+
+  attributes do
+    uuid_primary_key :id
+    attribute :name, :string
+    attribute :dims, :integer
+    attribute :intervals, {:array, :map}  # [{start, end}, ...]
+    attribute :values, :binary             # Compressed value storage
+    attribute :metadata, :map
+    timestamps()
+  end
+
+  actions do
+    defaults [:read, :destroy]
+    
+    create :store do
+      accept [:name, :dims, :metadata]
+      argument :tensor, :map, allow_nil?: false
+      change fn changeset, _ ->
+        tensor = Ash.Changeset.get_argument(changeset, :tensor)
+        {intervals, values} = serialize_tensor(tensor)
+        changeset
+        |> Ash.Changeset.change_attribute(:intervals, intervals)
+        |> Ash.Changeset.change_attribute(:values, values)
+      end
+    end
+    
+    read :load do
+      argument :name, :string, allow_nil?: false
+      filter expr(name == ^arg(:name))
+    end
+  end
+end
+```
+
+### Finch.jl Integration Path (HC-74)
+
+For maximum performance on sparse tensor operations, optional integration with Finch.jl:
+
+**Architecture**:
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     FINCH.JL INTEROP                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Elixir (Thunderbolt)          Julia (Finch.jl)               │
+│   ┌─────────────────┐           ┌─────────────────┐            │
+│   │ ContinuousTensor│           │ Tensor(Format)  │            │
+│   │                 │           │                 │            │
+│   │ intervals/values│───JSON───▶│ SparseLists     │            │
+│   │                 │           │                 │            │
+│   │ radius_search() │           │ @einsum ops     │            │
+│   └────────┬────────┘           └────────┬────────┘            │
+│            │                             │                      │
+│            │         ZeroMQ / Port       │                      │
+│            └─────────────────────────────┘                      │
+│                                                                 │
+│   Galley Optimizer: 1000x speedup on sparse queries            │
+│   Example: 263ms → 153μs on sparse matrix chain                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Julia Service** (optional sidecar):
+```julia
+# julia/finch_service.jl
+using Finch, JSON3, ZMQ
+
+function handle_radius_search(data)
+    A = Tensor(CSCFormat(), data["points"])
+    center = data["center"]
+    radius = data["radius"]
+    
+    # Finch generates optimized kernel automatically
+    result = @finsum E[i] += (dist(A[i, :], center) < radius) * A[i, :]
+    
+    JSON3.write(result)
+end
+```
+
+### Telemetry & Observability
+
+**Events**:
+```elixir
+[:thunderline, :bolt, :continuous, :create]      # Tensor creation
+[:thunderline, :bolt, :continuous, :get]         # Index operation
+[:thunderline, :bolt, :continuous, :algebra]     # Algebra operation
+[:thunderline, :bolt, :continuous, :serialize]   # Storage operation
+[:thunderline, :grid, :continuous, :search]      # Spatial query
+[:thunderline, :flow, :continuous, :aggregate]   # Temporal aggregation
+```
+
+**Metrics**:
+- `continuous.tensor.interval_count` - Number of intervals (complexity)
+- `continuous.tensor.lookup_latency_us` - Index operation timing
+- `continuous.tensor.algebra_latency_us` - Algebra operation timing
+- `continuous.search.results_count` - Spatial query result size
+
+### Research References
+
+1. **Primary**: Won et al. "The Continuous Tensor Abstraction" (OOPSLA 2025) - [arXiv:2407.01742](https://arxiv.org/abs/2407.01742)
+2. **Finch Compiler**: Ahrens et al. "Finch: Sparse and Structured Array Programming" (CGO 2023)
+3. **Galley Optimizer**: Deeds et al. "Galley: Modern Query Optimization for Sparse Tensor Programs" (2024)
+4. **Looplets**: Ahrens et al. "Looplets: A Language for Structured Coiteration" (CGO 2023)
+
+### Success Criteria
+
+**MVP (Phase 1-2)**:
+- [ ] `ContinuousTensor` module operational with piecewise-constant storage
+- [ ] ThunderGrid radius search using continuous indexing
+- [ ] 5x+ speedup on spatial queries vs naive implementation
+- [ ] Unit test coverage > 90%
+
+**Full Integration (Phase 3-5)**:
+- [ ] All domains using continuous tensor primitives
+- [ ] PAC state manifolds enabling smooth transitions
+- [ ] Continuous event algebra for temporal analysis
+- [ ] CA fields with real-valued interpolation
+
+**Research Validation (Phase 6)**:
+- [ ] Finch.jl interop demonstrating 100x+ speedup on sparse operations
+- [ ] Benchmark parity with paper results (9.2x on radius search)
+- [ ] Documentation and usage patterns established
 
 ---
 
