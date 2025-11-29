@@ -54,6 +54,8 @@ defmodule Thunderline.Application do
     # Infrastructure that does NOT need DB access - safe to start early
     # NOTE: All domain supervisors use tick-based activation (Phase 3+: OPERATION BLAZING VINE EXTENDED)
     infrastructure_early = [
+      # Tick 0: Core temporal services (MUST start first)
+      Thunderline.Thundercore.Supervisor,
       # Tick 1: Core flow & state
       Thunderline.Thunderflow.Supervisor,
       # Tick 2: Authentication & presence
@@ -69,6 +71,8 @@ defmodule Thunderline.Application do
       Thunderline.Thundergrid.Supervisor,
       # Tick 7: Visual intelligence
       Thunderline.Thunderprism.Supervisor,
+      # Tick 12: Entropy sink (starts late, cleans up)
+      Thunderline.Thunderwall.Supervisor,
       # Non-domain infrastructure
       ThunderlineWeb.Presence
     ]

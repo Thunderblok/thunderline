@@ -242,6 +242,8 @@ config :thunderline,
     # Re‑enable by uncommenting when you actually implement features there.
 
     # CORE (keep):
+    # Tick/temporal origin domain - MUST be first
+    Thunderline.Thundercore.Domain,
     # Storage / memory / vault
     Thunderline.Thunderblock.Domain,
     # Event streams / pipelines
@@ -259,7 +261,9 @@ config :thunderline,
     # Heavy compute & UPM resources now active
     Thunderline.Thunderbolt.Domain,
     # ThunderPrism - DAG scratchpad for ML decision trails (Phase 4.0)
-    Thunderline.Thunderprism.Domain
+    Thunderline.Thunderprism.Domain,
+    # Entropy sink / GC / decay - boundary domain (last in cycle)
+    Thunderline.Thunderwall.Domain
   ]
 
 # OPTIONAL (disabled right now):
