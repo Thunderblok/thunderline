@@ -38,11 +38,11 @@ defmodule Thunderline.Thundercore.TickEmitterTest do
     test "pauses tick emission", %{name: name} do
       Process.sleep(150)
       tick_before = TickEmitter.current_tick(name)
-      
+
       :ok = TickEmitter.pause(name)
       Process.sleep(200)
       tick_after = TickEmitter.current_tick(name)
-      
+
       # Tick should not have changed while paused
       assert tick_before == tick_after
     end
@@ -51,11 +51,11 @@ defmodule Thunderline.Thundercore.TickEmitterTest do
       :ok = TickEmitter.pause(name)
       Process.sleep(50)
       tick_paused = TickEmitter.current_tick(name)
-      
+
       :ok = TickEmitter.resume(name)
       Process.sleep(150)
       tick_resumed = TickEmitter.current_tick(name)
-      
+
       assert tick_resumed > tick_paused
     end
   end
@@ -63,7 +63,7 @@ defmodule Thunderline.Thundercore.TickEmitterTest do
   describe "state/1" do
     test "returns state without timers", %{name: name} do
       state = TickEmitter.state(name)
-      
+
       assert is_map(state)
       assert Map.has_key?(state, :system_tick)
       assert Map.has_key?(state, :slow_tick)

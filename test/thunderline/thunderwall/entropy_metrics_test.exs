@@ -15,7 +15,7 @@ defmodule Thunderline.Thunderwall.EntropyMetricsTest do
   describe "snapshot/1" do
     test "returns metrics map", %{name: name} do
       snapshot = EntropyMetrics.snapshot(name)
-      
+
       assert is_map(snapshot)
       assert Map.has_key?(snapshot, :decay_rate)
       assert Map.has_key?(snapshot, :overflow_rate)

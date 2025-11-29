@@ -15,7 +15,7 @@ defmodule Thunderline.Thunderwall.GCSchedulerTest do
   describe "stats/1" do
     test "returns initial stats", %{name: name} do
       stats = GCScheduler.stats(name)
-      
+
       assert stats.total_runs == 0
       assert stats.total_collected == 0
       assert is_nil(stats.last_run)

@@ -15,7 +15,7 @@ defmodule Thunderline.Thunderwall.OverflowHandlerTest do
   describe "stats/1" do
     test "returns initial stats", %{name: name} do
       stats = OverflowHandler.stats(name)
-      
+
       assert stats.total == 0
       assert stats.by_domain == %{}
       assert stats.by_reason == %{}
@@ -34,7 +34,7 @@ defmodule Thunderline.Thunderwall.OverflowHandlerTest do
       # Can't easily test after overflow without full setup
       :ok = OverflowHandler.clear_stats(name)
       stats = OverflowHandler.stats(name)
-      
+
       assert stats.total == 0
     end
   end
