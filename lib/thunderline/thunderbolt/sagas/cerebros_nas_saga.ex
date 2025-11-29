@@ -57,6 +57,11 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
   alias Thunderline.Thunderbolt.ML.ModelArtifact
   alias Thunderline.Thunderbolt.ML.TrainingDataset
 
+  middlewares do
+    middleware Thunderline.Thunderbolt.Sagas.TelemetryMiddleware
+    middleware Reactor.Middleware.Telemetry
+  end
+
   input :dataset_id
   input :search_space
   input :max_trials
@@ -166,10 +171,23 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
       end
     end
 
-    compensate fn _jobs, _ ->
-      # TODO: Cancel in-flight training jobs
+    compensate fn _jobs, context ->
+      # Cancel in-flight training jobs via Cerebros bridge
       Logger.warning("Compensating: canceling training jobs")
-      {:ok, :compensated}
+
+      correlation_id = Map.get(context, :correlation_id)
+
+      # Attempt to cancel training jobs via the Cerebros bridge
+      case cancel_training_jobs(correlation_id) do
+        {:ok, cancelled_count} ->
+          Logger.info("Cancelled #{cancelled_count} training jobs")
+          {:ok, :compensated}
+
+        {:error, reason} ->
+          Logger.error("Failed to cancel training jobs: #{inspect(reason)}")
+          # Continue compensation even if cancellation fails
+          {:ok, :partial_compensation}
+      end
     end
   end
 
@@ -334,5 +352,22 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
     |> Enum.reject(&(&1.accuracy == 0.0))
     |> Enum.sort_by(& &1.score, :desc)
     |> Enum.take(5)
+  end
+
+  defp cancel_training_jobs(correlation_id) do
+    # Attempt to cancel training jobs via Cerebros bridge
+    if Code.ensure_loaded?(Thunderline.Thunderbolt.CerebrosBridge.Invoker) do
+      case Thunderline.Thunderbolt.CerebrosBridge.Invoker.cancel_jobs(correlation_id: correlation_id) do
+        {:ok, result} ->
+          {:ok, Map.get(result, :cancelled_count, 0)}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      # Cerebros bridge not available, log and continue
+      Logger.warning("Cerebros bridge unavailable for job cancellation")
+      {:ok, 0}
+    end
   end
 end

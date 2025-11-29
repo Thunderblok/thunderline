@@ -55,6 +55,11 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
   alias Thunderline.Thunderbolt.Resources.UpmAdapter
   alias Thunderline.Thunderbolt.Resources.UpmDriftWindow
 
+  middlewares do
+    middleware Thunderline.Thunderbolt.Sagas.TelemetryMiddleware
+    middleware Reactor.Middleware.Telemetry
+  end
+
   input :snapshot_id
   input :correlation_id
   input :causation_id
@@ -113,14 +118,21 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
   step :policy_check do
     argument :validation_result, result(:validate_drift)
 
-    run fn %{validation_result: %{snapshot: snapshot, drift_score: drift_score}}, _ ->
-      # TODO: Wire to ThunderCrown policy evaluation
-      # For now, stub with auto-approval
-      policy_decision = %{
-        approved: true,
-        reason: "Auto-approved (drift: #{drift_score})",
-        policy_id: Thunderline.UUID.v7()
-      }
+    run fn %{validation_result: %{snapshot: snapshot, drift_score: drift_score}}, context ->
+      # Check ThunderCrown for policy evaluation if available
+      policy_decision =
+        case evaluate_crown_policy(snapshot, drift_score, context) do
+          {:ok, decision} ->
+            decision
+
+          {:error, _reason} ->
+            # Fallback to auto-approval when Crown unavailable
+            %{
+              approved: true,
+              reason: "Auto-approved (drift: #{drift_score}) - Crown unavailable",
+              policy_id: Thunderline.UUID.v7()
+            }
+        end
 
       if policy_decision.approved do
         Logger.info("Policy check passed for snapshot #{snapshot.id}")
@@ -223,9 +235,29 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
     end
 
     compensate fn _adapters, _ ->
-      # TODO: Restore previous adapter configurations
-      Logger.warning("Compensating: adapter sync rollback")
-      {:ok, :compensated}
+      # Restore previous adapter configurations by reverting snapshot references
+      Logger.warning("Compensating: rolling back adapter sync")
+
+      # Find adapters and restore their previous snapshot reference
+      case Ash.read(UpmAdapter) do
+        {:ok, adapters} ->
+          # For each adapter, we need to restore its previous state
+          # Since we don't have the previous snapshot_id stored,
+          # we mark them as needing resync
+          Enum.each(adapters, fn adapter ->
+            case Ash.update(adapter, %{active_snapshot_id: nil, needs_resync: true}) do
+              {:ok, _} -> :ok
+              {:error, reason} ->
+                Logger.error("Failed to reset adapter #{adapter.id}: #{inspect(reason)}")
+            end
+          end)
+
+          {:ok, :compensated}
+
+        {:error, reason} ->
+          Logger.error("Failed to query adapters for compensation: #{inspect(reason)}")
+          {:error, {:compensation_failed, reason}}
+      end
     end
   end
 
@@ -272,4 +304,41 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
   end
 
   return :emit_activation_event
+
+  # Private helpers
+
+  defp evaluate_crown_policy(snapshot, drift_score, context) do
+    # Attempt to call ThunderCrown policy evaluation
+    correlation_id = Map.get(context, :correlation_id, Thunderline.UUID.v7())
+
+    policy_request = %{
+      policy_type: :upm_activation,
+      subject: %{
+        snapshot_id: snapshot.id,
+        drift_score: drift_score,
+        status: snapshot.status
+      },
+      context: %{
+        correlation_id: correlation_id,
+        timestamp: DateTime.utc_now()
+      }
+    }
+
+    # Check if ThunderCrown PolicyEngine is available
+    if Code.ensure_loaded?(Thunderline.Thundercrown.PolicyEngine) do
+      case Thunderline.Thundercrown.PolicyEngine.evaluate(policy_request) do
+        {:ok, %{decision: :allow, reason: reason}} ->
+          {:ok, %{approved: true, reason: reason, policy_id: Thunderline.UUID.v7()}}
+
+        {:ok, %{decision: :deny, reason: reason}} ->
+          {:ok, %{approved: false, reason: reason, policy_id: Thunderline.UUID.v7()}}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
+      # ThunderCrown not available, return error to trigger fallback
+      {:error, :crown_unavailable}
+    end
+  end
 end

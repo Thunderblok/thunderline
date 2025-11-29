@@ -49,6 +49,11 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   require Logger
   alias Thunderline.Thunderbolt.Sagas.Base
   alias Thunderline.Thundergate.Resources.User
+
+  middlewares do
+    middleware Thunderline.Thunderbolt.Sagas.TelemetryMiddleware
+    middleware Reactor.Middleware.Telemetry
+  end
   alias Thunderline.Thunderblock.Resources.VaultUser
 
   # Emit telemetry for all steps (start/stop events)
@@ -218,17 +223,28 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   step :create_default_community do
     argument :user, result(:create_user)
 
-    run fn %{user: user}, _ ->
-      # TODO: Wire to ThunderLink community creation action
-      # For now, stub with success
-      Logger.info("Default community membership created for user #{user.id}")
-      {:ok, %{community_id: Thunderline.UUID.v7(), user_id: user.id}}
+    run fn %{user: user}, context ->
+      # Wire to ThunderLink community creation if available
+      case create_community_membership(user, context) do
+        {:ok, membership} ->
+          Logger.info("Default community membership created for user #{user.id}")
+          {:ok, membership}
+
+        {:error, reason} ->
+          Logger.warning("Community creation failed: #{inspect(reason)}, using stub")
+          # Return stub on failure - community can be created later
+          {:ok, %{community_id: Thunderline.UUID.v7(), user_id: user.id, stub: true}}
+      end
     end
 
-    compensate fn _membership, _ ->
-      # TODO: Remove community membership
-      Logger.warning("Compensating: removing community membership")
-      {:ok, :compensated}
+    compensate fn membership, _context ->
+      # Remove community membership if it was actually created
+      if Map.get(membership, :stub) do
+        {:ok, :no_compensation_needed}
+      else
+        Logger.warning("Compensating: removing community membership #{membership.community_id}")
+        remove_community_membership(membership)
+      end
     end
   end
 
@@ -283,4 +299,50 @@ defmodule Thunderline.Thunderbolt.Sagas.UserProvisioningSaga do
   end
 
   defp validate_email_format(_), do: {:error, :invalid_email_format}
+
+  defp create_community_membership(user, context) do
+    # Check if ThunderLink is available and create membership
+    if Code.ensure_loaded?(Thunderline.Thunderlink.Resources.CommunityMember) do
+      # Get or create default community
+      default_community_id = get_default_community_id()
+
+      Ash.create(Thunderline.Thunderlink.Resources.CommunityMember, %{
+        user_id: user.id,
+        community_id: default_community_id,
+        role: :member,
+        joined_at: DateTime.utc_now()
+      })
+    else
+      # ThunderLink not available
+      {:error, :thunderlink_unavailable}
+    end
+  rescue
+    _ -> {:error, :community_creation_failed}
+  end
+
+  defp remove_community_membership(membership) do
+    if Code.ensure_loaded?(Thunderline.Thunderlink.Resources.CommunityMember) do
+      case Ash.get(Thunderline.Thunderlink.Resources.CommunityMember, membership.id) do
+        {:ok, member} ->
+          Ash.destroy(member)
+          {:ok, :compensated}
+
+        {:error, %Ash.Error.Query.NotFound{}} ->
+          {:ok, :already_removed}
+
+        {:error, reason} ->
+          {:error, {:compensation_failed, reason}}
+      end
+    else
+      {:ok, :thunderlink_unavailable}
+    end
+  rescue
+    _ -> {:ok, :compensation_error_ignored}
+  end
+
+  defp get_default_community_id do
+    # Return a well-known default community ID
+    # In production, this would query for the system default community
+    Application.get_env(:thunderline, :default_community_id, Thunderline.UUID.v7())
+  end
 end

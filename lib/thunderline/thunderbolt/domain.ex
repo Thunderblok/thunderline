@@ -141,5 +141,14 @@ defmodule Thunderline.Thunderbolt.Domain do
     resource Thunderline.Thunderbolt.Resources.OnnxInference do
       define :infer, action: :infer, args: [:model_path, :input, :metadata]
     end
+
+    # Saga State Persistence
+    resource Thunderline.Thunderbolt.Sagas.SagaState do
+      define :get_saga_state, action: :read, get_by: [:id]
+      define :list_saga_states, action: :list
+      define :list_sagas_by_status, action: :list_by_status, args: [:status]
+      define :list_sagas_by_module, action: :list_by_module, args: [:saga_module]
+      define :find_stale_sagas, action: :stale_sagas, args: [:older_than_seconds]
+    end
   end
 end
