@@ -151,6 +151,9 @@ defmodule ThunderlineWeb.Router do
       # Chat interface (conversations & messages)
       live "/chat", ChatLive, :index
       live "/chat/:conversation_id", ChatLive, :show
+
+      # ThunderChief - AI Orchestrator Interface (glassmorphic chat)
+      live "/chief", ThunderchiefLive, :index
     end
   end
 

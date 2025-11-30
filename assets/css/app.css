@@ -6,6 +6,9 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* ThunderPrism Design System - Glassmorphic UI Components */
+@import "./thunderprism-design-system.css";
+
 /* Fallback: we still expose dashboard theme tokens in case daisyUI is unavailable at runtime. */
 :root[data-theme='thunderline'] {
   --color-base-100: #0f1115;
