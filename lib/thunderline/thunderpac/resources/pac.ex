@@ -439,10 +439,18 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
       }, extra)
     }
 
+    # Broadcast to PAC-specific channel
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "pac:lifecycle:#{pac.id}",
       {:pac_lifecycle, event}
+    )
+
+    # Broadcast to global PAC state channel (for UPM PACTrainingBridge)
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      "pac.state.changed",
+      %{name: "pac.state.changed", payload: %{pac_id: pac.id, status: pac.status, event_type: event_type}}
     )
 
     :telemetry.execute(
@@ -455,6 +463,13 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
   end
 
   defp emit_state_event(pac, event_type) do
+    # Broadcast to UPM training bridge
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      "pac.state.changed",
+      %{name: "pac.state.changed", payload: %{pac_id: pac.id, event_type: event_type}}
+    )
+
     :telemetry.execute(
       [:thunderline, :pac, :state, event_type],
       %{count: 1},

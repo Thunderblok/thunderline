@@ -46,7 +46,7 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
   require Logger
 
   alias Thunderline.Thunderbolt.Resources.{UpmTrainer, UpmSnapshot}
-  alias Thunderline.Thunderbolt.UPM.{ReplayBuffer, SnapshotManager}
+  alias Thunderline.Thunderbolt.UPM.{ReplayBuffer, SnapshotManager, SGD}
   alias Thunderline.Features.FeatureWindow
   alias Thunderline.Thunderflow.EventBus
   alias Thunderline.UUID
@@ -346,15 +346,12 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
   end
 
   defp initialize_model_params do
-    # Initialize model parameters (embeddings, weights)
-    # This is a placeholder - actual implementation would depend on model architecture
-    %{
-      embedding_dim: 128,
-      hidden_layers: [256, 128],
-      output_dim: 64,
-      weights: %{},
-      version: 1
-    }
+    # Initialize model parameters using real Nx-based SGD
+    SGD.initialize_params(
+      feature_dim: 64,
+      hidden_dim: 128,
+      output_dim: 32
+    )
   end
 
   defp do_process_window(window_id, state) do
@@ -392,23 +389,13 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
   end
 
   defp sgd_update(window, params, learning_rate) do
-    # Simplified SGD update logic (placeholder)
-    # Real implementation would:
-    # 1. Extract features and labels from window
-    # 2. Compute forward pass
-    # 3. Compute loss
-    # 4. Compute gradients
-    # 5. Update parameters using learning_rate
+    # Real SGD update using Nx tensors
+    # Extract features and labels from the window
+    features = window.features || %{}
+    labels = window.labels || %{}
 
-    # Mock loss calculation
-    loss = :rand.uniform() * 0.1
-
-    # Mock parameter update (just add noise for now)
-    updated_params =
-      Map.update(params, :version, 1, &(&1 + 1))
-      |> Map.put(:last_update, DateTime.utc_now())
-
-    {loss, updated_params}
+    # Perform actual gradient descent update
+    SGD.update(features, labels, params, learning_rate: learning_rate)
   end
 
   defp update_trainer_metrics(state) do
