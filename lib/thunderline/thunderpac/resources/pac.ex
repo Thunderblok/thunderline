@@ -246,7 +246,7 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
       change fn changeset, _context ->
         changeset
         |> Ash.Changeset.change_attribute(:last_active_at, DateTime.utc_now())
-        |> Ash.Changeset.change_attribute(:session_count, 
+        |> Ash.Changeset.change_attribute(:session_count,
              (Ash.Changeset.get_attribute(changeset, :session_count) || 0) + 1)
       end
 
@@ -316,7 +316,7 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
       change fn changeset, context ->
         intent = context.arguments.intent
         current_queue = Ash.Changeset.get_attribute(changeset, :intent_queue) || []
-        
+
         intent_with_id = Map.put_new(intent, "id", Ash.UUID.generate())
         |> Map.put_new("queued_at", DateTime.utc_now() |> DateTime.to_iso8601())
 
@@ -417,7 +417,7 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
 
   defp maybe_set_kernel(changeset) do
     kernel_id = Ash.Changeset.get_argument(changeset, :kernel_id)
-    
+
     if kernel_id do
       Ash.Changeset.change_attribute(changeset, :identity_kernel_id, kernel_id)
     else

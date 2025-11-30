@@ -14,7 +14,7 @@ defmodule Thunderline.Thunderpac.Domain do
   ## Domain Vector
 
   Pac → Block → Vine (state → persist → orchestrate)
-  
+
   PAC state flows downstream to Block for persistence and Vine for DAG tracking.
 
   ## Event Categories

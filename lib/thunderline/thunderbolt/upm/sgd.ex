@@ -32,7 +32,7 @@ defmodule Thunderline.Thunderbolt.UPM.SGD do
 
   ## Options
     - `:feature_dim` - Input dimension (default: 64)
-    - `:hidden_dim` - Hidden layer dimension (default: 128)  
+    - `:hidden_dim` - Hidden layer dimension (default: 128)
     - `:output_dim` - Output dimension (default: 32)
     - `:seed` - Random seed for reproducibility
   """
