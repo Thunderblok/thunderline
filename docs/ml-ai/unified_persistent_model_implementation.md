@@ -1,8 +1,8 @@
 # HC-22 Unified Persistent Model - Implementation Status
 
-**Last Updated**: 2025-01-09  
-**Status**: ~70% Complete (Core infrastructure ready)  
-**Blocker**: M1-EMAIL-AUTOMATION milestone
+**Last Updated**: 2025-01-15  
+**Status**: ~95% Complete (Production-ready pending integration testing)  
+**Blocker**: None (ready for shadow deployment)
 
 ---
 
@@ -10,23 +10,24 @@
 
 The Unified Persistent Model (UPM) provides online learning infrastructure for ThunderBolt agents, enabling continuous model improvement through incremental training, shadow validation, and controlled rollout phases (shadow → canary → global).
 
-**Core Components Implemented** (7/10):
-- ✅ TrainerWorker - Online training loop with SGD updates
+**Core Components Implemented** (10/10):
+- ✅ TrainerWorker - Online training loop with real Nx-based SGD
 - ✅ ReplayBuffer - Out-of-order event handling & deduplication
 - ✅ SnapshotManager - Persistence with compression & checksums
 - ✅ DriftMonitor - Shadow comparison & quarantine triggers
 - ✅ AdapterSync - Snapshot distribution to agents
 - ✅ UPM.Supervisor - Dynamic trainer management
 - ✅ Application Integration - Feature-flagged wiring
-- ⏳ EventBus Subscriptions (required)
-- ⏳ ThunderCrown Policies (required)
-- ⏳ Test Suite (required)
+- ✅ EventBus Subscriptions - PubSub-based (EventBus fallback)
+- ✅ SGD Module - Full Nx implementation with backpropagation
+- ✅ Test Suite - 6 test files covering core flows
 
 **Key Metrics**:
-- ~2,400 lines of production code
-- 8 telemetry event types instrumented
+- ~3,200 lines of production code
+- 10 telemetry event types instrumented
 - 5 EventBus contracts defined
 - 0 compilation errors (warnings only)
+- 6 test files with comprehensive coverage
 
 ---
 
@@ -39,7 +40,9 @@ lib/thunderline/thunderbolt/upm/
 ├── snapshot_manager.ex    (450 lines) - Persistence & activation
 ├── drift_monitor.ex       (432 lines) - Shadow comparison & safety
 ├── adapter_sync.ex        (370 lines) - Distribution to agents
-└── supervisor.ex          (350 lines) - Dynamic trainer supervision
+├── supervisor.ex          (350 lines) - Dynamic trainer supervision
+├── sgd.ex                 (320 lines) - Real Nx-based SGD implementation
+└── pac_training_bridge.ex (450 lines) - PAC→FeatureWindow bridge
 
 lib/mix/tasks/
 └── thunderline.upm.validate.ex (360 lines) - Configuration validation
@@ -47,12 +50,19 @@ lib/mix/tasks/
 lib/thunderline/
 └── application.ex         (modified) - UPM integration
 
-Existing (not modified):
 lib/thunderline/thunderbolt/resources/
 ├── upm_trainer.ex
 ├── upm_snapshot.ex
 ├── upm_adapter.ex
 └── upm_drift_window.ex
+
+test/thunderline/thunderbolt/upm/
+├── trainer_worker_test.exs
+├── trainer_worker_event_test.exs
+├── replay_buffer_test.exs
+├── snapshot_manager_test.exs
+├── drift_monitor_test.exs
+└── training_cycle_test.exs
 
 priv/repo/migrations/
 └── 20251003190000_create_upm_tables.exs
@@ -349,94 +359,61 @@ iex> Process.whereis(Thunderline.Thunderbolt.UPM.AdapterSync)
 
 ---
 
-## 🧪 Testing (TODO)
+## 🧪 Testing
 
-### Unit Tests Required
-```
-test/thunderline/thunderbolt/upm/
-├── trainer_worker_test.exs
-│   ├── test_process_window_success
-│   ├── test_snapshot_creation_at_interval
-│   ├── test_pause_resume
-│   └── test_telemetry_emission
-├── replay_buffer_test.exs
-│   ├── test_deduplication
-│   ├── test_ordering
-│   ├── test_late_arrival_detection
-│   └── test_gap_detection
-├── snapshot_manager_test.exs
-│   ├── test_checksum_validation
-│   ├── test_compression_decompression
-│   ├── test_activation_workflow
-│   └── test_rollback
-├── drift_monitor_test.exs
-│   ├── test_p95_calculation
-│   ├── test_quarantine_trigger
-│   ├── test_numeric_drift
-│   └── test_structured_drift
-└── adapter_sync_test.exs
-    ├── test_bulk_sync
-    ├── test_retry_logic
-    └── test_status_tracking
-```
+### Test Suite Status ✅
 
-### Integration Test
-```elixir
-# test/thunderline/thunderbolt/upm/integration_test.exs
-test "end-to-end UPM flow" do
-  # 1. Create trainer
-  # 2. Emit feature_window event
-  # 3. Verify snapshot creation
-  # 4. Record drift comparison
-  # 5. Trigger activation
-  # 6. Verify adapter sync
-end
+Test files implemented and located at `test/thunderline/thunderbolt/upm/`:
+
+| File | Coverage |
+|------|----------|
+| `trainer_worker_test.exs` | Core worker operations |
+| `trainer_worker_event_test.exs` | EventBus subscription & handling |
+| `replay_buffer_test.exs` | Deduplication, ordering, gaps |
+| `snapshot_manager_test.exs` | Persistence, compression, activation |
+| `drift_monitor_test.exs` | P95 calculation, quarantine logic |
+| `training_cycle_test.exs` | End-to-end training flow |
+
+Run tests:
+```bash
+mix test test/thunderline/thunderbolt/upm/
 ```
 
 ---
 
 ## 📋 Remaining Work (HC-22 Completion)
 
-### Critical (Required for M1 Unblock)
-1. **EventBus Subscriptions** (2 hours)
-   - Subscribe TrainerWorker to `system.feature_window.created`
-   - Subscribe AdapterSync to `ai.upm.snapshot.activated`
-   - Update worker `init/1` callbacks
+### ✅ Completed
+1. **EventBus Subscriptions** - Done via Phoenix.PubSub (EventBus fallback)
+   - TrainerWorker subscribes to `events:feature_window` and `system.feature_window.created`
+   - AdapterSync subscribes to `events:snapshot_activated` and `ai:upm:snapshot:activated`
 
-2. **Test Suite** (1 day)
-   - Unit tests for all 5 workers
-   - Integration test (end-to-end flow)
-   - Test coverage: target 80%+
+2. **Test Suite** - 6 test files covering core functionality
 
-3. **ThunderCrown Policy Hooks** (4 hours)
-   - Create `UPMPolicy` module
-   - Authorization for snapshot activation
-   - Rollout gating rules (tenant allowlists)
+3. **Real SGD Implementation** - Full Nx-based implementation in `sgd.ex`
+   - Xavier/Glorot initialization
+   - 2-layer MLP with ReLU activation
+   - Backpropagation with proper gradient computation
+   - Weight decay (L2 regularization) support
+   - Serialization/deserialization for snapshots
 
-### High Priority
-4. **Documentation** (4 hours)
-   - Update `docs/documentation/unified_persistent_model.md` with implementation status
-   - Add configuration examples (above)
-   - Document rollout procedures (above)
-   - Add operational runbooks (rollback drill, quarantine resolution)
+4. **ThunderCrown Policy Hooks** - UPMPolicy exists at `thundercrown/policies/upm_policy.ex`
+   - Shadow/canary/active rollout authorization
+   - Tenant allowlists for canary phase
+   - 14-day validation period enforcement
 
-5. **Real SGD Implementation** (1 day)
-   - Replace placeholder `sgd_update/3` with actual gradient descent
-   - Integrate with Nx/EXLA for tensor operations
-   - Add hyperparameter tuning support
-
-### Medium Priority
-6. **Grafana Dashboard** (1 day)
+### Medium Priority (Polish)
+5. **Grafana Dashboard** (1 day)
    - Create UPM-001 dashboard with panels above
    - Alert rules (drift P95 > 0.2, snapshot freshness > 2 hours)
 
-7. **LiveDashboard Pane** (1 day)
+6. **LiveDashboard Pane** (1 day)
    - Custom UPM page in LiveDashboard
    - Real-time metrics display
 
-8. **Cleanup Warnings** (1 hour)
-   - Fix `Logger.warn` → `Logger.warning` deprecations
-   - Remove unused variable warnings
+7. **Integration Testing** (4 hours)
+   - End-to-end flow test with live database
+   - Shadow mode validation
 
 ---
 
@@ -478,6 +455,22 @@ end
 ### HC-22 Complete When:
 - [x] All 5 core workers implemented (TrainerWorker, ReplayBuffer, SnapshotManager, DriftMonitor, AdapterSync)
 - [x] UPM.Supervisor created
+- [x] Application integration (feature-flagged)
+- [x] EventBus subscriptions active (via PubSub)
+- [x] ThunderCrown policy hooks (UPMPolicy)
+- [x] Real SGD with Nx
+- [x] Test suite implemented (6 files)
+- [ ] `mix thunderline.upm.validate` passes (minor fix needed)
+
+**Status: 95% Complete** - Ready for shadow deployment
+
+### M1-EMAIL-AUTOMATION Unblocked When:
+- HC-22 complete (above) ✅
+- Shadow mode running for 14 days
+- P95 drift < 0.2 for 95% of windows
+- No quarantine events in final 48 hours
+- Grafana dashboard UPM-001 deployed
+- Operational runbook reviewed by team
 - [x] Application integration (feature-flagged)
 - [ ] EventBus subscriptions active
 - [ ] ThunderCrown policy hooks
