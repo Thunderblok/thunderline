@@ -244,6 +244,8 @@ config :thunderline,
     # CORE (keep):
     # Tick/temporal origin domain - MUST be first
     Thunderline.Thundercore.Domain,
+    # PAC lifecycle domain (#2 in Pantheon)
+    Thunderline.Thunderpac.Domain,
     # Storage / memory / vault
     Thunderline.Thunderblock.Domain,
     # Event streams / pipelines
@@ -449,6 +451,8 @@ config :ash_authentication_phoenix,
 config :ash_admin, AshAdmin,
   otp_app: :thunderline,
   domains: [
+    Thunderline.Thundercore.Domain,
+    Thunderline.Thunderpac.Domain,
     Thunderline.Thunderblock.Domain,
     Thunderline.Thunderflow.Domain,
     Thunderline.Thunderlink.Domain,
