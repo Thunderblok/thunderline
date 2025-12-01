@@ -118,7 +118,8 @@ defmodule Thunderline.Thundercrown.PolicyEngine do
   Sets the evaluation strategy for a policy.
   """
   @spec with_strategy(policy(), evaluation_strategy()) :: policy()
-  def with_strategy(policy, strategy) when strategy in [:all_of, :any_of, :first_match, :weighted] do
+  def with_strategy(policy, strategy)
+      when strategy in [:all_of, :any_of, :first_match, :weighted] do
     %{policy | strategy: strategy}
   end
 
@@ -140,17 +141,19 @@ defmodule Thunderline.Thundercrown.PolicyEngine do
     start = System.monotonic_time(:microsecond)
 
     # Enrich context with action info
-    eval_context = Map.merge(context, %{
-      __action_domain: action[:domain],
-      __action_resource: action[:resource],
-      __action_name: action[:action]
-    })
+    eval_context =
+      Map.merge(context, %{
+        __action_domain: action[:domain],
+        __action_resource: action[:resource],
+        __action_name: action[:action]
+      })
 
     # Evaluate all rules
-    rule_results = Enum.map(policy.rules, fn rule ->
-      result = Constraint.evaluate(rule.constraint, eval_context)
-      {rule, result}
-    end)
+    rule_results =
+      Enum.map(policy.rules, fn rule ->
+        result = Constraint.evaluate(rule.constraint, eval_context)
+        {rule, result}
+      end)
 
     # Aggregate based on strategy
     verdict = aggregate(policy, rule_results)

@@ -168,7 +168,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Perturbation do
   defp fold_key(key, data) when is_integer(key) and is_integer(data) do
     # Simple but effective: XOR with rotated data
     # In production, use a proper hash like MurmurHash3
-    rotated = Integer.mod(data * 2654435761, 2 ** 32)
+    rotated = Integer.mod(data * 2_654_435_761, 2 ** 32)
     Bitwise.bxor(key, rotated)
   end
 

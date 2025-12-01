@@ -21,10 +21,6 @@ defmodule Thunderline.Thundervine.Thunderoll.Resources.Generation do
     data_layer: AshPostgres.DataLayer,
     extensions: [AshGraphql.Resource]
 
-  graphql do
-    type :thunderoll_generation
-  end
-
   postgres do
     table "thunderoll_generations"
     repo Thunderline.Repo
@@ -37,6 +33,10 @@ defmodule Thunderline.Thundervine.Thunderoll.Resources.Generation do
       index [:experiment_id, :index], name: "thunderoll_generations_exp_idx_unique", unique: true
       index [:experiment_id], name: "thunderoll_generations_experiment_idx"
     end
+  end
+
+  graphql do
+    type :thunderoll_generation
   end
 
   # ═══════════════════════════════════════════════════════════════

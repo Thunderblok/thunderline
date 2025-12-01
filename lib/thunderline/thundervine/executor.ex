@@ -209,7 +209,10 @@ defmodule Thunderline.Thundervine.Executor do
         success
 
       {:error, reason} when attempt < max_attempts ->
-        Logger.warning("Node #{node.id} attempt #{attempt} failed: #{inspect(reason)}, retrying...")
+        Logger.warning(
+          "Node #{node.id} attempt #{attempt} failed: #{inspect(reason)}, retrying..."
+        )
+
         # Exponential backoff with jitter
         delay = backoff_delay(attempt)
         Process.sleep(delay)

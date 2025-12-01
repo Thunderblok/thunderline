@@ -252,7 +252,8 @@ defmodule Thunderline.Thundervine.Graph do
       name: graph.name,
       description: graph.description,
       nodes: Map.new(graph.nodes, fn {id, node} -> {id, Node.to_map(node)} end),
-      edges: Enum.map(graph.edges, fn {from, to, meta} -> %{from: from, to: to, metadata: meta} end),
+      edges:
+        Enum.map(graph.edges, fn {from, to, meta} -> %{from: from, to: to, metadata: meta} end),
       metadata: graph.metadata
     }
   end

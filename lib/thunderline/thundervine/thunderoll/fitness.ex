@@ -170,7 +170,10 @@ defmodule Thunderline.Thundervine.Thunderoll.Fitness do
         run_mock_rollout(perturbation, member_idx)
 
       _ ->
-        Logger.warning("[Thunderoll.Fitness] Unknown rollout type: #{inspect(spec[:rollout_type])}")
+        Logger.warning(
+          "[Thunderoll.Fitness] Unknown rollout type: #{inspect(spec[:rollout_type])}"
+        )
+
         %{reward: 0.0}
     end
   end

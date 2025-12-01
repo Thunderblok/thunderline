@@ -62,7 +62,10 @@ defmodule Thunderline.Thundervine.Thunderoll.Nodes.Init do
           generation: 0
         }
 
-        Logger.info("[Thunderoll.Node.Init] Experiment initialized: #{inspect(runner.experiment_id)}")
+        Logger.info(
+          "[Thunderoll.Node.Init] Experiment initialized: #{inspect(runner.experiment_id)}"
+        )
+
         {:ok, output}
 
       {:error, reason} ->
@@ -227,7 +230,10 @@ defmodule Thunderline.Thundervine.Thunderoll.Nodes.CheckConvergence do
         next_generation: generation + 1
       }
 
-      Logger.debug("[Thunderoll.Node.CheckConvergence] Continuing to generation #{generation + 1}")
+      Logger.debug(
+        "[Thunderoll.Node.CheckConvergence] Continuing to generation #{generation + 1}"
+      )
+
       {:ok, output}
     end
   end

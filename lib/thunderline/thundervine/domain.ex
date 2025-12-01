@@ -48,8 +48,14 @@ defmodule Thunderline.Thundervine.Domain do
       # Thunderoll queries (HC-Δ-7)
       get Thunderline.Thundervine.Thunderoll.Resources.Experiment, :thunderoll_experiment, :read
       list Thunderline.Thundervine.Thunderoll.Resources.Experiment, :thunderoll_experiments, :read
-      list Thunderline.Thundervine.Thunderoll.Resources.Experiment, :thunderoll_experiments_running, :running
-      list Thunderline.Thundervine.Thunderoll.Resources.Generation, :thunderoll_generations, :for_experiment
+
+      list Thunderline.Thundervine.Thunderoll.Resources.Experiment,
+           :thunderoll_experiments_running,
+           :running
+
+      list Thunderline.Thundervine.Thunderoll.Resources.Generation,
+           :thunderoll_generations,
+           :for_experiment
     end
 
     mutations do
@@ -87,17 +93,38 @@ defmodule Thunderline.Thundervine.Domain do
 
       # GraphExecution mutations (HC-Δ-1)
       create Thunderline.Thundervine.Resources.GraphExecution, :start_graph_execution, :start
-      update Thunderline.Thundervine.Resources.GraphExecution, :complete_graph_execution, :complete
+
+      update Thunderline.Thundervine.Resources.GraphExecution,
+             :complete_graph_execution,
+             :complete
+
       update Thunderline.Thundervine.Resources.GraphExecution, :fail_graph_execution, :fail
       update Thunderline.Thundervine.Resources.GraphExecution, :cancel_graph_execution, :cancel
 
       # Thunderoll mutations (HC-Δ-7)
-      create Thunderline.Thundervine.Thunderoll.Resources.Experiment, :start_thunderoll_experiment, :start
-      update Thunderline.Thundervine.Thunderoll.Resources.Experiment, :begin_thunderoll_experiment, :begin_running
-      update Thunderline.Thundervine.Thunderoll.Resources.Experiment, :complete_thunderoll_experiment, :complete
-      update Thunderline.Thundervine.Thunderoll.Resources.Experiment, :fail_thunderoll_experiment, :fail
-      update Thunderline.Thundervine.Thunderoll.Resources.Experiment, :abort_thunderoll_experiment, :abort
-      create Thunderline.Thundervine.Thunderoll.Resources.Generation, :record_thunderoll_generation, :record
+      create Thunderline.Thundervine.Thunderoll.Resources.Experiment,
+             :start_thunderoll_experiment,
+             :start
+
+      update Thunderline.Thundervine.Thunderoll.Resources.Experiment,
+             :begin_thunderoll_experiment,
+             :begin_running
+
+      update Thunderline.Thundervine.Thunderoll.Resources.Experiment,
+             :complete_thunderoll_experiment,
+             :complete
+
+      update Thunderline.Thundervine.Thunderoll.Resources.Experiment,
+             :fail_thunderoll_experiment,
+             :fail
+
+      update Thunderline.Thundervine.Thunderoll.Resources.Experiment,
+             :abort_thunderoll_experiment,
+             :abort
+
+      create Thunderline.Thundervine.Thunderoll.Resources.Generation,
+             :record_thunderoll_generation,
+             :record
     end
   end
 

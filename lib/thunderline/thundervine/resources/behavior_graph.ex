@@ -59,9 +59,15 @@ defmodule Thunderline.Thundervine.Resources.BehaviorGraph do
 
         cs
         |> Ash.Changeset.change_attribute(:name, graph_map[:name] || graph_map["name"])
-        |> Ash.Changeset.change_attribute(:description, graph_map[:description] || graph_map["description"])
+        |> Ash.Changeset.change_attribute(
+          :description,
+          graph_map[:description] || graph_map["description"]
+        )
         |> Ash.Changeset.change_attribute(:graph_data, graph_map)
-        |> Ash.Changeset.change_attribute(:metadata, graph_map[:metadata] || graph_map["metadata"] || %{})
+        |> Ash.Changeset.change_attribute(
+          :metadata,
+          graph_map[:metadata] || graph_map["metadata"] || %{}
+        )
         |> Ash.Changeset.change_attribute(:status, :active)
       end
     end
@@ -163,19 +169,21 @@ defmodule Thunderline.Thundervine.Resources.BehaviorGraph do
     end
   end
 
-  identities do
-    identity :unique_name_version, [:name, :version]
-  end
-
   calculations do
     calculate :node_count, :integer do
       calculation fn records, _ctx ->
         Enum.map(records, fn record ->
-          nodes = get_in(record.graph_data, ["nodes"]) || get_in(record.graph_data, [:nodes]) || %{}
+          nodes =
+            get_in(record.graph_data, ["nodes"]) || get_in(record.graph_data, [:nodes]) || %{}
+
           map_size(nodes)
         end)
       end
     end
+  end
+
+  identities do
+    identity :unique_name_version, [:name, :version]
   end
 
   @doc """

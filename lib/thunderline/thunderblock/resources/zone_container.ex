@@ -182,7 +182,7 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        zone = Ash.get!(Thunderblock.Resources.ZoneContainer, input.arguments.id)
+        zone = Ash.get!(Thunderline.Thunderblock.Resources.ZoneContainer, input.arguments.id)
 
         zone =
           zone
@@ -230,7 +230,7 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
 
       run fn input, _context ->
         # Load and update zone status
-        zone = Ash.get!(Thunderblock.Resources.ZoneContainer, input.arguments.id)
+        zone = Ash.get!(Thunderline.Thunderblock.Resources.ZoneContainer, input.arguments.id)
 
         zone
         |> Ash.Changeset.for_update(:internal_pause, %{})
@@ -256,12 +256,12 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
 
     action :restart, :struct do
       description "Restart zone and its supervision tree"
-      constraints instance_of: Thunderblock.Resources.ZoneContainer
+      constraints instance_of: Thunderline.Thunderblock.Resources.ZoneContainer
 
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get!(Thunderblock.Resources.ZoneContainer, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.ZoneContainer, input.arguments.id) do
           nil ->
             {:error, "Zone container not found"}
 
@@ -303,12 +303,12 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
 
     action :mark_degraded, :struct do
       description "Mark zone as degraded due to issues"
-      constraints instance_of: Thunderblock.Resources.ZoneContainer
+      constraints instance_of: Thunderline.Thunderblock.Resources.ZoneContainer
 
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get!(Thunderblock.Resources.ZoneContainer, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.ZoneContainer, input.arguments.id) do
           nil ->
             {:error, "Zone container not found"}
 
@@ -347,12 +347,12 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
 
     action :mark_failed, :struct do
       description "Mark zone as failed"
-      constraints instance_of: Thunderblock.Resources.ZoneContainer
+      constraints instance_of: Thunderline.Thunderblock.Resources.ZoneContainer
 
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get!(Thunderblock.Resources.ZoneContainer, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.ZoneContainer, input.arguments.id) do
           nil ->
             {:error, "Zone container not found"}
 
@@ -412,11 +412,11 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
 
     action :health_check, :struct do
       description "Perform health check and update status"
-      constraints instance_of: Thunderblock.Resources.ZoneContainer
+      constraints instance_of: Thunderline.Thunderblock.Resources.ZoneContainer
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get(Thunderblock.Resources.ZoneContainer, input.arguments.id, []) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.ZoneContainer, input.arguments.id, []) do
           {:ok, zone} ->
             zone
             |> Ash.Changeset.for_update(:internal_health_check, [])

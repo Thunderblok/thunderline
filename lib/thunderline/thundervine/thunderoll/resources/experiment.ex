@@ -31,10 +31,6 @@ defmodule Thunderline.Thundervine.Thunderoll.Resources.Experiment do
 
   require Logger
 
-  graphql do
-    type :thunderoll_experiment
-  end
-
   postgres do
     table "thunderoll_experiments"
     repo Thunderline.Repo
@@ -44,6 +40,10 @@ defmodule Thunderline.Thundervine.Thunderoll.Resources.Experiment do
       index [:base_model_ref], name: "thunderoll_experiments_model_idx"
       index [:inserted_at], name: "thunderoll_experiments_created_idx"
     end
+  end
+
+  graphql do
+    type :thunderoll_experiment
   end
 
   # ═══════════════════════════════════════════════════════════════

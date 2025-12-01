@@ -195,7 +195,7 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
 
       run fn input, _context ->
         case Thunderblock.Domain
-             |> Ash.get(Thunderblock.Resources.SupervisionTree, input.arguments.id) do
+             |> Ash.get!(Thunderline.Thunderblock.Resources.SupervisionTree, input.arguments.id) do
           {:ok, tree} ->
             {:ok, updated_tree} =
               tree
@@ -232,12 +232,12 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
 
     action :stop, :struct do
       description "Stop the supervision tree"
-      constraints instance_of: Thunderblock.Resources.SupervisionTree
+      constraints instance_of: Thunderline.Thunderblock.Resources.SupervisionTree
 
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get!(Thunderblock.Resources.SupervisionTree, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.SupervisionTree, input.arguments.id) do
           nil ->
             {:error, "Supervision tree not found"}
 
@@ -364,13 +364,13 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
 
     action :add_child, :struct do
       description "Add a new child to the supervision tree"
-      constraints instance_of: Thunderblock.Resources.SupervisionTree
+      constraints instance_of: Thunderline.Thunderblock.Resources.SupervisionTree
 
       argument :id, :uuid, allow_nil?: false
       argument :child_id, :string, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get!(Thunderblock.Resources.SupervisionTree, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.SupervisionTree, input.arguments.id) do
           nil ->
             {:error, "Supervision tree not found"}
 
@@ -403,13 +403,13 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
 
     action :remove_child, :struct do
       description "Remove a child from the supervision tree"
-      constraints instance_of: Thunderblock.Resources.SupervisionTree
+      constraints instance_of: Thunderline.Thunderblock.Resources.SupervisionTree
 
       argument :id, :uuid, allow_nil?: false
       argument :child_id, :string, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get!(Thunderblock.Resources.SupervisionTree, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.SupervisionTree, input.arguments.id) do
           nil ->
             {:error, "Supervision tree not found"}
 
@@ -458,12 +458,12 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
 
     action :check_recovery, :struct do
       description "Check and perform recovery procedures"
-      constraints instance_of: Thunderblock.Resources.SupervisionTree
+      constraints instance_of: Thunderline.Thunderblock.Resources.SupervisionTree
 
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        case Ash.get!(Thunderblock.Resources.SupervisionTree, input.arguments.id) do
+        case Ash.get!(Thunderline.Thunderblock.Resources.SupervisionTree, input.arguments.id) do
           nil ->
             {:error, "Supervision tree not found"}
 
@@ -746,11 +746,11 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
       destination_attribute :id
     end
 
-    has_many :child_trees, Thunderblock.Resources.SupervisionTree do
+    has_many :child_trees, Thunderline.Thunderblock.Resources.SupervisionTree do
       destination_attribute :parent_tree_id
     end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
+    has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
       destination_attribute :target_resource_id
       filter expr(target_resource_type == :supervision_tree)
     end

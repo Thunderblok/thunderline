@@ -79,7 +79,8 @@ defmodule Thunderline.Thundervine.Thunderoll.Population do
   Compute statistics from a fitness vector.
   """
   @spec fitness_statistics([float()]) :: fitness_stats()
-  def fitness_statistics(fitness_vector) when is_list(fitness_vector) and length(fitness_vector) > 0 do
+  def fitness_statistics(fitness_vector)
+      when is_list(fitness_vector) and length(fitness_vector) > 0 do
     sorted = Enum.sort(fitness_vector)
     n = length(sorted)
     mean = Enum.sum(sorted) / n

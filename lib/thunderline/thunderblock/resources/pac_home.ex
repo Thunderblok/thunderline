@@ -862,12 +862,12 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
       destination_attribute :id
     end
 
-    belongs_to :zone_container, Thunderblock.Resources.ZoneContainer do
+    belongs_to :zone_container, Thunderline.Thunderblock.Resources.ZoneContainer do
       source_attribute :zone_container_id
       destination_attribute :id
     end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
+    has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
       destination_attribute :target_resource_id
       filter expr(target_resource_type == :pac_home)
     end
