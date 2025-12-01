@@ -103,7 +103,9 @@ defmodule Thunderline.Thunderbit.ProtocolTest do
 
     test "respects provided energy and salience" do
       ctx = Context.new()
-      {:ok, bit, _ctx} = Protocol.spawn_bit(:cognitive, %{content: "test", energy: 0.8, salience: 0.9}, ctx)
+
+      {:ok, bit, _ctx} =
+        Protocol.spawn_bit(:cognitive, %{content: "test", energy: 0.8, salience: 0.9}, ctx)
 
       assert bit.energy == 0.8
       assert bit.salience == 0.9

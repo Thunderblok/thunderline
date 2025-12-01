@@ -157,6 +157,9 @@ defmodule ThunderlineWeb.Router do
 
       # ThunderChief - AI Orchestrator Interface (glassmorphic chat)
       live "/chief", ThunderchiefLive, :index
+
+      # Thunderfield - Visual Thunderbit Field (HC-Δ-5.3)
+      live "/field", ThunderfieldLive, :index
     end
   end
 

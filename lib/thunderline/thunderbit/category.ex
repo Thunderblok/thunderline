@@ -626,6 +626,39 @@ defmodule Thunderline.Thunderbit.Category do
   end
 
   @doc """
+  Returns the ontology path as a list of strings.
+  Convenient for UI display and serialization.
+
+  ## Examples
+
+      iex> Category.ontology_path_strings(:cognitive)
+      ["being", "proposition"]
+  """
+  @spec ontology_path_strings(id()) :: [String.t()]
+  def ontology_path_strings(id) do
+    case ontology_path(id) do
+      {:ok, path} -> Enum.map(path, &Atom.to_string/1)
+      _ -> []
+    end
+  end
+
+  @doc """
+  Returns the full ontology path formatted for display.
+
+  ## Examples
+
+      iex> Category.ontology_display(:cognitive)
+      "Being → Proposition"
+  """
+  @spec ontology_display(id()) :: String.t()
+  def ontology_display(id) do
+    id
+    |> ontology_path_strings()
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join(" → ")
+  end
+
+  @doc """
   Returns the primary ontology category (Level 1) for a Thunderbit category.
   """
   @spec primary_ontology(id()) :: {:ok, atom()} | {:error, :unknown_category}

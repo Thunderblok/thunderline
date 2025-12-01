@@ -66,13 +66,17 @@ defmodule Thunderline.Thunderbit.UIContract do
           id: String.t(),
           category: String.t(),
           role: String.t(),
-          label: String.t(),
-          tooltip: String.t(),
+          state: String.t(),
           energy: float(),
           salience: float(),
-          status: String.t(),
+          content: String.t(),
+          tags: [String.t()],
+          ontology_path: [String.t()],
           geometry: geometry_dto(),
-          links: [thunderedge_dto()]
+          links: [thunderedge_dto()],
+          label: String.t(),
+          tooltip: String.t(),
+          inserted_at: String.t() | nil
         }
 
   @type geometry_dto :: %{
@@ -121,17 +125,28 @@ defmodule Thunderline.Thunderbit.UIContract do
     # Find edges involving this bit
     bit_edges = find_bit_edges(bit.id, edges)
 
+    # Get ontology path as strings
+    ontology_path =
+      case Category.ontology_path(category) do
+        {:ok, path} -> Enum.map(path, &Atom.to_string/1)
+        _ -> []
+      end
+
     %{
       id: bit.id,
       category: Atom.to_string(category),
       role: Atom.to_string(cat.role),
-      label: build_label(bit),
-      tooltip: build_tooltip(bit),
+      state: status_to_state(Map.get(bit, :status, :active)),
       energy: Map.get(bit, :energy, 0.5),
       salience: Map.get(bit, :salience, 0.5),
-      status: status_to_string(Map.get(bit, :status, :active)),
+      content: Map.get(bit, :content, ""),
+      tags: Map.get(bit, :tags, []) |> Enum.map(&to_string/1),
+      ontology_path: ontology_path,
       geometry: build_geometry_dto(bit, cat),
-      links: Enum.map(bit_edges, &edge_to_dto/1)
+      links: Enum.map(bit_edges, &edge_to_dto/1),
+      label: build_label(bit),
+      tooltip: build_tooltip(bit),
+      inserted_at: format_timestamp(Map.get(bit, :inserted_at))
     }
   end
 
@@ -183,22 +198,38 @@ defmodule Thunderline.Thunderbit.UIContract do
   Broadcasts bits and edges as slim DTOs to the Thunderfield topic.
 
   ## Parameters
-  - `bits` - List of Thunderbits to broadcast
+  - `bits` - Single bit or list of Thunderbits to broadcast
   - `edges` - List of edges (optional, defaults to [])
+  - `event_type` - Event type atom (defaults to :created)
+
+  ## Event Types
+  - `:created` - New bits spawned
+  - `:updated` - Bits modified
+  - `:retired` - Bits removed
 
   ## Returns
   - `:ok`
   """
-  @spec broadcast([map()], [Edge.t()] | [map()]) :: :ok
-  def broadcast(bits, edges \\ []) when is_list(bits) do
+  @spec broadcast([map()] | map(), [Edge.t()] | [map()], atom()) :: :ok
+  def broadcast(bits_or_bit, edges \\ [], event_type \\ :created)
+
+  def broadcast(bits, edges, event_type) when is_list(bits) do
     dtos = to_dtos(bits, edges)
     edge_dtos = Enum.map(edges, &edge_to_dto/1)
 
-    Phoenix.PubSub.broadcast(
-      Thunderline.PubSub,
-      "thunderbits:lobby",
-      {:thunderbit_spawn, %{bits: dtos, edges: edge_dtos}}
-    )
+    message =
+      case event_type do
+        :created -> {:thunderbit_spawn, %{bits: dtos, edges: edge_dtos}}
+        :updated -> {:thunderbit_update, %{bits: dtos, edges: edge_dtos}}
+        :retired -> {:thunderbit_retire, %{bits: dtos}}
+        _ -> {:thunderbit_event, %{type: event_type, bits: dtos, edges: edge_dtos}}
+      end
+
+    Phoenix.PubSub.broadcast(Thunderline.PubSub, "thunderbits:lobby", message)
+  end
+
+  def broadcast(bit, edges, event_type) when is_map(bit) do
+    broadcast([bit], edges, event_type)
   end
 
   @doc """
@@ -344,6 +375,22 @@ defmodule Thunderline.Thunderbit.UIContract do
   defp status_to_string(:fading), do: "fading"
   defp status_to_string(:archived), do: "archived"
   defp status_to_string(_), do: "active"
+
+  # Map internal status to UI state
+  # UI states: spawned | processing | settled | retired | error
+  defp status_to_state(:spawning), do: "spawned"
+  defp status_to_state(:active), do: "settled"
+  defp status_to_state(:processing), do: "processing"
+  defp status_to_state(:fading), do: "retired"
+  defp status_to_state(:archived), do: "retired"
+  defp status_to_state(:error), do: "error"
+  defp status_to_state(_), do: "settled"
+
+  defp format_timestamp(nil), do: nil
+  defp format_timestamp(%DateTime{} = dt), do: DateTime.to_iso8601(dt)
+  defp format_timestamp(%NaiveDateTime{} = ndt), do: NaiveDateTime.to_iso8601(ndt)
+  defp format_timestamp(other) when is_binary(other), do: other
+  defp format_timestamp(_), do: nil
 
   # ===========================================================================
   # Links Building (legacy)

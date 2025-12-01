@@ -26,7 +26,7 @@ defmodule Thunderline.Thunderbit.Ethics do
       {:error, {:maxim_violated, "Primum non nocere"}}
   """
 
-  alias Thunderline.Thunderbit.Category
+  alias Thunderline.Thunderbit.{Category, Context}
   alias Thunderline.Thundercore.Ontology
 
   require Logger
@@ -76,9 +76,55 @@ defmodule Thunderline.Thunderbit.Ethics do
     end
   end
 
-  defp check_spawn_policy(_cat, _context) do
+  defp check_spawn_policy(_cat, context) do
     # Integration point for Thundercrown policy engine
-    # For now, allow all spawns
+    # HC-Δ-5.3: Stub for future Thundercrown.PolicyEngine integration
+    case thundercrown_allow?(:thunderbit_spawn, context) do
+      :ok -> :ok
+      {:error, _} = error -> error
+    end
+  end
+
+  # ===========================================================================
+  # Thundercrown Integration Hooks (Stubs)
+  # ===========================================================================
+
+  @doc """
+  Checks with Thundercrown PolicyEngine if an action is allowed.
+
+  This is the integration point for the governance/ethics layer.
+  Currently returns :ok for all actions (stub implementation).
+
+  ## Future Integration
+
+  When Thundercrown.PolicyEngine is fully implemented:
+
+      def thundercrown_allow?(action, context) do
+        Thundercrown.PolicyEngine.allow?(action, context)
+      end
+
+  ## Parameters
+  - `action` - The action to check (:thunderbit_spawn, :thunderbit_link, :thunderbit_action)
+  - `context` - Context with actor, bit, edge, etc.
+
+  ## Returns
+  - `:ok` - Action is allowed
+  - `{:error, {:policy_violation, reason}}` - Action is denied
+  """
+  @spec thundercrown_allow?(atom(), map() | Context.t()) :: :ok | {:error, term()}
+  def thundercrown_allow?(action, context) do
+    # Stub: Always allow for now
+    # TODO: Integrate with Thundercrown.PolicyEngine when available
+    Logger.debug("[Ethics] Thundercrown check: #{action} - allowed (stub)")
+
+    # Future implementation:
+    # if Code.ensure_loaded?(Thunderline.Thundercrown.PolicyEngine) do
+    #   Thunderline.Thundercrown.PolicyEngine.allow?(action, context)
+    # else
+    #   :ok
+    # end
+
+    _ = {action, context}
     :ok
   end
 
@@ -107,7 +153,9 @@ defmodule Thunderline.Thunderbit.Ethics do
     to_cat = Map.get(to_bit, :category, :cognitive)
 
     with :ok <- Category.check_maxim_compatibility(from_cat, to_cat),
-         :ok <- check_relation_ethics(from_cat, to_cat, relation) do
+         :ok <- check_relation_ethics(from_cat, to_cat, relation),
+         :ok <-
+           thundercrown_allow?(:thunderbit_link, %{from: from_bit, to: to_bit, relation: relation}) do
       :ok
     end
   end
