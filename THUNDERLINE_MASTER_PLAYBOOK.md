@@ -968,12 +968,13 @@ end
 
 | ID | Priority | Component | Description | Status |
 |----|----------|-----------|-------------|--------|
-| HC-Δ-1 | P0 | Thundervine DAG Infrastructure | Behavior DAG data structures, node wrappers, executor | Not Started |
-| HC-Δ-2 | P0 | Thundercrown Policy Engine | Runtime policy evaluation, constraint DSL, policy resources | Not Started |
+| HC-Δ-1 | P0 | Thundervine DAG Infrastructure | Behavior DAG data structures, node wrappers, executor | ✅ Complete |
+| HC-Δ-2 | P0 | Thundercrown Policy Engine | Runtime policy evaluation, constraint DSL, policy resources | ✅ Complete |
 | HC-Δ-3 | P1 | DiffLogic CA Engine | Differentiable logic CA, learnable gates, grid state | Not Started |
 | HC-Δ-4 | P1 | MAP-Elites Archive (Full QD) | Quality-diversity search, elite archive, mutation operators | Not Started |
 | HC-Δ-5 | P1 | Thunderbit Category Protocol | Composable computation units, monadic bind, type definitions | Not Started |
 | HC-Δ-6 | P2 | Structured Tensor (Finch-inspired) | Sparse/dense tensor types, operations, loop fusion | Not Started |
+| HC-Δ-7 | P0 | Thunderoll Hyperscale Optimizer | EGGROLL-based ES, low-rank perturbations, population management | Not Started |
 
 ### HC-Δ-1: Thundervine DAG Infrastructure
 
@@ -1452,15 +1453,560 @@ lib/thunderline/structured_tensor/
 
 ---
 
+### HC-Δ-7: Thunderoll Hyperscale Optimizer
+
+**Priority**: P0 (Optimization backbone)
+**Owner**: Vine Steward × Pac Steward
+**Dependencies**: HC-Δ-1 (DAG Infrastructure), HC-Δ-2 (Policy Engine)
+
+**Purpose**: Integrate EGGROLL-style Evolution Strategies for hyperscale optimization of PAC behaviors, policies, and neural substrates. Uses low-rank perturbations to achieve 100x throughput over naïve ES while maintaining full-rank update expressivity.
+
+**Reference**: [ES Hyperscale Paper](https://eshyperscale.github.io/) - Oxford/FLAIR/NVIDIA
+
+**Core Insight**:
+> If you can do batched LoRA-style inference and define a fitness function, Thunderoll can optimize the system end-to-end without backprop.
+
+**Components**:
+```
+lib/thunderline/thundervine/thunderoll/
+├── runner.ex              # Orchestrates EGGROLL optimization loops
+├── population.ex          # Population management and sampling
+├── perturbation.ex        # Low-rank A·Bᵀ perturbation generation
+├── fitness.ex             # Fitness aggregation from rollouts
+├── backend/
+│   ├── behaviour.ex       # Backend behaviour specification
+│   ├── remote_jax.ex      # HTTP/gRPC wrapper for JAX EGGROLL
+│   └── nx_native.ex       # Future: Native Nx implementation
+└── resources/
+    ├── experiment.ex      # ThunderollExperiment Ash resource
+    └── generation.ex      # ThunderollGeneration Ash resource
+```
+
+**Thunderoll.Runner Core**:
+```elixir
+defmodule Thunderline.Thundervine.Thunderoll.Runner do
+  @moduledoc """
+  EGGROLL-style Evolution Strategies optimizer.
+  
+  Uses low-rank perturbations (A·Bᵀ where r << min(m,n)) to achieve
+  O(r(m+n)) memory vs O(mn) for full-rank ES, while aggregated
+  updates remain full-rank across the population.
+  """
+  
+  alias Thunderline.Thundervine.Thunderoll.{Population, Perturbation, Fitness}
+  alias Thunderline.Thundercrown.PolicyEngine
+  
+  defstruct [
+    :experiment_id,
+    :base_params,           # Base model parameters (or LoRA base)
+    :rank,                  # Low-rank perturbation rank (default: 1)
+    :population_size,       # N workers/members
+    :sigma,                 # Perturbation standard deviation
+    :generation,            # Current generation index
+    :backend,               # :remote_jax | :nx_native
+    :fitness_spec,          # Fitness function specification
+    :convergence_criteria,  # When to stop
+    :policy_context         # Thundercrown governance context
+  ]
+  
+  @type t :: %__MODULE__{}
+  
+  @doc """
+  Initialize a new Thunderoll optimization run.
+  
+  Validates against Thundercrown policies before starting.
+  Creates persistent ThunderollExperiment record.
+  """
+  def init(opts) do
+    with {:ok, _} <- PolicyEngine.check("thunderoll:allowed?", opts.policy_context),
+         {:ok, experiment} <- create_experiment(opts) do
+      {:ok, %__MODULE__{
+        experiment_id: experiment.id,
+        base_params: opts.base_params,
+        rank: opts[:rank] || 1,
+        population_size: opts.population_size,
+        sigma: opts[:sigma] || 0.02,
+        generation: 0,
+        backend: opts[:backend] || :remote_jax,
+        fitness_spec: opts.fitness_spec,
+        convergence_criteria: opts[:convergence_criteria] || default_convergence(),
+        policy_context: opts.policy_context
+      }}
+    end
+  end
+  
+  @doc """
+  Run one generation of EGGROLL optimization.
+  
+  1. Sample low-rank perturbations for population
+  2. Dispatch fitness evaluations (PAC rollouts)
+  3. Collect fitness vector
+  4. Compute aggregated update via backend
+  5. Return delta parameters
+  """
+  def run_generation(%__MODULE__{} = state) do
+    # Sample perturbations: each is {A, B} where A ∈ R^(m×r), B ∈ R^(n×r)
+    perturbations = Perturbation.sample_population(
+      state.base_params,
+      state.population_size,
+      state.rank,
+      state.sigma
+    )
+    
+    # Evaluate fitness for each perturbed member
+    fitness_vector = Fitness.evaluate_population(
+      state.base_params,
+      perturbations,
+      state.fitness_spec
+    )
+    
+    # Compute EGGROLL update: Σ(fitness_i * A_i * B_i^T) / population_size
+    delta = compute_update(perturbations, fitness_vector, state)
+    
+    # Store generation record
+    {:ok, _gen} = store_generation(state, fitness_vector, delta)
+    
+    {:ok, delta, %{state | generation: state.generation + 1}}
+  end
+  
+  @doc """
+  Check if optimization has converged.
+  """
+  def converged?(%__MODULE__{} = state) do
+    cond do
+      state.generation >= state.convergence_criteria.max_generations -> true
+      fitness_plateau?(state) -> true
+      policy_limit_reached?(state) -> true
+      true -> false
+    end
+  end
+end
+```
+
+**Perturbation Module**:
+```elixir
+defmodule Thunderline.Thundervine.Thunderoll.Perturbation do
+  @moduledoc """
+  Low-rank perturbation generation for EGGROLL.
+  
+  Instead of sampling full-rank noise E ∈ R^(m×n), we sample:
+    A ∈ R^(m×r)
+    B ∈ R^(n×r)
+  And form the perturbation as A·Bᵀ.
+  
+  Memory: O(r(m+n)) vs O(mn)
+  Forward pass: O(r(m+n)) vs O(mn)
+  
+  Key insight: While individual perturbations are low-rank,
+  the aggregated update Σ(f_i * A_i * B_i^T) is full-rank
+  when population_size ≥ hidden_dim.
+  """
+  
+  defstruct [:a, :b, :seed, :sigma]
+  
+  @type t :: %__MODULE__{
+    a: Nx.Tensor.t(),
+    b: Nx.Tensor.t(),
+    seed: integer(),
+    sigma: float()
+  }
+  
+  @doc """
+  Sample perturbations for entire population.
+  
+  Uses deterministic key derivation so perturbations can be
+  reconstructed from seeds without storing full matrices.
+  """
+  def sample_population(base_params, population_size, rank, sigma) do
+    base_key = :rand.uniform(2 ** 32)
+    
+    for member_idx <- 0..(population_size - 1) do
+      # Deterministic key folding (matches JAX pattern)
+      member_key = fold_key(base_key, member_idx)
+      sample_one(base_params, rank, sigma, member_key)
+    end
+  end
+  
+  defp sample_one(base_params, rank, sigma, key) do
+    {m, n} = param_shape(base_params)
+    
+    # Sample A and B from N(0, 1)
+    {key_a, key_b} = split_key(key)
+    a = Nx.random_normal({m, rank}, key: key_a)
+    b = Nx.random_normal({n, rank}, key: key_b)
+    
+    %__MODULE__{a: a, b: b, seed: key, sigma: sigma}
+  end
+  
+  @doc """
+  Apply perturbation to base parameters for forward pass.
+  
+  perturbed = base + sigma * A @ B.T
+  
+  This is computed efficiently as:
+    x @ perturbed.T = x @ base.T + sigma * (x @ B) @ A.T
+  """
+  def apply(%__MODULE__{} = pert, base_params, input) do
+    # Efficient low-rank forward: O(r(m+n)) instead of O(mn)
+    base_output = Nx.dot(input, Nx.transpose(base_params))
+    
+    # Low-rank correction
+    xB = Nx.dot(input, pert.b)           # [batch, r]
+    correction = Nx.dot(xB, Nx.transpose(pert.a))  # [batch, m]
+    
+    Nx.add(base_output, Nx.multiply(correction, pert.sigma))
+  end
+end
+```
+
+**Fitness Module**:
+```elixir
+defmodule Thunderline.Thundervine.Thunderoll.Fitness do
+  @moduledoc """
+  Fitness evaluation for EGGROLL population members.
+  
+  Fitness is computed by Thunderline (not EGGROLL backend) because:
+  1. We control the rollout environment
+  2. We can inject domain-specific metrics (PLV, near-critical, safety)
+  3. Thundercrown can abort unsafe members mid-evaluation
+  """
+  
+  alias Thunderline.Thundervine.{Graph, Executor}
+  alias Thunderline.Thundercrown.PolicyEngine
+  
+  @doc """
+  Evaluate fitness for all population members.
+  
+  Returns fitness vector as list of floats.
+  """
+  def evaluate_population(base_params, perturbations, fitness_spec) do
+    # Parallel evaluation with controlled concurrency
+    Task.async_stream(
+      Enum.with_index(perturbations),
+      fn {pert, idx} -> evaluate_one(base_params, pert, fitness_spec, idx) end,
+      max_concurrency: fitness_spec[:max_concurrency] || System.schedulers_online(),
+      timeout: fitness_spec[:timeout] || 30_000
+    )
+    |> Enum.map(fn {:ok, fitness} -> fitness end)
+  end
+  
+  defp evaluate_one(base_params, perturbation, spec, member_idx) do
+    # Run PAC/model with perturbed parameters
+    rollout_result = run_rollout(base_params, perturbation, spec)
+    
+    # Extract metrics based on fitness specification
+    metrics = extract_metrics(rollout_result, spec)
+    
+    # Aggregate into scalar fitness
+    # Default: weighted sum, but spec can override
+    aggregate_fitness(metrics, spec)
+  end
+  
+  defp run_rollout(base_params, perturbation, spec) do
+    case spec.rollout_type do
+      :pac_behavior ->
+        # Run PAC with perturbed policy
+        run_pac_rollout(base_params, perturbation, spec)
+      
+      :environment_steps ->
+        # Run in simulated environment
+        run_env_rollout(base_params, perturbation, spec)
+      
+      :custom ->
+        # User-provided rollout function
+        spec.rollout_fn.(base_params, perturbation)
+    end
+  end
+  
+  @doc """
+  Default fitness aggregation: weighted sum of metrics.
+  
+  Supports:
+  - :reward (higher is better)
+  - :safety_violations (lower is better, inverted)
+  - :plv_sync (phase-locking value, target ~0.3-0.7)
+  - :stability (lower chaos is better for some tasks)
+  """
+  def aggregate_fitness(metrics, spec) do
+    weights = spec[:weights] || %{
+      reward: 1.0,
+      safety_violations: -10.0,
+      plv_sync: 0.5,
+      stability: 0.2
+    }
+    
+    Enum.reduce(weights, 0.0, fn {metric, weight}, acc ->
+      value = Map.get(metrics, metric, 0.0)
+      acc + weight * value
+    end)
+  end
+end
+```
+
+**Ash Resources**:
+```elixir
+defmodule Thunderline.Thundervine.Thunderoll.Resources.Experiment do
+  use Ash.Resource,
+    domain: Thunderline.Thundervine.Domain,
+    data_layer: AshPostgres.DataLayer
+  
+  postgres do
+    table "thunderoll_experiments"
+    repo Thunderline.Repo
+  end
+  
+  attributes do
+    uuid_primary_key :id
+    attribute :name, :string, allow_nil?: false
+    attribute :base_model_ref, :string  # Reference to model/PAC being optimized
+    attribute :rank, :integer, default: 1
+    attribute :population_size, :integer, allow_nil?: false
+    attribute :sigma, :float, default: 0.02
+    attribute :max_generations, :integer, default: 100
+    attribute :fitness_spec, :map, default: %{}
+    attribute :convergence_criteria, :map, default: %{}
+    attribute :status, :atom, constraints: [one_of: [:pending, :running, :completed, :aborted, :failed]]
+    attribute :final_fitness, :float
+    attribute :total_evaluations, :integer, default: 0
+    timestamps()
+  end
+  
+  relationships do
+    has_many :generations, Thunderline.Thundervine.Thunderoll.Resources.Generation
+  end
+  
+  actions do
+    defaults [:read, :destroy]
+    
+    create :start do
+      accept [:name, :base_model_ref, :rank, :population_size, :sigma, :max_generations, :fitness_spec, :convergence_criteria]
+      change set_attribute(:status, :pending)
+    end
+    
+    update :begin_running do
+      change set_attribute(:status, :running)
+    end
+    
+    update :complete do
+      accept [:final_fitness, :total_evaluations]
+      change set_attribute(:status, :completed)
+    end
+    
+    update :abort do
+      change set_attribute(:status, :aborted)
+    end
+    
+    update :fail do
+      change set_attribute(:status, :failed)
+    end
+  end
+end
+
+defmodule Thunderline.Thundervine.Thunderoll.Resources.Generation do
+  use Ash.Resource,
+    domain: Thunderline.Thundervine.Domain,
+    data_layer: AshPostgres.DataLayer
+  
+  postgres do
+    table "thunderoll_generations"
+    repo Thunderline.Repo
+  end
+  
+  attributes do
+    uuid_primary_key :id
+    attribute :index, :integer, allow_nil?: false
+    attribute :fitness_stats, :map  # {min, max, mean, std}
+    attribute :best_fitness, :float
+    attribute :population_summary, :map  # Aggregated metrics
+    attribute :update_delta_ref, :string  # Reference to stored delta
+    attribute :duration_ms, :integer
+    attribute :status, :atom, constraints: [one_of: [:pending, :running, :completed, :failed]]
+    timestamps()
+  end
+  
+  relationships do
+    belongs_to :experiment, Thunderline.Thundervine.Thunderoll.Resources.Experiment
+  end
+  
+  actions do
+    defaults [:read]
+    
+    create :record do
+      accept [:index, :fitness_stats, :best_fitness, :population_summary, :update_delta_ref, :duration_ms]
+      change set_attribute(:status, :completed)
+    end
+  end
+end
+```
+
+**Behavior DAG Nodes for Thunderoll**:
+```elixir
+# Node handlers registered with Thundervine.Executor
+
+defmodule Thunderline.Thundervine.Thunderoll.Nodes.Init do
+  @behaviour Thunderline.Thundervine.Executor.NodeHandler
+  
+  def execute(%{config: config}, context) do
+    with {:ok, runner} <- Thunderoll.Runner.init(config) do
+      {:ok, %{experiment_id: runner.experiment_id, runner: runner}}
+    end
+  end
+end
+
+defmodule Thunderline.Thundervine.Thunderoll.Nodes.Generation do
+  @behaviour Thunderline.Thundervine.Executor.NodeHandler
+  
+  def execute(%{runner: runner}, _context) do
+    case Thunderoll.Runner.run_generation(runner) do
+      {:ok, delta, new_runner} ->
+        {:ok, %{delta: delta, runner: new_runner, converged: Thunderoll.Runner.converged?(new_runner)}}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+end
+
+defmodule Thunderline.Thundervine.Thunderoll.Nodes.ApplyUpdate do
+  @behaviour Thunderline.Thundervine.Executor.NodeHandler
+  
+  def execute(%{delta: delta, target_ref: target_ref}, _context) do
+    # Apply aggregated update to target model/PAC
+    :ok = apply_delta_to_target(target_ref, delta)
+    {:ok, %{applied: true}}
+  end
+end
+
+defmodule Thunderline.Thundervine.Thunderoll.Nodes.CheckConvergence do
+  @behaviour Thunderline.Thundervine.Executor.NodeHandler
+  
+  def execute(%{converged: converged, runner: runner}, _context) do
+    if converged do
+      {:ok, %{action: :complete, final_generation: runner.generation}}
+    else
+      {:ok, %{action: :continue}}
+    end
+  end
+end
+```
+
+**Thundercrown Policies for Thunderoll**:
+```elixir
+# Policy definitions for governing Thunderoll experiments
+
+# thunderoll:allowed? - Can this actor start an experiment?
+%{
+  name: "thunderoll:allowed?",
+  evaluation_strategy: :all_of,
+  rules: [
+    %{type: :has_scope, scope: "thunderoll:run"},
+    %{type: :resource_limit, resource: :concurrent_experiments, limit: 5},
+    %{type: :time_window, start_hour: 6, end_hour: 22}  # No overnight experiments
+  ]
+}
+
+# thunderoll:max_population - Limit population size by tier
+%{
+  name: "thunderoll:max_population",
+  evaluation_strategy: :first_match,
+  rules: [
+    %{condition: %{role: :admin}, result: %{max: 262144}},      # Full EGGROLL scale
+    %{condition: %{role: :researcher}, result: %{max: 16384}},  # Research tier
+    %{condition: %{role: :user}, result: %{max: 1024}},         # User tier
+    %{default: %{max: 256}}                                      # Default
+  ]
+}
+
+# thunderoll:protected_models - Models that cannot be optimized
+%{
+  name: "thunderoll:protected_models",
+  evaluation_strategy: :any_of,
+  rules: [
+    %{type: :matches, field: :base_model_ref, pattern: "^sacred:.*"},
+    %{type: :matches, field: :base_model_ref, pattern: "^production:.*"}
+  ],
+  on_match: :deny
+}
+```
+
+**Backend: Remote JAX (Phase 1)**:
+```elixir
+defmodule Thunderline.Thundervine.Thunderoll.Backend.RemoteJax do
+  @moduledoc """
+  HTTP/gRPC client for JAX EGGROLL backend.
+  
+  The backend server handles:
+  - Low-rank perturbation math (A·Bᵀ operations)
+  - Aggregated update computation
+  - Optionally: model storage and delta application
+  
+  Thunderline handles:
+  - Orchestration and scheduling
+  - Fitness evaluation (rollouts)
+  - Policy enforcement
+  - Persistence and auditing
+  """
+  
+  @behaviour Thunderline.Thundervine.Thunderoll.Backend
+  
+  def compute_update(perturbation_seeds, fitness_vector, config) do
+    payload = %{
+      "seeds" => perturbation_seeds,
+      "fitness" => fitness_vector,
+      "rank" => config.rank,
+      "sigma" => config.sigma,
+      "param_shape" => config.param_shape
+    }
+    
+    case Req.post(config.backend_url <> "/compute_update", json: payload) do
+      {:ok, %{status: 200, body: body}} ->
+        {:ok, decode_delta(body)}
+      {:ok, %{status: status, body: body}} ->
+        {:error, {:backend_error, status, body}}
+      {:error, reason} ->
+        {:error, {:connection_error, reason}}
+    end
+  end
+end
+```
+
+**Integration with Near-Critical Control (Future)**:
+```elixir
+# Fitness function that includes loop-controller metrics
+fitness_spec = %{
+  rollout_type: :pac_behavior,
+  weights: %{
+    # Task performance
+    task_reward: 1.0,
+    
+    # Near-critical dynamics (from loop controller)
+    plv_target_deviation: -0.5,  # Penalize deviation from target PLV
+    sigma_flow_efficiency: 0.3,  # Reward good propagatability
+    lambda_hat_stability: -0.2,  # Penalize high chaos (unless exploring)
+    
+    # Safety
+    constraint_violations: -10.0
+  },
+  
+  # Target PLV for "edge of chaos" operation
+  plv_target: 0.5,
+  
+  # Inject loop controller metrics into rollout
+  inject_metrics: [:plv, :sigma, :lambda_hat]
+}
+```
+
+---
+
 ### Implementation Phases
 
-| Phase | HC Items | Focus | Timeline |
-|-------|----------|-------|----------|
-| **1** | HC-Δ-1, HC-Δ-2 | Orchestration backbone (Vine DAG + Crown Policy) | Week 1-2 |
-| **2** | HC-Δ-3 | CA Engine (DiffLogic integration) | Week 2-3 |
-| **3** | HC-Δ-4 | MAP-Elites (Quality-Diversity search) | Week 3-4 |
-| **4** | HC-Δ-5 | Thunderbit Protocol (Category composition) | Week 4-5 |
-| **5** | HC-Δ-6 | Structured Tensors (Finch-inspired) | Week 5-6 |
+| Phase | HC Items | Focus | Timeline | Status |
+|-------|----------|-------|----------|--------|
+| **1** | HC-Δ-1, HC-Δ-2 | Orchestration backbone (Vine DAG + Crown Policy) | Week 1-2 | ✅ Complete |
+| **2** | HC-Δ-7 | Thunderoll Hyperscale Optimizer | Week 2-3 | 🚧 In Progress |
+| **3** | HC-Δ-3 | CA Engine (DiffLogic integration) | Week 3-4 | Not Started |
+| **4** | HC-Δ-4 | MAP-Elites (Quality-Diversity search) | Week 4-5 | Not Started |
+| **5** | HC-Δ-5 | Thunderbit Protocol (Category composition) | Week 5-6 | Not Started |
+| **6** | HC-Δ-6 | Structured Tensors (Finch-inspired) | Week 6-7 | Not Started |
 
 ### Cross-Domain Layer Activation
 
@@ -1469,6 +2015,7 @@ The HC-Δ series activates several cross-domain functional layers:
 | Layer | Domains | HC-Δ Items |
 |-------|---------|------------|
 | **Orchestration Layer** | Vine × Crown | HC-Δ-1, HC-Δ-2 |
+| **Optimization Layer** | Vine × Pac × Crown | HC-Δ-7 |
 | **Compute Layer** | Bolt × Flow | HC-Δ-3, HC-Δ-4 |
 | **Transform Layer** | Bolt × Block | HC-Δ-5, HC-Δ-6 |
 
@@ -1483,6 +2030,7 @@ The HC-Δ series activates several cross-domain functional layers:
 | Behavior DAGs | Thundervine.Graph | HC-Δ-1 |
 | Policy Engine | Thundercrown.PolicyEngine | HC-Δ-2 |
 | Thunderbit CAT | Thunderbit Protocol | HC-Δ-5 |
+| EGGROLL ES | Thundervine.Thunderoll | HC-Δ-7 |
 
 ---
 
