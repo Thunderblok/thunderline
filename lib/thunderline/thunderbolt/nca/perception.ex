@@ -16,7 +16,7 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
 
   The perception vector is constructed by:
   1. The cell's own state (16 channels)
-  2. Sobel-x gradient of state (16 channels)  
+  2. Sobel-x gradient of state (16 channels)
   3. Sobel-y gradient of state (16 channels)
 
   Total perception: 48 dimensions per cell.

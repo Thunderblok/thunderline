@@ -33,7 +33,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Fitness do
 
       %{
         rollout_type: :custom,
-        rollout_fn: fn base_params, perturbation -> 
+        rollout_fn: fn base_params, perturbation ->
           # ... evaluate and return metrics map
         end
       }

@@ -55,7 +55,7 @@ defmodule Thunderline.Thunderwall.Sink do
   The entropy score determines when to archive:
 
   ```
-  entropy_score = 
+  entropy_score =
     age_factor * (now - created_at) +
     chaos_factor * max(0, lambda_hat - 0.5) +
     fitness_factor * (1.0 - fitness) +

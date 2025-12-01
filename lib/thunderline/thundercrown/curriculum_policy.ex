@@ -243,7 +243,7 @@ defmodule Thunderline.Thundercrown.CurriculumPolicy do
   ## Arguments
 
   - `tenant` - Tenant identifier
-  - `task_id` - Unique task identifier  
+  - `task_id` - Unique task identifier
   - `response` - Executor's response
   - `success` - Whether the attempt succeeded
   """

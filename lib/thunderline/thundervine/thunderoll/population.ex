@@ -19,7 +19,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Population do
 
   At rank=1 with float32:
   - Population 1024, hidden 256: ~2MB
-  - Population 16384, hidden 1024: ~128MB  
+  - Population 16384, hidden 1024: ~128MB
   - Population 262144, hidden 4096: ~8GB
   """
 

@@ -634,3 +634,134 @@
 .glow-purple {
   box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
 }
+
+/* ===================================================================
+   Thunderfield - Thunderbit Visualization
+   =================================================================== */
+
+/* Background grid pattern */
+.thunderfield-grid {
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+}
+
+/* Thunderbit glyph base styles */
+.thunderbit-glyph {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thunderbit:hover .thunderbit-glyph {
+  filter: brightness(1.2);
+  transform: scale(1.1);
+}
+
+/* Slow pulse animation for active bits */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(0.95);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Float animation for bubble shapes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-float {
+  animation: float 2s ease-in-out infinite;
+}
+
+/* Slow spin for star shapes */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 10s linear infinite;
+}
+
+/* Slide-in animation for detail panel */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* Spawn animation for new bits */
+@keyframes spawn {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.thunderbit-spawning {
+  animation: spawn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Fade animation for archived bits */
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.thunderbit-fading {
+  animation: fade-out 0.5s ease-in forwards;
+}
+
+/* Relation lines */
+.relation-line line {
+  stroke-dashoffset: 0;
+  animation: dash 20s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
