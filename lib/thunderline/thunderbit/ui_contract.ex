@@ -1,136 +1,212 @@
 defmodule Thunderline.Thunderbit.UIContract do
   @moduledoc """
-  Thunderbit UI Contract - Rendering Specifications
+  Thunderbit UI Contract - Slim DTOs for Front-End Rendering
 
-  Converts Thunderbits to UI-ready specifications following the
-  ThunderbitUISpec schema that front-ends consume.
+  Converts Thunderbits to minimal, UI-ready DTOs following the
+  ThunderbitDTO and ThunderedgeDTO schemas. These are intentionally
+  slim to prevent front-end from accessing internal protocol state.
 
-  ## UI Spec Schema
+  ## Design Principle: Slim DTOs
+
+  The front-end should ONLY receive:
+  - What it needs to render (geometry, visual state)
+  - What it needs for interaction (id, links)
+  - NO internal protocol state (maxims, policies, ethics verdicts)
+
+  ## ThunderbitDTO Schema
 
   ```typescript
-  interface ThunderbitUISpec {
+  interface ThunderbitDTO {
     id: string;
-    canonical_name: string;
-    geometry: { type, shape, position };
-    visual: { base_color, energy, salience, state, animation };
-    links: [{ target_id, relation_type, strength }];
-    label: string;
-    tooltip: string;
     category: string;
     role: string;
+    label: string;
+    tooltip: string;
+    energy: number;      // 0.0 - 1.0
+    salience: number;    // 0.0 - 1.0
+    status: string;      // "spawning" | "active" | "fading"
+    geometry: {
+      type: string;      // "node" | "edge" | "region"
+      shape: string;     // "circle" | "hex" | "diamond" | "square"
+      base_color: string;
+      position: { x: number; y: number; z: number };
+    };
+    links: ThunderedgeDTO[];
+  }
+
+  interface ThunderedgeDTO {
+    id: string;
+    from_id: string;
+    to_id: string;
+    relation: string;    // "feeds" | "inhibits" | "modulates" | etc.
+    strength: number;    // 0.0 - 1.0
   }
   ```
 
   ## Usage
 
-      iex> UIContract.to_spec(bit)
-      %{id: "...", geometry: %{...}, visual: %{...}, ...}
+      # Single bit to DTO
+      dto = UIContract.to_dto(bit)
 
-      iex> UIContract.render_all([bit1, bit2])
-      [%{...}, %{...}]
+      # Multiple bits with edges
+      dtos = UIContract.to_dtos(bits, edges)
+
+      # Broadcast to front-end
+      :ok = UIContract.broadcast(bits, edges)
   """
 
-  alias Thunderline.Thunderbit.Category
+  alias Thunderline.Thunderbit.{Category, Edge}
   alias Thunderline.Thundercore.Thunderbit, as: CoreBit
 
   # ===========================================================================
   # Types
   # ===========================================================================
 
-  @type ui_spec :: %{
+  @type thunderbit_dto :: %{
           id: String.t(),
-          canonical_name: String.t(),
-          geometry: geometry_spec(),
-          visual: visual_spec(),
-          links: [link_spec()],
+          category: String.t(),
+          role: String.t(),
           label: String.t(),
           tooltip: String.t(),
-          category: String.t(),
-          role: String.t()
+          energy: float(),
+          salience: float(),
+          status: String.t(),
+          geometry: geometry_dto(),
+          links: [thunderedge_dto()]
         }
 
-  @type geometry_spec :: %{
+  @type geometry_dto :: %{
           type: String.t(),
           shape: String.t(),
+          base_color: String.t(),
           position: %{x: float(), y: float(), z: float()}
         }
 
-  @type visual_spec :: %{
-          base_color: String.t(),
-          energy: float(),
-          salience: float(),
-          state: String.t(),
-          animation: String.t()
-        }
-
-  @type link_spec :: %{
-          target_id: String.t(),
-          relation_type: String.t(),
+  @type thunderedge_dto :: %{
+          id: String.t(),
+          from_id: String.t(),
+          to_id: String.t(),
+          relation: String.t(),
           strength: float()
         }
 
   # ===========================================================================
-  # Main API
+  # Main API - Slim DTOs
   # ===========================================================================
 
   @doc """
-  Converts a Thunderbit to a UI specification.
+  Converts a Thunderbit to a slim DTO for front-end consumption.
+
+  Only includes fields necessary for rendering. Internal protocol
+  state (maxims, policies, ethics_verdict) is NOT included.
 
   ## Examples
 
-      iex> UIContract.to_spec(bit)
-      %{
-        id: "abc-123",
-        canonical_name: "Proposition.Question/IsItSafe@energy=0.5",
-        geometry: %{type: "node", shape: "hex", position: %{x: 0.5, y: 0.5, z: 0}},
-        visual: %{base_color: "#8B5CF6", energy: 0.5, salience: 0.5, state: "idle", animation: "spin"},
-        links: [],
-        label: "Is it safe?",
-        tooltip: "Is it safe?",
-        category: "cognitive",
-        role: "transformer"
-      }
+      dto = UIContract.to_dto(bit)
+      # => %{id: "abc", category: "cognitive", label: "Is it safe?", ...}
   """
-  @spec to_spec(map()) :: ui_spec()
-  def to_spec(bit) do
+  @spec to_dto(map()) :: thunderbit_dto()
+  def to_dto(bit) do
+    to_dto(bit, [])
+  end
+
+  @doc """
+  Converts a Thunderbit to a slim DTO with related edges.
+  """
+  @spec to_dto(map(), [Edge.t()] | [map()]) :: thunderbit_dto()
+  def to_dto(bit, edges) do
     category = Map.get(bit, :category, infer_category(bit))
     {:ok, cat} = Category.get(category)
+    
+    # Find edges involving this bit
+    bit_edges = find_bit_edges(bit.id, edges)
 
     %{
       id: bit.id,
-      canonical_name: get_canonical_name(bit),
-      geometry: build_geometry(bit, cat),
-      visual: build_visual(bit, cat),
-      links: build_links(bit),
+      category: Atom.to_string(category),
+      role: Atom.to_string(cat.role),
       label: build_label(bit),
       tooltip: build_tooltip(bit),
-      category: Atom.to_string(category),
-      role: Atom.to_string(cat.role)
+      energy: Map.get(bit, :energy, 0.5),
+      salience: Map.get(bit, :salience, 0.5),
+      status: status_to_string(Map.get(bit, :status, :active)),
+      geometry: build_geometry_dto(bit, cat),
+      links: Enum.map(bit_edges, &edge_to_dto/1)
     }
   end
 
   @doc """
-  Converts multiple Thunderbits to UI specifications.
+  Converts multiple Thunderbits to slim DTOs.
   """
-  @spec render_all([map()]) :: [ui_spec()]
-  def render_all(bits) when is_list(bits) do
-    Enum.map(bits, &to_spec/1)
+  @spec to_dtos([map()]) :: [thunderbit_dto()]
+  def to_dtos(bits) when is_list(bits) do
+    to_dtos(bits, [])
   end
 
   @doc """
-  Broadcasts UI specs to the Thunderfield PubSub topic.
+  Converts multiple Thunderbits to slim DTOs with edges.
   """
-  @spec broadcast(ui_spec() | [ui_spec()]) :: :ok
-  def broadcast(specs) when is_list(specs) do
+  @spec to_dtos([map()], [Edge.t()] | [map()]) :: [thunderbit_dto()]
+  def to_dtos(bits, edges) when is_list(bits) do
+    Enum.map(bits, fn bit -> to_dto(bit, edges) end)
+  end
+
+  @doc """
+  Converts an Edge to a slim DTO.
+  """
+  @spec edge_to_dto(Edge.t() | map()) :: thunderedge_dto()
+  def edge_to_dto(%Edge{} = edge) do
+    %{
+      id: edge.id,
+      from_id: edge.from_id,
+      to_id: edge.to_id,
+      relation: Atom.to_string(edge.relation),
+      strength: edge.strength
+    }
+  end
+
+  def edge_to_dto(%{from_id: from_id, to_id: to_id, relation: relation} = edge) do
+    %{
+      id: Map.get(edge, :id, "edge-#{from_id}-#{to_id}"),
+      from_id: from_id,
+      to_id: to_id,
+      relation: to_string(relation),
+      strength: Map.get(edge, :strength, 0.5)
+    }
+  end
+
+  # ===========================================================================
+  # Broadcasting
+  # ===========================================================================
+
+  @doc """
+  Broadcasts bits and edges as slim DTOs to the Thunderfield topic.
+
+  ## Parameters
+  - `bits` - List of Thunderbits to broadcast
+  - `edges` - List of edges (optional, defaults to [])
+
+  ## Returns
+  - `:ok`
+  """
+  @spec broadcast([map()], [Edge.t()] | [map()]) :: :ok
+  def broadcast(bits, edges \\ []) when is_list(bits) do
+    dtos = to_dtos(bits, edges)
+    edge_dtos = Enum.map(edges, &edge_to_dto/1)
+    
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "thunderbits:lobby",
-      {:thunderbit_spawn, specs}
+      {:thunderbit_spawn, %{bits: dtos, edges: edge_dtos}}
     )
   end
 
-  def broadcast(spec) when is_map(spec) do
-    broadcast([spec])
+  @doc """
+  Broadcasts a single bit as slim DTO.
+  """
+  @spec broadcast_one(map(), [Edge.t()] | [map()]) :: :ok
+  def broadcast_one(bit, edges \\ []) do
+    broadcast([bit], edges)
   end
 
   @doc """
@@ -157,9 +233,71 @@ defmodule Thunderline.Thunderbit.UIContract do
     )
   end
 
+  @doc """
+  Broadcasts a new edge connection.
+  """
+  @spec broadcast_edge(Edge.t() | map()) :: :ok
+  def broadcast_edge(edge) do
+    dto = edge_to_dto(edge)
+    
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      "thunderbits:lobby",
+      {:thunderbit_link, dto}
+    )
+  end
+
+  # ===========================================================================
+  # Legacy API (for backward compatibility)
+  # ===========================================================================
+
+  @doc """
+  Converts a Thunderbit to the legacy UI specification format.
+
+  ## Deprecated
+  Use `to_dto/1` instead for slim DTOs.
+  """
+  @spec to_spec(map()) :: map()
+  def to_spec(bit) do
+    category = Map.get(bit, :category, infer_category(bit))
+    {:ok, cat} = Category.get(category)
+
+    %{
+      id: bit.id,
+      canonical_name: get_canonical_name(bit),
+      geometry: build_geometry(bit, cat),
+      visual: build_visual(bit, cat),
+      links: build_links(bit),
+      label: build_label(bit),
+      tooltip: build_tooltip(bit),
+      category: Atom.to_string(category),
+      role: Atom.to_string(cat.role)
+    }
+  end
+
+  @doc """
+  Converts multiple Thunderbits to legacy UI specifications.
+
+  ## Deprecated
+  Use `to_dtos/1` instead for slim DTOs.
+  """
+  @spec render_all([map()]) :: [map()]
+  def render_all(bits) when is_list(bits) do
+    Enum.map(bits, &to_spec/1)
+  end
+
   # ===========================================================================
   # Geometry Building
   # ===========================================================================
+
+  defp build_geometry_dto(bit, cat) do
+    %{
+      type: Atom.to_string(cat.geometry.type),
+      shape: Atom.to_string(cat.geometry.shape),
+      base_color: cat.geometry.base_color,
+      position: get_position(bit)
+    }
+  end
 
   defp build_geometry(bit, cat) do
     %{
@@ -188,7 +326,7 @@ defmodule Thunderline.Thunderbit.UIContract do
   end
 
   # ===========================================================================
-  # Visual Building
+  # Visual Building (legacy)
   # ===========================================================================
 
   defp build_visual(bit, cat) do
@@ -196,19 +334,19 @@ defmodule Thunderline.Thunderbit.UIContract do
       base_color: cat.geometry.base_color,
       energy: Map.get(bit, :energy, 0.5),
       salience: Map.get(bit, :salience, 0.5),
-      state: status_to_state(Map.get(bit, :status, :active)),
+      state: status_to_string(Map.get(bit, :status, :active)),
       animation: Atom.to_string(cat.geometry.animation)
     }
   end
 
-  defp status_to_state(:spawning), do: "thinking"
-  defp status_to_state(:active), do: "idle"
-  defp status_to_state(:fading), do: "fading"
-  defp status_to_state(:archived), do: "fading"
-  defp status_to_state(_), do: "idle"
+  defp status_to_string(:spawning), do: "spawning"
+  defp status_to_string(:active), do: "active"
+  defp status_to_string(:fading), do: "fading"
+  defp status_to_string(:archived), do: "archived"
+  defp status_to_string(_), do: "active"
 
   # ===========================================================================
-  # Links Building
+  # Links Building (legacy)
   # ===========================================================================
 
   defp build_links(bit) do
@@ -227,6 +365,14 @@ defmodule Thunderline.Thunderbit.UIContract do
       end
     end)
     |> Enum.reject(&is_nil/1)
+  end
+
+  defp find_bit_edges(bit_id, edges) do
+    Enum.filter(edges, fn edge ->
+      from_id = Map.get(edge, :from_id)
+      to_id = Map.get(edge, :to_id)
+      from_id == bit_id || to_id == bit_id
+    end)
   end
 
   # ===========================================================================

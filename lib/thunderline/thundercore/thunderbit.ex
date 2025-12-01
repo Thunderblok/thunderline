@@ -493,7 +493,7 @@ defmodule Thunderline.Thundercore.Thunderbit do
   # ===========================================================================
 
   defp generate_id do
-    Thunderline.UUID.generate()
+    Thunderline.UUID.v7()
   end
 
   defp spawn_position do
