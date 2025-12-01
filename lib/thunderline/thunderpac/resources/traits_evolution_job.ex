@@ -72,12 +72,14 @@ defmodule Thunderline.Thunderpac.Resources.TraitsEvolutionJob do
   oban do
     triggers do
       trigger :process_evolution do
+        action :start
         queue :pac_evolution
-        worker(Thunderline.Thunderpac.Workers.EvolutionWorker)
         scheduler_cron "*/10 * * * *"
+        worker_module_name Thunderline.Thunderpac.Workers.EvolutionTriggerWorker
+        scheduler_module_name Thunderline.Thunderpac.Schedulers.EvolutionScheduler
 
         where expr(status == :pending)
-        on_error :error
+        on_error :fail
       end
     end
   end
@@ -336,7 +338,7 @@ defmodule Thunderline.Thunderpac.Resources.TraitsEvolutionJob do
         since =
           context.arguments[:since] || DateTime.add(DateTime.utc_now(), -24 * 60 * 60, :second)
 
-        Ash.Query.filter(query, completed_at >= ^since)
+        Ash.Query.filter(query, expr(completed_at >= ^since))
       end
 
       prepare build(sort: [completed_at: :desc], limit: 100)

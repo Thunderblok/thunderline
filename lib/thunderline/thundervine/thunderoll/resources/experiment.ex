@@ -26,9 +26,14 @@ defmodule Thunderline.Thundervine.Thunderoll.Resources.Experiment do
   use Ash.Resource,
     otp_app: :thunderline,
     domain: Thunderline.Thundervine.Domain,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshGraphql.Resource]
 
   require Logger
+
+  graphql do
+    type :thunderoll_experiment
+  end
 
   postgres do
     table "thunderoll_experiments"

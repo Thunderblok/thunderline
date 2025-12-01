@@ -282,11 +282,8 @@ defmodule Thunderline.Thunderwall.Resources.SandboxLog do
     read :active_operations do
       description "List all active sandbox operations"
 
-      prepare fn query, _context ->
-        query
-        |> Ash.Query.filter(status == :active)
-        |> Ash.Query.sort(started_at: :desc)
-      end
+      filter expr(status == :active)
+      prepare build(sort: [started_at: :desc])
     end
 
     read :for_target do
@@ -300,15 +297,9 @@ defmodule Thunderline.Thunderwall.Resources.SandboxLog do
         allow_nil? false
       end
 
-      prepare fn query, _context ->
-        target_type = Ash.Query.get_argument(query, :target_type)
-        target_id = Ash.Query.get_argument(query, :target_id)
-
-        query
-        |> Ash.Query.filter(target_type == ^target_type)
-        |> Ash.Query.filter(target_id == ^target_id)
-        |> Ash.Query.sort(inserted_at: :desc)
-      end
+      filter expr(target_type == ^arg(:target_type))
+      filter expr(target_id == ^arg(:target_id))
+      prepare build(sort: [inserted_at: :desc])
     end
 
     read :recent do
@@ -319,8 +310,8 @@ defmodule Thunderline.Thunderwall.Resources.SandboxLog do
         default 50
       end
 
-      prepare fn query, _context ->
-        limit = Ash.Query.get_argument(query, :limit) || 50
+      prepare fn query, context ->
+        limit = context.arguments[:limit] || 50
 
         query
         |> Ash.Query.sort(inserted_at: :desc)

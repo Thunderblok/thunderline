@@ -805,8 +805,8 @@ defmodule ThunderlineWeb.ReflexPanelLive do
   end
 
   attr :stimulus_type, :atom, default: :pulse
-  attr :stimulus_coord, :tuple, default: {5, 5, 5}
-  attr :grid_size, :tuple, default: {10, 10, 10}
+  attr :stimulus_coord, :any, default: {5, 5, 5}
+  attr :grid_size, :any, default: {10, 10, 10}
 
   defp stimulus_modal(assigns) do
     {max_x, max_y, max_z} = assigns.grid_size

@@ -18,7 +18,12 @@ defmodule Thunderline.Thundervine.Thunderoll.Resources.Generation do
   use Ash.Resource,
     otp_app: :thunderline,
     domain: Thunderline.Thundervine.Domain,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    extensions: [AshGraphql.Resource]
+
+  graphql do
+    type :thunderoll_generation
+  end
 
   postgres do
     table "thunderoll_generations"

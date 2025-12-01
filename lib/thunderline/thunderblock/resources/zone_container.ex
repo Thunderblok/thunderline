@@ -680,18 +680,19 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
 
   # ===== RELATIONSHIPS =====
   relationships do
-    belongs_to :cluster_node, Thunderblock.Resources.ClusterNode do
+    belongs_to :cluster_node, Thunderline.Thunderblock.Resources.ClusterNode do
       attribute_writable? true
       source_attribute :cluster_node_id
       destination_attribute :id
     end
 
-    has_many :system_events, Thunderblock.Resources.SystemEvent do
-      destination_attribute :target_resource_id
-      filter expr(target_resource_type == :zone_container)
-    end
+    # NOTE: SystemEvent resource not yet implemented
+    # has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
+    #   destination_attribute :target_resource_id
+    #   filter expr(target_resource_type == :zone_container)
+    # end
 
-    has_many :supervision_trees, Thunderblock.Resources.SupervisionTree do
+    has_many :supervision_trees, Thunderline.Thunderblock.Resources.SupervisionTree do
       destination_attribute :zone_container_id
     end
 

@@ -729,19 +729,19 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
 
   # ===== RELATIONSHIPS =====
   relationships do
-    belongs_to :cluster_node, Thunderblock.Resources.ClusterNode do
+    belongs_to :cluster_node, Thunderline.Thunderblock.Resources.ClusterNode do
       attribute_writable? true
       source_attribute :cluster_node_id
       destination_attribute :id
     end
 
-    belongs_to :zone_container, Thunderblock.Resources.ZoneContainer do
+    belongs_to :zone_container, Thunderline.Thunderblock.Resources.ZoneContainer do
       attribute_writable? true
       source_attribute :zone_container_id
       destination_attribute :id
     end
 
-    belongs_to :parent_tree, Thunderblock.Resources.SupervisionTree do
+    belongs_to :parent_tree, Thunderline.Thunderblock.Resources.SupervisionTree do
       source_attribute :parent_tree_id
       destination_attribute :id
     end

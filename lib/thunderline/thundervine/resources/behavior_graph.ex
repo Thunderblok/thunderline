@@ -188,8 +188,8 @@ defmodule Thunderline.Thundervine.Resources.BehaviorGraph do
   @doc """
   Hydrates a BehaviorGraph record back to a Graph struct.
   """
-  def to_graph(%__MODULE__{graph_data: data}) when is_map(data) do
-    {:ok, Graph.from_map(data)}
+  def to_graph(record) when is_struct(record) and is_map(record.graph_data) do
+    {:ok, Graph.from_map(record.graph_data)}
   end
 
   def to_graph(_), do: {:error, :invalid_graph_data}

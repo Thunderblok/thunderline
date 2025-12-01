@@ -251,22 +251,20 @@ defmodule Thunderline.Thunderpac.Resources.MemoryCell do
         constraints one_of: [:episodic, :semantic, :procedural]
       end
 
-      prepare fn query, _context ->
-        pac_id = Ash.Query.get_argument(query, :pac_id)
-        threshold = Ash.Query.get_argument(query, :threshold) || 0.3
-        limit = Ash.Query.get_argument(query, :limit) || 10
-        memory_type = Ash.Query.get_argument(query, :memory_type)
+      filter expr(pac_id == ^arg(:pac_id))
+      filter expr(salience >= ^arg(:threshold))
+      filter expr(decay_at > now())
 
-        query =
-          query
-          |> Ash.Query.filter(pac_id == ^pac_id)
-          |> Ash.Query.filter(salience >= ^threshold)
-          |> Ash.Query.filter(decay_at > ^DateTime.utc_now())
-          |> Ash.Query.sort(salience: :desc)
-          |> Ash.Query.limit(limit)
+      prepare build(sort: [salience: :desc])
+
+      prepare fn query, context ->
+        limit_val = context.arguments[:limit] || 10
+        memory_type = context.arguments[:memory_type]
+
+        query = Ash.Query.limit(query, limit_val)
 
         if memory_type do
-          Ash.Query.filter(query, memory_type == ^memory_type)
+          Ash.Query.filter(query, expr(memory_type == ^memory_type))
         else
           query
         end
@@ -286,20 +284,20 @@ defmodule Thunderline.Thunderpac.Resources.MemoryCell do
         description "Optional: filter by PAC"
       end
 
-      prepare fn query, _context ->
-        hours = Ash.Query.get_argument(query, :hours) || 24
-        pac_id = Ash.Query.get_argument(query, :pac_id)
+      filter expr(decay_at > now())
+
+      prepare build(sort: [decay_at: :asc])
+
+      prepare fn query, context ->
+        hours = context.arguments[:hours] || 24
+        pac_id = context.arguments[:pac_id]
 
         cutoff = DateTime.add(DateTime.utc_now(), hours, :hour)
 
-        query =
-          query
-          |> Ash.Query.filter(decay_at <= ^cutoff)
-          |> Ash.Query.filter(decay_at > ^DateTime.utc_now())
-          |> Ash.Query.sort(decay_at: :asc)
+        query = Ash.Query.filter(query, expr(decay_at <= ^cutoff))
 
         if pac_id do
-          Ash.Query.filter(query, pac_id == ^pac_id)
+          Ash.Query.filter(query, expr(pac_id == ^pac_id))
         else
           query
         end
@@ -317,15 +315,14 @@ defmodule Thunderline.Thunderpac.Resources.MemoryCell do
         allow_nil? false
       end
 
-      prepare fn query, _context ->
-        pac_id = Ash.Query.get_argument(query, :pac_id)
-        tags = Ash.Query.get_argument(query, :tags) || []
+      filter expr(pac_id == ^arg(:pac_id))
+      filter expr(decay_at > now())
 
-        query
-        |> Ash.Query.filter(pac_id == ^pac_id)
-        |> Ash.Query.filter(fragment("? && ?", tags, ^tags))
-        |> Ash.Query.filter(decay_at > ^DateTime.utc_now())
-        |> Ash.Query.sort(salience: :desc)
+      prepare build(sort: [salience: :desc])
+
+      prepare fn query, context ->
+        tags = context.arguments[:tags] || []
+        Ash.Query.filter(query, expr(fragment("? && ?", tags, ^tags)))
       end
     end
 
@@ -336,14 +333,10 @@ defmodule Thunderline.Thunderpac.Resources.MemoryCell do
         allow_nil? false
       end
 
-      prepare fn query, _context ->
-        pac_id = Ash.Query.get_argument(query, :pac_id)
+      filter expr(pac_id == ^arg(:pac_id))
+      filter expr(decay_at > now())
 
-        query
-        |> Ash.Query.filter(pac_id == ^pac_id)
-        |> Ash.Query.filter(decay_at > ^DateTime.utc_now())
-        |> Ash.Query.sort(inserted_at: :desc)
-      end
+      prepare build(sort: [inserted_at: :desc])
     end
   end
 

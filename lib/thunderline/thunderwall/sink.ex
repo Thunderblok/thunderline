@@ -479,16 +479,17 @@ defmodule Thunderline.Thunderwall.Sink do
     # 4. Update patterns
     new_patterns =
       patterns_extracted
-      |> Enum.filter(& &1)
+      |> Enum.filter(fn x -> x end)
       |> Enum.reduce(state.patterns, &record_pattern(&2, &1))
 
     # 5. Update stats
     collected = length(quarantine_to_archive)
+    valid_patterns_count = patterns_extracted |> Enum.filter(fn x -> x end) |> length()
 
     new_stats =
       state.stats
       |> Map.update!(:archived_total, &(&1 + collected))
-      |> Map.update!(:patterns_extracted, &(&1 + length(Enum.filter(patterns_extracted, & &1))))
+      |> Map.update!(:patterns_extracted, &(&1 + valid_patterns_count))
       |> Map.update!(:gc_runs, &(&1 + 1))
 
     if collected > 0 do
