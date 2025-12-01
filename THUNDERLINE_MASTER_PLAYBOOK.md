@@ -954,6 +954,538 @@ end
 
 ---
 
+## 🔬 HC-Δ RESEARCH INTEGRATION SERIES (Dec 1, 2025)
+
+**Mission**: Integrate advanced research concepts (TapNet, DiffLogic, MAP-Elites, Finch) into Thunderline's production architecture through modular, incremental delivery.
+
+**Research Sources**:
+- [TapNet: Attentional Prototypical Networks](https://cdn.aaai.org) - Multi-level temporal feature learning
+- [DiffLogic CA (Google Research)](https://google-research.github.io/self-organising-systems/difflogic-ca/) - Learnable logic circuits for CA
+- [MAP-Elites Quality-Diversity](https://arxiv.org/abs/1504.04909) - Multi-dimensional archive of elite behaviors
+- [Finch Sparse Tensor Compiler](https://arxiv.org/abs/2404.16730) - Structured tensor + control flow fusion
+
+### HC-Δ Series Overview
+
+| ID | Priority | Component | Description | Status |
+|----|----------|-----------|-------------|--------|
+| HC-Δ-1 | P0 | Thundervine DAG Infrastructure | Behavior DAG data structures, node wrappers, executor | Not Started |
+| HC-Δ-2 | P0 | Thundercrown Policy Engine | Runtime policy evaluation, constraint DSL, policy resources | Not Started |
+| HC-Δ-3 | P1 | DiffLogic CA Engine | Differentiable logic CA, learnable gates, grid state | Not Started |
+| HC-Δ-4 | P1 | MAP-Elites Archive (Full QD) | Quality-diversity search, elite archive, mutation operators | Not Started |
+| HC-Δ-5 | P1 | Thunderbit Category Protocol | Composable computation units, monadic bind, type definitions | Not Started |
+| HC-Δ-6 | P2 | Structured Tensor (Finch-inspired) | Sparse/dense tensor types, operations, loop fusion | Not Started |
+
+### HC-Δ-1: Thundervine DAG Infrastructure
+
+**Priority**: P0 (Orchestration backbone)
+**Owner**: Vine Steward
+**Dependencies**: None (foundational)
+
+**Purpose**: Implement behavior DAG data structures enabling complex workflows as composable graphs. Each node wraps a Thunderpac state machine or ML model, with edges encoding data/control dependencies.
+
+**Components**:
+```
+lib/thunderline/thundervine/
+├── graph.ex           # Behavior DAG data structure with builder API
+├── node.ex            # Task node wrapper (points to Thunderpac or ML tasks)
+├── edge.ex            # Dependency edge with metadata
+├── executor.ex        # DAG traversal and execution engine
+└── resources/
+    ├── behavior_graph.ex      # Ash resource for persistent graphs
+    └── graph_execution.ex     # Ash resource for execution tracking
+```
+
+**Graph Structure**:
+```elixir
+defmodule Thunderline.Thundervine.Graph do
+  @moduledoc """
+  Behavior DAG representing complex workflows as composable graphs.
+  Each node wraps a task (Thunderpac FSM, ML model, or custom action).
+  """
+  
+  defstruct [
+    :id,
+    :name,
+    :nodes,       # %{node_id => Node.t()}
+    :edges,       # [{from, to, metadata}]
+    :entry_nodes, # IDs of nodes with no incoming edges
+    :exit_nodes,  # IDs of nodes with no outgoing edges
+    :metadata
+  ]
+  
+  @type t :: %__MODULE__{
+    id: String.t(),
+    name: String.t(),
+    nodes: %{String.t() => Node.t()},
+    edges: [{String.t(), String.t(), map()}],
+    entry_nodes: [String.t()],
+    exit_nodes: [String.t()],
+    metadata: map()
+  }
+end
+```
+
+**Node Types**:
+```elixir
+defmodule Thunderline.Thundervine.Node do
+  @moduledoc "Task node wrapper in behavior DAG"
+  
+  defstruct [
+    :id,
+    :name,
+    :type,        # :thunderpac | :ml_model | :action | :subgraph
+    :task_ref,    # Reference to actual task implementation
+    :config,      # Node-specific configuration
+    :timeout_ms,  # Execution timeout
+    :retry_policy # {:max_attempts, n} | :no_retry
+  ]
+  
+  @type node_type :: :thunderpac | :ml_model | :action | :subgraph
+end
+```
+
+**Executor Flow**:
+```
+1. PREPARATION
+   Graph.validate(graph) → Check for cycles, orphan nodes
+   Executor.plan(graph) → Topological sort, identify parallelizable groups
+   
+2. EXECUTION
+   for each parallel_group do
+     Task.async_stream(group, &execute_node/2)
+     |> collect_results()
+     |> propagate_to_dependents()
+   end
+   
+3. COMPLETION
+   Emit vine.graph.completed event
+   Persist execution results to BehaviorGraphExecution
+```
+
+**Events**:
+- `vine.graph.started` - Graph execution initiated
+- `vine.graph.node.started` - Individual node execution started
+- `vine.graph.node.completed` - Node completed (success/failure)
+- `vine.graph.completed` - Full graph execution completed
+
+**Telemetry**:
+```elixir
+[:thunderline, :vine, :graph, :execute, :start]
+[:thunderline, :vine, :graph, :execute, :stop]
+[:thunderline, :vine, :graph, :node, :execute, :start]
+[:thunderline, :vine, :graph, :node, :execute, :stop]
+[:thunderline, :vine, :graph, :node, :execute, :exception]
+```
+
+**Success Criteria**:
+- [ ] Graph struct with builder API (add_node, add_edge, connect)
+- [ ] Node wrapper supporting 4 task types
+- [ ] DAG executor with topological ordering
+- [ ] Parallel execution of independent nodes
+- [ ] Ash resources for persistence
+- [ ] Event emission through Thunderflow
+- [ ] Unit tests for graph operations and execution
+
+---
+
+### HC-Δ-2: Thundercrown Policy Engine
+
+**Priority**: P0 (Orchestration backbone)
+**Owner**: Crown Steward
+**Dependencies**: HC-Δ-1 (for DAG policy enforcement)
+
+**Purpose**: Runtime policy evaluation engine that enforces governance rules on DAG transitions, agent actions, and cross-domain operations. Policies are stored as Ash resources and evaluated at runtime.
+
+**Components**:
+```
+lib/thunderline/thundercrown/
+├── policy_engine.ex       # Core evaluation engine
+├── constraint.ex          # Constraint DSL for policy rules
+├── evaluator.ex           # Policy evaluation logic
+├── cache.ex               # Policy cache for performance
+└── resources/
+    ├── policy.ex          # Ash resource for policy definitions
+    ├── policy_rule.ex     # Individual rule definitions
+    └── policy_evaluation.ex # Evaluation audit trail
+```
+
+**Policy Structure**:
+```elixir
+defmodule Thunderline.Thundercrown.Policy do
+  @moduledoc """
+  Policy definition for governance enforcement.
+  Policies contain rules that evaluate against context.
+  """
+  
+  use Ash.Resource,
+    domain: Thunderline.Thundercrown.Domain,
+    data_layer: AshPostgres.DataLayer
+  
+  attributes do
+    uuid_primary_key :id
+    attribute :name, :string, allow_nil?: false
+    attribute :description, :string
+    attribute :scope, :atom  # :global | :domain | :resource | :action
+    attribute :target, :string  # Domain/resource/action name
+    attribute :priority, :integer, default: 100
+    attribute :enabled, :boolean, default: true
+    attribute :rules, {:array, :map}  # Serialized rule definitions
+    timestamps()
+  end
+  
+  actions do
+    defaults [:read, :destroy]
+    
+    create :define do
+      accept [:name, :description, :scope, :target, :priority, :rules]
+    end
+    
+    update :enable do
+      change set_attribute(:enabled, true)
+    end
+    
+    update :disable do
+      change set_attribute(:enabled, false)
+    end
+    
+    read :for_target do
+      argument :scope, :atom, allow_nil?: false
+      argument :target, :string, allow_nil?: false
+      filter expr(scope == ^arg(:scope) and target == ^arg(:target) and enabled == true)
+      prepare build(sort: [priority: :asc])
+    end
+  end
+end
+```
+
+**Constraint DSL**:
+```elixir
+defmodule Thunderline.Thundercrown.Constraint do
+  @moduledoc """
+  DSL for defining policy constraints.
+  Constraints are composable predicates over context.
+  """
+  
+  @type constraint :: 
+    {:all, [constraint()]} |
+    {:any, [constraint()]} |
+    {:none, [constraint()]} |
+    {:attribute, atom(), operator(), term()} |
+    {:actor, atom(), operator(), term()} |
+    {:resource, atom(), operator(), term()} |
+    {:custom, (context() -> boolean())}
+  
+  @type operator :: :eq | :neq | :gt | :lt | :gte | :lte | :in | :not_in | :matches
+  
+  @doc "All constraints must pass"
+  def all(constraints), do: {:all, constraints}
+  
+  @doc "At least one constraint must pass"
+  def any(constraints), do: {:any, constraints}
+  
+  @doc "No constraints may pass"
+  def none(constraints), do: {:none, constraints}
+  
+  @doc "Check attribute value"
+  def attribute(name, op, value), do: {:attribute, name, op, value}
+  
+  @doc "Check actor property"
+  def actor(property, op, value), do: {:actor, property, op, value}
+  
+  @doc "Check resource property"  
+  def resource(property, op, value), do: {:resource, property, op, value}
+  
+  @doc "Custom predicate function"
+  def custom(fun) when is_function(fun, 1), do: {:custom, fun}
+end
+```
+
+**Policy Engine**:
+```elixir
+defmodule Thunderline.Thundercrown.PolicyEngine do
+  @moduledoc """
+  Runtime policy evaluation engine.
+  Evaluates policies against context and returns allow/deny decisions.
+  """
+  
+  alias Thunderline.Thundercrown.{Policy, Constraint, Evaluator, Cache}
+  alias Thunderline.Thunderflow.EventBus
+  
+  @type context :: %{
+    actor: map() | nil,
+    resource: map() | nil,
+    action: atom(),
+    domain: atom(),
+    metadata: map()
+  }
+  
+  @type decision :: :allow | {:deny, reason :: String.t()}
+  
+  @doc "Evaluate all applicable policies for context"
+  @spec evaluate(context()) :: decision()
+  def evaluate(context) do
+    start_time = System.monotonic_time()
+    
+    policies = get_applicable_policies(context)
+    result = evaluate_policies(policies, context)
+    
+    emit_telemetry(context, result, start_time)
+    emit_event(context, result)
+    
+    result
+  end
+  
+  @doc "Check if action is allowed (raises on deny)"
+  @spec authorize!(context()) :: :ok | no_return()
+  def authorize!(context) do
+    case evaluate(context) do
+      :allow -> :ok
+      {:deny, reason} -> raise Thunderline.Thundercrown.PolicyError, reason
+    end
+  end
+  
+  defp get_applicable_policies(context) do
+    Cache.get_or_fetch({context.domain, context.action}, fn ->
+      Policy.for_target!(scope: :action, target: "#{context.domain}.#{context.action}")
+      |> Enum.concat(Policy.for_target!(scope: :domain, target: to_string(context.domain)))
+      |> Enum.concat(Policy.for_target!(scope: :global, target: "*"))
+      |> Enum.sort_by(& &1.priority)
+    end)
+  end
+  
+  defp evaluate_policies([], _context), do: :allow
+  defp evaluate_policies([policy | rest], context) do
+    case Evaluator.evaluate(policy, context) do
+      :allow -> evaluate_policies(rest, context)
+      {:deny, _reason} = deny -> deny
+    end
+  end
+end
+```
+
+**DAG Policy Integration** (connects to HC-Δ-1):
+```elixir
+defmodule Thunderline.Thundervine.PolicyGuard do
+  @moduledoc "Policy enforcement for DAG transitions"
+  
+  alias Thunderline.Thundercrown.PolicyEngine
+  
+  @doc "Check if graph execution is allowed"
+  def authorize_graph_execution(graph, actor) do
+    context = %{
+      actor: actor,
+      resource: graph,
+      action: :execute_graph,
+      domain: :thundervine,
+      metadata: %{graph_id: graph.id, node_count: map_size(graph.nodes)}
+    }
+    PolicyEngine.evaluate(context)
+  end
+  
+  @doc "Check if specific node execution is allowed"
+  def authorize_node_execution(node, graph, actor) do
+    context = %{
+      actor: actor,
+      resource: node,
+      action: :execute_node,
+      domain: :thundervine,
+      metadata: %{
+        graph_id: graph.id,
+        node_id: node.id,
+        node_type: node.type
+      }
+    }
+    PolicyEngine.evaluate(context)
+  end
+  
+  @doc "Check if DAG edge transition is allowed"
+  def authorize_edge_transition(from_node, to_node, graph, actor) do
+    context = %{
+      actor: actor,
+      resource: %{from: from_node, to: to_node, graph: graph},
+      action: :traverse_edge,
+      domain: :thundervine,
+      metadata: %{
+        graph_id: graph.id,
+        from_node_id: from_node.id,
+        to_node_id: to_node.id
+      }
+    }
+    PolicyEngine.evaluate(context)
+  end
+end
+```
+
+**Events**:
+- `crown.policy.evaluated` - Policy evaluation completed
+- `crown.policy.denied` - Action denied by policy
+- `crown.policy.created` - New policy defined
+- `crown.policy.updated` - Policy modified
+
+**Telemetry**:
+```elixir
+[:thunderline, :crown, :policy, :evaluate, :start]
+[:thunderline, :crown, :policy, :evaluate, :stop]
+[:thunderline, :crown, :policy, :cache, :hit]
+[:thunderline, :crown, :policy, :cache, :miss]
+```
+
+**Success Criteria**:
+- [ ] Policy Ash resource with CRUD actions
+- [ ] Constraint DSL for rule composition
+- [ ] Policy engine with caching
+- [ ] DAG policy integration (authorize graph/node/edge)
+- [ ] Event emission for audit trail
+- [ ] Performance: <1ms evaluation for cached policies
+- [ ] Unit tests for all constraint types
+
+---
+
+### HC-Δ-3: DiffLogic CA Engine
+
+**Priority**: P1
+**Owner**: Bolt Steward
+**Dependencies**: HC-40 (LoopMonitor metrics)
+
+**Purpose**: Integrate DiffLogic-CA modules as learnable, local decision rules within agents. Each agent's control logic is a small CA whose update rule is learned via differentiable logic gates.
+
+**Components**:
+```
+lib/thunderline/thunderbolt/
+├── ca_engine.ex           # Core DiffLogic CA execution
+├── logic_gate.ex          # Learnable gate primitives
+├── ca_state.ex            # CA grid state management
+└── resources/
+    └── ca_rule.ex         # Ash resource for learned rules
+```
+
+**Key Features**:
+- Float-parameterized rule tables (gradients from Python)
+- Quantization layer for discrete execution
+- Stability guards (gradient clipping, divergence detection)
+- Integration with LoopMonitor criticality metrics
+
+---
+
+### HC-Δ-4: MAP-Elites Archive (Full QD)
+
+**Priority**: P1
+**Owner**: Bolt + Evolution Stewards
+**Dependencies**: HC-Ω-6 (TraitsEvolutionJob)
+
+**Purpose**: Implement quality-diversity search maintaining an N-dimensional archive where each cell stores the elite (best-performing) agent for that behavioral niche.
+
+**Components**:
+```
+lib/thunderline/evolution/
+├── map_elites.ex          # Core QD loop
+├── archive.ex             # Elite archive (Ash resource)
+├── behavior_descriptor.ex # Dimension definitions
+├── mutation.ex            # Mutation operators
+└── resources/
+    └── elite_entry.ex     # Archive entry resource
+```
+
+**Behavior Dimensions** (initial):
+- LogicDensity: Number of gates in agent's CA
+- MemoryReuse: Frequency of state reuse
+- ActionVolatility: Rate of behavioral change
+- TaskPerformance: Objective fitness score
+- NoveltyScore: Distance from existing elites
+
+---
+
+### HC-Δ-5: Thunderbit Category Protocol
+
+**Priority**: P1
+**Owner**: Bolt Steward
+**Dependencies**: None
+
+**Purpose**: Represent each atomic agent module as a Thunderbit - a composable unit of computation with category-theoretic composition laws.
+
+**Components**:
+```
+lib/thunderline/thunderbit/
+├── protocol.ex            # Thunderbit protocol definition
+├── composition.ex         # Monadic bind operations
+├── types.ex               # Type definitions
+└── primitives/
+    ├── identity.ex        # Identity Thunderbit
+    ├── sequence.ex        # Sequential composition
+    └── parallel.ex        # Parallel composition
+```
+
+**Protocol Definition**:
+```elixir
+defprotocol Thunderline.Thunderbit do
+  @doc "Bind input to Thunderbit, producing output"
+  @spec bind(t, input :: term()) :: {:ok, output :: term()} | {:error, reason :: term()}
+  def bind(bit, input)
+  
+  @doc "Compose two Thunderbits sequentially"
+  @spec compose(t, t) :: t
+  def compose(bit1, bit2)
+end
+```
+
+---
+
+### HC-Δ-6: Structured Tensor (Finch-inspired)
+
+**Priority**: P2
+**Owner**: Bolt Steward
+**Dependencies**: HC-Δ-3 (CA Engine)
+
+**Purpose**: Adopt Finch programming model for structured data computations. Auto-specialize loops to data sparsity for efficient on-device compute.
+
+**Components**:
+```
+lib/thunderline/structured_tensor/
+├── tensor.ex              # Sparse/dense tensor types
+├── ops.ex                 # Tensor operations
+├── loop_fusion.ex         # Auto-specialization
+└── formats/
+    ├── csc.ex             # Compressed Sparse Column
+    ├── coo.ex             # Coordinate format
+    └── dense.ex           # Dense format
+```
+
+---
+
+### Implementation Phases
+
+| Phase | HC Items | Focus | Timeline |
+|-------|----------|-------|----------|
+| **1** | HC-Δ-1, HC-Δ-2 | Orchestration backbone (Vine DAG + Crown Policy) | Week 1-2 |
+| **2** | HC-Δ-3 | CA Engine (DiffLogic integration) | Week 2-3 |
+| **3** | HC-Δ-4 | MAP-Elites (Quality-Diversity search) | Week 3-4 |
+| **4** | HC-Δ-5 | Thunderbit Protocol (Category composition) | Week 4-5 |
+| **5** | HC-Δ-6 | Structured Tensors (Finch-inspired) | Week 5-6 |
+
+### Cross-Domain Layer Activation
+
+The HC-Δ series activates several cross-domain functional layers:
+
+| Layer | Domains | HC-Δ Items |
+|-------|---------|------------|
+| **Orchestration Layer** | Vine × Crown | HC-Δ-1, HC-Δ-2 |
+| **Compute Layer** | Bolt × Flow | HC-Δ-3, HC-Δ-4 |
+| **Transform Layer** | Bolt × Block | HC-Δ-5, HC-Δ-6 |
+
+### Research-to-Production Mapping
+
+| Research Concept | Production Module | HC-Δ Item |
+|------------------|-------------------|-----------|
+| TapNet Attention | Thunderbolt.AttentionEncoder | Future |
+| DiffLogic CA | Thunderbolt.CAEngine | HC-Δ-3 |
+| MAP-Elites QD | Thunderline.Evolution.MapElites | HC-Δ-4 |
+| Finch Tensors | Thunderline.StructuredTensor | HC-Δ-6 |
+| Behavior DAGs | Thundervine.Graph | HC-Δ-1 |
+| Policy Engine | Thundercrown.PolicyEngine | HC-Δ-2 |
+| Thunderbit CAT | Thunderbit Protocol | HC-Δ-5 |
+
+---
+
 ## 🌐 CA ARCHITECTURE VISION: THE ROSETTA STONE (Nov 28, 2025)
 
 **Full Reference**: [`docs/HC_ARCHITECTURE_SYNTHESIS.md`](docs/HC_ARCHITECTURE_SYNTHESIS.md)

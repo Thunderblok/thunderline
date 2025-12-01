@@ -77,6 +77,10 @@ defmodule Thunderline.Thundercrown.Domain do
     resource Thunderline.Thundercrown.Resources.ConversationTools
     resource Thunderline.Thundercrown.Resources.ConversationAgent
 
+    # Policy engine resources (HC-Δ-2)
+    resource Thunderline.Thundercrown.Resources.PolicyDefinition
+    resource Thunderline.Thundercrown.Resources.PolicyEvaluation
+
     # TODO: Add other resources when implemented:
     # resource Thunderline.Thundercrown.Resources.AiPolicy
     # resource Thunderline.Thundercrown.Resources.McpBus

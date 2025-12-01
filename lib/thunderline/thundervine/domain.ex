@@ -33,6 +33,17 @@ defmodule Thunderline.Thundervine.Domain do
       # WorkflowSnapshot queries
       get Thunderline.Thundervine.Resources.WorkflowSnapshot, :workflow_snapshot, :read
       list Thunderline.Thundervine.Resources.WorkflowSnapshot, :workflow_snapshots, :read
+
+      # BehaviorGraph queries (HC-Δ-1)
+      get Thunderline.Thundervine.Resources.BehaviorGraph, :behavior_graph, :read
+      list Thunderline.Thundervine.Resources.BehaviorGraph, :behavior_graphs, :read
+      list Thunderline.Thundervine.Resources.BehaviorGraph, :active_behavior_graphs, :active
+      get Thunderline.Thundervine.Resources.BehaviorGraph, :behavior_graph_by_name, :by_name
+
+      # GraphExecution queries (HC-Δ-1)
+      get Thunderline.Thundervine.Resources.GraphExecution, :graph_execution, :read
+      list Thunderline.Thundervine.Resources.GraphExecution, :graph_executions, :read
+      list Thunderline.Thundervine.Resources.GraphExecution, :recent_graph_executions, :recent
     end
 
     mutations do
@@ -56,6 +67,23 @@ defmodule Thunderline.Thundervine.Domain do
       create Thunderline.Thundervine.Resources.WorkflowSnapshot,
              :capture_workflow_snapshot,
              :capture
+
+      # BehaviorGraph mutations (HC-Δ-1)
+      create Thunderline.Thundervine.Resources.BehaviorGraph, :create_behavior_graph, :create
+
+      create Thunderline.Thundervine.Resources.BehaviorGraph,
+             :create_behavior_graph_from_struct,
+             :create_from_struct
+
+      update Thunderline.Thundervine.Resources.BehaviorGraph, :update_behavior_graph, :update
+      update Thunderline.Thundervine.Resources.BehaviorGraph, :archive_behavior_graph, :archive
+      destroy Thunderline.Thundervine.Resources.BehaviorGraph, :delete_behavior_graph, :destroy
+
+      # GraphExecution mutations (HC-Δ-1)
+      create Thunderline.Thundervine.Resources.GraphExecution, :start_graph_execution, :start
+      update Thunderline.Thundervine.Resources.GraphExecution, :complete_graph_execution, :complete
+      update Thunderline.Thundervine.Resources.GraphExecution, :fail_graph_execution, :fail
+      update Thunderline.Thundervine.Resources.GraphExecution, :cancel_graph_execution, :cancel
     end
   end
 
@@ -69,5 +97,9 @@ defmodule Thunderline.Thundervine.Domain do
     # TAK persistence resources
     resource Thunderline.Thundervine.Resources.TAKChunkEvent
     resource Thunderline.Thundervine.Resources.TAKChunkState
+
+    # Behavior DAG resources (HC-Δ-1)
+    resource Thunderline.Thundervine.Resources.BehaviorGraph
+    resource Thunderline.Thundervine.Resources.GraphExecution
   end
 end

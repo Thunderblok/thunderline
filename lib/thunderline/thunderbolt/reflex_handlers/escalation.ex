@@ -85,10 +85,13 @@ defmodule Thunderline.Thunderbolt.ReflexHandlers.Escalation do
   end
 
   @impl true
-  def handle_info({:event, %{name: name} = event}, state)
-      when is_binary(name) and name =~ "bolt.thunderbit.reflex" do
-    state = process_event(event, state)
-    {:noreply, state}
+  def handle_info({:event, %{name: name} = event}, state) when is_binary(name) do
+    if String.contains?(name, "bolt.thunderbit.reflex") do
+      state = process_event(event, state)
+      {:noreply, state}
+    else
+      {:noreply, state}
+    end
   end
 
   def handle_info({:reflex_event, event}, state) do
