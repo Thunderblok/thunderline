@@ -111,6 +111,9 @@ defmodule ThunderlineWeb.Router do
       # ThunderPrism 3D DAG Visualizer - ML decision trail exploration
       live "/thunderprism", ThunderprismLive, :index
 
+      # Reflex Panel - Self-optimizing CA visualization (HC-Ω-3)
+      live "/reflex", ReflexPanelLive, :index
+
       # Training Prompt Interface - Submit text-based training jobs with UPM/MLflow integration
       live "/training/prompt", TrainingPromptLive, :index
 
