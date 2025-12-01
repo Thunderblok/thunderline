@@ -173,9 +173,11 @@ defmodule Thunderline.Thunderbit.IO do
   defp validate_shape(_, _), do: :ok
 
   defp shapes_match?({:dynamic}, _), do: true
+
   defp shapes_match?(expected, actual) when is_tuple(expected) and is_tuple(actual) do
     Tuple.to_list(expected) == Tuple.to_list(actual)
   end
+
   defp shapes_match?(_, _), do: true
 
   @doc """

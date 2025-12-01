@@ -38,6 +38,85 @@ defmodule Thunderline.Thunderbit.Resources.ThunderbitDefinition do
     migration_types id: :uuid
   end
 
+  code_interface do
+    define :create, args: [:name, :category_id, :role]
+    define :read
+    define :list_enabled
+    define :by_role, args: [:role]
+    define :by_category_id, args: [:category_id]
+    define :update
+    define :enable
+    define :disable
+    define :destroy
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [
+        :name,
+        :category_id,
+        :ontology_path,
+        :role,
+        :description,
+        :inputs,
+        :outputs,
+        :capabilities,
+        :forbidden,
+        :can_link_to,
+        :can_receive_from,
+        :composition_mode,
+        :required_maxims,
+        :forbidden_maxims,
+        :geometry,
+        :examples,
+        :enabled
+      ]
+    end
+
+    update :update do
+      accept [
+        :name,
+        :description,
+        :inputs,
+        :outputs,
+        :capabilities,
+        :forbidden,
+        :can_link_to,
+        :can_receive_from,
+        :composition_mode,
+        :required_maxims,
+        :forbidden_maxims,
+        :geometry,
+        :examples,
+        :enabled
+      ]
+    end
+
+    update :enable do
+      change set_attribute(:enabled, true)
+    end
+
+    update :disable do
+      change set_attribute(:enabled, false)
+    end
+
+    read :list_enabled do
+      filter expr(enabled == true)
+    end
+
+    read :by_role do
+      argument :role, :atom, allow_nil?: false
+      filter expr(role == ^arg(:role))
+    end
+
+    read :by_category_id do
+      argument :category_id, :atom, allow_nil?: false
+      filter expr(category_id == ^arg(:category_id))
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -59,7 +138,17 @@ defmodule Thunderline.Thunderbit.Resources.ThunderbitDefinition do
     attribute :role, :atom do
       allow_nil? false
       public? true
-      constraints one_of: [:observer, :transformer, :storage, :actuator, :router, :critic, :analyzer, :controller]
+
+      constraints one_of: [
+                    :observer,
+                    :transformer,
+                    :storage,
+                    :actuator,
+                    :router,
+                    :critic,
+                    :analyzer,
+                    :controller
+                  ]
     end
 
     attribute :description, :string do
@@ -133,84 +222,5 @@ defmodule Thunderline.Thunderbit.Resources.ThunderbitDefinition do
 
   identities do
     identity :unique_category_id, [:category_id]
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      accept [
-        :name,
-        :category_id,
-        :ontology_path,
-        :role,
-        :description,
-        :inputs,
-        :outputs,
-        :capabilities,
-        :forbidden,
-        :can_link_to,
-        :can_receive_from,
-        :composition_mode,
-        :required_maxims,
-        :forbidden_maxims,
-        :geometry,
-        :examples,
-        :enabled
-      ]
-    end
-
-    update :update do
-      accept [
-        :name,
-        :description,
-        :inputs,
-        :outputs,
-        :capabilities,
-        :forbidden,
-        :can_link_to,
-        :can_receive_from,
-        :composition_mode,
-        :required_maxims,
-        :forbidden_maxims,
-        :geometry,
-        :examples,
-        :enabled
-      ]
-    end
-
-    update :enable do
-      change set_attribute(:enabled, true)
-    end
-
-    update :disable do
-      change set_attribute(:enabled, false)
-    end
-
-    read :list_enabled do
-      filter expr(enabled == true)
-    end
-
-    read :by_role do
-      argument :role, :atom, allow_nil?: false
-      filter expr(role == ^arg(:role))
-    end
-
-    read :by_category_id do
-      argument :category_id, :atom, allow_nil?: false
-      filter expr(category_id == ^arg(:category_id))
-    end
-  end
-
-  code_interface do
-    define :create, args: [:name, :category_id, :role]
-    define :read
-    define :list_enabled
-    define :by_role, args: [:role]
-    define :by_category_id, args: [:category_id]
-    define :update
-    define :enable
-    define :disable
-    define :destroy
   end
 end

@@ -51,36 +51,41 @@ defmodule Thunderline.Thunderbit.Demo do
   @spec intake(String.t(), String.t()) :: {:ok, [map()], [map()], Context.t()} | {:error, term()}
   def intake(text, pac_id) when is_binary(text) and is_binary(pac_id) do
     Logger.info("[Demo.intake] Starting intake flow for PAC #{pac_id}")
-    
+
     # 1. Create fresh context
     ctx = Context.new(pac_id: pac_id, zone: :cortex)
-    
+
     # 2. Spawn sensory bit (input perception)
     with {:ok, sensory, ctx} <- Protocol.spawn_bit(:sensory, %{content: text}, ctx) do
       Logger.debug("[Demo.intake] Spawned sensory bit: #{sensory.id}")
-      
+
       # 3. Bind classification to determine intent
       {:ok, sensory, ctx} = Protocol.bind(sensory, &classify_intent/2, ctx)
       Logger.debug("[Demo.intake] Classified as: #{sensory.kind}")
-      
+
       # 4. Spawn cognitive bit (reasoning layer)
-      with {:ok, cognitive, ctx} <- Protocol.spawn_bit(:cognitive, %{
-             content: text,
-             input_bit_id: sensory.id
-           }, ctx) do
+      with {:ok, cognitive, ctx} <-
+             Protocol.spawn_bit(
+               :cognitive,
+               %{
+                 content: text,
+                 input_bit_id: sensory.id
+               },
+               ctx
+             ) do
         Logger.debug("[Demo.intake] Spawned cognitive bit: #{cognitive.id}")
-        
+
         # 5. Link sensory → cognitive with :feeds relation
         with {:ok, edge, ctx} <- Protocol.link(sensory, cognitive, :feeds, ctx) do
           Logger.debug("[Demo.intake] Created edge: #{edge.id} (#{edge.relation})")
-          
+
           bits = [sensory, cognitive]
           edges = [edge]
-          
+
           # Log the final context state
           Logger.info("[Demo.intake] Complete: #{length(bits)} bits, #{length(edges)} edges")
           Logger.debug("[Demo.intake] Context event_log: #{length(ctx.event_log)} events")
-          
+
           {:ok, bits, edges, ctx}
         end
       end
@@ -111,13 +116,13 @@ defmodule Thunderline.Thunderbit.Demo do
   @spec run(String.t(), String.t()) :: :ok | {:error, term()}
   def run(text, pac_id) when is_binary(text) and is_binary(pac_id) do
     Logger.info("[Demo.run] Starting demo: '#{String.slice(text, 0, 30)}...'")
-    
+
     case intake(text, pac_id) do
       {:ok, bits, edges, ctx} ->
         # 6. Broadcast to UI via slim DTOs
         Logger.info("[Demo.run] Broadcasting #{length(bits)} bits, #{length(edges)} edges")
         UIContract.broadcast(bits, edges)
-        
+
         # Log summary
         Logger.info("""
         [Demo.run] Complete!
@@ -125,9 +130,9 @@ defmodule Thunderline.Thunderbit.Demo do
         - Edges: #{inspect(Enum.map(edges, & &1.relation))}
         - Events: #{length(ctx.event_log)}
         """)
-        
+
         :ok
-        
+
       {:error, reason} ->
         Logger.error("[Demo.run] Failed: #{inspect(reason)}")
         {:error, reason}
@@ -166,30 +171,27 @@ defmodule Thunderline.Thunderbit.Demo do
   @doc false
   def classify_intent(bit, ctx) do
     content = bit.content || ""
-    
+
     kind =
       cond do
         # Questions
         String.contains?(content, "?") -> :question
         String.match?(content, ~r/^(what|who|when|where|why|how)\b/i) -> :question
-        
         # Commands
         String.match?(content, ~r/^(go|move|navigate|run|stop|start)\b/i) -> :command
         String.match?(content, ~r/^(do|make|create|delete|update)\b/i) -> :command
-        
         # Memory operations
         String.match?(content, ~r/^(remember|save|store|forget|recall)\b/i) -> :memory
-        
         # Default: general intent
         true -> :intent
       end
-    
+
     # Update the bit with classification
     new_bit = %{bit | kind: kind}
-    
+
     # Log the classification
     ctx = Context.log(ctx, :info, "classify_intent", "Classified as #{kind}")
-    
+
     {:ok, new_bit, ctx}
   end
 
@@ -203,23 +205,23 @@ defmodule Thunderline.Thunderbit.Demo do
   @spec inspect_context(Context.t()) :: :ok
   def inspect_context(%Context{} = ctx) do
     IO.puts("""
-    
+
     === Context State ===
     Session: #{ctx.session_id}
     PAC: #{ctx.pac_id || "nil"}
     Zone: #{ctx.zone || "nil"}
-    
+
     Bits (#{map_size(ctx.bits_by_id)}):
     #{format_bits(ctx.bits_by_id)}
-    
+
     Edges (#{length(ctx.edges)}):
     #{format_edges(ctx.edges)}
-    
+
     Events (#{length(ctx.event_log)}):
     #{format_events(ctx.event_log)}
     =====================
     """)
-    
+
     :ok
   end
 

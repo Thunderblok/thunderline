@@ -117,7 +117,7 @@ defmodule Thunderline.Thunderbit.UIContract do
   def to_dto(bit, edges) do
     category = Map.get(bit, :category, infer_category(bit))
     {:ok, cat} = Category.get(category)
-    
+
     # Find edges involving this bit
     bit_edges = find_bit_edges(bit.id, edges)
 
@@ -193,7 +193,7 @@ defmodule Thunderline.Thunderbit.UIContract do
   def broadcast(bits, edges \\ []) when is_list(bits) do
     dtos = to_dtos(bits, edges)
     edge_dtos = Enum.map(edges, &edge_to_dto/1)
-    
+
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "thunderbits:lobby",
@@ -239,7 +239,7 @@ defmodule Thunderline.Thunderbit.UIContract do
   @spec broadcast_edge(Edge.t() | map()) :: :ok
   def broadcast_edge(edge) do
     dto = edge_to_dto(edge)
-    
+
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "thunderbits:lobby",

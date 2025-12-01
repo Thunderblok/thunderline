@@ -218,8 +218,12 @@ defmodule Thunderline.Thunderbit.Wiring do
 
   defp reachable?(from, target, adj, visited) do
     cond do
-      from == target -> true
-      MapSet.member?(visited, from) -> false
+      from == target ->
+        true
+
+      MapSet.member?(visited, from) ->
+        false
+
       true ->
         neighbors = Map.get(adj, from, [])
         new_visited = MapSet.put(visited, from)

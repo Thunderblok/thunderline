@@ -3,7 +3,7 @@ defmodule Thunderline.Thunderbit.Protocol do
   Thunderbit Protocol - Core Verbs for Thunderbit Lifecycle
 
   Implements the 7 protocol verbs that manage the Thunderbit lifecycle.
-  
+
   ## Core Principle: Context Threading
 
   The Protocol NEVER mutates global state. Instead:
@@ -97,27 +97,30 @@ defmodule Thunderline.Thunderbit.Protocol do
          :ok <- Ethics.check_spawn(category, ctx),
          {:ok, bit} <- build_bit(cat, attrs, ctx) do
       Logger.debug("[Protocol.spawn_bit] Created #{category} Thunderbit: #{bit.id}")
-      
+
       # Register bit in context and emit event
-      ctx = ctx
-            |> Context.register_bit(bit)
-            |> Context.emit_event(:bit_spawned, %{
-                 bit_id: bit.id,
-                 category: category,
-                 role: cat.role
-               })
-      
+      ctx =
+        ctx
+        |> Context.register_bit(bit)
+        |> Context.emit_event(:bit_spawned, %{
+          bit_id: bit.id,
+          category: category,
+          role: cat.role
+        })
+
       {:ok, bit, ctx}
     end
   end
-  
+
   # Legacy support: convert raw map context to Context struct
   def spawn_bit(category, attrs, context) when is_map(context) do
-    ctx = Context.new(
-      pac_id: Map.get(context, :pac_id),
-      zone: Map.get(context, :zone),
-      policies: Map.get(context, :policies, [])
-    )
+    ctx =
+      Context.new(
+        pac_id: Map.get(context, :pac_id),
+        zone: Map.get(context, :zone),
+        policies: Map.get(context, :policies, [])
+      )
+
     spawn_bit(category, attrs, ctx)
   end
 
@@ -216,19 +219,15 @@ defmodule Thunderline.Thunderbit.Protocol do
     case continuation.(bit, ctx) do
       {:ok, new_bit, new_ctx} ->
         # Enforce preservation rules
-        validated_bit = %{new_bit | 
-          id: bit.id,
-          category: bit.category,
-          role: bit.role
-        }
-        
+        validated_bit = %{new_bit | id: bit.id, category: bit.category, role: bit.role}
+
         # Update bit in context
         new_ctx = Context.update_bit(new_ctx, validated_bit)
         {:ok, validated_bit, new_ctx}
-        
+
       {:error, _} = error ->
         error
-        
+
       # Legacy support: tuple return
       {new_bit, new_ctx} when is_map(new_bit) and is_struct(new_ctx, Context) ->
         validated_bit = %{new_bit | id: bit.id, category: bit.category, role: bit.role}
@@ -236,11 +235,12 @@ defmodule Thunderline.Thunderbit.Protocol do
         {:ok, validated_bit, new_ctx}
     end
   end
-  
+
   # Legacy bind/2 for backward compatibility
   @doc false
   def bind(bit, continuation) when is_function(continuation, 2) do
     ctx = Context.new()
+
     case bind(bit, continuation, ctx) do
       {:ok, new_bit, new_ctx} -> {new_bit, new_ctx}
       {:error, reason} -> raise "Bind failed: #{inspect(reason)}"
@@ -279,11 +279,12 @@ defmodule Thunderline.Thunderbit.Protocol do
       end
     end)
   end
-  
+
   # Legacy chain/2
   @doc false
   def chain(bit, continuations) when is_list(continuations) do
     ctx = Context.new()
+
     case chain(bit, continuations, ctx) do
       {:ok, new_bit, new_ctx} -> {new_bit, new_ctx}
       {:error, reason} -> raise "Chain failed: #{inspect(reason)}"
@@ -322,31 +323,32 @@ defmodule Thunderline.Thunderbit.Protocol do
     with :ok <- Wiring.validate_relation(from_bit.category, to_bit.category, relation),
          :ok <- Ethics.check_link(from_bit, to_bit, relation),
          {:ok, edge} <- create_edge(from_bit, to_bit, relation) do
-      
       # Add edge to context and emit event
-      ctx = ctx
-            |> Context.add_edge(edge)
-            |> Context.emit_event(:bits_linked, %{
-                 from_id: from_bit.id,
-                 to_id: to_bit.id,
-                 relation: relation,
-                 edge_id: edge.id
-               })
-      
+      ctx =
+        ctx
+        |> Context.add_edge(edge)
+        |> Context.emit_event(:bits_linked, %{
+          from_id: from_bit.id,
+          to_id: to_bit.id,
+          relation: relation,
+          edge_id: edge.id
+        })
+
       {:ok, edge, ctx}
     end
   end
-  
+
   # Legacy link/3 for backward compatibility
   @doc false
   def link(from_bit, to_bit, relation) do
     ctx = Context.new()
+
     case link(from_bit, to_bit, relation, ctx) do
       {:ok, edge, _ctx} -> {:ok, edge}
       {:error, _} = error -> error
     end
   end
-  
+
   defp create_edge(from_bit, to_bit, relation) do
     # Try to use new Edge module, fall back to Wiring
     if function_exported?(Edge, :new, 4) do
@@ -395,27 +397,29 @@ defmodule Thunderline.Thunderbit.Protocol do
       {:ok, new_bit, outputs} ->
         # Track capability usage
         tracked = track_step(new_bit, role)
-        
+
         # Update bit in context and emit event
-        ctx = ctx
-              |> Context.update_bit(tracked)
-              |> Context.emit_event(:bit_stepped, %{
-                   bit_id: bit.id,
-                   role: role,
-                   output_count: length(outputs)
-                 })
-        
+        ctx =
+          ctx
+          |> Context.update_bit(tracked)
+          |> Context.emit_event(:bit_stepped, %{
+            bit_id: bit.id,
+            role: role,
+            output_count: length(outputs)
+          })
+
         {:ok, tracked, outputs, ctx}
 
       {:halt, reason} ->
         {:halt, reason}
     end
   end
-  
+
   # Legacy step/2 for backward compatibility
   @doc false
   def step(bit, event) do
     ctx = Context.new()
+
     case step(bit, event, ctx) do
       {:ok, new_bit, outputs, _ctx} -> {:ok, new_bit, outputs}
       {:halt, reason} -> {:halt, reason}
@@ -455,7 +459,8 @@ defmodule Thunderline.Thunderbit.Protocol do
       type: :routed,
       payload: event.payload,
       source: bit.id,
-      targets: [],  # Would be populated by routing logic
+      # Would be populated by routing logic
+      targets: [],
       timestamp: DateTime.utc_now()
     }
 
@@ -590,21 +595,22 @@ defmodule Thunderline.Thunderbit.Protocol do
   @spec retire(map(), atom(), context()) :: {:ok, context()}
   def retire(bit, reason, %Context{} = ctx) do
     Logger.debug("[Protocol.retire] Retiring #{bit.id}: #{reason}")
-    
+
     # Remove from context and emit event
-    ctx = ctx
-          |> Context.emit_event(:bit_retired, %{
-               bit_id: bit.id,
-               reason: reason
-             })
-    
+    ctx =
+      ctx
+      |> Context.emit_event(:bit_retired, %{
+        bit_id: bit.id,
+        reason: reason
+      })
+
     # Remove bit from bits_by_id
     new_bits = Map.delete(ctx.bits_by_id, bit.id)
     ctx = %{ctx | bits_by_id: new_bits}
-    
+
     {:ok, ctx}
   end
-  
+
   @doc """
   Retires a Thunderbit and broadcasts the retirement event.
 
@@ -621,17 +627,17 @@ defmodule Thunderline.Thunderbit.Protocol do
   @spec retire_with_broadcast(map(), atom(), context()) :: {:ok, context()}
   def retire_with_broadcast(bit, reason, %Context{} = ctx) do
     {:ok, ctx} = retire(bit, reason, ctx)
-    
+
     # Broadcast retirement
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "thunderbits:lobby",
       {:thunderbit_retire, %{id: bit.id, reason: reason}}
     )
-    
+
     {:ok, ctx}
   end
-  
+
   # Legacy retire/2 for backward compatibility
   @doc false
   def retire(bit, reason) do
@@ -723,7 +729,7 @@ defmodule Thunderline.Thunderbit.Protocol do
       {:ok, new_bit, ctx}
     end
   end
-  
+
   # Legacy mutate/2 for backward compatibility
   @doc false
   def mutate(bit, changes) when is_map(changes) do
@@ -756,16 +762,16 @@ defmodule Thunderline.Thunderbit.Protocol do
   """
   @spec spawn_for_ui(map()) :: {:ok, [map()], [Edge.t()], context()} | {:error, term()}
   def spawn_for_ui(%{content: content} = input) do
-    ctx = Context.new(
-      pac_id: Map.get(input, :pac_id),
-      zone: Map.get(input, :zone)
-    )
+    ctx =
+      Context.new(
+        pac_id: Map.get(input, :pac_id),
+        zone: Map.get(input, :zone)
+      )
 
     # Start with sensory bit
     with {:ok, sensory, ctx} <- spawn_bit(:sensory, %{content: content}, ctx),
          {:ok, sensory, ctx} <- bind(sensory, &classify_input/2, ctx),
          {:ok, sensory, ctx} <- bind(sensory, &extract_tags/2, ctx) do
-      
       # Maybe spawn cognitive bit and link
       {bits, edges, ctx} =
         if needs_reasoning?(sensory) do
@@ -775,7 +781,8 @@ defmodule Thunderline.Thunderbit.Protocol do
                 {:ok, edge, ctx} -> {[sensory, cognitive], [edge], ctx}
                 {:error, _} -> {[sensory, cognitive], [], ctx}
               end
-            _ -> 
+
+            _ ->
               {[sensory], [], ctx}
           end
         else
@@ -785,7 +792,7 @@ defmodule Thunderline.Thunderbit.Protocol do
       {:ok, bits, edges, ctx}
     end
   end
-  
+
   @doc """
   Spawns Thunderbit(s) and returns UI specs (legacy convenience).
 
@@ -801,6 +808,7 @@ defmodule Thunderline.Thunderbit.Protocol do
       {:ok, bits, edges, _ctx} ->
         ui_specs = Enum.map(bits, fn bit -> to_ui_spec(bit, edges) end)
         {:ok, ui_specs}
+
       {:error, _} = error ->
         error
     end
@@ -842,11 +850,12 @@ defmodule Thunderline.Thunderbit.Protocol do
   defp to_ui_spec(bit, edges \\ []) do
     {:ok, cat} = Category.get(bit.category)
     geometry = Map.get(cat, :geometry, %{})
-    
+
     # Find edges involving this bit
-    bit_edges = Enum.filter(edges, fn e -> 
-      e.from_id == bit.id || e.to_id == bit.id 
-    end)
+    bit_edges =
+      Enum.filter(edges, fn e ->
+        e.from_id == bit.id || e.to_id == bit.id
+      end)
 
     %{
       id: bit.id,
@@ -866,15 +875,16 @@ defmodule Thunderline.Thunderbit.Protocol do
       links:
         Enum.map(bit_edges, fn edge ->
           target_id = if edge.from_id == bit.id, do: edge.to_id, else: edge.from_id
+
           %{
-            target_id: target_id, 
-            relation_type: Atom.to_string(edge.relation), 
+            target_id: target_id,
+            relation_type: Atom.to_string(edge.relation),
             strength: edge.strength
           }
         end) ++
-        Enum.map(bit.links || [], fn link_id ->
-          %{target_id: link_id, relation_type: "related", strength: 0.5}
-        end),
+          Enum.map(bit.links || [], fn link_id ->
+            %{target_id: link_id, relation_type: "related", strength: 0.5}
+          end),
       label: String.slice(bit.content || "", 0, 30),
       tooltip: bit.content,
       category: Atom.to_string(bit.category),

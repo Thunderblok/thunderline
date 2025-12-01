@@ -42,9 +42,25 @@ defmodule Thunderline.Thunderbit.Category do
   # Types
   # ===========================================================================
 
-  @type id :: :sensory | :cognitive | :mnemonic | :motor | :social | :ethical | :perceptual | :executive
+  @type id ::
+          :sensory
+          | :cognitive
+          | :mnemonic
+          | :motor
+          | :social
+          | :ethical
+          | :perceptual
+          | :executive
 
-  @type role :: :observer | :transformer | :storage | :actuator | :router | :critic | :analyzer | :controller
+  @type role ::
+          :observer
+          | :transformer
+          | :storage
+          | :actuator
+          | :router
+          | :critic
+          | :analyzer
+          | :controller
 
   @type composition :: :serial | :parallel | :feedback | :broadcast
 
@@ -132,7 +148,13 @@ defmodule Thunderline.Thunderbit.Category do
         %{name: :raw_input, type: :signal, shape: :any, topic: nil, required: true}
       ],
       outputs: [
-        %{name: :parsed_event, type: :event, shape: :any, topic: "thunderbits:sensory", required: true}
+        %{
+          name: :parsed_event,
+          type: :event,
+          shape: :any,
+          topic: "thunderbits:sensory",
+          required: true
+        }
       ],
       capabilities: [:read_sensors, :subscribe_topics],
       forbidden: [:write_events, :trigger_action, :veto_action],
@@ -161,7 +183,13 @@ defmodule Thunderline.Thunderbit.Category do
         %{name: :context, type: :context, shape: :map, topic: nil, required: false}
       ],
       outputs: [
-        %{name: :transformed, type: :event, shape: :any, topic: "thunderbits:cognitive", required: true},
+        %{
+          name: :transformed,
+          type: :event,
+          shape: :any,
+          topic: "thunderbits:cognitive",
+          required: true
+        },
         %{name: :inference, type: :message, shape: :any, topic: nil, required: false}
       ],
       capabilities: [:access_memory, :spawn_bits],
@@ -221,7 +249,13 @@ defmodule Thunderline.Thunderbit.Category do
         %{name: :verdict, type: :message, shape: :any, topic: nil, required: false}
       ],
       outputs: [
-        %{name: :action_event, type: :event, shape: :any, topic: "thunderbits:actions", required: true},
+        %{
+          name: :action_event,
+          type: :event,
+          shape: :any,
+          topic: "thunderbits:actions",
+          required: true
+        },
         %{name: :side_effect, type: :signal, shape: :any, topic: nil, required: false}
       ],
       capabilities: [:write_events, :trigger_action],
@@ -280,7 +314,13 @@ defmodule Thunderline.Thunderbit.Category do
         %{name: :policy_context, type: :context, shape: :map, topic: nil, required: true}
       ],
       outputs: [
-        %{name: :verdict, type: :message, shape: %{allowed: :boolean, reason: :string}, topic: nil, required: true}
+        %{
+          name: :verdict,
+          type: :message,
+          shape: %{allowed: :boolean, reason: :string},
+          topic: nil,
+          required: true
+        }
       ],
       capabilities: [:evaluate_policy, :veto_action],
       forbidden: [:trigger_action, :write_events],
