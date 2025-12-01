@@ -49,7 +49,7 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderpac_roles, ["USING GIN (capabilities)"], name: "pac_roles_caps_idx")
+    execute "CREATE INDEX pac_roles_caps_idx ON thunderpac_roles USING GIN (capabilities)"
 
     create index(:thunderpac_roles, [:is_system], name: "pac_roles_system_idx")
 
@@ -119,37 +119,8 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
 
     create index(:thunderpac_intents, [:pac_id], name: "pac_intents_pac_idx")
 
-    create table(:saga_states, primary_key: false) do
-      add :id, :uuid, null: false, default: fragment("uuid_generate_v7()"), primary_key: true
-      add :saga_module, :text, null: false
-      add :status, :text, null: false, default: "pending"
-      add :inputs, :map, default: %{}
-      add :output, :text
-      add :checkpoint, :text
-      add :error, :text
-      add :attempt_count, :bigint, null: false, default: 0
-      add :max_attempts, :bigint, default: 3
-      add :last_attempt_at, :utc_datetime_usec
-      add :completed_at, :utc_datetime_usec
-      add :timeout_ms, :bigint, default: 60000
-      add :meta, :map, default: %{}
-
-      add :inserted_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-
-      add :updated_at, :utc_datetime_usec,
-        null: false,
-        default: fragment("(now() AT TIME ZONE 'utc')")
-    end
-
-    create index(:saga_states, [:inserted_at])
-
-    create index(:saga_states, [:status, :last_attempt_at])
-
-    create index(:saga_states, [:saga_module, :status])
-
-    create unique_index(:saga_states, [:id], name: "saga_states_correlation_id_index")
+    # NOTE: saga_states table creation removed - already created by earlier migration
+    # 20251128234500_add_saga_states.exs
 
     create table(:thunderoll_experiments, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
@@ -294,11 +265,9 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
       add :pac_id, :uuid, null: false
     end
 
-    create index(:thunderpac_memory_cells, ["USING GIN (tags)"], name: "memory_cells_tags_idx")
+    execute "CREATE INDEX memory_cells_tags_idx ON thunderpac_memory_cells USING GIN (tags)"
 
-    create index(:thunderpac_memory_cells, ["USING GIN (content)"],
-             name: "memory_cells_content_idx"
-           )
+    execute "CREATE INDEX memory_cells_content_idx ON thunderpac_memory_cells USING GIN (content)"
 
     create index(:thunderpac_memory_cells, [:pac_id, :memory_type, :salience],
              name: "memory_cells_pac_type_salience_idx"
@@ -340,14 +309,8 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
              name: "policy_definitions_unique_name_version_index"
            )
 
-    alter table(:upm_observations) do
-      add :manifold_id, :bigint
-      add :cluster_stability, :float
-      add :manifold_distance, :float
-      add :simplex_degree, :bigint
-    end
-
-    create index(:upm_observations, [:manifold_id], name: "upm_observations_manifold_id_idx")
+    # NOTE: upm_observations columns already added by 20251126124200_add_manifold_clustering_fields
+    # alter table(:upm_observations) do ... end removed
 
     create table(:thunderpac_pacs, primary_key: false) do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
@@ -440,11 +403,11 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
           )
     end
 
-    create index(:thunderpac_pacs, ["USING GIN (trait_vector)"], name: "pacs_traits_idx")
+    execute "CREATE INDEX pacs_traits_idx ON thunderpac_pacs USING GIN (trait_vector)"
 
-    create index(:thunderpac_pacs, ["USING GIN (memory_state)"], name: "pacs_memory_idx")
+    execute "CREATE INDEX pacs_memory_idx ON thunderpac_pacs USING GIN (memory_state)"
 
-    create index(:thunderpac_pacs, ["USING GIN (persona)"], name: "pacs_persona_idx")
+    execute "CREATE INDEX pacs_persona_idx ON thunderpac_pacs USING GIN (persona)"
 
     create index(:thunderpac_pacs, [:last_active_at], name: "pacs_last_active_idx")
 
@@ -549,13 +512,9 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
         default: fragment("(now() AT TIME ZONE 'utc')")
     end
 
-    create index(:thunderwall_sandbox_logs, ["USING GIN (result)"],
-             name: "sandbox_logs_result_idx"
-           )
+    execute "CREATE INDEX sandbox_logs_result_idx ON thunderwall_sandbox_logs USING GIN (result)"
 
-    create index(:thunderwall_sandbox_logs, ["USING GIN (params)"],
-             name: "sandbox_logs_params_idx"
-           )
+    execute "CREATE INDEX sandbox_logs_params_idx ON thunderwall_sandbox_logs USING GIN (params)"
 
     create index(:thunderwall_sandbox_logs, [:expires_at], name: "sandbox_logs_expires_idx")
 
@@ -589,13 +548,9 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
                      name: "sandbox_logs_expires_idx"
                    )
 
-    drop_if_exists index(:thunderwall_sandbox_logs, ["USING GIN (params)"],
-                     name: "sandbox_logs_params_idx"
-                   )
+    execute "DROP INDEX IF EXISTS sandbox_logs_params_idx"
 
-    drop_if_exists index(:thunderwall_sandbox_logs, ["USING GIN (result)"],
-                     name: "sandbox_logs_result_idx"
-                   )
+    execute "DROP INDEX IF EXISTS sandbox_logs_result_idx"
 
     drop table(:thunderwall_sandbox_logs)
 
@@ -637,11 +592,11 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
 
     drop_if_exists index(:thunderpac_pacs, [:last_active_at], name: "pacs_last_active_idx")
 
-    drop_if_exists index(:thunderpac_pacs, ["USING GIN (persona)"], name: "pacs_persona_idx")
+    execute "DROP INDEX IF EXISTS pacs_persona_idx"
 
-    drop_if_exists index(:thunderpac_pacs, ["USING GIN (memory_state)"], name: "pacs_memory_idx")
+    execute "DROP INDEX IF EXISTS pacs_memory_idx"
 
-    drop_if_exists index(:thunderpac_pacs, ["USING GIN (trait_vector)"], name: "pacs_traits_idx")
+    execute "DROP INDEX IF EXISTS pacs_traits_idx"
 
     alter table(:thunderpac_pacs) do
       remove :active_role_id
@@ -691,16 +646,8 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
 
     drop table(:thunderpac_pacs)
 
-    drop_if_exists index(:upm_observations, [:manifold_id],
-                     name: "upm_observations_manifold_id_idx"
-                   )
-
-    alter table(:upm_observations) do
-      remove :simplex_degree
-      remove :manifold_distance
-      remove :cluster_stability
-      remove :manifold_id
-    end
+    # NOTE: upm_observations columns managed by 20251126124200_add_manifold_clustering_fields
+    # drop + alter removed
 
     drop_if_exists unique_index(:policy_definitions, [:name, :version],
                      name: "policy_definitions_unique_name_version_index"
@@ -724,13 +671,9 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
                      name: "memory_cells_pac_type_salience_idx"
                    )
 
-    drop_if_exists index(:thunderpac_memory_cells, ["USING GIN (content)"],
-                     name: "memory_cells_content_idx"
-                   )
+    execute "DROP INDEX IF EXISTS memory_cells_content_idx"
 
-    drop_if_exists index(:thunderpac_memory_cells, ["USING GIN (tags)"],
-                     name: "memory_cells_tags_idx"
-                   )
+    execute "DROP INDEX IF EXISTS memory_cells_tags_idx"
 
     drop table(:thunderpac_memory_cells)
 
@@ -770,15 +713,7 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
 
     drop table(:thunderoll_experiments)
 
-    drop_if_exists unique_index(:saga_states, [:id], name: "saga_states_correlation_id_index")
-
-    drop_if_exists index(:saga_states, [:saga_module, :status])
-
-    drop_if_exists index(:saga_states, [:status, :last_attempt_at])
-
-    drop_if_exists index(:saga_states, [:inserted_at])
-
-    drop table(:saga_states)
+    # NOTE: saga_states drops removed - table managed by 20251128234500_add_saga_states.exs
 
     drop_if_exists index(:thunderpac_intents, [:pac_id], name: "pac_intents_pac_idx")
 
@@ -806,9 +741,7 @@ defmodule Thunderline.Repo.Migrations.HcDeltaOrchestration do
 
     drop_if_exists index(:thunderpac_roles, [:is_system], name: "pac_roles_system_idx")
 
-    drop_if_exists index(:thunderpac_roles, ["USING GIN (capabilities)"],
-                     name: "pac_roles_caps_idx"
-                   )
+    execute "DROP INDEX IF EXISTS pac_roles_caps_idx"
 
     drop table(:thunderpac_roles)
 
