@@ -150,5 +150,8 @@ defmodule Thunderline.Thunderbolt.Domain do
       define :list_sagas_by_module, action: :list_by_module, args: [:saga_module]
       define :find_stale_sagas, action: :stale_sagas, args: [:older_than_seconds]
     end
+
+    # Thunderbit Category Protocol (HC-Δ-5)
+    resource Thunderline.Thunderbit.Resources.ThunderbitDefinition
   end
 end

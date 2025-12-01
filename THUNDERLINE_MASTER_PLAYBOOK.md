@@ -972,7 +972,7 @@ end
 | HC-Δ-2 | P0 | Thundercrown Policy Engine | Runtime policy evaluation, constraint DSL, policy resources | ✅ Complete |
 | HC-Δ-3 | P1 | DiffLogic CA Engine | Differentiable logic CA, learnable gates, grid state | Not Started |
 | HC-Δ-4 | P1 | MAP-Elites Archive (Full QD) | Quality-diversity search, elite archive, mutation operators | Not Started |
-| HC-Δ-5 | P1 | Thunderbit Category Protocol | Composable computation units, monadic bind, type definitions | Not Started |
+| HC-Δ-5 | P1 | Thunderbit Category Protocol | Composable computation units, monadic bind, type definitions | ✅ Complete |
 | HC-Δ-6 | P2 | Structured Tensor (Finch-inspired) | Sparse/dense tensor types, operations, loop fusion | Not Started |
 | HC-Δ-7 | P0 | Thunderoll Hyperscale Optimizer | EGGROLL-based ES, low-rank perturbations, population management | Not Started |
 
@@ -1396,38 +1396,51 @@ lib/thunderline/evolution/
 
 ---
 
-### HC-Δ-5: Thunderbit Category Protocol
+### HC-Δ-5: Thunderbit Category Protocol ✅
 
 **Priority**: P1
 **Owner**: Bolt Steward
-**Dependencies**: None
+**Dependencies**: Upper Ontology (HC-Ω-1)
+**Status**: ✅ Complete (v1.0)
 
-**Purpose**: Represent each atomic agent module as a Thunderbit - a composable unit of computation with category-theoretic composition laws.
+**Purpose**: Represent each atomic agent module as a Thunderbit - a composable unit of computation with category-theoretic composition laws. Makes the Upper Ontology executable.
 
-**Components**:
+**Implementation**:
 ```
 lib/thunderline/thunderbit/
-├── protocol.ex            # Thunderbit protocol definition
-├── composition.ex         # Monadic bind operations
-├── types.ex               # Type definitions
-└── primitives/
-    ├── identity.ex        # Identity Thunderbit
-    ├── sequence.ex        # Sequential composition
-    └── parallel.ex        # Parallel composition
+├── category.ex            # 8 categories (sensory, cognitive, mnemonic, motor, social, ethical, perceptual, executive)
+├── wiring.ex              # Composition rules and edge validation
+├── io.ex                  # I/O type specs and validation
+├── protocol.ex            # 7 protocol verbs (spawn_bit, bind, link, step, retire, query, mutate)
+├── ethics.ex              # Maxim enforcement layer
+├── registry.ex            # ETS-based runtime registry
+├── ui_contract.ex         # UI spec generation for front-end
+└── resources/
+    └── thunderbit_definition.ex  # Ash resource for persistence
 ```
 
-**Protocol Definition**:
+**Category Taxonomy**:
+| Category | Role | Ontology Path |
+|----------|------|---------------|
+| Sensory | Observer | Entity.Physical |
+| Cognitive | Transformer | Proposition.* |
+| Mnemonic | Storage | Entity.Conceptual |
+| Motor | Actuator | Process.Action |
+| Social | Router | Relation.* |
+| Ethical | Critic | Proposition.Goal |
+| Perceptual | Analyzer | Attribute.State |
+| Executive | Controller | Process.Action |
+
+**Protocol Verbs**:
 ```elixir
-defprotocol Thunderline.Thunderbit do
-  @doc "Bind input to Thunderbit, producing output"
-  @spec bind(t, input :: term()) :: {:ok, output :: term()} | {:error, reason :: term()}
-  def bind(bit, input)
-  
-  @doc "Compose two Thunderbits sequentially"
-  @spec compose(t, t) :: t
-  def compose(bit1, bit2)
-end
+Protocol.spawn_bit(:cognitive, attrs, ctx)  # → {:ok, %Thunderbit{}}
+Protocol.bind(bit, &transform/2)            # → {bit', ctx'}
+Protocol.link(bit_a, bit_b, :feeds)         # → {:ok, edge} | {:error, _}
+Protocol.step(bit, event)                   # → {:ok, bit', outputs}
+Protocol.retire(bit, :done)                 # → :ok
 ```
+
+**Spec Document**: `documentation/HC-D5_THUNDERBIT_CATEGORY_PROTOCOL.md`
 
 ---
 
@@ -2005,7 +2018,7 @@ fitness_spec = %{
 | **2** | HC-Δ-7 | Thunderoll Hyperscale Optimizer | Week 2-3 | 🚧 In Progress |
 | **3** | HC-Δ-3 | CA Engine (DiffLogic integration) | Week 3-4 | Not Started |
 | **4** | HC-Δ-4 | MAP-Elites (Quality-Diversity search) | Week 4-5 | Not Started |
-| **5** | HC-Δ-5 | Thunderbit Protocol (Category composition) | Week 5-6 | Not Started |
+| **5** | HC-Δ-5 | Thunderbit Protocol (Category composition) | Week 5-6 | ✅ Complete |
 | **6** | HC-Δ-6 | Structured Tensors (Finch-inspired) | Week 6-7 | Not Started |
 
 ### Cross-Domain Layer Activation

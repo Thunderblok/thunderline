@@ -41,7 +41,9 @@ defmodule Thunderline.Application do
     # DomainRegistry MUST start before TickGenerator
     tick_system = [
       Thunderline.Thunderblock.DomainRegistry,
-      Thunderline.Thunderlink.TickGenerator
+      Thunderline.Thunderlink.TickGenerator,
+      # Thunderbit Category Protocol registry (HC-Δ-5)
+      Thunderline.Thunderbit.Registry
     ]
 
     # Domain-specific children that may need DB (excluding Cerebros - starts after Oban)
