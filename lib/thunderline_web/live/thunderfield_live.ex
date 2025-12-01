@@ -47,7 +47,8 @@ defmodule ThunderlineWeb.ThunderfieldLive do
      |> assign(:edges, [])
      |> assign(:selected_bit, nil)
      |> assign(:context, Context.new(pac_id: "field_user"))
-     |> assign(:stats, %{total: 0, sensory: 0, cognitive: 0, linked: 0})}
+     |> assign(:stats, %{total: 0, sensory: 0, cognitive: 0, linked: 0})
+     |> assign(:form, to_form(%{"content" => ""}, as: :input))}
   end
 
   # ===========================================================================
@@ -112,6 +113,7 @@ defmodule ThunderlineWeb.ThunderfieldLive do
         <%!-- Input Bar --%>
         <footer class="px-6 py-4 border-t border-cyan-500/20 bg-slate-900/50">
           <Thunderfield.thunderbit_input
+            form={@form}
             on_submit="submit_input"
             placeholder="Type something to spawn Thunderbits..."
             voice_enabled={false}
@@ -139,7 +141,8 @@ defmodule ThunderlineWeb.ThunderfieldLive do
   # ===========================================================================
 
   @impl true
-  def handle_event("submit_input", %{"content" => content}, socket) when content != "" do
+  def handle_event("submit_input", %{"input" => %{"content" => content}}, socket)
+      when content != "" do
     Logger.info("[ThunderfieldLive] Input: #{String.slice(content, 0, 50)}")
 
     # Use the Demo module's intake flow
@@ -151,6 +154,7 @@ defmodule ThunderlineWeb.ThunderfieldLive do
         {:noreply,
          socket
          |> assign(:context, ctx)
+         |> assign(:form, to_form(%{"content" => ""}, as: :input))
          |> put_flash(:info, "Spawned #{length(bits)} bits")}
 
       {:error, reason} ->

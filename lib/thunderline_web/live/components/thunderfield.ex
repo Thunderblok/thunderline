@@ -113,13 +113,17 @@ defmodule ThunderlineWeb.Live.Components.Thunderfield do
     bit = assigns.bit
     color = Thunderbit.color(bit)
     shape = Thunderbit.shape(bit)
-    size = round(24 + bit.energy * 24)
+    energy = Map.get(bit, :energy) || Map.get(bit, "energy") || 0.5
+    size = round(24 + energy * 24)
+    position = extract_position(bit)
 
     assigns =
       assigns
       |> assign(:color, color)
       |> assign(:shape, shape)
       |> assign(:size, size)
+      |> assign(:position, position)
+      |> assign(:energy, energy)
 
     ~H"""
     <div
@@ -127,10 +131,10 @@ defmodule ThunderlineWeb.Live.Components.Thunderfield do
         "absolute transition-all duration-500",
         @selected && "ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900"
       ]}
-      style={"left: #{@bit.position.x * 100}%; top: #{@bit.position.y * 100}%; transform: translate(-50%, -50%);"}
-      title={@bit.content}
+      style={"left: #{@position.x * 100}%; top: #{@position.y * 100}%; transform: translate(-50%, -50%);"}
+      title={Map.get(@bit, :content) || Map.get(@bit, "content") || ""}
     >
-      <.bit_shape shape={@shape} color={@color} size={@size} energy={@bit.energy} />
+      <.bit_shape shape={@shape} color={@color} size={@size} energy={@energy} />
     </div>
     """
   end
@@ -380,25 +384,36 @@ defmodule ThunderlineWeb.Live.Components.Thunderfield do
     end
   end
 
+  # Extract position from either struct field or nested geometry in DTO
+  defp extract_position(%{position: %{x: _, y: _} = pos}), do: pos
+  defp extract_position(%{geometry: %{position: %{x: _, y: _} = pos}}), do: pos
+  defp extract_position(%{"position" => %{"x" => x, "y" => y}}), do: %{x: x, y: y}
+  defp extract_position(%{"geometry" => %{"position" => %{"x" => x, "y" => y}}}), do: %{x: x, y: y}
+  defp extract_position(_), do: %{x: 0.5, y: 0.5}
+
   # ===========================================================================
   # Input Panel
   # ===========================================================================
 
   attr :class, :string, default: ""
+  attr :form, :map, required: true
   attr :on_submit, :string, default: "submit_input"
   attr :placeholder, :string, default: "Type or speak a Thunderbit..."
   attr :voice_enabled, :boolean, default: false
 
   def thunderbit_input(assigns) do
     ~H"""
-    <form phx-submit={@on_submit} class={["flex gap-2", @class]}>
+    <.form for={@form} phx-submit={@on_submit} id="thunderbit-input-form" class={["flex gap-2", @class]}>
       <div class="flex-1 relative">
         <input
           type="text"
-          name="content"
+          name={@form[:content].name}
+          id={@form[:content].id}
+          value={@form[:content].value}
           placeholder={@placeholder}
           class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30"
           autocomplete="off"
+          phx-debounce="100"
         />
         <button
           :if={@voice_enabled}
@@ -415,7 +430,7 @@ defmodule ThunderlineWeb.Live.Components.Thunderfield do
       >
         Spawn
       </button>
-    </form>
+    </.form>
     """
   end
 end

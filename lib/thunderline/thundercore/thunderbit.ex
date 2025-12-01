@@ -407,6 +407,23 @@ defmodule Thunderline.Thundercore.Thunderbit do
   Returns the primary color for this Thunderbit based on kind.
   """
   def color(%__MODULE__{kind: kind}) do
+    color_for_kind(kind)
+  end
+
+  # Handle DTO maps (from UIContract.to_dto) - extract from geometry or category
+  def color(%{geometry: %{base_color: base_color}}) when is_binary(base_color), do: base_color
+
+  def color(%{category: category}) when is_binary(category) do
+    color_for_category(category)
+  end
+
+  def color(%{category: category}) when is_atom(category) do
+    color_for_category(to_string(category))
+  end
+
+  def color(_), do: "#6B7280"
+
+  defp color_for_kind(kind) do
     case kind do
       :question -> "#F97316"
       :command -> "#22C55E"
@@ -420,10 +437,43 @@ defmodule Thunderline.Thundercore.Thunderbit do
     end
   end
 
+  defp color_for_category(category) do
+    case category do
+      "sensory" -> "#3B82F6"
+      "cognitive" -> "#8B5CF6"
+      "executive" -> "#22C55E"
+      "memory" -> "#6366F1"
+      _ -> "#6B7280"
+    end
+  end
+
   @doc """
   Returns the shape for this Thunderbit based on kind.
   """
   def shape(%__MODULE__{kind: kind}) do
+    shape_for_kind(kind)
+  end
+
+  # Handle DTO maps (from UIContract.to_dto) - extract from geometry or category
+  def shape(%{geometry: %{shape: shape}}) when is_binary(shape) do
+    String.to_existing_atom(shape)
+  rescue
+    _ -> :circle
+  end
+
+  def shape(%{geometry: %{shape: shape}}) when is_atom(shape), do: shape
+
+  def shape(%{category: category}) when is_binary(category) do
+    shape_for_category(category)
+  end
+
+  def shape(%{category: category}) when is_atom(category) do
+    shape_for_category(to_string(category))
+  end
+
+  def shape(_), do: :circle
+
+  defp shape_for_kind(kind) do
     case kind do
       :question -> :bubble
       :command -> :capsule
@@ -434,6 +484,16 @@ defmodule Thunderline.Thundercore.Thunderbit do
       :world_update -> :diamond
       :error -> :triangle
       :system -> :square
+    end
+  end
+
+  defp shape_for_category(category) do
+    case category do
+      "sensory" -> :circle
+      "cognitive" -> :hex
+      "executive" -> :capsule
+      "memory" -> :diamond
+      _ -> :circle
     end
   end
 
@@ -464,6 +524,12 @@ defmodule Thunderline.Thundercore.Thunderbit do
         shape: shape(bit)
       }
     }
+  end
+
+  # Handle already-serialized DTO maps (from UIContract.to_dto)
+  def to_map(%{id: _} = dto) when is_map(dto) do
+    # Already a DTO - just ensure it's JSON-ready
+    dto
   end
 
   @doc "Creates a Thunderbit from a map"
