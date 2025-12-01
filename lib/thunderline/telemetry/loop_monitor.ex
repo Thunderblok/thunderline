@@ -285,7 +285,10 @@ defmodule Thunderline.Telemetry.LoopMonitor do
     {alerts, intervention} =
       if record.lambda > @lambda_chaotic_threshold do
         {
-          [{:chaotic_drift, %{lambda: record.lambda, threshold: @lambda_chaotic_threshold}} | alerts],
+          [
+            {:chaotic_drift, %{lambda: record.lambda, threshold: @lambda_chaotic_threshold}}
+            | alerts
+          ],
           intervention || :stabilize
         }
       else
@@ -320,6 +323,7 @@ defmodule Thunderline.Telemetry.LoopMonitor do
         Logger.warning(
           "[LoopMonitor] No intervention registered for #{domain}, action: #{action}"
         )
+
         {:intervention, action}
 
       callback ->

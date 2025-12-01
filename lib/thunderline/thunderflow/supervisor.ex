@@ -38,12 +38,13 @@ defmodule Thunderline.Thunderflow.Supervisor do
       {Thunderline.Thunderflow.Blackboard, []},
       # Near-critical dynamics monitoring (Cinderforge Lab paper)
       {Thunderline.Telemetry.LoopMonitor, [name: Thunderline.Telemetry.LoopMonitor]},
-      {Thunderline.Telemetry.TickObserver, [
-        name: Thunderline.Telemetry.TickObserver,
-        loop_monitor: Thunderline.Telemetry.LoopMonitor,
-        observe_interval: 5,
-        auto_irope: true
-      ]}
+      {Thunderline.Telemetry.TickObserver,
+       [
+         name: Thunderline.Telemetry.TickObserver,
+         loop_monitor: Thunderline.Telemetry.LoopMonitor,
+         observe_interval: 5,
+         auto_irope: true
+       ]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

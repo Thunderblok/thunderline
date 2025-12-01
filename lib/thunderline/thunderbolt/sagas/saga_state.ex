@@ -50,79 +50,18 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaState do
     type "saga_state"
 
     routes do
-      base "/saga-states"
-      get :read
+      base("/saga-states")
+      get(:read)
       index :list
     end
   end
 
-  attributes do
-    uuid_v7_primary_key :id
-
-    attribute :saga_module, :string do
-      allow_nil? false
-      description "Fully qualified module name of the Reactor saga"
-    end
-
-    attribute :status, :atom do
-      allow_nil? false
-      default :pending
-      constraints one_of: @saga_statuses
-      description "Current execution status of the saga"
-    end
-
-    attribute :inputs, :map do
-      default %{}
-      description "Input arguments passed to the saga"
-    end
-
-    attribute :output, :string do
-      description "JSON-serialized output from successful completion"
-    end
-
-    attribute :checkpoint, :string do
-      description "Serialized Reactor state for halted sagas (resume support)"
-    end
-
-    attribute :error, :string do
-      description "Error message from failed execution"
-    end
-
-    attribute :attempt_count, :integer do
-      allow_nil? false
-      default 0
-      description "Number of execution attempts"
-    end
-
-    attribute :max_attempts, :integer do
-      default 3
-      description "Maximum allowed retry attempts"
-    end
-
-    attribute :last_attempt_at, :utc_datetime_usec do
-      description "Timestamp of the most recent execution attempt"
-    end
-
-    attribute :completed_at, :utc_datetime_usec do
-      description "Timestamp when saga completed successfully"
-    end
-
-    attribute :timeout_ms, :integer do
-      default 60_000
-      description "Execution timeout in milliseconds"
-    end
-
-    attribute :meta, :map do
-      default %{}
-      description "Additional metadata (actor, tenant, etc.)"
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  identities do
-    identity :correlation_id, [:id]
+  code_interface do
+    define :get, action: :read, args: [:id]
+    define :list_by_status, args: [:status]
+    define :list_by_module, args: [:saga_module]
+    define :find_stale, action: :stale_sagas, args: [:older_than_seconds]
+    define :cancel
   end
 
   actions do
@@ -225,6 +164,71 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaState do
     end
   end
 
+  attributes do
+    uuid_v7_primary_key :id
+
+    attribute :saga_module, :string do
+      allow_nil? false
+      description "Fully qualified module name of the Reactor saga"
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      default :pending
+      constraints one_of: @saga_statuses
+      description "Current execution status of the saga"
+    end
+
+    attribute :inputs, :map do
+      default %{}
+      description "Input arguments passed to the saga"
+    end
+
+    attribute :output, :string do
+      description "JSON-serialized output from successful completion"
+    end
+
+    attribute :checkpoint, :string do
+      description "Serialized Reactor state for halted sagas (resume support)"
+    end
+
+    attribute :error, :string do
+      description "Error message from failed execution"
+    end
+
+    attribute :attempt_count, :integer do
+      allow_nil? false
+      default 0
+      description "Number of execution attempts"
+    end
+
+    attribute :max_attempts, :integer do
+      default 3
+      description "Maximum allowed retry attempts"
+    end
+
+    attribute :last_attempt_at, :utc_datetime_usec do
+      description "Timestamp of the most recent execution attempt"
+    end
+
+    attribute :completed_at, :utc_datetime_usec do
+      description "Timestamp when saga completed successfully"
+    end
+
+    attribute :timeout_ms, :integer do
+      default 60_000
+      description "Execution timeout in milliseconds"
+    end
+
+    attribute :meta, :map do
+      default %{}
+      description "Additional metadata (actor, tenant, etc.)"
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
   calculations do
     calculate :duration_ms, :integer do
       description "Execution duration in milliseconds (if completed)"
@@ -263,11 +267,7 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaState do
     end
   end
 
-  code_interface do
-    define :get, action: :read, args: [:id]
-    define :list_by_status, args: [:status]
-    define :list_by_module, args: [:saga_module]
-    define :find_stale, action: :stale_sagas, args: [:older_than_seconds]
-    define :cancel
+  identities do
+    identity :correlation_id, [:id]
   end
 end

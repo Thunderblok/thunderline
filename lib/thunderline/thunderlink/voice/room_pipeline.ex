@@ -224,8 +224,11 @@ defmodule Thunderline.Thunderlink.Voice.RoomPipeline do
       {:ok, event} ->
         Task.start(fn ->
           case EventBus.publish_event(event) do
-            {:ok, _} -> :ok
-            {:error, reason} -> Logger.debug("[VoicePipeline] Event publish failed: #{inspect(reason)}")
+            {:ok, _} ->
+              :ok
+
+            {:error, reason} ->
+              Logger.debug("[VoicePipeline] Event publish failed: #{inspect(reason)}")
           end
         end)
 

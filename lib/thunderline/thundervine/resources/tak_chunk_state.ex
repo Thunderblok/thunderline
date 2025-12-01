@@ -16,6 +16,10 @@ defmodule Thunderline.Thundervine.Resources.TAKChunkState do
     repo Thunderline.Repo
   end
 
+  actions do
+    defaults [:read, :create, :update, :destroy]
+  end
+
   attributes do
     uuid_primary_key :id
     attribute :zone_id, :string, allow_nil?: false
@@ -28,9 +32,5 @@ defmodule Thunderline.Thundervine.Resources.TAKChunkState do
 
   identities do
     identity :by_zone_chunk, [:zone_id, :chunk_coords]
-  end
-
-  actions do
-    defaults [:read, :create, :update, :destroy]
   end
 end

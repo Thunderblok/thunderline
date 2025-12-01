@@ -15,6 +15,14 @@ defmodule Thunderline.Thundervine.Resources.TAKChunkEvent do
     repo Thunderline.Repo
   end
 
+  actions do
+    defaults [:read]
+
+    create :create do
+      accept [:zone_id, :chunk_coords, :tick_id, :diffs, :rule_hash, :meta]
+    end
+  end
+
   attributes do
     uuid_primary_key :id
     attribute :zone_id, :string, allow_nil?: false
@@ -28,13 +36,5 @@ defmodule Thunderline.Thundervine.Resources.TAKChunkEvent do
 
   identities do
     identity :by_zone_tick, [:zone_id, :chunk_coords, :tick_id]
-  end
-
-  actions do
-    defaults [:read]
-
-    create :create do
-      accept [:zone_id, :chunk_coords, :tick_id, :diffs, :rule_hash, :meta]
-    end
   end
 end

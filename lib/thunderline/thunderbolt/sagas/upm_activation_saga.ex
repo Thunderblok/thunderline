@@ -245,7 +245,9 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
           # we mark them as needing resync
           Enum.each(adapters, fn adapter ->
             case Ash.update(adapter, %{active_snapshot_id: nil, needs_resync: true}) do
-              {:ok, _} -> :ok
+              {:ok, _} ->
+                :ok
+
               {:error, reason} ->
                 Logger.error("Failed to reset adapter #{adapter.id}: #{inspect(reason)}")
             end

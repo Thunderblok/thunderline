@@ -10,10 +10,13 @@ defmodule Thunderline.Thunderbolt.Events.TAKChunkEvolved do
   @enforce_keys [:zone_id, :chunk_id, :tick_id, :diffs, :rule_hash]
   defstruct [
     :zone_id,
-    :chunk_id,   # {cx, cy, cz}
+    # {cx, cy, cz}
+    :chunk_id,
     :tick_id,
-    :diffs,      # list of %{voxel_id: {x,y,z}, old: map(), new: map()}
+    # list of %{voxel_id: {x,y,z}, old: map(), new: map()}
+    :diffs,
     :rule_hash,
-    :meta        # optional map
+    # optional map
+    :meta
   ]
 end

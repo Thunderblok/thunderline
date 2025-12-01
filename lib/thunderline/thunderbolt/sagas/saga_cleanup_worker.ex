@@ -196,7 +196,10 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaCleanupWorker do
         :ok
 
       {:error, reason} ->
-        Logger.warning("[SagaCleanupWorker] Failed to mark saga #{saga.id} as stale: #{inspect(reason)}")
+        Logger.warning(
+          "[SagaCleanupWorker] Failed to mark saga #{saga.id} as stale: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -251,7 +254,10 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaCleanupWorker do
       :ok
     else
       {:error, reason} ->
-        Logger.warning("[SagaCleanupWorker] Failed to archive saga #{saga.id}: #{inspect(reason)}")
+        Logger.warning(
+          "[SagaCleanupWorker] Failed to archive saga #{saga.id}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -272,8 +278,9 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaCleanupWorker do
         failed_archived: results.failed_archived,
         completed_archived: results.completed_archived,
         cancelled_deleted: results.cancelled_deleted,
-        total: results.stale_marked + results.failed_archived +
-               results.completed_archived + results.cancelled_deleted
+        total:
+          results.stale_marked + results.failed_archived +
+            results.completed_archived + results.cancelled_deleted
       },
       %{worker: __MODULE__}
     )

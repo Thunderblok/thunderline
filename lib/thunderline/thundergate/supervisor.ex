@@ -42,7 +42,9 @@ defmodule Thunderline.Thundergate.Supervisor do
 
   @impl Thunderline.Thunderblock.DomainActivation
   def on_activated(tick_count) do
-    Logger.info("[ThunderGate] 🛡️  GATE ONLINE - Authentication & Services Active at tick #{tick_count}")
+    Logger.info(
+      "[ThunderGate] 🛡️  GATE ONLINE - Authentication & Services Active at tick #{tick_count}"
+    )
 
     state = %{
       activated_at: tick_count,
@@ -76,6 +78,7 @@ defmodule Thunderline.Thundergate.Supervisor do
   @impl Thunderline.Thunderblock.DomainActivation
   def on_deactivated(reason, state) do
     uptime_ticks = state.tick_count - state.activated_at
+
     Logger.info(
       "[ThunderGate] 🛡️  Gate closing after #{uptime_ticks} ticks, reason: #{inspect(reason)}"
     )

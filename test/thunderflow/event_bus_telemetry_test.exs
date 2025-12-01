@@ -39,10 +39,33 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
     ]
 
     # Attach all handlers
-    :telemetry.attach(:enqueue_handler, [:thunderline, :event, :enqueue], elem(handlers, 0) |> elem(1), nil)
-    :telemetry.attach(:publish_handler, [:thunderline, :event, :publish], elem(handlers, 1) |> elem(1), nil)
-    :telemetry.attach(:dropped_handler, [:thunderline, :event, :dropped], elem(handlers, 2) |> elem(1), nil)
-    :telemetry.attach(:validated_handler, [:thunderline, :event, :validated], elem(handlers, 3) |> elem(1), nil)
+    :telemetry.attach(
+      :enqueue_handler,
+      [:thunderline, :event, :enqueue],
+      elem(handlers, 0) |> elem(1),
+      nil
+    )
+
+    :telemetry.attach(
+      :publish_handler,
+      [:thunderline, :event, :publish],
+      elem(handlers, 1) |> elem(1),
+      nil
+    )
+
+    :telemetry.attach(
+      :dropped_handler,
+      [:thunderline, :event, :dropped],
+      elem(handlers, 2) |> elem(1),
+      nil
+    )
+
+    :telemetry.attach(
+      :validated_handler,
+      [:thunderline, :event, :validated],
+      elem(handlers, 3) |> elem(1),
+      nil
+    )
 
     on_exit(fn ->
       :telemetry.detach(:enqueue_handler)
@@ -65,7 +88,10 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
 
       EventBus.publish_event(event)
 
-      assert_receive {:telemetry, [:thunderline, :event, :validated], %{duration: duration}, %{status: :ok, name: "system.test.telemetry"}}, 1000
+      assert_receive {:telemetry, [:thunderline, :event, :validated], %{duration: duration},
+                      %{status: :ok, name: "system.test.telemetry"}},
+                     1000
+
       assert is_integer(duration)
       assert duration >= 0
     end
@@ -80,7 +106,10 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
 
       EventBus.publish_event(event)
 
-      assert_receive {:telemetry, [:thunderline, :event, :publish], %{duration: duration}, metadata}, 1000
+      assert_receive {:telemetry, [:thunderline, :event, :publish], %{duration: duration},
+                      metadata},
+                     1000
+
       assert is_integer(duration)
       assert metadata.name == "system.test.publish_telemetry"
       assert metadata.status in [:ok, :error]
@@ -130,7 +159,9 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
       EventBus.publish_event(event)
 
       # The :validated event should include name
-      assert_receive {:telemetry, [:thunderline, :event, :validated], _, %{name: "system.test.priority"}}, 1000
+      assert_receive {:telemetry, [:thunderline, :event, :validated], _,
+                      %{name: "system.test.priority"}},
+                     1000
     end
   end
 
@@ -140,10 +171,12 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
       invalid_event = %Event{
         id: "test",
         at: DateTime.utc_now(),
-        name: "x",  # Too short - will fail validation
+        # Too short - will fail validation
+        name: "x",
         source: :flow,
         payload: %{},
-        correlation_id: "not-a-uuid",  # Invalid UUID format
+        # Invalid UUID format
+        correlation_id: "not-a-uuid",
         taxonomy_version: 1,
         event_version: 1,
         meta: %{}
@@ -153,7 +186,9 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
       _result = EventBus.publish_event(invalid_event)
 
       # Should get a validated telemetry with error status
-      assert_receive {:telemetry, [:thunderline, :event, :validated], %{duration: _}, %{status: :error}}, 1000
+      assert_receive {:telemetry, [:thunderline, :event, :validated], %{duration: _},
+                      %{status: :error}},
+                     1000
     end
   end
 end

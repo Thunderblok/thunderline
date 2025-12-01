@@ -134,12 +134,13 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
   """
   defnp evolve_2d(grid, born, survive) do
     # Create 2D Moore neighborhood kernel (3x3 with center = 0)
-    kernel = Nx.tensor([
-      [1, 1, 1],
-      [1, 0, 1],
-      [1, 1, 1]
-    ])
-    |> Nx.reshape({1, 1, 3, 3})
+    kernel =
+      Nx.tensor([
+        [1, 1, 1],
+        [1, 0, 1],
+        [1, 1, 1]
+      ])
+      |> Nx.reshape({1, 1, 3, 3})
 
     # Reshape grid for convolution (add batch and channel dims)
     shape = Nx.shape(grid)
@@ -148,8 +149,9 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
     grid_reshaped = Nx.reshape(grid, {1, 1, height, width})
 
     # Count alive neighbors via convolution
-    neighbors = Nx.conv(grid_reshaped, kernel, padding: :same, strides: 1)
-    |> Nx.squeeze(axes: [0, 1])
+    neighbors =
+      Nx.conv(grid_reshaped, kernel, padding: :same, strides: 1)
+      |> Nx.squeeze(axes: [0, 1])
 
     # Apply CA rules
     apply_rules(grid, neighbors, born, survive)
@@ -170,8 +172,9 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
     grid_reshaped = Nx.reshape(grid, {1, 1, depth, height, width})
 
     # Count alive neighbors via convolution
-    neighbors = Nx.conv(grid_reshaped, kernel, padding: :same, strides: 1)
-    |> Nx.squeeze(axes: [0, 1])
+    neighbors =
+      Nx.conv(grid_reshaped, kernel, padding: :same, strides: 1)
+      |> Nx.squeeze(axes: [0, 1])
 
     # Apply CA rules
     apply_rules(grid, neighbors, born, survive)
@@ -193,10 +196,10 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
   # Implements efficient rule checking using tensor operations.
   defnp apply_rules(grid, neighbors, born, survive) do
     # Birth mask: dead cells (0) with neighbor count in 'born' list
-    birth_mask = (grid == 0) and check_rule_match(neighbors, born)
+    birth_mask = grid == 0 and check_rule_match(neighbors, born)
 
     # Survival mask: alive cells (1) with neighbor count in 'survive' list
-    survival_mask = (grid == 1) and check_rule_match(neighbors, survive)
+    survival_mask = grid == 1 and check_rule_match(neighbors, survive)
 
     # Apply rules: cell is alive (1) if birth or survival condition met
     Nx.select(birth_mask or survival_mask, 1, 0)
@@ -245,26 +248,31 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
 
     # Create random initial grid (Nx 0.10.0 uses Nx.Random API)
     key = Nx.Random.key(System.system_time())
-    {grid, _new_key} = case dimensions do
-      {w, h} -> Nx.Random.randint(key, 0, 2, shape: {w, h}, type: :u8)
-      {x, y, z} -> Nx.Random.randint(key, 0, 2, shape: {x, y, z}, type: :u8)
-    end
+
+    {grid, _new_key} =
+      case dimensions do
+        {w, h} -> Nx.Random.randint(key, 0, 2, shape: {w, h}, type: :u8)
+        {x, y, z} -> Nx.Random.randint(key, 0, 2, shape: {x, y, z}, type: :u8)
+      end
 
     grid_size = Nx.size(grid)
 
     # Warmup: JIT compile kernels
     Logger.info("[TAK.GPUStepper] Warming up (#{warmup_gens} generations)...")
-    warmup_grid = Enum.reduce(1..warmup_gens, grid, fn _i, g ->
-      evolve(g, born, survive)
-    end)
+
+    warmup_grid =
+      Enum.reduce(1..warmup_gens, grid, fn _i, g ->
+        evolve(g, born, survive)
+      end)
 
     # Benchmark: measure actual performance
     Logger.info("[TAK.GPUStepper] Benchmarking (#{generations} generations)...")
     start_time = System.monotonic_time(:millisecond)
 
-    _final_grid = Enum.reduce(1..generations, warmup_grid, fn _i, g ->
-      evolve(g, born, survive)
-    end)
+    _final_grid =
+      Enum.reduce(1..generations, warmup_grid, fn _i, g ->
+        evolve(g, born, survive)
+      end)
 
     end_time = System.monotonic_time(:millisecond)
     total_time_ms = end_time - start_time
@@ -282,7 +290,9 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
       target_met?: gen_per_sec >= 1000
     }
 
-    Logger.info("[TAK.GPUStepper] Benchmark complete: #{stats.gen_per_sec} gen/sec (target: >1000)")
+    Logger.info(
+      "[TAK.GPUStepper] Benchmark complete: #{stats.gen_per_sec} gen/sec (target: >1000)"
+    )
 
     stats
   end

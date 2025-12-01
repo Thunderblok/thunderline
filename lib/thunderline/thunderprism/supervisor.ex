@@ -42,7 +42,9 @@ defmodule Thunderline.Thunderprism.Supervisor do
 
   @impl Thunderline.Thunderblock.DomainActivation
   def on_activated(tick_count) do
-    Logger.info("[Thunderprism] 🔮 PRISM AWAKENED - Visual intelligence & ML decision trails ONLINE at tick #{tick_count}")
+    Logger.info(
+      "[Thunderprism] 🔮 PRISM AWAKENED - Visual intelligence & ML decision trails ONLINE at tick #{tick_count}"
+    )
 
     state = %{
       activated_at: tick_count,
@@ -58,7 +60,10 @@ defmodule Thunderline.Thunderprism.Supervisor do
     :telemetry.execute(
       [:thunderline, :thunderprism, :activated],
       %{tick: tick_count},
-      %{domain: "thunderprism", services: ["decision_graph", "ml_visualization", "context_trails"]}
+      %{
+        domain: "thunderprism",
+        services: ["decision_graph", "ml_visualization", "context_trails"]
+      }
     )
 
     {:ok, state}
@@ -68,7 +73,9 @@ defmodule Thunderline.Thunderprism.Supervisor do
   def on_tick(tick_count, state) do
     # Health check every 45 ticks (45 seconds) - monitor ML decision graph health
     if rem(tick_count, 45) == 0 do
-      Logger.debug("[Thunderprism] 🔮 Visual pulse at tick #{tick_count} - Decision trails illuminated")
+      Logger.debug(
+        "[Thunderprism] 🔮 Visual pulse at tick #{tick_count} - Decision trails illuminated"
+      )
     end
 
     {:noreply, %{state | tick_count: tick_count}}
@@ -77,6 +84,7 @@ defmodule Thunderline.Thunderprism.Supervisor do
   @impl Thunderline.Thunderblock.DomainActivation
   def on_deactivated(reason, state) do
     uptime_ticks = state.tick_count - state.activated_at
+
     Logger.info(
       "[Thunderprism] 🔮 Prism dimming after #{uptime_ticks} ticks, reason: #{inspect(reason)}"
     )

@@ -87,7 +87,8 @@ defmodule Thunderline.Thunderwall.Sink do
   @gc_batch_size 100
 
   # Score factors (tune these!)
-  @age_factor 0.001  # Per hour
+  # Per hour
+  @age_factor 0.001
   @chaos_factor 2.0
   @fitness_factor 1.5
   @lineage_factor 0.5
@@ -146,7 +147,8 @@ defmodule Thunderline.Thunderwall.Sink do
   - `reason` - Why the run failed
   - `metadata` - Additional context (metrics, config, etc.)
   """
-  @spec quarantine_ca_run(String.t(), quarantine_reason(), map()) :: {:ok, sink_entry()} | {:error, term()}
+  @spec quarantine_ca_run(String.t(), quarantine_reason(), map()) ::
+          {:ok, sink_entry()} | {:error, term()}
   def quarantine_ca_run(run_id, reason, metadata \\ %{}) do
     GenServer.call(__MODULE__, {:quarantine, :ca_run, run_id, reason, metadata})
   end
@@ -170,7 +172,8 @@ defmodule Thunderline.Thunderwall.Sink do
   @doc """
   Quarantine a failed TPE trial.
   """
-  @spec quarantine_trial(String.t(), quarantine_reason(), map()) :: {:ok, sink_entry()} | {:error, term()}
+  @spec quarantine_trial(String.t(), quarantine_reason(), map()) ::
+          {:ok, sink_entry()} | {:error, term()}
   def quarantine_trial(trial_id, reason, metadata \\ %{}) do
     GenServer.call(__MODULE__, {:quarantine, :trial, trial_id, reason, metadata})
   end
@@ -234,9 +237,12 @@ defmodule Thunderline.Thunderwall.Sink do
     Process.send_after(self(), :gc_tick, gc_interval)
 
     state = %{
-      quarantine: %{},  # id => sink_entry
-      archive: %{},      # id => sink_entry
-      patterns: %{},     # pattern_key => pattern
+      # id => sink_entry
+      quarantine: %{},
+      # id => sink_entry
+      archive: %{},
+      # pattern_key => pattern
+      patterns: %{},
       gc_interval: gc_interval,
       stats: %{
         quarantined_total: 0,
@@ -267,7 +273,9 @@ defmodule Thunderline.Thunderwall.Sink do
       %{entity_type: entity_type, reason: reason}
     )
 
-    Logger.info("[Sink] Quarantined #{entity_type}:#{entity_id} reason=#{reason} score=#{Float.round(entry.entropy_score, 3)}")
+    Logger.info(
+      "[Sink] Quarantined #{entity_type}:#{entity_id} reason=#{reason} score=#{Float.round(entry.entropy_score, 3)}"
+    )
 
     {:reply, {:ok, entry}, %{state | quarantine: new_quarantine, stats: new_stats}}
   end
@@ -278,12 +286,13 @@ defmodule Thunderline.Thunderwall.Sink do
     fitness_history = Enum.map(lineage, & &1.fitness)
     avg_fitness = if lineage_depth > 0, do: Enum.sum(fitness_history) / lineage_depth, else: 0
 
-    enriched_metadata = Map.merge(metadata, %{
-      lineage_depth: lineage_depth,
-      fitness_history: fitness_history,
-      avg_fitness: avg_fitness,
-      lineage: lineage
-    })
+    enriched_metadata =
+      Map.merge(metadata, %{
+        lineage_depth: lineage_depth,
+        fitness_history: fitness_history,
+        avg_fitness: avg_fitness,
+        lineage: lineage
+      })
 
     entry = create_sink_entry(:lineage, pac_id, :lineage_death, enriched_metadata)
 
@@ -306,9 +315,12 @@ defmodule Thunderline.Thunderwall.Sink do
     emit_event(:pattern_extracted, pattern)
     EntropyMetrics.record_decay()
 
-    Logger.info("[Sink] Archived lineage #{pac_id} depth=#{lineage_depth} avg_fitness=#{Float.round(avg_fitness, 3)}")
+    Logger.info(
+      "[Sink] Archived lineage #{pac_id} depth=#{lineage_depth} avg_fitness=#{Float.round(avg_fitness, 3)}"
+    )
 
-    {:reply, {:ok, archived_entry}, %{state | archive: new_archive, patterns: new_patterns, stats: new_stats}}
+    {:reply, {:ok, archived_entry},
+     %{state | archive: new_archive, patterns: new_patterns, stats: new_stats}}
   end
 
   @impl true
@@ -331,11 +343,13 @@ defmodule Thunderline.Thunderwall.Sink do
 
   @impl true
   def handle_call(:stats, _from, state) do
-    stats = Map.merge(state.stats, %{
-      quarantine_count: map_size(state.quarantine),
-      archive_count: map_size(state.archive),
-      pattern_count: map_size(state.patterns)
-    })
+    stats =
+      Map.merge(state.stats, %{
+        quarantine_count: map_size(state.quarantine),
+        archive_count: map_size(state.archive),
+        pattern_count: map_size(state.patterns)
+      })
+
     {:reply, stats, state}
   end
 
@@ -443,7 +457,8 @@ defmodule Thunderline.Thunderwall.Sink do
 
     # 2. Archive promoted entries
     {new_archive, patterns_extracted} =
-      Enum.reduce(quarantine_to_archive, {state.archive, []}, fn {id, entry}, {archive, patterns} ->
+      Enum.reduce(quarantine_to_archive, {state.archive, []}, fn {id, entry},
+                                                                 {archive, patterns} ->
         pattern = extract_failure_pattern(entry)
         archived_entry = %{entry | archived_at: now, pattern: pattern}
 
@@ -505,7 +520,9 @@ defmodule Thunderline.Thunderwall.Sink do
 
   defp archive_expired?(entry, now) do
     case entry.archived_at do
-      nil -> false
+      nil ->
+        false
+
       archived_at ->
         days_archived = DateTime.diff(now, archived_at, :day)
         days_archived >= @archive_ttl_days
@@ -568,7 +585,11 @@ defmodule Thunderline.Thunderwall.Sink do
       |> detect_trend()
 
     lambda_values = Enum.map(lineage, &Map.get(&1, :lambda_hat, 0.273))
-    avg_lambda = if length(lambda_values) > 0, do: Enum.sum(lambda_values) / length(lambda_values), else: 0.273
+
+    avg_lambda =
+      if length(lambda_values) > 0,
+        do: Enum.sum(lambda_values) / length(lambda_values),
+        else: 0.273
 
     %{
       type: :lineage,

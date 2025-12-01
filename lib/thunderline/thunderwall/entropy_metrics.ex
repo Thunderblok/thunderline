@@ -32,8 +32,10 @@ defmodule Thunderline.Thunderwall.EntropyMetrics do
   use GenServer
   require Logger
 
-  @collect_interval_ms 10_000  # Collect every 10 seconds
-  @window_size 60  # Keep 60 samples (10 minutes of data)
+  # Collect every 10 seconds
+  @collect_interval_ms 10_000
+  # Keep 60 samples (10 minutes of data)
+  @window_size 60
 
   @telemetry_prefix [:thunderline, :wall, :entropy]
 
@@ -181,7 +183,8 @@ defmodule Thunderline.Thunderwall.EntropyMetrics do
   defp calculate_metrics(samples) do
     # Calculate rates per minute
     window_minutes = length(samples) * (@collect_interval_ms / 60_000)
-    window_minutes = max(window_minutes, 0.1)  # Avoid division by zero
+    # Avoid division by zero
+    window_minutes = max(window_minutes, 0.1)
 
     total_decays = Enum.sum(Enum.map(samples, & &1.decays))
     total_overflows = Enum.sum(Enum.map(samples, & &1.overflows))

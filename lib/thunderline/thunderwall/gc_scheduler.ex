@@ -34,13 +34,14 @@ defmodule Thunderline.Thunderwall.GCScheduler do
   alias Thunderline.Thunderwall.{DecayProcessor, EntropyMetrics}
   alias Thunderline.Thundercore.Resources.TickState
 
-  @default_gc_interval_ms 60_000  # 1 minute
+  # 1 minute
+  @default_gc_interval_ms 60_000
   @telemetry_prefix [:thunderline, :wall, :gc]
 
   # GC policies: {module, action, retention_value}
   @gc_policies [
     # Prune tick states older than 72000 ticks (~1 hour at 20Hz)
-    {:tick_state, TickState, :prune_before_tick, 72_000},
+    {:tick_state, TickState, :prune_before_tick, 72_000}
     # Add more policies as domains are implemented
   ]
 

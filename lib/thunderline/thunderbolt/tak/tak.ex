@@ -118,9 +118,7 @@ defmodule Thunderline.Thunderbolt.TAK do
   def start_runner(run_id, opts) do
     # Phase 1: Delegate to existing Bolt.CA.Runner (backward compatible)
     # Phase 2: Will use TAK.Runner with GPU integration
-    Thunderline.Thunderbolt.CA.Runner.start_link(
-      Map.merge(opts, %{run_id: run_id})
-    )
+    Thunderline.Thunderbolt.CA.Runner.start_link(Map.merge(opts, %{run_id: run_id}))
   end
 
   @doc """

@@ -47,47 +47,10 @@ defmodule Thunderline.Thundercore.Resources.IdentityKernel do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :kernel_id, :uuid do
-      allow_nil? false
-      public? true
-      description "Unique kernel identifier"
-    end
-
-    attribute :seed, :binary do
-      allow_nil? false
-      public? true
-      description "32-byte random seed for identity derivation"
-    end
-
-    attribute :created_at_tick, :integer do
-      allow_nil? true
-      public? true
-      description "System tick when kernel was created"
-    end
-
-    attribute :metadata, :map do
-      default %{}
-      public? true
-      description "Optional metadata for the kernel"
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  relationships do
-    belongs_to :lineage, IdentityKernel do
-      allow_nil? true
-      public? true
-      description "Parent kernel for inheritance"
-    end
-  end
-
-  identities do
-    identity :unique_kernel_id, [:kernel_id]
+  code_interface do
+    define :ignite
+    define :derive, args: [:parent_kernel_id]
+    define :by_kernel_id, args: [:kernel_id], action: :by_kernel_id
   end
 
   actions do
@@ -129,10 +92,47 @@ defmodule Thunderline.Thundercore.Resources.IdentityKernel do
     end
   end
 
-  code_interface do
-    define :ignite
-    define :derive, args: [:parent_kernel_id]
-    define :by_kernel_id, args: [:kernel_id], action: :by_kernel_id
+  attributes do
+    uuid_primary_key :id
+
+    attribute :kernel_id, :uuid do
+      allow_nil? false
+      public? true
+      description "Unique kernel identifier"
+    end
+
+    attribute :seed, :binary do
+      allow_nil? false
+      public? true
+      description "32-byte random seed for identity derivation"
+    end
+
+    attribute :created_at_tick, :integer do
+      allow_nil? true
+      public? true
+      description "System tick when kernel was created"
+    end
+
+    attribute :metadata, :map do
+      default %{}
+      public? true
+      description "Optional metadata for the kernel"
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  relationships do
+    belongs_to :lineage, IdentityKernel do
+      allow_nil? true
+      public? true
+      description "Parent kernel for inheritance"
+    end
+  end
+
+  identities do
+    identity :unique_kernel_id, [:kernel_id]
   end
 
   # ═══════════════════════════════════════════════════════════════

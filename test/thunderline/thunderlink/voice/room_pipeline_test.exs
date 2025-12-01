@@ -166,7 +166,10 @@ defmodule Thunderline.Thunderlink.Voice.RoomPipelineTest do
   end
 
   describe "speaking state" do
-    test "update_speaking/3 broadcasts speaking state changes", %{room_id: room_id, infra_ready: infra_ready} do
+    test "update_speaking/3 broadcasts speaking state changes", %{
+      room_id: room_id,
+      infra_ready: infra_ready
+    } do
       if infra_ready do
         case ensure_room(room_id) do
           {:ok, _pid} ->
@@ -212,7 +215,10 @@ defmodule Thunderline.Thunderlink.Voice.RoomPipelineTest do
   end
 
   describe "intent detection" do
-    test "submit_transcript/4 processes text for intents", %{room_id: room_id, infra_ready: infra_ready} do
+    test "submit_transcript/4 processes text for intents", %{
+      room_id: room_id,
+      infra_ready: infra_ready
+    } do
       if infra_ready do
         case ensure_room(room_id) do
           {:ok, _pid} ->

@@ -280,7 +280,9 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
 
       Logger.debug("[UPM.TrainerWorker] Received feature window event: #{window_id}")
     else
-      Logger.warning("[UPM.TrainerWorker] Received feature window event without window_id: #{inspect(event)}")
+      Logger.warning(
+        "[UPM.TrainerWorker] Received feature window event without window_id: #{inspect(event)}"
+      )
     end
 
     {:noreply, state}
@@ -379,7 +381,10 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
           {:ok, new_state}
         else
           # Skip unfilled windows
-          Logger.debug("[UPM.TrainerWorker] Skipping unfilled window: #{window_id} (status: #{window.status})")
+          Logger.debug(
+            "[UPM.TrainerWorker] Skipping unfilled window: #{window_id} (status: #{window.status})"
+          )
+
           {:ok, state}
         end
 

@@ -40,43 +40,6 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
 
   require Logger
 
-  # No persistence - pure compute resource for inference
-  attributes do
-    # Input
-    attribute :model_path, :string do
-      allow_nil? false
-      description "Path to ONNX model file (absolute or relative to priv/models)"
-    end
-
-    attribute :input, :map do
-      allow_nil? false
-      description "Input tensor data as map with 'data' key containing nested lists"
-    end
-
-    attribute :metadata, :map do
-      default %{}
-      description "Optional metadata (correlation_id, tenant_id, etc.)"
-    end
-
-    # Output
-    attribute :predictions, :map do
-      description "Model predictions as map"
-    end
-
-    attribute :duration_ms, :integer do
-      description "Inference duration in milliseconds"
-    end
-
-    attribute :status, :atom do
-      constraints one_of: [:success, :error]
-      description "Inference status"
-    end
-
-    attribute :error, :string do
-      description "Error message if status=:error"
-    end
-  end
-
   code_interface do
     define :infer, action: :infer, args: [:model_path, :input, :metadata]
   end
@@ -118,9 +81,7 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
               %{model_path: model_path, correlation_id: metadata[:correlation_id]}
             )
 
-            Logger.info(
-              "[OnnxInference] Success: model=#{model_path}, duration=#{duration_ms}ms"
-            )
+            Logger.info("[OnnxInference] Success: model=#{model_path}, duration=#{duration_ms}ms")
 
             # NOTE: Session stays in ModelServer cache - no close needed
             {:ok, ml_output}
@@ -170,6 +131,43 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
     # Read action (required by Ash)
     read :read do
       description "No-op read (inference is stateless)"
+    end
+  end
+
+  # No persistence - pure compute resource for inference
+  attributes do
+    # Input
+    attribute :model_path, :string do
+      allow_nil? false
+      description "Path to ONNX model file (absolute or relative to priv/models)"
+    end
+
+    attribute :input, :map do
+      allow_nil? false
+      description "Input tensor data as map with 'data' key containing nested lists"
+    end
+
+    attribute :metadata, :map do
+      default %{}
+      description "Optional metadata (correlation_id, tenant_id, etc.)"
+    end
+
+    # Output
+    attribute :predictions, :map do
+      description "Model predictions as map"
+    end
+
+    attribute :duration_ms, :integer do
+      description "Inference duration in milliseconds"
+    end
+
+    attribute :status, :atom do
+      constraints one_of: [:success, :error]
+      description "Inference status"
+    end
+
+    attribute :error, :string do
+      description "Error message if status=:error"
     end
   end
 

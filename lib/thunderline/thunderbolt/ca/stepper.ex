@@ -88,7 +88,8 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   - `:neighborhood_type` - Type of neighborhood (default: `:von_neumann`)
   - `:boundary_condition` - How to handle edges (default: `:clip`)
   """
-  @spec step_thunderbit_grid(thunderbit_grid(), ruleset()) :: {:ok, [thunderbit_delta()], thunderbit_grid()}
+  @spec step_thunderbit_grid(thunderbit_grid(), ruleset()) ::
+          {:ok, [thunderbit_delta()], thunderbit_grid()}
   def step_thunderbit_grid(%{bounds: bounds, bits: bits, tick: tick} = grid, ruleset) do
     rule_id = get_rule(ruleset)
     neighborhood_type = Map.get(ruleset, :neighborhood_type, :von_neumann)
@@ -100,7 +101,9 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
       bits
       |> Task.async_stream(
         fn {coord, bit} ->
-          neighbors = get_neighbor_states(coord, bits, bounds, neighborhood_type, boundary_condition)
+          neighbors =
+            get_neighbor_states(coord, bits, bounds, neighborhood_type, boundary_condition)
+
           new_bit = apply_rule(bit, neighbors, rule_id, new_tick)
           {coord, new_bit}
         end,
@@ -126,7 +129,8 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   - `:sparse` - If true, only create bits at specified coords (default: false)
   - `:coords` - List of coords to populate when sparse (default: [])
   """
-  @spec create_thunderbit_grid(pos_integer(), pos_integer(), pos_integer(), keyword()) :: thunderbit_grid()
+  @spec create_thunderbit_grid(pos_integer(), pos_integer(), pos_integer(), keyword()) ::
+          thunderbit_grid()
   def create_thunderbit_grid(x, y, z, opts \\ []) do
     bounds = {x, y, z}
     rule_id = Keyword.get(opts, :rule_id, :demo)
@@ -274,7 +278,7 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
       end
 
     new_phase = Float.mod(bit.phi_phase + 0.1, 2 * :math.pi())
-    new_lambda = if currently_alive != (new_flow > 0.5), do: 0.5, else: bit.lambda_sensitivity * 0.9
+    new_lambda = if currently_alive != new_flow > 0.5, do: 0.5, else: bit.lambda_sensitivity * 0.9
     new_state = derive_state(new_flow, new_lambda)
 
     {new_state, new_flow, new_phase, new_lambda}

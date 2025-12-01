@@ -78,8 +78,7 @@ if System.get_env("LOG_STDERR") == "1" do
 end
 
 # Use new handler-based logger config (replaces deprecated :backends)
-config :logger, :default_handler,
-  level: :debug
+config :logger, :default_handler, level: :debug
 
 # ------------------------------------------------------------
 # Magika Configuration

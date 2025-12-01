@@ -377,7 +377,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             </div>
           </section>
         </div>
-
+        
     <!-- Column 2: KPIs + Event Flow + Controls -->
         <div class="space-y-6">
           <!-- 3. KPIs -->
@@ -583,7 +583,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
             </div>
           </section>
         </div>
-
+        
     <!-- Column 3: Peers + Trends (+ AI assistant) -->
         <div class="space-y-6">
           <!-- 4. Peers -->

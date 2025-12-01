@@ -191,12 +191,13 @@ defmodule Thunderline.Telemetry.TickObserver do
       Logger.debug("[TickObserver] Auto-registered iRoPE callback for #{domain}")
     end
 
-    new_domains = Map.put(state.domains, domain, %{
-      collector: collector,
-      registered_at: DateTime.utc_now(),
-      observations: 0,
-      last_result: nil
-    })
+    new_domains =
+      Map.put(state.domains, domain, %{
+        collector: collector,
+        registered_at: DateTime.utc_now(),
+        observations: 0,
+        last_result: nil
+      })
 
     {:noreply, %{state | domains: new_domains}}
   end
@@ -227,9 +228,11 @@ defmodule Thunderline.Telemetry.TickObserver do
       ticks_received: state.ticks_received,
       observations_made: state.observations_made,
       domains_count: map_size(state.domains),
-      domains: Enum.map(state.domains, fn {name, info} ->
-        {name, %{observations: info.observations, registered_at: info.registered_at}}
-      end) |> Map.new(),
+      domains:
+        Enum.map(state.domains, fn {name, info} ->
+          {name, %{observations: info.observations, registered_at: info.registered_at}}
+        end)
+        |> Map.new(),
       uptime_seconds: uptime,
       observe_interval: state.observe_interval,
       last_observation_tick: state.last_observation_tick,
@@ -281,11 +284,12 @@ defmodule Thunderline.Telemetry.TickObserver do
         end
       end)
 
-    %{state |
-      domains: new_domains,
-      observations_made: state.observations_made + observations_made,
-      last_observation_tick: tick_count,
-      errors: Enum.take(errors ++ state.errors, 100)
+    %{
+      state
+      | domains: new_domains,
+        observations_made: state.observations_made + observations_made,
+        last_observation_tick: tick_count,
+        errors: Enum.take(errors ++ state.errors, 100)
     }
   end
 

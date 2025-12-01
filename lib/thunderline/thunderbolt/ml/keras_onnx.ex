@@ -581,7 +581,8 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
       activations: tensor,
       entropy_prev: prev_entropy || current_entropy,
       entropy_next: current_entropy,
-      jvp_matrix: Nx.tensor([[1.0]])  # Simplified - would need Jacobian for real λ̂
+      # Simplified - would need Jacobian for real λ̂
+      jvp_matrix: Nx.tensor([[1.0]])
     }
 
     # Try to observe via LoopMonitor if it's running

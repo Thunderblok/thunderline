@@ -61,7 +61,10 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaWorkerTest do
 
       assert job.worker == "Thunderline.Thunderbolt.Sagas.SagaWorker"
       assert job.queue == "sagas"
-      assert job.args["saga_module"] == "Elixir.Thunderline.Thunderbolt.Sagas.SagaWorkerTest.TestSaga"
+
+      assert job.args["saga_module"] ==
+               "Elixir.Thunderline.Thunderbolt.Sagas.SagaWorkerTest.TestSaga"
+
       assert job.args["correlation_id"] == correlation_id
       assert job.args["timeout_ms"] == 5000
     end

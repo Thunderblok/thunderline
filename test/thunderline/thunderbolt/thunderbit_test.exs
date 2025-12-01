@@ -18,12 +18,13 @@ defmodule Thunderline.Thunderbolt.ThunderbitTest do
     end
 
     test "allows customizing initial values" do
-      bit = Thunderbit.new({1, 2, 3},
-        state: 42,
-        rule_id: :diffusion,
-        trust_score: 0.9,
-        sigma_flow: 0.7
-      )
+      bit =
+        Thunderbit.new({1, 2, 3},
+          state: 42,
+          rule_id: :diffusion,
+          trust_score: 0.9,
+          sigma_flow: 0.7
+        )
 
       assert bit.coord == {1, 2, 3}
       assert bit.state == 42
@@ -95,13 +96,14 @@ defmodule Thunderline.Thunderbolt.ThunderbitTest do
     test "update_state/2 updates dynamics metrics" do
       bit = Thunderbit.new({0, 0, 0})
 
-      updated = Thunderbit.update_state(bit,
-        state: 1,
-        phi_phase: 1.5,
-        sigma_flow: 0.8,
-        lambda_sensitivity: 0.2,
-        tick: 100
-      )
+      updated =
+        Thunderbit.update_state(bit,
+          state: 1,
+          phi_phase: 1.5,
+          sigma_flow: 0.8,
+          lambda_sensitivity: 0.2,
+          tick: 100
+        )
 
       assert updated.state == 1
       assert updated.phi_phase == 1.5
@@ -201,14 +203,15 @@ defmodule Thunderline.Thunderbolt.ThunderbitTest do
 
   describe "to_delta/1" do
     test "converts Thunderbit to delta map for PubSub" do
-      bit = Thunderbit.new({1, 2, 3},
-        state: 42,
-        sigma_flow: 0.8,
-        trust_score: 0.7,
-        phi_phase: 1.5,
-        lambda_sensitivity: 0.2,
-        channel_id: "chan-123"
-      )
+      bit =
+        Thunderbit.new({1, 2, 3},
+          state: 42,
+          sigma_flow: 0.8,
+          trust_score: 0.7,
+          phi_phase: 1.5,
+          lambda_sensitivity: 0.2,
+          channel_id: "chan-123"
+        )
 
       delta = Thunderbit.to_delta(bit)
 

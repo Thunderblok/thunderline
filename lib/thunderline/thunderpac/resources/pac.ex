@@ -56,6 +56,23 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
     end
   end
 
+  # ═══════════════════════════════════════════════════════════════
+  # STATE MACHINE - PAC LIFECYCLE
+  # ═══════════════════════════════════════════════════════════════
+
+  state_machine do
+    initial_states([:seed])
+    default_initial_state(:seed)
+
+    transitions do
+      transition(:ignite, from: [:seed], to: :dormant)
+      transition(:activate, from: [:dormant, :suspended], to: :active)
+      transition(:suspend, from: [:active], to: :suspended)
+      transition(:archive, from: [:dormant, :active, :suspended], to: :archived)
+      transition(:reactivate, from: [:archived], to: :dormant)
+    end
+  end
+
   admin do
     form do
       field :name
@@ -65,19 +82,216 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # STATE MACHINE - PAC LIFECYCLE
+  # CODE INTERFACE
   # ═══════════════════════════════════════════════════════════════
 
-  state_machine do
-    initial_states [:seed]
-    default_initial_state :seed
+  code_interface do
+    define :spawn, args: [:name, {:optional, :persona}, {:optional, :kernel_id}]
+    define :ignite
+    define :activate
+    define :suspend, args: [{:optional, :reason}]
+    define :archive
+    define :reactivate
+    define :update_memory, args: [:memory_state]
+    define :push_intent, args: [:intent]
+    define :pop_intent
+    define :set_role, args: [:role_id]
+    define :tick
+    define :active_pacs, action: :active_pacs
+    define :by_status, args: [:status]
+    define :by_kernel, args: [:kernel_id]
+  end
 
-    transitions do
-      transition :ignite, from: [:seed], to: :dormant
-      transition :activate, from: [:dormant, :suspended], to: :active
-      transition :suspend, from: [:active], to: :suspended
-      transition :archive, from: [:dormant, :active, :suspended], to: :archived
-      transition :reactivate, from: [:archived], to: :dormant
+  # ═══════════════════════════════════════════════════════════════
+  # ACTIONS
+  # ═══════════════════════════════════════════════════════════════
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :spawn do
+      description "Spawn a new PAC from an identity kernel"
+      accept [:name, :persona, :capabilities, :metadata]
+      argument :kernel_id, :uuid, allow_nil?: true
+
+      change fn changeset, _context ->
+        changeset
+        |> Ash.Changeset.change_attribute(:status, :seed)
+        |> maybe_set_kernel()
+      end
+    end
+
+    update :ignite do
+      description "Ignite PAC - transition from seed to dormant"
+      accept []
+      require_atomic? false
+
+      change transition_state(:dormant)
+
+      change after_action(fn _changeset, pac, _context ->
+               emit_lifecycle_event(pac, :ignited)
+               {:ok, pac}
+             end)
+    end
+
+    update :activate do
+      description "Activate PAC - transition to active state"
+      accept []
+      require_atomic? false
+
+      change transition_state(:active)
+
+      change fn changeset, _context ->
+        changeset
+        |> Ash.Changeset.change_attribute(:last_active_at, DateTime.utc_now())
+        |> Ash.Changeset.change_attribute(
+          :session_count,
+          (Ash.Changeset.get_attribute(changeset, :session_count) || 0) + 1
+        )
+      end
+
+      change after_action(fn _changeset, pac, _context ->
+               emit_lifecycle_event(pac, :activated)
+               {:ok, pac}
+             end)
+    end
+
+    update :suspend do
+      description "Suspend PAC - preserve state but stop processing"
+      accept []
+      require_atomic? false
+      argument :reason, :string, allow_nil?: true
+
+      change transition_state(:suspended)
+
+      change after_action(fn _changeset, pac, context ->
+               reason = Map.get(context.arguments, :reason, "manual suspension")
+               emit_lifecycle_event(pac, :suspended, %{reason: reason})
+               {:ok, pac}
+             end)
+    end
+
+    update :archive do
+      description "Archive PAC - soft delete with state preservation"
+      accept []
+      require_atomic? false
+
+      change transition_state(:archived)
+
+      change after_action(fn _changeset, pac, _context ->
+               emit_lifecycle_event(pac, :archived)
+               {:ok, pac}
+             end)
+    end
+
+    update :reactivate do
+      description "Reactivate an archived PAC"
+      accept []
+      require_atomic? false
+
+      change transition_state(:dormant)
+
+      change after_action(fn _changeset, pac, _context ->
+               emit_lifecycle_event(pac, :reactivated)
+               {:ok, pac}
+             end)
+    end
+
+    update :update_memory do
+      description "Update PAC memory state"
+      accept [:memory_state]
+      require_atomic? false
+
+      change after_action(fn _changeset, pac, _context ->
+               emit_state_event(pac, :memory_updated)
+               {:ok, pac}
+             end)
+    end
+
+    update :push_intent do
+      description "Add intent to PAC queue"
+      argument :intent, :map, allow_nil?: false
+      require_atomic? false
+
+      change fn changeset, context ->
+        intent = context.arguments.intent
+        current_queue = Ash.Changeset.get_attribute(changeset, :intent_queue) || []
+
+        intent_with_id =
+          Map.put_new(intent, "id", Ash.UUID.generate())
+          |> Map.put_new("queued_at", DateTime.utc_now() |> DateTime.to_iso8601())
+
+        Ash.Changeset.change_attribute(
+          changeset,
+          :intent_queue,
+          current_queue ++ [intent_with_id]
+        )
+      end
+    end
+
+    update :pop_intent do
+      description "Remove and return first intent from queue"
+      accept []
+      require_atomic? false
+
+      change fn changeset, _context ->
+        current_queue = Ash.Changeset.get_attribute(changeset, :intent_queue) || []
+
+        case current_queue do
+          [_head | tail] ->
+            Ash.Changeset.change_attribute(changeset, :intent_queue, tail)
+
+          [] ->
+            changeset
+        end
+      end
+    end
+
+    update :set_role do
+      description "Set the active role for this PAC"
+      argument :role_id, :uuid, allow_nil?: true
+      require_atomic? false
+
+      change fn changeset, context ->
+        Ash.Changeset.change_attribute(changeset, :active_role_id, context.arguments.role_id)
+      end
+    end
+
+    update :tick do
+      description "Process a system tick for active PAC"
+      accept []
+      require_atomic? false
+
+      change fn changeset, _context ->
+        current_ticks = Ash.Changeset.get_attribute(changeset, :total_active_ticks) || 0
+        status = Ash.Changeset.get_attribute(changeset, :status)
+
+        if status == :active do
+          changeset
+          |> Ash.Changeset.change_attribute(:total_active_ticks, current_ticks + 1)
+          |> Ash.Changeset.change_attribute(:last_active_at, DateTime.utc_now())
+        else
+          changeset
+        end
+      end
+    end
+
+    read :active_pacs do
+      description "List all active PACs"
+      filter expr(status == :active)
+      prepare build(sort: [last_active_at: :desc])
+    end
+
+    read :by_status do
+      description "Find PACs by status"
+      argument :status, :atom, allow_nil?: false
+      filter expr(status == ^arg(:status))
+    end
+
+    read :by_kernel do
+      description "Find PAC by identity kernel"
+      argument :kernel_id, :uuid, allow_nil?: false
+      filter expr(identity_kernel_id == ^arg(:kernel_id))
     end
   end
 
@@ -205,213 +419,6 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # ACTIONS
-  # ═══════════════════════════════════════════════════════════════
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :spawn do
-      description "Spawn a new PAC from an identity kernel"
-      accept [:name, :persona, :capabilities, :metadata]
-      argument :kernel_id, :uuid, allow_nil?: true
-
-      change fn changeset, _context ->
-        changeset
-        |> Ash.Changeset.change_attribute(:status, :seed)
-        |> maybe_set_kernel()
-      end
-    end
-
-    update :ignite do
-      description "Ignite PAC - transition from seed to dormant"
-      accept []
-      require_atomic? false
-
-      change transition_state(:dormant)
-
-      change after_action(fn _changeset, pac, _context ->
-        emit_lifecycle_event(pac, :ignited)
-        {:ok, pac}
-      end)
-    end
-
-    update :activate do
-      description "Activate PAC - transition to active state"
-      accept []
-      require_atomic? false
-
-      change transition_state(:active)
-
-      change fn changeset, _context ->
-        changeset
-        |> Ash.Changeset.change_attribute(:last_active_at, DateTime.utc_now())
-        |> Ash.Changeset.change_attribute(:session_count,
-             (Ash.Changeset.get_attribute(changeset, :session_count) || 0) + 1)
-      end
-
-      change after_action(fn _changeset, pac, _context ->
-        emit_lifecycle_event(pac, :activated)
-        {:ok, pac}
-      end)
-    end
-
-    update :suspend do
-      description "Suspend PAC - preserve state but stop processing"
-      accept []
-      require_atomic? false
-      argument :reason, :string, allow_nil?: true
-
-      change transition_state(:suspended)
-
-      change after_action(fn _changeset, pac, context ->
-        reason = Map.get(context.arguments, :reason, "manual suspension")
-        emit_lifecycle_event(pac, :suspended, %{reason: reason})
-        {:ok, pac}
-      end)
-    end
-
-    update :archive do
-      description "Archive PAC - soft delete with state preservation"
-      accept []
-      require_atomic? false
-
-      change transition_state(:archived)
-
-      change after_action(fn _changeset, pac, _context ->
-        emit_lifecycle_event(pac, :archived)
-        {:ok, pac}
-      end)
-    end
-
-    update :reactivate do
-      description "Reactivate an archived PAC"
-      accept []
-      require_atomic? false
-
-      change transition_state(:dormant)
-
-      change after_action(fn _changeset, pac, _context ->
-        emit_lifecycle_event(pac, :reactivated)
-        {:ok, pac}
-      end)
-    end
-
-    update :update_memory do
-      description "Update PAC memory state"
-      accept [:memory_state]
-      require_atomic? false
-
-      change after_action(fn _changeset, pac, _context ->
-        emit_state_event(pac, :memory_updated)
-        {:ok, pac}
-      end)
-    end
-
-    update :push_intent do
-      description "Add intent to PAC queue"
-      argument :intent, :map, allow_nil?: false
-      require_atomic? false
-
-      change fn changeset, context ->
-        intent = context.arguments.intent
-        current_queue = Ash.Changeset.get_attribute(changeset, :intent_queue) || []
-
-        intent_with_id = Map.put_new(intent, "id", Ash.UUID.generate())
-        |> Map.put_new("queued_at", DateTime.utc_now() |> DateTime.to_iso8601())
-
-        Ash.Changeset.change_attribute(changeset, :intent_queue, current_queue ++ [intent_with_id])
-      end
-    end
-
-    update :pop_intent do
-      description "Remove and return first intent from queue"
-      accept []
-      require_atomic? false
-
-      change fn changeset, _context ->
-        current_queue = Ash.Changeset.get_attribute(changeset, :intent_queue) || []
-
-        case current_queue do
-          [_head | tail] ->
-            Ash.Changeset.change_attribute(changeset, :intent_queue, tail)
-
-          [] ->
-            changeset
-        end
-      end
-    end
-
-    update :set_role do
-      description "Set the active role for this PAC"
-      argument :role_id, :uuid, allow_nil?: true
-      require_atomic? false
-
-      change fn changeset, context ->
-        Ash.Changeset.change_attribute(changeset, :active_role_id, context.arguments.role_id)
-      end
-    end
-
-    update :tick do
-      description "Process a system tick for active PAC"
-      accept []
-      require_atomic? false
-
-      change fn changeset, _context ->
-        current_ticks = Ash.Changeset.get_attribute(changeset, :total_active_ticks) || 0
-        status = Ash.Changeset.get_attribute(changeset, :status)
-
-        if status == :active do
-          changeset
-          |> Ash.Changeset.change_attribute(:total_active_ticks, current_ticks + 1)
-          |> Ash.Changeset.change_attribute(:last_active_at, DateTime.utc_now())
-        else
-          changeset
-        end
-      end
-    end
-
-    read :active_pacs do
-      description "List all active PACs"
-      filter expr(status == :active)
-      prepare build(sort: [last_active_at: :desc])
-    end
-
-    read :by_status do
-      description "Find PACs by status"
-      argument :status, :atom, allow_nil?: false
-      filter expr(status == ^arg(:status))
-    end
-
-    read :by_kernel do
-      description "Find PAC by identity kernel"
-      argument :kernel_id, :uuid, allow_nil?: false
-      filter expr(identity_kernel_id == ^arg(:kernel_id))
-    end
-  end
-
-  # ═══════════════════════════════════════════════════════════════
-  # CODE INTERFACE
-  # ═══════════════════════════════════════════════════════════════
-
-  code_interface do
-    define :spawn, args: [:name, {:optional, :persona}, {:optional, :kernel_id}]
-    define :ignite
-    define :activate
-    define :suspend, args: [{:optional, :reason}]
-    define :archive
-    define :reactivate
-    define :update_memory, args: [:memory_state]
-    define :push_intent, args: [:intent]
-    define :pop_intent
-    define :set_role, args: [:role_id]
-    define :tick
-    define :active_pacs, action: :active_pacs
-    define :by_status, args: [:status]
-    define :by_kernel, args: [:kernel_id]
-  end
-
-  # ═══════════════════════════════════════════════════════════════
   # PRIVATE HELPERS
   # ═══════════════════════════════════════════════════════════════
 
@@ -431,12 +438,16 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
       domain: :pac,
       source: "Thunderpac.PAC",
       correlation_id: Thunderline.UUID.v7(),
-      payload: Map.merge(%{
-        pac_id: pac.id,
-        pac_name: pac.name,
-        status: pac.status,
-        timestamp: DateTime.utc_now()
-      }, extra)
+      payload:
+        Map.merge(
+          %{
+            pac_id: pac.id,
+            pac_name: pac.name,
+            status: pac.status,
+            timestamp: DateTime.utc_now()
+          },
+          extra
+        )
     }
 
     # Broadcast to PAC-specific channel
@@ -450,7 +461,10 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
     Phoenix.PubSub.broadcast(
       Thunderline.PubSub,
       "pac.state.changed",
-      %{name: "pac.state.changed", payload: %{pac_id: pac.id, status: pac.status, event_type: event_type}}
+      %{
+        name: "pac.state.changed",
+        payload: %{pac_id: pac.id, status: pac.status, event_type: event_type}
+      }
     )
 
     :telemetry.execute(

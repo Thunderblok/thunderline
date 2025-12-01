@@ -22,7 +22,8 @@ defmodule Thunderline.Thunderbolt.ThunderCell.SpikingCellTest do
     end
 
     test "membrane_update decays to rest with no input" do
-      v = -60.0  # Above rest
+      # Above rest
+      v = -60.0
       v_rest = -70.0
       tau_m = 20.0
       resistance = 10.0
@@ -48,7 +49,8 @@ defmodule Thunderline.Thunderbolt.ThunderCell.SpikingCellTest do
       queue = [
         %{source: :a, time: 10, weight: 1.0},
         %{source: :b, time: 10, weight: 2.0},
-        %{source: :c, time: 11, weight: 3.0}  # Not at current time
+        # Not at current time
+        %{source: :c, time: 11, weight: 3.0}
       ]
 
       current = SpikingCell.compute_synaptic_current(queue, 10)
@@ -72,13 +74,15 @@ defmodule Thunderline.Thunderbolt.ThunderCell.SpikingCellTest do
 
   describe "GenServer operations" do
     setup do
-      {:ok, pid} = SpikingCell.start_link(
-        id: :test_cell,
-        v_threshold: -55.0,
-        v_rest: -70.0,
-        tau_membrane: 20.0,
-        perturbation_enabled: false
-      )
+      {:ok, pid} =
+        SpikingCell.start_link(
+          id: :test_cell,
+          v_threshold: -55.0,
+          v_rest: -70.0,
+          tau_membrane: 20.0,
+          perturbation_enabled: false
+        )
+
       {:ok, cell: pid}
     end
 
@@ -187,12 +191,14 @@ defmodule Thunderline.Thunderbolt.ThunderCell.SpikingCellTest do
 
   describe "telemetry" do
     setup do
-      {:ok, pid} = SpikingCell.start_link(
-        id: :telemetry_test,
-        v_threshold: -55.0,
-        v_rest: -70.0,
-        perturbation_enabled: false
-      )
+      {:ok, pid} =
+        SpikingCell.start_link(
+          id: :telemetry_test,
+          v_threshold: -55.0,
+          v_rest: -70.0,
+          perturbation_enabled: false
+        )
+
       {:ok, cell: pid}
     end
 

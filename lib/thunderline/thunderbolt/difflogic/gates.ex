@@ -77,22 +77,22 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
   end
 
   # Individual gate implementations
-  defnp gate_false(_a, _b), do: Nx.tensor(0.0)
-  defnp gate_and(a, b), do: Nx.multiply(a, b)
-  defnp gate_a_inhibit_b(a, b), do: Nx.multiply(a, Nx.subtract(1.0, b))
-  defnp gate_a(a, _b), do: a
-  defnp gate_b_inhibit_a(a, b), do: Nx.multiply(Nx.subtract(1.0, a), b)
-  defnp gate_b(_a, b), do: b
-  defnp gate_xor(a, b), do: Nx.subtract(Nx.add(a, b), Nx.multiply(2.0, Nx.multiply(a, b)))
-  defnp gate_or(a, b), do: Nx.subtract(Nx.add(a, b), Nx.multiply(a, b))
-  defnp gate_nor(a, b), do: Nx.subtract(1.0, gate_or(a, b))
-  defnp gate_xnor(a, b), do: Nx.subtract(1.0, gate_xor(a, b))
-  defnp gate_not_b(_a, b), do: Nx.subtract(1.0, b)
-  defnp gate_a_implies_b(a, b), do: gate_or(Nx.subtract(1.0, a), b)
-  defnp gate_not_a(a, _b), do: Nx.subtract(1.0, a)
-  defnp gate_b_implies_a(a, b), do: gate_or(a, Nx.subtract(1.0, b))
-  defnp gate_nand(a, b), do: Nx.subtract(1.0, gate_and(a, b))
-  defnp gate_true(_a, _b), do: Nx.tensor(1.0)
+  defnp(gate_false(_a, _b), do: Nx.tensor(0.0))
+  defnp(gate_and(a, b), do: Nx.multiply(a, b))
+  defnp(gate_a_inhibit_b(a, b), do: Nx.multiply(a, Nx.subtract(1.0, b)))
+  defnp(gate_a(a, _b), do: a)
+  defnp(gate_b_inhibit_a(a, b), do: Nx.multiply(Nx.subtract(1.0, a), b))
+  defnp(gate_b(_a, b), do: b)
+  defnp(gate_xor(a, b), do: Nx.subtract(Nx.add(a, b), Nx.multiply(2.0, Nx.multiply(a, b))))
+  defnp(gate_or(a, b), do: Nx.subtract(Nx.add(a, b), Nx.multiply(a, b)))
+  defnp(gate_nor(a, b), do: Nx.subtract(1.0, gate_or(a, b)))
+  defnp(gate_xnor(a, b), do: Nx.subtract(1.0, gate_xor(a, b)))
+  defnp(gate_not_b(_a, b), do: Nx.subtract(1.0, b))
+  defnp(gate_a_implies_b(a, b), do: gate_or(Nx.subtract(1.0, a), b))
+  defnp(gate_not_a(a, _b), do: Nx.subtract(1.0, a))
+  defnp(gate_b_implies_a(a, b), do: gate_or(a, Nx.subtract(1.0, b)))
+  defnp(gate_nand(a, b), do: Nx.subtract(1.0, gate_and(a, b)))
+  defnp(gate_true(_a, _b), do: Nx.tensor(1.0))
 
   # ═══════════════════════════════════════════════════════════════
   # SOFT GATE SELECTION (Differentiable)
@@ -112,24 +112,25 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
   """
   defn soft_gate(a, b, weights) do
     # Compute all 16 gate outputs
-    outputs = Nx.stack([
-      gate_false(a, b),
-      gate_and(a, b),
-      gate_a_inhibit_b(a, b),
-      gate_a(a, b),
-      gate_b_inhibit_a(a, b),
-      gate_b(a, b),
-      gate_xor(a, b),
-      gate_or(a, b),
-      gate_nor(a, b),
-      gate_xnor(a, b),
-      gate_not_b(a, b),
-      gate_a_implies_b(a, b),
-      gate_not_a(a, b),
-      gate_b_implies_a(a, b),
-      gate_nand(a, b),
-      gate_true(a, b)
-    ])
+    outputs =
+      Nx.stack([
+        gate_false(a, b),
+        gate_and(a, b),
+        gate_a_inhibit_b(a, b),
+        gate_a(a, b),
+        gate_b_inhibit_a(a, b),
+        gate_b(a, b),
+        gate_xor(a, b),
+        gate_or(a, b),
+        gate_nor(a, b),
+        gate_xnor(a, b),
+        gate_not_b(a, b),
+        gate_a_implies_b(a, b),
+        gate_not_a(a, b),
+        gate_b_implies_a(a, b),
+        gate_nand(a, b),
+        gate_true(a, b)
+      ])
 
     # Weighted sum of outputs
     Nx.dot(outputs, weights)
@@ -194,9 +195,9 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
     # a_inputs: {n} or {batch, n}
     # b_inputs: {n} or {batch, n}
     # gate_logits: {n, 16}
-    
+
     n = elem(Nx.shape(gate_logits), 0)
-    
+
     case Nx.rank(a_inputs) do
       1 ->
         # Single sample: iterate through gates
@@ -212,13 +213,13 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
       2 ->
         # Batched: process each gate for full batch
         {batch_size, _} = Nx.shape(a_inputs)
-        
+
         0..(n - 1)
         |> Enum.map(fn i ->
           a = Nx.slice(a_inputs, [0, i], [batch_size, 1]) |> Nx.squeeze(axes: [1])
           b = Nx.slice(b_inputs, [0, i], [batch_size, 1]) |> Nx.squeeze(axes: [1])
           logits = Nx.slice(gate_logits, [i, 0], [1, 16]) |> Nx.squeeze()
-          
+
           # Vectorized soft gate for batch
           vectorized_soft_gate_batch(a, b, logits)
         end)
@@ -236,10 +237,10 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
     # a, b: {batch_size}
     # logits: {16}
     probs = Nx.Defn.jit(&gate_softmax/1).(logits)
-    
+
     # Compute all 16 gate outputs for entire batch
     gate_outputs = compute_all_gates_batch(a, b)
-    
+
     # Weighted sum: {batch, 16} @ {16} -> {batch}
     Nx.dot(gate_outputs, probs)
   end
@@ -248,27 +249,42 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
   defp compute_all_gates_batch(a, b) do
     # a, b: {batch_size}
     # Returns: {batch_size, 16}
-    
-    g0 = Nx.broadcast(0.0, Nx.shape(a))           # FALSE
-    g1 = Nx.multiply(a, b)                         # AND
-    g2 = Nx.multiply(a, Nx.subtract(1, b))         # A > B
-    g3 = a                                         # A
-    g4 = Nx.multiply(Nx.subtract(1, a), b)         # B > A
-    g5 = b                                         # B
-    g6 = Nx.abs(Nx.subtract(a, b))                 # XOR
-    g7 = Nx.max(a, b)                              # OR
-    g8 = Nx.subtract(1, g7)                        # NOR
-    g9 = Nx.subtract(1, g6)                        # XNOR
-    g10 = Nx.subtract(1, b)                        # NOT B
-    g11 = Nx.max(a, Nx.subtract(1, b))             # A >= B
-    g12 = Nx.subtract(1, a)                        # NOT A
-    g13 = Nx.max(Nx.subtract(1, a), b)             # B >= A
-    g14 = Nx.subtract(1, g1)                       # NAND
-    g15 = Nx.broadcast(1.0, Nx.shape(a))           # TRUE
-    
+
+    # FALSE
+    g0 = Nx.broadcast(0.0, Nx.shape(a))
+    # AND
+    g1 = Nx.multiply(a, b)
+    # A > B
+    g2 = Nx.multiply(a, Nx.subtract(1, b))
+    # A
+    g3 = a
+    # B > A
+    g4 = Nx.multiply(Nx.subtract(1, a), b)
+    # B
+    g5 = b
+    # XOR
+    g6 = Nx.abs(Nx.subtract(a, b))
+    # OR
+    g7 = Nx.max(a, b)
+    # NOR
+    g8 = Nx.subtract(1, g7)
+    # XNOR
+    g9 = Nx.subtract(1, g6)
+    # NOT B
+    g10 = Nx.subtract(1, b)
+    # A >= B
+    g11 = Nx.max(a, Nx.subtract(1, b))
+    # NOT A
+    g12 = Nx.subtract(1, a)
+    # B >= A
+    g13 = Nx.max(Nx.subtract(1, a), b)
+    # NAND
+    g14 = Nx.subtract(1, g1)
+    # TRUE
+    g15 = Nx.broadcast(1.0, Nx.shape(a))
+
     Nx.stack([g0, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15], axis: 1)
   end
-
 
   # ═══════════════════════════════════════════════════════════════
   # INITIALIZATION
@@ -333,7 +349,7 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
   @doc """
   Get gate name from index.
   """
-  def gate_name(0), do: :false
+  def gate_name(0), do: false
   def gate_name(1), do: :and
   def gate_name(2), do: :a_inhibit_b
   def gate_name(3), do: :a
@@ -348,6 +364,6 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Gates do
   def gate_name(12), do: :not_a
   def gate_name(13), do: :b_implies_a
   def gate_name(14), do: :nand
-  def gate_name(15), do: :true
+  def gate_name(15), do: true
   def gate_name(_), do: :unknown
 end

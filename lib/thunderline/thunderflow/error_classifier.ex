@@ -317,6 +317,9 @@ defmodule Thunderline.Thunderflow.ErrorClassifier do
   """
   @spec should_dlq?(%ErrorClass{}) :: boolean()
   def should_dlq?(%ErrorClass{class: :security}), do: false
-  def should_dlq?(%ErrorClass{class: class}) when class in [:transient, :timeout, :dependency], do: true
+
+  def should_dlq?(%ErrorClass{class: class}) when class in [:transient, :timeout, :dependency],
+    do: true
+
   def should_dlq?(%ErrorClass{}), do: false
 end

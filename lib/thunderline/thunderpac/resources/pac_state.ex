@@ -51,80 +51,14 @@ defmodule Thunderline.Thunderpac.Resources.PACState do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :snapshot_type, :atom do
-      allow_nil? false
-      public? true
-      constraints one_of: [:checkpoint, :milestone, :emergency, :export]
-    end
-
-    attribute :version, :integer do
-      allow_nil? false
-      default 1
-      public? true
-      description "State schema version for migration"
-    end
-
-    attribute :state_data, :map do
-      allow_nil? false
-      default %{}
-      public? true
-      description "Full PAC state at snapshot time"
-    end
-
-    attribute :compressed, :boolean do
-      allow_nil? false
-      default false
-      public? true
-      description "Whether state_data is compressed"
-    end
-
-    attribute :checksum, :string do
-      allow_nil? true
-      public? true
-      description "SHA256 hash of state_data for integrity"
-    end
-
-    attribute :size_bytes, :integer do
-      allow_nil? true
-      public? true
-      description "Size of state_data in bytes"
-    end
-
-    attribute :trigger, :string do
-      allow_nil? true
-      public? true
-      description "What triggered this snapshot"
-    end
-
-    attribute :notes, :string do
-      allow_nil? true
-      public? true
-      constraints max_length: 1000
-    end
-
-    attribute :metadata, :map do
-      allow_nil? false
-      default %{}
-      public? true
-    end
-
-    create_timestamp :inserted_at
-  end
-
-  relationships do
-    belongs_to :pac, Thunderline.Thunderpac.Resources.PAC do
-      allow_nil? false
-      attribute_writable? true
-    end
-  end
-
-  calculations do
-    calculate :age_seconds, :integer, expr(
-      fragment("EXTRACT(EPOCH FROM (NOW() - ?))", inserted_at)
-    )
+  code_interface do
+    define :checkpoint
+    define :milestone
+    define :emergency
+    define :export
+    define :latest_for_pac, args: [:pac_id]
+    define :checkpoints_for_pac, args: [:pac_id]
+    define :milestones_for_pac, args: [:pac_id]
   end
 
   actions do
@@ -197,13 +131,79 @@ defmodule Thunderline.Thunderpac.Resources.PACState do
     end
   end
 
-  code_interface do
-    define :checkpoint
-    define :milestone
-    define :emergency
-    define :export
-    define :latest_for_pac, args: [:pac_id]
-    define :checkpoints_for_pac, args: [:pac_id]
-    define :milestones_for_pac, args: [:pac_id]
+  attributes do
+    uuid_primary_key :id
+
+    attribute :snapshot_type, :atom do
+      allow_nil? false
+      public? true
+      constraints one_of: [:checkpoint, :milestone, :emergency, :export]
+    end
+
+    attribute :version, :integer do
+      allow_nil? false
+      default 1
+      public? true
+      description "State schema version for migration"
+    end
+
+    attribute :state_data, :map do
+      allow_nil? false
+      default %{}
+      public? true
+      description "Full PAC state at snapshot time"
+    end
+
+    attribute :compressed, :boolean do
+      allow_nil? false
+      default false
+      public? true
+      description "Whether state_data is compressed"
+    end
+
+    attribute :checksum, :string do
+      allow_nil? true
+      public? true
+      description "SHA256 hash of state_data for integrity"
+    end
+
+    attribute :size_bytes, :integer do
+      allow_nil? true
+      public? true
+      description "Size of state_data in bytes"
+    end
+
+    attribute :trigger, :string do
+      allow_nil? true
+      public? true
+      description "What triggered this snapshot"
+    end
+
+    attribute :notes, :string do
+      allow_nil? true
+      public? true
+      constraints max_length: 1000
+    end
+
+    attribute :metadata, :map do
+      allow_nil? false
+      default %{}
+      public? true
+    end
+
+    create_timestamp :inserted_at
+  end
+
+  relationships do
+    belongs_to :pac, Thunderline.Thunderpac.Resources.PAC do
+      allow_nil? false
+      attribute_writable? true
+    end
+  end
+
+  calculations do
+    calculate :age_seconds,
+              :integer,
+              expr(fragment("EXTRACT(EPOCH FROM (NOW() - ?))", inserted_at))
   end
 end

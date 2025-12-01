@@ -206,7 +206,9 @@ defmodule Thunderline.Thunderbolt.Sagas.TelemetryMiddlewareTest do
       assert {:ok, _context} =
                TelemetryMiddleware.event({:compensate_complete, result}, step, context)
 
-      assert_receive {[:thunderline, :saga, :compensate, :complete], ^ref, _measurements, metadata}
+      assert_receive {[:thunderline, :saga, :compensate, :complete], ^ref, _measurements,
+                      metadata}
+
       assert metadata.step_name == :compensate_step
       assert metadata.compensation_result == :ok
     end

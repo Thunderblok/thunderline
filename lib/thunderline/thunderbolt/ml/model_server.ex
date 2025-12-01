@@ -62,9 +62,12 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
     :max_models,
     :model_dir,
     :health_timer,
-    sessions: %{},        # model_name => session
-    access_times: %{},    # model_name => last_access_time
-    load_times: %{}       # model_name => load_duration_ms
+    # model_name => session
+    sessions: %{},
+    # model_name => last_access_time
+    access_times: %{},
+    # model_name => load_duration_ms
+    load_times: %{}
   ]
 
   # ─────────────────────────────────────────────────────────────
@@ -164,9 +167,10 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
     }
 
     # Schedule health check
-    health_timer = if health_interval > 0 do
-      Process.send_after(self(), :health_check, health_interval)
-    end
+    health_timer =
+      if health_interval > 0 do
+        Process.send_after(self(), :health_check, health_interval)
+      end
 
     state = %{state | health_timer: health_timer}
 
@@ -290,8 +294,9 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
     )
 
     # Reschedule
-    health_interval = Application.get_env(:thunderline, __MODULE__)[:health_check_interval]
-                      || @default_health_interval
+    health_interval =
+      Application.get_env(:thunderline, __MODULE__)[:health_check_interval] ||
+        @default_health_interval
 
     if health_interval > 0 do
       Process.send_after(self(), :health_check, health_interval)
@@ -358,10 +363,11 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
         state
       end
 
-    %{state |
-      sessions: Map.put(state.sessions, model_name, session),
-      access_times: Map.put(state.access_times, model_name, now),
-      load_times: Map.put(state.load_times, model_name, load_ms)
+    %{
+      state
+      | sessions: Map.put(state.sessions, model_name, session),
+        access_times: Map.put(state.access_times, model_name, now),
+        load_times: Map.put(state.load_times, model_name, load_ms)
     }
   end
 
@@ -377,10 +383,11 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
       %{model: model_name}
     )
 
-    %{state |
-      sessions: Map.delete(state.sessions, model_name),
-      access_times: Map.delete(state.access_times, model_name),
-      load_times: Map.delete(state.load_times, model_name)
+    %{
+      state
+      | sessions: Map.delete(state.sessions, model_name),
+        access_times: Map.delete(state.access_times, model_name),
+        load_times: Map.delete(state.load_times, model_name)
     }
   end
 

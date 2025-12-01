@@ -132,14 +132,18 @@ defmodule Thunderline.Thunderflow.Pipelines.ExampleDomainPipeline do
   end
 
   defp priority_event?(%Event{type: type}) when type in [:critical, :urgent, :alert], do: true
+
   defp priority_event?(%Event{name: name}) when is_binary(name) do
     String.starts_with?(name, "priority.") or String.contains?(name, ".critical.")
   end
+
   defp priority_event?(_), do: false
 
   defp audit_event?(%Event{type: type}) when type in [:audit, :compliance, :security], do: true
+
   defp audit_event?(%Event{name: name}) when is_binary(name) do
     String.starts_with?(name, "audit.") or String.starts_with?(name, "security.")
   end
+
   defp audit_event?(_), do: false
 end

@@ -152,9 +152,10 @@ defmodule Thunderline.Thunderbolt.Continuous.Storage do
     %{
       format: "interval_list",
       dims: dims,
-      intervals: Enum.map(intervals, fn {interval, value} ->
-        %{bounds: interval_to_list(interval), value: value}
-      end),
+      intervals:
+        Enum.map(intervals, fn {interval, value} ->
+          %{bounds: interval_to_list(interval), value: value}
+        end),
       shape: shape,
       default: default,
       nnz: length(intervals)

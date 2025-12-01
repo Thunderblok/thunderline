@@ -155,7 +155,10 @@ defmodule Thunderline.Thunderbolt.Continuous.Tensor do
 
     result = %Tensor{tensor | intervals: updated_intervals}
 
-    emit_telemetry(:set, start_time, %{dims: tensor.dims, interval_count: length(updated_intervals)})
+    emit_telemetry(:set, start_time, %{
+      dims: tensor.dims,
+      interval_count: length(updated_intervals)
+    })
 
     result
   end
@@ -220,9 +223,10 @@ defmodule Thunderline.Thunderbolt.Continuous.Tensor do
   def map(%Tensor{} = tensor, fun) when is_function(fun, 1) do
     start_time = System.monotonic_time()
 
-    mapped_intervals = Enum.map(tensor.intervals, fn {interval, value} ->
-      {interval, fun.(value)}
-    end)
+    mapped_intervals =
+      Enum.map(tensor.intervals, fn {interval, value} ->
+        {interval, fun.(value)}
+      end)
 
     result = %Tensor{tensor | intervals: mapped_intervals}
 

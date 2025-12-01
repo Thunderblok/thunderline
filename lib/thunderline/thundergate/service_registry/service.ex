@@ -47,8 +47,12 @@ defmodule Thunderline.Thundergate.ServiceRegistry.Service do
         :metadata
       ]
 
-      validate {Ash.Resource.Validation.OneOf, attribute: :service_type, values: ["cerebros", "mlflow", "custom"]}
-      validate {Ash.Resource.Validation.OneOf, attribute: :status, values: ["starting", "healthy", "unhealthy", "stopped", "busy"]}
+      validate {Ash.Resource.Validation.OneOf,
+                attribute: :service_type, values: ["cerebros", "mlflow", "custom"]}
+
+      validate {Ash.Resource.Validation.OneOf,
+                attribute: :status,
+                values: ["starting", "healthy", "unhealthy", "stopped", "busy"]}
 
       change fn changeset, _context ->
         changeset

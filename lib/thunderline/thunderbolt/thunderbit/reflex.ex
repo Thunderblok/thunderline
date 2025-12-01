@@ -60,6 +60,10 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
   require Logger
 
   @telemetry_event [:thunderline, :thunderbit, :reflex]
+  @telemetry_flow_event [:thunderline, :flow, :reflex_triggered]
+
+  # PubSub topic for real-time reflex events
+  @reflex_pubsub_topic "reflex:triggered"
 
   # ═══════════════════════════════════════════════════════════════
   # Type Definitions
@@ -393,7 +397,12 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
 
     # Emit events to EventBus if propagation enabled
     if Map.get(policy, :propagation_enabled, true) do
-      Enum.each(events, &emit_reflex_event/1)
+      pac_id = Map.get(policy, :pac_id)
+      chunk_id = Map.get(policy, :chunk_id)
+
+      Enum.each(events, fn event ->
+        emit_reflex_event(event, pac_id: pac_id, chunk_id: chunk_id)
+      end)
     end
 
     {final_bit, Enum.reverse(events)}
@@ -426,11 +435,12 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
 
     if metrics.lambda_hat > threshold do
       # Mark for quarantine
-      updated_bit = Thunderbit.add_presence(bit, "__quarantine__", %{
-        reason: :chaos_spike,
-        lambda_hat: metrics.lambda_hat,
-        quarantined_at: System.system_time(:millisecond)
-      })
+      updated_bit =
+        Thunderbit.add_presence(bit, "__quarantine__", %{
+          reason: :chaos_spike,
+          lambda_hat: metrics.lambda_hat,
+          quarantined_at: System.system_time(:millisecond)
+        })
 
       {:fire, updated_bit,
        %{
@@ -499,7 +509,7 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # Event Propagation
+  # Event Propagation (HC-Ω-5: Reflex → Flow Integration)
   # ═══════════════════════════════════════════════════════════════
 
   @doc """
@@ -522,24 +532,268 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
 
   def check_propagation(_bit, _event), do: :no_propagate
 
-  defp emit_reflex_event(reflex_event) do
-    event_name = "bolt.thunderbit.reflex.#{reflex_event.type}"
+  @doc """
+  Emits a reflex event to the global event fabric (Thunderflow).
+
+  This is the primary integration point between Thunderbit reflexes
+  and the broader event system, enabling:
+
+  - Crown → PAC policy decisions based on reflex activity
+  - Bolt → Action handlers responding to reflex triggers
+  - ReflexPanel → Real-time visualization of reflex activity
+
+  ## Event Format
+
+  Events are emitted with name `bolt.reflex.triggered` and include:
+  - `bit_id` - The Thunderbit that triggered
+  - `chunk_id` - Chunk/region identifier (if available)
+  - `reflex_type` - Type of reflex (:stability, :chaos, :trust, :decay)
+  - `trigger` - Specific trigger condition
+  - `data` - Reflex-specific data payload
+  - `ts` - Timestamp of trigger
+  """
+  @spec emit_reflex_event(reflex_event(), keyword()) :: {:ok, Event.t()} | {:error, term()}
+  def emit_reflex_event(reflex_event, opts \\ []) do
+    chunk_id = Keyword.get(opts, :chunk_id, derive_chunk_id(reflex_event.coord))
+    pac_id = Keyword.get(opts, :pac_id)
 
     payload = %{
       bit_id: reflex_event.bit_id,
+      chunk_id: chunk_id,
       coord: reflex_event.coord,
+      reflex_type: reflex_event.type,
       trigger: reflex_event.trigger,
       data: reflex_event.data,
-      emitted_at: System.system_time(:millisecond)
+      pac_id: pac_id,
+      ts: System.system_time(:millisecond)
     }
 
-    case Event.new(name: event_name, source: :bolt, payload: payload, meta: %{pipeline: :realtime}) do
+    # Emit telemetry for flow integration
+    :telemetry.execute(
+      @telemetry_flow_event,
+      %{count: 1},
+      %{
+        reflex_type: reflex_event.type,
+        trigger: reflex_event.trigger,
+        bit_id: reflex_event.bit_id,
+        chunk_id: chunk_id
+      }
+    )
+
+    # Build canonical event
+    case Event.new(
+           name: "bolt.reflex.triggered",
+           source: :bolt,
+           payload: payload,
+           meta: %{
+             pipeline: :realtime,
+             reflex_type: reflex_event.type,
+             chunk_id: chunk_id
+           },
+           priority: reflex_priority(reflex_event.type)
+         ) do
       {:ok, event} ->
-        EventBus.publish_event(event)
+        # Publish to EventBus
+        result = EventBus.publish_event(event)
+
+        # Also broadcast via PubSub for real-time subscribers (ReflexPanel, etc)
+        Phoenix.PubSub.broadcast(
+          Thunderline.PubSub,
+          @reflex_pubsub_topic,
+          {:reflex_triggered, payload}
+        )
+
+        result
 
       {:error, reason} ->
-        Logger.warning("[Thunderbit.Reflex] Failed to emit event: #{inspect(reason)}")
+        Logger.warning("[Thunderbit.Reflex] Failed to create reflex event: #{inspect(reason)}")
+        {:error, reason}
     end
+  end
+
+  @doc """
+  Emits an aggregated reflex event for a chunk/region.
+
+  Used by `batch_step/4` to emit consolidated events rather than
+  per-bit events, reducing event volume while preserving signal.
+
+  ## Parameters
+
+  - `chunk_id` - Identifier for the chunk/region
+  - `events` - List of individual reflex events to aggregate
+  - `opts` - Options including `:pac_id`
+
+  ## Aggregation Strategy
+
+  Events are grouped by type. For each type:
+  - Count of triggered bits
+  - Average metrics from data payloads
+  - Representative sample of bit_ids (max 5)
+  """
+  @spec emit_aggregated_reflex_event(String.t(), [reflex_event()], keyword()) ::
+          {:ok, Event.t()} | {:error, term()} | :noop
+  def emit_aggregated_reflex_event(_chunk_id, [], _opts), do: :noop
+
+  def emit_aggregated_reflex_event(chunk_id, events, opts \\ []) do
+    pac_id = Keyword.get(opts, :pac_id)
+
+    # Group events by type
+    grouped = Enum.group_by(events, & &1.type)
+
+    aggregated_by_type =
+      grouped
+      |> Enum.map(fn {type, type_events} ->
+        {type, aggregate_type_events(type_events)}
+      end)
+      |> Map.new()
+
+    # Determine dominant reflex type
+    {dominant_type, _} =
+      aggregated_by_type
+      |> Enum.max_by(fn {_type, agg} -> agg.count end, fn -> {:mixed, %{count: 0}} end)
+
+    payload = %{
+      chunk_id: chunk_id,
+      pac_id: pac_id,
+      aggregated: true,
+      total_count: length(events),
+      by_type: aggregated_by_type,
+      dominant_type: dominant_type,
+      ts: System.system_time(:millisecond)
+    }
+
+    # Emit telemetry
+    :telemetry.execute(
+      @telemetry_flow_event,
+      %{count: length(events), aggregated: true},
+      %{
+        chunk_id: chunk_id,
+        dominant_type: dominant_type,
+        type_counts: Map.new(aggregated_by_type, fn {t, a} -> {t, a.count} end)
+      }
+    )
+
+    case Event.new(
+           name: "bolt.reflex.chunk_triggered",
+           source: :bolt,
+           payload: payload,
+           meta: %{
+             pipeline: :realtime,
+             aggregated: true,
+             chunk_id: chunk_id,
+             dominant_type: dominant_type
+           },
+           priority: reflex_priority(dominant_type)
+         ) do
+      {:ok, event} ->
+        result = EventBus.publish_event(event)
+
+        # Broadcast aggregated event
+        Phoenix.PubSub.broadcast(
+          Thunderline.PubSub,
+          @reflex_pubsub_topic,
+          {:reflex_chunk_triggered, payload}
+        )
+
+        result
+
+      {:error, reason} ->
+        Logger.warning(
+          "[Thunderbit.Reflex] Failed to create aggregated reflex event: #{inspect(reason)}"
+        )
+
+        {:error, reason}
+    end
+  end
+
+  defp aggregate_type_events(events) do
+    count = length(events)
+
+    # Sample bit_ids (max 5)
+    sample_bit_ids =
+      events
+      |> Enum.take(5)
+      |> Enum.map(& &1.bit_id)
+
+    # Extract trigger types
+    triggers =
+      events
+      |> Enum.map(& &1.trigger)
+      |> Enum.uniq()
+
+    # Aggregate numeric data from payloads
+    avg_data = aggregate_numeric_data(events)
+
+    %{
+      count: count,
+      sample_bit_ids: sample_bit_ids,
+      triggers: triggers,
+      avg_data: avg_data
+    }
+  end
+
+  defp aggregate_numeric_data(events) do
+    # Collect all numeric values from data payloads
+    all_data =
+      events
+      |> Enum.map(& &1.data)
+      |> Enum.filter(&is_map/1)
+
+    if Enum.empty?(all_data) do
+      %{}
+    else
+      # Find common numeric keys and average them
+      keys =
+        all_data
+        |> Enum.flat_map(&Map.keys/1)
+        |> Enum.uniq()
+        |> Enum.filter(fn key ->
+          Enum.all?(all_data, fn data ->
+            case Map.get(data, key) do
+              val when is_number(val) -> true
+              _ -> false
+            end
+          end)
+        end)
+
+      keys
+      |> Enum.map(fn key ->
+        values = Enum.map(all_data, &Map.get(&1, key))
+        avg = Enum.sum(values) / length(values)
+        {key, avg}
+      end)
+      |> Map.new()
+    end
+  end
+
+  defp derive_chunk_id(nil), do: "unknown"
+
+  defp derive_chunk_id({x, y, z}) when is_number(x) and is_number(y) and is_number(z) do
+    # Derive chunk from coord (8x8x8 chunks)
+    chunk_x = div(trunc(x), 8)
+    chunk_y = div(trunc(y), 8)
+    chunk_z = div(trunc(z), 8)
+    "chunk_#{chunk_x}_#{chunk_y}_#{chunk_z}"
+  end
+
+  defp derive_chunk_id({x, y}) when is_number(x) and is_number(y) do
+    chunk_x = div(trunc(x), 8)
+    chunk_y = div(trunc(y), 8)
+    "chunk_#{chunk_x}_#{chunk_y}"
+  end
+
+  defp derive_chunk_id(_), do: "unknown"
+
+  defp reflex_priority(:chaos), do: :high
+  defp reflex_priority(:stability), do: :normal
+  defp reflex_priority(:decay), do: :low
+  defp reflex_priority(:trust), do: :normal
+  defp reflex_priority(:activation), do: :normal
+  defp reflex_priority(_), do: :normal
+
+  # Legacy emit function for backward compatibility
+  defp emit_reflex_event_legacy(reflex_event) do
+    emit_reflex_event(reflex_event)
   end
 
   # ═══════════════════════════════════════════════════════════════
@@ -550,6 +804,15 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
   Applies reflex step to multiple Thunderbits in parallel.
 
   Useful for grid-level updates with proper neighbor resolution.
+  Emits aggregated reflex events per chunk rather than per-bit
+  to reduce event volume while preserving signal.
+
+  ## Options
+
+  - `:pac_id` - PAC identifier for event correlation
+  - `:chunk_id` - Override chunk identifier (default: derived from coords)
+  - `:emit_aggregated` - Emit aggregated chunk events (default: true)
+  - `:emit_individual` - Also emit individual events (default: false)
   """
   @spec batch_step(
           %{Thunderbit.coord() => Thunderbit.t()},
@@ -559,25 +822,52 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
         ) ::
           {%{Thunderbit.coord() => Thunderbit.t()}, [reflex_event()]}
   def batch_step(bits_map, gate_logits, policy \\ %{}, tick \\ 0) do
-    bits_map
-    |> Task.async_stream(
-      fn {coord, bit} ->
-        # Resolve neighbors from the bits map
-        neighbors =
-          bit.neighborhood
-          |> Enum.map(fn n_coord -> Map.get(bits_map, n_coord) end)
-          |> Enum.reject(&is_nil/1)
-          |> Enum.map(&to_neighbor_state/1)
+    emit_aggregated = Map.get(policy, :emit_aggregated, true)
+    emit_individual = Map.get(policy, :emit_individual, false)
+    pac_id = Map.get(policy, :pac_id)
 
-        {:ok, updated_bit, events} = step(bit, neighbors, gate_logits, policy, tick)
-        {coord, updated_bit, events}
-      end,
-      timeout: :infinity,
-      ordered: false
-    )
-    |> Enum.reduce({%{}, []}, fn {:ok, {coord, bit, events}}, {bits_acc, events_acc} ->
-      {Map.put(bits_acc, coord, bit), events ++ events_acc}
-    end)
+    # Disable individual emission in step if we're doing aggregation
+    step_policy =
+      if emit_aggregated and not emit_individual do
+        Map.put(policy, :propagation_enabled, false)
+      else
+        policy
+      end
+
+    {updated_bits, all_events} =
+      bits_map
+      |> Task.async_stream(
+        fn {coord, bit} ->
+          # Resolve neighbors from the bits map
+          neighbors =
+            bit.neighborhood
+            |> Enum.map(fn n_coord -> Map.get(bits_map, n_coord) end)
+            |> Enum.reject(&is_nil/1)
+            |> Enum.map(&to_neighbor_state/1)
+
+          {:ok, updated_bit, events} = step(bit, neighbors, gate_logits, step_policy, tick)
+          {coord, updated_bit, events}
+        end,
+        timeout: :infinity,
+        ordered: false
+      )
+      |> Enum.reduce({%{}, []}, fn {:ok, {coord, bit, events}}, {bits_acc, events_acc} ->
+        {Map.put(bits_acc, coord, bit), events ++ events_acc}
+      end)
+
+    # Emit aggregated events by chunk
+    if emit_aggregated and length(all_events) > 0 do
+      # Group events by chunk
+      events_by_chunk =
+        all_events
+        |> Enum.group_by(fn event -> derive_chunk_id(event.coord) end)
+
+      Enum.each(events_by_chunk, fn {chunk_id, chunk_events} ->
+        emit_aggregated_reflex_event(chunk_id, chunk_events, pac_id: pac_id)
+      end)
+    end
+
+    {updated_bits, all_events}
   end
 
   defp to_neighbor_state(%Thunderbit{} = bit) do

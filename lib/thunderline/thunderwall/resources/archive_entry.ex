@@ -33,65 +33,12 @@ defmodule Thunderline.Thunderwall.Resources.ArchiveEntry do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :resource_type, :string do
-      allow_nil? false
-      public? true
-      description "Original resource module/type name"
-    end
-
-    attribute :resource_id, :string do
-      allow_nil? false
-      public? true
-      description "Original resource primary key (stringified)"
-    end
-
-    attribute :archive_reason, :atom do
-      allow_nil? false
-      public? true
-      description "Reason for archival"
-      constraints one_of: [:user_requested, :compliance, :debug, :migration, :system]
-      default :system
-    end
-
-    attribute :snapshot, :map do
-      allow_nil? false
-      public? true
-      description "Complete snapshot of archived resource"
-    end
-
-    attribute :archived_at_tick, :integer do
-      allow_nil? true
-      public? true
-      description "System tick when archival occurred"
-    end
-
-    attribute :retention_days, :integer do
-      allow_nil? true
-      public? true
-      description "How long to retain this archive (nil = forever)"
-    end
-
-    attribute :tags, {:array, :string} do
-      default []
-      public? true
-      description "Tags for categorization and search"
-    end
-
-    attribute :metadata, :map do
-      default %{}
-      public? true
-      description "Additional archive metadata"
-    end
-
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
-  end
-
-  identities do
-    identity :unique_archive, [:resource_type, :resource_id]
+  code_interface do
+    define :archive
+    define :update_tags
+    define :by_type, args: [:resource_type, {:optional, :limit}]
+    define :by_tag, args: [:tag, {:optional, :limit}]
+    define :find_archive, args: [:resource_type, :resource_id]
   end
 
   actions do
@@ -99,7 +46,16 @@ defmodule Thunderline.Thunderwall.Resources.ArchiveEntry do
 
     create :archive do
       description "Archive a resource"
-      accept [:resource_type, :resource_id, :archive_reason, :snapshot, :retention_days, :tags, :metadata]
+
+      accept [
+        :resource_type,
+        :resource_id,
+        :archive_reason,
+        :snapshot,
+        :retention_days,
+        :tags,
+        :metadata
+      ]
 
       change fn changeset, _context ->
         tick =
@@ -165,11 +121,64 @@ defmodule Thunderline.Thunderwall.Resources.ArchiveEntry do
     end
   end
 
-  code_interface do
-    define :archive
-    define :update_tags
-    define :by_type, args: [:resource_type, {:optional, :limit}]
-    define :by_tag, args: [:tag, {:optional, :limit}]
-    define :find_archive, args: [:resource_type, :resource_id]
+  attributes do
+    uuid_primary_key :id
+
+    attribute :resource_type, :string do
+      allow_nil? false
+      public? true
+      description "Original resource module/type name"
+    end
+
+    attribute :resource_id, :string do
+      allow_nil? false
+      public? true
+      description "Original resource primary key (stringified)"
+    end
+
+    attribute :archive_reason, :atom do
+      allow_nil? false
+      public? true
+      description "Reason for archival"
+      constraints one_of: [:user_requested, :compliance, :debug, :migration, :system]
+      default :system
+    end
+
+    attribute :snapshot, :map do
+      allow_nil? false
+      public? true
+      description "Complete snapshot of archived resource"
+    end
+
+    attribute :archived_at_tick, :integer do
+      allow_nil? true
+      public? true
+      description "System tick when archival occurred"
+    end
+
+    attribute :retention_days, :integer do
+      allow_nil? true
+      public? true
+      description "How long to retain this archive (nil = forever)"
+    end
+
+    attribute :tags, {:array, :string} do
+      default []
+      public? true
+      description "Tags for categorization and search"
+    end
+
+    attribute :metadata, :map do
+      default %{}
+      public? true
+      description "Additional archive metadata"
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  identities do
+    identity :unique_archive, [:resource_type, :resource_id]
   end
 end

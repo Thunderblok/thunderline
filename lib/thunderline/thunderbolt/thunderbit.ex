@@ -168,11 +168,12 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
   """
   @spec new_with_neighborhood(coord(), coord(), atom() | {atom(), integer()}, keyword()) :: t()
   def new_with_neighborhood(coord, grid_bounds, neighborhood_type, opts \\ []) do
-    neighbors = Thunderline.Thunderbolt.CA.Neighborhood.compute(
-      coord,
-      grid_bounds,
-      neighborhood_type
-    )
+    neighbors =
+      Thunderline.Thunderbolt.CA.Neighborhood.compute(
+        coord,
+        grid_bounds,
+        neighborhood_type
+      )
 
     new(coord, Keyword.put(opts, :neighborhood, neighbors))
   end

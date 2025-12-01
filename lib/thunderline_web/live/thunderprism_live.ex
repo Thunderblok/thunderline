@@ -121,8 +121,8 @@ defmodule ThunderlineWeb.ThunderprismLive do
                 </form>
 
                 <div class="divider my-2" />
-
-                <!-- Stats -->
+                
+    <!-- Stats -->
                 <div class="stats stats-vertical shadow bg-base-200">
                   <div class="stat py-2">
                     <div class="stat-title text-xs">Nodes</div>
@@ -143,8 +143,8 @@ defmodule ThunderlineWeb.ThunderprismLive do
                 </button>
               </div>
             </div>
-
-            <!-- Node Inspector -->
+            
+    <!-- Node Inspector -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
                 <h2 class="card-title text-sm">
@@ -183,10 +183,18 @@ defmodule ThunderlineWeb.ThunderprismLive do
                     <% end %>
 
                     <div class="flex gap-2">
-                      <button phx-click="view_edges" phx-value-id={@selected_node.id} class="btn btn-outline btn-xs flex-1">
+                      <button
+                        phx-click="view_edges"
+                        phx-value-id={@selected_node.id}
+                        class="btn btn-outline btn-xs flex-1"
+                      >
                         View Edges
                       </button>
-                      <button phx-click="filter_by_pac" phx-value-pac={@selected_node.pac_id} class="btn btn-outline btn-xs flex-1">
+                      <button
+                        phx-click="filter_by_pac"
+                        phx-value-pac={@selected_node.pac_id}
+                        class="btn btn-outline btn-xs flex-1"
+                      >
                         Filter PAC
                       </button>
                     </div>
@@ -199,8 +207,8 @@ defmodule ThunderlineWeb.ThunderprismLive do
                 <% end %>
               </div>
             </div>
-
-            <!-- Legend -->
+            
+    <!-- Legend -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
                 <h2 class="card-title text-sm">
@@ -233,8 +241,8 @@ defmodule ThunderlineWeb.ThunderprismLive do
               </div>
             </div>
           </div>
-
-          <!-- 3D Graph Container - React Three Fiber -->
+          
+    <!-- 3D Graph Container - React Three Fiber -->
           <div class="lg:col-span-3">
             <div class="card bg-base-300 shadow-xl h-[calc(100vh-8rem)]">
               <div class="card-body p-0 overflow-hidden rounded-2xl">
@@ -376,7 +384,10 @@ defmodule ThunderlineWeb.ThunderprismLive do
     socket =
       socket
       |> load_pac_ids()
-      |> push_event("graph_updated", load_graph_data(socket.assigns.pac_filter, socket.assigns.limit))
+      |> push_event(
+        "graph_updated",
+        load_graph_data(socket.assigns.pac_filter, socket.assigns.limit)
+      )
       |> put_flash(:info, "Generated #{length(created_nodes)} test nodes!")
 
     {:noreply, socket}

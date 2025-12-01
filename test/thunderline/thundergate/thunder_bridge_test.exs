@@ -178,7 +178,8 @@ defmodule Thundergate.ThunderBridgeTest do
     end
 
     test "start_ca_streaming/1 accepts custom interval" do
-      assert {:ok, %{streaming: true, interval: 50}} = ThunderBridge.start_ca_streaming(interval: 50)
+      assert {:ok, %{streaming: true, interval: 50}} =
+               ThunderBridge.start_ca_streaming(interval: 50)
     end
 
     test "stop_ca_streaming/0 returns stopped status" do

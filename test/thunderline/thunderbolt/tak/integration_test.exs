@@ -111,7 +111,8 @@ defmodule Thunderline.Thunderbolt.TAK.IntegrationTest do
 
       deltas = TAK.Grid.compute_deltas(grid, new_grid)
       # 6 changes: 3 cells die, 3 cells born
-      assert length(deltas) == 4  # Actually 4 because center stays
+      # Actually 4 because center stays
+      assert length(deltas) == 4
     end
 
     test "3D grid evolution" do

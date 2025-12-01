@@ -186,7 +186,7 @@ defmodule Thunderline.Thunderblock.Validations do
     defp validate_permission_values(permissions) do
       invalid =
         Enum.find(permissions, fn {_key, value} ->
-          not (value in @valid_permission_values)
+          value not in @valid_permission_values
         end)
 
       case invalid do
@@ -339,8 +339,7 @@ defmodule Thunderline.Thunderblock.Validations do
           {:error, field: :child_specs, message: "must be a list"}
 
         not Enum.all?(specs, &valid_child_spec?/1) ->
-          {:error,
-           field: :child_specs, message: "all child specs must have id and start fields"}
+          {:error, field: :child_specs, message: "all child specs must have id and start fields"}
 
         true ->
           :ok

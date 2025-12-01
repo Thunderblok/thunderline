@@ -300,7 +300,8 @@ defmodule Thunderline.Thunderbolt.UPM.SGD do
 
     %{
       params
-      | w1: Nx.from_binary(params.w1, :f32) |> Nx.reshape({params.feature_dim, params.hidden_dim}),
+      | w1:
+          Nx.from_binary(params.w1, :f32) |> Nx.reshape({params.feature_dim, params.hidden_dim}),
         b1: Nx.from_binary(params.b1, :f32) |> Nx.reshape({params.hidden_dim}),
         w2: Nx.from_binary(params.w2, :f32) |> Nx.reshape({params.hidden_dim, params.output_dim}),
         b2: Nx.from_binary(params.b2, :f32) |> Nx.reshape({params.output_dim})

@@ -88,6 +88,7 @@ defmodule Thunderline.Thunderblock.DomainRegistry do
     case :ets.lookup(@table_name, domain_name) do
       [{^domain_name, status, tick, timestamp}] ->
         {:ok, %{status: status, tick: tick, timestamp: timestamp}}
+
       [] ->
         {:error, :not_found}
     end
@@ -131,12 +132,13 @@ defmodule Thunderline.Thunderblock.DomainRegistry do
 
     Logger.info("[DomainRegistry] Started and subscribed to system events")
 
-    {:ok, %{
-      active_domains: MapSet.new(),
-      tick_count: 0,
-      last_tick_at: nil,
-      activation_history: []
-    }}
+    {:ok,
+     %{
+       active_domains: MapSet.new(),
+       tick_count: 0,
+       last_tick_at: nil,
+       activation_history: []
+     }}
   end
 
   @impl true

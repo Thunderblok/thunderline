@@ -30,11 +30,14 @@ defmodule Thunderline.Thunderbolt.CA.NeighborhoodTest do
       neighbors = Neighborhood.compute({0, 0, 0}, {10, 10, 10}, :von_neumann, :periodic)
 
       assert length(neighbors) == 6
-      assert {9, 0, 0} in neighbors  # wrapped from -1
+      # wrapped from -1
+      assert {9, 0, 0} in neighbors
       assert {1, 0, 0} in neighbors
-      assert {0, 9, 0} in neighbors  # wrapped from -1
+      # wrapped from -1
+      assert {0, 9, 0} in neighbors
       assert {0, 1, 0} in neighbors
-      assert {0, 0, 9} in neighbors  # wrapped from -1
+      # wrapped from -1
+      assert {0, 0, 9} in neighbors
       assert {0, 0, 1} in neighbors
     end
   end
@@ -66,9 +69,12 @@ defmodule Thunderline.Thunderbolt.CA.NeighborhoodTest do
       neighbors = Neighborhood.compute({5, 5, 5}, {10, 10, 10}, {:von_neumann, 2})
 
       # Should include cells at distance 1 and 2
-      assert {5, 5, 3} in neighbors  # distance 2
-      assert {4, 5, 4} in neighbors  # distance 2
-      assert {5, 5, 4} in neighbors  # distance 1
+      # distance 2
+      assert {5, 5, 3} in neighbors
+      # distance 2
+      assert {4, 5, 4} in neighbors
+      # distance 1
+      assert {5, 5, 4} in neighbors
     end
 
     test "moore with radius 2 returns 124 neighbors" do
@@ -96,15 +102,20 @@ defmodule Thunderline.Thunderbolt.CA.NeighborhoodTest do
     test "correctly identifies von_neumann neighbors" do
       assert Neighborhood.neighbors?({5, 5, 5}, {5, 5, 6}, :von_neumann)
       assert Neighborhood.neighbors?({5, 5, 5}, {4, 5, 5}, :von_neumann)
-      refute Neighborhood.neighbors?({5, 5, 5}, {4, 4, 5}, :von_neumann)  # diagonal
-      refute Neighborhood.neighbors?({5, 5, 5}, {5, 5, 5}, :von_neumann)  # same cell
+      # diagonal
+      refute Neighborhood.neighbors?({5, 5, 5}, {4, 4, 5}, :von_neumann)
+      # same cell
+      refute Neighborhood.neighbors?({5, 5, 5}, {5, 5, 5}, :von_neumann)
     end
 
     test "correctly identifies moore neighbors" do
       assert Neighborhood.neighbors?({5, 5, 5}, {5, 5, 6}, :moore)
-      assert Neighborhood.neighbors?({5, 5, 5}, {4, 4, 4}, :moore)  # corner
-      refute Neighborhood.neighbors?({5, 5, 5}, {3, 5, 5}, :moore)  # too far
-      refute Neighborhood.neighbors?({5, 5, 5}, {5, 5, 5}, :moore)  # same cell
+      # corner
+      assert Neighborhood.neighbors?({5, 5, 5}, {4, 4, 4}, :moore)
+      # too far
+      refute Neighborhood.neighbors?({5, 5, 5}, {3, 5, 5}, :moore)
+      # same cell
+      refute Neighborhood.neighbors?({5, 5, 5}, {5, 5, 5}, :moore)
     end
   end
 

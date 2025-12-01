@@ -42,48 +42,11 @@ defmodule Thunderline.Thunderwall.Resources.DecayRecord do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :resource_type, :string do
-      allow_nil? false
-      public? true
-      description "Original resource module/type name"
-    end
-
-    attribute :resource_id, :string do
-      allow_nil? false
-      public? true
-      description "Original resource primary key (stringified)"
-    end
-
-    attribute :decay_reason, :atom do
-      allow_nil? false
-      public? true
-      description "Reason for decay"
-      constraints one_of: [:ttl_expired, :explicit, :orphaned, :overflow, :gc, :system]
-      default :ttl_expired
-    end
-
-    attribute :snapshot, :map do
-      allow_nil? true
-      public? true
-      description "JSON snapshot of resource at decay time"
-    end
-
-    attribute :decayed_at_tick, :integer do
-      allow_nil? true
-      public? true
-      description "System tick when decay occurred"
-    end
-
-    attribute :metadata, :map do
-      default %{}
-      public? true
-      description "Additional decay metadata"
-    end
-
-    create_timestamp :inserted_at
+  code_interface do
+    define :record_decay
+    define :by_type, args: [:resource_type, {:optional, :limit}]
+    define :by_reason, args: [:decay_reason, {:optional, :limit}]
+    define :prune_before, args: [:before]
   end
 
   actions do
@@ -152,19 +115,54 @@ defmodule Thunderline.Thunderwall.Resources.DecayRecord do
         import Ecto.Query
 
         {count, _} =
-          Thunderline.Repo.delete_all(
-            from(d in "decay_records", where: d.inserted_at < ^before)
-          )
+          Thunderline.Repo.delete_all(from(d in "decay_records", where: d.inserted_at < ^before))
 
         {:ok, count}
       end
     end
   end
 
-  code_interface do
-    define :record_decay
-    define :by_type, args: [:resource_type, {:optional, :limit}]
-    define :by_reason, args: [:decay_reason, {:optional, :limit}]
-    define :prune_before, args: [:before]
+  attributes do
+    uuid_primary_key :id
+
+    attribute :resource_type, :string do
+      allow_nil? false
+      public? true
+      description "Original resource module/type name"
+    end
+
+    attribute :resource_id, :string do
+      allow_nil? false
+      public? true
+      description "Original resource primary key (stringified)"
+    end
+
+    attribute :decay_reason, :atom do
+      allow_nil? false
+      public? true
+      description "Reason for decay"
+      constraints one_of: [:ttl_expired, :explicit, :orphaned, :overflow, :gc, :system]
+      default :ttl_expired
+    end
+
+    attribute :snapshot, :map do
+      allow_nil? true
+      public? true
+      description "JSON snapshot of resource at decay time"
+    end
+
+    attribute :decayed_at_tick, :integer do
+      allow_nil? true
+      public? true
+      description "System tick when decay occurred"
+    end
+
+    attribute :metadata, :map do
+      default %{}
+      public? true
+      description "Additional decay metadata"
+    end
+
+    create_timestamp :inserted_at
   end
 end

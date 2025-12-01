@@ -195,9 +195,7 @@ defmodule Thunderline.Thunderblock.DomainActivation do
           DynamicSupervisor.start_child(
             Thunderline.TaskSupervisor,
             {Thunderline.Thunderblock.DomainActivation.Listener,
-             module: module,
-             domain_name: domain_name,
-             activation_tick: activation_tick}
+             module: module, domain_name: domain_name, activation_tick: activation_tick}
           )
 
         :ok
@@ -361,9 +359,7 @@ defmodule Thunderline.Thunderblock.DomainActivation do
           {:noreply, %{state | domain_state: new_domain_state, current_tick: tick_count}}
 
         {:stop, reason, final_state} ->
-          Logger.info(
-            "[DomainActivation] #{state.domain_name} deactivating: #{inspect(reason)}"
-          )
+          Logger.info("[DomainActivation] #{state.domain_name} deactivating: #{inspect(reason)}")
 
           # Call optional deactivation callback
           if function_exported?(state.module, :on_deactivated, 2) do

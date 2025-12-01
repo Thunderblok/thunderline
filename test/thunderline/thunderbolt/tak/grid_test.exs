@@ -33,9 +33,12 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
       grid = %Grid{
         size: {3, 3},
         cells: %{
-          {1, 1} => 1,  # center
-          {0, 0} => 1,  # top-left
-          {2, 2} => 1   # bottom-right
+          # center
+          {1, 1} => 1,
+          # top-left
+          {0, 0} => 1,
+          # bottom-right
+          {2, 2} => 1
         }
       }
 
@@ -44,11 +47,22 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
 
       # Verify alive cells
       flat = Nx.to_flat_list(tensor)
+
       expected = [
-        1, 0, 0,  # row 0: (0,0) alive
-        0, 1, 0,  # row 1: (1,1) alive
-        0, 0, 1   # row 2: (2,2) alive
+        # row 0: (0,0) alive
+        1,
+        0,
+        0,
+        # row 1: (1,1) alive
+        0,
+        1,
+        0,
+        # row 2: (2,2) alive
+        0,
+        0,
+        1
       ]
+
       assert flat == expected
     end
 
@@ -65,8 +79,10 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
       grid = %Grid{
         size: {2, 2, 2},
         cells: %{
-          {0, 0, 0} => 1,  # corner
-          {1, 1, 1} => 1   # opposite corner
+          # corner
+          {0, 0, 0} => 1,
+          # opposite corner
+          {1, 1, 1} => 1
         }
       }
 
@@ -86,38 +102,52 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
       original = Grid.new({3, 3})
 
       # Create tensor with specific pattern
-      tensor = Nx.tensor([
-        [1, 0, 1],
-        [0, 1, 0],
-        [1, 0, 1]
-      ], type: :u8)
+      tensor =
+        Nx.tensor(
+          [
+            [1, 0, 1],
+            [0, 1, 0],
+            [1, 0, 1]
+          ],
+          type: :u8
+        )
 
       grid = Grid.from_tensor(original, tensor)
 
       assert grid.size == {3, 3}
+
       assert grid.cells == %{
-        {0, 0} => 1, {2, 0} => 1,
-        {1, 1} => 1,
-        {0, 2} => 1, {2, 2} => 1
-      }
+               {0, 0} => 1,
+               {2, 0} => 1,
+               {1, 1} => 1,
+               {0, 2} => 1,
+               {2, 2} => 1
+             }
     end
 
     test "converts tensor back to 3D grid" do
       original = Grid.new({2, 2, 2})
 
       # Create tensor with corners alive
-      tensor = Nx.tensor([
-        [[1, 0], [0, 0]],  # z=0
-        [[0, 0], [0, 1]]   # z=1
-      ], type: :u8)
+      tensor =
+        Nx.tensor(
+          [
+            # z=0
+            [[1, 0], [0, 0]],
+            # z=1
+            [[0, 0], [0, 1]]
+          ],
+          type: :u8
+        )
 
       grid = Grid.from_tensor(original, tensor)
 
       assert grid.size == {2, 2, 2}
+
       assert grid.cells == %{
-        {0, 0, 0} => 1,
-        {1, 1, 1} => 1
-      }
+               {0, 0, 0} => 1,
+               {1, 1, 1} => 1
+             }
     end
 
     test "round-trip preserves grid state for 2D" do
@@ -207,11 +237,15 @@ defmodule Thunderline.Thunderbolt.TAK.GridTest do
       }
 
       # Evolve to blinker pattern
-      evolved_tensor = Nx.tensor([
-        [0, 1, 0],
-        [0, 1, 0],
-        [0, 1, 0]
-      ], type: :u8)
+      evolved_tensor =
+        Nx.tensor(
+          [
+            [0, 1, 0],
+            [0, 1, 0],
+            [0, 1, 0]
+          ],
+          type: :u8
+        )
 
       deltas = Grid.compute_deltas_from_tensor(original, evolved_tensor)
 

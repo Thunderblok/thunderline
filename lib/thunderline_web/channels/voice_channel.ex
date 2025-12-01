@@ -192,8 +192,11 @@ defmodule ThunderlineWeb.VoiceChannel do
         # Fire and forget - voice events are transient
         Task.start(fn ->
           case EventBus.publish_event(event) do
-            {:ok, _} -> :ok
-            {:error, reason} -> Logger.debug("[VoiceChannel] Event publish failed: #{inspect(reason)}")
+            {:ok, _} ->
+              :ok
+
+            {:error, reason} ->
+              Logger.debug("[VoiceChannel] Event publish failed: #{inspect(reason)}")
           end
         end)
 

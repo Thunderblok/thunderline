@@ -53,7 +53,14 @@ defmodule Thunderline.Thundervine.TAKEventRecorder do
   """
   def start_link(opts) do
     run_id = Keyword.fetch!(opts, :run_id)
-    name = Keyword.get(opts, :name, {:via, Registry, {Thunderline.Thundervine.Registry, {__MODULE__, run_id}}})
+
+    name =
+      Keyword.get(
+        opts,
+        :name,
+        {:via, Registry, {Thunderline.Thundervine.Registry, {__MODULE__, run_id}}}
+      )
+
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
@@ -116,7 +123,8 @@ defmodule Thunderline.Thundervine.TAKEventRecorder do
     # Convert PubSub message to TAKChunkEvolved event
     event = %TAKChunkEvolved{
       zone_id: state.zone_id,
-      chunk_id: {0, 0, 0},  # Default chunk - could be extracted from run metadata
+      # Default chunk - could be extracted from run metadata
+      chunk_id: {0, 0, 0},
       tick_id: msg.generation,
       diffs: diffs,
       rule_hash: compute_rule_hash(state.run_id),

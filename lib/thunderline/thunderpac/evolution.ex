@@ -163,7 +163,8 @@ defmodule Thunderline.Thunderpac.Evolution do
       trait_modifiers: %{
         entropy_tolerance: 0.5,
         novelty_bonus: 0.15,
-        lambda_target: 0.273,  # Langton's λc
+        # Langton's λc
+        lambda_target: 0.273,
         plv_target: 0.4
       }
     },
@@ -533,7 +534,9 @@ defmodule Thunderline.Thunderpac.Evolution do
 
     # 4. Record trial with TPE
     if state.tpe_bridge do
-      Task.start(fn -> TPEBridge.record_trial(state.tpe_bridge, suggested_traits, fitness.total) end)
+      Task.start(fn ->
+        TPEBridge.record_trial(state.tpe_bridge, suggested_traits, fitness.total)
+      end)
     end
 
     # 5. Check if this is the best so far
@@ -577,7 +580,9 @@ defmodule Thunderline.Thunderpac.Evolution do
     }
 
     current_lineage = Map.get(state.lineages, pac.id, [])
-    new_lineages = Map.put(state.lineages, pac.id, [lineage_entry | current_lineage] |> Enum.take(1000))
+
+    new_lineages =
+      Map.put(state.lineages, pac.id, [lineage_entry | current_lineage] |> Enum.take(1000))
 
     # 9. Emit events
     emit_evolution_event(:step, pac.id, %{
@@ -603,7 +608,8 @@ defmodule Thunderline.Thunderpac.Evolution do
       %{pac_id: pac.id, profile: session.profile, improved: improved}
     )
 
-    {:reply, {:ok, evolved_pac, fitness}, %{state | sessions: new_sessions, lineages: new_lineages}}
+    {:reply, {:ok, evolved_pac, fitness},
+     %{state | sessions: new_sessions, lineages: new_lineages}}
   end
 
   defp create_default_session(pac_id, config) do
@@ -646,7 +652,12 @@ defmodule Thunderline.Thunderpac.Evolution do
 
     # Stability: inverse entropy (high entropy = low stability)
     stability_raw = 1.0 - entropy
-    stability = if entropy <= modifiers.entropy_tolerance, do: stability_raw * 1.2, else: stability_raw * 0.8
+
+    stability =
+      if entropy <= modifiers.entropy_tolerance,
+        do: stability_raw * 1.2,
+        else: stability_raw * 0.8
+
     stability = clamp(stability)
 
     # Coherence: PLV vs target
@@ -767,7 +778,23 @@ defmodule Thunderline.Thunderpac.Evolution do
     |> Enum.into(%{})
   end
 
-  defp traits_to_vector(traits) do
+  @doc """
+  Converts a traits map to a fixed-order trait vector.
+
+  Trait order:
+  0. aggression
+  1. curiosity
+  2. caution
+  3. persistence
+  4. adaptability
+  5. sociability
+  6. lambda_sensitivity
+  7. entropy_tolerance
+  8. phase_coherence
+  9. flow_stability
+  """
+  @spec traits_to_vector(map()) :: [float()]
+  def traits_to_vector(traits) do
     # Fixed order for trait_vector
     keys = [
       :aggression,
@@ -787,7 +814,11 @@ defmodule Thunderline.Thunderpac.Evolution do
     end)
   end
 
-  defp vector_to_traits(vector) when is_list(vector) do
+  @doc """
+  Converts a trait vector back to a traits map.
+  """
+  @spec vector_to_traits([float()] | nil) :: map()
+  def vector_to_traits(vector) when is_list(vector) do
     keys = [
       :aggression,
       :curiosity,
@@ -807,7 +838,7 @@ defmodule Thunderline.Thunderpac.Evolution do
     |> Enum.into(%{})
   end
 
-  defp vector_to_traits(_), do: default_traits()
+  def vector_to_traits(_), do: default_traits()
 
   # ═══════════════════════════════════════════════════════════════
   # Event Emission

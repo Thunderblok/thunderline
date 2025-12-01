@@ -39,7 +39,8 @@ defmodule Thunderline.ThunderBridgeDeprecatedTest do
       case {deprecated_result, authoritative_result} do
         {{:ok, _}, {:ok, _}} -> assert true
         {{:error, _}, {:error, _}} -> assert true
-        _ -> assert true  # Allow mismatch during test isolation
+        # Allow mismatch during test isolation
+        _ -> assert true
       end
 
       # Should have emitted deprecation telemetry
@@ -77,7 +78,7 @@ defmodule Thunderline.ThunderBridgeDeprecatedTest do
 
       # Results should be equivalent type
       assert elem(deprecated_result, 0) == elem(authoritative_result, 0) or
-             is_map(deprecated_result) and is_map(authoritative_result)
+               (is_map(deprecated_result) and is_map(authoritative_result))
 
       assert_receive {:deprecation, %{count: 1}, _}, 1000
     end

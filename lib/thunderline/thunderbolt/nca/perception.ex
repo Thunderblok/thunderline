@@ -3,7 +3,7 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
   Neural Cellular Automata Perception Layer.
 
   Based on: "Growing Neural Cellular Automata" (Distill, Google Research, 2020)
-  
+
   Implements the perception stage of the NCA update rule where each cell
   perceives its local neighborhood through gradient sensing (Sobel filters).
 
@@ -39,8 +39,8 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
 
   @sobel_y_vals [
     [-1, -2, -1],
-    [0,  0,  0],
-    [1,  2,  1]
+    [0, 0, 0],
+    [1, 2, 1]
   ]
 
   # Runtime functions to get Sobel tensors (avoids compile-time EXLA)
@@ -108,7 +108,7 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
     # Compute gradients for each channel
     grad_x = sobel_gradient_x(state_grid)
     grad_y = sobel_gradient_y(state_grid)
-    
+
     # Concatenate: [state, grad_x, grad_y]
     Nx.concatenate([state_grid, grad_x, grad_y], axis: 2)
   end
@@ -129,41 +129,42 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
 
   defp apply_sobel_filter(state_grid, kernel) do
     {h, w, c} = Nx.shape(state_grid)
-    
+
     # Pad the grid for convolution (same padding)
     padded = Nx.pad(state_grid, 0.0, [{1, 1, 0}, {1, 1, 0}, {0, 0, 0}])
-    
+
     # Convolve each channel
-    results = 
+    results =
       for channel <- 0..(c - 1) do
         channel_data = Nx.slice(padded, [0, 0, channel], [h + 2, w + 2, 1])
         channel_data = Nx.squeeze(channel_data, axes: [2])
         convolved = convolve_2d(channel_data, kernel)
         Nx.reshape(convolved, {h, w, 1})
       end
-    
+
     Nx.concatenate(results, axis: 2)
   end
 
   defp convolve_2d(input, kernel) do
     {ih, iw} = Nx.shape(input)
     {kh, kw} = Nx.shape(kernel)
-    
+
     oh = ih - kh + 1
     ow = iw - kw + 1
-    
+
     # Build output via sliding window
-    rows = 
+    rows =
       for i <- 0..(oh - 1) do
-        cols = 
+        cols =
           for j <- 0..(ow - 1) do
             # Extract patch and compute convolution
             patch = Nx.slice(input, [i, j], [kh, kw])
             Nx.sum(Nx.multiply(patch, kernel))
           end
+
         Nx.stack(cols)
       end
-    
+
     Nx.stack(rows)
   end
 
@@ -181,40 +182,40 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
     grad_x = gradient_3d_x(state_grid)
     grad_y = gradient_3d_y(state_grid)
     grad_z = gradient_3d_z(state_grid)
-    
+
     # Concatenate: [state, grad_x, grad_y, grad_z]
     Nx.concatenate([state_grid, grad_x, grad_y, grad_z], axis: 3)
   end
 
   defp gradient_3d_x(grid) do
     {x, y, z, c} = Nx.shape(grid)
-    
+
     # Central difference in x direction
     left = Nx.slice(grid, [0, 0, 0, 0], [x - 2, y, z, c])
     right = Nx.slice(grid, [2, 0, 0, 0], [x - 2, y, z, c])
     center_grad = Nx.divide(Nx.subtract(right, left), 2.0)
-    
+
     # Pad to original size
     Nx.pad(center_grad, 0.0, [{1, 1, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}])
   end
 
   defp gradient_3d_y(grid) do
     {x, y, z, c} = Nx.shape(grid)
-    
+
     left = Nx.slice(grid, [0, 0, 0, 0], [x, y - 2, z, c])
     right = Nx.slice(grid, [0, 2, 0, 0], [x, y - 2, z, c])
     center_grad = Nx.divide(Nx.subtract(right, left), 2.0)
-    
+
     Nx.pad(center_grad, 0.0, [{0, 0, 0}, {1, 1, 0}, {0, 0, 0}, {0, 0, 0}])
   end
 
   defp gradient_3d_z(grid) do
     {x, y, z, c} = Nx.shape(grid)
-    
+
     left = Nx.slice(grid, [0, 0, 0, 0], [x, y, z - 2, c])
     right = Nx.slice(grid, [0, 0, 2, 0], [x, y, z - 2, c])
     center_grad = Nx.divide(Nx.subtract(right, left), 2.0)
-    
+
     Nx.pad(center_grad, 0.0, [{0, 0, 0}, {0, 0, 0}, {1, 1, 0}, {0, 0, 0}])
   end
 
@@ -230,19 +231,19 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
   """
   def apply_alive_mask(state_grid) do
     {h, w, c} = Nx.shape(state_grid)
-    
+
     # Extract alpha channel
     alpha = Nx.slice(state_grid, [0, 0, @alpha_channel], [h, w, 1])
     alpha = Nx.squeeze(alpha, axes: [2])
-    
+
     # Max pool over 3x3 to check if any neighbor is alive
     alive_mask = max_pool_2d(alpha, 3)
     alive_mask = Nx.greater(alive_mask, 0.1)
-    
+
     # Broadcast mask to all channels and apply
     mask_3d = Nx.new_axis(alive_mask, 2)
     mask_3d = Nx.broadcast(mask_3d, {h, w, c})
-    
+
     zeros = Nx.broadcast(Nx.tensor(0.0, type: :f32), {h, w, c})
     Nx.select(mask_3d, state_grid, zeros)
   end
@@ -250,21 +251,22 @@ defmodule Thunderline.Thunderbolt.NCA.Perception do
   defp max_pool_2d(input, kernel_size) do
     {h, w} = Nx.shape(input)
     pad = div(kernel_size, 2)
-    
+
     # Pad with very negative value for max pooling
     padded = Nx.pad(input, -1.0e9, [{pad, pad, 0}, {pad, pad, 0}])
-    
+
     # Max over each kernel_size x kernel_size window
-    rows = 
+    rows =
       for i <- 0..(h - 1) do
-        cols = 
+        cols =
           for j <- 0..(w - 1) do
             patch = Nx.slice(padded, [i, j], [kernel_size, kernel_size])
             Nx.reduce_max(patch)
           end
+
         Nx.stack(cols)
       end
-    
+
     Nx.stack(rows)
   end
 end

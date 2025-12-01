@@ -49,7 +49,8 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitorTest do
     end
 
     test "lambda_hat/1 returns correct fraction" do
-      states = [0, 1, 0, 1, 0]  # 2/5 active
+      # 2/5 active
+      states = [0, 1, 0, 1, 0]
       assert LoopMonitor.lambda_hat(states) == 0.4
     end
 

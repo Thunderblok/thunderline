@@ -53,7 +53,9 @@ defmodule ThunderlineWeb.TrainingPromptLive do
       <header class="mb-8">
         <div class="flex items-center gap-4">
           <h1 class="text-2xl font-bold">Training Prompt Interface</h1>
-          <span class="badge badge-info">{if @upm_enabled, do: "UPM Enabled", else: "UPM Disabled"}</span>
+          <span class="badge badge-info">
+            {if @upm_enabled, do: "UPM Enabled", else: "UPM Disabled"}
+          </span>
           <%= if @mlflow_tracking_uri do %>
             <a
               href={@mlflow_tracking_uri}
@@ -166,8 +168,7 @@ defmodule ThunderlineWeb.TrainingPromptLive do
                 disabled={@processing or String.length(@prompt_text) < 10}
               >
                 <%= if @processing do %>
-                  <span class="loading loading-spinner loading-sm"></span>
-                  Processing...
+                  <span class="loading loading-spinner loading-sm"></span> Processing...
                 <% else %>
                   🚀 Submit Training Job
                 <% end %>
@@ -185,15 +186,28 @@ defmodule ThunderlineWeb.TrainingPromptLive do
 
           <%= if @upm_enabled do %>
             <div class="alert alert-info mt-4 text-xs">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                class="stroke-current shrink-0 w-5 h-5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                >
+                </path>
+              </svg>
               <span>
                 UPM will continuously learn from this prompt and update all connected agents via snapshot distribution.
               </span>
             </div>
           <% end %>
         </section>
-
-        <!-- Recent Training Jobs -->
+        
+    <!-- Recent Training Jobs -->
         <section class="panel p-6">
           <div class="flex items-center gap-2 mb-4">
             <div class="w-2 h-2 rounded-full bg-violet-400"></div>
@@ -247,7 +261,8 @@ defmodule ThunderlineWeb.TrainingPromptLive do
 
                   <%= if job.status == :running do %>
                     <div class="progress-container">
-                      <progress class="progress progress-primary w-full" value="70" max="100"></progress>
+                      <progress class="progress progress-primary w-full" value="70" max="100">
+                      </progress>
                       <span class="text-xs text-surface-muted mt-1">Phase {job.phase || 1}/4</span>
                     </div>
                   <% end %>
@@ -283,8 +298,8 @@ defmodule ThunderlineWeb.TrainingPromptLive do
           </div>
         </section>
       </div>
-
-      <!-- UPM Status Panel -->
+      
+    <!-- UPM Status Panel -->
       <%= if @upm_enabled do %>
         <section class="panel p-6 mt-6">
           <div class="flex items-center gap-2 mb-4">
@@ -347,7 +362,8 @@ defmodule ThunderlineWeb.TrainingPromptLive do
       socket = assign(socket, :processing, true)
 
       # Create training dataset from prompt
-      dataset_result = create_dataset_from_prompt(prompt_text, model_type, socket.assigns.current_user)
+      dataset_result =
+        create_dataset_from_prompt(prompt_text, model_type, socket.assigns.current_user)
 
       case dataset_result do
         {:ok, dataset} ->
@@ -366,24 +382,24 @@ defmodule ThunderlineWeb.TrainingPromptLive do
           case CerebrosTrainer.enqueue_training(dataset.id, job_opts) do
             {:ok, _oban_job} ->
               {:noreply,
-                socket
-                |> assign(:processing, false)
-                |> assign(:prompt_text, "")
-                |> put_flash(:info, "Training job submitted successfully!")
-                |> load_recent_jobs()}
+               socket
+               |> assign(:processing, false)
+               |> assign(:prompt_text, "")
+               |> put_flash(:info, "Training job submitted successfully!")
+               |> load_recent_jobs()}
 
             {:error, reason} ->
               {:noreply,
-                socket
-                |> assign(:processing, false)
-                |> put_flash(:error, "Failed to submit job: #{inspect(reason)}")}
+               socket
+               |> assign(:processing, false)
+               |> put_flash(:error, "Failed to submit job: #{inspect(reason)}")}
           end
 
         {:error, reason} ->
           {:noreply,
-            socket
-            |> assign(:processing, false)
-            |> put_flash(:error, "Failed to create dataset: #{inspect(reason)}")}
+           socket
+           |> assign(:processing, false)
+           |> put_flash(:error, "Failed to create dataset: #{inspect(reason)}")}
       end
     end
   end
@@ -432,23 +448,24 @@ defmodule ThunderlineWeb.TrainingPromptLive do
     dataset_name = "prompt_#{System.unique_integer([:positive])}_#{model_type}"
 
     case TrainingDataset.create(
-      %{
-        name: dataset_name,
-        description: "Training dataset from prompt submission",
-        metadata: %{
-          "source" => "prompt_interface",
-          "model_type" => model_type,
-          "created_by" => user_identifier(current_user)
-        }
-      },
-      domain: Domain
-    ) do
+           %{
+             name: dataset_name,
+             description: "Training dataset from prompt submission",
+             metadata: %{
+               "source" => "prompt_interface",
+               "model_type" => model_type,
+               "created_by" => user_identifier(current_user)
+             }
+           },
+           domain: Domain
+         ) do
       {:ok, dataset} ->
         # Write prompt to corpus file
         corpus_path = Path.join(["/tmp/thunderline/training", dataset.id])
         File.mkdir_p!(corpus_path)
 
         csv_path = Path.join(corpus_path, "prompt_data.csv")
+
         csv_content = """
         text,label
         "#{String.replace(prompt_text, "\"", "\"\"")}","training_sample"
@@ -462,7 +479,8 @@ defmodule ThunderlineWeb.TrainingPromptLive do
 
         {:ok, dataset}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -503,15 +521,20 @@ defmodule ThunderlineWeb.TrainingPromptLive do
   defp format_status(status) when is_atom(status) do
     status |> Atom.to_string() |> String.upcase()
   end
+
   defp format_status(status), do: to_string(status)
 
   defp format_timestamp(nil), do: "N/A"
+
   defp format_timestamp(%DateTime{} = dt) do
     Calendar.strftime(dt, "%H:%M:%S")
   end
+
   defp format_timestamp(_), do: "N/A"
 
-  defp format_metric_key(key) when is_atom(key), do: key |> Atom.to_string() |> String.replace("_", " ")
+  defp format_metric_key(key) when is_atom(key),
+    do: key |> Atom.to_string() |> String.replace("_", " ")
+
   defp format_metric_key(key), do: to_string(key)
 
   defp format_metric_value(value) when is_float(value), do: Float.round(value, 4)

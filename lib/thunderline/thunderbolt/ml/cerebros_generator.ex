@@ -137,9 +137,7 @@ defmodule Thunderline.Thunderbolt.ML.CerebrosGenerator do
         %{prompt_length: String.length(prompt)}
       )
 
-      Logger.debug(
-        "[CerebrosGenerator] Generated #{tokens_generated} tokens in #{duration_ms}ms"
-      )
+      Logger.debug("[CerebrosGenerator] Generated #{tokens_generated} tokens in #{duration_ms}ms")
 
       {:ok, text}
     else

@@ -249,8 +249,11 @@ defmodule Thunderline.Thunderbolt.UPM.ObservationRecorder do
     # Resolve PAC ID if resolver provided
     pac_id =
       case state.pac_resolver do
-        nil -> enriched_observation[:pac_id] || UUID.v7()
-        resolver when is_function(resolver, 1) -> resolver.(enriched_observation[:domain]) || UUID.v7()
+        nil ->
+          enriched_observation[:pac_id] || UUID.v7()
+
+        resolver when is_function(resolver, 1) ->
+          resolver.(enriched_observation[:domain]) || UUID.v7()
       end
 
     attrs = %{
@@ -333,7 +336,9 @@ defmodule Thunderline.Thunderbolt.UPM.ObservationRecorder do
           end
 
         {:error, reason} ->
-          Logger.warning("[UPM.ObservationRecorder] Failed to record batch observation: #{inspect(reason)}")
+          Logger.warning(
+            "[UPM.ObservationRecorder] Failed to record batch observation: #{inspect(reason)}"
+          )
       end
     end)
 
@@ -432,7 +437,12 @@ defmodule Thunderline.Thunderbolt.UPM.ObservationRecorder do
 
     # Emit cluster transition event if manifold changed
     if last_manifold != nil and clustering.manifold_id != last_manifold do
-      emit_cluster_transition_event(domain, last_manifold, clustering.manifold_id, observation[:tick])
+      emit_cluster_transition_event(
+        domain,
+        last_manifold,
+        clustering.manifold_id,
+        observation[:tick]
+      )
     end
 
     enriched_observation =

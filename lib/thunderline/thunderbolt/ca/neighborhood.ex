@@ -21,7 +21,8 @@ defmodule Thunderline.Thunderbolt.CA.Neighborhood do
 
   @type coord :: {integer(), integer(), integer()}
   @type bounds :: coord()
-  @type neighborhood_type :: :von_neumann | :moore | {:von_neumann, pos_integer()} | {:moore, pos_integer()}
+  @type neighborhood_type ::
+          :von_neumann | :moore | {:von_neumann, pos_integer()} | {:moore, pos_integer()}
   @type boundary_condition :: :clip | :periodic | :reflect
 
   # ═══════════════════════════════════════════════════════════════
@@ -39,11 +40,11 @@ defmodule Thunderline.Thunderbolt.CA.Neighborhood do
   ]
 
   # Moore: 26 neighbors (all adjacent, including corners)
-  @moore_offsets (for dx <- -1..1,
-                      dy <- -1..1,
-                      dz <- -1..1,
-                      {dx, dy, dz} != {0, 0, 0},
-                      do: {dx, dy, dz})
+  @moore_offsets for dx <- -1..1,
+                     dy <- -1..1,
+                     dz <- -1..1,
+                     {dx, dy, dz} != {0, 0, 0},
+                     do: {dx, dy, dz}
 
   # ═══════════════════════════════════════════════════════════════
   # Core Computation

@@ -29,7 +29,8 @@ defmodule Thunderline.Thundervine.Supervisor do
       {Registry, keys: :unique, name: Thunderline.Thundervine.Registry},
 
       # DynamicSupervisor for TAK event recorders
-      {DynamicSupervisor, name: Thunderline.Thundervine.EventRecorderSupervisor, strategy: :one_for_one}
+      {DynamicSupervisor,
+       name: Thunderline.Thundervine.EventRecorderSupervisor, strategy: :one_for_one}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -45,7 +46,9 @@ defmodule Thunderline.Thundervine.Supervisor do
 
   @impl Thunderline.Thunderblock.DomainActivation
   def on_activated(tick_count) do
-    Logger.info("[Thundervine] 🧬 VINE GROWING - DAG persistence & TAK recording ONLINE at tick #{tick_count}")
+    Logger.info(
+      "[Thundervine] 🧬 VINE GROWING - DAG persistence & TAK recording ONLINE at tick #{tick_count}"
+    )
 
     state = %{
       activated_at: tick_count,
@@ -71,7 +74,10 @@ defmodule Thunderline.Thundervine.Supervisor do
     # Health check every 35 ticks (35 seconds) - check for stale recorders
     if rem(tick_count, 35) == 0 do
       active_count = length(list_recorders())
-      Logger.debug("[Thundervine] 🧬 DAG pulse at tick #{tick_count} - #{active_count} active recorders")
+
+      Logger.debug(
+        "[Thundervine] 🧬 DAG pulse at tick #{tick_count} - #{active_count} active recorders"
+      )
     end
 
     {:noreply, %{state | tick_count: tick_count}}
@@ -80,6 +86,7 @@ defmodule Thunderline.Thundervine.Supervisor do
   @impl Thunderline.Thunderblock.DomainActivation
   def on_deactivated(reason, state) do
     uptime_ticks = state.tick_count - state.activated_at
+
     Logger.info(
       "[Thundervine] 🧬 Vine retracting after #{uptime_ticks} ticks, reason: #{inspect(reason)}"
     )
@@ -105,7 +112,10 @@ defmodule Thunderline.Thundervine.Supervisor do
   Stop a TAKEventRecorder for a specific run.
   """
   def stop_recorder(run_id) do
-    case Registry.lookup(Thunderline.Thundervine.Registry, {Thunderline.Thundervine.TAKEventRecorder, run_id}) do
+    case Registry.lookup(
+           Thunderline.Thundervine.Registry,
+           {Thunderline.Thundervine.TAKEventRecorder, run_id}
+         ) do
       [{pid, _}] ->
         DynamicSupervisor.terminate_child(Thunderline.Thundervine.EventRecorderSupervisor, pid)
 

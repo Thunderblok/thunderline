@@ -124,7 +124,14 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaWorker do
 
     # Execute saga with timeout
     result =
-      execute_with_timeout(saga_module, inputs, correlation_id, causation_id, deadline, timeout_ms)
+      execute_with_timeout(
+        saga_module,
+        inputs,
+        correlation_id,
+        causation_id,
+        deadline,
+        timeout_ms
+      )
 
     # Handle result
     case result do
@@ -165,7 +172,14 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaWorker do
 
   # Private functions
 
-  defp execute_with_timeout(saga_module, inputs, correlation_id, causation_id, deadline, timeout_ms) do
+  defp execute_with_timeout(
+         saga_module,
+         inputs,
+         correlation_id,
+         causation_id,
+         deadline,
+         timeout_ms
+       ) do
     # Add correlation/causation to inputs
     enriched_inputs =
       inputs

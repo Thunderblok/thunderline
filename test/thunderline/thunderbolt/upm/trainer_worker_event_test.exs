@@ -36,11 +36,12 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
 
   describe "EventBus subscription" do
     test "subscribes to system.feature_window.created on startup" do
-      {:ok, pid} = TrainerWorker.start_link(
-        name: :test_trainer_event_subscription,
-        trainer_name: "test_event_trainer",
-        mode: :shadow
-      )
+      {:ok, pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_event_subscription,
+          trainer_name: "test_event_trainer",
+          mode: :shadow
+        )
 
       # Verify subscription by checking process info
       # PubSub subscriptions are stored in process dictionary
@@ -54,50 +55,54 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
       # Create a filled feature window resource
       tenant_id = Ash.UUID.generate()
 
-      {:ok, window} = FeatureWindow
-      |> Ash.Changeset.for_create(:ingest_window, %{
-        tenant_id: tenant_id,
-        kind: :email_decision,
-        key: "test_key_#{System.unique_integer()}",
-        window_start: DateTime.utc_now() |> DateTime.add(-60, :second),
-        window_end: DateTime.utc_now(),
-        features: %{
-          "embedding" => [0.1, 0.2, 0.3],
-          "metadata" => %{"source" => "test"}
-        },
-        label_spec: %{"action" => "string"},
-        feature_schema_version: 1,
-        provenance: %{"source" => "test"}
-      })
-      |> Ash.create(authorize?: false)
-
-      # Fill the window with labels
-      {:ok, filled_window} = window
-      |> Ash.Changeset.for_update(:fill_labels, %{
-        labels: %{"action" => "send"},
-        status: :filled
-      })
-      |> Ash.update(authorize?: false)
-
-      # Start trainer
-      {:ok, trainer_pid} = TrainerWorker.start_link(
-        name: :test_trainer_event_handler,
-        trainer_name: "test_event_handler",
-        mode: :shadow
-      )
-
-      # Create and publish event
-      {:ok, event} = Event.new(%{
-        name: "system.feature_window.created",
-        source: :flow,
-        payload: %{
-          window_id: filled_window.id,
+      {:ok, window} =
+        FeatureWindow
+        |> Ash.Changeset.for_create(:ingest_window, %{
           tenant_id: tenant_id,
           kind: :email_decision,
-          window_start: filled_window.window_start,
-          features_count: 1
-        }
-      })
+          key: "test_key_#{System.unique_integer()}",
+          window_start: DateTime.utc_now() |> DateTime.add(-60, :second),
+          window_end: DateTime.utc_now(),
+          features: %{
+            "embedding" => [0.1, 0.2, 0.3],
+            "metadata" => %{"source" => "test"}
+          },
+          label_spec: %{"action" => "string"},
+          feature_schema_version: 1,
+          provenance: %{"source" => "test"}
+        })
+        |> Ash.create(authorize?: false)
+
+      # Fill the window with labels
+      {:ok, filled_window} =
+        window
+        |> Ash.Changeset.for_update(:fill_labels, %{
+          labels: %{"action" => "send"},
+          status: :filled
+        })
+        |> Ash.update(authorize?: false)
+
+      # Start trainer
+      {:ok, trainer_pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_event_handler,
+          trainer_name: "test_event_handler",
+          mode: :shadow
+        )
+
+      # Create and publish event
+      {:ok, event} =
+        Event.new(%{
+          name: "system.feature_window.created",
+          source: :flow,
+          payload: %{
+            window_id: filled_window.id,
+            tenant_id: tenant_id,
+            kind: :email_decision,
+            window_start: filled_window.window_start,
+            features_count: 1
+          }
+        })
 
       # Publish event (simulating EventBus)
       Phoenix.PubSub.broadcast(
@@ -120,20 +125,25 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
       window_id = Ash.UUID.generate()
 
       # Start trainer
-      {:ok, trainer_pid} = TrainerWorker.start_link(
-        name: :test_trainer_legacy,
-        trainer_name: "test_legacy",
-        mode: :shadow
-      )
+      {:ok, trainer_pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_legacy,
+          trainer_name: "test_legacy",
+          mode: :shadow
+        )
 
       # Send legacy event format
-      send(trainer_pid, {:event_bus, %{
-        name: "system.feature_window.created",
-        payload: %{
-          "window_id" => window_id,
-          "tenant_id" => tenant_id
-        }
-      }})
+      send(
+        trainer_pid,
+        {:event_bus,
+         %{
+           name: "system.feature_window.created",
+           payload: %{
+             "window_id" => window_id,
+             "tenant_id" => tenant_id
+           }
+         }}
+      )
 
       # Wait for telemetry
       assert_receive {:telemetry, :event_received, %{count: 1}, metadata}, 1000
@@ -148,18 +158,20 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
       window_id_str = Ash.UUID.generate()
       window_id_atom = Ash.UUID.generate()
 
-      {:ok, trainer_pid} = TrainerWorker.start_link(
-        name: :test_trainer_keys,
-        trainer_name: "test_keys",
-        mode: :shadow
-      )
+      {:ok, trainer_pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_keys,
+          trainer_name: "test_keys",
+          mode: :shadow
+        )
 
       # Test with string key
-      {:ok, event1} = Event.new(%{
-        name: "system.feature_window.created",
-        source: :flow,
-        payload: %{"window_id" => window_id_str}
-      })
+      {:ok, event1} =
+        Event.new(%{
+          name: "system.feature_window.created",
+          source: :flow,
+          payload: %{"window_id" => window_id_str}
+        })
 
       Phoenix.PubSub.broadcast(
         Thunderline.PubSub,
@@ -171,11 +183,12 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
       assert metadata1.window_id == window_id_str
 
       # Test with atom key
-      {:ok, event2} = Event.new(%{
-        name: "system.feature_window.created",
-        source: :flow,
-        payload: %{window_id: window_id_atom}
-      })
+      {:ok, event2} =
+        Event.new(%{
+          name: "system.feature_window.created",
+          source: :flow,
+          payload: %{window_id: window_id_atom}
+        })
 
       Phoenix.PubSub.broadcast(
         Thunderline.PubSub,
@@ -192,28 +205,32 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
     test "logs warning for events without window_id" do
       import ExUnit.CaptureLog
 
-      {:ok, trainer_pid} = TrainerWorker.start_link(
-        name: :test_trainer_no_id,
-        trainer_name: "test_no_id",
-        mode: :shadow
-      )
-
-      {:ok, event} = Event.new(%{
-        name: "system.feature_window.created",
-        source: :flow,
-        payload: %{tenant_id: Ash.UUID.generate()}  # Missing window_id
-      })
-
-      log = capture_log(fn ->
-        Phoenix.PubSub.broadcast(
-          Thunderline.PubSub,
-          "system.feature_window.created",
-          event
+      {:ok, trainer_pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_no_id,
+          trainer_name: "test_no_id",
+          mode: :shadow
         )
 
-        # Give it time to process
-        Process.sleep(100)
-      end)
+      {:ok, event} =
+        Event.new(%{
+          name: "system.feature_window.created",
+          source: :flow,
+          # Missing window_id
+          payload: %{tenant_id: Ash.UUID.generate()}
+        })
+
+      log =
+        capture_log(fn ->
+          Phoenix.PubSub.broadcast(
+            Thunderline.PubSub,
+            "system.feature_window.created",
+            event
+          )
+
+          # Give it time to process
+          Process.sleep(100)
+        end)
 
       assert log =~ "Received feature window event without window_id"
 
@@ -226,25 +243,27 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
       tenant_id = Ash.UUID.generate()
       window_id = Ash.UUID.generate()
 
-      {:ok, trainer_pid} = TrainerWorker.start_link(
-        name: :test_trainer_buffer,
-        trainer_name: "test_buffer",
-        mode: :shadow
-      )
+      {:ok, trainer_pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_buffer,
+          trainer_name: "test_buffer",
+          mode: :shadow
+        )
 
       # Get trainer state to access replay buffer
       metrics = TrainerWorker.get_metrics(trainer_pid)
 
       # Publish event
-      {:ok, event} = Event.new(%{
-        name: "system.feature_window.created",
-        source: :flow,
-        payload: %{
-          window_id: window_id,
-          tenant_id: tenant_id,
-          features: %{"test" => "data"}
-        }
-      })
+      {:ok, event} =
+        Event.new(%{
+          name: "system.feature_window.created",
+          source: :flow,
+          payload: %{
+            window_id: window_id,
+            tenant_id: tenant_id,
+            features: %{"test" => "data"}
+          }
+        })
 
       Phoenix.PubSub.broadcast(
         Thunderline.PubSub,
@@ -270,35 +289,38 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
       tenant_id = Ash.UUID.generate()
 
       # Create an UNFILLED window
-      {:ok, window} = FeatureWindow
-      |> Ash.Changeset.for_create(:ingest_window, %{
-        tenant_id: tenant_id,
-        kind: :email_decision,
-        key: "test_unfilled_#{System.unique_integer()}",
-        window_start: DateTime.utc_now() |> DateTime.add(-60, :second),
-        window_end: DateTime.utc_now(),
-        features: %{"test" => "data"},
-        label_spec: %{"action" => "string"},
-        feature_schema_version: 1,
-        provenance: %{"source" => "test"}
-      })
-      |> Ash.create(authorize?: false)
+      {:ok, window} =
+        FeatureWindow
+        |> Ash.Changeset.for_create(:ingest_window, %{
+          tenant_id: tenant_id,
+          kind: :email_decision,
+          key: "test_unfilled_#{System.unique_integer()}",
+          window_start: DateTime.utc_now() |> DateTime.add(-60, :second),
+          window_end: DateTime.utc_now(),
+          features: %{"test" => "data"},
+          label_spec: %{"action" => "string"},
+          feature_schema_version: 1,
+          provenance: %{"source" => "test"}
+        })
+        |> Ash.create(authorize?: false)
 
       # Window is in :open status, not :filled
       assert window.status == :open
       assert is_nil(window.labels)
 
-      {:ok, trainer_pid} = TrainerWorker.start_link(
-        name: :test_trainer_unfilled,
-        trainer_name: "test_unfilled",
-        mode: :shadow
-      )
+      {:ok, trainer_pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_unfilled,
+          trainer_name: "test_unfilled",
+          mode: :shadow
+        )
 
-      log = capture_log(fn ->
-        # Process window directly
-        TrainerWorker.process_window(trainer_pid, window.id)
-        Process.sleep(200)
-      end)
+      log =
+        capture_log(fn ->
+          # Process window directly
+          TrainerWorker.process_window(trainer_pid, window.id)
+          Process.sleep(200)
+        end)
 
       assert log =~ "Skipping unfilled window"
 
@@ -313,32 +335,35 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorkerEventTest do
       tenant_id = Ash.UUID.generate()
 
       # Create and fill a window
-      {:ok, window} = FeatureWindow
-      |> Ash.Changeset.for_create(:ingest_window, %{
-        tenant_id: tenant_id,
-        kind: :email_decision,
-        key: "test_key_#{System.unique_integer()}",
-        window_start: DateTime.utc_now() |> DateTime.add(-60, :second),
-        window_end: DateTime.utc_now(),
-        features: %{"embedding" => [0.1, 0.2]},
-        label_spec: %{"action" => "string"},
-        feature_schema_version: 1,
-        provenance: %{"source" => "test"}
-      })
-      |> Ash.create(authorize?: false)
+      {:ok, window} =
+        FeatureWindow
+        |> Ash.Changeset.for_create(:ingest_window, %{
+          tenant_id: tenant_id,
+          kind: :email_decision,
+          key: "test_key_#{System.unique_integer()}",
+          window_start: DateTime.utc_now() |> DateTime.add(-60, :second),
+          window_end: DateTime.utc_now(),
+          features: %{"embedding" => [0.1, 0.2]},
+          label_spec: %{"action" => "string"},
+          feature_schema_version: 1,
+          provenance: %{"source" => "test"}
+        })
+        |> Ash.create(authorize?: false)
 
-      {:ok, filled_window} = window
-      |> Ash.Changeset.for_update(:fill_labels, %{
-        labels: %{"action" => "send"},
-        status: :filled
-      })
-      |> Ash.update(authorize?: false)
+      {:ok, filled_window} =
+        window
+        |> Ash.Changeset.for_update(:fill_labels, %{
+          labels: %{"action" => "send"},
+          status: :filled
+        })
+        |> Ash.update(authorize?: false)
 
-      {:ok, trainer_pid} = TrainerWorker.start_link(
-        name: :test_trainer_filled,
-        trainer_name: "test_filled",
-        mode: :shadow
-      )
+      {:ok, trainer_pid} =
+        TrainerWorker.start_link(
+          name: :test_trainer_filled,
+          trainer_name: "test_filled",
+          mode: :shadow
+        )
 
       # Process the filled window
       TrainerWorker.process_window(trainer_pid, filled_window.id)

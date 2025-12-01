@@ -317,8 +317,7 @@ defmodule Thunderline.Thundervine.Replay do
     %{
       rule_1: Map.put(stats_1, :hash, rule_hash_1),
       rule_2: Map.put(stats_2, :hash, rule_hash_2),
-      more_active:
-        if(stats_1.total_changes > stats_2.total_changes, do: :rule_1, else: :rule_2),
+      more_active: if(stats_1.total_changes > stats_2.total_changes, do: :rule_1, else: :rule_2),
       activity_ratio:
         if(stats_2.total_changes > 0,
           do: stats_1.total_changes / stats_2.total_changes,

@@ -30,25 +30,31 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   alias Thunderline.Thunderbolt.Thunderbit
 
   defstruct [
-    :format,      # :coo | :hash | :dense
-    :shape,       # {height, width, depth}
-    :channels,    # Number of channels per cell
-    :data,        # Format-specific data structure
-    :default,     # Default value for missing entries
-    :nnz          # Number of non-zero entries
+    # :coo | :hash | :dense
+    :format,
+    # {height, width, depth}
+    :shape,
+    # Number of channels per cell
+    :channels,
+    # Format-specific data structure
+    :data,
+    # Default value for missing entries
+    :default,
+    # Number of non-zero entries
+    :nnz
   ]
 
   @type coord :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}
   @type cell_value :: list(float())
-  
+
   @type t :: %__MODULE__{
-    format: :coo | :hash | :dense,
-    shape: {non_neg_integer(), non_neg_integer(), non_neg_integer()},
-    channels: non_neg_integer(),
-    data: term(),
-    default: cell_value(),
-    nnz: non_neg_integer()
-  }
+          format: :coo | :hash | :dense,
+          shape: {non_neg_integer(), non_neg_integer(), non_neg_integer()},
+          channels: non_neg_integer(),
+          data: term(),
+          default: cell_value(),
+          nnz: non_neg_integer()
+        }
 
   @default_channels 16
   @alive_threshold 0.1
@@ -71,12 +77,13 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
     format = Keyword.get(opts, :format, :hash)
     channels = Keyword.get(opts, :channels, @default_channels)
     default = Keyword.get(opts, :default, List.duplicate(0.0, channels))
-    
-    data = case format do
-      :coo -> []
-      :hash -> %{}
-    end
-    
+
+    data =
+      case format do
+        :coo -> []
+        :hash -> %{}
+      end
+
     %__MODULE__{
       format: format,
       shape: shape,
@@ -95,20 +102,20 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   @spec from_thunderbits(list({coord(), Thunderbit.t()}), keyword()) :: t()
   def from_thunderbits(cells, opts \\ []) do
     threshold = Keyword.get(opts, :alive_threshold, @alive_threshold)
-    
+
     # Find bounds
     coords = Enum.map(cells, fn {{x, y, z}, _} -> {x, y, z} end)
     max_x = coords |> Enum.map(&elem(&1, 0)) |> Enum.max(fn -> 0 end)
     max_y = coords |> Enum.map(&elem(&1, 1)) |> Enum.max(fn -> 0 end)
     max_z = coords |> Enum.map(&elem(&1, 2)) |> Enum.max(fn -> 0 end)
-    
+
     shape = {max_x + 1, max_y + 1, max_z + 1}
     grid = new(shape, opts)
-    
+
     # Insert alive cells
     Enum.reduce(cells, grid, fn {coord, thunderbit}, acc ->
       state = thunderbit_to_state(thunderbit)
-      
+
       # Check alpha channel for aliveness
       if Enum.at(state, 3, 0.0) >= threshold do
         put(acc, coord, state)
@@ -123,7 +130,9 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
     # [R, G, B, α, PLV, σ_flow, λ_sensitivity, hidden...]
     [
       # RGB (from some visual representation)
-      0.5, 0.5, 0.5,
+      0.5,
+      0.5,
+      0.5,
       # Alpha (1.0 for alive)
       1.0,
       # PLV (Phase Locking Value)
@@ -133,7 +142,15 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
       # Lambda sensitivity
       tb.lambda_sensitivity || 0.0,
       # Hidden channels (pad to 16)
-      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
     ]
   end
 
@@ -148,7 +165,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   def get(%__MODULE__{format: :hash, data: data, default: default}, coord) do
     Map.get(data, coord, default)
   end
-  
+
   def get(%__MODULE__{format: :coo, data: entries, default: default}, coord) do
     case Enum.find(entries, fn {c, _v} -> c == coord end) do
       {_, value} -> value
@@ -164,10 +181,10 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
     new_nnz = if Map.has_key?(data, coord), do: nnz, else: nnz + 1
     %{grid | data: Map.put(data, coord, value), nnz: new_nnz}
   end
-  
+
   def put(%__MODULE__{format: :coo, data: entries, nnz: nnz} = grid, coord, value) do
     # Remove existing entry if present
-    {filtered, was_present} = 
+    {filtered, was_present} =
       Enum.reduce(entries, {[], false}, fn {c, v}, {acc, found} ->
         if c == coord do
           {acc, true}
@@ -175,7 +192,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
           {[{c, v} | acc], found}
         end
       end)
-    
+
     new_nnz = if was_present, do: nnz, else: nnz + 1
     %{grid | data: [{coord, value} | filtered], nnz: new_nnz}
   end
@@ -191,7 +208,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
       grid
     end
   end
-  
+
   def delete(%__MODULE__{format: :coo, data: entries, nnz: nnz} = grid, coord) do
     filtered = Enum.reject(entries, fn {c, _} -> c == coord end)
     new_nnz = if length(filtered) < length(entries), do: nnz - 1, else: nnz
@@ -211,7 +228,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   def each_active(%__MODULE__{format: :hash, data: data}, fun) do
     Enum.each(data, fn {coord, value} -> fun.(coord, value) end)
   end
-  
+
   def each_active(%__MODULE__{format: :coo, data: entries}, fun) do
     Enum.each(entries, fn {coord, value} -> fun.(coord, value) end)
   end
@@ -221,16 +238,20 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   """
   @spec map_active(t(), (coord(), cell_value() -> cell_value())) :: t()
   def map_active(%__MODULE__{format: :hash, data: data} = grid, fun) do
-    new_data = Map.new(data, fn {coord, value} -> 
-      {coord, fun.(coord, value)} 
-    end)
+    new_data =
+      Map.new(data, fn {coord, value} ->
+        {coord, fun.(coord, value)}
+      end)
+
     %{grid | data: new_data}
   end
-  
+
   def map_active(%__MODULE__{format: :coo, data: entries} = grid, fun) do
-    new_entries = Enum.map(entries, fn {coord, value} -> 
-      {coord, fun.(coord, value)} 
-    end)
+    new_entries =
+      Enum.map(entries, fn {coord, value} ->
+        {coord, fun.(coord, value)}
+      end)
+
     %{grid | data: new_entries}
   end
 
@@ -240,8 +261,8 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   @spec pmap_active(t(), (coord(), cell_value() -> cell_value()), keyword()) :: t()
   def pmap_active(%__MODULE__{format: :hash, data: data} = grid, fun, opts \\ []) do
     max_concurrency = Keyword.get(opts, :max_concurrency, System.schedulers_online())
-    
-    new_data = 
+
+    new_data =
       data
       |> Task.async_stream(
         fn {coord, value} -> {coord, fun.(coord, value)} end,
@@ -251,10 +272,10 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
       |> Enum.reduce(%{}, fn {:ok, {coord, value}}, acc ->
         Map.put(acc, coord, value)
       end)
-    
+
     %{grid | data: new_data}
   end
-  
+
   def pmap_active(%__MODULE__{format: :coo} = grid, fun, opts) do
     # Convert to hash for parallel processing
     grid
@@ -271,7 +292,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
     new_data = Map.filter(data, fn {coord, value} -> pred.(coord, value) end)
     %{grid | data: new_data, nnz: map_size(new_data)}
   end
-  
+
   def filter_active(%__MODULE__{format: :coo, data: entries} = grid, pred) do
     new_entries = Enum.filter(entries, fn {coord, value} -> pred.(coord, value) end)
     %{grid | data: new_entries, nnz: length(new_entries)}
@@ -287,7 +308,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   @spec neighbors(t(), coord()) :: list({coord(), cell_value()})
   def neighbors(grid, {x, y, z}) do
     {h, w, d} = grid.shape
-    
+
     for dx <- -1..1,
         dy <- -1..1,
         dz <- -1..1,
@@ -308,11 +329,12 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
 
   Efficient: only processes active cells and their immediate neighborhood.
   """
-  @spec convolve(t(), (coord(), cell_value(), list({coord(), cell_value()}) -> cell_value())) :: t()
+  @spec convolve(t(), (coord(), cell_value(), list({coord(), cell_value()}) -> cell_value())) ::
+          t()
   def convolve(grid, fun) do
     # Collect all coordinates that might be affected
     # (active cells + their neighbors)
-    affected_coords = 
+    affected_coords =
       grid
       |> active_coords()
       |> Enum.flat_map(fn coord ->
@@ -320,15 +342,15 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
         [coord | neighbor_coords]
       end)
       |> Enum.uniq()
-    
+
     # Apply function to each affected coordinate
-    new_values = 
+    new_values =
       Enum.map(affected_coords, fn coord ->
         current = get(grid, coord)
         neighs = neighbors(grid, coord)
         {coord, fun.(coord, current, neighs)}
       end)
-    
+
     # Build new grid from results
     Enum.reduce(new_values, new(grid.shape, format: grid.format), fn {coord, value}, acc ->
       # Only store non-default values
@@ -343,7 +365,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   defp active_coords(%__MODULE__{format: :hash, data: data}) do
     Map.keys(data)
   end
-  
+
   defp active_coords(%__MODULE__{format: :coo, data: entries}) do
     Enum.map(entries, fn {coord, _} -> coord end)
   end
@@ -357,7 +379,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   """
   @spec to_hash(t()) :: t()
   def to_hash(%__MODULE__{format: :hash} = grid), do: grid
-  
+
   def to_hash(%__MODULE__{format: :coo, data: entries} = grid) do
     data = Map.new(entries)
     %{grid | format: :hash, data: data}
@@ -368,7 +390,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   """
   @spec to_coo(t()) :: t()
   def to_coo(%__MODULE__{format: :coo} = grid), do: grid
-  
+
   def to_coo(%__MODULE__{format: :hash, data: data} = grid) do
     entries = Map.to_list(data)
     %{grid | format: :coo, data: entries}
@@ -384,7 +406,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
     # Initialize dense tensor with defaults
     default_tensor = Nx.tensor(default, type: :f32)
     dense = Nx.broadcast(default_tensor, {h, w, d, c})
-    
+
     # Scatter active values
     grid
     |> active_coords()
@@ -403,18 +425,18 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   def from_dense(tensor, opts \\ []) do
     threshold = Keyword.get(opts, :alive_threshold, @alive_threshold)
     {h, w, d, c} = Nx.shape(tensor)
-    
+
     grid = new({h, w, d}, Keyword.put(opts, :channels, c))
-    
+
     # Extract non-zero cells
     tensor_list = Nx.to_list(tensor)
-    
-    Enum.reduce(0..(h-1), grid, fn x, acc_x ->
-      Enum.reduce(0..(w-1), acc_x, fn y, acc_y ->
-        Enum.reduce(0..(d-1), acc_y, fn z, acc_z ->
+
+    Enum.reduce(0..(h - 1), grid, fn x, acc_x ->
+      Enum.reduce(0..(w - 1), acc_x, fn y, acc_y ->
+        Enum.reduce(0..(d - 1), acc_y, fn z, acc_z ->
           value = tensor_list |> Enum.at(x) |> Enum.at(y) |> Enum.at(z)
           alpha = Enum.at(value, 3, 0.0)
-          
+
           if alpha >= threshold do
             put(acc_z, {x, y, z}, value)
           else
@@ -435,7 +457,7 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   @spec sparsity(t()) :: float()
   def sparsity(%__MODULE__{shape: {h, w, d}, nnz: nnz}) do
     total = h * w * d
-    1.0 - (nnz / total)
+    1.0 - nnz / total
   end
 
   @doc """
@@ -449,15 +471,14 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   """
   @spec bounding_box(t()) :: {coord(), coord()} | nil
   def bounding_box(%__MODULE__{nnz: 0}), do: nil
-  
+
   def bounding_box(grid) do
     coords = active_coords(grid)
-    
+
     xs = Enum.map(coords, &elem(&1, 0))
     ys = Enum.map(coords, &elem(&1, 1))
     zs = Enum.map(coords, &elem(&1, 2))
-    
-    {{Enum.min(xs), Enum.min(ys), Enum.min(zs)},
-     {Enum.max(xs), Enum.max(ys), Enum.max(zs)}}
+
+    {{Enum.min(xs), Enum.min(ys), Enum.min(zs)}, {Enum.max(xs), Enum.max(ys), Enum.max(zs)}}
   end
 end

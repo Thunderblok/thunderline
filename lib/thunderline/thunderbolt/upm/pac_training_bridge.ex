@@ -138,7 +138,10 @@ defmodule Thunderline.Thunderbolt.UPM.PACTrainingBridge do
         {:noreply, maybe_emit_window(new_state)}
 
       {:error, reason} ->
-        Logger.warning("[UPM.PACTrainingBridge] Failed to process PAC #{pac_id}: #{inspect(reason)}")
+        Logger.warning(
+          "[UPM.PACTrainingBridge] Failed to process PAC #{pac_id}: #{inspect(reason)}"
+        )
+
         {:noreply, state}
     end
   end
@@ -189,7 +192,10 @@ defmodule Thunderline.Thunderbolt.UPM.PACTrainingBridge do
     end
   end
 
-  def handle_info({:pac_event, %{type: :intent_completed, pac_id: pac_id, intent: intent} = event}, state) do
+  def handle_info(
+        {:pac_event, %{type: :intent_completed, pac_id: pac_id, intent: intent} = event},
+        state
+      ) do
     Logger.debug("[UPM.PACTrainingBridge] PAC intent completed: #{pac_id}")
 
     state =
@@ -200,7 +206,10 @@ defmodule Thunderline.Thunderbolt.UPM.PACTrainingBridge do
     {:noreply, maybe_emit_window(state)}
   end
 
-  def handle_info({:pac_event, %{type: :snapshot_created, pac_id: pac_id, snapshot: snapshot} = event}, state) do
+  def handle_info(
+        {:pac_event, %{type: :snapshot_created, pac_id: pac_id, snapshot: snapshot} = event},
+        state
+      ) do
     Logger.debug("[UPM.PACTrainingBridge] PAC snapshot created: #{pac_id}")
 
     # Extract features from snapshot

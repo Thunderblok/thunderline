@@ -91,7 +91,8 @@ defmodule Thunderline.Thunderwall.OverflowHandler do
         by_domain: %{},
         by_reason: %{}
       },
-      recent: []  # Circular buffer of recent items
+      # Circular buffer of recent items
+      recent: []
     }
 
     Logger.info("[Thunderwall.OverflowHandler] Started")
@@ -186,6 +187,7 @@ defmodule Thunderline.Thunderwall.OverflowHandler do
         Logger.warning(
           "[Thunderwall.OverflowHandler] Dead-letter not implemented, decaying instead"
         )
+
         :ok
 
       :discard ->

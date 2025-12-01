@@ -19,7 +19,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
 
   # Client API
 
-  @doc """
+  @doc \"""
   Start a TAK runner process.
 
   ## Options
@@ -123,7 +123,9 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
 
     schedule_tick(tick_ms)
 
-    Logger.info("[TAK.Runner] Started run_id=#{run_id} size=#{inspect(size)} tick_ms=#{tick_ms} gpu?=#{gpu_enabled?}")
+    Logger.info(
+      "[TAK.Runner] Started run_id=#{run_id} size=#{inspect(size)} tick_ms=#{tick_ms} gpu?=#{gpu_enabled?}"
+    )
 
     {:ok, state}
   end
@@ -138,23 +140,30 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
     start_time = System.monotonic_time(:millisecond)
 
     # Phase 3: GPU-accelerated evolution with proper Grid↔Tensor bridge
-    {deltas, new_grid} = if state.gpu_enabled? do
-      # GPU path: Grid → Tensor → GPU evolve → Tensor → Grid
-      evolved_tensor = gpu_evolve(state.grid, state.ruleset)
-      deltas = compute_deltas_from_tensor(state.grid, evolved_tensor)
-      new_grid = Grid.from_tensor(state.grid, evolved_tensor)
-                |> Grid.increment_generation()
-      {deltas, new_grid}
-    else
-      # Fallback to existing Bolt.CA.Stepper
-      result = Thunderline.Thunderbolt.TAK.evolve_gpu(state.grid, state.ruleset)
-      case result do
-        {:ok, d, g} -> {d, g}
-        _ ->
-          Logger.warning("[TAK.Runner] Evolution failed, using previous grid")
-          {[], state.grid}
+    {deltas, new_grid} =
+      if state.gpu_enabled? do
+        # GPU path: Grid → Tensor → GPU evolve → Tensor → Grid
+        evolved_tensor = gpu_evolve(state.grid, state.ruleset)
+        deltas = compute_deltas_from_tensor(state.grid, evolved_tensor)
+
+        new_grid =
+          Grid.from_tensor(state.grid, evolved_tensor)
+          |> Grid.increment_generation()
+
+        {deltas, new_grid}
+      else
+        # Fallback to existing Bolt.CA.Stepper
+        result = Thunderline.Thunderbolt.TAK.evolve_gpu(state.grid, state.ruleset)
+
+        case result do
+          {:ok, d, g} ->
+            {d, g}
+
+          _ ->
+            Logger.warning("[TAK.Runner] Evolution failed, using previous grid")
+            {[], state.grid}
+        end
       end
-    end
 
     gen_time_ms = System.monotonic_time(:millisecond) - start_time
 

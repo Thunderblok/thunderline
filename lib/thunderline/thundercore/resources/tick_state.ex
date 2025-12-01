@@ -32,52 +32,11 @@ defmodule Thunderline.Thundercore.Resources.TickState do
     end
   end
 
-  attributes do
-    uuid_primary_key :id
-
-    attribute :tick_id, :integer do
-      allow_nil? false
-      public? true
-      description "Tick sequence number"
-    end
-
-    attribute :tick_type, :atom do
-      allow_nil? false
-      public? true
-      description "Type of tick: :system, :slow, :fast"
-      constraints one_of: [:system, :slow, :fast]
-      default :system
-    end
-
-    attribute :timestamp, :utc_datetime_usec do
-      allow_nil? false
-      public? true
-      description "Wall clock time when tick was emitted"
-    end
-
-    attribute :monotonic_ns, :integer do
-      allow_nil? false
-      public? true
-      description "Monotonic nanoseconds at tick emission"
-    end
-
-    attribute :epoch_ms, :integer do
-      allow_nil? false
-      public? true
-      description "Milliseconds since TickEmitter start"
-    end
-
-    attribute :metadata, :map do
-      default %{}
-      public? true
-      description "Optional tick metadata"
-    end
-
-    create_timestamp :inserted_at
-  end
-
-  identities do
-    identity :unique_tick, [:tick_id, :tick_type]
+  code_interface do
+    define :snapshot
+    define :recent, args: [{:optional, :limit}]
+    define :by_type, args: [:tick_type, {:optional, :limit}]
+    define :prune_before_tick, args: [:tick_id]
   end
 
   actions do
@@ -129,19 +88,58 @@ defmodule Thunderline.Thundercore.Resources.TickState do
         import Ecto.Query
 
         {count, _} =
-          Thunderline.Repo.delete_all(
-            from(t in "tick_states", where: t.tick_id < ^tick_id)
-          )
+          Thunderline.Repo.delete_all(from(t in "tick_states", where: t.tick_id < ^tick_id))
 
         {:ok, count}
       end
     end
   end
 
-  code_interface do
-    define :snapshot
-    define :recent, args: [{:optional, :limit}]
-    define :by_type, args: [:tick_type, {:optional, :limit}]
-    define :prune_before_tick, args: [:tick_id]
+  attributes do
+    uuid_primary_key :id
+
+    attribute :tick_id, :integer do
+      allow_nil? false
+      public? true
+      description "Tick sequence number"
+    end
+
+    attribute :tick_type, :atom do
+      allow_nil? false
+      public? true
+      description "Type of tick: :system, :slow, :fast"
+      constraints one_of: [:system, :slow, :fast]
+      default :system
+    end
+
+    attribute :timestamp, :utc_datetime_usec do
+      allow_nil? false
+      public? true
+      description "Wall clock time when tick was emitted"
+    end
+
+    attribute :monotonic_ns, :integer do
+      allow_nil? false
+      public? true
+      description "Monotonic nanoseconds at tick emission"
+    end
+
+    attribute :epoch_ms, :integer do
+      allow_nil? false
+      public? true
+      description "Milliseconds since TickEmitter start"
+    end
+
+    attribute :metadata, :map do
+      default %{}
+      public? true
+      description "Optional tick metadata"
+    end
+
+    create_timestamp :inserted_at
+  end
+
+  identities do
+    identity :unique_tick, [:tick_id, :tick_type]
   end
 end

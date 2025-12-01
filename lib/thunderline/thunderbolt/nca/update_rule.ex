@@ -30,7 +30,8 @@ defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
 
   alias Thunderline.Thunderbolt.NCA.Perception
 
-  @perception_dim 48  # 16 state + 16 grad_x + 16 grad_y
+  # 16 state + 16 grad_x + 16 grad_y
+  @perception_dim 48
   @hidden_dim 128
   @state_dim 16
 
@@ -84,7 +85,8 @@ defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
   def forward(perception, params) do
     # Layer 1: Dense + ReLU
     z1 = Nx.add(Nx.dot(perception, params.w1), params.b1)
-    h1 = Nx.max(z1, 0)  # ReLU
+    # ReLU
+    h1 = Nx.max(z1, 0)
 
     # Layer 2: Dense (no activation - residual update)
     Nx.add(Nx.dot(h1, params.w2), params.b2)
@@ -102,15 +104,15 @@ defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
   """
   def stochastic_update(state_grid, delta_grid, update_prob \\ 0.5) do
     {h, w, c} = Nx.shape(state_grid)
-    
+
     # Generate random mask
     key = Nx.Random.key(System.system_time(:nanosecond))
     {rand_mask, _key} = Nx.Random.uniform(key, shape: {h, w, 1})
-    
+
     # Cells update if random < update_prob
     update_mask = Nx.less(rand_mask, update_prob)
     update_mask = Nx.broadcast(update_mask, {h, w, c})
-    
+
     # Apply masked update
     zeros = Nx.broadcast(Nx.tensor(0.0, type: :f32), {h, w, c})
     masked_delta = Nx.select(update_mask, delta_grid, zeros)
@@ -131,21 +133,21 @@ defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
   """
   def step(state_grid, params, opts \\ []) do
     update_prob = Keyword.get(opts, :update_prob, 0.5)
-    
+
     # 1. Perceive
     perception = Perception.perceive(state_grid)
-    
+
     # 2. Apply update rule to get deltas
     # Reshape for batch processing
     {h, w, _p} = Nx.shape(perception)
     perception_flat = Nx.reshape(perception, {h * w, @perception_dim})
-    
+
     delta_flat = forward(perception_flat, params)
     delta_grid = Nx.reshape(delta_flat, {h, w, @state_dim})
-    
+
     # 3. Stochastic update
     updated = stochastic_update(state_grid, delta_grid, update_prob)
-    
+
     # 4. Alive masking
     Perception.apply_alive_mask(updated)
   end
@@ -170,10 +172,10 @@ defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
   """
   def rgba_loss(state_grid, target_rgba) do
     {h, w, _c} = Nx.shape(state_grid)
-    
+
     # Extract RGBA from state
     current_rgba = Nx.slice(state_grid, [0, 0, 0], [h, w, 4])
-    
+
     # L2 loss
     diff = Nx.subtract(current_rgba, target_rgba)
     Nx.mean(Nx.power(diff, 2))
@@ -205,12 +207,13 @@ defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
         w2: Nx.to_binary(params.w2),
         b2: Nx.to_binary(params.b2)
     }
+
     :erlang.term_to_binary(serializable)
   end
 
   def deserialize(binary) do
     params = :erlang.binary_to_term(binary)
-    
+
     %{
       params
       | w1: Nx.from_binary(params.w1, :f32) |> Nx.reshape({@perception_dim, @hidden_dim}),

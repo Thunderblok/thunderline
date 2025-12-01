@@ -176,7 +176,19 @@ defmodule Thunderline.Thunderbolt.Resources.UpmObservation do
 
     attribute :domain, :atom do
       allow_nil? false
-      constraints one_of: [:ml_pipeline, :crown, :flow, :bolt, :gate, :grid, :link, :block, :cerebros]
+
+      constraints one_of: [
+                    :ml_pipeline,
+                    :crown,
+                    :flow,
+                    :bolt,
+                    :gate,
+                    :grid,
+                    :link,
+                    :block,
+                    :cerebros
+                  ]
+
       description "Domain being observed"
     end
 
@@ -238,7 +250,16 @@ defmodule Thunderline.Thunderbolt.Resources.UpmObservation do
     attribute :band_status, :atom do
       allow_nil? false
       default :unknown
-      constraints one_of: [:healthy, :loop_detected, :degenerate, :chaotic_drift, :resonance_spike, :unknown]
+
+      constraints one_of: [
+                    :healthy,
+                    :loop_detected,
+                    :degenerate,
+                    :chaotic_drift,
+                    :resonance_spike,
+                    :unknown
+                  ]
+
       description "Overall health classification based on observables"
     end
 

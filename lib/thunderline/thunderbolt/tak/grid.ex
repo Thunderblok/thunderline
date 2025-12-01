@@ -48,7 +48,8 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
   ```
   """
 
-  @type dimensions :: {pos_integer(), pos_integer()} | {pos_integer(), pos_integer(), pos_integer()}
+  @type dimensions ::
+          {pos_integer(), pos_integer()} | {pos_integer(), pos_integer(), pos_integer()}
   @type t :: %__MODULE__{
           size: dimensions(),
           cells: map(),
@@ -103,21 +104,23 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
     case size do
       {width, height} ->
         # 2D grid
-        data = for y <- 0..(height - 1),
-                   x <- 0..(width - 1) do
-          Map.get(cells, {x, y}, 0)
-        end
+        data =
+          for y <- 0..(height - 1),
+              x <- 0..(width - 1) do
+            Map.get(cells, {x, y}, 0)
+          end
 
         Nx.tensor(data, type: :u8)
         |> Nx.reshape({height, width})
 
       {depth, height, width} ->
         # 3D grid
-        data = for z <- 0..(depth - 1),
-                   y <- 0..(height - 1),
-                   x <- 0..(width - 1) do
-          Map.get(cells, {x, y, z}, 0)
-        end
+        data =
+          for z <- 0..(depth - 1),
+              y <- 0..(height - 1),
+              x <- 0..(width - 1) do
+            Map.get(cells, {x, y, z}, 0)
+          end
 
         Nx.tensor(data, type: :u8)
         |> Nx.reshape({depth, height, width})
@@ -143,36 +146,37 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
     shape = Nx.shape(squeezed)
     flat_data = Nx.to_flat_list(squeezed)
 
-    cells = case shape do
-      {_height, width} ->
-        # 2D grid
-        flat_data
-        |> Enum.with_index()
-        |> Enum.reduce(%{}, fn {value, idx}, acc ->
-          if value == 1 do
-            x = rem(idx, width)
-            y = div(idx, width)
-            Map.put(acc, {x, y}, 1)
-          else
-            acc
-          end
-        end)
+    cells =
+      case shape do
+        {_height, width} ->
+          # 2D grid
+          flat_data
+          |> Enum.with_index()
+          |> Enum.reduce(%{}, fn {value, idx}, acc ->
+            if value == 1 do
+              x = rem(idx, width)
+              y = div(idx, width)
+              Map.put(acc, {x, y}, 1)
+            else
+              acc
+            end
+          end)
 
-      {_depth, height, width} ->
-        # 3D grid
-        flat_data
-        |> Enum.with_index()
-        |> Enum.reduce(%{}, fn {value, idx}, acc ->
-          if value == 1 do
-            x = rem(idx, width)
-            y = rem(div(idx, width), height)
-            z = div(idx, width * height)
-            Map.put(acc, {x, y, z}, 1)
-          else
-            acc
-          end
-        end)
-    end
+        {_depth, height, width} ->
+          # 3D grid
+          flat_data
+          |> Enum.with_index()
+          |> Enum.reduce(%{}, fn {value, idx}, acc ->
+            if value == 1 do
+              x = rem(idx, width)
+              y = rem(div(idx, width), height)
+              z = div(idx, width * height)
+              Map.put(acc, {x, y, z}, 1)
+            else
+              acc
+            end
+          end)
+      end
 
     %{grid | cells: cells}
   end
@@ -225,10 +229,11 @@ defmodule Thunderline.Thunderbolt.TAK.Grid do
   """
   def compute_deltas(%__MODULE__{cells: old_cells}, %__MODULE__{cells: new_cells}) do
     # Find all coordinates that changed
-    all_coords = MapSet.union(
-      MapSet.new(Map.keys(old_cells)),
-      MapSet.new(Map.keys(new_cells))
-    )
+    all_coords =
+      MapSet.union(
+        MapSet.new(Map.keys(old_cells)),
+        MapSet.new(Map.keys(new_cells))
+      )
 
     all_coords
     |> Enum.reduce([], fn coord, acc ->

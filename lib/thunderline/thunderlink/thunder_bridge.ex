@@ -78,7 +78,8 @@ defmodule Thunderline.ThunderBridge do
       end)
 
   def stop_ca_streaming,
-    do: tap_deprecated(:stop_ca_streaming, fn -> Thundergate.ThunderBridge.stop_ca_streaming() end)
+    do:
+      tap_deprecated(:stop_ca_streaming, fn -> Thundergate.ThunderBridge.stop_ca_streaming() end)
 
   # Agent/Chunk CRUD
   def get_agent_state(agent_id),
@@ -103,7 +104,8 @@ defmodule Thunderline.ThunderBridge do
     do: tap_deprecated(:get_chunks, fn -> Thundergate.ThunderBridge.get_chunks(filters) end)
 
   def create_chunk(chunk_data),
-    do: tap_deprecated(:create_chunk, fn -> Thundergate.ThunderBridge.create_chunk(chunk_data) end)
+    do:
+      tap_deprecated(:create_chunk, fn -> Thundergate.ThunderBridge.create_chunk(chunk_data) end)
 
   # Subscription & Events
   def subscribe(pid \\ self()),

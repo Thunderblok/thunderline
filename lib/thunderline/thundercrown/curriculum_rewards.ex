@@ -31,11 +31,16 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
 
   require Logger
 
-  @default_alpha 1.0    # Uncertainty weight
-  @default_beta 0.6     # Tool use weight
-  @default_gamma 0.3    # Repetition penalty weight
-  @default_tool_cap 4   # Maximum tool calls to reward
-  @frontier_band {0.3, 0.8}  # Capability frontier: 30-80% success rate
+  # Uncertainty weight
+  @default_alpha 1.0
+  # Tool use weight
+  @default_beta 0.6
+  # Repetition penalty weight
+  @default_gamma 0.3
+  # Maximum tool calls to reward
+  @default_tool_cap 4
+  # Capability frontier: 30-80% success rate
+  @frontier_band {0.3, 0.8}
 
   # ═══════════════════════════════════════════════════════════════
   # UNCERTAINTY REWARD
@@ -61,7 +66,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
   def uncertainty_reward(consistency_score) when is_float(consistency_score) do
     # Clamp to [0, 1]
     p_hat = max(0.0, min(1.0, consistency_score))
-    
+
     # R_unc = 1 - 2|p̂ - 0.5|
     # Maximum (1.0) when p̂ = 0.5, minimum (0.0) when p̂ = 0 or 1
     1.0 - 2.0 * abs(p_hat - 0.5)
@@ -83,16 +88,16 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
   @spec compute_consistency([term()]) :: float()
   def compute_consistency([]), do: 0.0
   def compute_consistency([_single]), do: 1.0
-  
+
   def compute_consistency(responses) when is_list(responses) do
     total = length(responses)
-    
+
     # Count occurrences of each response
     counts = Enum.frequencies(responses)
-    
+
     # Find majority count
     max_count = counts |> Map.values() |> Enum.max()
-    
+
     # Consistency = majority_count / total
     max_count / total
   end
@@ -123,7 +128,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
   def tool_use_reward(tool_calls, opts \\ []) when is_integer(tool_calls) do
     gamma = Keyword.get(opts, :gamma, @default_beta)
     cap = Keyword.get(opts, :cap, @default_tool_cap)
-    
+
     # R_tool = γ · min(N_tool, C) / C
     gamma * min(tool_calls, cap) / cap
   end
@@ -150,7 +155,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
     {default_low, default_high} = @frontier_band
     low = Keyword.get(opts, :low, default_low)
     high = Keyword.get(opts, :high, default_high)
-    
+
     success_rate >= low and success_rate <= high
   end
 
@@ -177,13 +182,13 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
   """
   @spec repetition_penalty(list(float()), list(list(float())), keyword()) :: float()
   def repetition_penalty(task_embedding, history_embeddings, opts \\ [])
-  
+
   def repetition_penalty(_task, [], _opts), do: 0.0
-  
+
   def repetition_penalty(task_embedding, history_embeddings, opts) do
     threshold = Keyword.get(opts, :threshold, 0.8)
     decay = Keyword.get(opts, :decay, 0.9)
-    
+
     # Compute decayed similarity scores
     penalties =
       history_embeddings
@@ -191,7 +196,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
       |> Enum.map(fn {hist_emb, idx} ->
         sim = cosine_similarity(task_embedding, hist_emb)
         decay_factor = :math.pow(decay, idx)
-        
+
         # Apply penalty if similarity exceeds threshold
         if sim > threshold do
           (sim - threshold) / (1.0 - threshold) * decay_factor
@@ -199,7 +204,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
           0.0
         end
       end)
-    
+
     # Sum penalties (capped at 1.0)
     min(1.0, Enum.sum(penalties))
   end
@@ -208,7 +213,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
     dot = Enum.zip(a, b) |> Enum.map(fn {x, y} -> x * y end) |> Enum.sum()
     norm_a = :math.sqrt(Enum.map(a, &(&1 * &1)) |> Enum.sum())
     norm_b = :math.sqrt(Enum.map(b, &(&1 * &1)) |> Enum.sum())
-    
+
     if norm_a * norm_b > 0.0 do
       dot / (norm_a * norm_b)
     else
@@ -249,24 +254,27 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
     alpha = Keyword.get(opts, :alpha, @default_alpha)
     beta = Keyword.get(opts, :beta, @default_beta)
     gamma = Keyword.get(opts, :gamma, @default_gamma)
-    
+
     # Compute components
     r_unc = uncertainty_reward(Map.get(metrics, :consistency_score, 0.5))
     r_tool = tool_use_reward(Map.get(metrics, :tool_calls, 0))
-    
-    r_rep = 
+
+    r_rep =
       case {Map.get(metrics, :task_embedding), Map.get(metrics, :history_embeddings)} do
         {task_emb, hist_embs} when is_list(task_emb) and is_list(hist_embs) ->
           repetition_penalty(task_emb, hist_embs)
+
         _ ->
           0.0
       end
-    
+
     # Combined reward
     reward = alpha * r_unc + beta * r_tool - gamma * r_rep
-    
-    Logger.debug("[CurriculumRewards] R_unc=#{Float.round(r_unc, 3)}, R_tool=#{Float.round(r_tool, 3)}, R_rep=#{Float.round(r_rep, 3)} => R_C=#{Float.round(reward, 3)}")
-    
+
+    Logger.debug(
+      "[CurriculumRewards] R_unc=#{Float.round(r_unc, 3)}, R_tool=#{Float.round(r_tool, 3)}, R_rep=#{Float.round(r_rep, 3)} => R_C=#{Float.round(reward, 3)}"
+    )
+
     reward
   end
 
@@ -301,7 +309,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
   def dynamic_clip_bound(consistency_score, opts \\ []) do
     eps_base = Keyword.get(opts, :eps_base, 0.2)
     eps_bonus = Keyword.get(opts, :eps_bonus, 0.3)
-    
+
     # Higher bonus for lower consistency (more ambiguous)
     eps_base + (1.0 - consistency_score) * eps_bonus
   end
@@ -318,7 +326,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewards do
   @spec filter_frontier_tasks(list({term(), float()}), keyword()) :: list({term(), float()})
   def filter_frontier_tasks(tasks_with_consistency, opts \\ []) do
     {low, high} = Keyword.get(opts, :band, @frontier_band)
-    
+
     Enum.filter(tasks_with_consistency, fn {_task, consistency} ->
       consistency >= low and consistency <= high
     end)

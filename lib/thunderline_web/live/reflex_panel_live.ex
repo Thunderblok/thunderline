@@ -56,6 +56,10 @@ defmodule ThunderlineWeb.ReflexPanelLive do
 
   @pubsub_topic "reflex_panel"
   @tick_interval_ms 100
+  @slow_motion_interval_ms 500
+
+  # Heatmap modes
+  @heatmap_modes [:none, :coherence, :plv, :entropy, :lambda]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -64,6 +68,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "#{@pubsub_topic}:metrics")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "#{@pubsub_topic}:voxels")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "#{@pubsub_topic}:evolution")
+      Phoenix.PubSub.subscribe(Thunderline.PubSub, "reflex:triggered")
       Phoenix.PubSub.subscribe(Thunderline.PubSub, "bolt.thunderbit.reflex.*")
 
       # Start tick timer for demo mode
@@ -79,6 +84,14 @@ defmodule ThunderlineWeb.ReflexPanelLive do
       |> assign(:demo_mode, true)
       |> assign(:tick, 0)
       |> assign(:paused, false)
+      # HC-Ω-7 Phase 2: New controls
+      |> assign(:slow_motion, false)
+      |> assign(:heatmap_mode, :none)
+      |> assign(:show_bit_inspector, false)
+      |> assign(:inspected_bit, nil)
+      |> assign(:stimulus_type, :pulse)
+      |> assign(:stimulus_coord, {5, 5, 5})
+      |> assign(:bit_logs, [])
       # Metrics
       |> assign(:plv, 0.5)
       |> assign(:entropy, 0.5)
@@ -102,6 +115,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
       |> assign(:voxel_count, 0)
       |> assign(:active_count, 0)
       |> assign(:chaotic_count, 0)
+      |> assign(:voxel_data, %{})
       # Events
       |> assign(:reflex_events, [])
       |> assign(:event_count, 0)
@@ -129,17 +143,97 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 if(@paused, do: "bg-amber-400", else: "bg-cyan-400 animate-pulse")
               ]} />
               <h1 class="text-lg font-semibold">⚡ Reflex Panel</h1>
-              <span class="badge badge-ghost badge-sm">HC-Ω-3</span>
+              <span class="badge badge-ghost badge-sm">HC-Ω-7</span>
               <span :if={@demo_mode} class="badge badge-warning badge-sm">Demo</span>
+              <span :if={@slow_motion} class="badge badge-info badge-sm animate-pulse">Slow-Mo</span>
             </div>
           </div>
           <div class="flex-none gap-2">
-            <button phx-click="toggle_pause" class={["btn btn-sm", if(@paused, do: "btn-warning", else: "btn-ghost")]}>
-              <.icon name={if(@paused, do: "hero-play", else: "hero-pause")} class="w-4 h-4" />
-              {if @paused, do: "Resume", else: "Pause"}
-            </button>
+            <!-- Playback Controls -->
+            <div class="btn-group">
+              <button
+                phx-click="toggle_pause"
+                class={["btn btn-sm", if(@paused, do: "btn-warning", else: "btn-ghost")]}
+              >
+                <.icon name={if(@paused, do: "hero-play", else: "hero-pause")} class="w-4 h-4" />
+              </button>
+              <button
+                phx-click="toggle_slow_motion"
+                class={["btn btn-sm", if(@slow_motion, do: "btn-info", else: "btn-ghost")]}
+              >
+                <.icon name="hero-backward" class="w-4 h-4" />
+              </button>
+              <button phx-click="step_tick" class="btn btn-ghost btn-sm" disabled={!@paused}>
+                <.icon name="hero-forward" class="w-4 h-4" />
+              </button>
+            </div>
+            
+    <!-- Heatmap Toggle -->
+            <div class="dropdown dropdown-end">
+              <label
+                tabindex="0"
+                class={[
+                  "btn btn-sm",
+                  if(@heatmap_mode != :none, do: "btn-secondary", else: "btn-ghost")
+                ]}
+              >
+                <.icon name="hero-fire" class="w-4 h-4" />
+                <span class="hidden sm:inline">Heatmap</span>
+              </label>
+              <ul
+                tabindex="0"
+                class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-40"
+              >
+                <li>
+                  <a
+                    phx-click="set_heatmap"
+                    phx-value-mode="none"
+                    class={if(@heatmap_mode == :none, do: "active", else: "")}
+                  >
+                    Off
+                  </a>
+                </li>
+                <li>
+                  <a
+                    phx-click="set_heatmap"
+                    phx-value-mode="coherence"
+                    class={if(@heatmap_mode == :coherence, do: "active", else: "")}
+                  >
+                    Coherence
+                  </a>
+                </li>
+                <li>
+                  <a
+                    phx-click="set_heatmap"
+                    phx-value-mode="plv"
+                    class={if(@heatmap_mode == :plv, do: "active", else: "")}
+                  >
+                    PLV
+                  </a>
+                </li>
+                <li>
+                  <a
+                    phx-click="set_heatmap"
+                    phx-value-mode="entropy"
+                    class={if(@heatmap_mode == :entropy, do: "active", else: "")}
+                  >
+                    Entropy
+                  </a>
+                </li>
+                <li>
+                  <a
+                    phx-click="set_heatmap"
+                    phx-value-mode="lambda"
+                    class={if(@heatmap_mode == :lambda, do: "active", else: "")}
+                  >
+                    Lambda
+                  </a>
+                </li>
+              </ul>
+            </div>
+
             <button phx-click="reset_simulation" class="btn btn-ghost btn-sm">
-              <.icon name="hero-arrow-path" class="w-4 h-4" /> Reset
+              <.icon name="hero-arrow-path" class="w-4 h-4" />
             </button>
             <.link navigate={~p"/dashboard"} class="btn btn-ghost btn-sm">
               <.icon name="hero-arrow-left" class="w-4 h-4" /> Dashboard
@@ -162,19 +256,35 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                   <label class="label py-1">
                     <span class="label-text text-xs">Profile</span>
                   </label>
-                  <select phx-change="change_profile" name="profile" class="select select-bordered select-sm w-full">
-                    <option value="explorer" selected={@evolution_profile == :explorer}>🔭 Explorer</option>
-                    <option value="exploiter" selected={@evolution_profile == :exploiter}>⚡ Exploiter</option>
-                    <option value="balanced" selected={@evolution_profile == :balanced}>⚖️ Balanced</option>
-                    <option value="resilient" selected={@evolution_profile == :resilient}>🛡️ Resilient</option>
-                    <option value="aggressive" selected={@evolution_profile == :aggressive}>🔥 Aggressive</option>
+                  <select
+                    phx-change="change_profile"
+                    name="profile"
+                    class="select select-bordered select-sm w-full"
+                  >
+                    <option value="explorer" selected={@evolution_profile == :explorer}>
+                      🔭 Explorer
+                    </option>
+                    <option value="exploiter" selected={@evolution_profile == :exploiter}>
+                      ⚡ Exploiter
+                    </option>
+                    <option value="balanced" selected={@evolution_profile == :balanced}>
+                      ⚖️ Balanced
+                    </option>
+                    <option value="resilient" selected={@evolution_profile == :resilient}>
+                      🛡️ Resilient
+                    </option>
+                    <option value="aggressive" selected={@evolution_profile == :aggressive}>
+                      🔥 Aggressive
+                    </option>
                   </select>
                 </div>
 
                 <div class="stats stats-vertical bg-base-200 mt-2">
                   <div class="stat py-2 px-3">
                     <div class="stat-title text-xs">Fitness</div>
-                    <div class="stat-value text-lg text-emerald-400">{Float.round(@evolution_fitness, 3)}</div>
+                    <div class="stat-value text-lg text-emerald-400">
+                      {Float.round(@evolution_fitness, 3)}
+                    </div>
                     <div class="stat-desc text-xs">
                       <.fitness_bar value={@evolution_fitness} />
                     </div>
@@ -185,7 +295,11 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                   <label class="label py-1">
                     <span class="label-text text-xs">Select PAC</span>
                   </label>
-                  <select phx-change="select_pac" name="pac_id" class="select select-bordered select-sm w-full">
+                  <select
+                    phx-change="select_pac"
+                    name="pac_id"
+                    class="select select-bordered select-sm w-full"
+                  >
                     <option value="">-- None --</option>
                     <%= for pac <- @pac_list do %>
                       <option value={pac.id} selected={@selected_pac == pac.id}>{pac.name}</option>
@@ -193,13 +307,17 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                   </select>
                 </div>
 
-                <button phx-click="evolve_step" class="btn btn-primary btn-sm mt-2 w-full" disabled={@paused}>
+                <button
+                  phx-click="evolve_step"
+                  class="btn btn-primary btn-sm mt-2 w-full"
+                  disabled={@paused}
+                >
                   <.icon name="hero-arrow-trending-up" class="w-4 h-4" /> Evolve
                 </button>
               </div>
             </div>
-
-            <!-- CA Controls -->
+            
+    <!-- CA Controls -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
                 <h2 class="card-title text-sm">
@@ -257,8 +375,8 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
-            <!-- Voxel Stats -->
+            
+    <!-- Voxel Stats -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
                 <h2 class="card-title text-sm">
@@ -281,8 +399,8 @@ defmodule ThunderlineWeb.ReflexPanelLive do
               </div>
             </div>
           </div>
-
-          <!-- Center Column: Metrics & Visualization -->
+          
+    <!-- Center Column: Metrics & Visualization -->
           <div class="lg:col-span-6 space-y-4">
             <!-- Criticality Metrics -->
             <div class="card bg-base-300 shadow-xl">
@@ -321,8 +439,8 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                     tooltip="Lyapunov exponent (chaos indicator)"
                   />
                 </div>
-
-                <!-- Edge of Chaos Score -->
+                
+    <!-- Edge of Chaos Score -->
                 <div class="bg-base-200 rounded-lg p-3">
                   <div class="flex justify-between items-center mb-2">
                     <span class="text-xs font-semibold">Edge-of-Chaos Score</span>
@@ -346,8 +464,8 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
-            <!-- Charts Container -->
+            
+    <!-- Charts Container -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
                 <h2 class="card-title text-sm">
@@ -368,28 +486,38 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
-            <!-- Voxel Visualization -->
+            
+    <!-- Voxel Visualization -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
-                <h2 class="card-title text-sm">
-                  <.icon name="hero-cube-transparent" class="w-4 h-4" /> Voxel Automata
-                </h2>
+                <div class="flex justify-between items-center">
+                  <h2 class="card-title text-sm">
+                    <.icon name="hero-cube-transparent" class="w-4 h-4" /> Voxel Automata
+                  </h2>
+                  <span :if={@heatmap_mode != :none} class="badge badge-secondary badge-sm">
+                    Heatmap: {@heatmap_mode}
+                  </span>
+                </div>
 
                 <div
                   id="voxel-grid-container"
                   phx-hook="VoxelGrid"
                   phx-update="ignore"
+                  phx-click="voxel_clicked"
                   data-size={Jason.encode!(@grid_size |> Tuple.to_list())}
-                  class="h-80 bg-base-200 rounded-lg overflow-hidden"
+                  data-heatmap-mode={@heatmap_mode}
+                  class="h-80 bg-base-200 rounded-lg overflow-hidden cursor-crosshair"
                 >
                   <!-- Three.js canvas will be injected here -->
+                  <div class="flex items-center justify-center h-full text-xs opacity-50">
+                    Click a voxel to inspect
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Right Column: Events & Fitness -->
+          
+    <!-- Right Column: Events & Fitness -->
           <div class="lg:col-span-3 space-y-4">
             <!-- Fitness History -->
             <div class="card bg-base-300 shadow-xl">
@@ -426,8 +554,8 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
-            <!-- Reflex Events Stream -->
+            
+    <!-- Reflex Events Stream -->
             <div class="card bg-base-300 shadow-xl max-h-96 overflow-hidden">
               <div class="card-body p-4">
                 <h2 class="card-title text-sm flex justify-between">
@@ -449,8 +577,8 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
-            <!-- Quick Actions -->
+            
+    <!-- Quick Actions -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
                 <h2 class="card-title text-sm">
@@ -464,6 +592,9 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                   <button phx-click="trigger_stability" class="btn btn-success btn-sm">
                     <.icon name="hero-shield-check" class="w-4 h-4" /> Stabilize
                   </button>
+                  <button phx-click="open_stimulus_modal" class="btn btn-warning btn-sm col-span-2">
+                    <.icon name="hero-bolt" class="w-4 h-4" /> Inject Stimulus
+                  </button>
                   <button phx-click="spawn_pac" class="btn btn-info btn-sm">
                     <.icon name="hero-user-plus" class="w-4 h-4" /> Spawn PAC
                   </button>
@@ -475,6 +606,22 @@ defmodule ThunderlineWeb.ReflexPanelLive do
             </div>
           </div>
         </div>
+        
+    <!-- HC-Ω-7 Phase 2: Bit Inspector Modal -->
+        <.bit_inspector_modal
+          :if={@show_bit_inspector}
+          bit={@inspected_bit}
+          logs={@bit_logs}
+          voxel_data={@voxel_data}
+        />
+        
+    <!-- HC-Ω-7 Phase 2: Stimulus Injection Modal -->
+        <.stimulus_modal
+          :if={assigns[:show_stimulus_modal]}
+          stimulus_type={@stimulus_type}
+          stimulus_coord={@stimulus_coord}
+          grid_size={@grid_size}
+        />
       </div>
     </Layouts.app>
     """
@@ -536,11 +683,251 @@ defmodule ThunderlineWeb.ReflexPanelLive do
       </div>
       <div class="mt-1 opacity-70">
         <span class="font-mono">{short_id(@event.bit_id)}</span>
-        <span> — {@event.trigger}</span>
+        <span class="mx-1">|</span>
+        <span>{@event.trigger}</span>
       </div>
     </div>
     """
   end
+
+  # ═══════════════════════════════════════════════════════════════
+  # HC-Ω-7 Phase 2: Modal Components
+  # ═══════════════════════════════════════════════════════════════
+
+  attr :bit, :map, default: nil
+  attr :logs, :list, default: []
+  attr :voxel_data, :map, default: %{}
+
+  defp bit_inspector_modal(assigns) do
+    ~H"""
+    <div class="modal modal-open">
+      <div class="modal-box max-w-2xl bg-base-300">
+        <button
+          phx-click="close_bit_inspector"
+          class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+        >
+          ✕
+        </button>
+
+        <h3 class="font-bold text-lg mb-4">
+          <.icon name="hero-magnifying-glass" class="w-5 h-5 inline" /> Bit Inspector
+        </h3>
+
+        <%= if @bit do %>
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Bit Info -->
+            <div class="space-y-3">
+              <div class="bg-base-200 p-3 rounded-lg">
+                <div class="text-xs opacity-60">Bit ID</div>
+                <div class="font-mono text-sm">{@bit.id || "N/A"}</div>
+              </div>
+
+              <div class="bg-base-200 p-3 rounded-lg">
+                <div class="text-xs opacity-60">Coordinate</div>
+                <div class="font-mono text-sm">{inspect(@bit.coord || "N/A")}</div>
+              </div>
+
+              <div class="bg-base-200 p-3 rounded-lg">
+                <div class="text-xs opacity-60">State</div>
+                <div class={["badge", bit_state_badge(@bit.state)]}>
+                  {@bit.state || :unknown}
+                </div>
+              </div>
+
+              <div class="bg-base-200 p-3 rounded-lg">
+                <div class="text-xs opacity-60">σ Flow</div>
+                <div class="font-mono text-lg">{Float.round(@bit.sigma_flow || 0.0, 4)}</div>
+              </div>
+
+              <div class="bg-base-200 p-3 rounded-lg">
+                <div class="text-xs opacity-60">φ Phase</div>
+                <div class="font-mono text-lg">{Float.round(@bit.phi_phase || 0.0, 4)}</div>
+              </div>
+
+              <div class="bg-base-200 p-3 rounded-lg">
+                <div class="text-xs opacity-60">λ Sensitivity</div>
+                <div class="font-mono text-lg">{Float.round(@bit.lambda_sensitivity || 0.0, 4)}</div>
+              </div>
+            </div>
+            
+    <!-- Neighbors & Logs -->
+            <div class="space-y-3">
+              <div class="bg-base-200 p-3 rounded-lg">
+                <div class="text-xs opacity-60 mb-2">Nearest Neighbors</div>
+                <div class="flex flex-wrap gap-1">
+                  <%= for neighbor <- (@bit.neighbors || []) |> Enum.take(8) do %>
+                    <span class="badge badge-ghost badge-sm font-mono">{inspect(neighbor)}</span>
+                  <% end %>
+                  <%= if (@bit.neighbors || []) == [] do %>
+                    <span class="text-xs opacity-50">No neighbors</span>
+                  <% end %>
+                </div>
+              </div>
+
+              <div class="bg-base-200 p-3 rounded-lg max-h-48 overflow-y-auto">
+                <div class="text-xs opacity-60 mb-2">Reflex Trigger Log</div>
+                <%= if @logs == [] do %>
+                  <div class="text-xs opacity-50">No triggers recorded</div>
+                <% else %>
+                  <div class="space-y-1">
+                    <%= for log <- Enum.take(@logs, 10) do %>
+                      <div class="text-xs font-mono p-1 bg-base-100 rounded">
+                        <span class={trigger_color(log.trigger)}>{log.trigger}</span>
+                        <span class="opacity-50 ml-2">{format_time(log.timestamp)}</span>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-action">
+            <button
+              phx-click="inject_at_bit"
+              phx-value-coord={inspect(@bit.coord)}
+              class="btn btn-warning btn-sm"
+            >
+              <.icon name="hero-bolt" class="w-4 h-4" /> Inject Here
+            </button>
+            <button phx-click="close_bit_inspector" class="btn btn-ghost btn-sm">Close</button>
+          </div>
+        <% else %>
+          <div class="text-center py-8 opacity-50">
+            <.icon name="hero-cube" class="w-12 h-12 mx-auto mb-2" />
+            <p>Click a voxel in the grid to inspect</p>
+          </div>
+        <% end %>
+      </div>
+      <div class="modal-backdrop" phx-click="close_bit_inspector"></div>
+    </div>
+    """
+  end
+
+  attr :stimulus_type, :atom, default: :pulse
+  attr :stimulus_coord, :tuple, default: {5, 5, 5}
+  attr :grid_size, :tuple, default: {10, 10, 10}
+
+  defp stimulus_modal(assigns) do
+    {max_x, max_y, max_z} = assigns.grid_size
+    {x, y, z} = assigns.stimulus_coord
+    assigns = assign(assigns, max_x: max_x, max_y: max_y, max_z: max_z, x: x, y: y, z: z)
+
+    ~H"""
+    <div class="modal modal-open">
+      <div class="modal-box bg-base-300">
+        <button
+          phx-click="close_stimulus_modal"
+          class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+        >
+          ✕
+        </button>
+
+        <h3 class="font-bold text-lg mb-4">
+          <.icon name="hero-bolt" class="w-5 h-5 inline" /> Inject Stimulus
+        </h3>
+
+        <form phx-submit="inject_stimulus" class="space-y-4">
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Stimulus Type</span>
+            </label>
+            <select name="type" class="select select-bordered w-full">
+              <option value="pulse" selected={@stimulus_type == :pulse}>
+                ⚡ Pulse (single activation)
+              </option>
+              <option value="wave" selected={@stimulus_type == :wave}>🌊 Wave (radial spread)</option>
+              <option value="chaos" selected={@stimulus_type == :chaos}>🔥 Chaos (destabilize)</option>
+              <option value="freeze" selected={@stimulus_type == :freeze}>
+                ❄️ Freeze (halt activity)
+              </option>
+              <option value="reset" selected={@stimulus_type == :reset}>
+                🔄 Reset (restore defaults)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Target Coordinate</span>
+            </label>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="label py-0"><span class="label-text-alt">X</span></label>
+                <input
+                  type="number"
+                  name="x"
+                  value={@x}
+                  min="0"
+                  max={@max_x - 1}
+                  class="input input-bordered w-full"
+                />
+              </div>
+              <div>
+                <label class="label py-0"><span class="label-text-alt">Y</span></label>
+                <input
+                  type="number"
+                  name="y"
+                  value={@y}
+                  min="0"
+                  max={@max_y - 1}
+                  class="input input-bordered w-full"
+                />
+              </div>
+              <div>
+                <label class="label py-0"><span class="label-text-alt">Z</span></label>
+                <input
+                  type="number"
+                  name="z"
+                  value={@z}
+                  min="0"
+                  max={@max_z - 1}
+                  class="input input-bordered w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Intensity</span>
+            </label>
+            <input
+              type="range"
+              name="intensity"
+              min="0"
+              max="100"
+              value="50"
+              class="range range-warning"
+            />
+          </div>
+
+          <div class="modal-action">
+            <button type="submit" class="btn btn-warning">
+              <.icon name="hero-bolt" class="w-4 h-4" /> Inject
+            </button>
+            <button type="button" phx-click="close_stimulus_modal" class="btn btn-ghost">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="modal-backdrop" phx-click="close_stimulus_modal"></div>
+    </div>
+    """
+  end
+
+  defp bit_state_badge(:active), do: "badge-success"
+  defp bit_state_badge(:chaotic), do: "badge-error"
+  defp bit_state_badge(:dormant), do: "badge-warning"
+  defp bit_state_badge(:stable), do: "badge-info"
+  defp bit_state_badge(_), do: "badge-ghost"
+
+  defp trigger_color(:chaos_spike), do: "text-red-400"
+  defp trigger_color(:low_stability), do: "text-amber-400"
+  defp trigger_color(:trust_boost), do: "text-emerald-400"
+  defp trigger_color(:idle_decay), do: "text-gray-400"
+  defp trigger_color(_), do: "text-cyan-400"
 
   # ═══════════════════════════════════════════════════════════════
   # Event Handlers
@@ -660,6 +1047,147 @@ defmodule ThunderlineWeb.ReflexPanelLive do
 
   def handle_event("clear_events", _params, socket) do
     {:noreply, assign(socket, reflex_events: [], event_count: 0)}
+  end
+
+  # ───────────────────────────────────────────────────────────────
+  # Phase 2: Heatmap Mode, Slow-Motion, Bit Inspector, Stimulus
+  # ───────────────────────────────────────────────────────────────
+
+  def handle_event("toggle_slow_motion", _params, socket) do
+    new_slow_motion = not socket.assigns.slow_motion
+
+    # Adjust tick interval: slow-motion = 500ms, normal = 100ms
+    tick_interval = if new_slow_motion, do: 500, else: 100
+
+    socket =
+      socket
+      |> assign(:slow_motion, new_slow_motion)
+      |> assign(:tick_interval, tick_interval)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("change_heatmap_mode", %{"mode" => mode}, socket) do
+    mode_atom =
+      case mode do
+        "coherence" -> :coherence
+        "plv" -> :plv
+        "entropy" -> :entropy
+        "lambda" -> :lambda
+        "state" -> :state
+        _ -> :coherence
+      end
+
+    {:noreply, assign(socket, :heatmap_mode, mode_atom)}
+  end
+
+  def handle_event("open_bit_inspector", _params, socket) do
+    # Load recent bit logs for the inspector
+    bit_logs = fetch_recent_bit_logs(socket, 20)
+    {:noreply, assign(socket, show_bit_inspector: true, bit_logs: bit_logs)}
+  end
+
+  def handle_event("close_bit_inspector", _params, socket) do
+    {:noreply, assign(socket, show_bit_inspector: false, inspected_bit: nil, bit_logs: [])}
+  end
+
+  def handle_event("inspect_bit", %{"bit_id" => bit_id}, socket) do
+    # Fetch detailed info for a specific bit
+    bit_info = fetch_bit_details(socket, bit_id)
+    {:noreply, assign(socket, inspected_bit: bit_info)}
+  end
+
+  def handle_event("open_stimulus_modal", _params, socket) do
+    {:noreply, assign(socket, show_stimulus_modal: true, stimulus_coord: nil)}
+  end
+
+  def handle_event("close_stimulus_modal", _params, socket) do
+    {:noreply,
+     assign(socket, show_stimulus_modal: false, stimulus_type: :chaos, stimulus_coord: nil)}
+  end
+
+  def handle_event("inject_stimulus", params, socket) do
+    type = String.to_existing_atom(params["type"] || "chaos")
+    x = String.to_integer(params["x"] || "0")
+    y = String.to_integer(params["y"] || "0")
+    z = String.to_integer(params["z"] || "0")
+    intensity = String.to_float(params["intensity"] || "0.5")
+
+    coord = {x, y, z}
+
+    # Emit stimulus event through EventBus
+    stimulus_event = %{
+      type: :stimulus_injected,
+      bit_id: "stimulus_#{x}_#{y}_#{z}",
+      trigger: type,
+      timestamp: DateTime.utc_now(),
+      data: %{
+        coord: coord,
+        stimulus_type: type,
+        intensity: intensity,
+        injected_by: :user
+      }
+    }
+
+    # Apply stimulus effect based on type
+    socket =
+      case type do
+        :chaos ->
+          socket
+          |> assign(:lambda_hat, min(1.0, socket.assigns.lambda_hat + intensity * 0.2))
+          |> assign(:entropy, min(1.0, socket.assigns.entropy + intensity * 0.3))
+          |> push_event("chaos_pulse", %{intensity: intensity, coord: coord})
+
+        :stability ->
+          socket
+          |> assign(:lambda_hat, max(0.0, socket.assigns.lambda_hat - intensity * 0.15))
+          |> assign(:entropy, max(0.0, socket.assigns.entropy - intensity * 0.2))
+          |> assign(:plv, min(1.0, socket.assigns.plv + intensity * 0.1))
+          |> push_event("stability_wave", %{intensity: intensity, coord: coord})
+
+        :freeze ->
+          # Freeze temporarily reduces all dynamics
+          socket
+          |> assign(:lambda_hat, 0.0)
+          |> assign(:entropy, 0.1)
+          |> push_event("freeze_effect", %{coord: coord, duration: intensity * 10})
+
+        :activate ->
+          # Activate boosts activity
+          socket
+          |> assign(:lambda_hat, 0.5 + intensity * 0.3)
+          |> assign(:entropy, 0.5)
+          |> assign(
+            :edge_of_chaos_score,
+            min(1.0, socket.assigns.edge_of_chaos_score + intensity * 0.2)
+          )
+          |> push_event("activation_burst", %{coord: coord, intensity: intensity})
+
+        _ ->
+          socket
+      end
+
+    socket =
+      socket
+      |> add_reflex_event(stimulus_event)
+      |> assign(:show_stimulus_modal, false)
+      |> put_flash(:info, "Stimulus #{type} injected at #{inspect(coord)}")
+
+    {:noreply, socket}
+  end
+
+  def handle_event("select_voxel", %{"coord" => coord_str}, socket) do
+    # Parse coord from JS hook (e.g., "1,2,3")
+    coord =
+      case String.split(coord_str, ",") do
+        [x, y, z] ->
+          {String.to_integer(x), String.to_integer(y), String.to_integer(z)}
+
+        _ ->
+          {0, 0, 0}
+      end
+
+    {:noreply, assign(socket, stimulus_coord: coord, show_stimulus_modal: true)}
   end
 
   # ═══════════════════════════════════════════════════════════════
@@ -807,12 +1335,24 @@ defmodule ThunderlineWeb.ReflexPanelLive do
 
     fitness =
       case profile do
-        :explorer -> 0.4 * (1.0 - entropy) + 0.3 * lambda + 0.3 * :rand.uniform()
-        :exploiter -> 0.5 * plv + 0.3 * (1.0 - entropy) + 0.2 * :rand.uniform()
-        :balanced -> 0.25 * plv + 0.25 * (1.0 - abs(lambda - 0.273) * 3) + 0.25 * (1.0 - entropy) + 0.25 * :rand.uniform()
-        :resilient -> 0.5 * (1.0 - entropy) + 0.3 * plv + 0.2 * :rand.uniform()
-        :aggressive -> 0.4 * lambda + 0.3 * (entropy) + 0.3 * :rand.uniform()
-        _ -> 0.5
+        :explorer ->
+          0.4 * (1.0 - entropy) + 0.3 * lambda + 0.3 * :rand.uniform()
+
+        :exploiter ->
+          0.5 * plv + 0.3 * (1.0 - entropy) + 0.2 * :rand.uniform()
+
+        :balanced ->
+          0.25 * plv + 0.25 * (1.0 - abs(lambda - 0.273) * 3) + 0.25 * (1.0 - entropy) +
+            0.25 * :rand.uniform()
+
+        :resilient ->
+          0.5 * (1.0 - entropy) + 0.3 * plv + 0.2 * :rand.uniform()
+
+        :aggressive ->
+          0.4 * lambda + 0.3 * entropy + 0.3 * :rand.uniform()
+
+        _ ->
+          0.5
       end
 
     fitness = clamp(fitness)
@@ -845,7 +1385,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
     entropy_score = 1.0 - abs(entropy - 0.5) * 2
     lyapunov_score = 1.0 - min(1.0, abs(lyapunov) * 5)
 
-    score = (lambda_score * 0.4 + plv_score * 0.2 + entropy_score * 0.2 + lyapunov_score * 0.2)
+    score = lambda_score * 0.4 + plv_score * 0.2 + entropy_score * 0.2 + lyapunov_score * 0.2
     clamp(score)
   end
 
@@ -897,4 +1437,73 @@ defmodule ThunderlineWeb.ReflexPanelLive do
   defp edge_of_chaos_progress(score) when score > 0.7, do: "progress-error"
   defp edge_of_chaos_progress(score) when score > 0.4, do: "progress-success"
   defp edge_of_chaos_progress(_), do: "progress-info"
+
+  # ───────────────────────────────────────────────────────────────
+  # Phase 2: Bit Inspector Helpers
+  # ───────────────────────────────────────────────────────────────
+
+  defp fetch_recent_bit_logs(socket, limit) do
+    # In demo mode, generate sample bit logs
+    # In production, this would query from Thunderflow events
+    if socket.assigns.demo_mode do
+      for i <- 1..min(limit, 10) do
+        %{
+          bit_id: "bit_#{:rand.uniform(999)}",
+          timestamp: DateTime.add(DateTime.utc_now(), -i * 60, :second),
+          state: Enum.random([:active, :dormant, :chaotic, :stable]),
+          lambda: 0.2 + :rand.uniform() * 0.3,
+          entropy: :rand.uniform(),
+          last_reflex: Enum.random([:stability, :chaos, :trust, :decay, nil])
+        }
+      end
+    else
+      # Production: Query from reflex events
+      socket.assigns.reflex_events
+      |> Enum.map(fn event ->
+        %{
+          bit_id: event[:bit_id] || "unknown",
+          timestamp: event[:timestamp] || DateTime.utc_now(),
+          state: event[:data][:state] || :unknown,
+          lambda: event[:data][:lambda_hat] || 0.0,
+          entropy: event[:data][:entropy] || 0.0,
+          last_reflex: event[:type]
+        }
+      end)
+      |> Enum.take(limit)
+    end
+  end
+
+  defp fetch_bit_details(_socket, bit_id) do
+    # Fetch detailed information about a specific bit
+    # In production, this would query Thunderbit state
+    %{
+      bit_id: bit_id,
+      position: {0, 0, 0},
+      state: :active,
+      lambda_hat: 0.273 + (:rand.uniform() - 0.5) * 0.1,
+      entropy: :rand.uniform(),
+      plv: 0.4 + :rand.uniform() * 0.3,
+      lyapunov: (:rand.uniform() - 0.5) * 0.1,
+      last_updated: DateTime.utc_now(),
+      reflex_history: [
+        %{type: :stability, timestamp: DateTime.add(DateTime.utc_now(), -120, :second)},
+        %{type: :chaos, timestamp: DateTime.add(DateTime.utc_now(), -60, :second)}
+      ],
+      neighbors: 6,
+      connectivity: 0.8
+    }
+  end
+
+  defp heatmap_mode_label(:coherence), do: "Coherence"
+  defp heatmap_mode_label(:plv), do: "PLV"
+  defp heatmap_mode_label(:entropy), do: "Entropy"
+  defp heatmap_mode_label(:lambda), do: "Lambda"
+  defp heatmap_mode_label(:state), do: "State"
+  defp heatmap_mode_label(_), do: "Unknown"
+
+  defp state_color(:active), do: "text-emerald-400"
+  defp state_color(:chaotic), do: "text-red-400"
+  defp state_color(:dormant), do: "text-gray-400"
+  defp state_color(:stable), do: "text-amber-400"
+  defp state_color(_), do: "text-cyan-400"
 end

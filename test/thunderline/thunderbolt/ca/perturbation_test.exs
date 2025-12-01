@@ -101,9 +101,10 @@ defmodule Thunderline.Thunderbolt.CA.PerturbationTest do
         end
 
       # At least one result should have flipped bits
-      has_flips = Enum.any?(results, fn r ->
-        Enum.zip(states, r) |> Enum.any?(fn {s, r} -> s != r end)
-      end)
+      has_flips =
+        Enum.any?(results, fn r ->
+          Enum.zip(states, r) |> Enum.any?(fn {s, r} -> s != r end)
+        end)
 
       assert has_flips
     end

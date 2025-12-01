@@ -115,9 +115,7 @@ defmodule Thunderline.Telemetry.IRoPE do
     new_omega = max(omega * @stern_mode_omega_decay, @min_omega)
     new_phi = rem_float(phi + @stern_mode_phase_bias + :rand.uniform() * 0.1, @max_phase)
 
-    Logger.info(
-      "[IRoPE] STERN MODE: omega #{omega} -> #{new_omega}, phi #{phi} -> #{new_phi}"
-    )
+    Logger.info("[IRoPE] STERN MODE: omega #{omega} -> #{new_omega}, phi #{phi} -> #{new_phi}")
 
     state
     |> Map.put(:omega, new_omega)
@@ -156,7 +154,11 @@ defmodule Thunderline.Telemetry.IRoPE do
     frequencies = Nx.linspace(0, 1, n: seq_len)
 
     # Gaussian notch centered at `center`
-    notch = Nx.exp(Nx.negate(Nx.divide(Nx.power(Nx.subtract(frequencies, center), 2), 2 * width * width)))
+    notch =
+      Nx.exp(
+        Nx.negate(Nx.divide(Nx.power(Nx.subtract(frequencies, center), 2), 2 * width * width))
+      )
+
     attenuation = Nx.subtract(1.0, Nx.multiply(notch, depth))
 
     # Apply notch to activations
@@ -357,11 +359,21 @@ defmodule Thunderline.Telemetry.IRoPE do
   def default_intervention_callback do
     fn action, state ->
       case action do
-        :apply_phase_bias -> apply_phase_bias(state)
-        :stern_mode -> stern_mode(state)
-        :throttle -> throttle(state)
-        :boost -> boost(state)
-        :stabilize -> stabilize(state)
+        :apply_phase_bias ->
+          apply_phase_bias(state)
+
+        :stern_mode ->
+          stern_mode(state)
+
+        :throttle ->
+          throttle(state)
+
+        :boost ->
+          boost(state)
+
+        :stabilize ->
+          stabilize(state)
+
         _ ->
           Logger.warning("[IRoPE] Unknown action: #{action}")
           state

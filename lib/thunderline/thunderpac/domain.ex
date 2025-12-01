@@ -50,5 +50,7 @@ defmodule Thunderline.Thunderpac.Domain do
     resource Thunderline.Thunderpac.Resources.PACRole
     resource Thunderline.Thunderpac.Resources.PACIntent
     resource Thunderline.Thunderpac.Resources.PACState
+    resource Thunderline.Thunderpac.Resources.TraitsEvolutionJob
+    resource Thunderline.Thunderpac.Resources.MemoryCell
   end
 end

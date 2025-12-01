@@ -29,11 +29,11 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
       {:ok, deltas, _new_grid} = Stepper.step_legacy_grid(grid, :demo)
 
       assert Enum.all?(deltas, fn d ->
-        Map.has_key?(d, :id) and
-        Map.has_key?(d, :state) and
-        Map.has_key?(d, :hex) and
-        Map.has_key?(d, :energy)
-      end)
+               Map.has_key?(d, :id) and
+                 Map.has_key?(d, :state) and
+                 Map.has_key?(d, :hex) and
+                 Map.has_key?(d, :energy)
+             end)
     end
   end
 
@@ -43,7 +43,8 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
 
       assert grid.bounds == {3, 3, 3}
       assert grid.tick == 0
-      assert map_size(grid.bits) == 27  # 3^3
+      # 3^3
+      assert map_size(grid.bits) == 27
     end
 
     test "create_thunderbit_grid/4 accepts sparse mode" do
@@ -73,7 +74,8 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
       {:ok, deltas, new_grid} = Stepper.next(grid, %{rule_id: :demo})
 
       assert is_list(deltas)
-      assert length(deltas) == 27  # All bits updated
+      # All bits updated
+      assert length(deltas) == 27
       assert new_grid.tick == 1
       assert map_size(new_grid.bits) == 27
     end
@@ -111,10 +113,11 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
       center_bit = grid.bits[{1, 1, 1}] |> Thunderbit.update_state(sigma_flow: 0.9)
       grid = put_in(grid.bits[{1, 1, 1}], center_bit)
 
-      {:ok, _deltas, new_grid} = Stepper.step_thunderbit_grid(grid, %{
-        rule_id: :demo,
-        neighborhood_type: :von_neumann
-      })
+      {:ok, _deltas, new_grid} =
+        Stepper.step_thunderbit_grid(grid, %{
+          rule_id: :demo,
+          neighborhood_type: :von_neumann
+        })
 
       # Neighbors of center should have been influenced by it
       # Just verify the computation ran without error
@@ -130,13 +133,14 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
       grid = put_in(grid.bits[{1, 1, 1}], center_bit)
 
       # Zero out all other cells
-      grid = update_in(grid.bits, fn bits ->
-        Enum.map(bits, fn
-          {{1, 1, 1}, bit} -> {{1, 1, 1}, bit}
-          {coord, bit} -> {coord, %{bit | sigma_flow: 0.0}}
+      grid =
+        update_in(grid.bits, fn bits ->
+          Enum.map(bits, fn
+            {{1, 1, 1}, bit} -> {{1, 1, 1}, bit}
+            {coord, bit} -> {coord, %{bit | sigma_flow: 0.0}}
+          end)
+          |> Map.new()
         end)
-        |> Map.new()
-      end)
 
       {:ok, _deltas, new_grid} = Stepper.step_thunderbit_grid(grid, %{rule_id: :diffusion})
 
@@ -150,16 +154,18 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
 
       # Seed with a known pattern
       active_coords = [{1, 0, 1}, {1, 1, 1}, {1, 2, 1}]
-      grid = update_in(grid.bits, fn bits ->
-        Enum.map(bits, fn {coord, bit} ->
-          if coord in active_coords do
-            {coord, %{bit | sigma_flow: 1.0}}
-          else
-            {coord, %{bit | sigma_flow: 0.0}}
-          end
+
+      grid =
+        update_in(grid.bits, fn bits ->
+          Enum.map(bits, fn {coord, bit} ->
+            if coord in active_coords do
+              {coord, %{bit | sigma_flow: 1.0}}
+            else
+              {coord, %{bit | sigma_flow: 0.0}}
+            end
+          end)
+          |> Map.new()
         end)
-        |> Map.new()
-      end)
 
       {:ok, _deltas, new_grid} = Stepper.step_thunderbit_grid(grid, %{rule_id: :game_of_life_3d})
 

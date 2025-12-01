@@ -42,7 +42,9 @@ defmodule Thunderline.Thundergrid.Supervisor do
 
   @impl Thunderline.Thunderblock.DomainActivation
   def on_activated(tick_count) do
-    Logger.info("[Thundergrid] 🌐 GRID ONLINE - Spatial coordinates & GraphQL API ACTIVE at tick #{tick_count}")
+    Logger.info(
+      "[Thundergrid] 🌐 GRID ONLINE - Spatial coordinates & GraphQL API ACTIVE at tick #{tick_count}"
+    )
 
     state = %{
       activated_at: tick_count,
@@ -67,7 +69,9 @@ defmodule Thunderline.Thundergrid.Supervisor do
   def on_tick(tick_count, state) do
     # Health check every 40 ticks (40 seconds) - monitor spatial grid health
     if rem(tick_count, 40) == 0 do
-      Logger.debug("[Thundergrid] 🌐 Spatial pulse at tick #{tick_count} - Grid coordinates stable")
+      Logger.debug(
+        "[Thundergrid] 🌐 Spatial pulse at tick #{tick_count} - Grid coordinates stable"
+      )
     end
 
     {:noreply, %{state | tick_count: tick_count}}
@@ -76,6 +80,7 @@ defmodule Thunderline.Thundergrid.Supervisor do
   @impl Thunderline.Thunderblock.DomainActivation
   def on_deactivated(reason, state) do
     uptime_ticks = state.tick_count - state.activated_at
+
     Logger.info(
       "[Thundergrid] 🌐 Grid offline after #{uptime_ticks} ticks, reason: #{inspect(reason)}"
     )

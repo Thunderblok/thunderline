@@ -110,7 +110,11 @@ defmodule Thunderline.Thunderflow.DomainProcessorTest do
     end
 
     test "exposes telemetry prefix" do
-      assert TestPipeline.__telemetry_prefix__() == [:thunderline, :domain_processor, :test_pipeline]
+      assert TestPipeline.__telemetry_prefix__() == [
+               :thunderline,
+               :domain_processor,
+               :test_pipeline
+             ]
     end
 
     test "custom telemetry prefix works" do
@@ -199,14 +203,22 @@ defmodule Thunderline.Thunderflow.DomainProcessorTest do
     test "module attributes are set from options" do
       # We can't directly access module attributes, but we can verify behavior
       # through the telemetry prefix which uses @__dp_name
-      assert TestPipeline.__telemetry_prefix__() == [:thunderline, :domain_processor, :test_pipeline]
+      assert TestPipeline.__telemetry_prefix__() == [
+               :thunderline,
+               :domain_processor,
+               :test_pipeline
+             ]
     end
 
     test "custom batcher_config is called via do_batcher_config" do
       # CustomConfigPipeline defines custom batcher configs
       # We verify this by checking the function exists and returns expected values
       assert CustomConfigPipeline.do_batcher_config(:fast) == [batch_size: 5, batch_timeout: 100]
-      assert CustomConfigPipeline.do_batcher_config(:slow) == [batch_size: 50, batch_timeout: 5_000]
+
+      assert CustomConfigPipeline.do_batcher_config(:slow) == [
+               batch_size: 50,
+               batch_timeout: 5_000
+             ]
     end
 
     test "custom processor_config is called via do_processor_config" do

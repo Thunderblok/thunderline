@@ -47,7 +47,8 @@ defmodule Thunderline.Thunderlink.TickGenerator do
   use GenServer
   require Logger
 
-  @tick_interval 1_000  # 1 second default
+  # 1 second default
+  @tick_interval 1_000
   @pubsub_topic "system:domain_tick"
 
   # Client API
@@ -89,12 +90,13 @@ defmodule Thunderline.Thunderlink.TickGenerator do
 
     Logger.info("[TickGenerator] Started with #{interval}ms interval")
 
-    {:ok, %{
-      tick_count: 0,
-      interval: interval,
-      started_at: System.monotonic_time(),
-      last_tick_at: nil
-    }}
+    {:ok,
+     %{
+       tick_count: 0,
+       interval: interval,
+       started_at: System.monotonic_time(),
+       last_tick_at: nil
+     }}
   end
 
   @impl true
@@ -114,6 +116,7 @@ defmodule Thunderline.Thunderlink.TickGenerator do
 
     # Emit telemetry
     tick_latency = System.monotonic_time() - tick_start
+
     :telemetry.execute(
       [:thunderline, :tick_generator, :tick],
       %{count: tick_count, latency_ns: tick_latency, active_domains: active_count},

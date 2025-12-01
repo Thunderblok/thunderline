@@ -153,7 +153,7 @@ defmodule Thunderline.Utils.Stats do
     j_max = jvp_matrix |> Nx.abs() |> Nx.reduce_max() |> Nx.to_number()
 
     epsilon = 1.0e-8
-    (j_frobenius * a_norm) / (j_max + epsilon)
+    j_frobenius * a_norm / (j_max + epsilon)
   end
 
   def resonance_index(_, _), do: 0.0
@@ -201,20 +201,22 @@ defmodule Thunderline.Utils.Stats do
       plv: %{
         value: plv,
         in_band: plv >= @plv_min and plv <= @plv_max,
-        status: cond do
-          plv > @plv_max -> :over_synchronized
-          plv < @plv_min -> :under_synchronized
-          true -> :healthy
-        end
+        status:
+          cond do
+            plv > @plv_max -> :over_synchronized
+            plv < @plv_min -> :under_synchronized
+            true -> :healthy
+          end
       },
       sigma: %{
         value: sigma,
         in_band: abs(sigma - @sigma_target) <= @sigma_tolerance,
-        status: cond do
-          sigma > @sigma_target + @sigma_tolerance -> :amplifying
-          sigma < @sigma_target - @sigma_tolerance -> :decaying
-          true -> :healthy
-        end
+        status:
+          cond do
+            sigma > @sigma_target + @sigma_tolerance -> :amplifying
+            sigma < @sigma_target - @sigma_tolerance -> :decaying
+            true -> :healthy
+          end
       },
       lambda: %{
         value: lambda,
@@ -226,12 +228,13 @@ defmodule Thunderline.Utils.Stats do
         # Rtau doesn't have fixed bands - monitor for spikes
         status: :monitoring
       },
-      overall: cond do
-        plv > 0.9 -> :loop_detected
-        lambda > 0.1 -> :chaotic_drift
-        sigma > 1.5 or sigma < 0.5 -> :degenerate
-        true -> :healthy
-      end
+      overall:
+        cond do
+          plv > 0.9 -> :loop_detected
+          lambda > 0.1 -> :chaotic_drift
+          sigma > 1.5 or sigma < 0.5 -> :degenerate
+          true -> :healthy
+        end
     }
   end
 

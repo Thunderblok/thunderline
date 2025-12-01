@@ -579,7 +579,9 @@ defmodule Thunderline.Thunderlink.Resources.Role do
     validate {Thunderline.Thunderblock.Validations.ValidSlug, field: :role_slug}
     validate Thunderline.Thunderblock.Validations.ValidPermissions
     validate Thunderline.Thunderblock.Validations.ValidChannelPermissions
-    validate {Thunderline.Thunderblock.Validations.ValidHierarchy, field: :hierarchy_level, max: 100}
+
+    validate {Thunderline.Thunderblock.Validations.ValidHierarchy,
+              field: :hierarchy_level, max: 100}
   end
 
   # ===== ATTRIBUTES =====

@@ -292,7 +292,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunSaga do
 
   # Get the configured Python invoker module
   defp get_invoker do
-    case Application.get_env(:thunderline, :cerebros_bridge, []) |> Keyword.get(:invoker, :pythonx) do
+    case Application.get_env(:thunderline, :cerebros_bridge, [])
+         |> Keyword.get(:invoker, :pythonx) do
       :snex -> SnexInvoker
       :pythonx -> PythonxInvoker
       other -> raise "Unsupported invoker: #{inspect(other)}"

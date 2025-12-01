@@ -40,7 +40,9 @@ defmodule Thunderline.Thunderflow.ErrorClass do
   Returns true if this error class indicates a retryable error.
   """
   @spec retryable?(t()) :: boolean()
-  def retryable?(%__MODULE__{class: class}) when class in [:transient, :timeout, :dependency], do: true
+  def retryable?(%__MODULE__{class: class}) when class in [:transient, :timeout, :dependency],
+    do: true
+
   def retryable?(%__MODULE__{}), do: false
 
   @doc """

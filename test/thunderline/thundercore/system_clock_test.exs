@@ -99,10 +99,11 @@ defmodule Thunderline.Thundercore.SystemClockTest do
 
   describe "measure/1" do
     test "measures function execution time" do
-      {result, duration} = SystemClock.measure(fn ->
-        Process.sleep(10)
-        :done
-      end)
+      {result, duration} =
+        SystemClock.measure(fn ->
+          Process.sleep(10)
+          :done
+        end)
 
       assert result == :done
       assert is_integer(duration)

@@ -200,7 +200,8 @@ defmodule Thunderline.Thunderlink.Resources.Community do
       argument :id, :uuid, allow_nil?: false
 
       run fn input, _context ->
-        community = Ash.get!(Thunderline.Thunderblock.Resources.ExecutionTenant, input.arguments.id)
+        community =
+          Ash.get!(Thunderline.Thunderblock.Resources.ExecutionTenant, input.arguments.id)
 
         community
         |> Ash.Changeset.for_update(:internal_activate)

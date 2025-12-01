@@ -47,6 +47,54 @@ defmodule Thunderline.Thunderpac.Resources.PACRole do
     end
   end
 
+  code_interface do
+    define :create
+    define :update
+    define :by_category, args: [:category]
+    define :system_roles, action: :system_roles
+    define :custom_roles, action: :custom_roles
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      description "Create a new PAC role"
+
+      accept [
+        :name,
+        :category,
+        :description,
+        :capabilities,
+        :constraints,
+        :persona_overlay,
+        :priority,
+        :metadata
+      ]
+    end
+
+    update :update do
+      description "Update a PAC role"
+      accept [:description, :capabilities, :constraints, :persona_overlay, :priority, :metadata]
+    end
+
+    read :by_category do
+      description "Find roles by category"
+      argument :category, :atom, allow_nil?: false
+      filter expr(category == ^arg(:category))
+    end
+
+    read :system_roles do
+      description "List system-defined roles"
+      filter expr(is_system == true)
+    end
+
+    read :custom_roles do
+      description "List user-defined roles"
+      filter expr(is_system == false)
+    end
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -118,43 +166,5 @@ defmodule Thunderline.Thunderpac.Resources.PACRole do
 
   identities do
     identity :unique_name, [:name]
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      description "Create a new PAC role"
-      accept [:name, :category, :description, :capabilities, :constraints, :persona_overlay, :priority, :metadata]
-    end
-
-    update :update do
-      description "Update a PAC role"
-      accept [:description, :capabilities, :constraints, :persona_overlay, :priority, :metadata]
-    end
-
-    read :by_category do
-      description "Find roles by category"
-      argument :category, :atom, allow_nil?: false
-      filter expr(category == ^arg(:category))
-    end
-
-    read :system_roles do
-      description "List system-defined roles"
-      filter expr(is_system == true)
-    end
-
-    read :custom_roles do
-      description "List user-defined roles"
-      filter expr(is_system == false)
-    end
-  end
-
-  code_interface do
-    define :create
-    define :update
-    define :by_category, args: [:category]
-    define :system_roles, action: :system_roles
-    define :custom_roles, action: :custom_roles
   end
 end

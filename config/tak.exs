@@ -39,10 +39,12 @@ config :thunderline, Thunderline.Thunderbolt.TAK,
   # Grid defaults
   default_dimensions_2d: {100, 100},
   default_dimensions_3d: {100, 100, 100},
-  max_grid_size: 1_000_000,  # 100³
+  # 100³
+  max_grid_size: 1_000_000,
 
   # Runner defaults
-  default_tick_ms: 16,  # ~60 FPS
+  # ~60 FPS
+  default_tick_ms: 16,
   broadcast_deltas?: true,
   delta_compression?: true,
 

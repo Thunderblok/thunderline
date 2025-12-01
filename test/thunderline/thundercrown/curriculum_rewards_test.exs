@@ -107,14 +107,16 @@ defmodule Thunderline.Thundercrown.CurriculumRewardsTest do
 
     test "penalizes identical tasks" do
       embedding = [1.0, 0.0, 0.0]
-      history = [[1.0, 0.0, 0.0]]  # Identical
+      # Identical
+      history = [[1.0, 0.0, 0.0]]
       penalty = CurriculumRewards.repetition_penalty(embedding, history, threshold: 0.9)
       assert penalty > 0.0
     end
 
     test "no penalty for orthogonal tasks" do
       embedding = [1.0, 0.0, 0.0]
-      history = [[0.0, 1.0, 0.0]]  # Orthogonal
+      # Orthogonal
+      history = [[0.0, 1.0, 0.0]]
       penalty = CurriculumRewards.repetition_penalty(embedding, history)
       assert_in_delta penalty, 0.0, 0.001
     end
@@ -123,15 +125,16 @@ defmodule Thunderline.Thundercrown.CurriculumRewardsTest do
       embedding = [1.0, 0.0, 0.0]
       # Use a slightly different embedding that's still similar (0.95 cosine sim)
       # [1.0, 0.0, 0.0] · [0.95, 0.31, 0.0] ≈ 0.95
-      similar_1 = [0.95, 0.31224989991991996, 0.0]  # normalized to unit length
+      # normalized to unit length
+      similar_1 = [0.95, 0.31224989991991996, 0.0]
       similar_2 = [0.95, 0.31224989991991996, 0.0]
-      
+
       history_1 = [similar_1]
       history_2 = [similar_1, similar_2]
-      
+
       penalty_1 = CurriculumRewards.repetition_penalty(embedding, history_1, threshold: 0.9)
       penalty_2 = CurriculumRewards.repetition_penalty(embedding, history_2, threshold: 0.9)
-      
+
       # Second penalty should be higher (adds decayed second match)
       assert penalty_2 > penalty_1
       # But less than double (due to decay of 0.9^1 = 0.9 for second item)
@@ -142,22 +145,24 @@ defmodule Thunderline.Thundercrown.CurriculumRewardsTest do
   describe "curriculum_reward/2" do
     test "combines all components" do
       metrics = %{
-        consistency_score: 0.5,  # Max uncertainty
-        tool_calls: 2           # Half of default cap
+        # Max uncertainty
+        consistency_score: 0.5,
+        # Half of default cap
+        tool_calls: 2
       }
-      
+
       reward = CurriculumRewards.curriculum_reward(metrics)
-      
+
       # Should be positive (uncertainty + tool use)
       assert reward > 0.0
     end
 
     test "respects weight parameters" do
       metrics = %{consistency_score: 0.5, tool_calls: 0}
-      
+
       reward_alpha_1 = CurriculumRewards.curriculum_reward(metrics, alpha: 1.0)
       reward_alpha_2 = CurriculumRewards.curriculum_reward(metrics, alpha: 2.0)
-      
+
       # Doubling alpha should double the uncertainty component
       assert_in_delta reward_alpha_2, reward_alpha_1 * 2, 0.001
     end
@@ -179,7 +184,7 @@ defmodule Thunderline.Thundercrown.CurriculumRewardsTest do
     test "higher bound for lower consistency" do
       bound_low = CurriculumRewards.dynamic_clip_bound(0.3)
       bound_high = CurriculumRewards.dynamic_clip_bound(0.9)
-      
+
       assert bound_low > bound_high
     end
 
@@ -193,16 +198,19 @@ defmodule Thunderline.Thundercrown.CurriculumRewardsTest do
   describe "rank_tasks/2" do
     test "ranks by descending reward" do
       tasks = [
-        {:task_a, %{consistency_score: 0.5, tool_calls: 4}},  # High reward
-        {:task_b, %{consistency_score: 1.0, tool_calls: 0}},  # Low reward
-        {:task_c, %{consistency_score: 0.6, tool_calls: 2}}   # Medium reward
+        # High reward
+        {:task_a, %{consistency_score: 0.5, tool_calls: 4}},
+        # Low reward
+        {:task_b, %{consistency_score: 1.0, tool_calls: 0}},
+        # Medium reward
+        {:task_c, %{consistency_score: 0.6, tool_calls: 2}}
       ]
-      
+
       ranked = CurriculumRewards.rank_tasks(tasks)
-      
+
       # Extract task names in order
       task_order = Enum.map(ranked, fn {task, _reward} -> task end)
-      
+
       # task_a should be first (highest reward)
       assert hd(task_order) == :task_a
     end

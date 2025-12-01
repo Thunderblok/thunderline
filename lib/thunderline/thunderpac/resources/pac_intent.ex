@@ -42,14 +42,6 @@ defmodule Thunderline.Thunderpac.Resources.PACIntent do
     end
   end
 
-  admin do
-    form do
-      field :intent_type
-      field :priority
-      field :payload
-    end
-  end
-
   state_machine do
     initial_states([:pending])
     default_initial_state(:pending)
@@ -62,6 +54,134 @@ defmodule Thunderline.Thunderpac.Resources.PACIntent do
       transition(:fail, from: [:active, :blocked], to: :failed)
       transition(:cancel, from: [:pending, :active, :blocked], to: :cancelled)
       transition(:retry, from: [:failed], to: :pending)
+    end
+  end
+
+  admin do
+    form do
+      field :intent_type
+      field :priority
+      field :payload
+    end
+  end
+
+  code_interface do
+    define :create
+    define :start
+    define :block
+    define :unblock
+    define :complete
+    define :fail
+    define :cancel
+    define :retry
+    define :pending_for_pac, args: [:pac_id]
+    define :active_for_pac, args: [:pac_id]
+    define :ready_to_execute
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      description "Create a new intent"
+
+      accept [
+        :intent_type,
+        :priority,
+        :payload,
+        :energy_cost,
+        :scheduled_at,
+        :timeout_ms,
+        :max_retries,
+        :metadata
+      ]
+
+      argument :pac_id, :uuid, allow_nil?: false
+      argument :role_id, :uuid, allow_nil?: true
+      argument :parent_intent_id, :uuid, allow_nil?: true
+
+      change manage_relationship(:pac_id, :pac, type: :append)
+      change manage_relationship(:role_id, :role, type: :append)
+      change manage_relationship(:parent_intent_id, :parent_intent, type: :append)
+    end
+
+    update :start do
+      description "Begin executing this intent"
+      require_atomic? false
+      change transition_state(:active)
+      change set_attribute(:started_at, &DateTime.utc_now/0)
+    end
+
+    update :block do
+      description "Mark intent as blocked on external dependency"
+      accept [:metadata]
+      require_atomic? false
+      change transition_state(:blocked)
+    end
+
+    update :unblock do
+      description "Resume blocked intent"
+      require_atomic? false
+      change transition_state(:active)
+    end
+
+    update :complete do
+      description "Mark intent as successfully completed"
+      accept [:result]
+      require_atomic? false
+      change transition_state(:completed)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+    end
+
+    update :fail do
+      description "Mark intent as failed"
+      accept [:error]
+      require_atomic? false
+      change transition_state(:failed)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+    end
+
+    update :cancel do
+      description "Cancel this intent"
+      require_atomic? false
+      change transition_state(:cancelled)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+    end
+
+    update :retry do
+      description "Retry a failed intent"
+      require_atomic? false
+      change transition_state(:pending)
+      change increment(:retry_count)
+      change set_attribute(:error, nil)
+      change set_attribute(:started_at, nil)
+      change set_attribute(:completed_at, nil)
+    end
+
+    read :pending_for_pac do
+      description "Get pending intents for a PAC"
+      argument :pac_id, :uuid, allow_nil?: false
+
+      filter expr(pac_id == ^arg(:pac_id) and state == :pending)
+      prepare build(sort: [priority: :desc, inserted_at: :asc])
+    end
+
+    read :active_for_pac do
+      description "Get currently active intents for a PAC"
+      argument :pac_id, :uuid, allow_nil?: false
+
+      filter expr(pac_id == ^arg(:pac_id) and state == :active)
+    end
+
+    read :ready_to_execute do
+      description "Get intents ready for execution"
+
+      filter expr(
+               state == :pending and
+                 (is_nil(scheduled_at) or scheduled_at <= ^DateTime.utc_now())
+             )
+
+      prepare build(sort: [priority: :desc, inserted_at: :asc])
     end
   end
 
@@ -178,112 +298,5 @@ defmodule Thunderline.Thunderpac.Resources.PACIntent do
       attribute_writable? true
       description "Parent intent if this is a sub-intent"
     end
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    create :create do
-      description "Create a new intent"
-      accept [:intent_type, :priority, :payload, :energy_cost, :scheduled_at, :timeout_ms, :max_retries, :metadata]
-      argument :pac_id, :uuid, allow_nil?: false
-      argument :role_id, :uuid, allow_nil?: true
-      argument :parent_intent_id, :uuid, allow_nil?: true
-
-      change manage_relationship(:pac_id, :pac, type: :append)
-      change manage_relationship(:role_id, :role, type: :append)
-      change manage_relationship(:parent_intent_id, :parent_intent, type: :append)
-    end
-
-    update :start do
-      description "Begin executing this intent"
-      require_atomic? false
-      change transition_state(:active)
-      change set_attribute(:started_at, &DateTime.utc_now/0)
-    end
-
-    update :block do
-      description "Mark intent as blocked on external dependency"
-      accept [:metadata]
-      require_atomic? false
-      change transition_state(:blocked)
-    end
-
-    update :unblock do
-      description "Resume blocked intent"
-      require_atomic? false
-      change transition_state(:active)
-    end
-
-    update :complete do
-      description "Mark intent as successfully completed"
-      accept [:result]
-      require_atomic? false
-      change transition_state(:completed)
-      change set_attribute(:completed_at, &DateTime.utc_now/0)
-    end
-
-    update :fail do
-      description "Mark intent as failed"
-      accept [:error]
-      require_atomic? false
-      change transition_state(:failed)
-      change set_attribute(:completed_at, &DateTime.utc_now/0)
-    end
-
-    update :cancel do
-      description "Cancel this intent"
-      require_atomic? false
-      change transition_state(:cancelled)
-      change set_attribute(:completed_at, &DateTime.utc_now/0)
-    end
-
-    update :retry do
-      description "Retry a failed intent"
-      require_atomic? false
-      change transition_state(:pending)
-      change increment(:retry_count)
-      change set_attribute(:error, nil)
-      change set_attribute(:started_at, nil)
-      change set_attribute(:completed_at, nil)
-    end
-
-    read :pending_for_pac do
-      description "Get pending intents for a PAC"
-      argument :pac_id, :uuid, allow_nil?: false
-
-      filter expr(pac_id == ^arg(:pac_id) and state == :pending)
-      prepare build(sort: [priority: :desc, inserted_at: :asc])
-    end
-
-    read :active_for_pac do
-      description "Get currently active intents for a PAC"
-      argument :pac_id, :uuid, allow_nil?: false
-
-      filter expr(pac_id == ^arg(:pac_id) and state == :active)
-    end
-
-    read :ready_to_execute do
-      description "Get intents ready for execution"
-      filter expr(
-        state == :pending and
-        (is_nil(scheduled_at) or scheduled_at <= ^DateTime.utc_now())
-      )
-      prepare build(sort: [priority: :desc, inserted_at: :asc])
-    end
-  end
-
-  code_interface do
-    define :create
-    define :start
-    define :block
-    define :unblock
-    define :complete
-    define :fail
-    define :cancel
-    define :retry
-    define :pending_for_pac, args: [:pac_id]
-    define :active_for_pac, args: [:pac_id]
-    define :ready_to_execute
   end
 end

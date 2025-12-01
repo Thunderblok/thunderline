@@ -43,7 +43,8 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
     test "returns profile config for valid profile" do
       {:ok, config} = Evolution.get_profile(:balanced)
 
-      assert config.trait_modifiers.lambda_target == 0.273  # Langton's λc
+      # Langton's λc
+      assert config.trait_modifiers.lambda_target == 0.273
     end
 
     test "returns error for invalid profile" do
@@ -93,7 +94,8 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
 
     test "lambda_hat near target increases adaptability" do
       {:ok, profile} = Evolution.get_profile(:balanced)
-      target = profile.trait_modifiers.lambda_target  # 0.273
+      # 0.273
+      target = profile.trait_modifiers.lambda_target
 
       optimal_metrics = %{plv: 0.5, entropy: 0.5, lambda_hat: target, lyapunov: 0.0}
       far_metrics = %{plv: 0.5, entropy: 0.5, lambda_hat: 0.9, lyapunov: 0.0}
@@ -110,7 +112,12 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
       metrics = %{plv: 0.5, entropy: 0.5, lambda_hat: 0.3, lyapunov: 0.0}
 
       small_queue_pac = %{intent_queue: [], memory_state: %{}, session_count: 1}
-      large_queue_pac = %{intent_queue: List.duplicate(%{}, 20), memory_state: %{}, session_count: 1}
+
+      large_queue_pac = %{
+        intent_queue: List.duplicate(%{}, 20),
+        memory_state: %{},
+        session_count: 1
+      }
 
       small_result = Evolution.compute_fitness(metrics, small_queue_pac, profile)
       large_result = Evolution.compute_fitness(metrics, large_queue_pac, profile)
@@ -318,7 +325,8 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
     test "handles missing metrics" do
       {:ok, profile} = Evolution.get_profile(:balanced)
 
-      metrics = %{}  # Empty metrics
+      # Empty metrics
+      metrics = %{}
       pac = %{intent_queue: [], memory_state: %{}, session_count: 1}
 
       result = Evolution.compute_fitness(metrics, pac, profile)

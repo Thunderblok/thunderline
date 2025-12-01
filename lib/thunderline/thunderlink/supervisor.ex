@@ -42,7 +42,9 @@ defmodule Thunderline.Thunderlink.Supervisor do
 
   @impl Thunderline.Thunderblock.DomainActivation
   def on_activated(tick_count) do
-    Logger.info("[ThunderLink] 🔗 LINK ESTABLISHED - Presence & Communications Online at tick #{tick_count}")
+    Logger.info(
+      "[ThunderLink] 🔗 LINK ESTABLISHED - Presence & Communications Online at tick #{tick_count}"
+    )
 
     state = %{
       activated_at: tick_count,
@@ -75,6 +77,7 @@ defmodule Thunderline.Thunderlink.Supervisor do
   @impl Thunderline.Thunderblock.DomainActivation
   def on_deactivated(reason, state) do
     uptime_ticks = state.tick_count - state.activated_at
+
     Logger.info(
       "[ThunderLink] 🔗 Link severing after #{uptime_ticks} ticks, reason: #{inspect(reason)}"
     )

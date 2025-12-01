@@ -36,30 +36,37 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
   """
   @spec init() :: {:ok, {pid(), Snex.env()}} | {:error, term()}
   def init do
-    python_paths = Application.get_env(:thunderline, :cerebros_bridge, [])
-                   |> Keyword.get(:python_path, ["python/cerebros", "python/cerebros/core", "python/cerebros/service"])
+    python_paths =
+      Application.get_env(:thunderline, :cerebros_bridge, [])
+      |> Keyword.get(:python_path, [
+        "python/cerebros",
+        "python/cerebros/core",
+        "python/cerebros/service"
+      ])
 
     Logger.info("[CerebrosBridge.SnexInvoker] Initializing with paths: #{inspect(python_paths)}")
 
     # Convert relative paths to absolute
-    abs_paths = Enum.map(python_paths, fn path ->
-      if Path.absname(path) == path do
-        path
-      else
-        Path.join(File.cwd!(), path)
-      end
-    end)
+    abs_paths =
+      Enum.map(python_paths, fn path ->
+        if Path.absname(path) == path do
+          path
+        else
+          Path.join(File.cwd!(), path)
+        end
+      end)
 
     # Build sys.path initialization script
-    sys_path_init = Enum.map_join(abs_paths, "\n", fn path ->
-      if File.exists?(path) do
-        Logger.info("[CerebrosBridge.SnexInvoker] Adding to sys.path: #{path}")
-        "sys.path.insert(0, '#{path}')"
-      else
-        Logger.warning("[CerebrosBridge.SnexInvoker] Path not found: #{path}")
-        ""
-      end
-    end)
+    sys_path_init =
+      Enum.map_join(abs_paths, "\n", fn path ->
+        if File.exists?(path) do
+          Logger.info("[CerebrosBridge.SnexInvoker] Adding to sys.path: #{path}")
+          "sys.path.insert(0, '#{path}')"
+        else
+          Logger.warning("[CerebrosBridge.SnexInvoker] Path not found: #{path}")
+          ""
+        end
+      end)
 
     # Create init script that adds paths and imports cerebros_service
     init_script = """
@@ -79,26 +86,41 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
     """
 
     try do
-      case Snex.Interpreter.start_link(python: python_executable, init_script: minimal_init_script) do
+      case Snex.Interpreter.start_link(
+             python: python_executable,
+             init_script: minimal_init_script
+           ) do
         {:ok, interpreter} ->
           # Create base environment
           case Snex.make_env(interpreter) do
             {:ok, env} ->
-              Logger.info("[CerebrosBridge.SnexInvoker] Snex interpreter initialized successfully")
+              Logger.info(
+                "[CerebrosBridge.SnexInvoker] Snex interpreter initialized successfully"
+              )
+
               {:ok, {interpreter, env}}
 
             {:error, error} ->
-              Logger.error("[CerebrosBridge.SnexInvoker] Failed to create base environment: #{inspect(error)}")
+              Logger.error(
+                "[CerebrosBridge.SnexInvoker] Failed to create base environment: #{inspect(error)}"
+              )
+
               {:error, error}
           end
 
         {:error, error} ->
-          Logger.error("[CerebrosBridge.SnexInvoker] Failed to start interpreter: #{inspect(error)}")
+          Logger.error(
+            "[CerebrosBridge.SnexInvoker] Failed to start interpreter: #{inspect(error)}"
+          )
+
           {:error, error}
       end
     rescue
       error ->
-        Logger.error("[CerebrosBridge.SnexInvoker] Initialization error: #{Exception.message(error)}")
+        Logger.error(
+          "[CerebrosBridge.SnexInvoker] Initialization error: #{Exception.message(error)}"
+        )
+
         {:error, {:init_failed, Exception.message(error)}}
     catch
       kind, reason ->
@@ -232,7 +254,6 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
     # Get or create interpreter and environment
     with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
          {:ok, env} <- Snex.make_env(interpreter) do
-
       python_code = """
       # cerebros_service already imported in init_script
       # Call the training function
@@ -289,7 +310,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
     Enum.map(list, &normalize_for_python/1)
   end
 
-  defp normalize_for_python(atom) when is_atom(atom) and not is_nil(atom) and atom != true and atom != false do
+  defp normalize_for_python(atom)
+       when is_atom(atom) and not is_nil(atom) and atom != true and atom != false do
     to_string(atom)
   end
 
@@ -333,7 +355,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
       class: :transient,
       severity: :error,
       visibility: :external,
-      context: Map.merge(meta, %{op: op, timeout_ms: timeout_ms, reason: :timeout, invoker: :snex})
+      context:
+        Map.merge(meta, %{op: op, timeout_ms: timeout_ms, reason: :timeout, invoker: :snex})
     }
   end
 

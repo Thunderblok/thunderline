@@ -9,7 +9,7 @@ defmodule Thunderline.Thunderbolt.DiffLogic.GatesTest do
   describe "individual gates" do
     # Note: apply_gate uses defn with cond, which requires scalar gate_id
     # For proper tensor batch operations, use soft_gate or gate_layer instead
-    
+
     test "gate 0 (FALSE) returns 0 for scalars" do
       a = Nx.tensor(1.0)
       b = Nx.tensor(1.0)
@@ -55,9 +55,9 @@ defmodule Thunderline.Thunderbolt.DiffLogic.GatesTest do
       b = Nx.tensor(0.5)
       # Uniform weights -> equal probability for all gates
       weights = Nx.broadcast(1.0 / 16.0, {16})
-      
+
       result = Gates.soft_gate(a, b, weights)
-      
+
       # Should produce a scalar result
       assert Nx.shape(result) == {}
     end
@@ -65,16 +65,17 @@ defmodule Thunderline.Thunderbolt.DiffLogic.GatesTest do
     test "with peaked weights approximates AND gate" do
       a = Nx.tensor(0.5)
       b = Nx.tensor(0.5)
-      
+
       # All weight on gate 1 (AND)
-      weights = Nx.put_slice(
-        Nx.broadcast(0.0, {16}),
-        [1],
-        Nx.tensor([1.0])
-      )
-      
+      weights =
+        Nx.put_slice(
+          Nx.broadcast(0.0, {16}),
+          [1],
+          Nx.tensor([1.0])
+        )
+
       result = Gates.soft_gate(a, b, weights)
-      
+
       # Should be very close to AND(0.5, 0.5) = 0.25
       assert_in_delta Nx.to_number(result), 0.25, 0.01
     end
@@ -104,13 +105,13 @@ defmodule Thunderline.Thunderbolt.DiffLogic.GatesTest do
       # Single pair of scalar inputs
       a = Nx.tensor(0.5)
       b = Nx.tensor(0.5)
-      
+
       # Logits for one gate (will be softmaxed)
       logits = Nx.broadcast(0.0, {16})
-      
+
       # Use straight_through_gate for batch processing
       result = Gates.straight_through_gate(a, b, logits)
-      
+
       # Should produce a scalar
       assert Nx.shape(result) == {}
     end

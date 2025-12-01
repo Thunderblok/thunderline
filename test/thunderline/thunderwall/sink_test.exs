@@ -26,9 +26,12 @@ defmodule Thunderline.Thunderwall.SinkTest do
 
       metadata = %{
         created_at: old_time,
-        lambda_hat: 0.9,  # Chaotic
-        fitness: 0.1,      # Poor
-        lineage_depth: 1   # Shallow
+        # Chaotic
+        lambda_hat: 0.9,
+        # Poor
+        fitness: 0.1,
+        # Shallow
+        lineage_depth: 1
       }
 
       score = Sink.compute_entropy_score(metadata)
@@ -157,18 +160,24 @@ defmodule Thunderline.Thunderwall.SinkTest do
 
   describe "GenServer operations" do
     setup do
-      {:ok, pid} = Sink.start_link(name: :"Sink_#{System.unique_integer([:positive])}", gc_interval_ms: 60_000)
+      {:ok, pid} =
+        Sink.start_link(
+          name: :"Sink_#{System.unique_integer([:positive])}",
+          gc_interval_ms: 60_000
+        )
+
       Process.register(pid, Thunderline.Thunderwall.Sink)
       on_exit(fn -> Process.unregister(Thunderline.Thunderwall.Sink) end)
       {:ok, pid: pid}
     end
 
     test "quarantines CA run", %{pid: _pid} do
-      {:ok, entry} = Sink.quarantine_ca_run(
-        "run_test_1",
-        :ca_failure,
-        %{lambda_hat: 0.9, entropy: 0.8}
-      )
+      {:ok, entry} =
+        Sink.quarantine_ca_run(
+          "run_test_1",
+          :ca_failure,
+          %{lambda_hat: 0.9, entropy: 0.8}
+        )
 
       assert entry.entity_type == :ca_run
       assert entry.entity_id == "run_test_1"
@@ -178,10 +187,11 @@ defmodule Thunderline.Thunderwall.SinkTest do
     end
 
     test "quarantines Thunderbit", %{pid: _pid} do
-      {:ok, entry} = Sink.quarantine_thunderbit(
-        "bit_test_1",
-        %{lambda_hat: 0.95, sigma_flow: 0.05}
-      )
+      {:ok, entry} =
+        Sink.quarantine_thunderbit(
+          "bit_test_1",
+          %{lambda_hat: 0.95, sigma_flow: 0.05}
+        )
 
       assert entry.entity_type == :thunderbit
       assert entry.reason == :chaos_spike
@@ -271,7 +281,12 @@ defmodule Thunderline.Thunderwall.SinkTest do
 
   describe "edge cases" do
     setup do
-      {:ok, pid} = Sink.start_link(name: :"Sink_edge_#{System.unique_integer([:positive])}", gc_interval_ms: 60_000)
+      {:ok, pid} =
+        Sink.start_link(
+          name: :"Sink_edge_#{System.unique_integer([:positive])}",
+          gc_interval_ms: 60_000
+        )
+
       Process.register(pid, Thunderline.Thunderwall.Sink)
       on_exit(fn -> Process.unregister(Thunderline.Thunderwall.Sink) end)
       {:ok, pid: pid}

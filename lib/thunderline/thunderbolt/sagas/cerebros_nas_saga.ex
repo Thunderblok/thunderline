@@ -356,7 +356,9 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
   defp cancel_training_jobs(correlation_id) do
     # Attempt to cancel training jobs via Cerebros bridge
     if Code.ensure_loaded?(Thunderline.Thunderbolt.CerebrosBridge.Invoker) do
-      case Thunderline.Thunderbolt.CerebrosBridge.Invoker.cancel_jobs(correlation_id: correlation_id) do
+      case Thunderline.Thunderbolt.CerebrosBridge.Invoker.cancel_jobs(
+             correlation_id: correlation_id
+           ) do
         {:ok, result} ->
           {:ok, Map.get(result, :cancelled_count, 0)}
 

@@ -38,28 +38,37 @@ defmodule Thunderline.Thunderwall.SamplePool do
   alias Thunderline.Thunderbolt.NCA.{Perception, UpdateRule}
 
   defstruct [
-    :states,      # Pool of state tensors
-    :losses,      # Loss value for each state
-    :pool_size,   # Number of states in pool
-    :state_shape, # Shape of each state tensor
-    :target,      # Target pattern to grow towards
-    :seed,        # Seed state for injection
-    :nca_params,  # NCA network parameters
-    :step_range,  # {min_steps, max_steps} for random rollouts
-    :damage_prob  # Probability of damaging states before return
+    # Pool of state tensors
+    :states,
+    # Loss value for each state
+    :losses,
+    # Number of states in pool
+    :pool_size,
+    # Shape of each state tensor
+    :state_shape,
+    # Target pattern to grow towards
+    :target,
+    # Seed state for injection
+    :seed,
+    # NCA network parameters
+    :nca_params,
+    # {min_steps, max_steps} for random rollouts
+    :step_range,
+    # Probability of damaging states before return
+    :damage_prob
   ]
 
   @type t :: %__MODULE__{
-    states: [Nx.Tensor.t()],
-    losses: [float()],
-    pool_size: non_neg_integer(),
-    state_shape: tuple(),
-    target: Nx.Tensor.t(),
-    seed: Nx.Tensor.t(),
-    nca_params: map(),
-    step_range: {non_neg_integer(), non_neg_integer()},
-    damage_prob: float()
-  }
+          states: [Nx.Tensor.t()],
+          losses: [float()],
+          pool_size: non_neg_integer(),
+          state_shape: tuple(),
+          target: Nx.Tensor.t(),
+          seed: Nx.Tensor.t(),
+          nca_params: map(),
+          step_range: {non_neg_integer(), non_neg_integer()},
+          damage_prob: float()
+        }
 
   @default_pool_size 1024
   @default_step_range {64, 96}
@@ -88,20 +97,21 @@ defmodule Thunderline.Thunderwall.SamplePool do
     step_range = Keyword.get(opts, :step_range, @default_step_range)
     damage_prob = Keyword.get(opts, :damage_prob, @default_damage_prob)
     channels = Keyword.get(opts, :channels, 16)
-    
+
     {h, w, _c} = Nx.shape(target)
     state_shape = {h, w, channels}
-    
+
     # Create seed (center cell alive)
     seed = create_seed(state_shape)
-    
+
     # Initialize pool with seeds
     states = List.duplicate(seed, pool_size)
-    losses = List.duplicate(1.0, pool_size)  # High initial loss
-    
+    # High initial loss
+    losses = List.duplicate(1.0, pool_size)
+
     # Initialize NCA parameters
     nca_params = UpdateRule.initialize_params(channels: channels)
-    
+
     %__MODULE__{
       states: states,
       losses: losses,
@@ -118,14 +128,14 @@ defmodule Thunderline.Thunderwall.SamplePool do
   defp create_seed({h, w, c}) do
     # Center cell is alive, rest are zeros
     zeros = Nx.broadcast(0.0, {h, w, c})
-    
+
     cx = div(h, 2)
     cy = div(w, 2)
-    
+
     # Set center cell: RGB white + alpha 1.0 + zeros for hidden
     seed_cell = [1.0, 1.0, 1.0, 1.0] ++ List.duplicate(0.0, c - 4)
     seed_tensor = Nx.tensor([seed_cell]) |> Nx.reshape({1, 1, c})
-    
+
     Nx.put_slice(zeros, [cx, cy, 0], seed_tensor)
   end
 
@@ -151,46 +161,47 @@ defmodule Thunderline.Thunderwall.SamplePool do
   def train_step(pool, opts \\ []) do
     batch_size = Keyword.get(opts, :batch_size, @default_batch_size)
     learning_rate = Keyword.get(opts, :learning_rate, 2.0e-3)
-    
+
     # Sample batch indices
     indices = sample_indices(pool.pool_size, batch_size)
-    
+
     # Get batch states
     batch_states = Enum.map(indices, fn idx -> Enum.at(pool.states, idx) end)
-    
+
     # Random number of steps
     {min_steps, max_steps} = pool.step_range
     n_steps = :rand.uniform(max_steps - min_steps + 1) + min_steps - 1
-    
+
     # Run NCA for n_steps and compute gradients
-    {final_states, batch_loss, grad} = 
+    {final_states, batch_loss, grad} =
       rollout_and_grad(batch_states, pool.nca_params, pool.target, n_steps)
-    
+
     # Update parameters
     updated_params = apply_gradients(pool.nca_params, grad, learning_rate)
-    
+
     # Compute per-sample losses for pool management
     per_sample_losses = compute_per_sample_losses(final_states, pool.target)
-    
+
     # Optionally damage states before returning to pool
     damaged_states = maybe_damage_states(final_states, pool.damage_prob)
-    
+
     # Write batch back to pool
     updated_states = write_batch_to_pool(pool.states, indices, damaged_states)
     updated_losses = write_batch_to_pool(pool.losses, indices, per_sample_losses)
-    
+
     # Replace highest loss sample with seed
-    {states_with_seed, losses_with_seed} = 
+    {states_with_seed, losses_with_seed} =
       inject_seed(updated_states, updated_losses, pool.seed)
-    
-    updated_pool = %{pool | 
-      states: states_with_seed, 
-      losses: losses_with_seed,
-      nca_params: updated_params
+
+    updated_pool = %{
+      pool
+      | states: states_with_seed,
+        losses: losses_with_seed,
+        nca_params: updated_params
     }
-    
+
     Logger.debug("[SamplePool] step complete, loss=#{Float.round(batch_loss, 5)}")
-    
+
     {updated_pool, batch_loss}
   end
 
@@ -206,18 +217,18 @@ defmodule Thunderline.Thunderwall.SamplePool do
 
     # Stack batch
     batch = Nx.stack(batch_states)
-    
+
     # Run NCA for n_steps
     final_batch = run_nca_steps(batch, params, n_steps)
-    
+
     # Compute loss
     {loss, grad} = compute_loss_and_grad(final_batch, target, params)
-    
+
     # Unstack batch
     final_states = Nx.to_list(final_batch)
-    
+
     loss_value = Nx.to_number(loss)
-    
+
     {final_states, loss_value, grad}
   end
 
@@ -227,7 +238,7 @@ defmodule Thunderline.Thunderwall.SamplePool do
       # Note: This is simplified - real impl would vectorize
       state
       |> Nx.to_list()
-      |> Enum.map(fn s -> 
+      |> Enum.map(fn s ->
         {updated, _} = UpdateRule.step(s, params)
         updated
       end)
@@ -237,17 +248,30 @@ defmodule Thunderline.Thunderwall.SamplePool do
 
   defp compute_loss_and_grad(final_batch, target, params) do
     # Extract RGBA channels for loss
-    rgba_pred = Nx.slice(final_batch, [0, 0, 0, 0], [elem(Nx.shape(final_batch), 0), elem(Nx.shape(target), 0), elem(Nx.shape(target), 1), 4])
-    rgba_target = Nx.slice(target, [0, 0, 0], [elem(Nx.shape(target), 0), elem(Nx.shape(target), 1), 4])
-    
+    rgba_pred =
+      Nx.slice(final_batch, [0, 0, 0, 0], [
+        elem(Nx.shape(final_batch), 0),
+        elem(Nx.shape(target), 0),
+        elem(Nx.shape(target), 1),
+        4
+      ])
+
+    rgba_target =
+      Nx.slice(target, [0, 0, 0], [elem(Nx.shape(target), 0), elem(Nx.shape(target), 1), 4])
+
     # Broadcast target to batch size
     batch_size = elem(Nx.shape(final_batch), 0)
-    target_batch = Nx.broadcast(rgba_target, {batch_size, elem(Nx.shape(target), 0), elem(Nx.shape(target), 1), 4})
-    
+
+    target_batch =
+      Nx.broadcast(
+        rgba_target,
+        {batch_size, elem(Nx.shape(target), 0), elem(Nx.shape(target), 1), 4}
+      )
+
     # MSE loss
     diff = Nx.subtract(rgba_pred, target_batch)
     loss = Nx.mean(Nx.power(diff, 2))
-    
+
     # Simplified gradient (placeholder - real impl would use Nx.Defn.grad)
     grad = %{
       w1: Nx.broadcast(0.0, Nx.shape(params.w1)),
@@ -255,7 +279,7 @@ defmodule Thunderline.Thunderwall.SamplePool do
       w2: Nx.broadcast(0.0, Nx.shape(params.w2)),
       b2: Nx.broadcast(0.0, Nx.shape(params.b2))
     }
-    
+
     {loss, grad}
   end
 
@@ -269,10 +293,13 @@ defmodule Thunderline.Thunderwall.SamplePool do
   end
 
   defp compute_per_sample_losses(states, target) do
-    rgba_target = Nx.slice(target, [0, 0, 0], [elem(Nx.shape(target), 0), elem(Nx.shape(target), 1), 4])
-    
+    rgba_target =
+      Nx.slice(target, [0, 0, 0], [elem(Nx.shape(target), 0), elem(Nx.shape(target), 1), 4])
+
     Enum.map(states, fn state ->
-      rgba_pred = Nx.slice(state, [0, 0, 0], [elem(Nx.shape(state), 0), elem(Nx.shape(state), 1), 4])
+      rgba_pred =
+        Nx.slice(state, [0, 0, 0], [elem(Nx.shape(state), 0), elem(Nx.shape(state), 1), 4])
+
       diff = Nx.subtract(rgba_pred, rgba_target)
       Nx.to_number(Nx.mean(Nx.power(diff, 2)))
     end)
@@ -290,17 +317,17 @@ defmodule Thunderline.Thunderwall.SamplePool do
 
   defp apply_random_damage(state) do
     {h, w, c} = Nx.shape(state)
-    
+
     # Random rectangular damage (zero out a region)
     damage_size = div(min(h, w), 4)
     dx = :rand.uniform(h - damage_size + 1) - 1
     dy = :rand.uniform(w - damage_size + 1) - 1
-    
+
     # Create damage mask
     mask = Nx.broadcast(1.0, {h, w, c})
     damage_region = Nx.broadcast(0.0, {damage_size, damage_size, c})
     damage_mask = Nx.put_slice(mask, [dx, dy, 0], damage_region)
-    
+
     Nx.multiply(state, damage_mask)
   end
 
@@ -313,16 +340,17 @@ defmodule Thunderline.Thunderwall.SamplePool do
 
   defp inject_seed(states, losses, seed) do
     # Find index of highest loss
-    max_loss_idx = 
+    max_loss_idx =
       losses
       |> Enum.with_index()
       |> Enum.max_by(fn {loss, _idx} -> loss end)
       |> elem(1)
-    
+
     # Replace with seed
     new_states = List.replace_at(states, max_loss_idx, seed)
-    new_losses = List.replace_at(losses, max_loss_idx, 1.0)  # Reset loss
-    
+    # Reset loss
+    new_losses = List.replace_at(losses, max_loss_idx, 1.0)
+
     {new_states, new_losses}
   end
 
@@ -346,27 +374,30 @@ defmodule Thunderline.Thunderwall.SamplePool do
     steps = Keyword.get(opts, :steps, 8000)
     log_every = Keyword.get(opts, :log_every, 100)
     on_step = Keyword.get(opts, :on_step, fn _pool, _step, _loss -> :ok end)
-    
+
     train_opts = Keyword.take(opts, [:batch_size, :learning_rate])
-    
+
     Logger.info("[SamplePool] Starting training for #{steps} steps")
-    
-    {final_pool, losses} = 
+
+    {final_pool, losses} =
       Enum.reduce(1..steps, {pool, []}, fn step, {current_pool, loss_history} ->
         {updated_pool, loss} = train_step(current_pool, train_opts)
-        
+
         if rem(step, log_every) == 0 do
           avg_loss = Enum.sum(updated_pool.losses) / updated_pool.pool_size
-          Logger.info("[SamplePool] Step #{step}/#{steps}, batch_loss=#{Float.round(loss, 5)}, avg_pool_loss=#{Float.round(avg_loss, 5)}")
+
+          Logger.info(
+            "[SamplePool] Step #{step}/#{steps}, batch_loss=#{Float.round(loss, 5)}, avg_pool_loss=#{Float.round(avg_loss, 5)}"
+          )
         end
-        
+
         on_step.(updated_pool, step, loss)
-        
+
         {updated_pool, [loss | loss_history]}
       end)
-    
+
     Logger.info("[SamplePool] Training complete")
-    
+
     {final_pool, Enum.reverse(losses)}
   end
 
@@ -390,12 +421,12 @@ defmodule Thunderline.Thunderwall.SamplePool do
   """
   @spec best_sample(t()) :: Nx.Tensor.t()
   def best_sample(pool) do
-    min_idx = 
+    min_idx =
       pool.losses
       |> Enum.with_index()
       |> Enum.min_by(fn {loss, _idx} -> loss end)
       |> elem(1)
-    
+
     Enum.at(pool.states, min_idx)
   end
 
@@ -450,7 +481,7 @@ defmodule Thunderline.Thunderwall.SamplePool do
   @spec deserialize(binary(), Nx.Tensor.t()) :: t()
   def deserialize(binary, target) do
     data = :erlang.binary_to_term(binary)
-    
+
     # Reconstruct params
     nca_params = %{
       w1: Nx.from_binary(data.nca_params.w1, :f32) |> Nx.reshape(data.nca_params.w1_shape),
@@ -458,7 +489,7 @@ defmodule Thunderline.Thunderwall.SamplePool do
       w2: Nx.from_binary(data.nca_params.w2, :f32) |> Nx.reshape(data.nca_params.w2_shape),
       b2: Nx.from_binary(data.nca_params.b2, :f32) |> Nx.reshape(data.nca_params.b2_shape)
     }
-    
+
     # Create fresh pool with loaded params
     pool = new(target, step_range: data.step_range, damage_prob: data.damage_prob)
     %{pool | nca_params: nca_params}

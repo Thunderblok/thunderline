@@ -24,8 +24,20 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
 
       # Neighbors with same phase = high PLV
       coherent_neighbors = [
-        %{coord: {1, 0, 0}, phi_phase: 0.0, sigma_flow: 0.5, lambda_sensitivity: 0.3, trust_score: 0.8},
-        %{coord: {0, 1, 0}, phi_phase: 0.1, sigma_flow: 0.5, lambda_sensitivity: 0.3, trust_score: 0.8}
+        %{
+          coord: {1, 0, 0},
+          phi_phase: 0.0,
+          sigma_flow: 0.5,
+          lambda_sensitivity: 0.3,
+          trust_score: 0.8
+        },
+        %{
+          coord: {0, 1, 0},
+          phi_phase: 0.1,
+          sigma_flow: 0.5,
+          lambda_sensitivity: 0.3,
+          trust_score: 0.8
+        }
       ]
 
       metrics = Reflex.compute_local_metrics(bit, coherent_neighbors)
@@ -39,8 +51,20 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
 
       # Neighbors with varied flow = high entropy
       varied_neighbors = [
-        %{coord: {1, 0, 0}, phi_phase: 0.0, sigma_flow: 0.1, lambda_sensitivity: 0.3, trust_score: 0.8},
-        %{coord: {0, 1, 0}, phi_phase: 0.0, sigma_flow: 0.9, lambda_sensitivity: 0.3, trust_score: 0.8}
+        %{
+          coord: {1, 0, 0},
+          phi_phase: 0.0,
+          sigma_flow: 0.1,
+          lambda_sensitivity: 0.3,
+          trust_score: 0.8
+        },
+        %{
+          coord: {0, 1, 0},
+          phi_phase: 0.0,
+          sigma_flow: 0.9,
+          lambda_sensitivity: 0.3,
+          trust_score: 0.8
+        }
       ]
 
       metrics = Reflex.compute_local_metrics(bit, varied_neighbors)
@@ -53,8 +77,20 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
       bit = create_test_bit(%{lambda_sensitivity: 0.3})
 
       neighbors = [
-        %{coord: {1, 0, 0}, phi_phase: 0.0, sigma_flow: 0.5, lambda_sensitivity: 0.5, trust_score: 0.8},
-        %{coord: {0, 1, 0}, phi_phase: 0.0, sigma_flow: 0.5, lambda_sensitivity: 0.7, trust_score: 0.8}
+        %{
+          coord: {1, 0, 0},
+          phi_phase: 0.0,
+          sigma_flow: 0.5,
+          lambda_sensitivity: 0.5,
+          trust_score: 0.8
+        },
+        %{
+          coord: {0, 1, 0},
+          phi_phase: 0.0,
+          sigma_flow: 0.5,
+          lambda_sensitivity: 0.7,
+          trust_score: 0.8
+        }
       ]
 
       metrics = Reflex.compute_local_metrics(bit, neighbors)
@@ -73,7 +109,8 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
       {state, flow, phase, lambda} = Reflex.apply_rule(bit, [], gate_logits, policy)
 
       assert flow < bit.sigma_flow
-      assert_in_delta flow, 0.72, 0.01  # 0.8 * 0.9
+      # 0.8 * 0.9
+      assert_in_delta flow, 0.72, 0.01
     end
 
     test "applies override freeze rule" do
@@ -105,7 +142,8 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
 
       assert state == :active
       assert flow == 1.0
-      assert phase == 0.5  # preserved
+      # preserved
+      assert phase == 0.5
       assert lambda == 0.0
     end
   end
@@ -140,7 +178,13 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
     test "fires trust reflex when stable and coherent" do
       bit = create_test_bit(%{sigma_flow: 0.7, trust_score: 0.5})
       metrics = %{plv: 0.8, entropy: 0.3, lambda_hat: 0.3, neighbor_count: 4}
-      policy = %{stability_threshold: 0.3, plv_threshold: 0.6, trust_boost: 0.1, propagation_enabled: false}
+
+      policy = %{
+        stability_threshold: 0.3,
+        plv_threshold: 0.6,
+        trust_boost: 0.1,
+        propagation_enabled: false
+      }
 
       {updated_bit, events} = Reflex.evaluate_reflexes(bit, metrics, policy)
 
@@ -152,7 +196,13 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
     test "returns unchanged bit when no reflexes fire" do
       bit = create_test_bit(%{sigma_flow: 0.5, trust_score: 0.5})
       metrics = %{plv: 0.5, entropy: 0.5, lambda_hat: 0.3, neighbor_count: 2}
-      policy = %{stability_threshold: 0.3, chaos_threshold: 0.8, plv_threshold: 0.9, propagation_enabled: false}
+
+      policy = %{
+        stability_threshold: 0.3,
+        chaos_threshold: 0.8,
+        plv_threshold: 0.9,
+        propagation_enabled: false
+      }
 
       {updated_bit, events} = Reflex.evaluate_reflexes(bit, metrics, policy)
 
@@ -166,7 +216,13 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
       # Add neighborhood manually since struct might not have it
       bit = Map.put(bit, :neighborhood, [{1, 0, 0}, {0, 1, 0}, {0, 0, 1}])
 
-      event = %{type: :chaos_spike, bit_id: bit.id, coord: bit.coord, trigger: :chaos_spike, data: %{}}
+      event = %{
+        type: :chaos_spike,
+        bit_id: bit.id,
+        coord: bit.coord,
+        trigger: :chaos_spike,
+        data: %{}
+      }
 
       result = Reflex.check_propagation(bit, event)
 
@@ -179,7 +235,13 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
       bit = create_test_bit()
       bit = Map.put(bit, :neighborhood, [{1, 0, 0}])
 
-      event = %{type: :stability, bit_id: bit.id, coord: bit.coord, trigger: :low_stability, data: %{}}
+      event = %{
+        type: :stability,
+        bit_id: bit.id,
+        coord: bit.coord,
+        trigger: :low_stability,
+        data: %{}
+      }
 
       result = Reflex.check_propagation(bit, event)
 
@@ -197,12 +259,19 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
   end
 
   describe "step/5" do
-    @tag :skip  # Requires DiffLogic.Gates module
+    # Requires DiffLogic.Gates module
+    @tag :skip
     test "performs complete reflex step" do
       bit = create_test_bit()
 
       neighbors = [
-        %{coord: {1, 0, 0}, phi_phase: 0.1, sigma_flow: 0.6, lambda_sensitivity: 0.3, trust_score: 0.8}
+        %{
+          coord: {1, 0, 0},
+          phi_phase: 0.1,
+          sigma_flow: 0.6,
+          lambda_sensitivity: 0.3,
+          trust_score: 0.8
+        }
       ]
 
       gate_logits = Nx.tensor(List.duplicate(0.1, 16))
@@ -216,7 +285,8 @@ defmodule Thunderline.Thunderbolt.Thunderbit.ReflexTest do
   end
 
   describe "batch_step/4" do
-    @tag :skip  # Requires DiffLogic.Gates module
+    # Requires DiffLogic.Gates module
+    @tag :skip
     test "updates multiple bits in parallel" do
       bits_map = %{
         {0, 0, 0} => create_test_bit(%{coord: {0, 0, 0}}),

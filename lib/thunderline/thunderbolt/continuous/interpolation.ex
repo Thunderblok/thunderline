@@ -230,6 +230,7 @@ defmodule Thunderline.Thunderbolt.Continuous.Interpolation do
       intervals
       |> Enum.flat_map(fn {{start_val, stop_val}, value} ->
         center = (start_val + stop_val) / 2
+
         if abs(center - x) <= bandwidth * 2 do
           [{center, value}]
         else

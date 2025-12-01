@@ -121,7 +121,9 @@ defmodule Thunderline.Thundercore.TickEmitter do
     # Schedule initial ticks
     state = schedule_ticks(state)
 
-    Logger.info("[Thundercore.TickEmitter] Started: system=#{system_tick_ms}ms, slow=#{slow_tick_ms}ms")
+    Logger.info(
+      "[Thundercore.TickEmitter] Started: system=#{system_tick_ms}ms, slow=#{slow_tick_ms}ms"
+    )
 
     {:ok, state}
   end

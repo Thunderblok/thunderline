@@ -39,6 +39,7 @@ defmodule Thunderline.Thunderwall.Domain do
   resources do
     resource Thunderline.Thunderwall.Resources.DecayRecord
     resource Thunderline.Thunderwall.Resources.ArchiveEntry
+    resource Thunderline.Thunderwall.Resources.SandboxLog
   end
 
   authorization do

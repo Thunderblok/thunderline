@@ -280,8 +280,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
       tick: state.tick,
       bounds: state.ca_config.bounds,
       current_params: state.current_params,
-      grid_size:
-        if(state.grid, do: map_size(Map.get(state.grid, :bits, %{})), else: 0)
+      grid_size: if(state.grid, do: map_size(Map.get(state.grid, :bits, %{})), else: 0)
     }
 
     {:reply, {:ok, summary}, state}
@@ -317,9 +316,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
           evaluate_params(new_state, params)
         end
 
-        case TPEBridge.optimize(tpe_pid, eval_fn,
-               max_trials: state.optimization_config.n_trials
-             ) do
+        case TPEBridge.optimize(tpe_pid, eval_fn, max_trials: state.optimization_config.n_trials) do
           {:ok, best_params, best_fitness} ->
             Logger.info(
               "[DiffLogicCA] Optimization complete! fitness=#{Float.round(best_fitness, 4)}"
@@ -475,7 +472,12 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
       new_grid.bits
       |> Map.values()
       |> Enum.map(fn bit ->
-        %{coord: bit.coord, sigma_flow: bit.sigma_flow, phi_phase: bit.phi_phase, state: bit.state}
+        %{
+          coord: bit.coord,
+          sigma_flow: bit.sigma_flow,
+          phi_phase: bit.phi_phase,
+          state: bit.state
+        }
       end)
 
     LoopMonitor.observe(monitor, new_grid.tick, voxel_states)
