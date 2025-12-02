@@ -9,7 +9,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultAgent do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshEvents.Events]
+    extensions: [AshEvents.Events],
+    authorizers: [Ash.Policy.Authorizer]
 
   import Ash.Resource.Change.Builtins
 
@@ -197,19 +198,27 @@ defmodule Thunderline.Thunderblock.Resources.VaultAgent do
     end
   end
 
-  # TODO: Re-enable policies once AshAuthentication is properly configured
-  # policies do
-  #   policy action_type(:read) do
-  #     authorize_if always()
-  #   end
+  # ===== POLICIES =====
+  policies do
+    # Bypass for AshAuthentication internal operations
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
 
-  #   policy action_type([:create, :update]) do
-  #     authorize_if actor_present()
-  #   end
+    # Read: Allow all authenticated users
+    policy action_type(:read) do
+      authorize_if actor_present()
+    end
 
-  #   policy action_type(:destroy) do
-  #     authorize_if relates_to_actor_via(:created_by_user)
-  #     authorize_if actor_attribute_equals(:role, :admin)
-  #   end
-  # end
+    # Create/Update: Require authenticated actor
+    policy action_type([:create, :update]) do
+      authorize_if actor_present()
+    end
+
+    # Destroy: Only creator or admin
+    policy action_type(:destroy) do
+      authorize_if relates_to_actor_via(:created_by_user)
+      authorize_if expr(^actor(:role) == :admin)
+    end
+  end
 end
