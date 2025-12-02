@@ -32,6 +32,7 @@ defmodule Thunderline.Thundergate.Domain do
     # Accounts → ThunderGate (authentication/security)
     resource Thunderline.Thundergate.Resources.User
     resource Thunderline.Thundergate.Resources.Token
+    resource Thunderline.Thundergate.Resources.ApiKey
 
     # Original ThunderGate resources
     resource Thunderline.Thundergate.Resources.ExternalService

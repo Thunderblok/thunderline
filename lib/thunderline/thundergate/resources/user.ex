@@ -12,6 +12,11 @@ defmodule Thunderline.Thundergate.Resources.User do
         identity_field :email
         sender Thunderline.Thundergate.Authentication.MagicLinkSender
       end
+
+      api_key do
+        api_key_relationship :valid_api_keys
+        api_key_hash_attribute :api_key_hash
+      end
     end
 
     tokens do
@@ -35,6 +40,13 @@ defmodule Thunderline.Thundergate.Resources.User do
       argument :subject, :string, allow_nil?: false
       get? true
       prepare AshAuthentication.Preparations.FilterBySubject
+    end
+
+    read :sign_in_with_api_key do
+      description "Authenticate a user via API key"
+      argument :api_key, :string, allow_nil?: false, sensitive?: true
+      get? true
+      prepare AshAuthentication.Strategy.ApiKey.SignInPreparation
     end
   end
 
@@ -84,5 +96,13 @@ defmodule Thunderline.Thundergate.Resources.User do
 
   identities do
     identity :unique_email, [:email]
+  end
+
+  relationships do
+    has_many :valid_api_keys, Thunderline.Thundergate.Resources.ApiKey do
+      filter expr(expires_at > now() and is_nil(revoked_at))
+    end
+
+    has_many :api_keys, Thunderline.Thundergate.Resources.ApiKey
   end
 end

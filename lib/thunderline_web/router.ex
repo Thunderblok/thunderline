@@ -47,9 +47,13 @@ defmodule ThunderlineWeb.Router do
     plug ThunderlineWeb.Plugs.LoadCurrentUser
   end
 
-  # MCP tool access pipeline (AshAI). API key auth optional initially; tighten later.
+  # MCP tool access pipeline (AshAI). API key auth required for production security.
   pipeline :mcp do
     plug :accepts, ["json"]
+
+    plug AshAuthentication.Strategy.ApiKey.Plug,
+      resource: Thunderline.Thundergate.Resources.User,
+      required?: false
   end
 
   pipeline :graphql do
