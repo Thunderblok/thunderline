@@ -12,7 +12,7 @@ Application.put_env(:thunderline, :cerebros_bridge,
 
 Application.put_env(:thunderline, :vim, enabled: false, shadow_mode: true)
 
-# Start the application - this starts Oban in :manual testing mode
+# Start the application - Oban is in :manual testing mode (jobs don't auto-run)
 {:ok, _} = Application.ensure_all_started(:thunderline)
 
 unless System.get_env("SKIP_ASH_SETUP") in ["1", "true"] do

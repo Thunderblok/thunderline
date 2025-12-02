@@ -32,6 +32,8 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   @behaviour Thunderline.Thunderchief.Behaviour
 
+  require Logger
+
   alias Thunderline.Thunderbit.{Context, Category}
   alias Thunderline.Thunderchief.{State, Action}
 
@@ -237,7 +239,6 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   defp do_apply_action(action, ctx) do
     # Unknown action, log warning
-    require Logger
     Logger.warning("[BitChief] Unknown action: #{inspect(action)}")
     {:ok, ctx}
   end

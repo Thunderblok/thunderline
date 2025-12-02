@@ -42,6 +42,8 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
 
   @behaviour Thunderline.Thunderchief.Behaviour
 
+  require Logger
+
   alias Thunderline.Thunderchief.{State, Action}
 
   @violation_threshold 0.1  # 10% violation rate triggers response

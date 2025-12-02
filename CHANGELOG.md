@@ -9,6 +9,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 ### Features:
 
+* **Guerrilla #32: DomainProcessor Oban Worker** - Async per-domain Chief delegation
+  - **Module**: `Thunderline.Thunderchief.Jobs.DomainProcessor`
+  - **Routing**: Domain-to-Chief mapping (bit→BitChief, vine→VineChief, crown→CrownChief, ui→UIChief)
+  - **Lifecycle**: observe → choose_action → apply_action → report_outcome with trajectory logging
+  - **Config**: Queue `:domain_processor`, max 3 attempts, priority 2
+  - **Telemetry**: Start/stop/error events under `[:thunderline, :thunderchief, :job, ...]`
+  - **Helpers**: `enqueue/3`, `enqueue_all/2`, `domains/0`, `chief_for/1`
+  - **Tests**: 18 passing in `domain_processor_test.exs`
+
 * **Guerrilla Backlog (#8-22)**: Complete sweep of Ash 3.x compatibility and infrastructure gaps
   - **#8-11**: Fix Ash 3.x API issues, AshOban extensions, add ChannelParticipant resource
   - **#12-13**: Migrate `AshOban.Resource` → `AshOban` extension in 20 files
@@ -37,6 +46,7 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 ### Fixes / Maintenance:
 
+* fix(test): add missing `require Ash.Query` to `cerebros_jobs_controller_test.exs` for Ash.Query.filter macro usage
 * fix(websocket): correct system state pattern match preventing noisy "Failed to fetch system state: {:ok, %{...}}" debug logs (now matches on `{:ok, map}`)
 * docs: add explicit Feature Flags section (ENABLE_NDJSON, ENABLE_UPS, TL_ENABLE_REACTOR, SKIP_DEPS_GET, SKIP_ASH_SETUP)
 * docs: add comprehensive RAG system documentation with API usage, architecture, and performance metrics

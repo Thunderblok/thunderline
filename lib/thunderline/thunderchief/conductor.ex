@@ -54,10 +54,8 @@ defmodule Thunderline.Thunderchief.Conductor do
   use GenServer
   require Logger
 
-  alias Thunderline.Thunderchief.{
-    Logger,
-    State
-  }
+  alias Thunderline.Thunderchief.Logger, as: TrajectoryLogger
+  alias Thunderline.Thunderchief.State
 
   alias Thunderline.Thunderchief.Chiefs.{
     BitChief,
@@ -153,7 +151,7 @@ defmodule Thunderline.Thunderchief.Conductor do
   @impl true
   def init(opts) do
     chiefs = opts[:chiefs] || @default_chiefs
-    logger = opts[:logger] || Logger
+    logger = opts[:logger] || TrajectoryLogger
     enabled = Keyword.get(opts, :enabled, true)
 
     # Subscribe to heartbeat tick events
@@ -341,7 +339,7 @@ defmodule Thunderline.Thunderchief.Conductor do
       }
     }
 
-    Logger.log_step(chief, step, server: logger)
+    TrajectoryLogger.log_step(chief, step, server: logger)
   rescue
     _ -> :ok
   end

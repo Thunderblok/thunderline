@@ -3127,7 +3127,122 @@ end
 
 ---
 
-## 🔀 CROSS-DOMAIN FUNCTIONAL LAYERS (Nov 28, 2025)
+## � OBAN DOMAINPROCESSOR (Guerrilla #32)
+
+**Status**: ✅ Complete  
+**Priority**: P1  
+**Module**: `Thunderline.Thunderchief.Jobs.DomainProcessor`  
+**Tests**: 18 passing (`test/thunderline/thunderchief/jobs/domain_processor_test.exs`)
+
+### Purpose
+
+While the Conductor handles **synchronous** tick-based orchestration, the DomainProcessor Oban worker enables **asynchronous** per-domain Chief execution with:
+
+- Retry semantics for transient failures (max 3 attempts)
+- Job scheduling (e.g., nightly consolidation)
+- Per-domain queue isolation for backpressure control
+- Independent scaling per domain workload
+- Trajectory logging for RL training data collection
+
+### Domain Routing
+
+```elixir
+@domain_chiefs %{
+  "bit"   => BitChief,
+  "vine"  => VineChief,
+  "crown" => CrownChief,
+  "ui"    => UIChief
+}
+```
+
+### Usage Examples
+
+```elixir
+# Enqueue a domain processing job
+%{domain: "bit", context: %{tick: 42}}
+|> DomainProcessor.new()
+|> Oban.insert()
+
+# With priority (for governance/critical domains)
+%{domain: "crown", context: %{urgent: true}}
+|> DomainProcessor.new(priority: 0)
+|> Oban.insert()
+
+# Scheduled execution
+%{domain: "vine", context: %{action: :consolidate}}
+|> DomainProcessor.new(scheduled_at: tomorrow())
+|> Oban.insert()
+
+# Convenience helpers
+DomainProcessor.enqueue("bit")
+DomainProcessor.enqueue("crown", %{urgent: true}, priority: 0)
+DomainProcessor.enqueue_all(%{tick: 42})  # All domains
+```
+
+### Job Args
+
+| Arg | Type | Required | Description |
+|-----|------|----------|-------------|
+| `domain` | string | yes | Domain key: "bit", "vine", "crown", "ui" |
+| `context` | map | no | Merged into chief context |
+| `action_override` | any | no | Force specific action (bypasses choose_action) |
+| `skip_logging` | boolean | no | Disable trajectory logging (default: false) |
+
+### Telemetry Events
+
+| Event | Measurements | Metadata |
+|-------|--------------|----------|
+| `[:thunderline, :thunderchief, :job, :start]` | `system_time` | `domain`, `job_id`, `attempt` |
+| `[:thunderline, :thunderchief, :job, :stop]` | `duration` | `domain`, `job_id`, `action` |
+| `[:thunderline, :thunderchief, :job, :error]` | `duration` | `domain`, `job_id`, `reason` |
+
+### Job Lifecycle
+
+```
+perform/1
+  ├── Validate domain → chief_for(domain)
+  ├── Build context (merge base + extra)
+  ├── Emit :start telemetry
+  │
+  ├── observe(chief_module, context)
+  │     → {:ok, state}
+  │
+  ├── choose_or_override(chief_module, state, action_override)
+  │     → {:ok, action} | {:wait, _} | {:defer, _}
+  │
+  ├── apply_action(chief_module, action, context)
+  │     → {:ok, updated_context}
+  │
+  ├── report(chief_module, updated_context)
+  │     → %{reward, metrics, trajectory_step}
+  │
+  ├── log_trajectory (unless skip_logging)
+  └── Emit :stop telemetry
+```
+
+### Configuration
+
+```elixir
+# Oban queue config (in runtime.exs or dev.exs)
+config :thunderline, Oban,
+  queues: [
+    domain_processor: 10  # concurrency limit
+  ]
+```
+
+### API Reference
+
+| Function | Description |
+|----------|-------------|
+| `new/2` | Build job changeset |
+| `enqueue/3` | Insert job for single domain |
+| `enqueue_all/2` | Insert jobs for all domains |
+| `domains/0` | List registered domain keys |
+| `chief_for/1` | Get Chief module for domain |
+
+---
+
+## �🔀 CROSS-DOMAIN FUNCTIONAL LAYERS (Nov 28, 2025)
 
 **Concept**: Individual domains own resources and actions, but certain capabilities emerge from domain *combinations*. These "functional layers" are implemented via coordinated modules across domains without creating new Ash domains.
 
@@ -4505,7 +4620,7 @@ _Status legend: [x] done · [ ] pending · [~] scaffolded / partial_
 29. [ ] Re-enable Thundergrid policies once actor context is wired.
 30. [ ] Fix `ZoneEvent` aggregate `group_by` syntax and add tests.
 31. [ ] Implement ThunderGate `Mnesia → PostgreSQL` sync.
-32. [ ] Extend `Thunderchief.DomainProcessor` Oban job with per-domain delegation.
+32. [x] Extend `Thunderchief.DomainProcessor` Oban job with per-domain delegation. _(Completed: Guerrilla #32 - Full Oban worker implementation at `Thunderline.Thunderchief.Jobs.DomainProcessor`. Features: per-domain Chief routing (bit→BitChief, vine→VineChief, crown→CrownChief, ui→UIChief), observe/choose/apply/report lifecycle, trajectory logging, telemetry events, retry semantics (max 3 attempts), convenience helpers (`enqueue/3`, `enqueue_all/2`, `domains/0`, `chief_for/1`). Tests: 18 passing in `domain_processor_test.exs`.)_
 33. [ ] Gate `Thundercrown.AgentRunner` via ThunderGate policy; call AshAI/Jido actions.
 34. [~] Reintroduce Jido/Bumblebee serving supervisor + echo fallback (scaffolded; needs validation/tests).
 35. [ ] Expand `Thundercrown.McpBus` docs + CLI examples.

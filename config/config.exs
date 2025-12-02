@@ -388,7 +388,12 @@ retention_cron =
 config :thunderline, Oban,
   repo: Thunderline.Repo,
   get_dynamic_repo: fn -> Thunderline.Repo end,
-  queues: [default: 10, cerebros_training: 10]
+  queues: [
+    default: 10,
+    cerebros_training: 10,
+    domain_processor: 4,
+    cross_domain: 2
+  ]
 
 config :jido_action,
   default_registry: System.get_env("JIDO_DEFAULT_REGISTRY", "agentjido.catalog"),

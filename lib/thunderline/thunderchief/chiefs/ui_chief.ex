@@ -40,6 +40,8 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
 
   @behaviour Thunderline.Thunderchief.Behaviour
 
+  require Logger
+
   alias Thunderline.Thunderchief.{State, Action}
 
   @default_throttle_ms 100

@@ -32,6 +32,8 @@ defmodule Thunderline.Thunderchief.Chiefs.VineChief do
 
   @behaviour Thunderline.Thunderchief.Behaviour
 
+  require Logger
+
   alias Thunderline.Thunderchief.{State, Action}
 
   @max_parallel_nodes 10

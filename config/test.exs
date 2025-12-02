@@ -1,7 +1,11 @@
 import Config
 
-# Disable Oban completely in test environment to prevent startup conflicts
-config :thunderline, Oban, false
+# Enable Oban in testing mode - jobs run inline with Oban.Testing
+config :thunderline, Oban,
+  testing: :manual,
+  repo: Thunderline.Repo,
+  queues: false,
+  plugins: false
 
 # Disable ML pipeline in tests (individual tests start their own Controllers)
 config :thunderline, :features, ml_pipeline: false

@@ -3,6 +3,8 @@ defmodule ThunderlineWeb.CerebrosJobsControllerTest do
   alias Thunderline.Thunderbolt.Resources.{CerebrosTrainingJob, TrainingDataset}
   alias Thunderline.Thunderbolt.Domain
 
+  require Ash.Query
+
   setup do
     # Create a test dataset
     {:ok, dataset} =
