@@ -4481,21 +4481,21 @@ _Status legend: [x] done · [ ] pending · [~] scaffolded / partial_
 5. [x] Hook `ThunderlineWeb.UserSocket` into AshAuthentication session tokens. _(Already implemented: uses `AshAuthentication.Token.verify/2`.)_
 6. [x] Finish router API key flip (issuance mix task + `required?: true`). _(Completed: ApiKey resource, AshAuthentication api_key strategy on User, `mix thunderline.api_key.generate` task, MCP pipeline with ApiKey.Plug. Set `required?: false` initially—flip to `true` when ready to enforce.)_
 7. [x] Re-enable Thunderblock vault resource policies. _(Completed: vault_action, vault_agent, vault_decision—added Ash.Policy.Authorizer + policy blocks with AshAuthentication bypass + actor_present() pattern.)_
-8. [ ] Clean Ash 3.x fragments in `VaultKnowledgeNode` (lines 15–614).
-9. [ ] Fix `pac_home` validation/fragment syntax for Ash 3.x.
-10. [ ] Restore AshOban triggers in `task_orchestrator` and `workflow_tracker`.
-11. [ ] Introduce `ChannelParticipant` Ash resource + relationships.
-12. [ ] Fix Ash 3.x validations/fragments in `Thundercom.Message`.
-13. [ ] Resolve `federation_socket` fragment/validation issues; recover AshOban trigger.
-14. [ ] Repair `Thundercom.Role` fragment filters + AshOban trigger syntax.
-15. [ ] Replace `Thunderlink.DashboardMetrics` stubs with live telemetry.
-16. [ ] Pipe telemetry into `dashboard_live.ex` (CPU/memory/latency).
-17. [ ] Complete `ThunderlaneDashboard` TODO wiring.
-18. [ ] Add Stream/Flow telemetry for pipeline throughput & failures.
-19. [ ] Rebuild Thunderbolt `StreamManager` supervisor + PubSub bridge.
-20. [ ] Ship ExUnit coverage for StreamManager ingest/drop behaviors.
-21. [ ] Fix `Thunderbolt.Resources.Chunk` state machine (AshStateMachine 3.x).
-22. [ ] Implement real resource allocation logic + orchestration events.
+8. [x] Clean Ash 3.x fragments in `VaultKnowledgeNode` (lines 15–614). _(Completed: Fixed via guerrilla #8-11 commit 91a4edc.)_
+9. [x] Fix `pac_home` validation/fragment syntax for Ash 3.x. _(Completed: Fixed via guerrilla #8-11 commit 91a4edc.)_
+10. [x] Restore AshOban triggers in `task_orchestrator` and `workflow_tracker`. _(Completed: Fixed via guerrilla #8-11 commit 91a4edc.)_
+11. [x] Introduce `ChannelParticipant` Ash resource + relationships. _(Completed: New resource with channel/user relationships, role enum, joined_at timestamp—commit 91a4edc.)_
+12. [x] Fix Ash 3.x validations/fragments in `Thundercom.Message`. _(Completed: Migrated AshOban.Resource → AshOban in 20 files—commit 96038c2.)_
+13. [x] Resolve `federation_socket` fragment/validation issues; recover AshOban trigger. _(Completed: Fixed via guerrilla #12-13 commit 96038c2.)_
+14. [x] Repair `Thundercom.Role` fragment filters + AshOban trigger syntax. _(Completed: Fixed via guerrilla #12-13 commit 96038c2.)_
+15. [x] Replace `Thunderlink.DashboardMetrics` stubs with live telemetry. _(Completed: Full implementation with real-time system metrics, process stats, memory tracking—commit cdc7aa1.)_
+16. [x] Pipe telemetry into `dashboard_live.ex` (CPU/memory/latency). _(Completed: Wired with guerrilla #15—commit cdc7aa1.)_
+17. [x] Complete `ThunderlaneDashboard` TODO wiring. _(Completed: Full dashboard implementation with live telemetry—commit 84eab1d.)_
+18. [x] Add Stream/Flow telemetry for pipeline throughput & failures. _(Completed: Telemetry spans for pipeline stages, failure tracking—commit e9c698e.)_
+19. [x] Rebuild Thunderbolt `StreamManager` supervisor + PubSub bridge. _(Completed: Full GenServer with subscribe/unsubscribe, batch publishing—commit 501e8e1.)_
+20. [x] Ship ExUnit coverage for StreamManager ingest/drop behaviors. _(Completed: Comprehensive tests + Credo complexity fix—commit 5166059.)_
+21. [x] Fix `Thunderbolt.Resources.Chunk` state machine (AshStateMachine 3.x). _(Completed: Fixed changeset.data access pattern for Ash 3.x—commit aaedec4.)_
+22. [x] Implement real resource allocation logic + orchestration events. _(Completed: 10+ private functions with strategy-based optimization, EventBus integration—commit fb2f938.)_
 23. [ ] Add ML health threshold evaluation to `chunk_health.ex`.
 24. [ ] Finish `activation_rule` evaluation workflow (notifications, ML init).
 25. [ ] Implement secure key management in `lane_rule_set.ex`.

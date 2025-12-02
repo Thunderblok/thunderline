@@ -7,7 +7,7 @@ defmodule Thunderline.Id do
   ULIDs provide significant advantages over UUIDv4 for Thunderline's append-heavy, time-ordered workloads:
 
   - **Lexicographically sortable**: First 48 bits encode timestamp → newer IDs sort after older IDs
-  - **128-bit like UUID**: Compatible with Postgres `uuid` column type  
+  - **128-bit like UUID**: Compatible with Postgres `uuid` column type
   - **URL-safe, human-friendly**: `/pac/01KANDQMV608PBSMF7TM9T1WR4` vs messy UUIDv4
   - **Index-friendly**: B-tree inserts go to end (append), not random pages
   - **Implicit time encoding**: Infer creation time from ID without extra column

@@ -205,7 +205,7 @@ defmodule Thunderline.Thunderchief.State do
   defp flatten_map(map, prefix) when is_map(map) do
     Enum.flat_map(map, fn {k, v} ->
       key = if prefix == [], do: k, else: :"#{Enum.join(prefix, "_")}_#{k}"
-      
+
       if is_map(v) and not is_struct(v) do
         flatten_map(v, prefix ++ [k])
       else

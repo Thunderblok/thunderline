@@ -9,6 +9,17 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 ### Features:
 
+* **Guerrilla Backlog (#8-22)**: Complete sweep of Ash 3.x compatibility and infrastructure gaps
+  - **#8-11**: Fix Ash 3.x API issues, AshOban extensions, add ChannelParticipant resource
+  - **#12-13**: Migrate `AshOban.Resource` → `AshOban` extension in 20 files
+  - **#15**: Wire DashboardMetrics and DashboardLive with live telemetry
+  - **#17**: Full ThunderlaneDashboard implementation
+  - **#18**: Stream/Flow telemetry for pipeline throughput & failures
+  - **#19**: StreamManager supervisor + PubSub bridge
+  - **#20**: ExUnit coverage for StreamManager + Credo complexity fix
+  - **#21**: Chunk resource Ash 3.x compatibility (changeset.data access pattern)
+  - **#22**: Real resource allocation logic + orchestration events (10+ functions implemented)
+
 * **RAG System Refactor**: Complete migration from Chroma HTTP API to native ash_ai + pgvector implementation
   - **Performance**: 95% faster queries (~7-10ms vs ~150ms)
   - **Simplification**: 65% code reduction (200 LOC vs 580 LOC)

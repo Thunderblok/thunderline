@@ -171,8 +171,8 @@ defmodule Thunderline.Thunderchief.Action do
   """
   @spec update_status(t(), status(), map()) :: t()
   def update_status(%Action{} = action, status, additional_meta \\ %{}) do
-    %{action | 
-      status: status, 
+    %{action |
+      status: status,
       metadata: Map.merge(action.metadata, additional_meta)
     }
   end

@@ -32,14 +32,14 @@ defmodule Mix.Tasks.Thunderline.ApiKey.Generate do
   ## Example
 
       $ mix thunderline.api_key.generate --email admin@example.com --name "MCP Access"
-      
+
       ✓ API Key generated successfully
-      
+
       Key ID:     550e8400-e29b-41d4-a716-446655440000
       User:       admin@example.com
       Name:       MCP Access
       Expires:    2025-03-02 12:34:56Z
-      
+
       ┌─────────────────────────────────────────────────────────────┐
       │ API KEY (store securely - shown only once):                 │
       │ tl_abc123...                                                │
