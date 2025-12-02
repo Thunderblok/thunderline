@@ -515,6 +515,8 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       end
 
       prepare fn query, context ->
+        require Ash.Query
+
         _start_id = context.arguments.start_node_id
         _rel_types = context.arguments.relationship_types || ["parent", "child", "related"]
         _max_depth = context.arguments.max_depth
@@ -525,7 +527,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         # Full graph traversal requires recursive CTEs or external graph DB
 
         query
-        |> Ash.Query.filter(verification_status != :deprecated)
+        |> Ash.Query.filter(expr(verification_status != :deprecated))
         |> Ash.Query.sort(centrality_score: :desc)
       end
     end

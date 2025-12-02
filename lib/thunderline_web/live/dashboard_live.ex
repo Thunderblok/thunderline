@@ -274,21 +274,24 @@ defmodule ThunderlineWeb.DashboardLive do
   defp update_performance_metrics(socket, telemetry_data) do
     duration_ms = (telemetry_data.duration || 0) / 1_000_000
 
+    # Get real metrics from DashboardMetrics
+    core_metrics = DashboardMetrics.thundercore_metrics()
+
     current_metrics =
       socket.assigns[:performance_metrics] ||
         %{
           avg_response_time: 0,
           throughput: 0,
-          # TODO: Implement real memory monitoring
-          memory_usage: "OFFLINE",
-          # TODO: Implement real CPU monitoring
-          cpu_usage: "OFFLINE"
+          memory_usage: core_metrics.memory_usage,
+          cpu_usage: core_metrics.cpu_usage
         }
 
     updated_metrics = %{
       current_metrics
       | avg_response_time: Float.round(duration_ms, 2),
-        throughput: current_metrics.throughput + 1
+        throughput: current_metrics.throughput + 1,
+        memory_usage: core_metrics.memory_usage,
+        cpu_usage: core_metrics.cpu_usage
     }
 
     assign(socket, :performance_metrics, updated_metrics)
@@ -346,13 +349,14 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   def handle_info(:publish_telemetry, socket) do
-    # Publish real-time system telemetry
+    # Publish real-time system telemetry with live metrics
+    core_metrics = DashboardMetrics.thundercore_metrics()
+
     Phoenix.PubSub.broadcast(Thunderline.PubSub, "system_metrics", {:system_metric_updated,
      %{
        type: :live_update,
-       # TODO: Implement real CPU monitoring
-       cpu_usage: "OFFLINE",
-       memory_usage: :erlang.memory()[:total],
+       cpu_usage: core_metrics.cpu_usage,
+       memory_usage: core_metrics.memory_bytes,
        timestamp: DateTime.utc_now()
      }})
 
@@ -885,13 +889,8 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:connected, false)
     # Add missing mode assignment
     |> assign(:mode, :production)
-    # Seed performance metrics so template & updates are safe immediately
-    |> assign(:performance_metrics, %{
-      avg_response_time: 0.0,
-      throughput: 0,
-      memory_usage: "OFFLINE",
-      cpu_usage: "OFFLINE"
-    })
+    # Seed performance metrics with live data from DashboardMetrics
+    |> assign(:performance_metrics, get_initial_performance_metrics())
     |> assign(:system_metrics, %{})
     |> assign(:domain_metrics, %{})
     |> assign(:automata_state, %{active_zones: 0, total_hexes: 144, energy_level: 0})
@@ -1451,26 +1450,23 @@ defmodule ThunderlineWeb.DashboardLive do
 
   defp get_system_health_data(system_metrics) do
     vm_memory = :erlang.memory()
+    core_metrics = DashboardMetrics.thundercore_metrics()
+    lane_metrics = DashboardMetrics.thunderlane_metrics()
 
     %{
       status: if(system_metrics.connected_nodes > 0, do: :healthy, else: :warning),
-      # NOTE: Placeholder until live CPU monitoring lands
-      cpu_usage: "OFFLINE",
+      cpu_usage: core_metrics.cpu_usage || "N/A",
       memory_usage: %{
         used: vm_memory[:total] - vm_memory[:system],
         total: vm_memory[:total]
       },
       disk_io: %{
-        # NOTE: Placeholder until disk I/O monitoring is wired up
-        read: "OFFLINE",
-        # NOTE: Placeholder until disk I/O monitoring is wired up
-        write: "OFFLINE"
+        read: format_io_rate(lane_metrics.io_stats[:read] || 0),
+        write: format_io_rate(lane_metrics.io_stats[:write] || 0)
       },
       network: %{
-        # NOTE: Placeholder until network monitoring is implemented
-        incoming: "OFFLINE",
-        # NOTE: Placeholder until network monitoring is implemented
-        outgoing: "OFFLINE"
+        incoming: lane_metrics.throughput || "0 B/s",
+        outgoing: lane_metrics.throughput || "0 B/s"
       },
       processes: %{
         active: :erlang.system_info(:process_count),
@@ -1844,4 +1840,32 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   defp format_bytes(_), do: "0 B"
+
+  # Helper to get initial performance metrics from DashboardMetrics
+  defp get_initial_performance_metrics do
+    try do
+      core_metrics = DashboardMetrics.thundercore_metrics()
+      %{
+        avg_response_time: 0.0,
+        throughput: 0,
+        memory_usage: core_metrics.memory_usage || "N/A",
+        cpu_usage: core_metrics.cpu_usage || "N/A"
+      }
+    rescue
+      _ ->
+        %{avg_response_time: 0.0, throughput: 0, memory_usage: "N/A", cpu_usage: "N/A"}
+    end
+  end
+
+  # Format I/O rate for display
+  defp format_io_rate(bytes) when is_integer(bytes) and bytes > 0 do
+    cond do
+      bytes >= 1_073_741_824 -> "#{Float.round(bytes / 1_073_741_824, 2)} GB/s"
+      bytes >= 1_048_576 -> "#{Float.round(bytes / 1_048_576, 2)} MB/s"
+      bytes >= 1_024 -> "#{Float.round(bytes / 1_024, 2)} KB/s"
+      true -> "#{bytes} B/s"
+    end
+  end
+
+  defp format_io_rate(_), do: "0 B/s"
 end
