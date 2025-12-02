@@ -898,8 +898,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     score =
       case Ash.Changeset.get_attribute(changeset, :optimization_score) do
         nil ->
-          # No new value provided, check the record's existing value
-          case Ash.Changeset.get_data(changeset) do
+          # No new value provided, check the record's existing value (Ash 3.x: access .data directly)
+          case changeset.data do
             %{optimization_score: existing_score} -> existing_score
             _ -> nil
           end
@@ -924,8 +924,8 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
     active =
       case Ash.Changeset.get_attribute(changeset, :active_count) do
         nil ->
-          # Check existing value
-          case Ash.Changeset.get_data(changeset) do
+          # Check existing value (Ash 3.x: access .data directly)
+          case changeset.data do
             %{active_count: count} -> count
             _ -> 0
           end
@@ -957,6 +957,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
   ]
 
   def __silence_unused__ do
+    _ = @_keep
     _ = [
       &validate_initialization_requirements/2,
       &complete_chunk_initialization/3,
