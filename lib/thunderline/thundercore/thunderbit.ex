@@ -74,6 +74,7 @@ defmodule Thunderline.Thundercore.Thunderbit do
           salience: float(),
           position: position(),
           links: [String.t()],
+          thundercell_ids: [String.t()],
           maxims: [String.t()],
           owner: String.t() | nil,
           status: status(),
@@ -92,6 +93,7 @@ defmodule Thunderline.Thundercore.Thunderbit do
     :salience,
     :position,
     :links,
+    :thundercell_ids,
     :maxims,
     :owner,
     :status,
@@ -138,6 +140,7 @@ defmodule Thunderline.Thundercore.Thunderbit do
   - `:salience` - Attention priority 0-1 (default: 0.5)
   - `:owner` - Responsible agent (default: nil)
   - `:links` - Related bit IDs (default: [])
+  - `:thundercell_ids` - Associated Thundercell IDs (default: [])
   - `:metadata` - Additional data (default: %{})
 
   ## Examples
@@ -164,6 +167,7 @@ defmodule Thunderline.Thundercore.Thunderbit do
       salience: Keyword.get(opts, :salience, 0.5),
       position: spawn_position(),
       links: Keyword.get(opts, :links, []),
+      thundercell_ids: Keyword.get(opts, :thundercell_ids, []),
       maxims: maxims,
       owner: Keyword.get(opts, :owner),
       status: :spawning,
@@ -381,6 +385,42 @@ defmodule Thunderline.Thundercore.Thunderbit do
   end
 
   # ===========================================================================
+  # Thundercell Association (HC-Δ-8)
+  # ===========================================================================
+
+  @doc """
+  Associates a Thundercell with this Thunderbit.
+
+  Thundercells are raw data substrate chunks; Thunderbits are semantic roles.
+  This enables many-to-many relationships: one Thunderbit can tag multiple
+  data chunks, and one data chunk can have multiple semantic interpretations.
+  """
+  def add_thundercell(%__MODULE__{} = bit, cell_id) when is_binary(cell_id) do
+    current = bit.thundercell_ids || []
+    %{bit | thundercell_ids: [cell_id | current] |> Enum.uniq()}
+  end
+
+  @doc "Associates multiple Thundercells with this Thunderbit"
+  def add_thundercells(%__MODULE__{} = bit, cell_ids) when is_list(cell_ids) do
+    current = bit.thundercell_ids || []
+    %{bit | thundercell_ids: (current ++ cell_ids) |> Enum.uniq()}
+  end
+
+  @doc "Removes a Thundercell association from this Thunderbit"
+  def remove_thundercell(%__MODULE__{} = bit, cell_id) when is_binary(cell_id) do
+    current = bit.thundercell_ids || []
+    %{bit | thundercell_ids: Enum.reject(current, &(&1 == cell_id))}
+  end
+
+  @doc "Returns the list of associated Thundercell IDs"
+  def thundercell_ids(%__MODULE__{thundercell_ids: ids}), do: ids || []
+
+  @doc "Checks if this Thunderbit is associated with a specific Thundercell"
+  def has_thundercell?(%__MODULE__{} = bit, cell_id) when is_binary(cell_id) do
+    cell_id in (bit.thundercell_ids || [])
+  end
+
+  # ===========================================================================
   # UI Helpers
   # ===========================================================================
 
@@ -514,6 +554,7 @@ defmodule Thunderline.Thundercore.Thunderbit do
       salience: bit.salience,
       position: bit.position,
       links: bit.links,
+      thundercell_ids: bit.thundercell_ids || [],
       maxims: bit.maxims,
       owner: bit.owner,
       status: bit.status,
@@ -542,6 +583,7 @@ defmodule Thunderline.Thundercore.Thunderbit do
       energy: map["energy"] || map[:energy] || 0.5,
       salience: map["salience"] || map[:salience] || 0.5,
       owner: map["owner"] || map[:owner],
+      thundercell_ids: map["thundercell_ids"] || map[:thundercell_ids] || [],
       metadata: map["metadata"] || map[:metadata] || %{}
     )
   end

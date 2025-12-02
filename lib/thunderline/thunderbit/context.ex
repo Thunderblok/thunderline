@@ -26,10 +26,13 @@ defmodule Thunderline.Thunderbit.Context do
   """
 
   alias Thunderline.Thunderbit.Category
+  alias Thunderline.Thunderbit.Thundercell
 
   @type t :: %__MODULE__{
           # Bit registry
           bits_by_id: %{String.t() => map()},
+          # Cell registry (HC-Δ-8: raw substrate chunks)
+          cells_by_id: %{String.t() => Thundercell.t()},
           edges: [map()],
 
           # Current scope
@@ -54,6 +57,7 @@ defmodule Thunderline.Thunderbit.Context do
         }
 
   defstruct bits_by_id: %{},
+            cells_by_id: %{},
             edges: [],
             pac_id: nil,
             graph_id: nil,
@@ -89,6 +93,7 @@ defmodule Thunderline.Thunderbit.Context do
   def new(opts \\ []) do
     %__MODULE__{
       bits_by_id: %{},
+      cells_by_id: %{},
       edges: [],
       pac_id: Keyword.get(opts, :pac_id),
       graph_id: Keyword.get(opts, :graph_id),
@@ -142,6 +147,82 @@ defmodule Thunderline.Thunderbit.Context do
     ctx.bits_by_id
     |> Map.values()
     |> Enum.filter(&(Map.get(&1, :category) == category))
+  end
+
+  # ===========================================================================
+  # Cell Registry (HC-Δ-8: Thundercell Substrate Layer)
+  # ===========================================================================
+
+  @doc """
+  Registers a Thundercell in the context.
+
+  Thundercells are raw substrate chunks that Thunderbits reference.
+  See `Thunderline.Thunderbit.Thundercell` for details.
+  """
+  @spec register_cell(t(), Thundercell.t()) :: t()
+  def register_cell(%__MODULE__{} = ctx, %Thundercell{} = cell) do
+    %{ctx | cells_by_id: Map.put(ctx.cells_by_id, cell.id, cell)}
+  end
+
+  @doc """
+  Updates a Thundercell in the context.
+  """
+  @spec update_cell(t(), Thundercell.t()) :: t()
+  def update_cell(%__MODULE__{} = ctx, %Thundercell{} = cell) do
+    %{ctx | cells_by_id: Map.put(ctx.cells_by_id, cell.id, cell)}
+  end
+
+  @doc """
+  Gets a Thundercell by ID from the context.
+  """
+  @spec get_cell(t(), String.t()) :: Thundercell.t() | nil
+  def get_cell(%__MODULE__{} = ctx, cell_id) do
+    Map.get(ctx.cells_by_id, cell_id)
+  end
+
+  @doc """
+  Gets multiple Thundercells by their IDs.
+  """
+  @spec get_cells(t(), [String.t()]) :: [Thundercell.t()]
+  def get_cells(%__MODULE__{} = ctx, cell_ids) when is_list(cell_ids) do
+    Enum.map(cell_ids, &get_cell(ctx, &1)) |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
+  Lists all Thundercells in the context.
+  """
+  @spec list_cells(t()) :: [Thundercell.t()]
+  def list_cells(%__MODULE__{} = ctx) do
+    Map.values(ctx.cells_by_id)
+  end
+
+  @doc """
+  Filters Thundercells by kind.
+  """
+  @spec cells_by_kind(t(), Thundercell.kind()) :: [Thundercell.t()]
+  def cells_by_kind(%__MODULE__{} = ctx, kind) do
+    ctx.cells_by_id
+    |> Map.values()
+    |> Enum.filter(&(&1.kind == kind))
+  end
+
+  @doc """
+  Gets all cells that a Thunderbit references.
+
+  Looks up the `thundercell_ids` field on the bit and returns the corresponding cells.
+  """
+  @spec cells_for_bit(t(), map()) :: [Thundercell.t()]
+  def cells_for_bit(%__MODULE__{} = ctx, bit) do
+    cell_ids = Map.get(bit, :thundercell_ids, [])
+    get_cells(ctx, cell_ids)
+  end
+
+  @doc """
+  Removes a Thundercell from the context.
+  """
+  @spec remove_cell(t(), String.t()) :: t()
+  def remove_cell(%__MODULE__{} = ctx, cell_id) do
+    %{ctx | cells_by_id: Map.delete(ctx.cells_by_id, cell_id)}
   end
 
   # ===========================================================================
@@ -254,6 +335,7 @@ defmodule Thunderline.Thunderbit.Context do
   def to_map(%__MODULE__{} = ctx) do
     %{
       bits_by_id: ctx.bits_by_id,
+      cells_by_id: serialize_cells(ctx.cells_by_id),
       edges: ctx.edges,
       pac_id: ctx.pac_id,
       graph_id: ctx.graph_id,
@@ -274,6 +356,7 @@ defmodule Thunderline.Thunderbit.Context do
   def from_map(map) do
     %__MODULE__{
       bits_by_id: map["bits_by_id"] || map[:bits_by_id] || %{},
+      cells_by_id: deserialize_cells(map["cells_by_id"] || map[:cells_by_id] || %{}),
       edges: map["edges"] || map[:edges] || [],
       pac_id: map["pac_id"] || map[:pac_id],
       graph_id: map["graph_id"] || map[:graph_id],
@@ -315,4 +398,27 @@ defmodule Thunderline.Thunderbit.Context do
       _ -> DateTime.utc_now()
     end
   end
+
+  # Serializes cells_by_id map to a JSON-safe format
+  defp serialize_cells(cells_by_id) when is_map(cells_by_id) do
+    Map.new(cells_by_id, fn {id, cell} ->
+      {id, Thundercell.to_map(cell)}
+    end)
+  end
+
+  defp serialize_cells(_), do: %{}
+
+  # Deserializes cells_by_id from a map format
+  defp deserialize_cells(cells_map) when is_map(cells_map) do
+    Map.new(cells_map, fn {id, cell_map} ->
+      case Thundercell.from_map(cell_map) do
+        {:ok, cell} -> {id, cell}
+        {:error, _} -> {id, nil}
+      end
+    end)
+    |> Enum.reject(fn {_id, cell} -> is_nil(cell) end)
+    |> Map.new()
+  end
+
+  defp deserialize_cells(_), do: %{}
 end
