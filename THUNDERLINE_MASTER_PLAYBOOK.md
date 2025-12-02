@@ -4478,9 +4478,9 @@ _Status legend: [x] done · [ ] pending · [~] scaffolded / partial_
 2. [x] Restore `CODEBASE_REVIEW_CHECKLIST.md` with Ash 3.x/MCP gates.
 3. [x] Wire gitleaks pre-push guard (`./scripts/git-hooks/install.sh`).
 4. [x] Document MCP/GitHub token handling; ship `.envrc.example`.
-5. [ ] Hook `ThunderlineWeb.UserSocket` into AshAuthentication session tokens.
-6. [ ] Finish router API key flip (issuance mix task + `required?: true`).
-7. [ ] Re-enable Thunderblock vault resource policies.
+5. [x] Hook `ThunderlineWeb.UserSocket` into AshAuthentication session tokens. _(Already implemented: uses `AshAuthentication.Token.verify/2`.)_
+6. [ ] Finish router API key flip (issuance mix task + `required?: true`). _(Blocked: no API key infrastructure exists yet—requires api_key resource, strategy, and mix task.)_
+7. [x] Re-enable Thunderblock vault resource policies. _(Completed: vault_action, vault_agent, vault_decision—added Ash.Policy.Authorizer + policy blocks with AshAuthentication bypass + actor_present() pattern.)_
 8. [ ] Clean Ash 3.x fragments in `VaultKnowledgeNode` (lines 15–614).
 9. [ ] Fix `pac_home` validation/fragment syntax for Ash 3.x.
 10. [ ] Restore AshOban triggers in `task_orchestrator` and `workflow_tracker`.
