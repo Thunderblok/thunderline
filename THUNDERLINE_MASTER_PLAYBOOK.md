@@ -970,11 +970,17 @@ end
 |----|----------|-----------|-------------|--------|
 | HC-Δ-1 | P0 | Thundervine DAG Infrastructure | Behavior DAG data structures, node wrappers, executor | ✅ Complete |
 | HC-Δ-2 | P0 | Thundercrown Policy Engine | Runtime policy evaluation, constraint DSL, policy resources | ✅ Complete |
-| HC-Δ-3 | P1 | DiffLogic CA Engine | Differentiable logic CA, learnable gates, grid state | Not Started |
-| HC-Δ-4 | P1 | MAP-Elites Archive (Full QD) | Quality-diversity search, elite archive, mutation operators | Not Started |
+| HC-Δ-3 | P1 | DiffLogic CA Engine | Differentiable logic CA, learnable gates, grid state | ✅ Complete |
+| HC-Δ-4 | P1 | MAP-Elites Archive (Full QD) | Quality-diversity search, elite archive, mutation operators | ✅ Complete |
 | HC-Δ-5 | P1 | Thunderbit Category Protocol | Composable computation units, monadic bind, type definitions | ✅ Complete |
 | HC-Δ-6 | P2 | Structured Tensor (Finch-inspired) | Sparse/dense tensor types, operations, loop fusion | Not Started |
-| HC-Δ-7 | P0 | Thunderoll Hyperscale Optimizer | EGGROLL-based ES, low-rank perturbations, population management | Not Started |
+| HC-Δ-7 | P0 | Thunderoll Hyperscale Optimizer | EGGROLL-based ES, low-rank perturbations, population management | ✅ Complete |
+| HC-Δ-8 | P0 | Thundercell Substrate Layer | Raw chunk abstraction (file/dataset/embedding blocks), CA grid mapping | ✅ Complete |
+| HC-Δ-9 | P1 | CA↔Thunderbit Integration | CA.Cell + CA.World structs, bit→cell traversal, activation physics | ✅ Complete |
+| HC-Δ-10 | P1 | Cerebros Feature Pipeline | Per-run feature extraction (~20 metrics), TPE optimization interface | ✅ Complete |
+| HC-Δ-11 | P1 | Unified ULID Infrastructure | Time-sortable IDs for Thunderbits/Thundercells/Events, Thunderline.Id abstraction | Not Started |
+| HC-Δ-12 | P2 | Near-Critical Dynamics (MCP-Θ) | PLV/σ/λ̂ monitors, Thunderbeat regulation, CA excitation control, loop repair | Not Started |
+| HC-Δ-13 | P1 | Thunderchief Orchestrator | Per-domain puppeteer policies, serialized tick dispatch, RL-ready logging | Not Started |
 
 ### HC-Δ-1: Thundervine DAG Infrastructure
 
@@ -2015,11 +2021,17 @@ fitness_spec = %{
 | Phase | HC Items | Focus | Timeline | Status |
 |-------|----------|-------|----------|--------|
 | **1** | HC-Δ-1, HC-Δ-2 | Orchestration backbone (Vine DAG + Crown Policy) | Week 1-2 | ✅ Complete |
-| **2** | HC-Δ-7 | Thunderoll Hyperscale Optimizer | Week 2-3 | 🚧 In Progress |
-| **3** | HC-Δ-3 | CA Engine (DiffLogic integration) | Week 3-4 | Not Started |
-| **4** | HC-Δ-4 | MAP-Elites (Quality-Diversity search) | Week 4-5 | Not Started |
+| **2** | HC-Δ-7 | Thunderoll Hyperscale Optimizer | Week 2-3 | ✅ Complete |
+| **3** | HC-Δ-3 | CA Engine (DiffLogic integration) | Week 3-4 | ✅ Complete |
+| **4** | HC-Δ-4 | MAP-Elites (Quality-Diversity search) | Week 4-5 | ✅ Complete |
 | **5** | HC-Δ-5 | Thunderbit Protocol (Category composition) | Week 5-6 | ✅ Complete |
 | **6** | HC-Δ-6 | Structured Tensors (Finch-inspired) | Week 6-7 | Not Started |
+| **7** | HC-Δ-8 | Thundercell Substrate Layer | Week 7-8 | ✅ Complete |
+| **8** | HC-Δ-9 | CA↔Thunderbit Integration | Week 8-9 | ✅ Complete |
+| **9** | HC-Δ-10 | Cerebros Feature Pipeline | Week 9-10 | ✅ Complete |
+| **10** | HC-Δ-11 | ULID Infrastructure (Time-sortable IDs) | Week 10-11 | Not Started |
+| **11** | HC-Δ-13 | Thunderchief Orchestrator (Per-domain puppeteers) | Week 11-12 | Not Started |
+| **12** | HC-Δ-12 | Near-Critical Dynamics (MCP-Θ regulation) | Week 12-13 | Not Started |
 
 ### Cross-Domain Layer Activation
 
@@ -2027,7 +2039,7 @@ The HC-Δ series activates several cross-domain functional layers:
 
 | Layer | Domains | HC-Δ Items |
 |-------|---------|------------|
-| **Orchestration Layer** | Vine × Crown | HC-Δ-1, HC-Δ-2 |
+| **Orchestration Layer** | Vine × Crown | HC-Δ-1, HC-Δ-2, HC-Δ-13 |
 | **Optimization Layer** | Vine × Pac × Crown | HC-Δ-7 |
 | **Compute Layer** | Bolt × Flow | HC-Δ-3, HC-Δ-4 |
 | **Transform Layer** | Bolt × Block | HC-Δ-5, HC-Δ-6 |
@@ -2044,10 +2056,568 @@ The HC-Δ series activates several cross-domain functional layers:
 | Policy Engine | Thundercrown.PolicyEngine | HC-Δ-2 |
 | Thunderbit CAT | Thunderbit Protocol | HC-Δ-5 |
 | EGGROLL ES | Thundervine.Thunderoll | HC-Δ-7 |
+| Thundercell Substrate | Thunderbit.Thundercell | HC-Δ-8 |
+| CA↔Bit Integration | Thunderbit.CA.Cell + CA.World | HC-Δ-9 |
+| Cerebros TPE Features | Thunderbolt.Cerebros.Features | HC-Δ-10 |
 
 ---
 
-## 🌐 CA ARCHITECTURE VISION: THE ROSETTA STONE (Nov 28, 2025)
+## 🏗️ THUNDERBIT LAYER ARCHITECTURE RECONCILIATION (Dec 2025)
+
+> **"Semantic Thunderbits sit on top of Physical Thunderbits."**
+
+### The Two Thunderbit Worlds
+
+The Thunderline codebase has evolved to contain **two distinct Thunderbit concepts** that operate at different abstraction layers:
+
+| Layer | Module | Purpose | Implemented |
+|-------|--------|---------|-------------|
+| **Cognitive Layer** | `Thunderline.Thunderbit` | Semantic agent bits (HC-Δ-5) - composable computation particles with category, kind, data, links | ✅ Complete |
+| **Physics Layer** | `Thunderbolt.Thunderbit` | 3D CA voxel cells - routing, trust, phase dynamics, relay weights | ✅ Complete (277 lines) |
+
+### Layer Relationship
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    THUNDERLINE COGNITIVE LAYER                              │
+│                                                                             │
+│   Thunderline.Thunderbit (HC-Δ-5)                                           │
+│   ├── Category: :cognitive | :dataset | :memory | :sensor | :action ...    │
+│   ├── Kind: :variable | :constant | :computed | :inferred ...              │
+│   ├── Data: arbitrary payload (JSON, embeddings, etc.)                     │
+│   ├── Links: references to other Thunderbits                               │
+│   └── Monadic bind: flatMap composition for agent pipelines                │
+│                                                                             │
+│   "WHAT the agent is thinking"                                              │
+└───────────────────────────────────────┬─────────────────────────────────────┘
+                                        │ sits on top of
+┌───────────────────────────────────────▼─────────────────────────────────────┐
+│                    THUNDERBOLT PHYSICS LAYER                                │
+│                                                                             │
+│   Thunderbolt.Thunderbit (lib/thunderline/thunderbolt/thunderbit.ex)        │
+│   ├── coord: {x, y, z} - 3D lattice position                                │
+│   ├── state: Nx tensor (voxel state)                                        │
+│   ├── φ_phase, σ_flow, λ_sensitivity: CA dynamics                           │
+│   ├── trust_score, relay_weight: routing trust                              │
+│   ├── presence_vector: who's here                                           │
+│   ├── route_tags: Bloom filter for destinations                             │
+│   ├── key_fragment: distributed key material                                │
+│   └── CAT config: cellular automata transform params                        │
+│                                                                             │
+│   "HOW the substrate routes and transforms signals"                         │
+└───────────────────────────────────────┬─────────────────────────────────────┘
+                                        │
+┌───────────────────────────────────────▼─────────────────────────────────────┐
+│                    THUNDERBOLT INFRASTRUCTURE                               │
+│                                                                             │
+│   Thunderbolt.Thundercell.CACell  - GenServer CA cell processes             │
+│   Thunderbolt.Thundercell.CAEngine - CA computation coordinator             │
+│   Thunderbolt.DiffLogic.Gates     - 16 differentiable logic gates           │
+│   Thunderbolt.NCA.UpdateRule      - Neural CA (Growing NCA paper)           │
+│   Thunderbolt.Cerebros.TPEBridge  - Python TPE/Optuna optimizer             │
+│                                                                             │
+│   "EXECUTION substrate: NCA, DiffLogic, optimization"                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Files (Already Implemented)
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `thunderbolt/thunderbit.ex` | 277 | 3D CA voxel struct with full physics layer |
+| `thunderbolt/thunderbit/reflex.ex` | 600+ | HC-Ω-1 Reflexive Intelligence Layer (5 reflex types) |
+| `thunderbolt/difflogic/gates.ex` | 300+ | All 16 binary logic gates as differentiable ops |
+| `thunderbolt/nca/update_rule.ex` | ~200 | Neural CA from "Growing NCA" (Distill 2020) |
+| `thunderbolt/cerebros/tpe_bridge.ex` | 380+ | Full Optuna/TPE Bayesian optimization |
+| `thunderbolt/thundercell/ca_cell.ex` | 147 | GenServer CA cell with state evolution |
+| `thunderbolt/thundercell/ca_engine.ex` | 205 | CA coordinator (Conway 3D, Highlife 3D, etc.) |
+| `thunderbolt/domain.ex` | 50+ | Ash domain with 50+ resources registered |
+
+### Reconciliation Strategy
+
+**DO NOT** rename or remove any existing code. Instead:
+
+1. ✅ **Document the layer split** (this section)
+2. 🔄 **Add `Thunderbolt.CA.Snapshot`** - Read-only struct for logging/UI (neutral snapshot of CA state)
+3. 🔄 **Add `Thunderbolt.Cerebros.Features`** - Feature extractor bridging CA state → TPEBridge
+4. 🔄 **Wire Features → TPEBridge** - Complete optimization loop
+
+### Integration Points
+
+```elixir
+# CA Snapshot: neutral read-only view of lattice state
+ca_snapshot = Thunderbolt.CA.Snapshot.capture(ca_engine, opts)
+# => %{tick: 42, dims: {16,16,16}, cells: %{coord => %{activation: 0.8, error: 0.1}}}
+
+# Feature Extraction: bridge to TPE
+features = Thunderbolt.Cerebros.Features.extract(config, context, ca_snapshot, metrics)
+# => %{config: %{...}, features: %{...}, metrics: %{...}}
+
+# TPE Integration: log for optimization
+Thunderbolt.Cerebros.TPEBridge.log_trial(features)
+```
+
+---
+
+## 🧱 HC-Δ-8: THUNDERCELL SUBSTRATE LAYER
+
+**Status**: Not Started  
+**Priority**: P0 (Foundational)  
+**Dependencies**: HC-Δ-5 (Thunderbit Protocol)
+
+### Core Insight
+
+> **"Thunderbits are not the data. Thunderbits are the semantic tags & roles that sit on top of the data."**
+
+The Thundercell is the **raw substrate chunk** — the actual payload blocks that Thunderbits reference. This separation enables:
+- 10k data rows = 10k Thundercells, but only 5-10 Thunderbits (semantic roles)
+- Clean separation between "what the system is thinking" vs "what the data actually is"
+- Many-to-many relationship: one Thunderbit can span multiple Thundercells
+
+### Thundercell Struct
+
+```elixir
+defmodule Thunderline.Thunderbit.Thundercell do
+  @moduledoc """
+  Raw substrate chunk in the Thunderline data universe.
+  
+  Thundercells are the actual payload blocks that Thunderbits reference.
+  Think of Thundercells as raw file chunks, dataset batches, embedding blocks,
+  or CA grid cells — the substrate upon which symbolic Thunderbits operate.
+  """
+  
+  @type kind :: :file_chunk | :dataset_batch | :embedding_block | :ca_cell | 
+                :audio_window | :video_frame | :token_block | :state_snapshot
+  
+  @type t :: %__MODULE__{
+    id: Thunderline.UUID.t(),
+    kind: kind(),
+    source: String.t(),           # Origin reference (file path, dataset ID, etc.)
+    range: {non_neg_integer(), non_neg_integer()},  # Byte/index range
+    payload_ref: {:inline, binary()} | {:ets, reference()} | {:external, String.t()},
+    embedding: Nx.Tensor.t() | nil,      # Optional embedding vector
+    ca_coord: {integer(), integer(), integer()} | nil,  # CA lattice position
+    stats: map(),                 # Size, hash, compression ratio, etc.
+    meta: map()                   # Extensible metadata
+  }
+  
+  defstruct [
+    :id, :kind, :source, :range, :payload_ref,
+    :embedding, :ca_coord,
+    stats: %{},
+    meta: %{}
+  ]
+  
+  @doc "Create a new Thundercell with validated fields"
+  def new(kind, source, range, opts \\ []) do
+    %__MODULE__{
+      id: Thunderline.UUID.v7(),
+      kind: kind,
+      source: source,
+      range: range,
+      payload_ref: Keyword.get(opts, :payload_ref, {:inline, <<>>}),
+      embedding: Keyword.get(opts, :embedding),
+      ca_coord: Keyword.get(opts, :ca_coord),
+      stats: Keyword.get(opts, :stats, %{}),
+      meta: Keyword.get(opts, :meta, %{})
+    }
+  end
+end
+```
+
+### Kind Taxonomy
+
+| Kind | Description | Typical Source | Use Case |
+|------|-------------|----------------|----------|
+| `:file_chunk` | Byte range from file | `"s3://bucket/file.bin"` | Large file processing |
+| `:dataset_batch` | Rows from dataset | `"postgres://table#offset=1000"` | Batch ML training |
+| `:embedding_block` | Pre-computed vectors | `"vector_store://collection"` | Similarity search |
+| `:ca_cell` | CA lattice cell state | `"ca://world_id/tick/coord"` | Cellular automaton |
+| `:audio_window` | Audio sample window | `"audio://stream/timestamp"` | Real-time audio |
+| `:video_frame` | Video frame data | `"video://stream/frame_id"` | Video processing |
+| `:token_block` | Token sequence | `"tokens://doc_id/range"` | LLM context |
+| `:state_snapshot` | Serialized state | `"snapshot://pac_id/version"` | PAC checkpoints |
+
+### Context Extension
+
+```elixir
+# Extend Thunderbit.Context to include cells_by_id
+defmodule Thunderline.Thunderbit.Context do
+  @type t :: %__MODULE__{
+    bits_by_id: %{Thunderbit.id() => Thunderbit.t()},
+    cells_by_id: %{Thundercell.id() => Thundercell.t()},  # NEW
+    pending_binds: [Thunderbit.t()],
+    time_budget_ms: non_neg_integer(),
+    config: map()
+  }
+end
+```
+
+### Thunderbit ↔ Thundercell Relationship
+
+```elixir
+# Extended Thunderbit struct
+defmodule Thunderline.Thunderbit.Thunderbit do
+  @type t :: %__MODULE__{
+    id: id(),
+    kind: kind(),
+    data: map(),
+    links: [id()],
+    meta: map(),
+    thundercell_ids: [Thundercell.id()]  # NEW: Many-to-many reference
+  }
+end
+```
+
+---
+
+## 🔬 HC-Δ-9: CA↔THUNDERBIT INTEGRATION
+
+**Status**: Not Started  
+**Priority**: P1  
+**Dependencies**: HC-Δ-8 (Thundercell), HC-Δ-3 (DiffLogic CA)
+
+### Core Insight
+
+> **"The CA is the activation lattice. Thunderbits traverse it. Thundercells ground it."**
+
+This module defines the bridge between the Cellular Automaton substrate and the symbolic Thunderbit layer.
+
+### CA.Cell Struct
+
+```elixir
+defmodule Thunderline.Thunderbit.CA.Cell do
+  @moduledoc """
+  A single cell in the CA lattice with activation dynamics.
+  
+  Each cell can hold references to both Thundercells (raw data chunks)
+  and Thunderbits (semantic particles), enabling bidirectional traversal.
+  """
+  
+  @type t :: %__MODULE__{
+    coord: {integer(), integer(), integer()},
+    activation: float(),        # Current activation level [0.0, 1.0]
+    excitation: float(),        # Incoming excitatory signal
+    inhibition: float(),        # Incoming inhibitory signal
+    error_potential: float(),   # Error signal for learning
+    energy: float(),            # Metabolic energy budget
+    cell_kind: atom(),          # :standard | :border | :hub | :sink
+    thundercell_ids: [String.t()],  # Grounding data chunks
+    thunderbit_ids: [String.t()],   # Semantic particles present
+    last_updated_at: DateTime.t()
+  }
+  
+  defstruct [
+    :coord,
+    activation: 0.0,
+    excitation: 0.0,
+    inhibition: 0.0,
+    error_potential: 0.0,
+    energy: 1.0,
+    cell_kind: :standard,
+    thundercell_ids: [],
+    thunderbit_ids: [],
+    last_updated_at: nil
+  ]
+end
+```
+
+### CA.World Struct
+
+```elixir
+defmodule Thunderline.Thunderbit.CA.World do
+  @moduledoc """
+  The complete CA lattice state for a single simulation tick.
+  """
+  
+  @type params :: %{
+    diffusion: float(),         # How activation spreads (0.0-1.0)
+    decay: float(),             # Activation decay rate (0.0-1.0)
+    neighbor_radius: pos_integer(),  # Neighborhood size
+    excitation_gain: float(),   # Excitatory signal multiplier
+    inhibition_gain: float(),   # Inhibitory signal multiplier
+    error_gain: float()         # Error backprop multiplier
+  }
+  
+  @type t :: %__MODULE__{
+    tick: non_neg_integer(),
+    dims: {pos_integer(), pos_integer(), pos_integer()},
+    cells: %{{integer(), integer(), integer()} => CA.Cell.t()},
+    params: params(),
+    meta: map()
+  }
+  
+  defstruct [
+    tick: 0,
+    dims: {16, 16, 16},
+    cells: %{},
+    params: %{
+      diffusion: 0.1,
+      decay: 0.05,
+      neighbor_radius: 1,
+      excitation_gain: 1.0,
+      inhibition_gain: 0.8,
+      error_gain: 0.1
+    },
+    meta: %{}
+  ]
+  
+  @doc "Step the world forward one tick"
+  def step(%__MODULE__{} = world) do
+    # 1. Collect neighbor inputs for each cell
+    # 2. Apply excitation/inhibition dynamics
+    # 3. Update activations with diffusion + decay
+    # 4. Propagate error signals
+    # 5. Increment tick
+    world
+    |> collect_neighbor_signals()
+    |> apply_dynamics()
+    |> update_activations()
+    |> propagate_errors()
+    |> Map.update!(:tick, &(&1 + 1))
+  end
+end
+```
+
+### Tick Update Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  CA.World.step/1 Pipeline                                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. collect_neighbor_signals/1                                   │
+│     - For each cell, sum activation from neighbors               │
+│     - Weight by distance (within neighbor_radius)                │
+│     - Separate excitatory vs inhibitory inputs                   │
+│                                                                  │
+│  2. apply_dynamics/1                                             │
+│     - excitation += sum(neighbor_activations) * excitation_gain  │
+│     - inhibition += sum(inhibitory_signals) * inhibition_gain    │
+│     - energy -= activation * metabolic_cost                      │
+│                                                                  │
+│  3. update_activations/1                                         │
+│     - new_activation = old * (1 - decay) + (excite - inhibit)    │
+│     - Apply diffusion to spread activation spatially             │
+│     - Clamp to [0.0, 1.0] range                                  │
+│                                                                  │
+│  4. propagate_errors/1                                           │
+│     - Backpropagate error_potential through links                │
+│     - Update Thunderbit weights if learning enabled              │
+│                                                                  │
+│  5. tick++                                                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Thunderbit Traversal API
+
+```elixir
+defmodule Thunderline.Thunderbit.CA.Traversal do
+  @moduledoc "Navigate Thunderbits across the CA lattice"
+  
+  @doc "Find all Thunderbits in cells with activation above threshold"
+  def active_bits(world, threshold \\ 0.5) do
+    world.cells
+    |> Enum.filter(fn {_coord, cell} -> cell.activation > threshold end)
+    |> Enum.flat_map(fn {_coord, cell} -> cell.thunderbit_ids end)
+    |> Enum.uniq()
+  end
+  
+  @doc "Get the CA coordinates for a Thunderbit"
+  def locate_bit(world, bit_id) do
+    world.cells
+    |> Enum.filter(fn {_coord, cell} -> bit_id in cell.thunderbit_ids end)
+    |> Enum.map(fn {coord, _cell} -> coord end)
+  end
+  
+  @doc "Inject a Thunderbit into a cell, updating activation"
+  def inject_bit(world, coord, bit_id, opts \\ []) do
+    activation_boost = Keyword.get(opts, :activation_boost, 0.3)
+    
+    update_in(world.cells[coord], fn cell ->
+      %{cell | 
+        thunderbit_ids: [bit_id | cell.thunderbit_ids] |> Enum.uniq(),
+        activation: min(1.0, cell.activation + activation_boost)
+      }
+    end)
+  end
+end
+```
+
+---
+
+## 📊 HC-Δ-10: CEREBROS FEATURE PIPELINE
+
+**Status**: ✅ Complete  
+**Priority**: P1  
+**Dependencies**: HC-Δ-8 (Thundercell), HC-Δ-9 (CA Integration)
+
+### Core Insight
+
+> **"Every run produces a feature vector. TPE learns which configs work best."**
+
+The Cerebros Feature Pipeline extracts ~20 metrics from each PAC run for Tree-structured Parzen Estimator (TPE) hyperparameter optimization.
+
+### Feature Vector Schema
+
+| Category | Features | Type | Description |
+|----------|----------|------|-------------|
+| **Config** (6) | | | Hyperparameter settings |
+| | `ca_diffusion` | float | CA diffusion rate |
+| | `ca_decay` | float | CA decay rate |
+| | `ca_neighbor_radius` | int | Neighborhood size |
+| | `pac_model_kind` | atom | Model architecture |
+| | `max_chain_length` | int | Max action chain |
+| | `policy_strictness` | float | Crown policy threshold |
+| **Thunderbit Activity** (6) | | | Symbolic layer metrics |
+| | `num_bits_total` | int | Total Thunderbits created |
+| | `num_bits_cognitive` | int | Cognitive category bits |
+| | `num_bits_dataset` | int | Dataset category bits |
+| | `avg_bit_degree` | float | Average links per bit |
+| | `max_chain_depth` | int | Deepest bit chain |
+| | `num_variable_bits` | int | Variable (mutable) bits |
+| **CA Dynamics** (6) | | | Lattice physics |
+| | `mean_activation` | float | Average cell activation |
+| | `max_activation` | float | Peak activation |
+| | `activation_entropy` | float | Activation distribution entropy |
+| | `active_cell_fraction` | float | % cells above threshold |
+| | `error_potential_mean` | float | Average error signal |
+| | `error_cell_fraction` | float | % cells with errors |
+| **Outcomes** (6) | | | Run results |
+| | `reward` | float | Task reward/score |
+| | `token_input` | int | Input tokens consumed |
+| | `token_output` | int | Output tokens generated |
+| | `latency_ms` | int | End-to-end latency |
+| | `num_policy_violations` | int | Crown policy triggers |
+| | `num_errors` | int | Errors encountered |
+
+### Feature Extractor Module
+
+```elixir
+defmodule Thunderline.Thunderbolt.Cerebros.Features do
+  @moduledoc """
+  Extract feature vectors from PAC runs for TPE optimization.
+  """
+  
+  @type feature_vector :: %{
+    # Config
+    ca_diffusion: float(),
+    ca_decay: float(),
+    ca_neighbor_radius: pos_integer(),
+    pac_model_kind: atom(),
+    max_chain_length: pos_integer(),
+    policy_strictness: float(),
+    
+    # Thunderbit Activity
+    num_bits_total: non_neg_integer(),
+    num_bits_cognitive: non_neg_integer(),
+    num_bits_dataset: non_neg_integer(),
+    avg_bit_degree: float(),
+    max_chain_depth: non_neg_integer(),
+    num_variable_bits: non_neg_integer(),
+    
+    # CA Dynamics
+    mean_activation: float(),
+    max_activation: float(),
+    activation_entropy: float(),
+    active_cell_fraction: float(),
+    error_potential_mean: float(),
+    error_cell_fraction: float(),
+    
+    # Outcomes
+    reward: float(),
+    token_input: non_neg_integer(),
+    token_output: non_neg_integer(),
+    latency_ms: non_neg_integer(),
+    num_policy_violations: non_neg_integer(),
+    num_errors: non_neg_integer()
+  }
+  
+  @doc "Extract features from a completed PAC run"
+  def extract(run_context, ca_world, config) do
+    %{
+      # Config features
+      ca_diffusion: config.ca_diffusion,
+      ca_decay: config.ca_decay,
+      ca_neighbor_radius: config.ca_neighbor_radius,
+      pac_model_kind: config.pac_model_kind,
+      max_chain_length: config.max_chain_length,
+      policy_strictness: config.policy_strictness,
+      
+      # Thunderbit activity
+      num_bits_total: count_bits(run_context),
+      num_bits_cognitive: count_bits_by_category(run_context, :cognitive),
+      num_bits_dataset: count_bits_by_category(run_context, :dataset),
+      avg_bit_degree: compute_avg_degree(run_context),
+      max_chain_depth: compute_max_depth(run_context),
+      num_variable_bits: count_bits_by_category(run_context, :variable),
+      
+      # CA dynamics
+      mean_activation: compute_mean_activation(ca_world),
+      max_activation: compute_max_activation(ca_world),
+      activation_entropy: compute_activation_entropy(ca_world),
+      active_cell_fraction: compute_active_fraction(ca_world, 0.5),
+      error_potential_mean: compute_error_mean(ca_world),
+      error_cell_fraction: compute_error_fraction(ca_world),
+      
+      # Outcomes
+      reward: run_context.reward,
+      token_input: run_context.token_input,
+      token_output: run_context.token_output,
+      latency_ms: run_context.latency_ms,
+      num_policy_violations: run_context.policy_violations,
+      num_errors: run_context.error_count
+    }
+  end
+  
+  @doc "Log feature vector to Cerebros for TPE training"
+  def log_to_cerebros(features, experiment_id) do
+    Thunderline.Thunderbolt.Cerebros.log_observation(experiment_id, features)
+  end
+end
+```
+
+### TPE Integration Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Cerebros TPE Optimization Loop                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. TPE.suggest_config() → config                                │
+│     - Sample from learned prior distribution                     │
+│     - Balance exploration vs exploitation                        │
+│                                                                  │
+│  2. PAC.run(config) → run_context, ca_world                      │
+│     - Execute PAC with suggested configuration                   │
+│     - Collect Thunderbit/Thundercell activity                    │
+│     - Record CA lattice dynamics                                 │
+│                                                                  │
+│  3. Features.extract(run_context, ca_world, config) → features   │
+│     - Compute ~20 feature metrics                                │
+│     - Package into normalized vector                             │
+│                                                                  │
+│  4. Features.log_to_cerebros(features, exp_id)                   │
+│     - Store observation for TPE update                           │
+│     - Update Parzen estimator densities                          │
+│                                                                  │
+│  5. Repeat from step 1                                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Cross-Domain Layer Update
+
+| Layer | Domains | HC-Δ Items |
+|-------|---------|------------|
+| **Orchestration Layer** | Vine × Crown | HC-Δ-1, HC-Δ-2 |
+| **Optimization Layer** | Vine × Pac × Crown | HC-Δ-7 |
+| **Compute Layer** | Bolt × Flow | HC-Δ-3, HC-Δ-4 |
+| **Transform Layer** | Bolt × Block | HC-Δ-5, HC-Δ-6 |
+| **Substrate Layer** | Bolt × Block × Bit | HC-Δ-8 |
+| **Lattice Layer** | Bolt × Bit × CA | HC-Δ-9 |
+| **Intelligence Layer** | Bolt × Crown × Cerebros | HC-Δ-10 |
 
 **Full Reference**: [`docs/HC_ARCHITECTURE_SYNTHESIS.md`](docs/HC_ARCHITECTURE_SYNTHESIS.md)
 
@@ -2114,6 +2684,446 @@ y = α·task_loss + β·reconstruction_error + γ·(1-compression_ratio) + δ·i
 | **4** | HC-64, HC-65 | TPE search space, training loop |
 | **5** | HC-66 | Co-Lex ordering service |
 | **6** | HC-67, HC-68 | WebRTC circuits, security layer |
+
+---
+
+## 🆔 HC-Δ-11: UNIFIED ULID INFRASTRUCTURE
+
+**Status**: Not Started  
+**Priority**: P1  
+**Dependencies**: None (foundational)  
+**Reference**: [packagemain.tech/p/ulid-identifier-golang-postgres](https://packagemain.tech/p/ulid-identifier-golang-postgres)
+
+### Core Insight
+
+> **"ULIDs are lexicographically sortable 128-bit IDs with embedded timestamps — perfect for append-heavy, time-ordered workloads like Thunderbits, Thundercells, and event logs."**
+
+ULID properties that benefit Thunderline:
+- **Lexicographically sortable**: First 48 bits = timestamp → newer IDs sort after older IDs
+- **128-bit like UUID**: Compatible with Postgres `uuid` column type
+- **URL-safe, human-friendly**: `/pac/01KANDQMV608PBSMF7TM9T1WR4` vs UUID v4
+- **Index-friendly**: B-tree inserts go to end, not random pages
+- **Implicit time encoding**: Infer creation time from ID without extra column
+
+### Where to Use ULID
+
+| Surface | ULID Fit | Rationale |
+|---------|----------|-----------|
+| **Thunderbit IDs** | ✅ Perfect | Time-ordered reasoning artifacts, replay-friendly |
+| **Thundercell IDs** | ✅ Perfect | Ingestion chunks, embeddings, dataset batches |
+| **EliteEntry IDs** | ✅ Perfect | Generational QD archive entries |
+| **Event/Log IDs** | ✅ Perfect | Append-only, chronological by nature |
+| **PAC Session IDs** | ✅ Good | Session timelines, debugging |
+| **CA Tick/World IDs** | ✅ Good | Snapshot ordering |
+| **Trial/Run IDs** | ✅ Good | Cerebros training runs |
+| **BEAM-internal ephemeral** | ⏸️ Skip | Keep simple atoms/refs |
+
+### Components
+
+```
+lib/thunderline/
+├── id.ex                    # Thunderline.Id abstraction (ULID-backed)
+└── id/
+    ├── generator.ex         # ULID generation with fallback
+    ├── parser.ex            # Extract timestamp from ULID
+    └── types/
+        └── ulid.ex          # Ash.Type.ULID custom type
+```
+
+### Module Structure
+
+```elixir
+defmodule Thunderline.Id do
+  @moduledoc """
+  Unified ID generator for Thunderline.
+  Uses ULID for time-sortable, URL-safe identifiers.
+  """
+  
+  @type t :: String.t()
+  
+  @doc "Generate a new ULID"
+  def generate do
+    # Use ulid library or custom implementation
+    ULID.generate()
+  end
+  
+  @doc "Generate ULID for specific timestamp"
+  def generate_at(datetime) do
+    ULID.generate(datetime)
+  end
+  
+  @doc "Extract timestamp from ULID"
+  def timestamp(ulid) do
+    ULID.decode_timestamp(ulid)
+  end
+  
+  @doc "Check if ID is valid ULID"
+  def valid?(id), do: ULID.valid?(id)
+end
+```
+
+### Ash Type Integration
+
+```elixir
+defmodule Thunderline.Id.Types.ULID do
+  use Ash.Type
+  
+  @impl true
+  def storage_type, do: :uuid  # or :string for char(26)
+  
+  @impl true
+  def cast_input(nil, _), do: {:ok, nil}
+  def cast_input(value, _) when is_binary(value), do: {:ok, value}
+  
+  @impl true
+  def cast_stored(nil, _), do: {:ok, nil}
+  def cast_stored(value, _), do: {:ok, value}
+  
+  @impl true
+  def dump_to_native(nil, _), do: {:ok, nil}
+  def dump_to_native(value, _), do: {:ok, value}
+  
+  @impl true
+  def generator(_constraints) do
+    StreamData.constant(Thunderline.Id.generate())
+  end
+end
+```
+
+### Migration Strategy
+
+1. **New resources**: Use ULID from the start
+2. **Existing resources**: Keep current PKs, no retrofit needed
+3. **Hybrid period**: Both work fine, gradually standardize
+
+### Synergy with CA/Cerebros
+
+ULID time-alignment enables:
+- **Timeline reconstruction**: "These N Thunderbits spawned in this window"
+- **Cross-entity correlation**: trial_id ↔ bit_ids ↔ cell_ids share chronology
+- **Replay by ID range**: "Show all Thunderbits between ID A and B"
+- **Time-based sharding**: Archive runs by ULID date prefix
+
+---
+
+## 🧠 HC-Δ-12: NEAR-CRITICAL DYNAMICS (MCP-Θ)
+
+**Status**: Not Started  
+**Priority**: P2  
+**Dependencies**: HC-Δ-3 (CA Engine), HC-Δ-9 (CA Integration)  
+**Reference**: Loop-Controlled Near-Critical Dynamics for LLMs (2025)
+
+### Core Insight
+
+> **"LLMs operate best in a 'near-critical' dynamical regime — not too synchronized, not too chaotic. Measurable field parameters (PLV, σ, λ̂) can regulate agent stability."**
+
+This paper proves mathematically what Thunderbeat + Thunderbit CA is already moving toward. It gives us physics-based tools to tune PAC agent behavior like a living organism.
+
+### Key Metrics
+
+| Metric | Definition | Ideal Range | Thunderline Mapping |
+|--------|------------|-------------|---------------------|
+| **PLV** | Phase Locking Value (attention head synchrony) | 0.30–0.60 | Thunderbeat regulation |
+| **σ** | Propagation coefficient (idea flow between layers) | ~1.0 (edge of chaos) | Thundercell excitation |
+| **λ̂** | Local Lyapunov exponent (thought trajectory divergence) | ≤ 0 (stable) | Instability trigger |
+| **iRoPE** | Spectral loop detection + RoPE frequency adjustment | N/A | CA rule repair |
+
+### Metric Interpretation
+
+```
+PLV (Phase Locking Value):
+├── Too high (>0.60)  → Repetition, collapse, loops
+├── Too low  (<0.30)  → Rambling, incoherence
+└── Sweet spot (0.30-0.60) → Metastable thinking zone
+
+σ (Propagation Coefficient):
+├── σ < 1  → Stuck thinking, nothing propagates
+├── σ ≈ 1  → Edge of chaos (optimal)
+└── σ > 1  → Runaway hallucinations
+
+λ̂ (Lyapunov Exponent):
+├── λ̂ ≤ 0 → Stable thought paths
+└── λ̂ > 0 → Chaotic divergence (trigger safe mode)
+```
+
+### Components
+
+```
+lib/thunderline/thundercrown/mcp_theta/
+├── monitor.ex           # Runtime PLV/σ/λ̂ measurement
+├── regulator.ex         # Thunderbeat pacing adjustments
+├── thresholds.ex        # Configurable bands and triggers
+└── actions.ex           # Corrective actions (dampen/energize)
+
+lib/thunderline/thunderbolt/criticality/
+├── plv_estimator.ex     # Phase locking from attention patterns
+├── propagation.ex       # σ from layer-to-layer activation
+├── lyapunov.ex          # λ̂ from trajectory divergence
+└── loop_detector.ex     # Spectral energy analysis
+```
+
+### MCP-Θ Regulator
+
+```elixir
+defmodule Thunderline.Thundercrown.MCPTheta.Regulator do
+  @moduledoc """
+  Meta-Critical Poise regulator for PAC agent stability.
+  Adjusts Thunderbeat pacing and CA excitation based on criticality metrics.
+  """
+  
+  alias Thunderline.Thundercrown.MCPTheta.Monitor
+  alias Thunderline.Thundercore.Heartbeat
+  alias Thunderline.Thunderbit.Thundercell
+  
+  @plv_band {0.30, 0.60}
+  @sigma_target 1.0
+  @lyapunov_threshold 0.0
+  
+  def regulate(pac_context) do
+    metrics = Monitor.measure(pac_context)
+    
+    cond do
+      metrics.lyapunov > @lyapunov_threshold ->
+        # Chaotic divergence - trigger safe mode
+        {:safe_mode, dampen_all(pac_context)}
+        
+      metrics.plv > elem(@plv_band, 1) ->
+        # Over-synchronized - inject noise
+        {:desync, inject_noise(pac_context, metrics)}
+        
+      metrics.plv < elem(@plv_band, 0) ->
+        # Under-synchronized - increase coupling
+        {:resync, increase_coupling(pac_context, metrics)}
+        
+      metrics.sigma > @sigma_target * 1.2 ->
+        # Runaway propagation - decay excitation
+        {:dampen, decay_excitation(pac_context, metrics)}
+        
+      metrics.sigma < @sigma_target * 0.8 ->
+        # Stagnant - boost propagation
+        {:boost, boost_propagation(pac_context, metrics)}
+        
+      true ->
+        # Healthy regime
+        {:stable, pac_context}
+    end
+  end
+end
+```
+
+### Integration Points
+
+| System | MCP-Θ Role |
+|--------|------------|
+| **Thunderbeat** | Adjust tick pacing based on PLV |
+| **Thundercell CA** | Modify excitation levels via σ |
+| **Thunderbit relations** | Rewire on loop detection |
+| **MCP Ethics** | Trigger safe-mode on λ̂ spike |
+| **Thundervine DAG** | Dampen edge weights for stability |
+
+---
+
+## 🎭 HC-Δ-13: THUNDERCHIEF ORCHESTRATOR
+
+**Status**: Not Started  
+**Priority**: P1  
+**Dependencies**: HC-Δ-1 (Vine DAG), HC-Δ-2 (Crown Policy)  
+**Reference**: Multi-Agent Collaboration via Evolving Orchestration (NeurIPS 2025)
+
+### Core Insight
+
+> **"A centralized 'puppeteer' policy dynamically chooses which agent should run at each step. This serializes multi-agent coordination into an optimizable sequence, discovering compact cyclic reasoning structures."**
+
+This paper validates the Thunderline architecture:
+- **Puppeteer** = Thunderchief (per-domain orchestrator)
+- **Puppets** = Thunderbits / Thundercells / DAG tasks
+- **Graph-of-thought → sequence** = Thunderbeat tick loop + Chief decisions
+- **RL evolution** = Cerebros outer loop
+
+### Mental Model
+
+```
+Thundergrid        → Global map of zones, ticks, events
+Thunderbit/cell    → Working pieces (reasoning + data)
+Thundercrown       → High-level policy & ethics
+Thunderchief.*     → Per-domain orchestrator = PUPPETEER
+```
+
+### Per-Domain Chiefs
+
+| Chief | Domain | Puppets | Selection Logic |
+|-------|--------|---------|-----------------|
+| `Thunderchief.Bit` | Thunderbit | Bit categories | Which bit to activate next |
+| `Thunderchief.Vine` | Thundervine | DAG nodes | Which graph node to execute |
+| `Thunderchief.Crown` | Thundercrown | Policy updates | Meta-chief for governance |
+| `Thunderchief.UI` | Prism | Surface elements | What to show user |
+
+### Components
+
+```
+lib/thunderline/thunderchief/
+├── behaviour.ex         # Thunderchief contract
+├── state.ex             # Chief observation state
+├── action.ex            # Chief action types
+├── chiefs/
+│   ├── bit_chief.ex     # Thunderbit orchestrator
+│   ├── vine_chief.ex    # DAG orchestrator
+│   ├── crown_chief.ex   # Meta-governance chief
+│   └── ui_chief.ex      # Surface orchestrator
+└── logger.ex            # RL trajectory logging
+```
+
+### Thunderchief Behaviour
+
+```elixir
+defmodule Thunderline.Thunderchief.Behaviour do
+  @moduledoc """
+  Contract for domain-level orchestrators (puppeteers).
+  Each Chief observes domain state and selects next action.
+  """
+  
+  @type state :: map()
+  @type action :: atom() | {atom(), map()}
+  @type outcome :: :success | :error | {:partial, map()}
+  
+  @doc "Extract compressed feature vector from domain state"
+  @callback observe_state(context :: map()) :: state()
+  
+  @doc "Choose next action given observed state"
+  @callback choose_action(state()) :: {:ok, action()} | {:wait, timeout()}
+  
+  @doc "Apply selected action to context"
+  @callback apply_action(action(), context :: map()) :: {:ok, map()} | {:error, term()}
+  
+  @doc "Report outcome for RL logging"
+  @callback report_outcome(context :: map()) :: %{
+    reward: float(),
+    metrics: map(),
+    trajectory_step: map()
+  }
+end
+```
+
+### Bit Chief Example
+
+```elixir
+defmodule Thunderline.Thunderchief.Chiefs.BitChief do
+  @behaviour Thunderline.Thunderchief.Behaviour
+  
+  alias Thunderline.Thunderbit.{Context, Protocol}
+  
+  @impl true
+  def observe_state(ctx) do
+    %{
+      pending_bits: count_pending(ctx),
+      active_category: current_category(ctx),
+      energy_level: ctx.energy,
+      chain_depth: ctx.chain_depth,
+      last_action_type: ctx.last_action
+    }
+  end
+  
+  @impl true
+  def choose_action(state) do
+    cond do
+      state.pending_bits > 0 and state.energy_level > 0.3 ->
+        {:ok, {:activate_pending, %{strategy: :fifo}}}
+        
+      state.chain_depth > 5 ->
+        {:ok, :consolidate}
+        
+      state.active_category == :sensory ->
+        {:ok, {:transition, :cognitive}}
+        
+      true ->
+        {:wait, 100}  # Wait for external stimulus
+    end
+  end
+  
+  @impl true
+  def apply_action({:activate_pending, opts}, ctx) do
+    case Protocol.activate_next(ctx, opts) do
+      {:ok, updated} -> {:ok, updated}
+      error -> error
+    end
+  end
+  
+  @impl true
+  def report_outcome(ctx) do
+    %{
+      reward: calculate_reward(ctx),
+      metrics: %{
+        bits_processed: ctx.bits_processed,
+        latency_ms: ctx.latency,
+        errors: ctx.error_count
+      },
+      trajectory_step: %{
+        state: observe_state(ctx),
+        action: ctx.last_action,
+        next_state: observe_state(ctx)
+      }
+    }
+  end
+end
+```
+
+### Thunderbeat Integration
+
+```elixir
+# On each tick, Chiefs are consulted
+defmodule Thunderline.Thundercore.TickRunner do
+  def run_tick(ctx) do
+    ctx
+    |> consult_chiefs()
+    |> execute_selected_actions()
+    |> emit_events()
+    |> log_trajectories()
+  end
+  
+  defp consult_chiefs(ctx) do
+    chiefs = [
+      Thunderchief.Chiefs.BitChief,
+      Thunderchief.Chiefs.VineChief
+    ]
+    
+    Enum.reduce(chiefs, ctx, fn chief, acc ->
+      state = chief.observe_state(acc)
+      case chief.choose_action(state) do
+        {:ok, action} -> 
+          {:ok, updated} = chief.apply_action(action, acc)
+          updated
+        {:wait, _} -> 
+          acc
+      end
+    end)
+  end
+end
+```
+
+### RL Training (Future)
+
+Chiefs are designed for later RL optimization:
+
+```elixir
+# Cerebros can replace choose_action/1 with learned policy
+defmodule Thunderline.Thunderchief.LearnedPolicy do
+  @doc """
+  Replace heuristic choose_action with TPE-optimized policy.
+  Training data comes from trajectory logs.
+  """
+  
+  def choose_action(state, policy_params) do
+    # Feature extraction
+    features = encode_state(state)
+    
+    # Policy network forward pass
+    action_probs = policy_forward(features, policy_params)
+    
+    # Sample or argmax
+    {:ok, sample_action(action_probs)}
+  end
+end
+```
 
 ---
 

@@ -138,6 +138,7 @@ The Thunderline platform is organized into sovereign domains with explicit contr
   - **MLflow** (2): Experiment, Run
   - **UPM** (4): UPMTrainer, UPMSnapshot, UPMAdapter, UPMDriftWindow
   - **MoE** (3): Expert, ExpertRouter, ExpertMetric
+  - **Thunderbit** (HC-Δ-5,8,9,10): Thunderbit (symbolic particle), Thundercell (raw substrate), CA.Cell, CA.World, Cerebros.Features
 - **GraphQL API**: core_agents queries and mutations for agent management
 - **Code Interfaces**: TrainingDataset operations (create/read/update, add_samples, export), Agent management, Workflow execution
 - **Key Services**: `ThunderCell` CA engine, `Lane` orchestrators, expert registries, `ErlangBridge` for neuro handoff, `CerebrosBridge` helpers (`RunOptions`, `Summary`).
@@ -277,6 +278,23 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 - **Operational hooks**: Trainer runs inside ThunderBolt orchestrators, snapshots persisted through ThunderBlock vault policies, rollout gated by ThunderCrown policies and feature flag `:unified_model`.
 - **Key KPIs**: Snapshot freshness, drift score, agent adoption percentage, rollback invocation count.
 
+### 1.13 Thunderbit/Thundercell — Semantic Particle & Raw Substrate Layer (HC-Δ-5,8,9,10)
+
+- **Resources**: **5+ Ash Resources** (part of Thunderbolt domain)
+- **Mission**: Separate symbolic/semantic layer (Thunderbits) from raw data substrate (Thundercells), enabling cellular automata dynamics on underlying data while maintaining clean semantic interfaces.
+- **Primary resources**:
+  - `Thunderbit` (existing) — Semantic particle/handle representing a thought unit, references 0+ Thundercells
+  - `Thundercell` (HC-Δ-8) — Raw substrate chunk (file_chunk, dataset_batch, embedding_block, ca_cell, audio_window, token_block)
+  - `CA.Cell` (HC-Δ-9) — Cellular automata lattice cell with activation, excitation, inhibition, energy, thundercell_ids, thunderbit_ids
+  - `CA.World` (HC-Δ-9) — Grid state container with tick, dims, cells map, diffusion/decay params
+  - `Cerebros.Features` (HC-Δ-10) — ~20-feature vector schema for TPE optimization per run
+- **Conceptual separation**:
+  - Thunderbits = semantic tags & roles (the thought process), lightweight indices into data universe
+  - Thundercells = raw payload blocks (what's actually stored), embeddings, file chunks, CA coordinates
+- **Event responsibilities**: Emit `thunderbit.created`, `thunderbit.linked`, `thundercell.created`, `ca.world.tick`, `ca.world.converged`, `cerebros.features.extracted`.
+- **Operational hooks**: CA dynamics driven by ThunderFlow tick events, Thundercell embeddings fed to UPM, Cerebros features piped to TPE optimizer.
+- **Key KPIs**: Thundercell cache hit rate, CA convergence time, TPE improvement ratio, Thunderbit→Thundercell resolution latency.
+
 ## 2. Resource Reference Tables
 
 ### 2.1 Active Core Domains (November 18, 2025)
@@ -286,12 +304,12 @@ The Thunderline platform is organized into sovereign domains with explicit contr
 | **Thundergate** | 19 | AshAdmin | Auth (2), External (3), Federation (3), Policy (2), Monitoring (9) | ✅ Active |
 | **Thunderlink** | 17 | AshAdmin, AshOban, AshGraphql, AshTypescript.Rpc | Support (1), Community (5), Voice (3), Registry (6), Infrastructure (2) | ✅ Active |
 | **Thunderflow** | 9 | AshAdmin | Streams (2), Actions (1), Events (1), Probes (3), Features (1), Lineage (1) | ✅ Active |
-| **Thunderbolt** | 50+ | AshAdmin, AshOban, AshJsonApi, AshGraphql | Core (5), Ising (3), Lane (10), Task (3), Automata (5), Cerebros (7), RAG (1), ML (6), MLflow (2), UPM (4), MoE (3) | ✅ Active |
+| **Thunderbolt** | 55+ | AshAdmin, AshOban, AshJsonApi, AshGraphql | Core (5), Ising (3), Lane (10), Task (3), Automata (5), Cerebros (7), RAG (1), ML (6), MLflow (2), UPM (4), MoE (3), Thunderbit (5+) | ✅ Active |
 | **Thundercrown** | 4 | AshAdmin, AshAi | UI (1), AgentRunner (1), Conversation (2) | ✅ Active |
 | **Thunderblock** | 33 | AshAdmin | Vault (13), Infrastructure (8), Orchestration (4), DAG (4), Timing (4) | ✅ Active |
 | **Thundergrid** | 5 | AshGraphql, AshJsonApi | Spatial (1), Zones (2), Events (1), State (1) | ✅ Active |
 
-**Total Active Resources**: ~160 across 8 domains
+**Total Active Resources**: ~165 across 8 domains
 
 ### 2.2 Support & Utility Domains
 

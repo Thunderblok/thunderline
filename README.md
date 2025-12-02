@@ -69,6 +69,9 @@ Thunderline is architected around **twelve specialized domains** (the "Pantheon"
 #### Recent Additions
 - **Thunderbit Category Protocol** *(HC-Δ-5)*: Executable ontology with 8 categories, spawnable computational building blocks
 - **Thunderfield** *(HC-Δ-5.3)*: Real-time LiveView visualization of Thunderbit graphs
+- **Thundercell Substrate** *(HC-Δ-8)*: Raw data chunk abstraction (file/dataset/embedding blocks), CA lattice grounding
+- **CA↔Thunderbit Integration** *(HC-Δ-9)*: Cellular Automaton lattice with activation dynamics, bit→cell traversal
+- **Cerebros Feature Pipeline** *(HC-Δ-10)*: Per-run feature extraction (~20 metrics) for TPE hyperparameter optimization
 
 (See `docs/architecture/THUNDERLINE_DOMAIN_CATALOG.md` for the full domain inventory)
 
