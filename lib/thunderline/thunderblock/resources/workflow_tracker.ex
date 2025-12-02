@@ -10,7 +10,7 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshOban.Resource]
+    extensions: [AshOban]
 
   postgres do
     table "workflow_trackers"
@@ -75,20 +75,14 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
   end
 
   # AshOban configuration for orchestration automation
-  # TODO: Fix AshOban syntax - commenting out until properly tested
-  # oban do
-  #   # Auto-cleanup completed workflow trackers
-  #   trigger :cleanup_completed_trackers do
-  #     action :destroy
-  #     where expr(status == :completed and updated_at < ago(7, :day))
-  #     cron "0 2 * * *"  # Daily at 2 AM
-  #   end
-  #
-  #   # Monitor stalled workflows
-  #   trigger :check_stalled_workflows do
-  #     action :read
-  #     where expr(status == :in_progress and updated_at < ago(1, :hour))
-  #     cron "*/15 * * * *"  # Every 15 minutes
-  #   end
-  # end
+  oban do
+    triggers do
+      # Auto-cleanup completed workflow trackers
+      trigger :cleanup_completed_trackers do
+        action :destroy
+        scheduler_cron "0 2 * * *"
+        where expr(status == :completed and updated_at < ago(7, :day))
+      end
+    end
+  end
 end

@@ -12,19 +12,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
   - Concept clustering and semantic grouping
   - Cross-domain knowledge linking and association
   - Knowledge consolidation and duplicate resolution
-  - Hierar    # TODO: Fix fragment expression referencing relationship_data in Ash 3.x
-    # read :find_contradictions do
-    #   description "Find knowledge contradictions"
-    #
-    #   prepare fn query, _context ->
-    #     query
-    #     |> Ash.Query.filter(
-    #       fragment("jsonb_array_length(?->'contradicts_nodes') > 0", relationship_data) and
-    #       verification_status != :deprecated
-    #     )
-    #     |> Ash.Query.sort([evidence_strength: :desc])
-    #   end
-    # endedge organization and taxonomy
+  - Hierarchical knowledge organization and taxonomy
   - Intelligent knowledge discovery and traversal
 
   ## Knowledge Philosophy
@@ -105,11 +93,10 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
     define :traverse_graph, args: [:start_node_id, :relationship_types, :max_depth, :direction]
     define :by_domain, args: [:knowledge_domain]
-    # TODO: Comment out interface for commented-out actions
-    # define :high_centrality, args: [:min_centrality]
-    # define :find_related, args: [:node_id, :relationship_strength_threshold]
-    # define :contradictions, action: :contradictions
-    # define :taxonomy_level, args: [:taxonomy_path]
+    define :high_centrality, args: [:min_centrality]
+    define :find_related, args: [:node_id, :relationship_strength_threshold]
+    define :contradictions, action: :contradictions
+    define :taxonomy_level, args: [:taxonomy_path]
     define :optimize_relationships, action: :optimize_relationships
     define :recalculate_metrics, action: :recalculate_metrics
     define :cleanup_deprecated, action: :cleanup_deprecated
@@ -528,19 +515,18 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       end
 
       prepare fn query, context ->
-        start_id = context.arguments.start_node_id
-        rel_types = context.arguments.relationship_types || ["parent", "child", "related"]
-        max_depth = context.arguments.max_depth
-        direction = context.arguments.direction
+        _start_id = context.arguments.start_node_id
+        _rel_types = context.arguments.relationship_types || ["parent", "child", "related"]
+        _max_depth = context.arguments.max_depth
+        _direction = context.arguments.direction
 
         # This would implement graph traversal logic
         # For now, return related nodes based on relationship data
+        # Full graph traversal requires recursive CTEs or external graph DB
 
-        # TODO: Fix filter for Ash 3.x - commented out variable references
-        # query
-        # |> Ash.Query.filter(verification_status != :deprecated)
-        # |> Ash.Query.sort([centrality_score: :desc])
         query
+        |> Ash.Query.filter(verification_status != :deprecated)
+        |> Ash.Query.sort(centrality_score: :desc)
       end
     end
 
@@ -558,22 +544,14 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
       prepare build(sort: [centrality_score: :desc, confidence_level: :desc])
     end
 
-    # TODO: Fix variable references in prepare block for Ash 3.x
-    # read :high_centrality do
-    #   description "Get highly central knowledge nodes"
-    #
-    #   argument :min_centrality, :decimal, default: Decimal.new("0.7")
-    #
-    #   prepare fn query, context ->
-    #     min_centrality = context.arguments.min_centrality
-    #     query
-    #     |> Ash.Query.filter(
-    #       centrality_score >= ^min_centrality and
-    #       verification_status == :verified
-    #     )
-    #     |> Ash.Query.sort([centrality_score: :desc])
-    #   end
-    # end
+    read :high_centrality do
+      description "Get highly central knowledge nodes"
+
+      argument :min_centrality, :decimal, default: Decimal.new("0.7")
+
+      filter expr(centrality_score >= ^arg(:min_centrality) and verification_status == :verified)
+      prepare build(sort: [centrality_score: :desc])
+    end
 
     read :find_related do
       description "Find nodes related to a specific node"
@@ -584,29 +562,22 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
 
       argument :relationship_strength_threshold, :decimal, default: Decimal.new("0.5")
 
-      prepare fn query, context ->
-        node_id = context.arguments.node_id
-        # TODO: Fix filter for Ash 3.x - commented out variable references
-        # query
-        # |> Ash.Query.filter(verification_status != :deprecated)
-        # |> Ash.Query.sort([centrality_score: :desc])
-        query
-      end
+      # Note: Full graph relationship lookup requires the node_id in relationship_data
+      # This is a simplified version that returns non-deprecated nodes sorted by centrality
+      filter expr(verification_status != :deprecated)
+      prepare build(sort: [centrality_score: :desc])
     end
 
-    # TODO: Fix fragment expression referencing relationship_data in Ash 3.x
-    # read :contradictions do
-    #   description "Find knowledge contradictions"
-    #
-    #   prepare fn query, _context ->
-    #     query
-    #     |> Ash.Query.filter(
-    #       fragment("jsonb_array_length(?->'contradicts_nodes') > 0", relationship_data) and
-    #       verification_status != :deprecated
-    #     )
-    #     |> Ash.Query.sort([evidence_strength: :desc])
-    #   end
-    # end
+    read :contradictions do
+      description "Find knowledge contradictions"
+
+      filter expr(
+               fragment("jsonb_array_length(?->'contradicts_nodes') > 0", relationship_data) and
+                 verification_status != :deprecated
+             )
+
+      prepare build(sort: [evidence_strength: :desc])
+    end
 
     read :taxonomy_level do
       description "Get nodes at specific taxonomy level"
@@ -615,8 +586,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultKnowledgeNode do
         allow_nil? false
       end
 
-      # TODO: Fix filter expression for Ash 3.x
-      # filter expr(taxonomy_path == ^arg(:taxonomy_path) and verification_status != :deprecated)
+      filter expr(taxonomy_path == ^arg(:taxonomy_path) and verification_status != :deprecated)
 
       prepare build(sort: [:title])
     end

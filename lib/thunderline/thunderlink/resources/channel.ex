@@ -41,8 +41,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
     references do
       reference :community, on_delete: :delete, on_update: :update
       reference :messages, on_delete: :delete, on_update: :update
-      # TODO: Add ChannelParticipant reference when resource exists
-      # reference :channel_participants, on_delete: :delete, on_update: :update
+      reference :channel_participants, on_delete: :delete, on_update: :update
     end
 
     custom_indexes do
@@ -671,10 +670,9 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
       destination_attribute :channel_id
     end
 
-    # TODO: Add ChannelParticipant resource and relationship
-    # has_many :channel_participants, Thunderline.Thunderblock.Resources.ChannelParticipant do
-    #   destination_attribute :channel_id
-    # end
+    has_many :channel_participants, Thunderline.Thunderblock.Resources.ChannelParticipant do
+      destination_attribute :channel_id
+    end
 
     has_many :system_events, Thunderline.Thunderblock.Resources.SystemEvent do
       destination_attribute :target_resource_id

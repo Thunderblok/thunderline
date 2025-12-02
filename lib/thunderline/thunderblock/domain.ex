@@ -125,5 +125,8 @@ defmodule Thunderline.Thunderblock.Domain do
 
     # Domain Activation Registry (Phase 1 - Tick System)
     resource Thunderline.Thunderblock.Resources.ActiveDomainRegistry
+
+    # Channel participation tracking
+    resource Thunderline.Thunderblock.Resources.ChannelParticipant
   end
 end

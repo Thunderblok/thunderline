@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshOban.Resource]
+    extensions: [AshOban]
 
   import Ash.Resource.Change.Builtins
 
@@ -272,39 +272,18 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
   end
 
   # AshOban triggers for orchestration automation
-  # TODO: Fix AshOban syntax - commenting out until properly tested
-  # oban do
-  #   # Monitor long-running workflows
-  #   trigger :check_long_running_workflows do
-  #     action :long_running
-  #     cron "*/10 * * * *"  # Every 10 minutes
-  #   end
-  #
-  #   # Auto-restart failed workflows with retry policy
-  #   trigger :restart_failed_workflows do
-  #     action :by_status, args: [:failed]
-  #     where expr(
-  #       fragment("(?->>'auto_restart')::boolean = true", metadata) and
-  #       fragment("(?->>'restart_attempts')::integer < 3", metadata)
-  #     )
-  #     cron "*/5 * * * *"  # Every 5 minutes
-  #   end
-  #
-  #   # Cleanup old completed workflows
-  #   trigger :cleanup_old_workflows do
-  #     action :destroy
-  #     where expr(
-  #       status in [:completed, :cancelled] and
-  #       completed_at < ago(30, :day)
-  #     )
-  #     cron "0 3 * * *"  # Daily at 3 AM
-  #   end
-  #
-  #   # Health check for stalled workflows
-  #   trigger :health_check_stalled do
-  #     action :read
-  #     where expr(is_stalled == true)
-  #     cron "*/15 * * * *"  # Every 15 minutes
-  #   end
-  # end
+  oban do
+    triggers do
+      # Cleanup old completed workflows
+      trigger :cleanup_old_workflows do
+        action :destroy
+        scheduler_cron "0 3 * * *"
+
+        where expr(
+                status in [:completed, :cancelled] and
+                  completed_at < ago(30, :day)
+              )
+      end
+    end
+  end
 end

@@ -26,7 +26,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource]
+    extensions: [AshJsonApi.Resource, AshOban]
 
   import Ash.Resource.Change.Builtins
 
@@ -883,15 +883,17 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
   end
 
   # ===== OBAN CONFIGURATION =====
-  # TODO: AshOban syntax needs verification - commenting out until properly tested
-  # oban do
-  #   # Regular health checks
-  #   trigger :pac_health_check do
-  #     action :health_check
-  #     cron "*/5 * * * *"  # Every 5 minutes
-  #     where expr(status in [:active, :suspended])
-  #   end
-  # end  # ===== IDENTITIES =====
+  oban do
+    triggers do
+      trigger :pac_health_check do
+        action :health_check
+        scheduler_cron "*/5 * * * *"
+        where expr(status in [:active, :suspended])
+      end
+    end
+  end
+
+  # ===== IDENTITIES =====
   identities do
     identity :unique_home_in_community, [:home_slug, :community_id]
     identity :unique_owner_home_name, [:owner_id, :home_name]
