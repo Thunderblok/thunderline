@@ -10,7 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.ChunkHealth do
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: :embedded,
-    extensions: [AshJsonApi.Resource, AshOban.Resource, AshGraphql.Resource],
+    extensions: [AshJsonApi.Resource, AshOban, AshGraphql.Resource],
     notifiers: [Ash.Notifier.PubSub]
 
   import Ash.Resource.Change.Builtins

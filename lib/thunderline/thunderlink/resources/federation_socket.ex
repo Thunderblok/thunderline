@@ -26,7 +26,7 @@ defmodule Thunderline.Thunderlink.Resources.FederationSocket do
   use Ash.Resource,
     domain: Thunderline.Thunderlink.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource]
+    extensions: [AshJsonApi.Resource, AshOban]
 
   import Ash.Resource.Change.Builtins
 

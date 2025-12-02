@@ -9,7 +9,7 @@ defmodule Thunderline.Thunderflow.Resources.EventStream do
   use Ash.Resource,
     domain: Thunderline.Thunderflow.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource]
+    extensions: [AshJsonApi.Resource, AshOban]
 
   postgres do
     table "thunderflow_event_streams"

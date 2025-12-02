@@ -9,7 +9,7 @@ defmodule Thunderline.Thundergate.Resources.FederatedRealm do
   use Ash.Resource,
     domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource]
+    extensions: [AshJsonApi.Resource, AshOban]
 
   # Removed unused import Ash.Resource.Change.Builtins to silence compile warning
 

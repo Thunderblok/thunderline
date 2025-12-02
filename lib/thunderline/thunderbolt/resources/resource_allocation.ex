@@ -10,7 +10,7 @@ defmodule Thunderline.Thunderbolt.Resources.ResourceAllocation do
   use Ash.Resource,
     domain: Thunderline.Thunderbolt.Domain,
     data_layer: :embedded,
-    extensions: [AshJsonApi.Resource, AshOban.Resource, AshGraphql.Resource]
+    extensions: [AshJsonApi.Resource, AshOban, AshGraphql.Resource]
 
   import Ash.Resource.Change.Builtins
   import Ash.Resource.Change.Builtins

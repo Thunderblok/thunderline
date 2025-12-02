@@ -9,7 +9,7 @@ defmodule Thunderline.Thundergate.Resources.FederatedMessage do
   use Ash.Resource,
     domain: Thunderline.Thundergate.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource]
+    extensions: [AshJsonApi.Resource, AshOban]
 
   import Ash.Resource.Change.Builtins
 

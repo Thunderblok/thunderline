@@ -9,7 +9,7 @@ defmodule Thunderline.Thunderblock.Resources.VaultQueryOptimization do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource],
+    extensions: [AshJsonApi.Resource, AshOban],
     authorizers: [Ash.Policy.Authorizer]
 
   # Removed unused imports (Ash.Resource.Change.Builtins, Ash.Expr)

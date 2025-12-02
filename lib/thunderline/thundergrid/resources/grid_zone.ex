@@ -10,7 +10,7 @@ defmodule Thunderline.Thundergrid.Resources.GridZone do
   use Ash.Resource,
     domain: Thunderline.Thundergrid.Domain,
     data_layer: :embedded,
-    extensions: [AshJsonApi.Resource, AshOban.Resource, AshGraphql.Resource],
+    extensions: [AshJsonApi.Resource, AshOban, AshGraphql.Resource],
     authorizers: [Ash.Policy.Authorizer]
 
   import Ash.Resource.Change.Builtins

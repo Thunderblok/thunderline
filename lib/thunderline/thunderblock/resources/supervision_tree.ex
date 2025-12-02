@@ -18,7 +18,7 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
   use Ash.Resource,
     domain: Thunderline.Thunderblock.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshJsonApi.Resource, AshOban.Resource],
+    extensions: [AshJsonApi.Resource, AshOban],
     authorizers: [Ash.Policy.Authorizer]
 
   import Ash.Resource.Change.Builtins

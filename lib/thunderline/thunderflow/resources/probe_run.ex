@@ -8,7 +8,7 @@ defmodule Thunderline.Thunderflow.Resources.ProbeRun do
   use Ash.Resource,
     domain: Thunderline.Thunderflow.Domain,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshOban.Resource]
+    extensions: [AshOban]
 
   postgres do
     table "probe_runs"
