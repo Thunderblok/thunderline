@@ -62,13 +62,25 @@ defmodule Thunderline.Thunderflow.Supervisor do
   def on_activated(tick_count) do
     Logger.info("[Thunderflow] Domain activated at tick #{tick_count}")
 
+    # Initialize pipeline telemetry ETS table
+    Thunderline.Thunderflow.PipelineTelemetry.init()
+
+    # Attach default telemetry handlers (log failures at :warning level)
+    Thunderline.Thunderflow.PipelineTelemetry.attach_default_handlers(
+      log_level: :debug,
+      log_throughput?: true,
+      log_failures?: true,
+      log_health?: false
+    )
+
     # Perform any activation-specific setup here
     state = %{
       activated_at: tick_count,
       started_at: DateTime.utc_now(),
       event_buffer_ready: true,
       blackboard_ready: true,
-      tick_count: tick_count
+      tick_count: tick_count,
+      pipeline_telemetry_initialized: true
     }
 
     {:ok, state}

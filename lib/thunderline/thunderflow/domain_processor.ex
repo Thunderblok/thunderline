@@ -232,11 +232,20 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
         try do
           result = handle_event_batch(batcher, messages, batch_info, context)
           duration = System.monotonic_time() - start_time
+          duration_ms = System.convert_time_unit(duration, :native, :millisecond)
 
           :telemetry.execute(
             @__dp_tele_prefix ++ [:batch, :stop],
             %{duration: duration, count: length(messages)},
             %{batcher: batcher}
+          )
+
+          # Record pipeline throughput telemetry
+          pipeline = infer_pipeline_type()
+          Thunderline.Thunderflow.PipelineTelemetry.record_throughput(
+            pipeline,
+            length(messages),
+            duration_ms
           )
 
           result
@@ -248,6 +257,15 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
               @__dp_tele_prefix ++ [:batch, :exception],
               %{duration: duration, count: length(messages)},
               %{batcher: batcher, exception: e}
+            )
+
+            # Record pipeline failure telemetry
+            pipeline = infer_pipeline_type()
+            Thunderline.Thunderflow.PipelineTelemetry.record_failure(
+              pipeline,
+              {:batch_exception, e.__struct__},
+              nil,
+              :batcher
             )
 
             Logger.error(
@@ -290,6 +308,16 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
           },
           meta: error_metadata
         }
+
+        # Record pipeline failure telemetry
+        pipeline = infer_pipeline_type()
+        event_name = extract_event_name(message.data)
+        Thunderline.Thunderflow.PipelineTelemetry.record_failure(
+          pipeline,
+          message.status,
+          event_name,
+          :processor
+        )
 
         case Event.new(dlq_attrs) do
           {:ok, dlq_event} ->
@@ -388,6 +416,25 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
       defp extract_event_id(%{id: id}), do: id
       defp extract_event_id(%{"id" => id}), do: id
       defp extract_event_id(_), do: nil
+
+      defp extract_event_name(%Event{name: name}), do: name
+      defp extract_event_name(%{name: name}), do: name
+      defp extract_event_name(%{"name" => name}), do: name
+      defp extract_event_name(_), do: nil
+
+      # Infer pipeline type from processor name
+      # Follows naming convention: realtime_ prefix = :realtime, cross_domain_ = :cross_domain
+      defp infer_pipeline_type do
+        name_str = Atom.to_string(@__dp_name)
+
+        cond do
+          String.starts_with?(name_str, "realtime_") -> :realtime
+          String.starts_with?(name_str, "cross_domain_") -> :cross_domain
+          String.starts_with?(name_str, "priority_") -> :realtime
+          String.starts_with?(name_str, "batch_") -> :general
+          true -> :general
+        end
+      end
 
       # --- Telemetry Prefix Override ---
 
