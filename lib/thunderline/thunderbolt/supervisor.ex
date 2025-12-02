@@ -24,9 +24,10 @@ defmodule Thunderline.Thunderbolt.Supervisor do
 
   @impl Supervisor
   def init(_init_arg) do
-    # Bolt children will be started post-activation if needed
-    # For now, minimal supervision
-    children = []
+    # Core Bolt children - StreamManager provides PubSub bridging
+    children = [
+      Thunderline.Thunderbolt.StreamManager
+    ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end
@@ -45,19 +46,23 @@ defmodule Thunderline.Thunderbolt.Supervisor do
       "[ThunderBolt] ⚡ BOLT CHARGED - Orchestration & CA Engine Online at tick #{tick_count}"
     )
 
+    # Ensure StreamManager stats table is initialized
+    Thunderline.Thunderbolt.StreamManager.init_stats()
+
     state = %{
       activated_at: tick_count,
       started_at: DateTime.utc_now(),
       ca_engine_ready: true,
       lanes_initialized: false,
       workflows_active: 0,
-      tick_count: tick_count
+      tick_count: tick_count,
+      stream_manager_ready: true
     }
 
     :telemetry.execute(
       [:thunderline, :thunderbolt, :activated],
       %{tick: tick_count},
-      %{domain: "thunderbolt", engines: ["ca", "dag", "lanes"]}
+      %{domain: "thunderbolt", engines: ["ca", "dag", "lanes", "stream_manager"]}
     )
 
     {:ok, state}
