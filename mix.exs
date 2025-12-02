@@ -137,6 +137,8 @@ defmodule Thunderline.MixProject do
       {:cloak, "~> 1.0"},
       # Crypto / JOSE (Ed25519 capability & policy signature stack)
       {:jose, "~> 1.11"},
+      # ULID (time-sortable IDs for Thunderbits/Thundercells/Events)
+      {:ecto_ulid_next, "~> 1.0"},
       # ECS & GraphQL
       {:ecsx, "~> 0.5"},
       {:absinthe, "~> 1.7"},
