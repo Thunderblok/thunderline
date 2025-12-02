@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Thunderline.Flags.Audit do
   against configured flags in `:thunderline, :features`.
 
   ## Output
-  
+
   Displays:
     * All configured feature flags with their current values
     * All Feature.enabled?/1,2 calls found in code with locations
