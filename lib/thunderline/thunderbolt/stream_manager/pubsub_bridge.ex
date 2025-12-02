@@ -139,17 +139,31 @@ defmodule Thunderline.Thunderbolt.StreamManager.PubSubBridge do
 
   ## Private helpers
 
+  # Stream inference patterns - ordered by priority
+  @stream_patterns [
+    {"chunk", :chunk_updates},
+    {"topology", :topology_events},
+    {"ml", :ml_events},
+    {"model", :ml_events},
+    {"lane", :lane_events},
+    {"ca", :ca_events},
+    {"automata", :ca_events},
+    {"alert", :alerts},
+    {"error", :alerts}
+  ]
+
   defp infer_stream_from_event(event_type) do
     event_str = Atom.to_string(event_type)
+    find_matching_stream(event_str, @stream_patterns)
+  end
 
-    cond do
-      String.contains?(event_str, "chunk") -> :chunk_updates
-      String.contains?(event_str, "topology") -> :topology_events
-      String.contains?(event_str, "ml") or String.contains?(event_str, "model") -> :ml_events
-      String.contains?(event_str, "lane") -> :lane_events
-      String.contains?(event_str, "ca") or String.contains?(event_str, "automata") -> :ca_events
-      String.contains?(event_str, "alert") or String.contains?(event_str, "error") -> :alerts
-      true -> :general
+  defp find_matching_stream(_event_str, []), do: :general
+
+  defp find_matching_stream(event_str, [{pattern, stream} | rest]) do
+    if String.contains?(event_str, pattern) do
+      stream
+    else
+      find_matching_stream(event_str, rest)
     end
   end
 
