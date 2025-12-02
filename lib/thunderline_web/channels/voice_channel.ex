@@ -176,7 +176,7 @@ defmodule ThunderlineWeb.VoiceChannel do
       socket.assigns[:current_scope] -> socket.assigns.current_scope.user.id
       socket.assigns[:actor_ctx] -> socket.assigns.actor_ctx.actor_id
       socket.assigns[:user_id] -> socket.assigns.user_id
-      true -> UUID.uuid4()
+      true -> Thunderline.UUID.v7()
     end
   end
 

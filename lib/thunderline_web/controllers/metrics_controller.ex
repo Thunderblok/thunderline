@@ -34,7 +34,8 @@ defmodule ThunderlineWeb.MetricsController do
       generate_system_metrics(system_metrics),
       generate_event_metrics(event_metrics),
       generate_agent_metrics(agent_metrics),
-      generate_domain_metrics()
+      generate_domain_metrics(),
+      generate_oban_metrics()
     ]
     |> Enum.join("\n")
   end
@@ -164,4 +165,75 @@ defmodule ThunderlineWeb.MetricsController do
   end
 
   defp format_prometheus_value(_), do: 0
+
+  defp generate_oban_metrics do
+    import Ecto.Query, only: [from: 2]
+
+    queues = Application.get_env(:thunderline, Oban, [])[:queues] || []
+
+    queue_metrics =
+      for {queue_name, _opts} <- queues do
+        counts = get_oban_queue_counts(queue_name)
+
+        """
+        # HELP thunderline_oban_queue_available Jobs available in #{queue_name}
+        # TYPE thunderline_oban_queue_available gauge
+        thunderline_oban_queue_available{queue="#{queue_name}"} #{counts.available}
+
+        # HELP thunderline_oban_queue_executing Jobs executing in #{queue_name}
+        # TYPE thunderline_oban_queue_executing gauge
+        thunderline_oban_queue_executing{queue="#{queue_name}"} #{counts.executing}
+
+        # HELP thunderline_oban_queue_scheduled Jobs scheduled in #{queue_name}
+        # TYPE thunderline_oban_queue_scheduled gauge
+        thunderline_oban_queue_scheduled{queue="#{queue_name}"} #{counts.scheduled}
+
+        # HELP thunderline_oban_queue_retryable Jobs retryable in #{queue_name}
+        # TYPE thunderline_oban_queue_retryable gauge
+        thunderline_oban_queue_retryable{queue="#{queue_name}"} #{counts.retryable}
+        """
+      end
+
+    # Also get telemetry stats from the Oban telemetry module
+    oban_stats = Thunderline.Thunderflow.Telemetry.Oban.stats()
+
+    [
+      """
+      # HELP thunderline_oban_telemetry_events_total Total Oban telemetry events captured
+      # TYPE thunderline_oban_telemetry_events_total counter
+      thunderline_oban_telemetry_events_total #{oban_stats.total}
+      """
+      | queue_metrics
+    ]
+    |> Enum.join("\n")
+  rescue
+    _ -> ""
+  end
+
+  defp get_oban_queue_counts(queue_name) do
+    import Ecto.Query, only: [from: 2]
+
+    queue_str = to_string(queue_name)
+
+    try do
+      counts =
+        from(j in "oban_jobs",
+          where: j.queue == ^queue_str,
+          group_by: j.state,
+          select: {j.state, count(j.id)}
+        )
+        |> Thunderline.Repo.all()
+        |> Map.new()
+
+      %{
+        available: Map.get(counts, "available", 0),
+        executing: Map.get(counts, "executing", 0),
+        scheduled: Map.get(counts, "scheduled", 0),
+        retryable: Map.get(counts, "retryable", 0)
+      }
+    rescue
+      _ ->
+        %{available: 0, executing: 0, scheduled: 0, retryable: 0}
+    end
+  end
 end

@@ -181,5 +181,5 @@ defmodule Thunderline.Thundercrown.Action do
     e -> Logger.warning("Failed to emit action event #{envelope.name}: #{inspect(e)}")
   end
 
-  defp uuid, do: UUID.uuid4()
+  defp uuid, do: Thunderline.UUID.v7()
 end

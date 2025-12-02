@@ -899,7 +899,7 @@ defmodule ThunderlineWeb.DashboardLive do
     |> assign(:profile_updates, [])
     # Ensure current_user comes from Auth hook; fallback to a demo actor if absent
     |> assign_new(:current_user, fn ->
-      %{id: UUID.uuid4(), name: "Thunder Operator", role: :owner, tenant_id: "demo"}
+      %{id: Thunderline.UUID.v7(), name: "Thunder Operator", role: :owner, tenant_id: "demo"}
     end)
     # Add the 8 critical dashboard component data
     |> assign(:system_health, %{})

@@ -22,8 +22,6 @@ defmodule Thunderline.Event do
     * :taxonomy_version (default 1)
     * :priority (legacy priority still honored)
     * :meta (map)
-
-  NOTE: UUID v7 not yet supplied by dependencies; v4 used as interim (TODO: replace when lib available).
   """
 
   @type priority :: :low | :normal | :high | :critical

@@ -104,7 +104,7 @@ defmodule Thunderline.Thunderbolt.Resources.MagMacroCommand do
     |> Enum.with_index(1)
     |> Enum.map(fn {character, sequence} ->
       %{
-        task_id: UUID.uuid4(),
+        task_id: Thunderline.UUID.v7(),
         task_type: :type_letter,
         value: character,
         sequence: sequence,

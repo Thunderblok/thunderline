@@ -64,9 +64,11 @@ Thunderline is architected around **twelve specialized domains** (the "Pantheon"
 - **ThunderVine** *(#9)*: DAG workflows, orchestration edges, TAK persistence
 - **ThunderPrism** *(#10)*: ML decision trails, UX cognition layer
 - **ThunderLink** *(#11)*: Federation protocols, WebRTC, inter-system communication
-
-#### Pending Domains
 - **ThunderPac** *(#2)*: PAC lifecycle, state containers, role/intent management
+
+#### Recent Additions
+- **Thunderbit Category Protocol** *(HC-Δ-5)*: Executable ontology with 8 categories, spawnable computational building blocks
+- **Thunderfield** *(HC-Δ-5.3)*: Real-time LiveView visualization of Thunderbit graphs
 
 (See `docs/architecture/THUNDERLINE_DOMAIN_CATALOG.md` for the full domain inventory)
 

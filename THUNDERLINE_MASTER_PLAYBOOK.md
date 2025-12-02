@@ -3499,11 +3499,11 @@ _Status legend: [x] done · [ ] pending · [~] scaffolded / partial_
 33. [ ] Gate `Thundercrown.AgentRunner` via ThunderGate policy; call AshAI/Jido actions.
 34. [~] Reintroduce Jido/Bumblebee serving supervisor + echo fallback (scaffolded; needs validation/tests).
 35. [ ] Expand `Thundercrown.McpBus` docs + CLI examples.
-36. [ ] Swap `Thunderline.Thunderflow.Event` UUID fallback to UUID v7 provider.
-37. [ ] Ship `mix thunderline.flags.audit` to verify feature usage vs config.
+36. [x] Swap `Thunderline.Thunderflow.Event` UUID fallback to UUID v7 provider. _(Completed: Event already uses `Thunderline.UUID.v7()`. Migrated 4 other files: voice_channel, action, dashboard_live, mag_macro_command. Removed stale TODO comment.)_
+37. [x] Ship `mix thunderline.flags.audit` to verify feature usage vs config. _(Completed: Full implementation with config scanning, code usage detection, undocumented/unused flag warnings, --json and --strict modes for CI.)_
 38. [x] Harden telemetry boot when `:opentelemetry_exporter` missing.
-39. [ ] Add StreamManager + Oban counters to LiveDashboard / Grafana JSON.
-40. [ ] Update `THUNDERLINE_DOMAIN_CATALOG.md` + README with new guards and progress.
+39. [x] Add StreamManager + Oban counters to LiveDashboard / Grafana JSON. _(Completed: Oban job metrics (start/stop/exception) + queue depth gauges added to ThunderlineWeb.Telemetry for LiveDashboard; Prometheus endpoint extended with per-queue available/executing/scheduled/retryable gauges. StreamManager deferred—module doesn't exist yet, see #19.)_
+40. [x] Update `THUNDERLINE_DOMAIN_CATALOG.md` + README with new guards and progress. _(Completed: Updated domain catalog for 12-Domain Pantheon completion—ThunderCore/Pac/Wall marked active, Thunderbit subsystem documented (11 modules), Thunderfield LiveView added. README updated with ThunderPac in active list, HC-Δ-5/5.3 additions. Stats: ~175 resources, all 12 domains now active.)_
 
 #### High Command Directive – Event→Model Flow (Sep 26 2025)
 

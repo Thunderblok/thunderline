@@ -47,6 +47,44 @@ defmodule ThunderlineWeb.Telemetry do
       summary("vm.total_run_queue_lengths.cpu"),
       summary("vm.total_run_queue_lengths.io"),
 
+      # Oban Job Metrics (exposed via LiveDashboard)
+      counter("oban.job.start",
+        event_name: [:oban, :job, :start],
+        tags: [:queue, :worker],
+        measurement: :system_time,
+        description: "Oban job executions started"
+      ),
+      summary("oban.job.stop.duration",
+        event_name: [:oban, :job, :stop],
+        unit: {:native, :millisecond},
+        tags: [:queue, :worker, :state],
+        description: "Oban job execution duration"
+      ),
+      counter("oban.job.exception",
+        event_name: [:oban, :job, :exception],
+        tags: [:queue, :worker, :kind],
+        measurement: :duration,
+        description: "Oban job exceptions"
+      ),
+
+      # Oban Queue Depth Gauges (polled periodically)
+      last_value("thunderline.oban.queue.available",
+        description: "Jobs available in Oban queue",
+        tags: [:queue]
+      ),
+      last_value("thunderline.oban.queue.executing",
+        description: "Jobs currently executing in Oban queue",
+        tags: [:queue]
+      ),
+      last_value("thunderline.oban.queue.scheduled",
+        description: "Jobs scheduled for future execution",
+        tags: [:queue]
+      ),
+      last_value("thunderline.oban.queue.retryable",
+        description: "Jobs pending retry in Oban queue",
+        tags: [:queue]
+      ),
+
       # Thunderline Custom Metrics
       last_value("thunderline.agents.active"),
       last_value("thunderline.chunks.total"),
@@ -91,7 +129,8 @@ defmodule ThunderlineWeb.Telemetry do
       # This function must call :telemetry.execute/3 and a metric must be added above.
       {__MODULE__, :dispatch_system_metrics, []},
       {__MODULE__, :dispatch_memory_metrics, []},
-      {__MODULE__, :dispatch_agent_metrics, []}
+      {__MODULE__, :dispatch_agent_metrics, []},
+      {__MODULE__, :dispatch_oban_queue_metrics, []}
     ]
   end
 
@@ -144,6 +183,60 @@ defmodule ThunderlineWeb.Telemetry do
   end
 
   defp mock_chunk_total, do: :rand.uniform(1000)
+
+  @doc """
+  Dispatch Oban queue depth metrics for LiveDashboard.
+
+  Polls all configured Oban queues and emits gauge metrics for each state.
+  Safe to call even when Oban is not running - returns zeros.
+  """
+  def dispatch_oban_queue_metrics do
+    queues = Application.get_env(:thunderline, Oban, [])[:queues] || []
+
+    for {queue_name, _opts} <- queues do
+      counts = get_oban_queue_counts(queue_name)
+
+      :telemetry.execute(
+        [:thunderline, :oban, :queue],
+        %{
+          available: counts.available,
+          executing: counts.executing,
+          scheduled: counts.scheduled,
+          retryable: counts.retryable
+        },
+        %{queue: queue_name}
+      )
+    end
+  rescue
+    _ -> :ok
+  end
+
+  defp get_oban_queue_counts(queue_name) do
+    import Ecto.Query, only: [from: 2]
+
+    queue_str = to_string(queue_name)
+
+    try do
+      counts =
+        from(j in "oban_jobs",
+          where: j.queue == ^queue_str,
+          group_by: j.state,
+          select: {j.state, count(j.id)}
+        )
+        |> Thunderline.Repo.all()
+        |> Map.new()
+
+      %{
+        available: Map.get(counts, "available", 0),
+        executing: Map.get(counts, "executing", 0),
+        scheduled: Map.get(counts, "scheduled", 0),
+        retryable: Map.get(counts, "retryable", 0)
+      }
+    rescue
+      _ ->
+        %{available: 0, executing: 0, scheduled: 0, retryable: 0}
+    end
+  end
 
   @doc """
   Gate authentication telemetry event documentation.

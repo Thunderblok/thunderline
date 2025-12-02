@@ -1,13 +1,14 @@
 # Thunderline Domain Catalog  
-**Audit Date:** November 28, 2025  
+**Audit Date:** December 2025  
 **Auditor:** Domain Architecture Review Team  
-**Status:** ✅ UPDATED – 12-Domain Pantheon architecture defined  
+**Status:** ✅ 12-Domain Pantheon COMPLETE – All domains active  
 **Review Report:** See `DOMAIN_ARCHITECTURE_REVIEW.md` and `COMPREHENSIVE_DOMAIN_ARCHITECTURE_ANALYSIS.md`  
 **Overall Architecture Grade:** A (9/10)  
-**Total Resources:** ~165 Ash resources across all domains  
+**Total Resources:** ~175 Ash resources across all domains  
 **Canonical Domains:** 12 (Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall)  
 **Active Domains:** 12 (Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall)  
-**Pending Domains:** 1 (Pac - HC-47)
+**Pending Domains:** 0  
+**New Subsystems:** Thunderbit Category Protocol (HC-Δ-5), Thunderfield UI (HC-Δ-5.3)
 
 ---
 
@@ -16,7 +17,7 @@
 | # | Domain | Focus | Status |
 |---|--------|-------|--------|
 | 1️⃣ | **Thundercore** | Tick emanation, system clock, identity kernel, PAC ignition | ✅ Active (3) |
-| 2️⃣ | **Thunderpac** | PAC lifecycle, state containers, role/intent management | 🆕 HC-47 |
+| 2️⃣ | **Thunderpac** | PAC lifecycle, state containers, role/intent management | ✅ Active (6) |
 | 3️⃣ | **Thundercrown** | Governance + Orchestration, policy, authorization, saga coordination | ✅ Active |
 | 4️⃣ | **Thunderbolt** | ML + Automata execution, loop monitors, CA, Cerebros, Sagas | ✅ Active (51+) |
 | 5️⃣ | **Thundergate** | Security, IAM, crypto, OAuth, boundaries, keys, rate limiting | ✅ Active (19) |
@@ -59,18 +60,65 @@
 
 ---
 
-### 🎭 ThunderPac Domain (PENDING - HC-47)
-- **Location:** `lib/thunderline/thunderpac/` (to be created)
+### ⚡ Thunderbit Subsystem (HC-Δ-5 Complete)
+- **Location:** `lib/thunderline/thunderbit/`
+- **Purpose:** Category Protocol - Executable ontology for computational building blocks
+- **Status:** ✅ ACTIVE – Core subsystem spanning ThunderCore and ThunderBolt
+- **Module Count:** **11 modules** (10 core + 1 resource)
+- **Origin:** HC-Δ-5 (Thunderbit Category Protocol) + HC-Ω (Upper Ontology)
+- **Core Modules:**
+  - `Category` - 8 core categories (sensory, cognitive, mnemonic, motor, social, ethical, perceptual, executive)
+  - `Protocol` - 7 protocol verbs (spawn, bind, link, step, retire, query, mutate)
+  - `Context` - Immutable context threading (bits_by_id, edges, event_log)
+  - `Edge` - Relationship management between Thunderbits
+  - `Wiring` - Category wiring rules and validation
+  - `Ethics` - Ethical constraint enforcement per category
+  - `Registry` - Thunderbit instance registry
+  - `UIContract` - PubSub bridge for LiveView visualization
+  - `IO` - Input/output handling
+  - `Demo` - Demo workflows for testing
+- **Resources:**
+  - `ThunderbitDefinition` - Ash resource for persistent Thunderbit definitions
+- **UI Integration:**
+  - **Thunderfield LiveView** (`ThunderlineWeb.ThunderfieldLive`) - Real-time visualization
+  - **PubSub Topic:** `thunderbits:lobby`
+  - **JS Hook:** Canvas-based bit/edge rendering
+- **Design Philosophy:**
+  - Context threading (never mutates global state)
+  - Monadic bind pattern for composition
+  - Category-aware wiring validation
+  - Ethics constraints per category
+- **Event Categories:** `bit.spawn.*`, `bit.link.*`, `bit.step.*`, `bit.retire.*`
+- **Cross-Domain Presence:**
+  - ThunderCore: `thunderbit.ex` (struct definitions), `ontology.ex` (Upper Ontology)
+  - ThunderBolt: `thunderbit.ex` (ML integration)
+  - ThunderGate: `ThunderbitMonitor` (monitoring resource)
+  - ThunderlineWeb: `ThunderfieldLive`, `Thunderfield` component, `ThunderbitAnalytics`
+- **Notes:** Thunderbit is the executable manifestation of the Upper Ontology - computational atoms that can be wired together following category rules. Designed for visual debugging via Thunderfield.
+
+---
+
+### 🎭 ThunderPac Domain (ACTIVE - HC-47 Complete)
+- **Location:** `lib/thunderline/thunderpac/`
 - **Purpose:** PAC lifecycle management, state containers, role/intent management
-- **Status:** 🆕 PENDING – Domain creation tracked in HC-47
+- **Status:** ✅ ACTIVE – Domain complete (HC-47)
 - **Pantheon Position:** #2 – Soul Container domain
-- **Planned Resources:**
+- **Resource Count:** **6 Ash Resources**
+- **Extensions:** AshAdmin.Domain, AshStateMachine
+- **Resources:**
   - `PAC` - Primary autonomous controller state container
   - `PACRole` - Role definitions and permissions
   - `PACIntent` - Intent management and tracking
-  - Lifecycle state machine: `:dormant`, `:active`, `:suspended`, `:archived`
-- **Migration Source:** Extract PAC-related resources from Thunderbolt/Thunderblock
-- **Event Categories:** `pac.lifecycle.*`, `pac.state.*`, `pac.intent.*`
+  - `PACEvolution` - Evolution tracking and versioning
+  - `PACState` - State snapshots and history
+  - `PACMetrics` - PAC performance and health metrics
+- **GenServers:**
+  - `Evolution` - Manages PAC evolution cycles
+- **Oban Workers:**
+  - `EvolutionWorker` - Background evolution processing
+  - `SyncWorker` - PAC state synchronization
+- **Lifecycle States:** `:dormant`, `:active`, `:suspended`, `:archived`
+- **Event Categories:** `pac.lifecycle.*`, `pac.state.*`, `pac.intent.*`, `pac.evolution.*`
 - **Symbolic Mapping:** Soul Container / Ascension Flow
 
 ---
@@ -691,22 +739,18 @@
 
 ---
 
-## Summary Statistics (12-Domain Pantheon - Nov 28, 2025)
+## Summary Statistics (12-Domain Pantheon - December 2025)
 
 | Classification | Count | Domains |
 |----------------|--------|----------|
-| ✅ Active (Core) | 8 | ThunderBlock (33), ThunderBolt (50+), ThunderCrown (4+Chief), ThunderFlow (9), ThunderGate (19), ThunderGrid (5), ThunderLink (17), ThunderPrism (2) |
-| ✅ Active (Support) | 2 | ThunderVine (6 resources), RAG (1 resource) |
-| 🆕 Pending (New) | 3 | ThunderCore (HC-46), ThunderPac (HC-47), ThunderWall (HC-48) |
-| ✅ Removed | 2 | ThunderForge (HC-30 cleanup - Nov 17, 2025), ThunderCom (HC-27/28 completion - Nov 18, 2025) |
-| ⚠️ Consolidated | 2 | ThunderChief (→ThunderCrown HC-49), ThunderWatch (→ThunderGate) |
+| ✅ Active (Core) | 12 | ThunderCore (3), ThunderPac (6), ThunderCrown (4+Chief), ThunderBolt (51+), ThunderGate (19), ThunderBlock (33), ThunderFlow (9), ThunderGrid (5), ThunderVine (6), ThunderPrism (2), ThunderLink (17), ThunderWall (3) |
+| ✅ Removed | 2 | ThunderForge (HC-30), ThunderCom (HC-27/28) |
+| ⚠️ Consolidated | 2 | ThunderChief (→ThunderCrown), ThunderWatch (→ThunderGate) |
 | ⚠️ Migration In Progress | 2 | ThunderJam (→ThunderGate.RateLimiting), ThunderClock (→ThunderBlock.Timing) |
 
-**12-Domain Pantheon Target:** Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall  
-**Currently Active:** 10 domains (Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, RAG)  
-**Pending Creation:** 3 domains (Core, Pac, Wall - HC-46/47/48)  
-**Total Ash Resources:** ~162 across all active domains  
-**Consolidation Status:** ThunderChief → ThunderCrown (HC-49 - pending completion)  
+**12-Domain Pantheon:** ✅ COMPLETE  
+**All Domains Active:** Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall  
+**Total Ash Resources:** ~175 across all active domains  
 
 **System Cycle Model:**
 - **Spark → Containment**: Core → Wall (full lifecycle)
@@ -714,7 +758,11 @@
 - **IO → Surface → UX**: Flow → Grid → Prism (events to interface)
 - **State → Persist → Orchestrate**: Pac → Block → Vine (lifecycle management)
 
-**Note:** Domain architecture transitioning from 8-domain legacy to 12-Domain Pantheon. See `THUNDERLINE_MASTER_PLAYBOOK.md` HC-46 through HC-49 for implementation plan.
+**Recent Additions (HC-Δ Series):**
+- **HC-Δ-5**: Thunderbit Category Protocol - executable ontology with 8 categories (10+ modules)
+- **HC-Δ-5.3**: Thunderfield MVP - real-time Thunderbit visualization via LiveView
+- **HC-Δ-7**: Thunderoll Hyperscale Optimizer - ML-driven scaling
+- **HC-Δ-1/2**: Thundervine DAG + Thundercrown Policy Engine enhancements
 
 ---
 
@@ -729,4 +777,4 @@
 
 ---
 
-**✅ Deliverable ready:** `docs: domain catalog updated for 12-Domain Pantheon (Nov 28, 2025)`
+**✅ Deliverable ready:** `docs: 12-Domain Pantheon complete, Thunderbit subsystem documented (Dec 2025)`
