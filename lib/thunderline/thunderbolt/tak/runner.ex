@@ -2,10 +2,15 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
   @moduledoc """
   TAK Runner - GPU-enhanced CA evolution streaming via PubSub.
 
+  Manages a cellular automata grid with optional GPU acceleration,
+  broadcasting deltas via PubSub for real-time visualization.
+  """
+
   use GenServer
   require Logger
 
   alias Thunderline.Thunderbolt.TAK
+  alias Thunderline.Thunderbolt.TAK.Grid
 
   @type runner_state :: %{
           run_id: String.t(),
@@ -19,7 +24,7 @@ defmodule Thunderline.Thunderbolt.TAK.Runner do
 
   # Client API
 
-  @doc \"""
+  @doc """
   Start a TAK runner process.
 
   ## Options

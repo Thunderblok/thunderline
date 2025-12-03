@@ -16,7 +16,7 @@ defmodule Thunderline.Repo.Migrations.AddChannelParticipants do
       add :last_active_at, :utc_datetime_usec, null: false
 
       add :channel_id, references(:thunderblock_channels, type: :uuid, on_delete: :delete_all), null: false
-      add :user_id, references(:vault_users, type: :uuid, on_delete: :delete_all), null: false
+      add :user_id, references(:users, type: :uuid, on_delete: :delete_all), null: false
 
       timestamps()
     end

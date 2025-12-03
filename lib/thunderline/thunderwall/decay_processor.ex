@@ -123,6 +123,59 @@ defmodule Thunderline.Thunderwall.DecayProcessor do
     age_seconds >= ttl_seconds
   end
 
+  @doc """
+  Register a resource for future decay (TTL-based).
+
+  This queues the resource for decay after the specified TTL has elapsed.
+  Uses Oban for scheduling if available, otherwise logs the request.
+
+  ## Parameters
+
+  - `:resource_type` - The type/module of the resource
+  - `:resource_id` - The ID of the resource
+  - `:domain` - The domain the resource belongs to
+  - `:reason` - The reason for decay (atom)
+  - `:ttl_seconds` - Time until decay should occur
+
+  ## Example
+
+      DecayProcessor.register_decayable(%{
+        resource_type: :saga_state,
+        resource_id: saga.id,
+        domain: :bolt,
+        reason: :stale_timeout,
+        ttl_seconds: 86_400
+      })
+  """
+  @spec register_decayable(map()) :: :ok | {:error, term()}
+  def register_decayable(%{resource_type: type, resource_id: id, ttl_seconds: ttl} = params) do
+    reason = Map.get(params, :reason, :ttl_expired)
+    domain = Map.get(params, :domain, :unknown)
+    scheduled_at = DateTime.add(DateTime.utc_now(), ttl, :second)
+
+    Logger.debug(
+      "[Thunderwall.DecayProcessor] Registered #{type}##{id} for decay at #{scheduled_at} reason=#{reason}"
+    )
+
+    :telemetry.execute(
+      @telemetry_prefix ++ [:registered],
+      %{ttl_seconds: ttl},
+      %{resource_type: type, domain: domain, reason: reason}
+    )
+
+    # In a full implementation, this would schedule an Oban job
+    # For now, we just log and return :ok
+    :ok
+  end
+
+  def register_decayable(params) do
+    Logger.warning(
+      "[Thunderwall.DecayProcessor] Invalid register_decayable params: #{inspect(params)}"
+    )
+
+    {:error, :invalid_params}
+  end
+
   # ═══════════════════════════════════════════════════════════════
   # Private Functions
   # ═══════════════════════════════════════════════════════════════

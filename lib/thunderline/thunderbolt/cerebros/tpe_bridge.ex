@@ -119,6 +119,12 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
   end
 
   @doc """
+  Alias for `suggest/1` - suggests parameters using TPE.
+  """
+  @spec suggest_params(GenServer.server()) :: {:ok, params()} | {:error, term()}
+  def suggest_params(server), do: suggest(server)
+
+  @doc """
   Records the result of evaluating a parameter set.
 
   ## Options
@@ -130,6 +136,23 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
   @spec record(GenServer.server(), params(), keyword()) :: :ok | {:error, term()}
   def record(server, params, opts) do
     GenServer.call(server, {:record, params, opts}, 30_000)
+  end
+
+  @doc """
+  Records a trial result with params and fitness value.
+  Convenience function that wraps `record/3`.
+  """
+  @spec record_trial(GenServer.server(), params(), float()) :: :ok | {:error, term()}
+  def record_trial(server, params, fitness) when is_number(fitness) do
+    record(server, params, fitness: fitness)
+  end
+
+  @doc """
+  Resets the optimization state, clearing trial history.
+  """
+  @spec reset(GenServer.server()) :: :ok | {:error, term()}
+  def reset(server) do
+    GenServer.call(server, :reset, 30_000)
   end
 
   @doc """
@@ -287,6 +310,22 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
     else
       {:reply, {:error, :no_trials}, state}
     end
+  end
+
+  @impl true
+  def handle_call(:reset, _from, state) do
+    Logger.info("[TPEBridge] Resetting optimization state for #{state.run_id}")
+
+    new_state = %{
+      state
+      | completed_trials: 0,
+        best_params: nil,
+        best_fitness: :neg_infinity,
+        history: []
+    }
+
+    emit_event("bolt.tpe.study.reset", %{run_id: state.run_id})
+    {:reply, :ok, new_state}
   end
 
   @impl true

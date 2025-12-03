@@ -544,13 +544,15 @@ defmodule Thunderline.Thunderbolt.Resources.ResourceAllocation do
 
     # Publish to event bus for cross-domain visibility
     case Thunderline.Thunderflow.EventBus.publish_event(%{
-      name: "thunderbolt.orchestration.resource_allocated",
-      source: :thunderbolt,
-      payload: event_attrs,
-      priority: :normal,
-      meta: %{pipeline: :general, correlation_id: allocation.id}
-    }) do
-      {:ok, _event} -> {:ok, allocation}
+           name: "thunderbolt.orchestration.resource_allocated",
+           source: :thunderbolt,
+           payload: event_attrs,
+           priority: :normal,
+           meta: %{pipeline: :general, correlation_id: allocation.id}
+         }) do
+      {:ok, _event} ->
+        {:ok, allocation}
+
       {:error, reason} ->
         # Log but don't fail the allocation operation
         require Logger

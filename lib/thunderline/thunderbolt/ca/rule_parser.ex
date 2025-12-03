@@ -1,5 +1,8 @@
 defmodule Thunderline.Thunderbolt.CA.RuleParser do
   @moduledoc "Parser for concise CA rule specification lines using NimbleParsec. Canonical module under Thunderbolt domain."
+
+  require Logger
+
   import NimbleParsec
 
   defstruct born: [], survive: [], rate_hz: 30, seed: nil, zone: nil, rest: nil

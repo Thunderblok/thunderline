@@ -112,8 +112,8 @@ defmodule ThunderlineWeb.TrialDashboardLive do
   defp load_model_runs(socket) do
     query =
       ModelRun
-      |> Query.sort(inserted_at: :desc)
-      |> Query.limit(20)
+      |> Ash.Query.sort(inserted_at: :desc)
+      |> Ash.Query.limit(20)
 
     case Ash.read(query) do
       {:ok, runs} ->
@@ -139,9 +139,9 @@ defmodule ThunderlineWeb.TrialDashboardLive do
   defp load_trials(socket, run_id) do
     query =
       ModelTrial
-      |> Query.filter(model_run_id: run_id)
-      |> Query.sort(inserted_at: :desc)
-      |> Query.load(:mlflow_run)
+      |> Ash.Query.filter(model_run_id: run_id)
+      |> Ash.Query.sort(inserted_at: :desc)
+      |> Ash.Query.load(:mlflow_run)
 
     case Ash.read(query) do
       {:ok, trials} ->

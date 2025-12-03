@@ -61,6 +61,50 @@ defmodule Thunderline.Thunderwall.OverflowHandler do
     GenServer.call(server, {:overflow, source_domain, item, reason})
   end
 
+  @doc """
+  Route a rejected resource to the overflow handler.
+
+  Convenience function that accepts a map of rejection details and
+  routes them to the overflow handler for processing.
+
+  ## Parameters
+
+  - `:source_domain` - The domain the resource came from
+  - `:resource_type` - The type/module of the resource
+  - `:resource_id` - The ID of the resource
+  - `:reason` - The reason for rejection (atom)
+  - `:payload` - Optional additional data about the rejection
+
+  ## Example
+
+      OverflowHandler.route_reject(%{
+        source_domain: :bolt,
+        resource_type: :saga_state,
+        resource_id: saga.id,
+        reason: :stale_timeout,
+        payload: %{saga_module: SomeModule}
+      })
+  """
+  @spec route_reject(map()) :: :ok | {:error, term()}
+  def route_reject(%{source_domain: domain, reason: reason} = params) do
+    item = %{
+      resource_type: Map.get(params, :resource_type, :unknown),
+      resource_id: Map.get(params, :resource_id),
+      payload: Map.get(params, :payload, %{}),
+      rejected_at: DateTime.utc_now()
+    }
+
+    handle_overflow(domain, item, reason)
+  end
+
+  def route_reject(params) do
+    Logger.warning(
+      "[Thunderwall.OverflowHandler] Invalid route_reject params: #{inspect(params)}"
+    )
+
+    {:error, :invalid_params}
+  end
+
   @doc "Get overflow statistics."
   @spec stats(GenServer.server()) :: map()
   def stats(server \\ __MODULE__) do

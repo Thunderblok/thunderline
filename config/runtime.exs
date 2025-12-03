@@ -223,21 +223,23 @@ end
 
 # ------------------------------------------------------------
 # Oban Configuration (Runtime)
-# Configured at runtime to prevent Ecto.Repo.Registry race condition.
-# The peer option with start_delay ensures Oban waits for Repo to be ready.
-# Set TL_ENABLE_OBAN=1 or CEREBROS_ENABLED=1 to enable.
+# NOTE: test.exs sets up Oban in :manual testing mode via compile-time config.
+# We only override Oban config in non-test environments.
+# Set TL_ENABLE_OBAN=1 or CEREBROS_ENABLED=1 to enable in dev/prod.
 # ------------------------------------------------------------
-oban_enabled =
-  System.get_env("TL_ENABLE_OBAN") in ["1", "true", "TRUE"] or
-    System.get_env("CEREBROS_ENABLED") in ["1", "true", "TRUE"]
+if config_env() != :test do
+  oban_enabled =
+    System.get_env("TL_ENABLE_OBAN") in ["1", "true", "TRUE"] or
+      System.get_env("CEREBROS_ENABLED") in ["1", "true", "TRUE"]
 
-if oban_enabled and config_env() != :test do
-  config :thunderline, Oban,
-    repo: Thunderline.Repo,
-    queues: [cerebros_training: 10],
-    plugins: []
-else
-  config :thunderline, Oban, false
+  if oban_enabled do
+    config :thunderline, Oban,
+      repo: Thunderline.Repo,
+      queues: [cerebros_training: 10],
+      plugins: []
+  else
+    config :thunderline, Oban, false
+  end
 end
 
 if config_env() == :prod do

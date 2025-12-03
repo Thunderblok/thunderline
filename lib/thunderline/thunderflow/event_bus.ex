@@ -81,6 +81,14 @@ defmodule Thunderline.Thunderflow.EventBus do
     end
   end
 
+  # Accept maps and convert to Event structs for backwards compatibility
+  def publish_event(%{} = attrs) when not is_struct(attrs) do
+    case Thunderline.Event.new(attrs) do
+      {:ok, event} -> publish_event(event)
+      {:error, reason} -> {:error, {:event_creation_failed, reason}}
+    end
+  end
+
   def publish_event(other), do: {:error, {:unsupported_event, other}}
 
   @spec publish_event!(Thunderline.Event.t()) :: Thunderline.Event.t() | no_return()

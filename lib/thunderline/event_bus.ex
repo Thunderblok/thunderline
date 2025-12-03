@@ -11,6 +11,7 @@ defmodule Thunderline.EventBus do
   @doc """
   Publish an event to the Thunderline event system.
 
+  Accepts either a `Thunderline.Event` struct or a map with event attributes.
   Returns `{:ok, event}` on success or `{:error, reason}` on failure.
 
   ## Examples
@@ -19,8 +20,11 @@ defmodule Thunderline.EventBus do
       iex> Thunderline.EventBus.publish_event(event)
       {:ok, %Thunderline.Event{}}
 
+      iex> Thunderline.EventBus.publish_event(%{name: "test.event", source: :flow, payload: %{}})
+      {:ok, %Thunderline.Event{}}
+
   """
-  @spec publish_event(Thunderline.Event.t()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
+  @spec publish_event(Thunderline.Event.t() | map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
   defdelegate publish_event(event), to: Thunderline.Thunderflow.EventBus
 
   @doc """
