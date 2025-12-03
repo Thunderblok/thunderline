@@ -180,8 +180,9 @@ defmodule Thunderline.Thunderpac.Workers.EvolutionWorker do
     # Try to fetch from Thunderflow event buffer
     # This is a simplified implementation - in production, query the event store
     try do
+      # EventBuffer.snapshot/1 returns up to N recent events (default 100)
       events =
-        Thunderline.Thunderflow.EventBuffer.recent()
+        Thunderline.Thunderflow.EventBuffer.snapshot()
         |> Enum.filter(fn event ->
           is_reflex_event?(event) and
             matches_pac?(event, pac_id) and

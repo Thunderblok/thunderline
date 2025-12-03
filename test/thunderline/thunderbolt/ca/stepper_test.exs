@@ -189,4 +189,241 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
       assert length(all_deltas) == 5
     end
   end
+
+  # ═══════════════════════════════════════════════════════════════
+  # Feature Extraction Tests (HC-Δ-3)
+  # ═══════════════════════════════════════════════════════════════
+
+  describe "extract_features/1" do
+    test "returns empty features for empty delta list" do
+      features = Stepper.extract_features([])
+
+      assert features.mean_energy == 0.0
+      assert features.energy_variance == 0.0
+      assert features.mean_flow == 0.0
+      assert features.activation_count == 0
+      assert features.total_count == 0
+      assert features.state_distribution == %{}
+      assert features.mean_chaos == 0.0
+      assert features.phase_coherence == 1.0
+      assert features.spatial_centroid == nil
+      assert is_integer(features.timestamp)
+    end
+
+    test "computes mean_energy from Thunderbit deltas" do
+      deltas = [
+        %{energy: 0.8, flow: 0.5, state: :active, lambda: 0.2, phase: 0.0},
+        %{energy: 0.4, flow: 0.3, state: :stable, lambda: 0.1, phase: 0.0},
+        %{energy: 0.2, flow: 0.1, state: :dormant, lambda: 0.0, phase: 0.0}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Mean energy of 0.8, 0.4, 0.2 = 1.4/3 ≈ 0.4667
+      assert_in_delta features.mean_energy, 0.4667, 0.001
+      # Mean flow of 0.5, 0.3, 0.1 = 0.9/3 = 0.3
+      assert_in_delta features.mean_flow, 0.3, 0.001
+    end
+
+    test "computes mean_energy from legacy deltas with integer energy" do
+      deltas = [
+        %{energy: 80, state: :active},
+        %{energy: 40, state: :evolving},
+        %{energy: 20, state: :inactive}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Integer energies normalized: 80/100=0.8, 40/100=0.4, 20/100=0.2
+      # Mean = (0.8 + 0.4 + 0.2) / 3 ≈ 0.4667
+      assert_in_delta features.mean_energy, 0.4667, 0.001
+      # No flow field, so mean_flow defaults to 0.0
+      assert features.mean_flow == 0.0
+    end
+
+    test "computes energy_variance" do
+      deltas = [
+        %{energy: 1.0, state: :active},
+        %{energy: 0.5, state: :stable},
+        %{energy: 0.0, state: :inactive}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Mean = 0.5, variance = ((1-0.5)² + (0.5-0.5)² + (0-0.5)²) / 3 = 0.5/3 ≈ 0.1667
+      assert_in_delta features.energy_variance, 0.1667, 0.001
+    end
+
+    test "counts activations correctly" do
+      deltas = [
+        %{energy: 0.8, state: :active},
+        %{energy: 0.6, state: :stable},
+        %{energy: 0.3, state: :dormant},
+        %{energy: 0.1, state: :inactive},
+        %{energy: 0.9, state: :chaotic}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # active, stable, chaotic count as activations = 3
+      assert features.activation_count == 3
+      assert features.total_count == 5
+    end
+
+    test "computes state_distribution" do
+      deltas = [
+        %{energy: 0.8, state: :active},
+        %{energy: 0.6, state: :stable},
+        %{energy: 0.5, state: :stable},
+        %{energy: 0.1, state: :inactive}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      assert features.state_distribution == %{
+               active: 1,
+               stable: 2,
+               inactive: 1
+             }
+    end
+
+    test "computes mean_chaos from lambda values" do
+      deltas = [
+        %{energy: 0.5, state: :active, lambda: 0.6},
+        %{energy: 0.5, state: :stable, lambda: 0.4},
+        %{energy: 0.5, state: :dormant, lambda: 0.2}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Mean of 0.6, 0.4, 0.2 = 0.4
+      assert_in_delta features.mean_chaos, 0.4, 0.001
+    end
+
+    test "computes phase_coherence for aligned phases" do
+      # All phases at 0 = perfectly coherent
+      deltas = [
+        %{energy: 0.5, state: :active, phase: 0.0},
+        %{energy: 0.5, state: :stable, phase: 0.0},
+        %{energy: 0.5, state: :dormant, phase: 0.0}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Perfect coherence = 0.0
+      assert_in_delta features.phase_coherence, 0.0, 0.01
+    end
+
+    test "computes phase_coherence for random phases" do
+      # Uniformly distributed phases around circle
+      deltas = [
+        %{energy: 0.5, state: :active, phase: 0.0},
+        %{energy: 0.5, state: :stable, phase: :math.pi() * 2 / 3},
+        %{energy: 0.5, state: :dormant, phase: :math.pi() * 4 / 3}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Low coherence (but not exactly 1 due to finite sample)
+      assert features.phase_coherence > 0.8
+    end
+
+    test "computes spatial_centroid from x/y/z coordinates" do
+      deltas = [
+        %{x: 0, y: 0, z: 0, energy: 0.5, state: :active},
+        %{x: 2, y: 2, z: 2, energy: 0.5, state: :stable}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Center of mass with equal energy weights = (1.0, 1.0, 1.0)
+      assert features.spatial_centroid == {1.0, 1.0, 1.0}
+    end
+
+    test "computes weighted spatial_centroid" do
+      deltas = [
+        %{x: 0, y: 0, z: 0, energy: 0.25, state: :dormant},
+        %{x: 4, y: 4, z: 4, energy: 0.75, state: :active}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      # Weighted by energy: (0*0.25 + 4*0.75) / 1.0 = 3.0 for each axis
+      assert features.spatial_centroid == {3.0, 3.0, 3.0}
+    end
+
+    test "returns nil centroid when no coordinates present" do
+      deltas = [
+        %{energy: 0.5, state: :active},
+        %{energy: 0.5, state: :stable}
+      ]
+
+      features = Stepper.extract_features(deltas)
+
+      assert features.spatial_centroid == nil
+    end
+  end
+
+  describe "step_with_features/2" do
+    test "returns deltas, grid, and features in one call" do
+      grid = Stepper.create_thunderbit_grid(3, 3, 3)
+
+      {:ok, deltas, new_grid, features} = Stepper.step_with_features(grid, %{rule_id: :demo})
+
+      assert is_list(deltas)
+      assert length(deltas) == 27
+      assert new_grid.tick == 1
+
+      # Features should be computed from the deltas
+      assert features.total_count == 27
+      assert is_float(features.mean_energy)
+      assert is_float(features.mean_flow)
+      assert is_map(features.state_distribution)
+      assert is_integer(features.timestamp)
+    end
+
+    test "features reflect actual delta values" do
+      # Create a grid with known state
+      grid = Stepper.create_thunderbit_grid(2, 2, 2)
+
+      {:ok, deltas, _new_grid, features} = Stepper.step_with_features(grid, %{rule_id: :demo})
+
+      # Manually compute what features should be using :energy field
+      energies = Enum.map(deltas, & &1.energy)
+      expected_mean_energy = Enum.sum(energies) / length(energies)
+
+      assert_in_delta features.mean_energy, expected_mean_energy, 0.0001
+
+      # Also verify mean_flow
+      flows = Enum.map(deltas, & &1.flow)
+      expected_mean_flow = Enum.sum(flows) / length(flows)
+
+      assert_in_delta features.mean_flow, expected_mean_flow, 0.0001
+    end
+  end
+
+  describe "feature extraction integration" do
+    test "features evolve over multiple steps" do
+      grid = Stepper.create_thunderbit_grid(3, 3, 3)
+
+      # Run several steps and collect features
+      {_final_grid, feature_history} =
+        Enum.reduce(1..5, {grid, []}, fn _, {g, acc_features} ->
+          {:ok, _deltas, new_g, features} = Stepper.step_with_features(g, %{rule_id: :demo})
+          {new_g, [features | acc_features]}
+        end)
+
+      # Should have 5 feature snapshots
+      assert length(feature_history) == 5
+
+      # All should have valid structure
+      Enum.each(feature_history, fn f ->
+        assert is_float(f.mean_energy)
+        assert is_float(f.energy_variance)
+        assert is_float(f.mean_flow)
+        assert is_integer(f.activation_count)
+        assert is_map(f.state_distribution)
+      end)
+    end
+  end
 end

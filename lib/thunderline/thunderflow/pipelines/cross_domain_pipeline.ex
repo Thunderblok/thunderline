@@ -18,9 +18,9 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
       name: __MODULE__,
       producer: [
         module:
-          {Thunderflow.MnesiaProducer,
+          {Thunderline.Thunderflow.MnesiaProducer,
            [
-             table: Thunderflow.CrossDomainEvents,
+             table: Thunderline.Thunderflow.CrossDomainEvents,
              poll_interval: 800,
              max_batch_size: 40,
              broadway_name: __MODULE__

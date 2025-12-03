@@ -199,7 +199,7 @@
 | HC-17 | P2 | Federation Roadmap | ActivityPub phases vague | Draft phased activation doc | Gate | Not Started |
 | HC-18 | P2 | Performance Baselines | No perf guard in CI | Add benches + regression thresholds | Platform | Not Started |
 | HC-19 | P2 | Mobile Readiness | No offline/mobile doc | Draft sync/offline strategy | Link | Not Started |
-| HC-20 | P1 | Cerebros Bridge | No formal external core bridge boundary | Create gitignored mirror + API boundary doc + DIP | Bolt Steward | Not Started |
+| HC-20 | P1 | Cerebros Bridge | No formal external core bridge boundary | **In Progress** (Dec 2025) - Cerebros-mini MVP: `Feature.from_bit/1` (12-dim extraction), `Scorer.infer/1` (mock model), `Bridge.evaluate_and_apply/2` (unified pipeline), BitChief integration (`{:cerebros_evaluate, ...}` action). Remaining: real ML model, feature flag, dashboard. See §Cerebros-Mini MVP. | Bolt Steward | In Progress |
 | HC-21 | P1 | VIM Rollout Governance | Shadow telemetry & canary activation plan missing | Implement vim.* telemetry + rollout checklist | Flow + Bolt | Not Started |
 | HC-23 | P1 | Thundra/Nerves Integration | Multi-dimensional PAC execution engine (cloud + edge) needed for sovereign agent autonomy | Implement Thundra VM (tick-based voxelized cellular automata in Bolt, 12-zone hexagonal lattice), Nerves firmware template (mTLS enrollment via Gate, local PAC execution), device telemetry backhaul (Link TOCP transport), policy enforcement (Crown device manifests), event DAG traceability (correlation_id/causation_id lineage) | Bolt + Gate + Link + Crown Stewards | Not Started |
 | HC-24 | P1 | Sensor-to-STAC Pipeline | Complete sensor data to knowledge graph to tokenized reward pipeline undefined | Design and implement Thunderforge to Thunderblock flow: Thunderbit ingestion (Nerves devices), decode/assemble workers (Oban), PAC validation (6-dimensional policy checks), DAG commit (knowledge graph), STAC minting (reward function), staking mechanics (sSTAC/STACC), anti-grief patterns (novelty decay, collusion detection), observability (SLOs P50 under 150ms, P95 under 500ms, P99 under 2s). See documentation/architecture/sensor_to_stac_pipeline.md | Forge + Bolt + Block Stewards | Not Started |
@@ -4108,6 +4108,132 @@ Status summary for the ThunderBolt ML ledger, Cerebros bridge boundary, and NAS 
 4. Implement resilient search/exploration strategy (replace `simple_search.ex` stub) and feed outcomes back into trials queue.
 4. Publish walkthrough for executing NAS loop via Thunderhelm (Livebook → Cerebros runner → MLflow) including feature flag prerequisites.
 5. Add `mix thunderline.ml.validate` (planned) to verify bridge config, dataset availability, and event emission paths before enabling flag.
+
+---
+
+## 🧠 Cerebros-Mini MVP Implementation (Dec 2025)
+
+**HC-20 Progress**: Local scoring model for Thunderbit evaluation. Implements the Puppeteer (Thunderchief) + Mimas (Cerebros-mini) architecture layer.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      CEREBROS-MINI PIPELINE                                 │
+│                                                                             │
+│   Thunderbit ──┬── Feature.from_bit/1 ──► 12-dim vector                     │
+│                │                              │                             │
+│                │                              ▼                             │
+│                │                     Scorer.infer/1                         │
+│                │                              │                             │
+│                │                              ▼                             │
+│                │                     %{score, label, next_action}           │
+│                │                              │                             │
+│                └── Protocol.mutate ◄─────────┘                              │
+│                    (cerebros_score, cerebros_label, etc.)                   │
+│                                                                             │
+│   Orchestration: BitChief → {:cerebros_evaluate, %{batch_size: N}}          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Module Reference
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| `Thunderline.Cerebros.Mini.Feature` | `lib/thunderline/cerebros/mini/feature.ex` | 12-dimension feature extraction from Thunderbits |
+| `Thunderline.Cerebros.Mini.Scorer` | `lib/thunderline/cerebros/mini/scorer.ex` | Mock scoring model (deterministic, no real ML) |
+| `Thunderline.Cerebros.Mini.Bridge` | `lib/thunderline/cerebros/mini/bridge.ex` | Unified pipeline: evaluate, apply_result, health |
+
+### Feature Dimensions (12-D)
+
+| Index | Feature | Type | Source |
+|-------|---------|------|--------|
+| 0 | `bit_hash` | float | Hash of bit ID normalized to [0,1] |
+| 1 | `pac_hash` | float | Hash of PAC ID normalized to [0,1] |
+| 2 | `zone_idx` | int | Zone index (0-11) |
+| 3 | `category_idx` | int | Category enum index |
+| 4 | `energy` | float | Energy level [0,1] |
+| 5 | `age` | float | Time since creation (seconds) |
+| 6 | `health` | float | Health metric [0,1] |
+| 7 | `salience` | float | Salience score [0,1] |
+| 8 | `chain_depth` | int | DAG chain depth |
+| 9 | `role_idx` | int | Role enum index |
+| 10 | `status_idx` | int | Status enum index |
+| 11 | `link_count` | int | Number of linked entities |
+
+### Scorer Output Schema
+
+```elixir
+%{
+  score: 0.72,           # Float [0,1] - overall quality score
+  label: :high,          # :critical | :low | :medium | :high
+  next_action: :boost,   # :boost_energy | :consolidate | :retire | :activate | :flag_for_review | nil
+  confidence: 0.85       # Float [0,1] - model confidence
+}
+```
+
+**Label Thresholds**: `<0.2 = :critical`, `0.2-0.4 = :low`, `0.4-0.7 = :medium`, `>0.7 = :high`
+
+### BitChief Integration
+
+The `BitChief` domain orchestrator now includes Cerebros evaluation as an action:
+
+```elixir
+# Action selection priority (in choose_action/1):
+# 1. Consolidation actions (if consolidation_needed > 0)
+# 2. Cerebros evaluation (if needs_cerebros_eval > 0)  ← NEW
+# 3. Health actions (if health_critical > 0)
+# 4. ...other actions
+
+# Bits need evaluation if:
+# - explicitly flagged (needs_cerebros_eval?: true)
+# - never scored (cerebros_score == nil)
+# - stale evaluation (last_cerebros_eval > 5 minutes ago)
+```
+
+### Telemetry Events
+
+| Event | Measurements | Metadata |
+|-------|--------------|----------|
+| `[:thunderline, :cerebros, :mini, :evaluate]` | `duration_ms`, `score` | `bit_id`, `label`, `action` |
+| `[:thunderline, :cerebros, :mini, :batch]` | `duration_ms`, `count`, `avg_score` | `evaluated`, `failed` |
+| `[:thunderline, :cerebros, :mini, :evaluate_error]` | - | `bit_id`, `error` |
+
+### EventBus Events
+
+| Event Name | Source | Payload |
+|------------|--------|---------|
+| `cerebros.mini.evaluated` | `:cerebros` | `%{bit_id, score, label, action}` |
+| `cerebros.mini.batch_evaluated` | `:cerebros` | `%{count, avg_score}` |
+| `cerebros.mini.result_applied` | `:cerebros` | `%{bit_id, changes, action}` |
+
+### Usage Examples
+
+```elixir
+# Direct evaluation (no mutation)
+{:ok, result} = Thunderline.Cerebros.Mini.Bridge.evaluate(bit)
+# => {:ok, %{bit_id: "...", score: 0.72, label: :high, ...}}
+
+# Batch evaluation with mutation
+{:ok, results} = Thunderline.Cerebros.Mini.Bridge.evaluate_and_apply_batch(bits)
+# => {:ok, [%{bit_id: "...", applied: true, ...}, ...]}
+
+# Health check
+{:ok, status} = Thunderline.Cerebros.Mini.Bridge.health()
+# => {:ok, %{status: :healthy, model: "mock_v1", dimensions: 12, ...}}
+```
+
+### Outstanding Work (HC-20)
+
+1. ✅ Feature extraction module (`Feature.from_bit/1`)
+2. ✅ Mock scorer model (`Scorer.infer/1`)
+3. ✅ Bridge unified pipeline (`Bridge.evaluate_and_apply/2`)
+4. ✅ BitChief integration (`{:cerebros_evaluate, ...}` action)
+5. ⬜ Real ML model training (replace mock scorer)
+6. ⬜ Feature flag (`features.cerebros_mini`) for gradual rollout
+7. ⬜ LiveDashboard panel for Cerebros metrics
+8. ⬜ DIP documentation for external integrations
 
 ---
 

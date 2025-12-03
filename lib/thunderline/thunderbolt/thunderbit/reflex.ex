@@ -313,7 +313,7 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
       new_flow = max(0.0, min(1.0, new_flow))
 
       # Phase advancement
-      new_phase = Float.mod(bit.phi_phase + new_flow * 0.1, 2 * :math.pi())
+      new_phase = :math.fmod(bit.phi_phase + new_flow * 0.1, 2 * :math.pi())
 
       # Lambda sensitivity from variance
       variance =

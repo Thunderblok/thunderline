@@ -99,6 +99,14 @@ defmodule Thunderline.Thunderflow.EventBus do
     end
   end
 
+  # Accept maps and convert to Event structs for backwards compatibility
+  def publish_event!(%{} = attrs) when not is_struct(attrs) do
+    case publish_event(attrs) do
+      {:ok, ev} -> ev
+      {:error, reason} -> raise "invalid_event: #{inspect(reason)}"
+    end
+  end
+
   defp on_invalid(ev, reason, start) do
     :telemetry.execute(@telemetry_drop, %{count: 1}, %{reason: reason, name: ev.name})
     telemetry_publish(start, ev, :error, :invalid)

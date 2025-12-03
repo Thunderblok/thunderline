@@ -18,16 +18,16 @@ defmodule Thunderline.Thunderflow.MetricSources do
   @doc "Aggregate queue stats across event tables (general + real-time + cross-domain)."
   def queue_depths do
     tables = [
-      Thunderflow.MnesiaProducer,
-      Thunderflow.RealTimeEvents,
-      Thunderflow.CrossDomainEvents
+      Thunderline.Thunderflow.MnesiaProducer,
+      Thunderline.Thunderflow.RealTimeEvents,
+      Thunderline.Thunderflow.CrossDomainEvents
     ]
 
     Enum.reduce(
       tables,
       %{pending: 0, processing: 0, failed: 0, dead_letter: 0, total: 0},
       fn table, acc ->
-        stats = Thunderflow.MnesiaProducer.queue_stats(table)
+        stats = Thunderline.Thunderflow.MnesiaProducer.queue_stats(table)
         Map.merge(acc, stats, fn _k, v1, v2 -> v1 + v2 end)
       end
     )

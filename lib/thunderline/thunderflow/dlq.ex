@@ -118,6 +118,10 @@ defmodule Thunderline.Thunderflow.DLQ do
     try do
       :mnesia.table_info(table, :attributes)
       true
+    catch
+      # Mnesia uses exit/throw, not exceptions
+      :exit, {:aborted, {:no_exists, _, _}} -> false
+      :exit, _ -> false
     rescue
       _ -> false
     end

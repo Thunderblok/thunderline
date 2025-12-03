@@ -65,14 +65,16 @@ defmodule Thunderline.Thunderflow.EventBusTest do
   end
 
   describe "publish_event/1 with invalid input" do
-    test "returns {:error, :unsupported_event} for non-Event struct" do
+    test "returns {:error, :event_creation_failed} for non-Event struct map" do
+      # Maps are attempted to be converted via Event.new/1 for backwards compatibility
       result = EventBus.publish_event(%{not: "an event"})
-      assert {:error, {:unsupported_event, _}} = result
+      assert {:error, {:event_creation_failed, _reasons}} = result
     end
 
-    test "returns {:error, :unsupported_event} for plain map" do
+    test "returns {:error, :event_creation_failed} for incomplete map" do
+      # Missing required :source field causes Event.new/1 to fail validation
       result = EventBus.publish_event(%{name: "test", payload: %{}})
-      assert {:error, {:unsupported_event, _}} = result
+      assert {:error, {:event_creation_failed, _reasons}} = result
     end
 
     test "returns {:error, :unsupported_event} for nil" do

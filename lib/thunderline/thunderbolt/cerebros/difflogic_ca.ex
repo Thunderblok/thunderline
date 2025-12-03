@@ -573,7 +573,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
       new_flow = max(0.0, min(1.0, new_flow))
 
       # Advance phase
-      new_phase = Float.mod(bit.phi_phase + new_flow * 0.1, 2 * :math.pi())
+      new_phase = :math.fmod(bit.phi_phase + new_flow * 0.1, 2 * :math.pi())
 
       # Update lambda sensitivity based on variance
       variance =

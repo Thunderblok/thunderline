@@ -36,11 +36,13 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   alias Thunderline.Thunderbit.{Context, Category}
   alias Thunderline.Thunderchief.{State, Action}
+  alias Thunderline.Cerebros.Mini.Bridge, as: CerebrosBridge
 
   @categories [:sensory, :cognitive, :motor, :governance, :meta]
   @max_chain_depth 5
   @min_energy_threshold 0.3
   @consolidation_threshold 10
+  @cerebros_eval_batch_size 10
 
   # ===========================================================================
   # Behaviour Implementation
@@ -56,6 +58,9 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
     pending = count_pending(bits)
     active = count_active(bits)
 
+    # Count bits needing Cerebros evaluation
+    needs_cerebros_eval = count_needs_cerebros_eval(bits)
+
     # Calculate aggregate metrics
     total_energy = calculate_total_energy(bits)
     avg_energy = if length(bits) > 0, do: total_energy / length(bits), else: 1.0
@@ -68,6 +73,9 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
       active_count: active,
       total_bits: length(bits),
       cell_count: cell_count,
+
+      # Cerebros
+      needs_cerebros_eval: needs_cerebros_eval,
 
       # By category
       category_counts: category_counts,
@@ -97,6 +105,10 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
       # High priority: consolidate if chain too deep
       state.needs_consolidation ->
         {:ok, :consolidate}
+
+      # Cerebros evaluation: score bits needing eval
+      state.needs_cerebros_eval > 0 ->
+        {:ok, {:cerebros_evaluate, %{batch_size: @cerebros_eval_batch_size}}}
 
       # Energy critical: wait for recovery
       state.energy_level < @min_energy_threshold ->
@@ -174,7 +186,8 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
       {:activate_pending, %{strategy: :energy}},
       {:transition, :sensory},
       {:transition, :cognitive},
-      {:transition, :motor}
+      {:transition, :motor},
+      {:cerebros_evaluate, %{batch_size: @cerebros_eval_batch_size}}
     ]
   end
 
@@ -235,6 +248,36 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
     end)
 
     {:ok, %{ctx | bits_by_id: updated_bits}}
+  end
+
+  defp do_apply_action({:cerebros_evaluate, %{batch_size: batch_size}}, ctx) do
+    # Find bits needing Cerebros evaluation
+    bits_to_eval = ctx.bits_by_id
+                   |> Map.values()
+                   |> Enum.filter(&needs_cerebros_eval?/1)
+                   |> Enum.take(batch_size)
+
+    if length(bits_to_eval) > 0 do
+      case CerebrosBridge.evaluate_and_apply_batch(bits_to_eval, ctx) do
+        {:ok, updated_bits, updated_ctx} ->
+          # Update bits_by_id with evaluated bits
+          new_bits_by_id = Enum.reduce(updated_bits, updated_ctx.bits_by_id, fn bit, acc ->
+            Map.put(acc, bit.id, bit)
+          end)
+
+          updated = %{updated_ctx | bits_by_id: new_bits_by_id}
+          updated = update_in(updated.metadata[:cerebros_evals], &((&1 || 0) + length(updated_bits)))
+
+          Logger.debug("[BitChief] Cerebros evaluated #{length(updated_bits)} bits")
+          {:ok, updated}
+
+        {:error, reason} ->
+          Logger.warning("[BitChief] Cerebros evaluation failed: #{inspect(reason)}")
+          {:ok, ctx}  # Non-fatal, continue
+      end
+    else
+      {:ok, ctx}
+    end
   end
 
   defp do_apply_action(action, ctx) do
@@ -304,6 +347,40 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   defp count_active(bits) do
     Enum.count(bits, &(&1.status == :active))
+  end
+
+  defp count_needs_cerebros_eval(bits) do
+    Enum.count(bits, &needs_cerebros_eval?/1)
+  end
+
+  defp needs_cerebros_eval?(bit) do
+    # A bit needs Cerebros evaluation if:
+    # 1. It's newly spawned (no score yet)
+    # 2. It's been modified since last eval
+    # 3. It's explicitly flagged for re-evaluation
+
+    cond do
+      # Explicitly flagged
+      Map.get(bit, :needs_cerebros_eval?, false) == true -> true
+
+      # No score yet (never evaluated)
+      is_nil(Map.get(bit, :cerebros_score)) -> true
+
+      # Stale evaluation (older than 5 minutes)
+      stale_cerebros_eval?(bit) -> true
+
+      # Otherwise, no need
+      true -> false
+    end
+  end
+
+  defp stale_cerebros_eval?(bit) do
+    case Map.get(bit, :last_cerebros_eval) do
+      nil -> true
+      last_eval ->
+        age = DateTime.diff(DateTime.utc_now(), last_eval, :second)
+        age > 300  # 5 minutes
+    end
   end
 
   defp calculate_total_energy(bits) do

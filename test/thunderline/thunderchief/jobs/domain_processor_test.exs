@@ -1,10 +1,10 @@
 defmodule Thunderline.Thunderchief.Jobs.DomainProcessorTest do
   @moduledoc """
   Tests for the DomainProcessor Oban job.
-  
+
   Unit tests verify job construction and domain routing logic.
   Uses Oban.Testing for verifying job changesets without database insertion.
-  
+
   Note: enqueue/3 and enqueue_all/2 tests use perform_job/3 from Oban.Testing
   rather than actual database insertion to avoid sandbox/trigger issues.
   """
@@ -76,10 +76,10 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessorTest do
     # Note: We test the changeset construction since Oban.insert() requires
     # database triggers that aren't available in sandbox mode. Actual insertion
     # is tested via Oban.Testing.perform_job/3 which bypasses insertion.
-    
+
     test "builds valid changeset for a domain" do
       changeset = DomainProcessor.new(%{domain: "bit", context: %{tick: 1}})
-      
+
       assert changeset.valid?
       assert changeset.changes.args.domain == "bit"
       assert changeset.changes.args.context.tick == 1
@@ -98,7 +98,7 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessorTest do
     test "accepts scheduling options in changeset" do
       future = DateTime.add(DateTime.utc_now(), 3600, :second)
       changeset = DomainProcessor.new(%{domain: "ui"}, scheduled_at: future)
-      
+
       assert changeset.valid?
       assert changeset.changes.scheduled_at == future
     end
@@ -107,14 +107,14 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessorTest do
   describe "enqueue_all/2 - changeset construction" do
     test "builds changesets for all domains" do
       context = %{tick: 42, correlation_id: Thunderline.UUID.v7()}
-      
+
       # Test the underlying changeset creation logic
       changesets = for domain <- DomainProcessor.domains() do
         DomainProcessor.new(%{domain: domain, context: context})
       end
-      
+
       assert length(changesets) == 4
-      
+
       for cs <- changesets do
         assert cs.valid?
         assert cs.changes.args.context.tick == 42
@@ -123,7 +123,7 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessorTest do
 
     test "all changesets share the same context" do
       context = %{tick: 99, source: :test}
-      
+
       changesets = for domain <- DomainProcessor.domains() do
         DomainProcessor.new(%{domain: domain, context: context})
       end

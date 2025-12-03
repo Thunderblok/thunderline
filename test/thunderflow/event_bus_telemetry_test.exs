@@ -38,32 +38,32 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
        end}
     ]
 
-    # Attach all handlers
+    # Attach all handlers - use Enum.at since handlers is a list
     :telemetry.attach(
       :enqueue_handler,
       [:thunderline, :event, :enqueue],
-      elem(handlers, 0) |> elem(1),
+      Enum.at(handlers, 0) |> elem(1),
       nil
     )
 
     :telemetry.attach(
       :publish_handler,
       [:thunderline, :event, :publish],
-      elem(handlers, 1) |> elem(1),
+      Enum.at(handlers, 1) |> elem(1),
       nil
     )
 
     :telemetry.attach(
       :dropped_handler,
       [:thunderline, :event, :dropped],
-      elem(handlers, 2) |> elem(1),
+      Enum.at(handlers, 2) |> elem(1),
       nil
     )
 
     :telemetry.attach(
       :validated_handler,
       [:thunderline, :event, :validated],
-      elem(handlers, 3) |> elem(1),
+      Enum.at(handlers, 3) |> elem(1),
       nil
     )
 
@@ -182,10 +182,15 @@ defmodule Thunderline.Thunderflow.EventBusTelemetryTest do
         meta: %{}
       }
 
-      # This may return error due to validator
-      _result = EventBus.publish_event(invalid_event)
+      # In test mode, validator is configured to :raise, so we need to handle the exception.
+      # The telemetry is emitted BEFORE the raise, so we can still assert_receive it.
+      try do
+        EventBus.publish_event(invalid_event)
+      rescue
+        ArgumentError -> :expected_in_raise_mode
+      end
 
-      # Should get a validated telemetry with error status
+      # Should get a validated telemetry with error status (emitted before raise)
       assert_receive {:telemetry, [:thunderline, :event, :validated], %{duration: _},
                       %{status: :error}},
                      1000
