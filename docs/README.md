@@ -1,7 +1,7 @@
 # 📚 Thunderline Documentation
 
-> **Last Reorganized:** November 26, 2025  
-> **Total Documents:** 208 markdown files
+> **Last Reorganized:** December 4, 2025  
+> **Total Documents:** 218 markdown files
 
 This directory contains all Thunderline project documentation, organized by category.
 
@@ -15,9 +15,20 @@ docs/
 ├── thunderline_handbook.md      # Main operational handbook
 ├── OKO_HANDBOOK.md              # OKO system handbook
 │
+├── hc-specs/                    # Active High Command specifications
+│   ├── HC_ARCHITECTURE_SYNTHESIS.md     # Architecture synthesis
+│   ├── HC_DELTA_14_18_QUAK_CEREBROS_SPEC.md  # QuAK + Cerebros spec
+│   ├── HC_DELTA_IMPLEMENTATION_SPEC.md  # Delta implementation
+│   ├── HC_TODO_SWEEP.md                 # Active HC todos
+│   ├── THUNDERBIT_V1_API_CONTRACT.md    # Thunderbit API v1
+│   ├── THUNDERBIT_BEHAVIOR_CONTRACT.md  # Thunderbit behavior
+│   ├── UPPER_ONTOLOGY.md                # Ontology definitions
+│   └── ...
+│
 ├── architecture/                # System architecture docs
 │   ├── THUNDERLINE_DOMAIN_CATALOG.md    # Domain inventory
 │   ├── thunderline_domain_resource_guide.md
+│   ├── domain_topdown.md                # C4 container view
 │   ├── DOMAIN_ARCHITECTURE.md
 │   ├── DOMAIN_ARCHITECTURE_REVIEW.md
 │   ├── DOMAIN_ACTIVATION_FLOW.md
@@ -100,10 +111,17 @@ docs/
 - [Cerebros Setup](guides/CEREBROS_SETUP.md) - ML system setup
 - [Deploy Demo](guides/DEPLOY_DEMO.md) - Deployment guide
 
+### High Command Specs (Active)
+- [HC Architecture Synthesis](hc-specs/HC_ARCHITECTURE_SYNTHESIS.md) - System synthesis
+- [QuAK + Cerebros Spec](hc-specs/HC_DELTA_14_18_QUAK_CEREBROS_SPEC.md) - Automata engine
+- [Thunderbit API v1](hc-specs/THUNDERBIT_V1_API_CONTRACT.md) - API contract
+- [Upper Ontology](hc-specs/UPPER_ONTOLOGY.md) - Ontology definitions
+
 ### Architecture
 - [Domain Catalog](architecture/THUNDERLINE_DOMAIN_CATALOG.md) - All domains & resources
 - [Domain Resource Guide](architecture/thunderline_domain_resource_guide.md) - Resource details
 - [Architecture Review](architecture/DOMAIN_ARCHITECTURE_REVIEW.md) - Latest review
+- [Domain Top-Down](architecture/domain_topdown.md) - C4 container view
 
 ### Reference
 - [Event Taxonomy](reference/EVENT_TAXONOMY.md) - Event naming conventions
@@ -136,11 +154,12 @@ These essential documents remain in the project root:
 
 ## 🗂️ Organization Principles
 
-1. **Active docs** in topic-specific folders (`architecture/`, `guides/`, `reference/`, `ml-ai/`)
-2. **Domain-specific docs** in `domain_docs/<domain>/`
-3. **Historical/completed work** in `historical/` with subcategories
-4. **Legacy archives** in `Doc History/` (preserved for reference)
+1. **HC specs** (active High Command documents) in `hc-specs/`
+2. **Active docs** in topic-specific folders (`architecture/`, `guides/`, `reference/`, `ml-ai/`)
+3. **Domain-specific docs** in `domain_docs/<domain>/`
+4. **Historical/completed work** in `historical/` with subcategories
+5. **Legacy archives** in `Doc History/` (preserved for reference)
 
 ---
 
-*Documentation reorganized November 26, 2025*
+*Documentation reorganized December 4, 2025*
