@@ -270,8 +270,8 @@ defmodule Thunderline.Thunderbolt.Criticality.PLVEstimator do
       |> Enum.reduce({0.0, 0.0}, fn {val, i}, {r_acc, i_acc} ->
         t = (i - n / 2.0) / (n / 4.0)
         gaussian = :math.exp(-t * t / 2.0)
-        r_acc + val * gaussian * :math.cos(omega0 * t)
-        i_acc + val * gaussian * :math.sin(omega0 * t)
+        {r_acc + val * gaussian * :math.cos(omega0 * t),
+         i_acc + val * gaussian * :math.sin(omega0 * t)}
       end)
 
     :math.atan2(imag_sum, real_sum)

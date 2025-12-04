@@ -237,12 +237,9 @@ defmodule Thunderline.Thunderlink.Voice.RoomPipeline do
     end
   end
 
-  @doc """
-  MVP intent detection from transcript text.
-
-  Looks for simple command patterns and emits `voice.intent.detected` events.
-  Future: Integrate with ThunderCrown AI for richer NLU.
-  """
+  # MVP intent detection from transcript text.
+  # Looks for simple command patterns and emits `voice.intent.detected` events.
+  # Future: Integrate with ThunderCrown AI for richer NLU.
   defp maybe_detect_intent(room_id, principal_id, text) do
     text_lower = String.downcase(text)
 

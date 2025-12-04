@@ -5,7 +5,7 @@ defmodule Thunderline.Thunderbolt.Signal.PLL do
   def step(%__MODULE__{} = pll, pulse) do
     e = saw(pll.phi) - if(pulse, do: 1.0, else: 0.0)
     omega1 = pll.omega + pll.kappa * e
-    %__MODULE__{pll | omega: omega1, phi: rem(pll.phi + omega1, 1.0)}
+    %__MODULE__{pll | omega: omega1, phi: :math.fmod(pll.phi + omega1, 1.0)}
   end
 
   def gate?(%__MODULE__{phi: phi}, g), do: (phi >= 1.0 - 0.1 or phi <= 0.1) and g > 0.5

@@ -72,16 +72,17 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
             end
 
           :pythonx ->
-            Logger.info("[AutoMLDriver] Initializing Pythonx runtime...")
+            # Deprecated: redirect to SnexInvoker
+            Logger.info("[AutoMLDriver] Pythonx invoker deprecated, using Snex (GIL-free)...")
 
-            case Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker.init() do
-              :ok ->
-                Logger.info("[AutoMLDriver] Pythonx runtime initialized successfully")
+            case Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker.init() do
+              {:ok, {_interpreter, _env}} ->
+                Logger.info("[AutoMLDriver] Snex runtime initialized successfully (via pythonx fallback)")
                 %{state | python_ready?: true}
 
               {:error, reason} ->
                 Logger.warning(
-                  "[AutoMLDriver] Pythonx init failed (non-fatal): #{inspect(reason)}"
+                  "[AutoMLDriver] Snex init failed (non-fatal): #{inspect(reason)}"
                 )
 
                 state

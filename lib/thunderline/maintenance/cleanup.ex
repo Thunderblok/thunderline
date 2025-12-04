@@ -162,6 +162,7 @@ defmodule Thunderline.Maintenance.Cleanup do
     end
   end
 
+  # File.rm_rf returns {:ok, files_deleted} on success, {:error, reason, file} on failure
   defp normalize_rf({:ok, _}), do: :ok
-  defp normalize_rf({:error, reason}), do: {:error, reason}
+  defp normalize_rf({:error, reason, _file}), do: {:error, reason}
 end

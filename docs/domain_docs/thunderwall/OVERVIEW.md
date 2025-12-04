@@ -1,46 +1,48 @@
-# ThunderWall Domain Overview
+# ThunderWall Domain Overview (Grounded)
 
-**Vertex Position**: Control Plane Ring — Entropy & Garbage Collection Surface
+**Last Verified**: 2025-01-XX  
+**Source of Truth**: `lib/thunderline/thunderwall/domain.ex`  
+**Pantheon Position**: #12 — System Boundary/Entropy Sink
 
-**Purpose**: System containment domain managing entropy, resource cleanup, and graceful degradation.
+## Purpose
 
-## Charter
+ThunderWall is the **system boundary and entropy sink**:
+- Decay processing (archive expired resources)
+- Overflow handling (reject streams)
+- Entropy metrics (system decay tracking)
+- GC scheduling
 
-ThunderWall is the terminus of the system cycle, responsible for containing entropy and cleaning up resources. It handles garbage collection of stale data, manages system degradation under load, and ensures the system returns to stable states. ThunderWall closes the Spark-to-Containment loop that begins in ThunderCore.
+**System Cycle**: Wall is the END of the cycle (Core → Wall).
 
-## Core Responsibilities
+## Domain Extensions
 
-1. **Entropy Management** — track and bound system entropy metrics across domains.
-2. **Garbage Collection** — schedule and execute cleanup of stale PACs, events, and transient data.
-3. **Resource Reclamation** — free resources from terminated sessions, expired tokens, and orphaned processes.
-4. **Graceful Degradation** — shed load intelligently when system approaches capacity limits.
-5. **Cycle Closure** — complete the system cycle by feeding containment signals back to ThunderCore.
+```elixir
+use Ash.Domain, extensions: [AshAdmin.Domain]
 
-## System Cycle Position
+authorization do
+  authorize :by_default
+  require_actor? false
+end
+```
 
-ThunderWall is the **terminus** of the system cycle:
-- **Upstream**: ThunderCore (cycle origin)
-- **Downstream**: Back to ThunderCore (cycle closure)
-- **Emits**: `entropy.contained`, `gc.completed`, `degradation.triggered`
+## Registered Resources (3)
 
-## Ash Resources
+| Resource | Module |
+|----------|--------|
+| DecayRecord | `Thunderline.Thunderwall.Resources.DecayRecord` |
+| ArchiveEntry | `Thunderline.Thunderwall.Resources.ArchiveEntry` |
+| SandboxLog | `Thunderline.Thunderwall.Resources.SandboxLog` |
 
-| Resource | Purpose |
-|----------|---------|
-| `Thunderline.Thunderwall.EntropyMetric` | Entropy tracking records |
-| `Thunderline.Thunderwall.GCJob` | Garbage collection job definitions |
+## Receives From
 
-## Key Modules
+- Expired PACs from Thunderpac
+- Stale events from Thunderflow
+- Orphaned data from Thunderblock
+- Failed saga states from Thundercrown
 
-- `Thunderline.Thunderwall.EntropyTracker` - Entropy measurement
-- `Thunderline.Thunderwall.Collector` - GC execution engine
+## Event Categories
 
-## Oban Integration
-
-ThunderWall uses Oban for scheduled cleanup:
-- `Thunderline.Thunderwall.Workers.StaleDataWorker` - Cleans old records
-- `Thunderline.Thunderwall.Workers.EntropyWorker` - Periodic entropy assessment
-
----
-
-*Last Updated: December 2025*
+- `wall.decay.*` — Resource decay events
+- `wall.archive.*` — Archival events
+- `wall.gc.*` — Garbage collection events
+- `wall.overflow.*` — Overflow/reject events

@@ -95,6 +95,24 @@ defmodule Thunderline.Thundercore.SystemClock do
   end
 
   @doc """
+  Returns time until a DateTime deadline in milliseconds.
+
+  Useful for converting wall-clock deadlines to timeout values.
+  Returns 0 if the deadline has already passed.
+
+  ## Examples
+
+      deadline = ~U[2025-01-01 12:00:00Z]
+      timeout_ms = SystemClock.time_until_deadline(deadline)
+  """
+  @spec time_until_deadline(DateTime.t()) :: non_neg_integer()
+  def time_until_deadline(%DateTime{} = deadline) do
+    now = DateTime.utc_now()
+    diff_ms = DateTime.diff(deadline, now, :millisecond)
+    max(diff_ms, 0)
+  end
+
+  @doc """
   Returns the current UTC datetime.
 
   This is a wall-clock time and should only be used for logging,

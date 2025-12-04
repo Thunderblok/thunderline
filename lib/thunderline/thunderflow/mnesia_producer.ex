@@ -379,7 +379,7 @@ defmodule Thunderline.Thunderflow.MnesiaProducer do
     end)
   end
 
-  defp handle_failed_event(table, event_id, status, message \\ nil)
+  defp handle_failed_event(table, event_id, status, message)
        when is_tuple(status) or is_atom(status) do
     result =
       :mnesia.transaction(fn ->

@@ -55,9 +55,11 @@ defmodule ThunderlineWeb.ReflexPanelLive do
   @tick_interval_ms 100
   # Reserved for slow-motion playback feature
   @_slow_motion_interval_ms 500
+  _ = @_slow_motion_interval_ms
 
   # Heatmap modes - reserved for future heatmap visualization options
   @_heatmap_modes [:none, :coherence, :plv, :entropy, :lambda]
+  _ = @_heatmap_modes
 
   @impl true
   def mount(_params, _session, socket) do
@@ -1491,17 +1493,4 @@ defmodule ThunderlineWeb.ReflexPanelLive do
       connectivity: 0.8
     }
   end
-
-  defp heatmap_mode_label(:coherence), do: "Coherence"
-  defp heatmap_mode_label(:plv), do: "PLV"
-  defp heatmap_mode_label(:entropy), do: "Entropy"
-  defp heatmap_mode_label(:lambda), do: "Lambda"
-  defp heatmap_mode_label(:state), do: "State"
-  defp heatmap_mode_label(_), do: "Unknown"
-
-  defp state_color(:active), do: "text-emerald-400"
-  defp state_color(:chaotic), do: "text-red-400"
-  defp state_color(:dormant), do: "text-gray-400"
-  defp state_color(:stable), do: "text-amber-400"
-  defp state_color(_), do: "text-cyan-400"
 end

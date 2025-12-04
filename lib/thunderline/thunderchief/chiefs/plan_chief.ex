@@ -136,7 +136,7 @@ defmodule Thunderline.Thunderchief.Chiefs.PlanChief do
   def plan_capabilities, do: @capabilities
 
   @impl true
-  def expand_node(node_id, node_value, context) do
+  def expand_node(node_id, node_value, _context) do
     Logger.debug("[PlanChief] Expanding node: #{node_id}")
 
     case node_value[:action] do
@@ -166,7 +166,7 @@ defmodule Thunderline.Thunderchief.Chiefs.PlanChief do
   end
 
   @impl true
-  def perform_step(node_id, node_value, context) do
+  def perform_step(node_id, node_value, _context) do
     Logger.debug("[PlanChief] Performing step: #{node_id} -> #{inspect(node_value[:action])}")
 
     action = node_value[:action]

@@ -186,8 +186,10 @@ defmodule Thunderline.Thunderbolt.UPM.Supervisor do
     tenant_id = Keyword.get(config, :tenant_id)
 
     alias Thunderline.Thunderbolt.Resources.UpmTrainer
+    require Ash.Query
 
-    case Ash.read(UpmTrainer, filter: [name: name, tenant_id: tenant_id]) do
+    query = UpmTrainer |> Ash.Query.filter(name == ^name and tenant_id == ^tenant_id)
+    case Ash.read(query) do
       {:ok, [trainer]} ->
         {:ok, trainer}
 

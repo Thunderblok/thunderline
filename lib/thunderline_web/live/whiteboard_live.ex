@@ -17,6 +17,9 @@ defmodule ThunderlineWeb.WhiteboardLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    # Alias current_user as current_principal for this view
+    current_principal = socket.assigns[:current_user] || generate_anonymous_user()
+
     if connected?(socket) do
       ThunderlineWeb.Endpoint.subscribe(@topic)
 
@@ -24,9 +27,9 @@ defmodule ThunderlineWeb.WhiteboardLive do
       {:ok, _} =
         Presence.track_global(
           self(),
-          socket.assigns.current_principal.id,
+          current_principal.id,
           %{
-            name: display_name(socket),
+            name: display_name(current_principal),
             joined_at: System.system_time(:second),
             cursor: nil
           }
@@ -36,6 +39,7 @@ defmodule ThunderlineWeb.WhiteboardLive do
     socket =
       socket
       |> assign(:page_title, "Dev Whiteboard")
+      |> assign(:current_principal, current_principal)
       |> assign(:strokes, [])
       |> assign(:messages, [])
       |> assign(:current_color, "#000000")
@@ -166,8 +170,16 @@ defmodule ThunderlineWeb.WhiteboardLive do
   def handle_info(_msg, socket), do: {:noreply, socket}
 
   # Helper functions
-  defp display_name(socket) do
-    socket.assigns.current_principal.name || "Anonymous"
+  defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp display_name(%{email: email}) when is_binary(email), do: email
+  defp display_name(_), do: "Anonymous"
+
+  defp generate_anonymous_user do
+    %{
+      id: Ecto.UUID.generate(),
+      name: "Anonymous-#{:rand.uniform(9999)}",
+      email: nil
+    }
   end
 
   defp fetch_users do

@@ -66,7 +66,8 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
           name: processed_event["action"]
         })
 
-        Message.put_broadway_cancelled(message, true)
+        # Skip duplicate - return message unchanged (will be acked without further processing)
+        message
       else
         if key, do: Idempotency.mark!(key)
 

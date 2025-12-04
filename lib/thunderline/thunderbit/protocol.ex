@@ -847,7 +847,7 @@ defmodule Thunderline.Thunderbit.Protocol do
     bit.kind in [:question, :intent]
   end
 
-  defp to_ui_spec(bit, edges \\ []) do
+  defp to_ui_spec(bit, edges) do
     {:ok, cat} = Category.get(bit.category)
     geometry = Map.get(cat, :geometry, %{})
 

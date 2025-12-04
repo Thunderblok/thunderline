@@ -313,9 +313,8 @@ end
 
 # Temporary deprecated alias for backward compatibility; remove after refactors complete.
 defmodule Thunderblock.Resources.Community do
-  @deprecated "Renamed to Thunderline.Thunderblock.Resources.ExecutionTenant"
   @moduledoc false
-  @deprecated "Renamed"
+  @deprecated "Renamed to Thunderline.Thunderblock.Resources.ExecutionTenant"
   defdelegate by_community_id(id), to: Thunderline.Thunderblock.Resources.ExecutionTenant
   @deprecated "Renamed"
   defdelegate by_status(status), to: Thunderline.Thunderblock.Resources.ExecutionTenant

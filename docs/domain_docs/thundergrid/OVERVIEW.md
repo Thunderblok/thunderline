@@ -1,51 +1,143 @@
-# ThunderGrid Domain Overview
+# ThunderGrid Domain Overview (Grounded)
 
+**Last Verified**: 2025-01-XX  
+**Source of Truth**: `lib/thunderline/thundergrid/domain.ex`  
 **Vertex Position**: Data Plane Ring — Spatial Intelligence Layer
 
-**Purpose**: Spatial coordination and GraphQL façade that models zones, boundaries, and placement for distributed Thunderline workloads.
+## Purpose
 
-## Charter
+ThunderGrid is the **spatial coordination and GraphQL façade** of Thunderline:
+- Spatial coordinate systems (hexagonal grids)
+- Zone boundary definitions and management
+- GraphQL API for spatial operations
+- Grid resource allocation
+- Spatial event tracking and replication
 
-ThunderGrid governs the spatial topology of Thunderline. It offers a canonical representation of zones, coordinates, and boundaries, enabling intelligent placement of compute, data, and agents. The domain exposes GraphQL interfaces, synchronizes ECS-like state, and ensures that cross-domain operations respect spatial ownership and replication policies.
+**Design Principle**: "Grid places, Bolt computes" — spatial topology for intelligent workload placement.
 
-## Core Responsibilities
+## Domain Extensions
 
-1. **Spatial Modeling** — maintain hex-based spatial coordinates, zones, and boundaries for all deployment regions.
-2. **Placement Decisions** — provide APIs and queries that ThunderBolt, ThunderForge, and agents use to request placement guidance.
-3. **GraphQL Surface** — expose spatial data through GraphQL for dashboards, operators, and external integrators.
-4. **Replication & Consistency** — track chunk state and zone events to support multi-zone replication and failover strategies.
-5. **Telemetry & Monitoring** — emit spatial metrics and change events consumed by ThunderFlow and Thunderwatch.
-6. **Policy Enforcement** — enforce tenancy and access policies across spatial resources (currently undergoing remediation).
+```elixir
+use Ash.Domain,
+  validate_config_inclusion?: false,
+  extensions: [AshGraphql.Domain, AshJsonApi.Domain]
+```
 
-## Ash Resources
+- **AshGraphql** — GraphQL queries/mutations for zones
+- **AshJsonApi** — JSON:API at `/api/thundergrid`
 
-- [`Thunderline.Thundergrid.Resources.SpatialCoordinate`](lib/thunderline/thundergrid/resources/spatial_coordinate.ex:1) — core coordinate entity with hex-based positioning.
-- [`Thunderline.Thundergrid.Resources.Zone`](lib/thunderline/thundergrid/resources/zone.ex:9) — represents spatial zones with metadata about ownership and tier.
-- [`Thunderline.Thundergrid.Resources.ZoneBoundary`](lib/thunderline/thundergrid/resources/zone_boundary.ex:11) — captures adjacency and boundaries between zones.
-- [`Thunderline.Thundergrid.Resources.ZoneEvent`](lib/thunderline/thundergrid/resources/zone_event.ex:10) — logs spatial events (creation, failover, replication).
-- [`Thunderline.Thundergrid.Resources.ChunkState`](lib/thunderline/thundergrid/resources/chunk_state.ex:10) — tracks chunk-level state for distributed data or workloads.
+## Directory Structure
+
+```
+lib/thunderline/thundergrid/
+├── domain.ex                    # Ash domain (5 resources)
+├── supervisor.ex                # Domain supervisor
+├── api.ex                       # GraphQL/RPC interface
+├── validations.ex               # Custom validations
+├── unikernel_data_layer.ex      # Optional unikernel data layer
+└── resources/                   # Ash resources (7 files)
+    ├── spatial_coordinate.ex    # Registered
+    ├── zone_boundary.ex         # Registered
+    ├── zone.ex                  # Registered
+    ├── zone_event.ex            # Registered
+    ├── chunk_state.ex           # Registered
+    ├── grid_zone.ex             # Embedded (not registered)
+    └── grid_resource.ex         # Embedded (not registered)
+```
+
+## Registered Ash Resources
+
+### Main Domain (5 resources)
+
+| Resource | Module | File |
+|----------|--------|------|
+| SpatialCoordinate | `Thunderline.Thundergrid.Resources.SpatialCoordinate` | resources/spatial_coordinate.ex |
+| ZoneBoundary | `Thunderline.Thundergrid.Resources.ZoneBoundary` | resources/zone_boundary.ex |
+| Zone | `Thunderline.Thundergrid.Resources.Zone` | resources/zone.ex |
+| ZoneEvent | `Thunderline.Thundergrid.Resources.ZoneEvent` | resources/zone_event.ex |
+| ChunkState | `Thunderline.Thundergrid.Resources.ChunkState` | resources/chunk_state.ex |
+
+### Embedded Resources (Not Registered)
+
+| Resource | Module | File |
+|----------|--------|------|
+| GridZone | `Thunderline.Thundergrid.Resources.GridZone` | resources/grid_zone.ex |
+| GridResource | `Thunderline.Thundergrid.Resources.GridResource` | resources/grid_resource.ex |
+
+## GraphQL Endpoints
+
+```elixir
+graphql do
+  authorize? false
+
+  queries do
+    list Zone, :zones, :read
+    list Zone, :available_zones, :available_zones
+    get Zone, :zone_by_coordinates, :by_coordinates
+  end
+
+  mutations do
+    create Zone, :spawn_zone, :spawn_zone
+    update Zone, :adjust_zone_entropy, :adjust_entropy
+    update Zone, :activate_zone, :activate
+    update Zone, :deactivate_zone, :deactivate
+  end
+end
+```
+
+## JSON:API Configuration
+
+```elixir
+json_api do
+  prefix "/api/thundergrid"
+  log_errors? true
+end
+```
+
+## Resource Responsibilities
+
+| Resource | Purpose |
+|----------|---------|
+| SpatialCoordinate | Core hex-based coordinate entity |
+| Zone | Spatial zones with ownership and tier metadata |
+| ZoneBoundary | Adjacency and boundaries between zones |
+| ZoneEvent | Logs spatial events (creation, failover, replication) |
+| ChunkState | Chunk-level state for distributed data/workloads |
+| GridZone (embedded) | Embedded zone representation |
+| GridResource (embedded) | Embedded resource allocation |
 
 ## Supporting Modules
 
-- [`Thunderline.Thundergrid.Domain`](lib/thunderline/thundergrid/domain.ex:2) — Ash domain definition enabling GraphQL integration.
-- [`Thunderline.Thundergrid.API`](lib/thunderline/thundergrid/api.ex:1) — GraphQL and RPC interface for spatial queries.
-- [`Thunderline.Thundergrid.UnikernelDataLayer`](lib/thunderline/thundergrid/unikernel_data_layer.ex:1) — optional data layer for unikernel deployments.
-- [`Thunderline.Thunderlink.DashboardMetrics`](lib/thunderline/thunderlink/dashboard_metrics.ex:183) — consumes ThunderGrid metrics for operator dashboards.
+| Module | Purpose | File |
+|--------|---------|------|
+| API | GraphQL/RPC interface | api.ex |
+| UnikernelDataLayer | Optional unikernel data layer | unikernel_data_layer.ex |
+| Validations | Custom validation modules | validations.ex |
 
-## Integration Points
+## Authorization
 
-### Vertical Edges
+```elixir
+graphql do
+  authorize? false  # GraphQL authorization disabled!
+end
+```
 
-- **ThunderBolt → ThunderGrid**: requests zone placement and chunk availability before scheduling heavy compute.
-- **ThunderGrid → ThunderFlow**: publishes `grid.*` events when zones change state or new spatial data is recorded.
-- **ThunderGrid → ThunderBlock**: informs storage layer of replication targets and zone-level retention requirements.
-- **ThunderGrid → Thundercrown**: provides spatial insight for governance decisions tied to geographic or tenant boundaries.
+⚠️ **Security Note**: GraphQL authorization is currently disabled. Reinstate `authorize? true` before production.
 
-### Horizontal Edges
+## Known Issues & TODOs
 
-- **ThunderGrid ↔ ThunderForge**: shares spatial context for compiled workloads that must respect placement constraints.
-- **ThunderGrid ↔ ThunderLink**: informs transport routing and presence decisions based on zone proximity.
-- **ThunderGrid ↔ ThunderVine**: logs spatial events into lineage graphs to track where data transformations occurred.
+### 1. GraphQL Authorization Disabled
+`authorize? false` on GraphQL — all operations are public.
+
+### 2. Policy Patterns
+Resources may have `authorize_if always()` or commented policies.
+See `DOMAIN_SECURITY_PATTERNS.md` for audit results.
+
+### 3. Embedded vs Registered
+`GridZone` and `GridResource` are embedded resources but not explicitly documented as such in the domain.
+
+### 4. validate_config_inclusion? false
+Domain has `validate_config_inclusion?: false` — resources may exist in files but not be explicitly listed.
 
 ## Telemetry Events
 
@@ -58,38 +150,24 @@ ThunderGrid governs the spatial topology of Thunderline. It offers a canonical r
 
 | Operation | Latency (P50) | Latency (P99) | Throughput |
 |-----------|---------------|---------------|------------|
-| Spatial coordinate query | 8 ms | 50 ms | 5k/s |
-| Zone placement decision | 20 ms | 120 ms | 1k/s |
-| Chunk state update | 15 ms | 90 ms | 3k/s |
-| GraphQL query | 25 ms | 150 ms | 2k/s |
-| Zone replication event | 40 ms | 200 ms | 500/min |
+| Spatial coordinate query | 8 ms | 50 ms | 5k/s |
+| Zone placement decision | 20 ms | 120 ms | 1k/s |
+| Chunk state update | 15 ms | 90 ms | 3k/s |
+| GraphQL query | 25 ms | 150 ms | 2k/s |
+| Zone replication event | 40 ms | 200 ms | 500/min |
 
-## Security & Policy Notes
+## Development Priorities
 
-- Security audit identified multiple resources with `authorize_if always()` or commented policies (see [`docs/documentation/DOMAIN_SECURITY_PATTERNS.md`](docs/documentation/DOMAIN_SECURITY_PATTERNS.md:419)); reinstate tenancy enforcement.
-- Placement decisions should validate tenant ownership before returning zone assignments.
-- Ensure replication metadata is encrypted or masked when exposed via GraphQL.
-- Align policy updates with ThunderCrown governance to respect cross-tenant rules.
+1. **Enable Authorization** — Set `authorize? true` on GraphQL
+2. **Policy Restoration** — Re-enable Ash policies across spatial resources
+3. **Metrics Activation** — Populate dashboard metrics marked "OFFLINE"
+4. **Replication Governance** — Finalize zone event replication policies
 
-## Testing Strategy
+## Related Domains
 
-- Unit tests for spatial coordinate calculations, boundary updates, and GraphQL resolvers.
-- Integration tests covering placement workflows between ThunderBolt and ThunderGrid.
-- Property tests verifying hex coordinate invariants and adjacency relationships.
-- Load tests to ensure GraphQL and API endpoints scale with dashboard traffic.
-
-## Development Roadmap
-
-1. **Phase 1 — Policy Restoration**: re-enable Ash policies across spatial resources and add tenancy coverage.
-2. **Phase 2 — Metrics Activation**: populate dashboard metrics currently marked “OFFLINE” and integrate with Thunderwatch.
-3. **Phase 3 — Replication Governance**: finalize replication policies, ensure zone events trigger consistent updates.
-4. **Phase 4 — Spatial Analytics**: enhance APIs with load balancing and predictive placement signals.
-
-## References
-
-- [`lib/thunderline/thundergrid/domain.ex`](lib/thunderline/thundergrid/domain.ex:2)
-- [`lib/thunderline/thundergrid/resources`](lib/thunderline/thundergrid/resources/zone.ex:9)
-- [`docs/documentation/CODEBASE_AUDIT_2025.md`](docs/documentation/CODEBASE_AUDIT_2025.md:350)
-- [`docs/documentation/DOMAIN_SECURITY_PATTERNS.md`](docs/documentation/DOMAIN_SECURITY_PATTERNS.md:419)
-- [`docs/documentation/planning/Thunderline_2025Q4_Squad_Matrix.md`](docs/documentation/planning/Thunderline_2025Q4_Squad_Matrix.md:29)
-- [`docs/documentation/THUNDERLINE_REBUILD_INITIATIVE.md`](docs/documentation/THUNDERLINE_REBUILD_INITIATIVE.md:575)
+- **ThunderBolt** — Requests zone placement before scheduling compute
+- **ThunderFlow** — Receives `grid.*` events on zone state changes
+- **ThunderBlock** — Informed of replication targets and retention
+- **ThunderCrown** — Provides spatial insight for governance
+- **ThunderLink** — Transport routing based on zone proximity
+- **ThunderVine** — Logs spatial events into lineage graphs

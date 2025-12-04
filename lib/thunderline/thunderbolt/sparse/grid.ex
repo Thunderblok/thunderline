@@ -135,8 +135,8 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
       0.5,
       # Alpha (1.0 for alive)
       1.0,
-      # PLV (Phase Locking Value)
-      tb.plv || 0.0,
+      # PLV (Phase Locking Value) - stored as phi_phase
+      tb.phi_phase || 0.0,
       # Sigma flow
       tb.sigma_flow || 0.0,
       # Lambda sensitivity

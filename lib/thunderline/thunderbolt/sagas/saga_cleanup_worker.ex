@@ -205,12 +205,11 @@ defmodule Thunderline.Thunderbolt.Sagas.SagaCleanupWorker do
   end
 
   defp query_sagas_for_archival(status, cutoff) do
-    Ash.read(SagaState,
-      filter: [
-        status: status
-      ],
-      limit: 100
-    )
+    require Ash.Query
+    query = SagaState
+      |> Ash.Query.filter(status == ^status)
+      |> Ash.Query.limit(100)
+    Ash.read(query)
     |> case do
       {:ok, sagas} ->
         # Filter by cutoff date (inserted_at)

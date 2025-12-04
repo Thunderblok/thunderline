@@ -1,40 +1,40 @@
-# ThunderCore Domain Overview
+# ThunderCore Domain Overview (Grounded)
 
-**Vertex Position**: Control Plane Ring — System Identity & Tick Surface
+**Last Verified**: 2025-01-XX  
+**Source of Truth**: `lib/thunderline/thundercore/domain.ex`  
+**Pantheon Position**: #1 — Origin/Seedpoint Domain
 
-**Purpose**: Core domain managing system identity, tick lifecycle, and domain activation. The heartbeat of Thunderline.
+## Purpose
 
-## Charter
+ThunderCore is the **system origin and heartbeat domain**:
+- Tick emanation (system heartbeat)
+- System clock (monotonic time)
+- Identity kernel (PAC seedpoint generation)
+- Temporal alignment
 
-ThunderCore is the foundational domain that provides tick-based scheduling and domain activation. It manages the system's identity, produces tick events that drive the unified perceptron model, and orchestrates domain registration. All other domains depend on ThunderCore for their activation and timing synchronization.
+**System Cycle**: Core is the START of the cycle (Core → Wall).
 
-## Core Responsibilities
+## Domain Extensions
 
-1. **Tick Generation** — produce periodic tick events that drive PAC lifecycle and domain processing.
-2. **Domain Registration** — maintain the active domain registry and coordinate domain activation.
-3. **System Identity** — provide stable identity primitives for nodes, sessions, and entities.
-4. **Health Monitoring** — track domain health and emit telemetry for system observability.
-5. **Spark-to-Containment Lifecycle** — initiate the system cycle that flows through all domains.
+```elixir
+use Ash.Domain,
+  extensions: [AshAdmin.Domain],
+  otp_app: :thunderline
+```
 
-## System Cycle Position
+## Registered Resources (2)
 
-ThunderCore is the **origin** of the system cycle:
-- **Upstream**: None (cycle origin)
-- **Downstream**: ThunderWall (cycle terminus)
-- **Emits**: `tick.generated`, `domain.activated`, `domain.deactivated`
+| Resource | Module |
+|----------|--------|
+| TickState | `Thunderline.Thundercore.Resources.TickState` |
+| IdentityKernel | `Thunderline.Thundercore.Resources.IdentityKernel` |
 
-## Ash Resources
+## Event Categories
 
-| Resource | Purpose |
-|----------|---------|
-| `Thunderline.Thundercore.Tick` | Tick event record |
-| `Thunderline.Thundercore.DomainRegistry` | Active domain tracking |
+- `core.tick.*` — Tick/heartbeat events
+- `core.identity.*` — Identity kernel events
+- `core.clock.*` — Clock synchronization events
 
-## Key Modules
+## Reference
 
-- `Thunderline.Thundercore.Ticker` - GenServer producing tick events
-- `Thunderline.Thundercore.DomainActivation` - Domain registration logic
-
----
-
-*Last Updated: December 2025*
+- HC-46 in THUNDERLINE_MASTER_PLAYBOOK.md

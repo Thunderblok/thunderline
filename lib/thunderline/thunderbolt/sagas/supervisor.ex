@@ -67,30 +67,33 @@ defmodule Thunderline.Thunderbolt.Sagas.Supervisor do
 
       OtelTrace.set_attributes(%{"saga.correlation_id" => correlation_id})
 
-      task_spec =
-        Task.Supervisor.child_spec(
-          fn ->
-            # Inherit trace context in saga task
-            OtelTrace.with_span "bolt.saga_execution", %{
-              saga_module: inspect(saga_module),
-              correlation_id: correlation_id
-            } do
-              Logger.info("Starting saga: #{inspect(saga_module)} [#{correlation_id}]")
-              OtelTrace.add_event("bolt.saga_started")
+      # Create a Task spec for the saga execution
+      task_fun = fn ->
+        # Inherit trace context in saga task
+        OtelTrace.with_span "bolt.saga_execution", %{
+          saga_module: inspect(saga_module),
+          correlation_id: correlation_id
+        } do
+          Logger.info("Starting saga: #{inspect(saga_module)} [#{correlation_id}]")
+          OtelTrace.add_event("bolt.saga_started")
 
-              result = Reactor.run(saga_module, inputs)
+          result = Reactor.run(saga_module, inputs)
 
-              Logger.info("Saga completed: #{inspect(saga_module)} [#{correlation_id}]")
-              OtelTrace.add_event("bolt.saga_completed", %{result: inspect(result)})
+          Logger.info("Saga completed: #{inspect(saga_module)} [#{correlation_id}]")
+          OtelTrace.add_event("bolt.saga_completed", %{result: inspect(result)})
 
-              # Emit telemetry for saga completion
-              emit_saga_telemetry(saga_module, result, correlation_id)
+          # Emit telemetry for saga completion
+          emit_saga_telemetry(saga_module, result, correlation_id)
 
-              result
-            end
-          end,
-          restart: :temporary
-        )
+          result
+        end
+      end
+
+      task_spec = %{
+        id: Task,
+        start: {Task, :start_link, [task_fun]},
+        restart: :temporary
+      }
 
       result =
         case DynamicSupervisor.start_child(__MODULE__, task_spec) do

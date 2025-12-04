@@ -228,11 +228,13 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
   end
 
   defp get_adapters_for_snapshot(snapshot_id) do
+    require Ash.Query
     # Get snapshot to determine mode
     case Ash.get(UpmSnapshot, snapshot_id) do
       {:ok, snapshot} ->
         # Get all adapters matching this mode
-        case Ash.read(UpmAdapter, filter: [mode: snapshot.mode]) do
+        query = UpmAdapter |> Ash.Query.filter(mode == ^snapshot.mode)
+        case Ash.read(query) do
           {:ok, adapters} -> {:ok, adapters}
           {:error, reason} -> {:error, reason}
         end

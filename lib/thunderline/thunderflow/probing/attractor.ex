@@ -46,9 +46,11 @@ defmodule Thunderline.Thunderflow.Probing.Attractor do
     do: "insufficient data (points=#{p}, delay_rows=#{r}, min_points=#{min})"
 
   defp load_embeddings(run_id) do
+    require Ash.Query
     # Stream lap embeddings ordered by lap_index
+    query = ProbeLap |> Ash.Query.filter(run_id == ^run_id)
     {:ok, laps} =
-      Ash.read(ProbeLap, %{run_id: run_id}, action: :read)
+      Ash.read(query)
       |> case do
         {:ok, q} -> {:ok, Enum.sort_by(q, & &1.lap_index)}
         other -> other

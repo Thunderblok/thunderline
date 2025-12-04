@@ -298,11 +298,6 @@ defmodule Thunderline.DashboardMetrics do
     end
   end
 
-  defp format_bytes_rate(bytes) when bytes > 1_073_741_824, do: "#{Float.round(bytes / 1_073_741_824, 1)} GB/s"
-  defp format_bytes_rate(bytes) when bytes > 1_048_576, do: "#{Float.round(bytes / 1_048_576, 1)} MB/s"
-  defp format_bytes_rate(bytes) when bytes > 1024, do: "#{Float.round(bytes / 1024, 1)} KB/s"
-  defp format_bytes_rate(bytes), do: "#{bytes} B/s"
-
   # Get error rate from telemetry
   defp get_error_rate do
     try do
@@ -1016,68 +1011,6 @@ defmodule Thunderline.DashboardMetrics do
     {:error, :cluster_supervisor_not_running}
   end
 
-  defp get_thundercell_elixir_stats_disabled do
-    # DISABLED: ClusterSupervisor causes crashes when not running
-    # Use ThunderCell Elixir modules directly
-    try do
-      # Check if the supervisor process is alive first
-      supervisor_name = Thunderline.Thunderbolt.ThunderCell.ClusterSupervisor
-
-      case Process.whereis(supervisor_name) do
-        nil ->
-          {:error, :cluster_supervisor_not_running}
-
-        _pid ->
-          clusters = supervisor_name.list_clusters()
-          cluster_count = length(clusters)
-
-          # Aggregate stats from all clusters
-          total_stats =
-            Enum.reduce(
-              clusters,
-              %{
-                total_generations: 0,
-                total_cells: 0,
-                alive_cells: 0,
-                active_rules: []
-              },
-              fn cluster, acc ->
-                generation = Map.get(cluster, :generation, 0)
-                cell_count = Map.get(cluster, :cell_count, 0)
-                # Assume 10% of cells are alive on average
-                alive_count = round(cell_count * 0.1)
-
-                %{
-                  total_generations: acc.total_generations + generation,
-                  total_cells: acc.total_cells + cell_count,
-                  alive_cells: acc.alive_cells + alive_count,
-                  active_rules: acc.active_rules ++ extract_cluster_rules(cluster)
-                }
-              end
-            )
-
-          {:ok,
-           %{
-             active_rules: Enum.uniq(total_stats.active_rules),
-             total_generations: total_stats.total_generations,
-             cluster_count: cluster_count,
-             total_cells: total_stats.total_cells,
-             alive_cells: total_stats.alive_cells,
-             neural_learning_rate: 0.001,
-             neural_convergence: 0.5,
-             adaptation_cycles: 0,
-             emergence_patterns: 0,
-             quantum_entanglement: 0.0,
-             superposition_count: 0,
-             decoherence_ms: 0,
-             quantum_speedup: 1.0
-           }}
-      end
-    rescue
-      error -> {:error, error}
-    end
-  end
-
   defp get_direct_thundercell_stats do
     # Get stats directly from ThunderCell Telemetry
     try do
@@ -1147,9 +1080,6 @@ defmodule Thunderline.DashboardMetrics do
       active_cells: 0
     }
   end
-
-  defp cube_size_to_cell_count(size) when is_integer(size), do: size * size * size
-  defp cube_size_to_cell_count(_), do: 0
 
   defp get_liveview_automata_stats do
     # Get stats from LiveView automata processes
@@ -1895,28 +1825,6 @@ defmodule Thunderline.DashboardMetrics do
       decoherence_ms: 0,
       quantum_speedup: 0.0
     }
-  end
-
-  defp extract_cluster_rules(cluster) do
-    # Extract CA rules from cluster stats
-    case Map.get(cluster, :ca_rules) do
-      nil ->
-        []
-
-      rules when is_map(rules) ->
-        name = Map.get(rules, :name, "Unknown")
-
-        case name do
-          "Conway's Game of Life 3D" -> [:conway_3d]
-          "Highlife 3D" -> [:highlife_3d]
-          "Seeds 3D" -> [:seeds_3d]
-          "Maze 3D" -> [:maze_3d]
-          _ -> [:custom_ca]
-        end
-
-      _ ->
-        []
-    end
   end
 
   # Agent metrics helper functions (consolidated here)

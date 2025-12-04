@@ -274,7 +274,7 @@ defmodule Thunderline.Thunderblock.Retention do
 
   defp normalize_scope_type(_), do: nil
 
-  defp resolve_interval(attrs, key, opts \\ []) do
+  defp resolve_interval(attrs, key, opts) do
     required? = Keyword.get(opts, :required, false)
     default = Keyword.get(opts, :default)
     raw_value = Map.get(attrs, key, default)

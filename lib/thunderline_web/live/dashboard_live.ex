@@ -631,7 +631,10 @@ defmodule ThunderlineWeb.DashboardLive do
 
   @impl true
   def handle_event("select_domain", %{"domain" => domain}, socket) do
-    {:noreply, assign(socket, :active_domain, String.to_atom(domain))}
+    {:noreply,
+     socket
+     |> assign(:active_domain, String.to_atom(domain))
+     |> assign(:selected_domain, domain)}
   end
 
   def handle_event("set_tab", %{"tab" => tab}, socket) do
@@ -817,9 +820,7 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   # Metrics Tab Event Handlers
-  def handle_event("select_domain", %{"domain" => domain}, socket) do
-    {:noreply, assign(socket, :selected_domain, domain)}
-  end
+  # NOTE: select_domain is defined above at line 633 - removed duplicate
 
   def handle_event("change_time_range", %{"range" => range}, socket) do
     {:noreply, assign(socket, :time_range, range)}
@@ -1101,15 +1102,6 @@ defmodule ThunderlineWeb.DashboardLive do
     (processes / total * 100.0) |> Float.round(2)
   end
 
-  defp calculate_active_agents_from_telemetry(snapshot) do
-    # Estimate active agents based on event throughput
-    case snapshot.event_rate_per_second do
-      # Rough estimation
-      rate when rate > 0 -> trunc(rate * 10)
-      _ -> 0
-    end
-  end
-
   defp get_thunderbolt_metrics do
     try do
       if Process.whereis(Thunderline.ThunderBridge) == nil do
@@ -1184,49 +1176,6 @@ defmodule ThunderlineWeb.DashboardLive do
     }
   end
 
-  defp get_evolution_stats_from_telemetry do
-    # Fallback evolution stats for when CA integration is unavailable
-    %{
-      total_generations: :rand.uniform(100) + 50,
-      mutations_count: :rand.uniform(20) + 5,
-      evolution_rate: :rand.uniform() * 10.0 + 2.0,
-      active_patterns:
-        Enum.map(1..:rand.uniform(5), fn _ -> "pattern_#{:rand.uniform(1000)}" end),
-      success_rate: :rand.uniform() * 0.8 + 0.2
-    }
-  end
-
-  defp calculate_success_rate(snapshots) do
-    if length(snapshots) > 0 do
-      total_events = Enum.sum(Enum.map(snapshots, &(&1.total_events || 0)))
-      error_events = Enum.sum(Enum.map(snapshots, &(&1.error_count || 0)))
-
-      if total_events > 0 do
-        (total_events - error_events) / total_events
-      else
-        1.0
-      end
-    else
-      0.0
-    end
-  end
-
-  defp default_system_metrics do
-    %{
-      uptime: :rand.uniform(5000),
-      active_agents: :rand.uniform(100),
-      total_chunks: 144,
-      connected_nodes: :rand.uniform(8),
-      memory_usage: :rand.uniform(200_000_000) + 100_000_000,
-      performance: %{
-        agents_per_second: :rand.uniform() * 10,
-        chunks_per_second: :rand.uniform() * 5,
-        memory_efficiency: :rand.uniform() * 30 + 10,
-        response_time: :rand.uniform() * 2 + 0.5
-      }
-    }
-  end
-
   defp handle_agent_event(socket, %{type: :spawned}) do
     update(socket, :system_metrics, fn metrics ->
       Map.update(metrics, :active_agents, 0, &(&1 + 1))
@@ -1270,36 +1219,6 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   defp apply_domain_event(metrics, _event), do: metrics
-
-  # Template Helper Functions
-
-  defp domain_navigation do
-    [
-      {:thundercore, "⚡"},
-      {:thunderbit, "🔥"},
-      {:thunderbolt, "⚡"},
-      {:thunderblock, "🏗️"},
-      {:thundergrid, "🔷"},
-      {:thunderblock_vault, "🗄️"},
-      {:thundercom, "📡"},
-      {:thundereye, "👁️"},
-      # thunderchief consolidated into thundercrown (HC-49)
-      {:thundercrown, "👑"},
-      {:thunderflow, "🌊"},
-      {:thunderstone, "🗿"},
-      {:thunderlink, "🔗"}
-    ]
-  end
-
-  defp format_number(num) when is_integer(num) do
-    cond do
-      num >= 1_000_000 -> "#{Float.round(num / 1_000_000, 1)}M"
-      num >= 1_000 -> "#{Float.round(num / 1_000, 1)}K"
-      true -> to_string(num)
-    end
-  end
-
-  defp format_number(num), do: to_string(num)
 
   # System Action Helpers
 

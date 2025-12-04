@@ -27,6 +27,7 @@ defmodule Thunderline.Thunderbolt.UPM.SGD do
   @default_output_dim 32
   # Numerical stability constant (reserved for future gradient clipping)
   @_epsilon 1.0e-7
+  _ = @_epsilon
 
   @doc """
   Initialize model parameters with Xavier/Glorot initialization.

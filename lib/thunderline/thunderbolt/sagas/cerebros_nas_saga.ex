@@ -206,7 +206,9 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
     argument :run, result(:await_completion)
 
     run fn %{run: run}, _ ->
-      case Ash.read(ModelArtifact, filter: [model_run_id: run.id]) do
+      require Ash.Query
+      query = ModelArtifact |> Ash.Query.filter(model_run_id == ^run.id)
+      case Ash.read(query) do
         {:ok, artifacts} ->
           Logger.info("Collected #{length(artifacts)} artifacts for run #{run.id}")
           {:ok, %{run: run, artifacts: artifacts}}

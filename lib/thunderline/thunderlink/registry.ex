@@ -623,14 +623,17 @@ defmodule Thunderline.Thunderlink.Registry do
   @spec nodes_with_capability(String.t(), String.t() | nil, Keyword.t()) :: [Node.t()]
   def nodes_with_capability(key, value \\ nil, opts \\ []) do
     # Get capabilities
-    capabilities =
+    args =
       if value do
-        Domain.node_capabilities_by_capability!(key, value, opts)
+        %{capability_key: key, capability_value: value}
       else
-        NodeCapability
-        |> Ash.Query.for_read(:by_capability, %{capability_key: key}, opts)
-        |> Ash.read!(opts)
+        %{capability_key: key}
       end
+
+    capabilities =
+      NodeCapability
+      |> Ash.Query.for_read(:by_capability, args, opts)
+      |> Ash.read!(opts)
 
     # Get unique node IDs
     node_ids = capabilities |> Enum.map(& &1.node_id) |> Enum.uniq()

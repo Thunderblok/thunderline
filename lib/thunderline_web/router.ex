@@ -3,6 +3,8 @@ defmodule ThunderlineWeb.Router do
   # Bring in AshAuthentication Phoenix router macros (auth_routes, sign_in_route, etc.)
   use AshAuthentication.Phoenix.Router
 
+  import AshAdmin.Router
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -133,7 +135,7 @@ defmodule ThunderlineWeb.Router do
       live "/c/:community_slug/:channel_slug", ChannelLive, :show
 
       # Thunderlane Specialized Dashboard
-      live "/dashboard/thunderlane", ThunderlineDashboard, :index
+      live "/dashboard/thunderlane", ThunderlineDashboardLive, :index
 
       # 3D Cellular Automata View
       live "/automata", AutomataLive, :index
@@ -288,9 +290,9 @@ defmodule ThunderlineWeb.Router do
   scope "/admin" do
     pipe_through [:browser, :admin]
 
-    forward "/", AshAdmin.Router,
+    ash_admin "/",
       otp_app: :thunderline,
-      apis: [
+      domains: [
         Thunderline.Thunderblock.Domain,
         Thunderline.Thunderflow.Domain,
         Thunderline.Thunderlink.Domain,
@@ -313,12 +315,7 @@ defmodule ThunderlineWeb.Router do
   end
 
   if Application.compile_env(:thunderline, :dev_routes) do
-    import AshAdmin.Router
-
-    scope "/admin" do
-      pipe_through :browser
-
-      ash_admin "/"
-    end
+    # Note: AshAdmin is already mounted at /admin above
+    # This block is for other dev routes like LiveDashboard
   end
 end

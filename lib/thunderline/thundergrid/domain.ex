@@ -18,7 +18,7 @@ defmodule Thunderline.Thundergrid.Domain do
     extensions: [AshGraphql.Domain, AshJsonApi.Domain]
 
   graphql do
-    authorize? false
+    authorize? true
 
     queries do
       list Thunderline.Thundergrid.Resources.Zone, :zones, :read

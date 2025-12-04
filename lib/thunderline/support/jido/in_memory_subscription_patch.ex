@@ -171,7 +171,7 @@ defmodule Jido.Bus.Adapters.InMemory.PersistentSubscription do
   def ack(%__MODULE__{} = subscription, signal_number) when is_integer(signal_number) do
     {updated, found?, latest_checkpoint} =
       Enum.reduce(subscription.subscribers, {[], false, subscription.checkpoint || 0}, fn
-        subscriber, {acc, found?, checkpoint_acc} ->
+        %Subscriber{} = subscriber, {acc, found?, checkpoint_acc} ->
           if not found? and MapSet.member?(subscriber.in_flight, signal_number) do
             updated_subscriber = %Subscriber{
               subscriber

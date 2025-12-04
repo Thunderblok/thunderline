@@ -100,7 +100,7 @@ defmodule ThunderlineWeb.CerebrosJobsController do
     with {:ok, job} <- get_job_by_id(id),
          phase <- Map.get(conn.params, "phase", job.phase || 0),
          {:ok, _updated_job} <-
-           CerebrosTrainingJob.update_checkpoint(job, phase, checkpoint_url, domain: Domain) do
+           CerebrosTrainingJob.update_checkpoint(job, %{phase: phase, checkpoint_url: checkpoint_url}) do
       render(conn, :ok, %{})
     end
   end
@@ -148,16 +148,16 @@ defmodule ThunderlineWeb.CerebrosJobsController do
 
     case status_atom do
       :running ->
-        CerebrosTrainingJob.start(job, domain: Domain)
+        CerebrosTrainingJob.start(job)
 
       :completed ->
         checkpoint_urls = params["checkpoint_urls"] || job.checkpoint_urls || []
         metrics = params["metrics"] || job.metrics || %{}
-        CerebrosTrainingJob.complete(job, checkpoint_urls, metrics, domain: Domain)
+        CerebrosTrainingJob.complete(job, %{checkpoint_urls: checkpoint_urls, metrics: metrics})
 
       :failed ->
         error_message = params["error_message"] || "Unknown error"
-        CerebrosTrainingJob.fail(job, error_message, domain: Domain)
+        CerebrosTrainingJob.fail(job, %{error_message: error_message})
 
       _ ->
         update_job(job, build_status_update_params(params))

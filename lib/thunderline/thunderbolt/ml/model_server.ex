@@ -132,6 +132,17 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
   end
 
   @doc """
+  Gets info about a specific model.
+
+  Returns metadata if the model is loaded, or `{:error, :not_found}`.
+  """
+  @spec get_model_info(String.t(), keyword()) :: {:ok, map()} | {:error, :not_found}
+  def get_model_info(model_name, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:get_model_info, model_name})
+  end
+
+  @doc """
   Runs inference directly through the server (for convenience).
 
   Loads model if needed, runs inference, returns output.
@@ -256,6 +267,25 @@ defmodule Thunderline.Thunderbolt.ML.ModelServer do
       end)
 
     {:reply, models, state}
+  end
+
+  @impl true
+  def handle_call({:get_model_info, model_name}, _from, state) do
+    case Map.get(state.sessions, model_name) do
+      nil ->
+        {:reply, {:error, :not_found}, state}
+
+      _session ->
+        info = %{
+          name: model_name,
+          loaded: true,
+          last_access: Map.get(state.access_times, model_name),
+          load_time_ms: Map.get(state.load_times, model_name),
+          path: Path.join(state.model_dir, model_name)
+        }
+
+        {:reply, {:ok, info}, state}
+    end
   end
 
   @impl true

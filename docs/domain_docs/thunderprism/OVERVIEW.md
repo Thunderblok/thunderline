@@ -1,47 +1,43 @@
-# ThunderPrism Domain Overview
+# ThunderPrism Domain Overview (Grounded)
 
-**Vertex Position**: Data Plane Ring — UX & Visualization Surface
+**Last Verified**: 2025-01-XX  
+**Source of Truth**: `lib/thunderline/thunderprism/domain.ex`  
+**Purpose**: DAG scratchpad for ML decision trails
 
-**Purpose**: User experience domain managing dashboards, UI state, 3D visualizations, and presentation logic.
+## Purpose
 
-## Charter
+ThunderPrism provides **persistent memory rails** for ML decision recording:
+- Record ML decision nodes (pac_id, iteration, model selection)
+- Track connections between decisions
+- Enable visualization and AI context querying
 
-ThunderPrism is the presentation layer for Thunderline. It manages LiveView components, dashboard state, 3D/WebGL visualizations, and user interface interactions. The domain translates internal system state into visual representations and handles user input that feeds back into the system.
+## Domain Extensions
 
-## Core Responsibilities
+```elixir
+use Ash.Domain
+```
 
-1. **Dashboard Management** — orchestrate multi-panel dashboard layouts with real-time updates.
-2. **3D Graph Visualization** — render node graphs, domain topology, and PAC networks using WebGL/Three.js.
-3. **LiveView Components** — provide reusable UI components for Phoenix LiveView.
-4. **State Projection** — transform domain events into UI-friendly state representations.
-5. **User Input Handling** — capture and route user interactions to appropriate domain actions.
+No additional extensions — basic Ash domain.
 
-## System Cycle Position
+## Registered Resources (2)
 
-ThunderPrism is a **terminal surface** domain:
-- **Upstream**: ThunderGrid (API surface)
-- **Downstream**: User interface (external)
-- **Domain Vector**: Grid → Prism (IO → surface → UX)
+| Resource | Module |
+|----------|--------|
+| PrismNode | `Thunderline.Thunderprism.PrismNode` |
+| PrismEdge | `Thunderline.Thunderprism.PrismEdge` |
 
-## Ash Resources
+## Code Interfaces
 
-| Resource | Purpose |
-|----------|---------|
-| `Thunderline.Thunderprism.Dashboard` | Dashboard configuration and state |
-| `Thunderline.Thunderprism.Panel` | Individual panel definitions |
+### PrismNode
+- `create_prism_node/7` — Create with pac_id, iteration, chosen_model, model_probabilities, model_distances, meta, timestamp
+- `get_prism_node/1` — Get by ID
+- `list_prism_nodes/0` — List all
 
-## Key Modules
+### PrismEdge
+- `create_prism_edge/4` — Create with from_id, to_id, relation_type, meta
+- `get_prism_edge/1` — Get by ID
+- `list_prism_edges/0` — List all
 
-- `ThunderlineWeb.Live.*` - LiveView modules for UI
-- `Thunderline.Thunderprism.GraphRenderer` - 3D visualization engine
+## Phase
 
-## LiveView Integration
-
-ThunderPrism components follow Phoenix 1.8 conventions:
-- Templates use `<Layouts.app flash={@flash}>` wrapper
-- Forms use `to_form/2` and `<.input>` components
-- Streams for efficient collection rendering
-
----
-
-*Last Updated: December 2025*
+Phase 4.0 — November 15, 2025

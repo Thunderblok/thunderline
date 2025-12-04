@@ -134,28 +134,33 @@ defmodule Thunderline.Thunderflow.Telemetry.OtelTrace do
   Extract trace context from event metadata and set as current span parent.
 
   Enables trace continuation across domain boundaries.
+  Uses W3C traceparent format via OpenTelemetry propagator.
   """
   def continue_trace_from_event(%{meta: %{trace_id: trace_id, span_id: span_id}} = _event)
       when is_binary(trace_id) and is_binary(span_id) do
-    # Parse hex strings back to integers
-    trace_id_int = String.to_integer(trace_id, 16)
-    span_id_int = String.to_integer(span_id, 16)
+    # Build W3C traceparent header: version-traceid-spanid-flags
+    # Format: 00-{32 hex trace_id}-{16 hex span_id}-{2 hex flags}
+    # Pad trace_id to 32 chars, span_id to 16 chars
+    padded_trace_id = String.pad_leading(trace_id, 32, "0")
+    padded_span_id = String.pad_leading(span_id, 16, "0")
+    traceparent = "00-#{padded_trace_id}-#{padded_span_id}-01"
 
-    # Set as remote parent span context
-    remote_ctx =
-      OpenTelemetry.Span.new_span_ctx(
-        trace_id_int,
-        span_id_int,
-        # trace_flags: sampled
-        1,
-        # trace_state: empty
-        []
+    # Use the W3C trace context propagator to extract and set the context
+    # extract/1 uses the default propagator and default carrier functions
+    carrier = %{"traceparent" => traceparent}
+
+    # Get the current propagator and use extract/4
+    propagator = :opentelemetry.get_text_map_extractor()
+
+    ctx =
+      :otel_propagator_text_map.extract(
+        propagator,
+        carrier,
+        fn c -> Map.keys(c) end,
+        fn key, c -> Map.get(c, key) end
       )
 
-    OpenTelemetry.Ctx.attach(
-      OpenTelemetry.Ctx.set_value(OpenTelemetry.Ctx.new(), :current_span_ctx, remote_ctx)
-    )
-
+    OpenTelemetry.Ctx.attach(ctx)
     :ok
   rescue
     _ ->

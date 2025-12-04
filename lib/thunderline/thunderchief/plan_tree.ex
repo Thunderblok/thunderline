@@ -268,7 +268,7 @@ defmodule Thunderline.Thunderchief.PlanTree do
     end
   end
 
-  defp find_parent_in_path(path, node_id) do
+  defp find_parent_in_path(path, _node_id) do
     path
     |> Enum.reverse()
     |> Enum.drop(1)

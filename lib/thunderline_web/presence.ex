@@ -16,7 +16,8 @@ defmodule ThunderlineWeb.Presence do
 
   @spec track_channel(pid, term, term, map) :: {:ok, term} | {:error, term}
   def track_channel(pid, channel_id, user_id, meta \\ %{}) do
-    Phoenix.Presence.track(
+    # Use the track/4 function from `use Phoenix.Presence`
+    track(
       pid,
       Topics.channel_presence(channel_id),
       user_id,
@@ -26,7 +27,8 @@ defmodule ThunderlineWeb.Presence do
 
   @spec track_global(pid, term, map) :: {:ok, term} | {:error, term}
   def track_global(pid, user_id, meta \\ %{}) do
-    Phoenix.Presence.track(
+    # Use the track/4 function from `use Phoenix.Presence`
+    track(
       pid,
       Topics.presence_global(),
       user_id,

@@ -34,7 +34,6 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   require Logger
 
-  alias Thunderline.Thunderbit.Category
   alias Thunderline.Thunderchief.{State, Action}
   alias Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge, as: CerebrosBridge
 
@@ -334,7 +333,7 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   defp count_by_category(bits) do
     Enum.reduce(bits, %{}, fn bit, acc ->
-      cat = Category.atom_to_category(bit.category || :sensory)
+      cat = bit.category || :sensory
       Map.update(acc, cat, 1, &(&1 + 1))
     end)
   rescue

@@ -61,6 +61,8 @@ defmodule Thunderline.Telemetry.LoopMonitor do
   # Target bands (from paper) - reserved for future band-based alerting
   @_plv_band {0.3, 0.6}
   @_sigma_band {0.8, 1.2}
+  _ = @_plv_band
+  _ = @_sigma_band
 
   # -------------------------------------------------------------------
   # Client API

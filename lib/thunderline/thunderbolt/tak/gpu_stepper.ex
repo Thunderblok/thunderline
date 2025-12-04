@@ -129,9 +129,7 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
     end
   end
 
-  @doc """
-  2D CA evolution kernel (8 neighbors).
-  """
+  # 2D CA evolution kernel (8 neighbors).
   defnp evolve_2d(grid, born, survive) do
     # Create 2D Moore neighborhood kernel (3x3 with center = 0)
     kernel =
@@ -157,9 +155,7 @@ defmodule Thunderline.Thunderbolt.TAK.GPUStepper do
     apply_rules(grid, neighbors, born, survive)
   end
 
-  @doc """
-  3D CA evolution kernel (26 neighbors).
-  """
+  # 3D CA evolution kernel (26 neighbors).
   defnp evolve_3d(grid, born, survive) do
     # Create 3D Moore neighborhood kernel (3x3x3 with center = 0)
     kernel = create_moore_kernel_3d()

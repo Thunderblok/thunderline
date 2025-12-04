@@ -823,10 +823,6 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
     end
   end
 
-  # Defensive catch-all so unexpected events never crash the LiveView.
-  @impl true
-  def handle_event(_other, _params, socket), do: {:noreply, socket}
-
   # ---- Assign refresh helpers ---------------------------------------------------
   defp refresh_events_assigns(socket) do
     events = live_events_snapshot(socket.assigns.active_domain) |> Enum.take(5)
@@ -1206,9 +1202,6 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   defp format_number(n) when is_float(n), do: format_number(round(n))
   defp format_number(other), do: to_string(other)
 
-  defp toggle_set(%MapSet{} = set, id),
-    do: if(MapSet.member?(set, id), do: MapSet.delete(set, id), else: MapSet.put(set, id))
-
   defp seed_events(domain_id) do
     now = System.os_time(:second)
 
@@ -1267,17 +1260,6 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   end
 
   defp smooth(list, _), do: list
-
-  # Transform KPI tuples {label, value, delta} into maps for JSON encoding.
-  defp json_kpis(list) when is_list(list) do
-    Enum.map(list, fn
-      {label, value, delta} -> %{label: label, value: value, delta: delta}
-      %{label: _} = m -> m
-      other -> %{label: to_string(inspect(other)), value: nil, delta: nil}
-    end)
-  end
-
-  defp json_kpis(_), do: []
 
   @impl true
   def handle_event("toggle_ndjson", _params, socket) do
@@ -1373,6 +1355,10 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
       {:noreply, socket}
     end
   end
+
+  # Defensive catch-all so unexpected events never crash the LiveView.
+  @impl true
+  def handle_event(_other, _params, socket), do: {:noreply, socket}
 
   @impl true
   def handle_info({:status, %{source: "ups"} = st}, socket) do

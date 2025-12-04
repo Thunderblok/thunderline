@@ -21,7 +21,7 @@ defmodule ThunderlineWeb.TrainingPromptLive do
   require Logger
   alias Phoenix.PubSub
   alias Thunderline.Thunderbolt.Resources.{TrainingDataset, CerebrosTrainingJob}
-  alias Thunderline.Workers.CerebrosTrainer
+  alias Thunderline.Thunderbolt.Workers.CerebrosTrainer
   alias Thunderline.Thunderbolt.Domain
 
   @impl true

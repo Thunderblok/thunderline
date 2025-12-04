@@ -49,6 +49,7 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
   @violation_threshold 0.1  # 10% violation rate triggers response
   # Reserved for future automatic escalation (currently alerts only)
   @_critical_violation_rate 0.3  # 30% triggers escalation
+  _ = @_critical_violation_rate
   @policy_suspension_threshold 0.5  # 50% failure rate suspends policy
 
   # ===========================================================================

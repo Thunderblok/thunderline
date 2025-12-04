@@ -656,28 +656,6 @@ defmodule ThunderlineWeb.CerebrosLive do
     to_form(%{"spec" => json}, as: :nas)
   end
 
-  defp build_enqueue_opts(run_id, spec) do
-    meta =
-      Map.get(spec, "metadata", %{})
-      |> Map.merge(%{
-        "source" => "cerebros_live",
-        "operator" => "manual",
-        "submitted_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-      })
-
-    [
-      {:run_id, run_id},
-      {:pulse_id, Map.get(spec, "pulse_id") || get_in(spec, ["pulse", "id"])},
-      {:budget, Map.get(spec, "budget", %{})},
-      {:parameters, Map.get(spec, "parameters", %{})},
-      {:tau, Map.get(spec, "tau") || get_in(spec, ["pulse", "tau"])},
-      {:correlation_id, Map.get(spec, "correlation_id") || run_id},
-      {:extra, Map.get(spec, "extra")}
-    ]
-    |> Enum.reject(fn {key, value} -> key != :run_id and is_nil(value) end)
-    |> Kernel.++([{:meta, meta}])
-  end
-
   defp add_history(history, update) do
     entry = Map.put_new(update, :published_at, DateTime.utc_now())
 
@@ -845,8 +823,4 @@ defmodule ThunderlineWeb.CerebrosLive do
   defp run_count_label(1), do: "1 past run"
   defp run_count_label(count) when is_integer(count), do: "#{count} past runs"
   defp run_count_label(_), do: "Past runs"
-
-  defp broadcast_run_update(update) do
-    PubSub.broadcast(Thunderline.PubSub, @run_topic, {:run_update, update})
-  end
 end

@@ -1,103 +1,217 @@
 # ThunderBlock Domain Overview
 
-**Vertex Position**: Data Plane Ring — Persistence Layer
+**Vertex Position**: Data Plane Ring — Persistence Layer  
+**Namespace**: `Thunderline.Thunderblock.*`  
+**Last Verified**: 2025-12-04
 
-**Purpose**: Persistent runtime foundation providing storage, retention, timing, and orchestrated infrastructure for every Thunderline workload.
+## Purpose
+
+ThunderBlock is the persistent runtime foundation providing storage, retention, timing, and orchestrated infrastructure for every Thunderline workload. This is the **only domain** that may directly access `Thunderline.Repo`.
 
 ## Charter
 
-ThunderBlock supplies the durable state and runtime services that keep Thunderline operational. The domain owns Postgres, Mnesia, and cache coordination; enforces retention policies; and now houses the consolidated ThunderClock timing system. It ensures that all domains can rely on consistent storage, scheduled activities, and fault-tolerant orchestration without duplicating infrastructure concerns.
+ThunderBlock supplies durable state and runtime services. It owns Postgres, Mnesia, and cache coordination; enforces retention policies; and houses the timing subsystem. All other domains access persistence through Ash actions on ThunderBlock resources.
 
-## Core Responsibilities
+## Directory Structure (Grounded)
 
-1. **Persistent Storage** — manage vault knowledge graphs, embeddings, decisions, and system logs in Postgres and distributed caches.
-2. **Retention & Lifecycle** — enforce archival, purge, and snapshot policies across vault resources and event logs.
-3. **Timing & Scheduling** — provide timers, cron jobs, and delayed execution (former ThunderClock) to drive time-based workflows.
-4. **Distributed Coordination** — expose supervision trees, execution containers, and DAG orchestration to support ThunderBolt and ThunderFlow.
-5. **Infrastructure Telemetry** — emit retention, timing, and queue metrics that power Thunderwatch dashboards.
-6. **Security & Tenancy** — maintain multi-tenant isolation, resource ownership boundaries, and audit trails for storage access.
+\`\`\`
+lib/thunderline/thunderblock/
+├── domain.ex                    # Ash Domain with AshAdmin
+├── checkpoint.ex                # Checkpoint operations
+├── domain_activation.ex         # Domain activation helpers
+├── domain_registry.ex           # Domain registry
+├── health.ex                    # Health checks
+├── migration_runner.ex          # Migration execution
+├── oban_introspection.ex        # Oban queue inspection
+├── retention.ex                 # Retention operations
+├── thunder_memory.ex            # Memory management
+├── validations.ex               # Shared validations (Ash Resource)
+├── jobs/                        # Oban workers
+│   ├── cross_domain_processor.ex     # ⚠️ Empty stub
+│   ├── domain_sync_processor.ex      # ✅ Active - domain sync
+│   ├── retention_sweep_worker.ex     # ✅ Active - retention sweeps
+│   └── scheduled_workflow_processor.ex # ⚠️ Empty stub
+├── rate_limiting/               # Rate limit infrastructure
+├── resources/                   # ✅ 27 Ash Resources
+│   ├── active_domain_registry.ex    # Domain activation
+│   ├── channel_participant.ex       # Channel participation
+│   ├── cluster_node.ex              # Cluster nodes
+│   ├── community.ex                 # ExecutionTenant (renamed)
+│   ├── distributed_state.ex         # Distributed state
+│   ├── execution_container.ex       # Execution containers
+│   ├── load_balancing_rule.ex       # Load balancing
+│   ├── pac_home.ex                  # PAC user homes
+│   ├── rate_limit_policy.ex         # Rate limiting
+│   ├── retention_policy.ex          # Retention policies
+│   ├── supervision_tree.ex          # Supervision tracking
+│   ├── system_event.ex              # System events
+│   ├── task_orchestrator.ex         # Task orchestration
+│   ├── vault_action.ex              # Vault actions
+│   ├── vault_agent.ex               # Vault agents
+│   ├── vault_cache_entry.ex         # Cache entries
+│   ├── vault_decision.ex            # Decision records
+│   ├── vault_embedding_vector.ex    # Embedding vectors
+│   ├── vault_experience.ex          # Experience records
+│   ├── vault_knowledge_node.ex      # ⭐ Knowledge graph nodes
+│   ├── vault_knowledge_node/        # KnowledgeNode helpers
+│   ├── vault_memory_node.ex         # Memory nodes
+│   ├── vault_memory_record.ex       # Memory records
+│   ├── vault_query_optimization.ex  # Query optimization
+│   ├── vault_user.ex                # Vault users
+│   ├── vault_user_token.ex          # User tokens
+│   ├── workflow_tracker.ex          # Workflow tracking
+│   └── zone_container.ex            # Zone containers
+├── retention/                   # Retention subsystem
+├── telemetry/                   # Telemetry modules
+└── timing/                      # Timing/scheduling subsystem
+    ├── delayed_execution.ex     # Delayed job execution
+    ├── generic_worker.ex        # Generic Oban worker
+    ├── scheduler.ex             # Timer scheduler
+    └── timer.ex                 # Timer definitions
+├── types/                       # Custom Ash types
+\`\`\`
 
-## Ash Resources
+## Ash Domain Registration
 
-- [`Thunderline.Thunderblock.Resources.VaultKnowledgeNode`](lib/thunderline/thunderblock/resources/vault_knowledge_node.ex:1) — durable knowledge representation for agents and models.
-- [`Thunderline.Thunderblock.Resources.RetentionPolicy`](lib/thunderline/thunderblock/resources/retention_policy.ex:1) — declarative policies controlling retention and archival workflows.
-- [`Thunderline.Thunderblock.Resources.ExecutionContainer`](lib/thunderline/thunderblock/resources/execution_container.ex:13) — runtime container records used to coordinate compute jobs.
-- [`Thunderline.Thunderblock.Resources.Workf‌lowTracker`](lib/thunderline/thunderblock/resources/workflow_tracker.ex:1) — tracks DAG execution state for orchestrated workflows.
-- [`Thunderline.Thunderblock.Resources.TaskOrchestrator`](lib/thunderline/thunderblock/resources/task_orchestrator.ex:12) — manages cross-domain tasks triggered by timers or retention events.
+**Domain**: \`Thunderline.Thunderblock.Domain\`  
+**Extensions**: \`AshAdmin.Domain\`
 
-### Timing Subdomain (ThunderClock)
+### Registered Resources (27 total)
+| Category | Resource | Table |
+|----------|----------|-------|
+| **Infrastructure** | ExecutionContainer | \`execution_containers\` |
+| | TaskOrchestrator | \`task_orchestrators\` |
+| | ZoneContainer | \`zone_containers\` |
+| | SupervisionTree | \`supervision_trees\` |
+| | ExecutionTenant | \`communities\` |
+| | ClusterNode | \`cluster_nodes\` |
+| | DistributedState | \`distributed_states\` |
+| | LoadBalancingRule | \`load_balancing_rules\` |
+| | RateLimitPolicy | \`rate_limit_policies\` |
+| | SystemEvent | \`system_events\` |
+| | RetentionPolicy | \`retention_policies\` |
+| | WorkflowTracker | \`workflow_trackers\` |
+| | ActiveDomainRegistry | \`active_domain_registries\` |
+| | ChannelParticipant | \`channel_participants\` |
+| **Vault (Storage)** | VaultAction | \`vault_actions\` |
+| | VaultAgent | \`vault_agents\` |
+| | VaultCacheEntry | \`vault_cache_entries\` |
+| | VaultDecision | \`vault_decisions\` |
+| | VaultEmbeddingVector | \`vault_embedding_vectors\` |
+| | VaultExperience | \`vault_experiences\` |
+| | VaultKnowledgeNode | \`vault_knowledge_nodes\` |
+| | VaultMemoryNode | \`vault_memory_nodes\` |
+| | VaultMemoryRecord | \`vault_memory_records\` |
+| | VaultQueryOptimization | \`vault_query_optimizations\` |
+| | VaultUser | \`vault_users\` |
+| | VaultUserToken | \`vault_user_tokens\` |
+| **PAC** | PACHome | \`pac_homes\` |
 
-- [`Thunderline.Thunderblock.Timing.Timer`](docs/domains/thunderblock/timing/OVERVIEW.md) — consolidated timer resource for one-shot and recurring execution.
-- [`Thunderline.Thunderblock.Timing.CronJob`](docs/domains/thunderblock/timing/OVERVIEW.md) — cron scheduler driving recurring maintenance operations.
-- [`Thunderline.Thunderblock.Timing.DelayedJob`](docs/domains/thunderblock/timing/OVERVIEW.md) — delayed execution records for future tasks.
+### Domain Delegated Functions
+\`\`\`elixir
+# VaultKnowledgeNode operations exposed at domain level
+Domain.add_relationship!/5
+Domain.remove_relationship!/4
+Domain.consolidate_knowledge!/3
+Domain.verify_knowledge!/4
+Domain.record_access!/4
+Domain.search_knowledge!/5
+Domain.traverse_graph!/5
+Domain.by_domain!/2
+Domain.optimize_relationships!/1
+Domain.recalculate_metrics!/1
+Domain.cleanup_deprecated!/1
+\`\`\`
 
-## Supporting Modules
+## Core Modules
 
-- [`Thunderline.Thunderblock.Domain`](lib/thunderline/thunderblock/domain.ex:2) — Ash domain definition tying resources to the persistence layer.
-- [`Thunderline.Thunderblock.Telemetry.Retention`](lib/thunderline/thunderblock/telemetry/retention.ex:1) — emits retention metrics and alerts.
-- [`Thunderline.Thunderblock.SupervisionTree`](lib/thunderline/thunderblock/resources/supervision_tree.ex:19) — supervises workflow and retention workers.
-- [`Thunderline.Thunderblock.Timing.TimerScheduler`](docs/domains/thunderblock/timing/OVERVIEW.md) — GenServer orchestrating timer execution.
-- [`Thunderline.Thunderblock.Timing.CronScheduler`](docs/domains/thunderblock/timing/OVERVIEW.md) — cron driver executing scheduled jobs.
+### Infrastructure & Runtime
+| Module | Status | Purpose |
+|--------|--------|---------|
+| \`Checkpoint\` | Active | State checkpointing |
+| \`Health\` | Active | Health check endpoints |
+| \`DomainActivation\` | Active | Domain lifecycle |
+| \`DomainRegistry\` | Active | Domain registration |
+| \`MigrationRunner\` | Active | Migration execution |
+| \`ObanIntrospection\` | Active | Oban queue inspection |
+| \`ThunderMemory\` | Active | Memory management |
+| \`Retention\` | Active | Retention operations |
+
+### Timing Subsystem
+| Module | Status | Purpose |
+|--------|--------|---------|
+| \`Timing.Timer\` | Active | Timer definitions |
+| \`Timing.Scheduler\` | Active | Timer scheduling |
+| \`Timing.DelayedExecution\` | Active | Delayed jobs |
+| \`Timing.GenericWorker\` | Active | Generic Oban worker |
+
+### Background Jobs (Oban)
+| Worker | Status | Queue | Purpose |
+|--------|--------|-------|---------|
+| \`RetentionSweepWorker\` | Active | \`:retention\` | Retention sweeps |
+| \`DomainSyncProcessor\` | Active | \`:domain_sync\` | Domain synchronization |
+| \`CrossDomainProcessor\` | ⚠️ Stub | — | Empty file |
+| \`ScheduledWorkflowProcessor\` | ⚠️ Stub | — | Empty file |
 
 ## Integration Points
 
 ### Vertical Edges
-
-- **ThunderBolt → ThunderBlock**: persists model artifacts, lane telemetry, and UPM snapshots in vault resources.
-- **ThunderFlow → ThunderBlock**: stores event history, system actions, and audit logs for compliance.
-- **ThunderBlock → ThunderFlow**: publishes `system.persistence.*` events when retention sweeps or timing jobs complete.
-- **ThunderBlock → ThunderLink**: supplies real-time state changes for dashboards via EventBus.
-- **ThunderBlock → ThunderVine**: sends provenance updates reflecting storage changes for lineage tracking.
+- **ThunderBolt → Block**: Persists model artifacts, UPM snapshots
+- **ThunderFlow → Block**: Stores event history, audit logs
+- **Block → ThunderFlow**: Publishes \`system.persistence.*\` events
+- **Block → ThunderLink**: Real-time state for dashboards
+- **Block → ThunderVine**: Provenance updates for storage changes
 
 ### Horizontal Edges
-
-- **ThunderBlock ↔ ThunderCrown**: consumes governance directives for retention policies and reports back audit results.
-- **ThunderBlock ↔ ThunderGate**: enforces tenancy and capability checks for storage access via shared policy modules.
-- **ThunderBlock ↔ ThunderGrid**: coordinates zone-specific storage or replication strategies when spatial placement matters.
+- **Block ↔ ThunderCrown**: Governance directives for retention
+- **Block ↔ ThunderGate**: Tenancy/capability checks for storage
+- **Block ↔ ThunderGrid**: Zone-specific storage strategies
 
 ## Telemetry Events
 
-- `[:thunderline, :thunderblock, :retention, :sweep_started|:sweep_completed]`
-- `[:thunderline, :thunderblock, :timing, :timer_fired]`
-- `[:thunderline, :thunderblock, :cron, :job_executed]`
-- `[:thunderline, :thunderblock, :vault, :policy_violation]`
-- `[:thunderline, :thunderblock, :workflow, :state_changed]`
+\`\`\`elixir
+[:thunderline, :thunderblock, :retention, :sweep_started]
+[:thunderline, :thunderblock, :retention, :sweep_completed]
+[:thunderline, :thunderblock, :timing, :timer_fired]
+[:thunderline, :thunderblock, :vault, :policy_violation]
+[:thunderline, :thunderblock, :workflow, :state_changed]
+[:thunderline, :thunderblock, :checkpoint, :created]
+[:thunderline, :thunderblock, :health, :check]
+\`\`\`
+
+## Known Issues & TODOs
+
+1. **Empty Stub Jobs**: \`cross_domain_processor.ex\`, \`scheduled_workflow_processor.ex\` need implementation or removal
+2. **Policy Coverage**: Many vault resources have \`authorize_if always()\` - need proper policies
+3. **File Naming**: \`community.ex\` defines \`ExecutionTenant\` - consider renaming file
+4. **Delegation Pattern**: Domain delegates to VaultKnowledgeNode - consider if this is the right pattern
 
 ## Performance Targets
 
 | Operation | Latency (P50) | Latency (P99) | Throughput |
 |-----------|---------------|---------------|------------|
-| Vault read/write | 10 ms | 60 ms | 5k/s |
-| Retention sweep batch | 500 ms | 2 s | 100/min |
-| Timer firing | 20 ms | 120 ms | 1k/s |
-| Cron job dispatch | 40 ms | 200 ms | 500/min |
-| Workflow checkpoint | 30 ms | 150 ms | 2k/min |
+| Vault read/write | 10 ms | 60 ms | 5k/s |
+| Retention sweep batch | 500 ms | 2 s | 100/min |
+| Timer firing | 20 ms | 120 ms | 1k/s |
+| Workflow checkpoint | 30 ms | 150 ms | 2k/min |
+| Knowledge graph query | 50 ms | 200 ms | 500/s |
 
 ## Security & Policy Notes
 
-- Audit highlighted numerous `authorize_if always()` patterns in vault resources (see [`docs/documentation/DOMAIN_SECURITY_PATTERNS.md`](docs/documentation/DOMAIN_SECURITY_PATTERNS.md:365)); remediation is required to enforce tenancy.
-- Retention jobs must log deletions and archive actions for auditable trails.
-- Timing jobs should respect governance capability checks before executing cross-domain actions.
-- Feature flags controlling retention tiers and timing experiments must be documented in `FEATURE_FLAGS.md`.
+- **Repo Access**: Only ThunderBlock may call \`Thunderline.Repo\` directly
+- **Policy Audit**: Many resources have placeholder policies (\`authorize_if always()\`)
+- Retention jobs must log deletions for audit trails
+- Timing jobs should respect governance checks before cross-domain actions
 
-## Testing Strategy
+## Development Priorities
 
-- Unit tests for retention policy evaluation, timer scheduling, and cron parsing.
-- Integration tests covering end-to-end retention sweeps and workflow orchestration.
-- Property tests for vault knowledge graph consistency and embedding vector uniqueness.
-- Chaos testing of timing recovery (ensure timers resume after crashes) and retention sweeps under heavy load.
-
-## Development Roadmap
-
-1. **Phase 1 — Policy Remediation**: reinstate Ash policies across vault resources and remove direct `authorize_if always()`.
-2. **Phase 2 — Retention Metrics**: complete metric export for DLQ and retention sweeps; integrate with Thunderwatch dashboards.
-3. **Phase 3 — Timing Hardening**: add distributed coordination and clock drift detection for the timing subsystem.
-4. **Phase 4 — Workflow Modernization**: migrate legacy ThunderChief orchestration remnants into official workflow trackers and document shutdown paths.
+1. **Phase 1**: Remove or implement empty stub jobs
+2. **Phase 2**: Policy remediation across vault resources
+3. **Phase 3**: Timing subsystem hardening (distributed coordination)
+4. **Phase 4**: Workflow tracker modernization
 
 ## References
 
-- [`THUNDERLINE_DOMAIN_CATALOG.md`](THUNDERLINE_DOMAIN_CATALOG.md:8)
-- [`docs/domains/thunderblock/timing/OVERVIEW.md`](docs/domains/thunderblock/timing/OVERVIEW.md:1)
-- [`docs/documentation/CODEBASE_AUDIT_2025.md`](docs/documentation/CODEBASE_AUDIT_2025.md:78)
-- [`docs/documentation/DOMAIN_SECURITY_PATTERNS.md`](docs/documentation/DOMAIN_SECURITY_PATTERNS.md:365)
-- [`docs/documentation/HC_EXECUTION_PLAN.md`](docs/documentation/HC_EXECUTION_PLAN.md:67)
+- Domain definition: [domain.ex](../../../lib/thunderline/thunderblock/domain.ex)
+- VaultKnowledgeNode: [vault_knowledge_node.ex](../../../lib/thunderline/thunderblock/resources/vault_knowledge_node.ex)
+- Retention: [retention.ex](../../../lib/thunderline/thunderblock/retention.ex)

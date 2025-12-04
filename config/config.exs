@@ -408,9 +408,9 @@ config :jido_action,
       end
   ]
 
-# Configure Cerebros toolkit
-config :cerebros,
-  repo: Thunderline.Repo
+# NOTE: Cerebros is internal to Thunderbolt domain, not an external app.
+# The :cerebros hex package is not used - all Cerebros code lives in
+# lib/thunderline/thunderbolt/cerebros/ and uses Snex for Python bridging.
 
 # --- AshOban Trigger Usage Reference ---------------------------------------
 # Example (from docs) for adding a trigger inside a resource:

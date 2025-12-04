@@ -242,10 +242,4 @@ defmodule Thunderline.Thundercrown.Resources.OrchestrationUI do
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
-
-  # Helper functions
-  defp priority_to_int(:low), do: 1
-  defp priority_to_int(:normal), do: 5
-  defp priority_to_int(:high), do: 8
-  defp priority_to_int(:critical), do: 10
 end

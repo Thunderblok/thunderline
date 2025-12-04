@@ -791,11 +791,6 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
   defp reflex_priority(:activation), do: :normal
   defp reflex_priority(_), do: :normal
 
-  # Legacy emit function for backward compatibility
-  defp emit_reflex_event_legacy(reflex_event) do
-    emit_reflex_event(reflex_event)
-  end
-
   # ═══════════════════════════════════════════════════════════════
   # Batch Operations
   # ═══════════════════════════════════════════════════════════════

@@ -1,99 +1,287 @@
-# ThunderLink Domain Overview
+# ThunderLink Domain Overview (Grounded)
 
+**Last Verified**: 2025-01-XX  
+**Source of Truth**: `lib/thunderline/thunderlink/domain.ex`  
 **Vertex Position**: Data Plane Ring — Transport Layer
 
-**Purpose**: Real-time transport, presence, and federation layer that delivers messages, voice, and protocol traffic across Thunderline and external networks.
+## Purpose
 
-## Charter
+ThunderLink is the **communication and networking domain** of Thunderline:
+- Protocol bus, broadcast, and federation
+- Real-time messaging and presence
+- WebRTC voice/video signaling
+- Cross-realm federation
+- Node registry and cluster topology
 
-ThunderLink provides the communication substrate for Thunderline. It manages WebSocket sessions, voice signaling, community channels, cross-realm federation, and the evolving TOCP transport. The domain guarantees reliable delivery, presence tracking, and telemetry for all user- and agent-facing interactions, while staying agnostic to business meaning (“Link does delivery, not meaning”).
+**Design Principle**: "Link does delivery, not meaning" — no transformations beyond envelope/serialization.
 
-## Core Responsibilities
+## Domain Extensions
 
-1. **Realtime Transport** — maintain WebSocket, WebRTC, and custom protocol connections for dashboards, agents, and clients.
-2. **Presence & Communities** — manage communities, channels, roles, and presence policies for collaborative features.
-3. **Federation Gateway** — broker cross-realm communication through federation sockets and future TOCP transports.
-4. **Voice Signaling** — provide signaling flows for voice rooms, participants, and devices (media pipeline emerging with Flow).
-5. **Telemetry & Reliability** — capture transport metrics, queue states, and routing decisions for dashboards and anomaly detection.
-6. **Protocol Evolution** — host the Thunderline Open Circuit Protocol (TOCP) scaffolding and ensure compatibility with future transports.
+```elixir
+use Ash.Domain,
+  extensions: [AshAdmin.Domain, AshOban.Domain, AshGraphql.Domain, AshTypescript.Rpc]
+```
 
-## Ash Resources
+- **AshAdmin** — Admin dashboard enabled
+- **AshOban** — Background job processing
+- **AshGraphql** — GraphQL queries/mutations for Ticket
+- **AshTypescript.Rpc** — TypeScript RPC generation
 
-- [`Thunderline.Thunderlink.Resources.Community`](lib/thunderline/thunderlink/resources/community.ex:28) — defines collaborative spaces and metadata.
-- [`Thunderline.Thunderlink.Resources.Channel`](lib/thunderline/thunderlink/resources/channel.ex:25) — channel-level metadata for messaging and broadcast.
-- [`Thunderline.Thunderlink.Resources.Message`](lib/thunderline/thunderlink/resources/message.ex:26) — stores messages with references to communities and actors.
-- [`Thunderline.Thunderlink.Resources.Role`](lib/thunderline/thunderlink/resources/role.ex:25) — captures roles and permissions for participants.
-- [`Thunderline.Thunderlink.Resources.FederationSocket`](lib/thunderline/thunderlink/resources/federation_socket.ex:27) — establishes cross-instance communication channels.
-- [`Thunderline.Thunderlink.Voice.Room`](lib/thunderline/thunderlink/voice/room.ex:8) — records voice room configuration and participants.
+## Directory Structure
+
+```
+lib/thunderline/thunderlink/
+├── domain.ex                    # Main Ash domain (18 resources)
+├── supervisor.ex                # Domain supervisor
+├── registry.ex                  # Registry management
+├── topics.ex                    # PubSub topics
+├── tick_generator.ex            # Tick generation
+├── dashboard_metrics.ex         # Dashboard metrics
+├── http.ex                      # HTTP utilities
+├── thunder_bridge.ex            # Bridge module
+├── thunder_websocket_client.ex  # WebSocket client
+├── chat/                        # Chat subdomain (separate Ash Domain)
+│   ├── chat.ex                  # Chat domain definition
+│   ├── conversation.ex          # Conversation resource
+│   ├── conversation/changes/    # Ash changes
+│   ├── message.ex               # Message resource
+│   └── message/changes/         # Ash changes
+├── presence/                    # Presence management (2 files)
+│   ├── enforcer.ex
+│   └── policy.ex
+├── resources/                   # Core Ash resources (11 files)
+│   ├── channel.ex
+│   ├── community.ex
+│   ├── federation_socket.ex
+│   ├── heartbeat.ex
+│   ├── link_session.ex
+│   ├── message.ex
+│   ├── node.ex
+│   ├── node_capability.ex
+│   ├── node_group.ex
+│   ├── node_group_membership.ex
+│   ├── role.ex
+│   └── ticket.ex
+├── transport/                   # Transport layer (14+ files)
+│   ├── admission.ex, config.ex, flow_control.ex
+│   ├── fragments.ex, membership.ex, reliability.ex
+│   ├── router.ex, store.ex, wire.ex
+│   ├── routing/
+│   ├── security.ex, security/
+│   └── telemetry.ex, telemetry/
+└── voice/                       # Voice/WebRTC (5 files)
+    ├── room.ex, participant.ex, device.ex
+    ├── room_pipeline.ex, supervisor.ex
+    └── calculations/
+```
+
+## Registered Ash Resources
+
+### Main Domain (18 resources)
+
+#### Support/Communication Resources
+| Resource | Module | File |
+|----------|--------|------|
+| Ticket | `Thunderline.Thunderlink.Resources.Ticket` | resources/ticket.ex |
+| Channel | `Thunderline.Thunderlink.Resources.Channel` | resources/channel.ex |
+| Community | `Thunderline.Thunderlink.Resources.Community` | resources/community.ex |
+| FederationSocket | `Thunderline.Thunderlink.Resources.FederationSocket` | resources/federation_socket.ex |
+| Message | `Thunderline.Thunderlink.Resources.Message` | resources/message.ex |
+| Role | `Thunderline.Thunderlink.Resources.Role` | resources/role.ex |
+
+#### Voice/WebRTC Resources
+| Resource | Module | File |
+|----------|--------|------|
+| Room | `Thunderline.Thunderlink.Voice.Room` | voice/room.ex |
+| Participant | `Thunderline.Thunderlink.Voice.Participant` | voice/participant.ex |
+| Device | `Thunderline.Thunderlink.Voice.Device` | voice/device.ex |
+
+#### Node Registry & Cluster Topology
+| Resource | Module | File |
+|----------|--------|------|
+| Node | `Thunderline.Thunderlink.Resources.Node` | resources/node.ex |
+| Heartbeat | `Thunderline.Thunderlink.Resources.Heartbeat` | resources/heartbeat.ex |
+| LinkSession | `Thunderline.Thunderlink.Resources.LinkSession` | resources/link_session.ex |
+| NodeCapability | `Thunderline.Thunderlink.Resources.NodeCapability` | resources/node_capability.ex |
+| NodeGroup | `Thunderline.Thunderlink.Resources.NodeGroup` | resources/node_group.ex |
+| NodeGroupMembership | `Thunderline.Thunderlink.Resources.NodeGroupMembership` | resources/node_group_membership.ex |
+
+### Chat Subdomain (Separate Ash Domain)
+
+Located at `chat/chat.ex` — `Thunderline.Thunderlink.Chat`:
+
+```elixir
+use Ash.Domain, otp_app: :thunderline, extensions: [AshAdmin.Domain, AshPhoenix]
+```
+
+| Resource | Module | File |
+|----------|--------|------|
+| Conversation | `Thunderline.Thunderlink.Chat.Conversation` | chat/conversation.ex |
+| Message | `Thunderline.Thunderlink.Chat.Message` | chat/message.ex |
+
+**Note**: Two separate Message resources exist:
+- `Thunderline.Thunderlink.Resources.Message` (main domain)
+- `Thunderline.Thunderlink.Chat.Message` (chat subdomain)
+
+## GraphQL Endpoints
+
+```elixir
+queries do
+  get Ticket, :get_ticket, :read
+  list Ticket, :list_tickets, :read
+end
+
+mutations do
+  create Ticket, :create_ticket, :open
+  update Ticket, :close_ticket, :close
+  update Ticket, :process_ticket, :process
+  update Ticket, :escalate_ticket, :escalate
+end
+```
+
+## TypeScript RPC
+
+```elixir
+typescript_rpc do
+  resource Ticket do
+    rpc_action(:list_tickets, :read)
+    rpc_action(:create_ticket, :open)
+  end
+end
+```
+
+## Code Interfaces (Domain-level)
+
+### Node Registry
+| Function | Resource | Action |
+|----------|----------|--------|
+| `register_node` | Node | :register |
+| `mark_node_online` | Node | :mark_online |
+| `mark_node_offline` | Node | :mark_offline |
+| `mark_node_status` | Node | :update_status |
+| `online_nodes` | Node | :online_nodes |
+| `nodes_by_status` | Node | :read |
+| `nodes_by_role` | Node | :read |
+| `heartbeat_node` | Node | :heartbeat |
+
+### Heartbeat
+| Function | Resource | Action |
+|----------|----------|--------|
+| `record_heartbeat` | Heartbeat | :record |
+| `recent_heartbeats` | Heartbeat | :recent |
+
+### LinkSession
+| Function | Resource | Action |
+|----------|----------|--------|
+| `active_link_sessions` | LinkSession | :active_sessions |
+| `establish_link_session` | LinkSession | :mark_established |
+| `update_link_session_metrics` | LinkSession | :update_metrics |
+| `close_link_session` | LinkSession | :close |
+
+### NodeCapability
+| Function | Resource | Action |
+|----------|----------|--------|
+| `node_capabilities_by_capability` | NodeCapability | :read |
+
+### Chat Subdomain
+| Function | Resource | Action |
+|----------|----------|--------|
+| `create_conversation` | Conversation | :create |
+| `get_conversation` | Conversation | :read (get_by: [:id]) |
+| `list_conversations` | Conversation | :read |
+| `message_history` | Message | :for_conversation |
+| `create_message` | Message | :create |
+
+## Authorization
+
+```elixir
+authorization do
+  authorize :by_default
+end
+```
+
+Enabled by default — policies must be defined on resources.
+
+## Transport Layer
+
+The transport/ directory implements the TOCP (Thunderline Open Circuit Protocol):
+
+| Module | Purpose |
+|--------|---------|
+| Router | Transport routing behavior |
+| Admission | Connection admission control |
+| Config | Transport configuration |
+| FlowControl | Flow control mechanisms |
+| Fragments | Message fragmentation |
+| Membership | Cluster membership |
+| Reliability | Reliable delivery |
+| Store | Transport storage |
+| Wire | Wire protocol |
+| Security | Transport security |
+| Telemetry | Transport telemetry |
+
+## Voice Signaling
+
+| Module | Purpose |
+|--------|---------|
+| Room | Voice room configuration |
+| Participant | Room participants |
+| Device | Participant devices |
+| RoomPipeline | Broadway pipeline for voice |
+| Supervisor | Voice supervisor |
 
 ## Supporting Modules
 
-- [`Thunderline.Thunderlink.Transport`](lib/thunderline/thunderlink/transport.ex:2) — facade bridging new transport implementations with legacy TOCP modules.
-- [`Thunderline.Thunderlink.Transport.Router`](lib/thunderline/thunderlink/transport/router.ex:2) — routing behavior for transport traffic.
-- [`Thunderline.Thunderlink.Transport.Telemetry.Aggregator`](lib/thunderline/thunderlink/transport/telemetry/aggregator.ex:1) — collects transport metrics.
-- [`Thunderline.Thunderlink.Transport.Security`](lib/thunderline/thunderlink/transport/security/impl.ex:10) — pluggable transport security enforcement.
-- [`Thunderline.Thunderlink.Chat`](lib/thunderline/thunderlink/chat.ex:1) — high-level messaging API bridging to Ash resources.
-- [`Thunderline.Thunderlink.DashboardMetrics`](lib/thunderline/thunderlink/dashboard_metrics.ex:501) — produces metrics for dashboards (currently with several TODO placeholders).
+| Module | Purpose | File |
+|--------|---------|------|
+| Registry | Node/session registry | registry.ex |
+| Topics | PubSub topic management | topics.ex |
+| TickGenerator | Tick generation | tick_generator.ex |
+| DashboardMetrics | Dashboard metrics | dashboard_metrics.ex |
+| ThunderBridge | Bridge module | thunder_bridge.ex |
+| ThunderWebsocketClient | WS client | thunder_websocket_client.ex |
 
-## Integration Points
+## Known Issues & TODOs
 
-### Vertical Edges
+### 1. Duplicate Message Resources
+Two Message resources exist:
+- `Thunderline.Thunderlink.Resources.Message` (main domain - community messaging)
+- `Thunderline.Thunderlink.Chat.Message` (chat subdomain - AI conversations)
 
-- **Thundergate → ThunderLink**: capability and authentication decisions feed into Link to authorize transport sessions.
-- **ThunderLink → ThunderFlow**: publishes `ui.command.*`, `voice.signal.*`, and other transport events to EventBus for downstream processing.
-- **ThunderLink → ThunderBlock**: persists messages and presence state for durable history and compliance.
-- **ThunderLink → ThunderCrown**: exposes communication metadata for policy decisions and AI governance.
+Verify if this is intentional or should be consolidated.
 
-### Horizontal Edges
+### 2. Chat as Separate Domain
+`Thunderline.Thunderlink.Chat` is a separate Ash Domain with AshPhoenix extension.
+Consider whether this should remain separate or merge into main domain.
 
-- **ThunderLink ↔ ThunderFlow**: real-time pipeline broadcasts updates to connected clients; Flow feeds back telemetry for dashboards.
-- **ThunderLink ↔ ThunderGrid**: consults spatial zone data when transport topology or edge placement matters.
-- **ThunderLink ↔ ThunderCom**: legacy communication surface being merged—ThunderCom resources should eventually migrate here.
-- **ThunderLink ↔ ThunderBolt**: streams execution updates, alerts, and user notifications from ThunderBolt pipelines.
+### 3. WARHORSE TODOs
+Multiple TODOs related to policy re-enablement marked as "WARHORSE" throughout the codebase.
+
+### 4. Dashboard Metrics
+`dashboard_metrics.ex` has several TODO placeholders for metrics marked as "OFFLINE".
+
+### 5. TOCP Feature Gate
+TOCP transport remains feature-gated and disabled by default.
 
 ## Telemetry Events
 
-- `[:thunderline, :thunderlink, :transport, :connected|:disconnected]` — connection lifecycle events.
-- `[:thunderline, :thunderlink, :message, :sent|:delivered]` — message flow metrics.
-- `[:thunderline, :thunderlink, :voice, :signal]` — voice signaling activity.
-- `[:thunderline, :thunderlink, :federation, :sync]` — federation socket synchronization.
-- `[:thunderline, :tocp, :router, :route]` — TOCP routing telemetry (feature gated).
+- `[:thunderline, :thunderlink, :transport, :connected|:disconnected]`
+- `[:thunderline, :thunderlink, :message, :sent|:delivered]`
+- `[:thunderline, :thunderlink, :voice, :signal]`
+- `[:thunderline, :thunderlink, :federation, :sync]`
+- `[:thunderline, :tocp, :router, :route]`
 
-## Performance Targets
+## Development Priorities
 
-| Operation | Latency (P50) | Latency (P99) | Throughput |
-|-----------|---------------|---------------|------------|
-| WebSocket message delivery | 15 ms | 80 ms | 10k/s |
-| Voice signaling dispatch | 20 ms | 120 ms | 5k/s |
-| Federation message relay | 40 ms | 200 ms | 1k/s |
-| Presence update propagation | 25 ms | 150 ms | 5k/s |
-| Transport telemetry emission | 10 ms | 60 ms | 20k/s |
+1. **Policy Reinforcement** — Re-enable Ash policies, resolve "WARHORSE" annotations
+2. **Transport Telemetry** — Implement dashboard metrics marked "OFFLINE"
+3. **Federation Maturation** — Finalize TOCP transports
+4. **Voice Evolution** — Integrate with ThunderFlow real-time pipeline
 
-## Security & Policy Notes
+## Related Domains
 
-- Presence and messaging policies are under review; many were disabled (see “WARHORSE” TODOs). Reinstate Ash policies and align with Thundergate governance.
-- Federation sockets must enforce capability checks before exchanging data with external realms.
-- TOCP feature (`:tocp`) remains disabled by default; when enabled ensure the new security hooks (`Thunderline.Thundertgate` integration) are active.
-- PII or sensitive payloads routed through ThunderLink should be encrypted at rest via ThunderBlock storage policies.
-
-## Testing Strategy
-
-- Unit tests for transport routing, security modules, and chat message changes.
-- Integration tests covering WebSocket connection lifecycle, presence updates, and voice room signaling (`test/thunderline/thunderlink/voice/*.exs`).
-- Property tests verifying message ordering and idempotency under retry scenarios.
-- Load tests simulating large subscriber counts to validate telemetry and fanout stability.
-
-## Development Roadmap
-
-1. **Phase 1 — Policy Reinforcement**: re-enable Ash policies on communication resources and resolve “WARHORSE” annotations.
-2. **Phase 2 — Transport Telemetry**: implement dashboard metrics currently marked as “OFFLINE” and integrate with Thunderwatch.
-3. **Phase 3 — Federation Maturation**: finalize TOCP transports, enable feature flag in staging, and document operational playbooks.
-4. **Phase 4 — Voice Evolution**: align voice signaling with ThunderFlow real-time pipeline and prepare for membrane/media pipeline integration.
-
-## References
-
-- [`lib/thunderline/thunderlink/domain.ex`](lib/thunderline/thunderlink/domain.ex:2)
-- [`docs/documentation/CODEBASE_AUDIT_2025.md`](docs/documentation/CODEBASE_AUDIT_2025.md:390)
-- [`docs/documentation/HC_EXECUTION_PLAN.md`](docs/documentation/HC_EXECUTION_PLAN.md:60)
-- [`docs/documentation/planning/tocp_thunderline_open_circuit_protocol_mvp_spec_v_0.md`](docs/documentation/planning/tocp_thunderline_open_circuit_protocol_mvp_spec_v_0.md:1)
-- [`docs/documentation/docs/flower-power/domain-cleanup-report.md`](docs/documentation/docs/flower-power/domain-cleanup-report.md:142)
+- **ThunderGate** — Authentication and capability decisions
+- **ThunderFlow** — Event publication from transport
+- **ThunderBlock** — Message persistence
+- **ThunderCrown** — Policy decisions and AI governance
+- **ThunderGrid** — Spatial zone data for transport topology

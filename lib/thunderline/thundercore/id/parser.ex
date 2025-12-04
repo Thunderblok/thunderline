@@ -39,6 +39,7 @@ defmodule Thunderline.Thundercore.Id.Parser do
   # Maximum valid timestamp (48 bits = ~8900 years from epoch)
   # Reserved for future timestamp validation
   @_max_timestamp 0xFFFFFFFFFFFF
+  _ = @_max_timestamp
 
   @doc """
   Extract the timestamp from a ULID string.

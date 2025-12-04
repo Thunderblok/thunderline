@@ -170,44 +170,4 @@ defmodule Thunderline.Thunderbolt.Resources.ChunkHealth do
                   error_rate_percent > 50
               )
   end
-
-  # Private action implementations
-  defp evaluate_health_thresholds(_changeset, health_record) do
-    # TODO: Implement ML-based health threshold evaluation
-    # For now, use simple thresholds
-    cond do
-      health_record.cpu_usage_percent |> Decimal.gt?(90) or
-          health_record.error_rate_percent |> Decimal.gt?(50) ->
-        {:ok, %{health_record | status: :critical}}
-
-      health_record.cpu_usage_percent |> Decimal.gt?(70) or
-          health_record.error_rate_percent |> Decimal.gt?(20) ->
-        {:ok, %{health_record | status: :degraded}}
-
-      true ->
-        {:ok, %{health_record | status: :healthy}}
-    end
-  end
-
-  defp trigger_remediation_if_needed(_changeset, health_record) do
-    if health_record.status in [:critical, :degraded] do
-      Phoenix.PubSub.broadcast(
-        Thunderline.PubSub,
-        "thunderbolt:remediation",
-        {:remediation_needed, health_record}
-      )
-    end
-
-    {:ok, health_record}
-  end
-
-  defp broadcast_health_change(_changeset, health_record) do
-    Phoenix.PubSub.broadcast(
-      Thunderline.PubSub,
-      "thunderbolt:health:#{health_record.chunk_id}",
-      {:health_changed, health_record}
-    )
-
-    {:ok, health_record}
-  end
 end

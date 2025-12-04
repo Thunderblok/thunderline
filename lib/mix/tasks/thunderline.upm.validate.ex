@@ -42,6 +42,7 @@ defmodule Mix.Tasks.Thunderline.Upm.Validate do
 
   use Mix.Task
   require Logger
+  require Ash.Query
 
   alias Thunderline.Feature
   alias Thunderline.Thunderbolt.Resources.{UpmTrainer, UpmSnapshot, UpmAdapter, UpmDriftWindow}
@@ -206,7 +207,8 @@ defmodule Mix.Tasks.Thunderline.Upm.Validate do
     IO.write("Database migrations... ")
 
     try do
-      case Ash.read(UpmTrainer, limit: 1) do
+      query = UpmTrainer |> Ash.Query.limit(1)
+      case Ash.read(query) do
         {:ok, _} ->
           IO.puts("✅ UPM tables exist")
           :ok
@@ -231,14 +233,18 @@ defmodule Mix.Tasks.Thunderline.Upm.Validate do
 
     data = :crypto.strong_rand_bytes(1024)
 
-    # Test zstd
+    # Test zstd - may not be available
     zstd_result =
-      try do
-        compressed = :ezstd.compress(data)
-        decompressed = :ezstd.decompress(compressed)
-        if decompressed == data, do: :ok, else: {:error, :mismatch}
-      rescue
-        _ -> {:error, :unavailable}
+      if Code.ensure_loaded?(:ezstd) do
+        try do
+          compressed = :ezstd.compress(data)
+          decompressed = :ezstd.decompress(compressed)
+          if decompressed == data, do: :ok, else: {:error, :mismatch}
+        rescue
+          _ -> {:error, :unavailable}
+        end
+      else
+        {:error, :not_loaded}
       end
 
     # Test gzip
@@ -261,7 +267,7 @@ defmodule Mix.Tasks.Thunderline.Upm.Validate do
         :ok
 
       {_, :ok} ->
-        IO.puts("⚠️  gzip only (zstd failed)")
+        IO.puts("⚠️  gzip only (zstd not available)")
         :ok
 
       _ ->

@@ -225,8 +225,6 @@ defmodule Thunderline.Thundercore.TickEmitter do
   # Private Functions
   # ═══════════════════════════════════════════════════════════════
 
-  defp schedule_ticks(%{paused: true} = state), do: state
-
   defp schedule_ticks(state) do
     system_timer = Process.send_after(self(), :system_tick, state.system_tick_ms)
     slow_timer = Process.send_after(self(), :slow_tick, state.slow_tick_ms)
