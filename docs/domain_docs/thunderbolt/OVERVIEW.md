@@ -1,12 +1,53 @@
 # ThunderBolt Domain Overview
 
-**Vertex Position**: Control Plane Ring — Execution Layer
+**Vertex Position**: Control Plane Ring — ML & Execution Layer
 
-**Purpose**: Orchestration and compute powerhouse that executes Thunderline’s ML workloads, manages Cerebros bridges, and coordinates Unified Persistent Model (UPM) lifecycles.
+**Purpose**: Machine Learning orchestration domain that executes ML workloads, manages Cerebros bridges, orchestrates ThunderCell chunks, and coordinates the Unified Persistent Model (UPM) lifecycle. Adjacent to ThunderBit (automata).
 
 ## Charter
 
-ThunderBolt is responsible for turning AI intent into concrete computation. The domain schedules and supervises neural architecture search, manages ThunderCell lane engines, and integrates external solvers such as Cerebros. It acts as the execution arm of ThunderCrown’s governance, providing deterministic, auditable runs and publishing telemetry across the platform.
+ThunderBolt is the **ML engine** of Thunderline. While ThunderBit defines the automata structure and categories, ThunderBolt **trains, optimizes, and runs inference** on those automata. The domain manages neural architecture search, Virtual Ising Machines (VIM), ThunderCell orchestration, and all Python/ML interop via Snex bridges.
+
+## Domain Relationship: ThunderBit ↔ ThunderBolt
+
+| Aspect | ThunderBit (Automata) | ThunderBolt (ML) |
+|--------|----------------------|------------------|
+| **Role** | Defines structure | Trains & executes |
+| **Focus** | Categories, wiring, transitions | Models, embeddings, inference |
+| **Analogy** | CPU (logic) | GPU (acceleration) |
+| **Data** | State machines, CA patterns | Weights, embeddings, gradients |
+
+## Core Responsibilities
+
+1. **ML Model Lifecycle** — register, version, and track ML models, datasets, artifacts, and trial runs.
+2. **Cerebros Integration** — coordinate NAS experiments via Snex bridge (GIL-free Python interop).
+3. **ThunderCell Orchestration** — manage ThunderCell chunks from ThunderBit, run lane engines, and coordinate cell-level ML.
+4. **Virtual Ising Machine (VIM)** — optimization layer for combinatorial problems.
+5. **Unified Persistent Model (UPM)** — run training and replay jobs for the platform-wide agent brain.
+6. **Python Interop** — Snex-based GIL-free Python calls for ML operations.
+7. **Policy Compliance** — enforce governance policies from ThunderCrown.
+
+## Subdomains
+
+```
+thunderbolt/
+├── ca/              # CA pattern execution (from ThunderBit specs)
+├── cerebros/        # Cerebros NAS orchestration
+├── cerebros_bridge/ # Snex/Python interop (snex_invoker.ex is primary)
+├── ml/              # Core ML resources & trainer
+├── moe/             # Mixture of Experts
+├── nlp/             # NLP processing
+├── numerics/        # Numerical adapters (Axon, ONNX)
+├── policy/          # ML policy execution
+├── rag/             # RAG (Retrieval Augmented Generation)
+├── sagas/           # ML workflow sagas
+├── signal/          # Signal processing
+├── sparse/          # Sparse computation
+├── tak/             # TAK persistence
+├── thundercell/     # ThunderCell chunk orchestration
+├── upm/             # Unified Persistent Model
+└── vim/             # Virtual Ising Machine (planned)
+```
 
 ## Core Responsibilities
 
