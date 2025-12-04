@@ -213,7 +213,8 @@ defmodule Thunderline.MixProject do
 
     base ++
       jido_git_deps ++
-      ash_jido_dep ++ [{:cerebros, path: "/home/mo/DEV/cerebros", override: true}]
+      ash_jido_dep
+      # ++ [{:cerebros, path: "/home/mo/DEV/cerebros", override: true}]
   end
 
   defp aliases do

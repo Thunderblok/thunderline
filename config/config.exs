@@ -118,21 +118,21 @@ config :thunderline,
     enabled: true,
     # Use snex for GIL-free parallel training (vs pythonx or subprocess)
     invoker: :snex,
-    # Path to cerebros_service.py module
-    python_path: ["thunderhelm"],
+    # Path to cerebros service modules (now in python/cerebros/)
+    python_path: ["python/cerebros", "python/cerebros/core", "python/cerebros/service"],
     repo_path:
       System.get_env("CEREBROS_REPO") ||
-        Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+        Path.expand("../python/cerebros", __DIR__),
     script_path:
       System.get_env("CEREBROS_SCRIPT") ||
         Path.expand(
-          "../../cerebros-core-algorithm-alpha/generative-proof-of-concept-CPU-preprocessing-in-memory.py",
+          "../python/cerebros/service/cerebros_service.py",
           __DIR__
         ),
     python_executable: System.get_env("CEREBROS_PYTHON") || "python3",
     working_dir:
       System.get_env("CEREBROS_WORKDIR") ||
-        Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+        Path.expand("../python/cerebros", __DIR__),
     invoke: [
       default_timeout_ms:
         case System.get_env("CEREBROS_TIMEOUT_MS") do

@@ -152,6 +152,6 @@ defmodule Thunderline.Thunderbolt.Domain do
     end
 
     # Thunderbit Category Protocol (HC-Δ-5)
-    resource Thunderline.Thunderbit.Resources.ThunderbitDefinition
+    resource Thunderline.Thunderbolt.Resources.ThunderbitDefinition
   end
 end

@@ -9,7 +9,7 @@ defmodule Thunderline.Thunderbolt.NLP.Port do
 
       # Start under supervision tree
       children = [
-        {Thunderline.Thunderbolt.NLP.Port, [python_path: "python3", cli_path: "thunderhelm/nlp_cli.py"]}
+        {Thunderline.Thunderbolt.NLP.Port, [python_path: "python3", cli_path: "python/services/nlp_cli.py"]}
       ]
 
       # Analyze text
@@ -80,7 +80,7 @@ defmodule Thunderline.Thunderbolt.NLP.Port do
   @impl true
   def init(opts) do
     python_path = Keyword.get(opts, :python_path, "python3")
-    cli_path = Keyword.get(opts, :cli_path, "thunderhelm/nlp_cli.py")
+    cli_path = Keyword.get(opts, :cli_path, "python/services/nlp_cli.py")
 
     state = %__MODULE__{
       python_path: python_path,

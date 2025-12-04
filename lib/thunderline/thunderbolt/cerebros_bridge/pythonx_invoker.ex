@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
 
       config :thunderline, :cerebros_bridge,
         invoker: :pythonx,  # or :subprocess (default)
-        python_path: ["thunderhelm", "path/to/cerebros-core"]
+        python_path: ["python/cerebros", "python/cerebros/core", "python/cerebros/service"]
 
   """
 
@@ -84,7 +84,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.PythonxInvoker do
 
     python_path =
       Application.get_env(:thunderline, :cerebros_bridge, [])
-      |> Keyword.get(:python_path, ["thunderhelm"])
+      |> Keyword.get(:python_path, ["python/cerebros", "python/cerebros/core", "python/cerebros/service"])
 
     Logger.info(
       "[CerebrosBridge.PythonxInvoker] Initializing Pythonx with paths: #{inspect(python_path)}"

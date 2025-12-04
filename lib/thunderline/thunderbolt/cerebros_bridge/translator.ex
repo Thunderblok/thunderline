@@ -275,13 +275,17 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Translator do
   end
 
   defp generate_cerebros_script(spec, opts) do
-    # Get absolute path to thunderhelm directory
-    thunderhelm_path = Path.join(File.cwd!(), "thunderhelm")
+    # Get absolute path to cerebros service directory
+    cerebros_path = Path.join(File.cwd!(), "python/cerebros")
+    cerebros_core_path = Path.join(File.cwd!(), "python/cerebros/core")
+    cerebros_service_path = Path.join(File.cwd!(), "python/cerebros/service")
 
     """
     import sys
     import json
-    sys.path.insert(0, '#{thunderhelm_path}')
+    sys.path.insert(0, '#{cerebros_path}')
+    sys.path.insert(0, '#{cerebros_core_path}')
+    sys.path.insert(0, '#{cerebros_service_path}')
     import cerebros_service
 
     spec = #{Jason.encode!(spec)}

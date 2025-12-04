@@ -1,9 +1,11 @@
-defmodule Thunderline.Thunderbit.Resources.ThunderbitDefinition do
+defmodule Thunderline.Thunderbolt.Resources.ThunderbitDefinition do
   @moduledoc """
   Ash Resource for persisting Thunderbit category definitions.
 
   This resource allows admin-level management of Thunderbit categories,
   storing custom categories beyond the hardcoded defaults.
+
+  Part of ThunderBolt domain since ThunderBolt orchestrates ThunderBit automata.
 
   ## Attributes
 

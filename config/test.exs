@@ -67,14 +67,14 @@ config :thunderline,
   features: [],
   cerebros_bridge: [
     enabled: false,
-    repo_path: Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+    repo_path: Path.expand("../python/cerebros", __DIR__),
     script_path:
       Path.expand(
-        "../../cerebros-core-algorithm-alpha/generative-proof-of-concept-CPU-preprocessing-in-memory.py",
+        "../python/cerebros/service/cerebros_service.py",
         __DIR__
       ),
     python_executable: System.get_env("CEREBROS_PYTHON") || "python3",
-    working_dir: Path.expand("../../cerebros-core-algorithm-alpha", __DIR__),
+    working_dir: Path.expand("../python/cerebros", __DIR__),
     invoke: [
       default_timeout_ms:
         case System.get_env("CEREBROS_TIMEOUT_MS") do

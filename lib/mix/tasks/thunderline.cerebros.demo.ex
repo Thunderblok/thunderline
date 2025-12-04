@@ -7,14 +7,13 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
   how Cerebros spins up MLflow locally (file-backed tracking by default).
 
   By default this task will:
-  - Resolve the Cerebros repo root (../cerebros-core-algorithm-alpha relative to Thunderline)
+  - Resolve the Cerebros root from python/cerebros (in-repo) or CEREBROS_REPO env
   - Set MLFLOW_TRACKING_URI to `file:<repo>/mlruns` if it's not already set
-  - Invoke the Python script:
-      generative-proof-of-concept-CPU-preprocessing-in-memory.py
+  - Invoke the Cerebros service via cerebros_service.py
 
   Options:
     --python <path>   : Python interpreter (default: "python3")
-    --repo <path>     : Path to cerebros-core-algorithm-alpha (default: ../cerebros-core-algorithm-alpha)
+    --repo <path>     : Path to Cerebros root (default: python/cerebros or CEREBROS_REPO env)
     --mlflow <uri>    : Override MLFLOW_TRACKING_URI (e.g., http://127.0.0.1:5000)
     --                 : All args after -- will be passed to the Python script
 
@@ -22,7 +21,7 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
     mix thunderline.cerebros.demo
     mix thunderline.cerebros.demo --python /usr/bin/python3.11
     mix thunderline.cerebros.demo --mlflow http://127.0.0.1:5000
-    mix thunderline.cerebros.demo --repo /home/mo/DEV/cerebros-core-algorithm-alpha
+    mix thunderline.cerebros.demo --repo /path/to/external/cerebros
     mix thunderline.cerebros.demo -- --epochs 2 --batch-size 16
   """
 
@@ -40,20 +39,36 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
       )
 
     cwd = File.cwd!()
-    default_repo = Path.expand("../cerebros-core-algorithm-alpha", cwd)
+    # Default to in-repo python/cerebros, fall back to CEREBROS_REPO env or external path
+    default_repo = 
+      case System.get_env("CEREBROS_REPO") do
+        nil -> Path.join(cwd, "python/cerebros")
+        env_path -> env_path
+      end
     repo = opts[:repo] || default_repo
 
+    # Look for cerebros_service.py (new structure) or fallback to legacy script
     script =
-      Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py")
-      |> Path.expand()
+      cond do
+        File.exists?(Path.join(repo, "service/cerebros_service.py")) ->
+          Path.join(repo, "service/cerebros_service.py") |> Path.expand()
+        File.exists?(Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py")) ->
+          Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py") |> Path.expand()
+        true ->
+          Path.join(repo, "service/cerebros_service.py") |> Path.expand()
+      end
 
     unless File.exists?(script) do
       Mix.raise("""
-      Cerebros demo script not found:
+      Cerebros script not found:
 
         #{script}
 
-      Specify a repo with --repo <path> if your cerebros-core-algorithm-alpha is elsewhere.
+      Tried locations:
+        - #{Path.join(repo, "service/cerebros_service.py")}
+        - #{Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py")}
+
+      Set CEREBROS_REPO env or use --repo <path> to specify the Cerebros location.
       """)
     end
 

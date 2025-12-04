@@ -29,7 +29,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.NLP do
   require Logger
 
   @python_path "python3.13"
-  @script_path Path.join("thunderhelm", "nlp_cli.py")
+  @script_path Path.join("python/services", "nlp_cli.py")
 
   # -- Public API ---------------------------------------------------------------
 

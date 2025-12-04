@@ -11,7 +11,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
 
       config :thunderline, :cerebros_bridge,
         invoker: :snex,
-        python_path: ["thunderhelm", "path/to/cerebros-core"]
+        python_path: ["python/cerebros", "python/cerebros/core", "python/cerebros/service"]
 
   ## Advantages over Pythonx
 
