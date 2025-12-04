@@ -254,7 +254,9 @@ defmodule Thunderline.DashboardMetrics do
       network_latency: network_stats.latency,
       active_connections: port_count,
       data_transfer_rate: network_stats.transfer_rate,
-      error_rate: get_error_rate()
+      error_rate: get_error_rate(),
+      throughput: network_stats.transfer_rate,
+      io_stats: %{read: 0, write: 0}
     }
   end
 

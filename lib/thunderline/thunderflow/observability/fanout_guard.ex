@@ -8,7 +8,7 @@ defmodule Thunderline.Thunderflow.Observability.FanoutGuard do
   ## Features
 
   - Adaptive sampling based on current load
-  - Configurable burst tolerance  
+  - Configurable burst tolerance
   - Dropped sample counters for visibility
   - Automatic recovery when load decreases
 
