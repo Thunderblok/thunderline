@@ -276,4 +276,133 @@ defmodule Thunderline.Thundercrown.PolicyEngine do
 
     :telemetry.execute([:thunderline, :crown, :policy, :evaluate], %{duration: duration}, meta)
   end
+
+  # =============================================================================
+  # Simplified API - Wrapper Functions
+  # =============================================================================
+  # These provide a simplified interface for callers that don't want to
+  # construct full policy objects.
+
+  @doc """
+  Simplified policy evaluation from a request map.
+
+  Accepts a policy request with:
+  - `policy_type` - atom identifying the policy category
+  - `subject` - map with subject data (what's being checked)
+  - `context` - map with contextual information
+
+  Returns `{:ok, %{decision: :allow | :deny, reason: term()}}` or `{:error, reason}`.
+
+  ## Example
+
+      policy_request = %{
+        policy_type: :upm_activation,
+        subject: %{snapshot_id: "...", drift_score: 0.15},
+        context: %{correlation_id: "..."}
+      }
+
+      {:ok, %{decision: :allow, reason: "approved"}} = PolicyEngine.evaluate(policy_request)
+  """
+  @spec evaluate(map()) :: {:ok, map()} | {:error, term()}
+  def evaluate(%{policy_type: policy_type, subject: subject, context: context}) do
+    # Build a simple policy based on policy_type
+    policy = build_policy_for_type(policy_type)
+
+    # Convert subject to action descriptor
+    action = %{
+      domain: policy_type,
+      resource: :evaluation,
+      action: :check
+    }
+
+    # Merge subject into context for evaluation
+    eval_context = Map.merge(context || %{}, subject || %{})
+
+    # Evaluate the policy
+    case evaluate(policy, eval_context, action) do
+      {:allow, meta} ->
+        {:ok, %{decision: :allow, reason: Map.get(meta, :matched_rule, "approved")}}
+
+      {:allow_with, limits} ->
+        {:ok, %{decision: :allow, reason: "conditional", limits: limits}}
+
+      {:deny, reason} ->
+        {:ok, %{decision: :deny, reason: format_denial_reason(reason)}}
+    end
+  end
+
+  def evaluate(%{} = request) do
+    # Handle malformed requests gracefully
+    policy_type = Map.get(request, :policy_type, :unknown)
+    subject = Map.get(request, :subject, %{})
+    context = Map.get(request, :context, %{})
+
+    evaluate(%{policy_type: policy_type, subject: subject, context: context})
+  end
+
+  @doc """
+  Permission-style check with a policy name and context.
+
+  Used for simple allow/deny decisions based on a named permission.
+
+  ## Example
+
+      case PolicyEngine.check("thunderoll:allowed?", %{user_id: "..."}) do
+        {:ok, _} -> # allowed
+        {:error, reason} -> # denied
+      end
+  """
+  @spec check(String.t(), map()) :: {:ok, map()} | {:error, term()}
+  def check(permission_name, context) when is_binary(permission_name) do
+    # Parse permission name into policy lookup
+    policy = build_policy_for_permission(permission_name)
+
+    action = %{
+      domain: :permission,
+      resource: :check,
+      action: String.to_atom(String.replace(permission_name, ":", "_"))
+    }
+
+    case evaluate(policy, context || %{}, action) do
+      {:allow, meta} -> {:ok, meta}
+      {:allow_with, meta} -> {:ok, meta}
+      {:deny, reason} -> {:error, format_denial_reason(reason)}
+    end
+  end
+
+  # Build a permissive default policy for a given type
+  # This can be extended to load actual policy definitions from storage
+  defp build_policy_for_type(policy_type) do
+    # For now, create a permissive policy that allows all requests
+    # In full implementation, this would load policies from PolicyDefinition resources
+    new_policy("#{policy_type}_policy",
+      id: "auto_#{policy_type}",
+      strategy: :all_of
+    )
+    |> add_rule("default_allow", Constraint.always(), on_fail: :deny)
+  end
+
+  defp build_policy_for_permission(permission_name) do
+    # Create a policy based on the permission name
+    # In full implementation, this would look up named permissions
+    slug =
+      permission_name
+      |> String.replace(":", "_")
+      |> String.replace("?", "")
+
+    new_policy(slug,
+      id: "perm_#{slug}",
+      strategy: :all_of
+    )
+    |> add_rule("default_allow", Constraint.always(), on_fail: :deny)
+  end
+
+  defp format_denial_reason({:rule_failed, rule_name}), do: "Rule failed: #{rule_name}"
+  defp format_denial_reason({:no_rules_passed, policy_id}), do: "No rules passed for #{policy_id}"
+  defp format_denial_reason({:no_match, policy_id}), do: "No match found for #{policy_id}"
+
+  defp format_denial_reason({:score_below_threshold, score, threshold}),
+    do: "Score #{score} below threshold #{threshold}"
+
+  defp format_denial_reason(reason), do: inspect(reason)
 end
