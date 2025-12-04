@@ -1,4 +1,4 @@
-defmodule Thunderline.Evolution.Resources.EliteEntry do
+defmodule Thunderline.Thunderbolt.Evolution.Resources.EliteEntry do
   @moduledoc """
   Ash resource for MAP-Elites archive entries (HC-Δ-4).
 
@@ -34,7 +34,7 @@ defmodule Thunderline.Evolution.Resources.EliteEntry do
 
   use Ash.Resource,
     otp_app: :thunderline,
-    domain: Thunderline.Evolution.Domain,
+    domain: Thunderline.Thunderbolt.Evolution.Domain,
     data_layer: AshPostgres.DataLayer
 
   require Logger

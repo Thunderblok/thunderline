@@ -1,4 +1,4 @@
-defmodule Thunderline.Evolution.Mutation do
+defmodule Thunderline.Thunderbolt.Evolution.Mutation do
   @moduledoc """
   Mutation and crossover operators for PAC evolution (HC-Δ-4).
 

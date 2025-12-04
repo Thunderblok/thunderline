@@ -11,7 +11,7 @@ defmodule Thunderline.Thundercrown.Stone do
     - side-effects: telemetry + event publish (system.crown.stone.verdict)
   """
   require Logger
-  alias Thunderline.Stone.Proof
+  alias Thunderline.Thundercrown.Proof
   alias Thunderline.Event
 
   @spec stone(atom(), map() | Event.t()) :: {:allow | :deny, map()}

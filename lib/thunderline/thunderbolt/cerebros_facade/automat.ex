@@ -1,4 +1,4 @@
-defmodule Thunderline.Cerebros.Automat do
+defmodule Thunderline.Thunderbolt.CerebrosFacade.Automat do
   @moduledoc """
   Cerebros Automat Bridge - Job-based async pattern for ML workloads.
 

@@ -263,22 +263,22 @@ defmodule Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
   # HC-20A: Event emission hooks for Automat Bridge pattern
 
   defp emit_job_created(_changeset, job) do
-    Thunderline.Cerebros.Automat.emit_job_created(job)
+    Thunderline.Thunderbolt.CerebrosFacade.Automat.emit_job_created(job)
     {:ok, job}
   end
 
   defp emit_job_started(_changeset, job) do
-    Thunderline.Cerebros.Automat.emit_job_started(job)
+    Thunderline.Thunderbolt.CerebrosFacade.Automat.emit_job_started(job)
     {:ok, job}
   end
 
   defp emit_job_completed(_changeset, job) do
-    Thunderline.Cerebros.Automat.emit_job_completed(job)
+    Thunderline.Thunderbolt.CerebrosFacade.Automat.emit_job_completed(job)
     {:ok, job}
   end
 
   defp emit_job_failed(_changeset, job) do
-    Thunderline.Cerebros.Automat.emit_job_failed(job)
+    Thunderline.Thunderbolt.CerebrosFacade.Automat.emit_job_failed(job)
     {:ok, job}
   end
 end

@@ -1,4 +1,4 @@
-defmodule Thunderline.Evolution.MapElites do
+defmodule Thunderline.Thunderbolt.Evolution.MapElites do
   @moduledoc """
   MAP-Elites quality-diversity algorithm implementation (HC-Δ-4).
 
@@ -41,8 +41,8 @@ defmodule Thunderline.Evolution.MapElites do
   - `TraitsEvolutionJob` - Oban-based async evolution
   """
 
-  alias Thunderline.Evolution.Archive
-  alias Thunderline.Evolution.Mutation
+  alias Thunderline.Thunderbolt.Evolution.Archive
+  alias Thunderline.Thunderbolt.Evolution.Mutation
 
   require Logger
 

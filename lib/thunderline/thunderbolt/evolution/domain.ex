@@ -1,4 +1,4 @@
-defmodule Thunderline.Evolution.Domain do
+defmodule Thunderline.Thunderbolt.Evolution.Domain do
   @moduledoc """
   Ash Domain for the Evolution system (HC-Δ-4).
 
@@ -20,6 +20,6 @@ defmodule Thunderline.Evolution.Domain do
     otp_app: :thunderline
 
   resources do
-    resource Thunderline.Evolution.Resources.EliteEntry
+    resource Thunderline.Thunderbolt.Evolution.Resources.EliteEntry
   end
 end

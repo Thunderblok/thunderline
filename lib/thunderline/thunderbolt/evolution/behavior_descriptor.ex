@@ -1,4 +1,4 @@
-defmodule Thunderline.Evolution.BehaviorDescriptor do
+defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
   @moduledoc """
   Defines behavior dimensions for MAP-Elites quality-diversity search (HC-Δ-4).
 

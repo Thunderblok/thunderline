@@ -1,4 +1,4 @@
-defmodule Thunderline.Cerebros.Mini.Scorer do
+defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Scorer do
   @moduledoc """
   Mock scoring model for Cerebros-mini MVP.
 
@@ -45,7 +45,7 @@ defmodule Thunderline.Cerebros.Mini.Scorer do
   - Trained on trajectory data from BitChief
   """
 
-  alias Thunderline.Cerebros.Mini.Feature
+  alias Thunderline.Thunderbolt.CerebrosFacade.Mini.Feature
 
   @type result :: %{
           score: float(),

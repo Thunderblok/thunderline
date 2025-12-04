@@ -1,6 +1,6 @@
-defmodule Thunderline.Stone.Proof do
+defmodule Thunderline.Thundercrown.Proof do
   @moduledoc """
-  Stone Proof - Cryptographic policy proof generation and verification.
+  Governance Proof - Cryptographic policy proof generation and verification.
 
   Stubbed module for HC micro-sprint. Implements minimal proof verification
   for governance gates.

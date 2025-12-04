@@ -1,4 +1,4 @@
-defmodule Thunderline.Cerebros.Mini.Feature do
+defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Feature do
   @moduledoc """
   Minimal feature extraction for Cerebros-mini scoring.
 
@@ -28,8 +28,8 @@ defmodule Thunderline.Cerebros.Mini.Feature do
 
       Thunderbit → from_bit/1 → Feature → infer/1 → Result → apply_result/3 → Mutation
 
-  See `Thunderline.Cerebros.Mini.Scorer` for inference and
-  `Thunderline.Cerebros.Mini.Bridge` for the full pipeline.
+  See `Thunderline.Thunderbolt.CerebrosFacade.Mini.Scorer` for inference and
+  `Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge` for the full pipeline.
   """
 
   @type t :: %__MODULE__{

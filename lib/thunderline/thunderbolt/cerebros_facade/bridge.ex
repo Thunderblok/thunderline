@@ -1,4 +1,4 @@
-defmodule Thunderline.Cerebros.Bridge do
+defmodule Thunderline.Thunderbolt.CerebrosFacade.Bridge do
   @moduledoc """
   Unified entry point for all Cerebros ML operations.
 

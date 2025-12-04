@@ -129,7 +129,7 @@ defmodule Thunderline.Thunderbolt.CerebrosModel do
 
   defp load_model(checkpoint_path, :onnx) do
     # ONNX loading delegated to Cerebros.Bridge (HC-20 boundary)
-    alias Thunderline.Cerebros.Bridge
+    alias Thunderline.Thunderbolt.CerebrosFacade.Bridge
 
     # Generate a model name from the checkpoint path
     model_name = Path.basename(checkpoint_path, ".onnx")

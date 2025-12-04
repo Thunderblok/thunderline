@@ -1,4 +1,4 @@
-defmodule Thunderline.Cerebros.Mini.Bridge do
+defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge do
   @moduledoc """
   Unified bridge for Cerebros-mini scoring pipeline.
 
@@ -39,7 +39,7 @@ defmodule Thunderline.Cerebros.Mini.Bridge do
   - `[:thunderline, :cerebros, :mini, :batch]` - Batch metrics
   """
 
-  alias Thunderline.Cerebros.Mini.{Feature, Scorer}
+  alias Thunderline.Thunderbolt.CerebrosFacade.Mini.{Feature, Scorer}
   alias Thunderline.Thunderbit.{Protocol, Context}
 
   require Logger

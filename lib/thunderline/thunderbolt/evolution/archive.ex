@@ -1,4 +1,4 @@
-defmodule Thunderline.Evolution.Archive do
+defmodule Thunderline.Thunderbolt.Evolution.Archive do
   @moduledoc """
   MAP-Elites Archive management for quality-diversity search (HC-Δ-4).
 
@@ -33,8 +33,8 @@ defmodule Thunderline.Evolution.Archive do
   - `Mutation` - Generates new candidates from elites
   """
 
-  alias Thunderline.Evolution.BehaviorDescriptor
-  alias Thunderline.Evolution.Resources.EliteEntry
+  alias Thunderline.Thunderbolt.Evolution.BehaviorDescriptor
+  alias Thunderline.Thunderbolt.Evolution.Resources.EliteEntry
 
   require Logger
 

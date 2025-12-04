@@ -36,7 +36,7 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   alias Thunderline.Thunderbit.Category
   alias Thunderline.Thunderchief.{State, Action}
-  alias Thunderline.Cerebros.Mini.Bridge, as: CerebrosBridge
+  alias Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge, as: CerebrosBridge
 
   @categories [:sensory, :cognitive, :motor, :governance, :meta]
   @max_chain_depth 5
