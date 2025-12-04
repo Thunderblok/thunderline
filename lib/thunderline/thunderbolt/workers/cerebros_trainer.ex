@@ -42,7 +42,7 @@ defmodule Thunderline.Thunderbolt.Workers.CerebrosTrainer do
         # Mark job as failed
         case get_job(job_id) do
           {:ok, job} ->
-            CerebrosTrainingJob.fail!(job, error_message: inspect(reason))
+            CerebrosTrainingJob.fail!(job, %{error_message: inspect(reason)})
 
           _ ->
             :ok
@@ -154,10 +154,10 @@ defmodule Thunderline.Thunderbolt.Workers.CerebrosTrainer do
 
           # Mark complete
           {:ok, completed_job} =
-            CerebrosTrainingJob.complete!(job,
+            CerebrosTrainingJob.complete!(job, %{
               checkpoint_urls: checkpoint_urls,
               metrics: metrics
-            )
+            })
 
           {:ok, completed_job}
 
@@ -166,10 +166,10 @@ defmodule Thunderline.Thunderbolt.Workers.CerebrosTrainer do
           # Phase completed, save checkpoint
           checkpoint_url = download_checkpoint(checkpoint, job.id, phase)
 
-          CerebrosTrainingJob.update_checkpoint!(job,
+          CerebrosTrainingJob.update_checkpoint!(job, %{
             phase: phase,
             checkpoint_url: checkpoint_url
-          )
+          })
 
           # Continue polling
           Process.sleep(@poll_interval_ms)

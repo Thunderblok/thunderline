@@ -55,9 +55,9 @@ defmodule Thunderline.Thunderbolt.Resources.CerebrosTrainingJob do
     define :read
     define :update
     define :start
-    define :complete, args: [:checkpoint_urls, :metrics]
-    define :fail, args: [:error_message]
-    define :update_checkpoint, args: [:phase, :checkpoint_url]
+    define :complete
+    define :fail
+    define :update_checkpoint
 
     # No required args - model_format has default
     define :mark_model_loaded
