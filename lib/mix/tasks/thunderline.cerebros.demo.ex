@@ -40,7 +40,7 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
 
     cwd = File.cwd!()
     # Default to in-repo python/cerebros, fall back to CEREBROS_REPO env or external path
-    default_repo = 
+    default_repo =
       case System.get_env("CEREBROS_REPO") do
         nil -> Path.join(cwd, "python/cerebros")
         env_path -> env_path

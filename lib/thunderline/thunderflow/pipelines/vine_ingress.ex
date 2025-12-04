@@ -12,7 +12,8 @@ defmodule Thunderline.Thunderflow.Pipelines.VineIngress do
   """
   use Broadway
   require Logger
-  alias Thunderline.{CA, Thundervine}
+  alias Thunderline.Thunderbolt.TAK
+  alias Thunderline.Thundervine
   alias Thunderline.Thundervine.Events
 
   @pubsub Thunderline.PubSub
@@ -55,7 +56,7 @@ defmodule Thunderline.Thunderflow.Pipelines.VineIngress do
   defp handle_command(%{type: :cmd_ca_rule_parse, payload: %{line: line} = payload}) do
     meta = Map.get(payload, :meta, %{})
 
-    with {:ok, rule} <- CA.parse_rule(line),
+    with {:ok, rule} <- TAK.parse_rule(line),
          {:ok, _} <- Events.rule_parsed(rule, meta) do
       {:ok, :rule_committed}
     else

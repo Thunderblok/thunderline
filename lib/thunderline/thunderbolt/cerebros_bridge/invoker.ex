@@ -309,4 +309,15 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Invoker do
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
+
+  @doc """
+  Cancel pending Oban jobs associated with a run.
+
+  TODO: Implement proper job cancellation via Oban.cancel_job/1
+  """
+  @spec cancel_jobs(list(pos_integer())) :: {:ok, non_neg_integer()} | {:error, term()}
+  def cancel_jobs(job_ids) when is_list(job_ids) do
+    Logger.debug("[CerebrosBridge.Invoker] cancel_jobs called for #{length(job_ids)} jobs (stub)")
+    {:ok, 0}
+  end
 end

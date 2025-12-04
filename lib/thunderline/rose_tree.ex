@@ -56,13 +56,13 @@ defmodule Thunderline.RoseTree do
   Returns the root node's data.
   """
   @spec root(t()) :: %{id: node_id(), value: value()}
-  def root(tree), do: RT.term(tree)
+  def root(tree), do: RT.get_term(tree)
 
   @doc """
   Returns the children of the root node.
   """
   @spec children(t()) :: [t()]
-  def children(tree), do: RT.children(tree)
+  def children(tree), do: RT.get_children(tree)
 
   @doc """
   Adds a child to the root of the tree.
@@ -88,7 +88,7 @@ defmodule Thunderline.RoseTree do
   """
   @spec add_subtree(t(), t()) :: t()
   def add_subtree(tree, subtree) do
-    RT.set_children(tree, RT.children(tree) ++ [subtree])
+    RT.set_children(tree, RT.get_children(tree) ++ [subtree])
   end
 
   @doc """

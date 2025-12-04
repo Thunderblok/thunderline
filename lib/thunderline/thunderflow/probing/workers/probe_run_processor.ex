@@ -80,8 +80,8 @@ defmodule Thunderline.Thunderflow.Probing.Workers.ProbeRunProcessor do
     if Feature.enabled?(:reward_signal) do
       with {:ok, event} <-
              Event.new(
-               "flow.probe.run.completed",
-               %{
+               name: "flow.probe.run.completed",
+               payload: %{
                  run_id: run.id,
                  status: :completed,
                  laps_count: length(laps),
