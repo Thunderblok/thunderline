@@ -200,7 +200,7 @@ defmodule Thunderline.Thunderblock.Resources.SupervisionTree do
             {:ok, updated_tree} =
               tree
               |> Ash.Changeset.for_update(:_internal_start, %{})
-              |> Thunderblock.Domain.update()
+              |> Ash.update()
 
             # Start supervision process
             Thunderblock.SupervisionManager.start_tree(tree.id)

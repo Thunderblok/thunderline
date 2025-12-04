@@ -12,7 +12,6 @@ defmodule Thunderline.Thunderflow.Pipelines.VineIngress do
   """
   use Broadway
   require Logger
-  alias Phoenix.PubSub
   alias Thunderline.{CA, Thundervine}
   alias Thunderline.Thundervine.Events
 

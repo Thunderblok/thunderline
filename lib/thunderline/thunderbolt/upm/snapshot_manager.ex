@@ -28,7 +28,7 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   require Logger
   require Ash.Query
 
-  alias Thunderline.Thunderbolt.Resources.{UpmSnapshot, UpmTrainer}
+  alias Thunderline.Thunderbolt.Resources.UpmSnapshot
   alias Thunderline.Thundercrown.Policies.UPMPolicy
   alias Thunderline.UUID
 

@@ -92,10 +92,10 @@ defmodule Thunderline.Thunderbolt.UPM.Supervisor do
   def stop_trainer(trainer_id) do
     children = DynamicSupervisor.which_children(__MODULE__.TrainersSupervisor)
 
-    case Enum.find(children, fn {_id, _pid, _type, [module]} ->
-           module == Supervisor and match?({__MODULE__.TrainerSupervisor, ^trainer_id}, _id)
+    case Enum.find(children, fn {id, _pid, _type, [module]} ->
+           module == Supervisor and match?({__MODULE__.TrainerSupervisor, ^trainer_id}, id)
          end) do
-      {id, pid, _, _} ->
+      {_id, pid, _, _} ->
         DynamicSupervisor.terminate_child(__MODULE__.TrainersSupervisor, pid)
         Logger.info("[UPM.Supervisor] Stopped trainer: #{trainer_id}")
         :ok

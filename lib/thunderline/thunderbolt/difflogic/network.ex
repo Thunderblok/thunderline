@@ -240,7 +240,7 @@ defmodule Thunderline.Thunderbolt.DiffLogic.Network do
   end
 
   # Discrete boolean gate operations (blazing fast)
-  defp apply_discrete_gate(a, b, 0), do: 0
+  defp apply_discrete_gate(_a, _b, 0), do: 0
   defp apply_discrete_gate(a, b, 1), do: band(a, b)
   defp apply_discrete_gate(a, b, 2), do: band(a, bnot(b))
   defp apply_discrete_gate(a, _b, 3), do: a

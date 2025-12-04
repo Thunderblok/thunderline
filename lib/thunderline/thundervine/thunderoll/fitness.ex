@@ -178,7 +178,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Fitness do
     end
   end
 
-  defp run_pac_rollout(base_params, perturbation, spec, _member_idx) do
+  defp run_pac_rollout(base_params, perturbation, _spec, _member_idx) do
     # Run PAC with perturbed policy
     # This integrates with Thunderpac's behavior system
 
@@ -205,7 +205,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Fitness do
     # Run in simulated environment
     # This would integrate with a Thunderline environment simulator
 
-    perturbed_params = apply_perturbation(base_params, perturbation)
+    _perturbed_params = apply_perturbation(base_params, perturbation)
     steps = spec[:env_steps] || 100
 
     # Placeholder: simulate environment steps

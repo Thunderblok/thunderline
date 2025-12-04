@@ -278,6 +278,8 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
       trigger :cleanup_old_workflows do
         action :destroy
         scheduler_cron "0 3 * * *"
+        scheduler_module_name Thunderline.Thunderblock.TaskOrchestrator.Schedulers.CleanupOldWorkflows
+        worker_module_name Thunderline.Thunderblock.TaskOrchestrator.Workers.CleanupOldWorkflows
 
         where expr(
                 status in [:completed, :cancelled] and

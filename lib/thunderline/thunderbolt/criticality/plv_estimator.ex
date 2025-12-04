@@ -28,8 +28,6 @@ defmodule Thunderline.Thunderbolt.Criticality.PLVEstimator do
       {:ok, plv} = PLVEstimator.estimate(attention_patterns)
   """
 
-  alias Thunderline.Thunderbolt.Numerics.Complex, as: TComplex
-
   @type attention_pattern :: %{
           optional(:weights) => list(float()),
           optional(:focus_score) => float(),

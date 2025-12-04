@@ -371,7 +371,7 @@ defmodule ThunderlineWeb.AutomataLive do
     Process.send_after(self(), :next_generation, delay)
   end
 
-  defp generate_next_pattern(rule, []) do
+  defp generate_next_pattern(_rule, []) do
     # Initialize with a single central cell
     initial_width = 80
     center = div(initial_width, 2)

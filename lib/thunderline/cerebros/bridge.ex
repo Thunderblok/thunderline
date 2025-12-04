@@ -99,7 +99,7 @@ defmodule Thunderline.Cerebros.Bridge do
     start_time = System.monotonic_time(:microsecond)
 
     case KerasONNX.infer(session, input, opts) do
-      {:ok, output} = result ->
+      {:ok, _output} = result ->
         duration_us = System.monotonic_time(:microsecond) - start_time
 
         emit_event("cerebros.inference.completed", %{

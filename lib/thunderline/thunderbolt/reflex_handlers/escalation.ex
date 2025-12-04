@@ -156,7 +156,7 @@ defmodule Thunderline.Thunderbolt.ReflexHandlers.Escalation do
     state
   end
 
-  defp handle_escalation(:critical_threshold, _severity, event, state) do
+  defp handle_escalation(:critical_threshold, _severity, event, _state) do
     Logger.error("[Escalation] Critical threshold crossed, emergency response")
 
     # Always trigger GC for critical thresholds

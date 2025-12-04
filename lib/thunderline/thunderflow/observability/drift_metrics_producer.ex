@@ -95,20 +95,20 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
 
   def handle_info({:timeseries_embedding, data}, state) do
     vector = extract_vector(data)
-    {queue, size} = enqueue_embedding(state.embeddings, vector)
+    {queue, _size} = enqueue_embedding(state.embeddings, vector)
     sample = state.sample + 1
     new_state = %{state | embeddings: queue, sample: sample, last_vector: vector}
     {:noreply, new_state}
   end
+
+  # Fall-through for unexpected messages
+  def handle_info(_other, state), do: {:noreply, state}
 
   @impl true
   def handle_call(:metrics, _from, state) do
     payload = Map.take(state, [:lambda, :corr_dim, :coherence, :sample, :updated_at])
     {:reply, payload, state}
   end
-
-  # Fall-through for unexpected messages
-  def handle_info(_other, state), do: {:noreply, state}
 
   defp recompute_coherence(lambda, d2) do
     stability = 1.0 / (1.0 + :math.exp(8 * lambda))
@@ -137,7 +137,7 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
   defp extract_vector(_), do: {}
 
   # Compute λ and correlation dimension approximations
-  defp compute_metrics(queue, last_vector) do
+  defp compute_metrics(queue, _last_vector) do
     embeddings = :queue.to_list(queue)
 
     cond do
@@ -223,7 +223,7 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
   defp distance(_, _), do: 0.0
 
   defp slope(xs, ys) do
-    n = length(xs)
+    _n = length(xs)
     mean_x = average(xs)
     mean_y = average(ys)
 
@@ -241,7 +241,7 @@ defmodule Thunderline.Thunderflow.Observability.DriftMetricsProducer do
 
   defp average(_), do: 0.0
 
-  defp clamp(v, min_v, max_v) when v < min_v, do: min_v
-  defp clamp(v, min_v, max_v) when v > max_v, do: max_v
+  defp clamp(v, min_v, _max_v) when v < min_v, do: min_v
+  defp clamp(v, _min_v, max_v) when v > max_v, do: max_v
   defp clamp(v, _min_v, _max_v), do: v
 end

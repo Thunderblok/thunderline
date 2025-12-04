@@ -205,7 +205,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
 
         community
         |> Ash.Changeset.for_update(:internal_activate)
-        |> Thunderline.Thunderblock.Domain.update!()
+        |> Ash.update!()
 
         # Start community services
         start_community_services(community)
@@ -255,7 +255,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
                 user_id: input.arguments.user_id,
                 role: input.arguments.role
               })
-              |> Thunderline.Thunderblock.Domain.update()
+              |> Ash.update()
 
             # Provision PAC home for new member
             provision_pac_home(community, input.arguments.user_id)
@@ -336,7 +336,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
               |> Ash.Changeset.for_update(:_internal_remove_member, %{
                 user_id: input.arguments.user_id
               })
-              |> Thunderline.Thunderblock.Domain.update()
+              |> Ash.update()
 
             # Cleanup PAC home and resources
             cleanup_member_resources(community, input.arguments.user_id)
@@ -405,7 +405,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
                 channel_count: input.arguments.channel_count,
                 pac_home_count: input.arguments.pac_home_count
               })
-              |> Thunderline.Thunderblock.Domain.update!()
+              |> Ash.update!()
 
             {:ok, updated_community}
 
@@ -433,7 +433,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
             updated_community =
               community
               |> Ash.Changeset.for_update(:_suspend_internal, %{})
-              |> Thunderline.Thunderblock.Domain.update!()
+              |> Ash.update!()
 
             # Suspend community services
             suspend_community_services(updated_community)
@@ -788,7 +788,7 @@ defmodule Thunderline.Thunderlink.Resources.Community do
     # Update community with zone reference
     Thunderline.Thunderlink.Resources.Community
     |> Ash.Changeset.for_update(:update, community, %{execution_zone_id: zone.id})
-    |> Thunderline.Thunderlink.Domain.update()
+    |> Ash.update()
   end
 
   defp create_default_channels(_community) do

@@ -6,7 +6,6 @@ defmodule ThunderlineWeb.DashboardLive.Components.DomainPanel do
   """
 
   use Phoenix.Component
-  import ThunderlineWeb.CoreComponents
 
   attr :domain, :atom, required: true
   attr :metrics, :map, default: %{}
@@ -148,15 +147,6 @@ defmodule ThunderlineWeb.DashboardLive.Components.DomainPanel do
               color="blue"
             />
             <.metric_row label="Throughput" value="#{@metrics[:throughput]} MB/s" color="purple" />
-          <% :thundercrown -> %>
-            <.metric_row label="Instances" value={@metrics[:instances]} color="cyan" />
-            <.metric_row label="Avg Load" value={@metrics[:average_load]} color="green" />
-            <.metric_row label="Peak Load" value={@metrics[:peak_load]} color="yellow" />
-            <.metric_row
-              label="Utilization"
-              value={format_percentage(@metrics[:resource_utilization])}
-              color="blue"
-            />
           <% _ -> %>
             <div class="text-sm text-gray-400">
               No metrics available
@@ -211,7 +201,6 @@ defmodule ThunderlineWeb.DashboardLive.Components.DomainPanel do
   defp domain_icon(:thunderflow), do: "🌊"
   defp domain_icon(:thunderstone), do: "🗿"
   defp domain_icon(:thunderlink), do: "🔗"
-  defp domain_icon(:thundercrown), do: "👑"
   defp domain_icon(_), do: "⚙️"
 
   defp status_color(:active), do: "bg-green-400"

@@ -78,12 +78,6 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgent do
 
   def select_llm(_input, %{llm: override}) when not is_nil(override), do: override
 
-  @doc false
-  @spec select_adapter(term(), map()) :: nil | module() | {module(), Keyword.t()}
-  def select_adapter(_llm, %{adapter: adapter}) when not is_nil(adapter), do: adapter
-  def select_adapter(_llm, %{llm_adapter: adapter}) when not is_nil(adapter), do: adapter
-  def select_adapter(_llm, _context), do: nil
-
   def select_llm(_input, _context) do
     model = Application.get_env(:thunderline, :conversation_llm, %{})
 
@@ -93,6 +87,12 @@ defmodule Thunderline.Thundercrown.Resources.ConversationAgent do
       |> Map.put_new(:stream, false)
     )
   end
+
+  @doc false
+  @spec select_adapter(term(), map()) :: nil | module() | {module(), Keyword.t()}
+  def select_adapter(_llm, %{adapter: adapter}) when not is_nil(adapter), do: adapter
+  def select_adapter(_llm, %{llm_adapter: adapter}) when not is_nil(adapter), do: adapter
+  def select_adapter(_llm, _context), do: nil
 
   @doc false
   @spec build_prompt_messages(Ash.ActionInput.t(), map()) :: [Message.t()]

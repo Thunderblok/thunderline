@@ -8,11 +8,10 @@ defmodule Thunderline.Thundercrown.Jobs.CrossDomainProcessor do
     queue: :cross_domain,
     max_attempts: 5
 
-  alias Thunderline.Thunderblock.Resources.WorkflowTracker
   require Logger
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args} = job) do
+  def perform(%Oban.Job{args: args} = _job) do
     Logger.info("Processing cross-domain job: #{inspect(args)}")
 
     case args do
@@ -34,7 +33,7 @@ defmodule Thunderline.Thundercrown.Jobs.CrossDomainProcessor do
          source_domain,
          target_domain,
          operation_type,
-         args
+         _args
        ) do
     Logger.info("Cross-domain operation: #{source_domain} → #{target_domain} (#{operation_type})")
 

@@ -530,7 +530,7 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
     alias Thunderline.Utils.Stats
 
     # Compute current entropy from output distribution
-    probs = Nx.softmax(tensor)
+    probs = Axon.Activations.softmax(tensor)
     current_entropy = Stats.entropy(probs)
 
     # Compute PLV from activation pattern
@@ -573,7 +573,7 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
     prev_entropy = Keyword.get(opts, :prev_entropy)
 
     # Compute observables
-    probs = Nx.softmax(tensor)
+    probs = Axon.Activations.softmax(tensor)
     current_entropy = Thunderline.Utils.Stats.entropy(probs)
 
     observation = %{

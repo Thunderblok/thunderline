@@ -222,7 +222,7 @@ defmodule Thunderline.Thunderbolt.DatasetManager do
     end)
   end
 
-  defp register_dataset(sharded_samples, target_samples) do
+  defp register_dataset(sharded_samples, _target_samples) do
     dataset_id = "phase1-clean-v1-#{System.os_time(:second)}"
 
     total_samples = sharded_samples |> Enum.map(&length(elem(&1, 1))) |> Enum.sum()

@@ -178,7 +178,7 @@ defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
 
     # L2 loss
     diff = Nx.subtract(current_rgba, target_rgba)
-    Nx.mean(Nx.power(diff, 2))
+    Nx.mean(Nx.pow(diff, 2))
   end
 
   @doc """

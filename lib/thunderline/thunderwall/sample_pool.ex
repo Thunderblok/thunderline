@@ -35,7 +35,7 @@ defmodule Thunderline.Thunderwall.SamplePool do
 
   require Logger
 
-  alias Thunderline.Thunderbolt.NCA.{Perception, UpdateRule}
+  alias Thunderline.Thunderbolt.NCA.UpdateRule
 
   defstruct [
     # Pool of state tensors
@@ -213,8 +213,6 @@ defmodule Thunderline.Thunderwall.SamplePool do
   end
 
   defp rollout_and_grad(batch_states, params, target, n_steps) do
-    import Nx.Defn
-
     # Stack batch
     batch = Nx.stack(batch_states)
 
@@ -270,7 +268,7 @@ defmodule Thunderline.Thunderwall.SamplePool do
 
     # MSE loss
     diff = Nx.subtract(rgba_pred, target_batch)
-    loss = Nx.mean(Nx.power(diff, 2))
+    loss = Nx.mean(Nx.pow(diff, 2))
 
     # Simplified gradient (placeholder - real impl would use Nx.Defn.grad)
     grad = %{
@@ -301,7 +299,7 @@ defmodule Thunderline.Thunderwall.SamplePool do
         Nx.slice(state, [0, 0, 0], [elem(Nx.shape(state), 0), elem(Nx.shape(state), 1), 4])
 
       diff = Nx.subtract(rgba_pred, rgba_target)
-      Nx.to_number(Nx.mean(Nx.power(diff, 2)))
+      Nx.to_number(Nx.mean(Nx.pow(diff, 2)))
     end)
   end
 

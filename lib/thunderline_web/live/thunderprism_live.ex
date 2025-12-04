@@ -18,8 +18,6 @@ defmodule ThunderlineWeb.ThunderprismLive do
 
   require Logger
 
-  alias Thunderline.Thunderprism.Domain, as: Prism
-
   @pubsub_topic "thunderprism:updates"
 
   @impl true

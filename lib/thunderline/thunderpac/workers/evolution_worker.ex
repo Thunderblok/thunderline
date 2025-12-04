@@ -408,7 +408,7 @@ defmodule Thunderline.Thunderpac.Workers.EvolutionWorker do
      }}
   end
 
-  defp evolution_loop(state, max_iterations, convergence_threshold, tpe_params, job)
+  defp evolution_loop(state, max_iterations, _convergence_threshold, _tpe_params, _job)
        when state.iterations >= max_iterations do
     Logger.debug("[EvolutionWorker] Reached max iterations: #{max_iterations}")
     state
@@ -509,7 +509,7 @@ defmodule Thunderline.Thunderpac.Workers.EvolutionWorker do
     |> Enum.into(%{})
   end
 
-  defp check_convergence(history, threshold) when length(history) < 5, do: false
+  defp check_convergence(history, _threshold) when length(history) < 5, do: false
 
   defp check_convergence(history, threshold) do
     # Check if last 5 iterations have minimal improvement

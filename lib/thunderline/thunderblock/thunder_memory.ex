@@ -305,27 +305,6 @@ defmodule Thunderline.ThunderMemory do
   end
 
   @impl true
-  def handle_cast({:record_metric, metric_name, value, metadata}, state) do
-    metric_id = generate_metric_id()
-    timestamp = DateTime.utc_now()
-
-    metric = %MetricTable{
-      id: metric_id,
-      metric_name: metric_name,
-      value: value,
-      timestamp: timestamp,
-      aggregation_level: :raw,
-      metadata: metadata
-    }
-
-    Memento.transaction!(fn ->
-      Memento.Query.write(metric)
-    end)
-
-    {:noreply, state}
-  end
-
-  @impl true
   def handle_call({:get_key, key}, _from, state) do
     result =
       Memento.transaction!(fn ->
@@ -458,6 +437,27 @@ defmodule Thunderline.ThunderMemory do
       end)
 
     {:reply, result, state}
+  end
+
+  @impl true
+  def handle_cast({:record_metric, metric_name, value, metadata}, state) do
+    metric_id = generate_metric_id()
+    timestamp = DateTime.utc_now()
+
+    metric = %MetricTable{
+      id: metric_id,
+      metric_name: metric_name,
+      value: value,
+      timestamp: timestamp,
+      aggregation_level: :raw,
+      metadata: metadata
+    }
+
+    Memento.transaction!(fn ->
+      Memento.Query.write(metric)
+    end)
+
+    {:noreply, state}
   end
 
   # Private helper functions

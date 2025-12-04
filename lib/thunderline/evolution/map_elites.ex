@@ -43,7 +43,6 @@ defmodule Thunderline.Evolution.MapElites do
 
   alias Thunderline.Evolution.Archive
   alias Thunderline.Evolution.Mutation
-  alias Thunderline.Evolution.BehaviorDescriptor
 
   require Logger
 

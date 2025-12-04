@@ -93,7 +93,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Nodes.Generation do
   - `:fitness_stats` - Statistics from this generation
   """
 
-  alias Thunderline.Thundervine.Thunderoll.{Runner, Population}
+  alias Thunderline.Thundervine.Thunderoll.Runner
 
   require Logger
 
@@ -177,7 +177,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Nodes.ApplyUpdate do
     end
   end
 
-  defp apply_to_external_target(target_ref, delta) do
+  defp apply_to_external_target(target_ref, _delta) do
     # In full implementation, this would:
     # 1. Look up the PAC/model by reference
     # 2. Apply the delta to its parameters

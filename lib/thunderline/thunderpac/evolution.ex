@@ -77,8 +77,7 @@ defmodule Thunderline.Thunderpac.Evolution do
   use GenServer
   require Logger
 
-  alias Thunderline.Thunderpac.Resources.PAC
-  alias Thunderline.Thunderbolt.Cerebros.{TPEBridge, LoopMonitor}
+  alias Thunderline.Thunderbolt.Cerebros.TPEBridge
   alias Thunderline.Thunderflow.EventBus
   alias Thunderline.Event
 

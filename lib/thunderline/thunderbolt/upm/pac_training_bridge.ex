@@ -31,10 +31,9 @@ defmodule Thunderline.Thunderbolt.UPM.PACTrainingBridge do
   use GenServer
   require Logger
 
-  alias Thunderline.Thunderpac.Resources.{PAC, PACState, PACIntent}
   alias Thunderline.Thunderbolt.UPM.PACFeatureExtractor
   alias Thunderline.Features.FeatureWindow
-  alias Thunderline.Thunderflow.EventBus
+  alias Thunderline.Thunderpac.Resources.PAC
 
   @default_window_duration_ms 60_000
   @default_min_events 5

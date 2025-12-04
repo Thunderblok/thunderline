@@ -4,8 +4,6 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
 
   require Ash.Query
   import Ash.Expr, only: [expr: 1]
-  alias Ash
-  alias Thunderline.Thunderbolt.Domain
   alias Thunderline.Thunderbolt.ML.{TrainingRun, ModelArtifact, ModelVersion}
 
   @tele_base [:ml, :run]
@@ -66,20 +64,20 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
   defp mark_started(%TrainingRun{} = run) do
     run
     |> Ash.Changeset.for_update(:mark_started)
-    |> Domain.update()
+    |> Ash.update()
   end
 
   defp mark_completed(%TrainingRun{} = run, %ModelArtifact{id: artifact_id}) do
     run
     |> Ash.Changeset.for_update(:mark_completed, %{artifact_id: artifact_id})
-    |> Domain.update()
+    |> Ash.update()
   end
 
   defp mark_failed(run_id, reason) do
     with {:ok, %TrainingRun{} = run} <- fetch_run(run_id) do
       run
       |> Ash.Changeset.for_update(:mark_failed, %{error: format_error(reason)})
-      |> Domain.update()
+      |> Ash.update()
     else
       _ -> :ok
     end
@@ -98,7 +96,7 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
       bytes: bytes
     }
     |> Ash.Changeset.for_create(ModelArtifact, :create)
-    |> Domain.create()
+    |> Ash.create()
   end
 
   defp record_version(%TrainingRun{spec_id: spec_id, dataset_id: dataset_id}, %ModelArtifact{
@@ -114,11 +112,12 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.RunWorker do
       notes: "Auto-recorded by RunWorker"
     }
     |> Ash.Changeset.for_create(ModelVersion, :record)
-    |> Domain.create()
+    |> Ash.create()
   end
 
-  defp format_error(%{message: msg}), do: msg
+  # Order matters: struct pattern before generic map pattern
   defp format_error(%RuntimeError{message: msg}), do: msg
+  defp format_error(%{message: msg}), do: msg
   defp format_error(term) when is_binary(term), do: term
   defp format_error(term), do: inspect(term)
 end

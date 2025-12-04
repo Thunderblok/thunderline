@@ -51,15 +51,13 @@ defmodule ThunderlineWeb.ReflexPanelLive do
 
   require Logger
 
-  alias Thunderline.Thunderpac.Evolution
-  alias Thunderline.Thunderbolt.Cerebros.LoopMonitor
-
   @pubsub_topic "reflex_panel"
   @tick_interval_ms 100
-  @slow_motion_interval_ms 500
+  # Reserved for slow-motion playback feature
+  @_slow_motion_interval_ms 500
 
-  # Heatmap modes
-  @heatmap_modes [:none, :coherence, :plv, :entropy, :lambda]
+  # Heatmap modes - reserved for future heatmap visualization options
+  @_heatmap_modes [:none, :coherence, :plv, :entropy, :lambda]
 
   @impl true
   def mount(_params, _session, socket) do

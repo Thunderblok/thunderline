@@ -377,7 +377,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
         )
 
         message
-        |> Message.update_metadata(fn metadata ->
+        |> update_message_metadata(fn metadata ->
           metadata
           |> Map.put(:attempts, next_attempt)
           |> Map.put(:attempt, next_attempt)
@@ -399,7 +399,7 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
         )
 
         message
-        |> Message.update_metadata(fn metadata ->
+        |> update_message_metadata(fn metadata ->
           metadata
           |> Map.put(:attempts, next_attempt)
           |> Map.put(:attempt, next_attempt)
@@ -409,6 +409,12 @@ defmodule Thunderline.Thunderflow.Pipelines.EventPipeline do
         |> Message.failed({:retry, delay})
       end
     end)
+  end
+
+  # Helper to update message metadata (Message.update_metadata/2 doesn't exist in Broadway)
+  defp update_message_metadata(%Message{metadata: metadata} = message, fun)
+       when is_function(fun, 1) do
+    %{message | metadata: fun.(metadata)}
   end
 
   defp generate_trace_id do

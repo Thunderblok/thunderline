@@ -82,9 +82,7 @@ defmodule Thunderline.Thunderwall.Sink do
   @telemetry_prefix [:thunderline, :wall, :sink]
 
   # Entropy thresholds
-  @quarantine_threshold 0.7
   @archive_threshold 0.9
-  @gc_batch_size 100
 
   # Score factors (tune these!)
   # Per hour

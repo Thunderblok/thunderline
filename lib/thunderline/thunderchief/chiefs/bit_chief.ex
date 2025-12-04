@@ -34,7 +34,7 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   require Logger
 
-  alias Thunderline.Thunderbit.{Context, Category}
+  alias Thunderline.Thunderbit.Category
   alias Thunderline.Thunderchief.{State, Action}
   alias Thunderline.Cerebros.Mini.Bridge, as: CerebrosBridge
 

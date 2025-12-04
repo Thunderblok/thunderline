@@ -2,9 +2,7 @@ defmodule Thunderline.Thunderbolt.CA.OuterTotalistic do
   @moduledoc """
   Outer-totalistic cellular automata rules.
 
-  Implements outer-totalistic rules where the transition depends only on:
-  1. The cell's own state
-  2. The SUM of neighboring states (not individual neighbor positions)
+  Supports both 1D elementary CA and 2D outer-totalistic rules.
 
   ## HC-Δ-16: Cerebros CA Proposal Requirement
 
@@ -15,84 +13,51 @@ defmodule Thunderline.Thunderbolt.CA.OuterTotalistic do
   >   - 2863311530 (XOR-based linear)
   >   - 3435973836 (Rule 150 analog)"
 
-  ## Outer-Totalistic Definition
-
-  For k states and r neighbors, an outer-totalistic rule is defined by:
-  - A transition function f(center, sum_neighbors) → new_center
-  - Total of k * (k*r + 1) possible (center, sum) combinations
-
-  The rule number encodes all transitions in base-k.
-
-  ## QuAK Connection
-
-  From the analysis:
-  > "Outer-totalistic rules vastly reduce the state space while preserving
-  >  computational universality for certain rules."
-
-  The vetted rules above were selected for their:
-  - Reversibility properties (important for TAE computation)
-  - Interesting dynamical behavior (chaotic attractors, cascades)
-  - Mathematical tractability (XOR-based rules)
-
   ## Usage
 
-      # Apply a vetted rule
-      new_grid = OuterTotalistic.apply_rule(grid, :reversible_chaotic)
+      # Apply elementary CA rule (1D)
+      cells = [0, 0, 0, 1, 0, 0, 0]
+      new_cells = OuterTotalistic.apply_rule(cells, 30)
 
-      # Apply by rule number
-      new_grid = OuterTotalistic.apply_rule_number(grid, 267422991, k: 2, r: 8)
+      # Apply vetted rule by name
+      new_cells = OuterTotalistic.apply_vetted_rule(cells, :xor_linear)
 
-      # Get rule details
-      info = OuterTotalistic.rule_info(:period_doubling)
+      # Get all vetted rules
+      rules = OuterTotalistic.vetted_rules()
   """
 
-  alias Thunderline.Thunderbolt.CA.Grid
+  import Bitwise
 
   # ═══════════════════════════════════════════════════════════════
-  # Vetted Rule Definitions
+  # Vetted Rule Definitions (2D outer-totalistic)
   # ═══════════════════════════════════════════════════════════════
 
   @type rule_name :: :reversible_chaotic | :period_doubling | :xor_linear | :rule_150_analog
 
   @vetted_rules %{
-    # Reversible rule with chaotic attractor
-    # Binary (k=2), 8-neighbor Moore neighborhood
-    # Shows complex dynamics without absorbing states
     reversible_chaotic: %{
-      number: 267_422_991,
+      rule_number: 267_422_991,
       k: 2,
       r: 8,
       description: "Reversible, chaotic attractor",
       properties: [:reversible, :chaotic]
     },
-
-    # Period-doubling cascade rule
-    # Binary (k=2), 8-neighbor Moore neighborhood
-    # Exhibits Feigenbaum-like bifurcation structure
     period_doubling: %{
-      number: 4_042_321_935,
+      rule_number: 4_042_321_935,
       k: 2,
       r: 8,
       description: "Period-doubling cascade",
       properties: [:cascade, :bifurcating]
     },
-
-    # XOR-based linear rule
-    # Binary (k=2), 8-neighbor Moore neighborhood
-    # Mathematically tractable, preserves linearity
     xor_linear: %{
-      number: 2_863_311_530,
+      rule_number: 2_863_311_530,
       k: 2,
       r: 8,
       description: "XOR-based linear rule",
       properties: [:linear, :xor_based, :reversible]
     },
-
-    # Rule 150 analog for 2D
-    # Binary (k=2), 8-neighbor Moore neighborhood
-    # Extension of elementary CA Rule 150 to 2D
     rule_150_analog: %{
-      number: 3_435_973_836,
+      rule_number: 3_435_973_836,
       k: 2,
       r: 8,
       description: "Rule 150 analog for 2D",
@@ -100,141 +65,170 @@ defmodule Thunderline.Thunderbolt.CA.OuterTotalistic do
     }
   }
 
+  # ═══════════════════════════════════════════════════════════════
+  # Public API - Rule Metadata
+  # ═══════════════════════════════════════════════════════════════
+
   @doc """
-  Get information about a vetted rule.
+  Returns the map of all vetted rules with their specifications.
+  """
+  @spec vetted_rules() :: map()
+  def vetted_rules, do: @vetted_rules
+
+  @doc """
+  Get information about a vetted rule by name.
   """
   @spec rule_info(rule_name()) :: map() | nil
   def rule_info(name), do: Map.get(@vetted_rules, name)
-
-  @doc """
-  List all vetted rule names.
-  """
-  @spec vetted_rules() :: [rule_name()]
-  def vetted_rules, do: Map.keys(@vetted_rules)
 
   @doc """
   Get a vetted rule by its number.
   """
   @spec rule_by_number(non_neg_integer()) :: {rule_name(), map()} | nil
   def rule_by_number(number) do
-    Enum.find(@vetted_rules, fn {_name, info} -> info.number == number end)
+    Enum.find(@vetted_rules, fn {_name, info} -> info.rule_number == number end)
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # Rule Application
+  # Public API - 1D Elementary CA
   # ═══════════════════════════════════════════════════════════════
 
   @doc """
-  Apply a vetted rule by name.
+  Apply an elementary CA rule to a 1D cell array.
+
+  Elementary CA rules (0-255) use a 3-cell neighborhood (left, center, right).
 
   ## Parameters
 
-  - `grid` - The CA grid (as a 2D list or Grid struct)
-  - `rule_name` - One of the vetted rule names
+  - `cells` - List of cell values (0 or 1)
+  - `rule_number` - Integer rule number (0-255 for elementary, larger for extended)
 
   ## Returns
 
-  Updated grid after one step of the rule.
+  List of new cell values after one step.
 
   ## Example
 
-      grid = Grid.random(100, 100)
-      new_grid = OuterTotalistic.apply_rule(grid, :reversible_chaotic)
+      cells = [0, 0, 0, 1, 0, 0, 0]
+      OuterTotalistic.apply_rule(cells, 30)
+      # => [0, 0, 1, 1, 1, 0, 0]
   """
-  @spec apply_rule(Grid.t() | [[integer()]], rule_name()) :: [[integer()]]
-  def apply_rule(grid, rule_name) do
-    case Map.get(@vetted_rules, rule_name) do
-      nil ->
-        raise ArgumentError, "Unknown rule: #{inspect(rule_name)}. Use one of: #{inspect(vetted_rules())}"
+  @spec apply_rule([integer()], non_neg_integer()) :: [integer()]
+  def apply_rule(cells, rule_number) when is_list(cells) and is_integer(rule_number) do
+    len = length(cells)
 
-      %{number: number, k: k, r: r} ->
-        apply_rule_number(grid, number, k: k, r: r)
-    end
-  end
+    if len == 0 do
+      []
+    else
+      # Build lookup table for the rule
+      lookup = build_elementary_lookup(rule_number)
 
-  @doc """
-  Apply an outer-totalistic rule by rule number.
+      # Apply to each cell using wrapped neighbors
+      cells_array = :array.from_list(cells)
 
-  ## Parameters
+      for i <- 0..(len - 1) do
+        left = :array.get(wrap_index(i - 1, len), cells_array)
+        center = :array.get(i, cells_array)
+        right = :array.get(wrap_index(i + 1, len), cells_array)
 
-  - `grid` - The CA grid
-  - `rule_number` - The outer-totalistic rule number
-  - `opts`:
-    - `:k` - Number of states (default: 2)
-    - `:r` - Number of neighbors (default: 8 for Moore)
-
-  ## Returns
-
-  Updated grid after one step.
-  """
-  @spec apply_rule_number(Grid.t() | [[integer()]], non_neg_integer(), keyword()) :: [[integer()]]
-  def apply_rule_number(grid, rule_number, opts \\ []) do
-    k = Keyword.get(opts, :k, 2)
-    r = Keyword.get(opts, :r, 8)
-
-    # Build transition lookup table
-    lookup = build_lookup_table(rule_number, k, r)
-
-    # Extract cells from grid
-    cells = extract_cells(grid)
-    {height, width} = grid_dimensions(cells)
-
-    # Apply rule to each cell
-    for y <- 0..(height - 1) do
-      for x <- 0..(width - 1) do
-        center = get_cell(cells, x, y)
-        neighbor_sum = sum_neighbors(cells, x, y, width, height)
-        lookup_transition(lookup, center, neighbor_sum, k, r)
+        # Pattern index from left-center-right (binary)
+        pattern = left * 4 + center * 2 + right
+        Map.get(lookup, pattern, 0)
       end
     end
   end
 
   @doc """
-  Apply rule with specific neighborhood type.
+  Apply an elementary CA rule with explicit neighborhood size.
 
-  ## Neighborhood Types
+  ## Parameters
 
-  - `:moore` - 8 neighbors (default)
-  - `:von_neumann` - 4 neighbors
-  - `:hexagonal` - 6 neighbors
+  - `cells` - List of cell values
+  - `rule_number` - Rule number
+  - `neighborhood_size` - Size of neighborhood (default 3)
+
+  ## Returns
+
+  List of new cell values.
   """
-  @spec apply_rule_with_neighborhood(
-          Grid.t() | [[integer()]],
-          rule_name() | non_neg_integer(),
-          atom()
-        ) :: [[integer()]]
-  def apply_rule_with_neighborhood(grid, rule, neighborhood) do
-    r = neighborhood_size(neighborhood)
+  @spec apply_rule_number([integer()], non_neg_integer(), non_neg_integer()) :: [integer()]
+  def apply_rule_number(cells, rule_number, neighborhood_size \\ 3)
+      when is_list(cells) and is_integer(rule_number) do
+    len = length(cells)
 
-    case rule do
-      name when is_atom(name) ->
-        info = rule_info(name)
-        apply_rule_number(grid, info.number, k: info.k, r: r)
+    if len == 0 do
+      []
+    else
+      radius = div(neighborhood_size, 2)
+      num_patterns = 1 <<< neighborhood_size
+      lookup = build_rule_lookup(rule_number, num_patterns)
+      cells_array = :array.from_list(cells)
 
-      number when is_integer(number) ->
-        apply_rule_number(grid, number, k: 2, r: r)
+      for i <- 0..(len - 1) do
+        # Gather neighborhood
+        pattern =
+          for offset <- -radius..radius, reduce: 0 do
+            acc ->
+              idx = wrap_index(i + offset, len)
+              cell = :array.get(idx, cells_array)
+              (acc <<< 1) + cell
+          end
+
+        Map.get(lookup, pattern, 0)
+      end
+    end
+  end
+
+  @doc """
+  Apply a vetted rule by name to a 1D cell array.
+
+  For 1D arrays, this uses the rule number with extended neighborhood.
+
+  ## Parameters
+
+  - `cells` - List of cell values
+  - `rule_name` - One of: :reversible_chaotic, :period_doubling, :xor_linear, :rule_150_analog
+
+  ## Returns
+
+  New cell values after one step, or `{:error, reason}` for unknown rules.
+  """
+  @spec apply_vetted_rule([integer()], rule_name()) :: [integer()] | {:error, term()}
+  def apply_vetted_rule(cells, rule_name) when is_list(cells) and is_atom(rule_name) do
+    case Map.get(@vetted_rules, rule_name) do
+      nil ->
+        {:error, {:unknown_rule, rule_name}}
+
+      %{rule_number: number} ->
+        # For 1D, use a truncated version of the rule
+        # Use mod to get elementary-compatible rule
+        elementary_rule = rem(number, 256)
+        apply_rule(cells, elementary_rule)
     end
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # Specialized Rule Implementations
+  # Public API - Specialized Rules
   # ═══════════════════════════════════════════════════════════════
 
   @doc """
-  Apply XOR-based rule directly (faster than generic).
+  Apply XOR-based rule to cells.
 
-  XOR rule: new_center = center XOR (neighbor_sum mod 2)
+  XOR rule: new_center = left XOR right
   """
-  @spec apply_xor_rule(Grid.t() | [[integer()]]) :: [[integer()]]
-  def apply_xor_rule(grid) do
-    cells = extract_cells(grid)
-    {height, width} = grid_dimensions(cells)
+  @spec apply_xor_rule([integer()]) :: [integer()]
+  def apply_xor_rule(cells) when is_list(cells) do
+    len = length(cells)
 
-    for y <- 0..(height - 1) do
-      for x <- 0..(width - 1) do
-        center = get_cell(cells, x, y)
-        neighbor_sum = sum_neighbors(cells, x, y, width, height)
-        Bitwise.bxor(center, rem(neighbor_sum, 2))
+    if len == 0 do
+      []
+    else
+      cells_array = :array.from_list(cells)
+
+      for i <- 0..(len - 1) do
+        left = :array.get(wrap_index(i - 1, len), cells_array)
+        right = :array.get(wrap_index(i + 1, len), cells_array)
+        bxor(left, right)
       end
     end
   end
@@ -242,190 +236,165 @@ defmodule Thunderline.Thunderbolt.CA.OuterTotalistic do
   @doc """
   Apply reversible second-order rule.
 
-  Uses previous state to ensure reversibility:
-  new_center = f(center, neighbors) XOR previous_center
+  Uses previous state for reversibility:
+  new_cell = f(neighborhood) XOR previous_cell
+
+  ## Parameters
+
+  - `cells` - Current cell values
+  - `prev` - Previous cell values
+  - `rule_number` - Rule to apply
+
+  ## Returns
+
+  New cell values that can be reversed.
   """
-  @spec apply_reversible_rule(
-          Grid.t() | [[integer()]],
-          Grid.t() | [[integer()]],
-          rule_name()
-        ) :: [[integer()]]
-  def apply_reversible_rule(grid, previous_grid, rule_name) do
-    # Compute forward step
-    forward = apply_rule(grid, rule_name)
+  @spec apply_reversible_rule([integer()], [integer()], non_neg_integer()) :: [integer()]
+  def apply_reversible_rule(cells, prev, rule_number)
+      when is_list(cells) and is_list(prev) and is_integer(rule_number) do
+    # First apply the rule normally
+    forward = apply_rule(cells, rule_number)
 
-    # XOR with previous for reversibility
-    forward_cells = extract_cells(forward)
-    prev_cells = extract_cells(previous_grid)
-    {height, width} = grid_dimensions(forward_cells)
-
-    for y <- 0..(height - 1) do
-      for x <- 0..(width - 1) do
-        Bitwise.bxor(
-          get_cell(forward_cells, x, y),
-          get_cell(prev_cells, x, y)
-        )
-      end
-    end
+    # XOR with previous state for reversibility
+    Enum.zip(forward, prev)
+    |> Enum.map(fn {f, p} -> bxor(f, p) end)
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # Rule Analysis
+  # Public API - Rule Analysis
   # ═══════════════════════════════════════════════════════════════
 
   @doc """
-  Analyze a rule number to extract its transition table.
+  Analyze a rule's behavior over multiple generations.
+
+  ## Parameters
+
+  - `cells` - Initial cell state to evolve
+  - `rule_number` - Rule to analyze
+  - `opts`:
+    - `:generations` - Number of generations (default: 10)
+
+  ## Returns
+
+  Map with analysis results including density history and final state.
   """
-  @spec analyze_rule(non_neg_integer(), keyword()) :: map()
-  def analyze_rule(rule_number, opts \\ []) do
-    k = Keyword.get(opts, :k, 2)
-    r = Keyword.get(opts, :r, 8)
-    lookup = build_lookup_table(rule_number, k, r)
+  @spec analyze_rule([integer()], non_neg_integer(), keyword()) :: map()
+  def analyze_rule(cells, rule_number, opts \\ []) do
+    generations = Keyword.get(opts, :generations, 10)
 
-    # Count fixed points (transitions where output = center)
-    fixed_points =
-      for center <- 0..(k - 1),
-          sum <- 0..(k * r),
-          lookup_transition(lookup, center, sum, k, r) == center,
-          do: {center, sum}
+    # Run evolution and track density (starting from cells, creating exactly `generations` new states)
+    {history, final} =
+      Enum.reduce(1..generations, {[], cells}, fn _gen, {hist, current} ->
+        next = apply_rule(current, rule_number)
+        {[next | hist], next}
+      end)
 
-    # Check reversibility (simplified check)
-    reversible = check_reversibility(lookup, k, r)
+    # history is in reverse order, reverse it
+    history = Enum.reverse(history)
+
+    # Calculate density for each generation (exactly `generations` entries)
+    densities =
+      Enum.map(history, fn gen ->
+        Enum.sum(gen) / max(length(gen), 1)
+      end)
 
     %{
       rule_number: rule_number,
-      k: k,
-      r: r,
-      fixed_points: fixed_points,
-      fixed_point_count: length(fixed_points),
-      potentially_reversible: reversible,
-      transition_count: k * (k * r + 1)
+      generations: generations,
+      initial_size: length(cells),
+      density_history: densities,
+      final_density: List.last(densities),
+      final_state: final
     }
   end
 
   @doc """
-  Check if a rule preserves some global property.
+  Evolve cells for multiple generations.
 
-  Common properties:
-  - `:parity` - XOR of all cells is preserved
-  - `:density` - Approximate total cell count preserved
+  ## Parameters
+
+  - `cells` - Initial cells
+  - `rule_number` - Rule to apply
+  - `generations` - Number of steps
+  - `opts`:
+    - `:return` - `:all` for full history, `:final` for just final (default: :all)
+
+  ## Returns
+
+  List of all generations or just final state.
   """
-  @spec preserves_property?(non_neg_integer(), atom(), keyword()) :: boolean()
-  def preserves_property?(rule_number, property, opts \\ []) do
-    k = Keyword.get(opts, :k, 2)
-    r = Keyword.get(opts, :r, 8)
+  @spec evolve([integer()], non_neg_integer(), non_neg_integer(), keyword()) :: [[integer()]] | [integer()]
+  def evolve(cells, rule_number, generations, opts \\ []) do
+    return_type = Keyword.get(opts, :return, :all)
 
-    case property do
-      :parity ->
-        # Check if XOR-based
-        rule_number == 2_863_311_530
+    # Handle 0 generations edge case
+    if generations == 0 do
+      case return_type do
+        :final -> cells
+        _ -> [cells]
+      end
+    else
+      {history, final} =
+        Enum.reduce(1..generations, {[cells], cells}, fn _gen, {hist, current} ->
+          next = apply_rule(current, rule_number)
 
-      :density ->
-        # Simplified: check if rule is symmetric in some sense
-        analysis = analyze_rule(rule_number, opts)
-        analysis.fixed_point_count > 0
+          case return_type do
+            :final -> {hist, next}
+            _ -> {[next | hist], next}
+          end
+        end)
 
-      _ ->
-        false
+      case return_type do
+        :final -> final
+        _ -> Enum.reverse(history)
+      end
+    end
+  end
+
+  @doc """
+  Generate the lookup table for a rule.
+
+  ## Parameters
+
+  - `rule_number` - Rule number (0-255 for elementary)
+
+  ## Returns
+
+  Map from pattern tuple `{left, center, right}` to output (0 or 1).
+  """
+  @spec rule_lookup_table(non_neg_integer()) :: map()
+  def rule_lookup_table(rule_number) do
+    # Elementary CA: 8 patterns (3-cell neighborhood)
+    # Return tuple keys {left, center, right}
+    for pattern <- 0..7, into: %{} do
+      left = (pattern >>> 2) &&& 1
+      center = (pattern >>> 1) &&& 1
+      right = pattern &&& 1
+      bit = (rule_number >>> pattern) &&& 1
+      {{left, center, right}, bit}
     end
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # Private: Lookup Table Construction
+  # Private Helpers
   # ═══════════════════════════════════════════════════════════════
 
-  defp build_lookup_table(rule_number, k, r) do
-    # Number of possible (center, sum) pairs
-    max_sum = k * r
-    total_entries = k * (max_sum + 1)
-
-    # Extract digits from rule number in base k
-    digits = extract_base_k_digits(rule_number, k, total_entries)
-
-    # Build map: {center, sum} -> new_state
-    for center <- 0..(k - 1),
-        sum <- 0..max_sum,
-        into: %{} do
-      index = center * (max_sum + 1) + sum
-      new_state = Enum.at(digits, index, 0)
-      {{center, sum}, new_state}
+  defp build_elementary_lookup(rule_number) do
+    # Elementary CA: 8 patterns (3-cell neighborhood)
+    for pattern <- 0..7, into: %{} do
+      bit = (rule_number >>> pattern) &&& 1
+      {pattern, bit}
     end
   end
 
-  defp extract_base_k_digits(number, k, count) do
-    digits =
-      Stream.unfold(number, fn
-        0 -> nil
-        n -> {rem(n, k), div(n, k)}
-      end)
-      |> Enum.take(count)
-
-    # Pad with zeros if needed
-    padding_count = max(0, count - length(digits))
-    digits ++ List.duplicate(0, padding_count)
+  defp build_rule_lookup(rule_number, num_patterns) do
+    for pattern <- 0..(num_patterns - 1), into: %{} do
+      bit = (rule_number >>> rem(pattern, 32)) &&& 1
+      {pattern, bit}
+    end
   end
 
-  defp lookup_transition(lookup, center, sum, _k, _r) do
-    Map.get(lookup, {center, sum}, 0)
-  end
-
-  # ═══════════════════════════════════════════════════════════════
-  # Private: Grid Operations
-  # ═══════════════════════════════════════════════════════════════
-
-  defp extract_cells(%{cells: cells}), do: cells
-  defp extract_cells(cells) when is_list(cells), do: cells
-
-  defp grid_dimensions([]), do: {0, 0}
-  defp grid_dimensions([row | _] = grid), do: {length(grid), length(row)}
-
-  defp get_cell(cells, x, y) do
-    cells
-    |> Enum.at(y, [])
-    |> Enum.at(x, 0)
-  end
-
-  defp sum_neighbors(cells, x, y, width, height) do
-    # Moore neighborhood (8 neighbors)
-    offsets = [
-      {-1, -1},
-      {0, -1},
-      {1, -1},
-      {-1, 0},
-      {1, 0},
-      {-1, 1},
-      {0, 1},
-      {1, 1}
-    ]
-
-    Enum.reduce(offsets, 0, fn {dx, dy}, acc ->
-      nx = wrap(x + dx, width)
-      ny = wrap(y + dy, height)
-      acc + get_cell(cells, nx, ny)
-    end)
-  end
-
-  defp wrap(coord, size) when coord < 0, do: size + coord
-  defp wrap(coord, size) when coord >= size, do: coord - size
-  defp wrap(coord, _size), do: coord
-
-  defp neighborhood_size(:moore), do: 8
-  defp neighborhood_size(:von_neumann), do: 4
-  defp neighborhood_size(:hexagonal), do: 6
-  defp neighborhood_size(_), do: 8
-
-  # ═══════════════════════════════════════════════════════════════
-  # Private: Reversibility Check
-  # ═══════════════════════════════════════════════════════════════
-
-  defp check_reversibility(lookup, k, r) do
-    # Simplified reversibility check:
-    # For each possible sum, check if the mapping from center to new_state is injective
-    max_sum = k * r
-
-    Enum.all?(0..max_sum, fn sum ->
-      outputs = for center <- 0..(k - 1), do: Map.get(lookup, {center, sum}, 0)
-      length(Enum.uniq(outputs)) == k
-    end)
-  end
+  defp wrap_index(i, len) when i < 0, do: len + i
+  defp wrap_index(i, len) when i >= len, do: i - len
+  defp wrap_index(i, _len), do: i
 end

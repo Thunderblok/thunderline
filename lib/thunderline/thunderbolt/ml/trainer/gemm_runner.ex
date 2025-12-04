@@ -135,13 +135,16 @@ defmodule Thunderline.Thunderbolt.ML.Trainer.GemmRunner do
 
   # Generate FP16 row-major matrices as binaries using Nx
   defp generate_inputs_fp16(m, n, k) do
-    a =
-      Nx.random_uniform({m, k}, 0.0, 1.0, type: {:f, 32})
-      |> Nx.as_type({:f, 16})
+    key = Nx.Random.key(System.unique_integer([:positive]))
 
-    b =
-      Nx.random_uniform({k, n}, 0.0, 1.0, type: {:f, 32})
-      |> Nx.as_type({:f, 16})
+    {a, key} =
+      Nx.Random.uniform(key, 0.0, 1.0, shape: {m, k}, type: {:f, 32})
+
+    {b, _key} =
+      Nx.Random.uniform(key, 0.0, 1.0, shape: {k, n}, type: {:f, 32})
+
+    a = Nx.as_type(a, {:f, 16})
+    b = Nx.as_type(b, {:f, 16})
 
     {Nx.to_binary(a), Nx.to_binary(b)}
   end

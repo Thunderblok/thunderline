@@ -235,7 +235,7 @@ defmodule Thunderline.Thunderlink.Resources.Channel do
             last_message_at: DateTime.utc_now(),
             channel_metrics: updated_metrics
           })
-          |> Thunderline.Thunderblock.Domain.update!()
+          |> Ash.update!()
 
         # Create message record
         create_channel_message(updated_channel, input.arguments)

@@ -466,8 +466,8 @@ defmodule Thunderline.Thunderflow.MnesiaProducer do
     List.to_tuple([table | updated_values])
   end
 
-  defp schedule_retry(_table, _event_id, delay) when delay <= 0 do
-    requeue_event(_table, _event_id)
+  defp schedule_retry(table, event_id, delay) when delay <= 0 do
+    requeue_event(table, event_id)
   end
 
   defp schedule_retry(table, event_id, delay) do

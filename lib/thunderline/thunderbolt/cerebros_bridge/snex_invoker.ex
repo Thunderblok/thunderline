@@ -69,7 +69,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
       end)
 
     # Create init script that adds paths and imports cerebros_service
-    init_script = """
+    _init_script = """
     import sys
     #{sys_path_init}
     import cerebros_service

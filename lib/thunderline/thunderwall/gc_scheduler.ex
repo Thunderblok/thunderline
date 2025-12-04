@@ -31,7 +31,7 @@ defmodule Thunderline.Thunderwall.GCScheduler do
   use GenServer
   require Logger
 
-  alias Thunderline.Thunderwall.{DecayProcessor, EntropyMetrics}
+  alias Thunderline.Thunderwall.EntropyMetrics
   alias Thunderline.Thundercore.Resources.TickState
 
   # 1 minute

@@ -47,7 +47,8 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
   alias Thunderline.Thunderchief.{State, Action}
 
   @violation_threshold 0.1  # 10% violation rate triggers response
-  @critical_violation_rate 0.3  # 30% triggers escalation
+  # Reserved for future automatic escalation (currently alerts only)
+  @_critical_violation_rate 0.3  # 30% triggers escalation
   @policy_suspension_threshold 0.5  # 50% failure rate suspends policy
 
   # ===========================================================================

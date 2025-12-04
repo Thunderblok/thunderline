@@ -25,8 +25,10 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunOptions do
     * `:operator` – string recorded in metadata (defaults to `manual`)
     * `:meta` – additional metadata map merged into the generated metadata
   """
-  @spec prepare(run_spec(), keyword()) :: {run_id(), run_spec(), enqueue_opts()}
-  def prepare(spec, opts \\ []) when is_map(spec) do
+  @spec prepare(run_spec(), keyword()) :: {run_id(), run_spec(), enqueue_opts()} | {:error, :invalid_spec}
+  def prepare(spec, opts \\ [])
+
+  def prepare(spec, opts) when is_map(spec) do
     run_id =
       Keyword.get_lazy(opts, :run_id, fn ->
         Map.get(spec, "run_id") || Map.get(spec, :run_id) || UUID.v7()

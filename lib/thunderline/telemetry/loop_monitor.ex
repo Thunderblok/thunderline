@@ -58,9 +58,9 @@ defmodule Thunderline.Telemetry.LoopMonitor do
   @lambda_chaotic_threshold 0.1
   @rtau_spike_factor 2.0
 
-  # Target bands (from paper)
-  @plv_band {0.3, 0.6}
-  @sigma_band {0.8, 1.2}
+  # Target bands (from paper) - reserved for future band-based alerting
+  @_plv_band {0.3, 0.6}
+  @_sigma_band {0.8, 1.2}
 
   # -------------------------------------------------------------------
   # Client API

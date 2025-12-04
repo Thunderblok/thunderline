@@ -8,8 +8,8 @@ defmodule ThunderlineWeb.Live.Auth do
   Included in `live_session :default, on_mount: [AshAuthentication.Phoenix.LiveSession, ThunderlineWeb.Live.Auth]`.
   We accept any tag (`_stage`) so it works whether passed as a bare module or with a stage tuple.
   """
-  # Import assign/2|3 from Phoenix.Component (works in LiveView on_mount hooks)
-  import Phoenix.Component, only: [assign: 2, assign: 3]
+  # Import assign/3 from Phoenix.Component (works in LiveView on_mount hooks)
+  import Phoenix.Component, only: [assign: 3]
 
   alias ThunderlineWeb.Auth.Actor
 

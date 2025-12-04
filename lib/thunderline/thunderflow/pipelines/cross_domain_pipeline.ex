@@ -59,7 +59,7 @@ defmodule Thunderline.Thunderflow.Pipelines.CrossDomainPipeline do
   end
 
   @impl Broadway
-  def handle_message(processor, %Message{} = message, _context) do
+  def handle_message(_processor, %Message{} = message, _context) do
     try do
       # Normalize to canonical event struct
       canonical_event =

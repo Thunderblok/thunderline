@@ -348,7 +348,7 @@ defmodule Thunderline.Thunderchief.Conductor do
   defp calculate_reward(%{success?: false}), do: -0.5
   defp calculate_reward(_), do: 0.0
 
-  defp update_metrics(metrics, actions, cycle_ms, chiefs) do
+  defp update_metrics(metrics, actions, cycle_ms, _chiefs) do
     total = metrics.total_actions + actions
 
     # Exponential moving average for cycle time

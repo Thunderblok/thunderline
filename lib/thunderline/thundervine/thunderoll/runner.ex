@@ -37,7 +37,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Runner do
   ES Hyperscale Paper: https://eshyperscale.github.io/
   """
 
-  alias Thunderline.Thundervine.Thunderoll.{Population, Perturbation, Fitness}
+  alias Thunderline.Thundervine.Thunderoll.{Perturbation, Fitness}
   alias Thunderline.Thundercrown.PolicyEngine
 
   require Logger

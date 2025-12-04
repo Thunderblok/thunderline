@@ -6,7 +6,6 @@ defmodule ThunderlineWeb.DashboardLive.Components.ProfilePanel do
   """
 
   use Phoenix.Component
-  import ThunderlineWeb.CoreComponents
 
   attr :updates, :list, default: []
   attr :class, :string, default: ""

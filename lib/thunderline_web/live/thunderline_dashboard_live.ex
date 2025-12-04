@@ -14,13 +14,11 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   alias Phoenix.PubSub
   alias Thunderline.DashboardMetrics
   alias Thunderline.Thunderflow.EventBuffer
-  alias Thunderline.EventBus
   alias Thunderline.Thunderflow.Observability.NDJSON
   alias Thunderline.Thunderblock.Checkpoint
   alias Thunderline.Thunderbolt.Cerebros.Summary, as: CerebrosSummary
   alias Thunderline.Thunderbolt.CerebrosBridge
   alias Thunderline.Thunderbolt.CerebrosBridge.{RunOptions, Validator}
-  alias Thunderline.UUID
 
   # Domain tree used by helper functions (was removed earlier; re-added).
   @sample_domains [
@@ -880,7 +878,7 @@ defmodule ThunderlineWeb.ThunderlineDashboardLive do
   defp build_kpis_from_metrics(%{system: sys} = payload) do
     events = Map.get(payload, :events, %{})
     agents = Map.get(payload, :agents, %{})
-    thunderlane = Map.get(payload, :thunderlane, %{})
+    _thunderlane = Map.get(payload, :thunderlane, %{})
 
     mem_total = get_in(sys, [:memory, :total]) || 0
     uptime = Map.get(sys, :uptime, 0)

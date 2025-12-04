@@ -13,7 +13,7 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
 
   use GenServer
   require Logger
-  alias Thunderline.Thunderbolt.{HPOExecutor, DatasetManager}
+  alias Thunderline.Thunderbolt.HPOExecutor
   alias Thunderline.Thunderflow.EventBus
 
   @default_study_params %{
@@ -210,7 +210,7 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
   defp start_trial_batch(study, batch_size) do
     # TODO: Implement Optuna ask() integration
     # For now, generate random suggestions within param bounds
-    trials =
+    _trials =
       Enum.map(1..batch_size, fn _ ->
         suggestion = generate_suggestion(study.params)
         trial_id = "trial-#{System.unique_integer([:positive])}"
@@ -283,7 +283,7 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
     end
   end
 
-  defp log_trial_to_mlflow(study_id, trial_id, objective, artifact) do
+  defp log_trial_to_mlflow(_study_id, trial_id, objective, _artifact) do
     # TODO: Implement MLflow logging
     Logger.info("[AutoMLDriver] Logging trial #{trial_id} to MLflow: #{inspect(objective)}")
   end

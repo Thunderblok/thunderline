@@ -189,7 +189,7 @@ defmodule Thunderline.Thunderbolt.Criticality.Lyapunov do
 
     case result do
       {nil, _} -> {nil, nil}
-      {idx, dist} when dist == :infinity -> {nil, nil}
+      {_idx, dist} when dist == :infinity -> {nil, nil}
       pair -> pair
     end
   end
@@ -255,7 +255,7 @@ defmodule Thunderline.Thunderbolt.Criticality.Lyapunov do
       {lambdas, _} =
         Enum.reduce(1..(n - 1), {[], 0}, fn i, {acc_lambdas, prev_neighbor_idx} ->
           current = Enum.at(vectors, i)
-          prev = Enum.at(vectors, i - 1)
+          _prev = Enum.at(vectors, i - 1)
 
           # Find neighbor distance growth
           neighbor_idx =

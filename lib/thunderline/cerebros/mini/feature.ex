@@ -32,8 +32,6 @@ defmodule Thunderline.Cerebros.Mini.Feature do
   `Thunderline.Cerebros.Mini.Bridge` for the full pipeline.
   """
 
-  alias Thunderline.Thunderbit.Category
-
   @type t :: %__MODULE__{
           bit_id: String.t(),
           pac_id: String.t() | nil,

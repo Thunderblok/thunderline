@@ -25,7 +25,6 @@ defmodule Thunderline.Thunderbit.Context do
   4. **Optimizable** — can be adapted for ECS or CA grids later
   """
 
-  alias Thunderline.Thunderbit.Category
   alias Thunderline.Thunderbit.Thundercell
 
   @type t :: %__MODULE__{

@@ -227,7 +227,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
       {:ok, best_params, best_fitness, new_state} ->
         {:reply, {:ok, best_params, best_fitness}, %{new_state | status: :idle}}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -241,7 +241,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -252,7 +252,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
       {:ok, deltas, new_state} ->
         {:reply, {:ok, deltas}, new_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -362,7 +362,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
 
     # Run for ticks_per_eval steps
     ticks = state.optimization_config.ticks_per_eval
-    {final_grid, _} = run_evaluation_loop(grid, ruleset, monitor, ticks)
+    {_final_grid, _} = run_evaluation_loop(grid, ruleset, monitor, ticks)
 
     # Get final metrics
     {:ok, metrics} = LoopMonitor.get_metrics(monitor)
@@ -392,7 +392,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
       {:error, e}
   end
 
-  defp run_evaluation_loop(grid, ruleset, monitor, 0), do: {grid, monitor}
+  defp run_evaluation_loop(grid, _ruleset, monitor, 0), do: {grid, monitor}
 
   defp run_evaluation_loop(grid, ruleset, monitor, remaining) do
     {:ok, _deltas, new_grid} = Stepper.step_thunderbit_grid(grid, ruleset)

@@ -265,7 +265,9 @@ config :thunderline,
     # ThunderPrism - DAG scratchpad for ML decision trails (Phase 4.0)
     Thunderline.Thunderprism.Domain,
     # Entropy sink / GC / decay - boundary domain (last in cycle)
-    Thunderline.Thunderwall.Domain
+    Thunderline.Thunderwall.Domain,
+    # Evolution domain for MAP-Elites quality-diversity search
+    Thunderline.Evolution.Domain
   ]
 
 # OPTIONAL (disabled right now):

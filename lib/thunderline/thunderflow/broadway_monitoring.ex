@@ -11,7 +11,6 @@ defmodule Thunderline.BroadwayMonitoring do
   """
 
   require Logger
-  alias Phoenix.PubSub
 
   @pipelines [
     Thunderline.Thunderflow.Pipelines.EventPipeline,
@@ -109,17 +108,21 @@ defmodule Thunderline.BroadwayMonitoring do
   end
 
   defp generate_performance_recommendations(performance_delta) do
-    recommendations = []
-
-    if performance_delta.throughput_improvement < 0 do
-      recommendations = ["Consider increasing concurrency or batch size" | recommendations]
-    end
-
-    if performance_delta.error_rate_change > 0.01 do
-      recommendations = ["Investigate increased error rates during load test" | recommendations]
-    end
-
-    recommendations
+    []
+    |> then(fn recs ->
+      if performance_delta.throughput_improvement < 0 do
+        ["Consider increasing concurrency or batch size" | recs]
+      else
+        recs
+      end
+    end)
+    |> then(fn recs ->
+      if performance_delta.error_rate_change > 0.01 do
+        ["Investigate increased error rates during load test" | recs]
+      else
+        recs
+      end
+    end)
   end
 
   defp calculate_throughput_change(_baseline, _final), do: :rand.uniform() * 2 - 1
@@ -247,7 +250,7 @@ defmodule Thunderline.BroadwayMonitoring do
     end
   end
 
-  defp get_pipeline_metrics(pipeline_module) do
+  defp get_pipeline_metrics(_pipeline_module) do
     # This would integrate with Broadway's built-in metrics
     # For now, return placeholder metrics
     %{
@@ -495,7 +498,7 @@ defmodule Thunderline.BroadwayMonitoring do
     }
   end
 
-  defp identify_bottlenecks(pipeline_analysis, system_analysis) do
+  defp identify_bottlenecks(pipeline_analysis, _system_analysis) do
     bottlenecks = []
 
     # Check for high error rates
@@ -575,33 +578,37 @@ defmodule Thunderline.BroadwayMonitoring do
   end
 
   defp generate_migration_recommendations(test_results) do
-    recommendations = []
-
     failed_tests = Enum.filter(test_results, fn {_type, result} -> not result.success end)
 
-    if length(failed_tests) > 0 do
-      recommendations = [
-        %{
-          priority: :critical,
-          action: "Fix failed migration tests",
-          details: "Failed tests: #{inspect(Enum.map(failed_tests, &elem(&1, 0)))}"
-        }
-        | recommendations
-      ]
-    end
-
-    if test_results.legacy_compatibility.success do
-      recommendations = [
-        %{
-          priority: :low,
-          action: "Remove legacy compatibility layer after migration is complete",
-          details: "Legacy broadcasts are working but should be phased out"
-        }
-        | recommendations
-      ]
-    end
-
-    recommendations
+    []
+    |> then(fn recs ->
+      if length(failed_tests) > 0 do
+        [
+          %{
+            priority: :critical,
+            action: "Fix failed migration tests",
+            details: "Failed tests: #{inspect(Enum.map(failed_tests, &elem(&1, 0)))}"
+          }
+          | recs
+        ]
+      else
+        recs
+      end
+    end)
+    |> then(fn recs ->
+      if test_results.legacy_compatibility.success do
+        [
+          %{
+            priority: :low,
+            action: "Remove legacy compatibility layer after migration is complete",
+            details: "Legacy broadcasts are working but should be phased out"
+          }
+          | recs
+        ]
+      else
+        recs
+      end
+    end)
   end
 
   defp analyze_trends(_metrics_history) do

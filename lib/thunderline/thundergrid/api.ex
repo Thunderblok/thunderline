@@ -36,7 +36,7 @@ defmodule Thunderline.Thundergrid.API do
   end
 
   @doc "Subscribe current process to zone change events."
-  def watch_zone(zone_id, opts \\ []) when is_binary(zone_id) do
+  def watch_zone(zone_id, _opts \\ []) when is_binary(zone_id) do
     topic = zone_topic(zone_id)
     :ok = PubSub.subscribe(@pubsub, topic)
     {:ok, topic}

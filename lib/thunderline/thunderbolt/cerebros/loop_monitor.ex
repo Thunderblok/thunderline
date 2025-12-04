@@ -505,7 +505,7 @@ defmodule Thunderline.Thunderbolt.Cerebros.LoopMonitor do
   end
 
   # Compute how fast two initially nearby trajectories diverge
-  defp compute_divergence(series_list, i, j, steps) when steps < 1, do: nil
+  defp compute_divergence(_series_list, _i, _j, steps) when steps < 1, do: nil
 
   defp compute_divergence(series_list, i, j, steps) do
     initial_dist = abs(Enum.at(series_list, i) - Enum.at(series_list, j))

@@ -479,7 +479,7 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Get ThunderCom metrics"
   def thundercom_metrics do
     pubsub_count = count_pubsub_subscriptions()
-    port_count = length(:erlang.ports())
+    _port_count = length(:erlang.ports())
 
     %{
       active_communities: pubsub_count,
@@ -828,7 +828,7 @@ defmodule Thunderline.DashboardMetrics do
   @doc "Get ThunderLink metrics"
   def thunderlink_metrics do
     port_count = length(:erlang.ports())
-    node_count = length(Node.list())
+    _node_count = length(Node.list())
 
     %{
       connections_active: port_count,

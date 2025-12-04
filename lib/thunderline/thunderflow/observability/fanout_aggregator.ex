@@ -140,7 +140,7 @@ defmodule Thunderline.Thunderflow.Observability.FanoutAggregator do
     {:noreply, new_state}
   end
 
-  def handle_cast({:record_broadcast, measurements, metadata}, state) do
+  def handle_cast({:record_broadcast, _measurements, metadata}, state) do
     # Broadcast events implicitly fan out to all domains (assume 7)
     target_count = 7
     event_type = Map.get(metadata, :event_type, "broadcast")

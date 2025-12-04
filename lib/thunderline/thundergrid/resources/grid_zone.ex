@@ -349,12 +349,12 @@ defmodule Thunderline.Thundergrid.Resources.GridZone do
   end
 
   # Private helper functions
-  defp create_zone_boundaries(zone) do
+  defp create_zone_boundaries(_zone) do
     # Implementation would create ZoneBoundary records
     :ok
   end
 
-  defp register_in_spatial_index(zone) do
+  defp register_in_spatial_index(_zone) do
     # Implementation would register zone in spatial indexing system
     :ok
   end

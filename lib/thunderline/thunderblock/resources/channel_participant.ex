@@ -66,7 +66,7 @@ defmodule Thunderline.Thunderblock.Resources.ChannelParticipant do
     define :update
     define :destroy
     define :join, args: [:channel_id, :user_id]
-    define :leave, args: [:channel_id, :user_id]
+    define :leave
     define :update_role, args: [:role]
     define :by_channel, args: [:channel_id]
     define :by_user, args: [:user_id]
@@ -135,6 +135,7 @@ defmodule Thunderline.Thunderblock.Resources.ChannelParticipant do
 
     update :update_role do
       description "Update participant's role in channel"
+      require_atomic? false
 
       argument :role, :atom do
         allow_nil? false

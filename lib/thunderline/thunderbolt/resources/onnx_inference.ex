@@ -174,6 +174,26 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
   # Private helpers
 
   # Build ML.Input struct from raw input map
+  # Note: More specific clause with dtype must come first
+  defp build_ml_input(%{data: data, dtype: dtype}) when is_list(data) do
+    try do
+      # Use specified dtype
+      tensor = Nx.tensor(data, type: dtype, backend: Nx.BinaryBackend)
+
+      input = %Thunderline.Thunderbolt.ML.Input{
+        tensor: tensor,
+        dtype: Nx.type(tensor),
+        shape: Nx.shape(tensor),
+        metadata: %{}
+      }
+
+      {:ok, input}
+    rescue
+      error ->
+        {:error, {:tensor_conversion_failed, error}}
+    end
+  end
+
   defp build_ml_input(%{data: data}) when is_list(data) do
     try do
       # Convert to Nx tensor - ensure we have batch dimension
@@ -197,6 +217,10 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
     end
   end
 
+  defp build_ml_input(_invalid) do
+    {:error, :invalid_input_format}
+  end
+
   # Ensure data has batch dimension (2D for sequence models)
   defp ensure_batch_dimension([first | _] = data) when is_list(first) do
     # Already has batch dimension (e.g., [[1,2,3], [4,5,6]])
@@ -206,29 +230,6 @@ defmodule Thunderline.Thunderbolt.Resources.OnnxInference do
   defp ensure_batch_dimension(data) when is_list(data) do
     # Single sequence - wrap in batch: [1,2,3] -> [[1,2,3]]
     [data]
-  end
-
-  defp build_ml_input(%{data: data, dtype: dtype}) when is_list(data) do
-    try do
-      # Use specified dtype
-      tensor = Nx.tensor(data, type: dtype, backend: Nx.BinaryBackend)
-
-      input = %Thunderline.Thunderbolt.ML.Input{
-        tensor: tensor,
-        dtype: Nx.type(tensor),
-        shape: Nx.shape(tensor),
-        metadata: %{}
-      }
-
-      {:ok, input}
-    rescue
-      error ->
-        {:error, {:tensor_conversion_failed, error}}
-    end
-  end
-
-  defp build_ml_input(_invalid) do
-    {:error, :invalid_input_format}
   end
 
   # Extract predictions from ML.Output

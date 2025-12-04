@@ -432,7 +432,7 @@ defmodule Thunderline.Thundergrid.Resources.SpatialCoordinate do
   end
 
   # Private helper functions
-  defp update_spatial_index(coordinate) do
+  defp update_spatial_index(_coordinate) do
     # Implementation would update spatial indexing system
     :ok
   end

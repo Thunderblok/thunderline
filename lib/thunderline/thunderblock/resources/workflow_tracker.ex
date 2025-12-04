@@ -29,6 +29,7 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
     defaults [:create, :read, :update, :destroy]
 
     update :increment_count do
+      require_atomic? false
       argument :job_completion_event, :map, allow_nil?: false
 
       change fn changeset, _context ->
@@ -81,6 +82,8 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
       trigger :cleanup_completed_trackers do
         action :destroy
         scheduler_cron "0 2 * * *"
+        scheduler_module_name Thunderline.Thunderblock.WorkflowTracker.Schedulers.CleanupCompletedTrackers
+        worker_module_name Thunderline.Thunderblock.WorkflowTracker.Workers.CleanupCompletedTrackers
         where expr(status == :completed and updated_at < ago(7, :day))
       end
     end

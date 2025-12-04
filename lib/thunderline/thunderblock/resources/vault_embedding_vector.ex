@@ -19,7 +19,13 @@ defmodule Thunderline.Thunderblock.Resources.VaultEmbeddingVector do
   end
 
   actions do
-    defaults [:read, :create, :update, :destroy]
+    defaults [:read, :create, :destroy]
+
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:vector, :vector_model, :dimension, :content_hash, :embedding_type, :metadata]
+    end
 
     create :create_embedding do
       description "Create a new vector embedding"

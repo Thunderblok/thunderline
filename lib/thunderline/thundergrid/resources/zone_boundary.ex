@@ -430,13 +430,13 @@ defmodule Thunderline.Thundergrid.Resources.ZoneBoundary do
   end
 
   # Helper functions for boundary geometry
-  def point_on_boundary?(boundary, {q, r, s}) do
+  def point_on_boundary?(_boundary, {_q, _r, _s}) do
     # Implementation would check if point lies on boundary geometry
     # For now, simple check
     true
   end
 
-  def calculate_crossing_cost(boundary, agent_properties \\ %{}) do
+  def calculate_crossing_cost(boundary, _agent_properties \\ %{}) do
     base_cost = get_in(boundary.crossing_rules, ["crossing_cost"]) || 1.0
 
     # Apply modifiers based on agent properties and boundary conditions
@@ -452,12 +452,12 @@ defmodule Thunderline.Thundergrid.Resources.ZoneBoundary do
   end
 
   # Private helper functions
-  defp setup_boundary_monitoring(boundary) do
+  defp setup_boundary_monitoring(_boundary) do
     # Implementation would set up monitoring systems
     :ok
   end
 
-  defp check_crossing_permission_logic(boundary, agent_id, direction) do
+  defp check_crossing_permission_logic(boundary, _agent_id, direction) do
     # Check permeability
     if Decimal.to_float(boundary.permeability) == 0.0 do
       false

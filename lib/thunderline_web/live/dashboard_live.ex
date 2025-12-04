@@ -10,26 +10,9 @@ defmodule ThunderlineWeb.DashboardLive do
   require Logger
 
   alias Thunderline.{ThunderBridge, DashboardMetrics}
-  alias Thundergate.ThunderBridge, as: GatewayBridge
 
-  # Import component functions
-  import ThunderlineWeb.DashboardLive.Components.DomainPanel, only: [domain_panel: 1]
-  import ThunderlineWeb.DashboardLive.Components.AutomataPanel, only: [automata_panel: 1]
-  import ThunderlineWeb.DashboardLive.Components.ChatPanel, only: [chat_panel: 1]
-  import ThunderlineWeb.DashboardLive.Components.ProfilePanel, only: [profile_panel: 1]
-
-  # Import the 8 critical dashboard components from BRUCE Team brief
+  # Import only the components that are used with function syntax <.component>
   import ThunderlineWeb.DashboardComponents.SystemHealth, only: [system_health_panel: 1]
-  import ThunderlineWeb.DashboardComponents.EventFlow, only: [event_flow_panel: 1]
-  import ThunderlineWeb.DashboardComponents.AlertManager, only: [alert_manager_panel: 1]
-  import ThunderlineWeb.DashboardComponents.MemoryMetrics, only: [memory_metrics_panel: 1]
-  import ThunderlineWeb.DashboardComponents.FederationStatus, only: [federation_status_panel: 1]
-  import ThunderlineWeb.DashboardComponents.AiGovernance, only: [ai_governance_panel: 1]
-
-  import ThunderlineWeb.DashboardComponents.OrchestrationEngine,
-    only: [orchestration_engine_panel: 1]
-
-  import ThunderlineWeb.DashboardComponents.SystemControls, only: [system_controls_panel: 1]
   import ThunderlineWeb.DashboardComponents.ThunderwatchPanel, only: [thunderwatch_panel: 1]
 
   @pipeline_modules %{
@@ -176,7 +159,7 @@ defmodule ThunderlineWeb.DashboardLive do
   end
 
   # Gate auth telemetry handler (telemetry callback)
-  def telemetry_gate_auth(_event, measurements, metadata, %{dashboard_pid: pid}) do
+  def telemetry_gate_auth(_event, _measurements, metadata, %{dashboard_pid: pid}) do
     send(pid, {:gate_auth, metadata[:result] || :unknown, metadata})
   rescue
     _ -> :ok
@@ -249,7 +232,7 @@ defmodule ThunderlineWeb.DashboardLive do
     {:noreply, updated_socket}
   end
 
-  def handle_info({:gate_auth, result, meta}, socket) do
+  def handle_info({:gate_auth, result, _meta}, socket) do
     stats = socket.assigns[:gate_auth_stats] || %{}
 
     updated =
@@ -1827,7 +1810,7 @@ defmodule ThunderlineWeb.DashboardLive do
   defp optional_identifier(label, value), do: "#{label} #{value}"
 
   defp blank?(value) when value in [nil, ""], do: true
-  defp blank?(value), do: false
+  defp blank?(_value), do: false
 
   # Metrics helpers
   defp format_bytes(bytes) when is_integer(bytes) do

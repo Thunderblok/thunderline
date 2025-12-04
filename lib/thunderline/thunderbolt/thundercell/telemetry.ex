@@ -49,7 +49,7 @@ defmodule Thunderline.Thunderbolt.ThunderCell.Telemetry do
   # ====================================================================
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     state = %__MODULE__{
       metrics: initialize_metrics(),
       start_time: System.monotonic_time(:millisecond)

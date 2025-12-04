@@ -6,7 +6,6 @@ defmodule ThunderlineWeb.DashboardLive.Components.AutomataPanel do
   """
 
   use Phoenix.Component
-  import ThunderlineWeb.CoreComponents
 
   attr :state, :map, required: true
   attr :expanded, :boolean, default: false

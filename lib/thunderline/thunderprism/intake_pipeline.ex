@@ -31,7 +31,7 @@ defmodule Thunderline.Thunderprism.IntakePipeline do
   - **Non-blocking**: Broadcasts results as they're processed
   """
 
-  alias Thunderline.Thunderbit.{Category, Edge, UIContract}
+  alias Thunderline.Thunderbit.{Edge, UIContract}
   alias Thunderline.UUID
   require Logger
 

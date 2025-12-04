@@ -5,13 +5,11 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
   ModelRun and ModelTrial stay in sync with emitted contracts.
   """
 
-  alias Ash
   alias Ash.Changeset
   alias Ash.Query
   require Ash.Query
   alias AshStateMachine.Errors.NoMatchingTransition
   alias Thunderline.Thunderbolt.CerebrosBridge.Contracts
-  alias Thunderline.Thunderbolt.Domain
   alias Thunderline.Thunderbolt.ML.ModelArtifact
   alias Thunderline.Thunderbolt.MLflow.{Config, SyncWorker}
   alias Thunderline.Thunderbolt.Resources.{ModelRun, ModelTrial}
@@ -37,7 +35,7 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Persistence do
            |> Changeset.for_update(:start, %{
              bridge_payload: start_payload(contract, response, spec)
            })
-           |> Domain.update() do
+           |> Ash.update() do
       :ok
     else
       {:ok, nil} -> {:error, :run_missing}

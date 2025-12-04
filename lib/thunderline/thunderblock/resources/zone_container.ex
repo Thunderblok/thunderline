@@ -187,7 +187,7 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
         zone =
           zone
           |> Ash.Changeset.for_update(:internal_activate)
-          |> Thunderblock.Domain.update!()
+          |> Ash.update!()
 
         # Start zone supervision processes
         Thunderblock.ZoneManager.start_zone(zone.id)

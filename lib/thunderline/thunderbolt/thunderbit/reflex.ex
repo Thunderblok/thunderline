@@ -54,7 +54,6 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
 
   alias Thunderline.Thunderbolt.Thunderbit
   alias Thunderline.Thunderbolt.DiffLogic.Gates
-  alias Thunderline.Thunderbolt.Cerebros.PACCompute
   alias Thunderline.Event
   alias Thunderline.Thunderflow.EventBus
   require Logger
@@ -337,7 +336,7 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
     {bit.state, bit.sigma_flow, bit.phi_phase, bit.lambda_sensitivity}
   end
 
-  defp apply_override_rule(bit, _neighbors, :collapse) do
+  defp apply_override_rule(_bit, _neighbors, :collapse) do
     # Collapse: zero out everything
     {:collapsed, 0.0, 0.0, 1.0}
   end
@@ -408,7 +407,7 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
     {final_bit, Enum.reverse(events)}
   end
 
-  defp evaluate_stability_reflex(bit, metrics, policy) do
+  defp evaluate_stability_reflex(bit, _metrics, policy) do
     threshold = Map.get(policy, :stability_threshold, 0.3)
 
     if bit.sigma_flow < threshold do
@@ -632,9 +631,10 @@ defmodule Thunderline.Thunderbolt.Thunderbit.Reflex do
   """
   @spec emit_aggregated_reflex_event(String.t(), [reflex_event()], keyword()) ::
           {:ok, Event.t()} | {:error, term()} | :noop
+  def emit_aggregated_reflex_event(chunk_id, events, opts \\ [])
   def emit_aggregated_reflex_event(_chunk_id, [], _opts), do: :noop
 
-  def emit_aggregated_reflex_event(chunk_id, events, opts \\ []) do
+  def emit_aggregated_reflex_event(chunk_id, events, opts) do
     pac_id = Keyword.get(opts, :pac_id)
 
     # Group events by type

@@ -103,7 +103,7 @@ defmodule Thunderline.Thunderbolt.Criticality.Propagation do
 
   defp estimate_ratio(activations, norm_type) do
     case layer_ratios(activations, norm: norm_type) do
-      {:ok, ratios} when length(ratios) > 0 ->
+      {:ok, [_ | _] = ratios} ->
         # Geometric mean of ratios
         product = Enum.reduce(ratios, 1.0, &(&1 * &2))
         sigma = :math.pow(product, 1.0 / length(ratios))

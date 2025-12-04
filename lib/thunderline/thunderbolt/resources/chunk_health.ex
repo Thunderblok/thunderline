@@ -13,8 +13,6 @@ defmodule Thunderline.Thunderbolt.Resources.ChunkHealth do
     extensions: [AshJsonApi.Resource, AshOban, AshGraphql.Resource],
     notifiers: [Ash.Notifier.PubSub]
 
-  import Ash.Resource.Change.Builtins
-
   # IN-MEMORY CONFIGURATION (sqlite removed)
   # Using :embedded data layer
 

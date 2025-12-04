@@ -127,7 +127,7 @@ defmodule Thunderline.Thundervine.Thunderoll.Backend.NxNative do
   end
 
   defp generate_all_perturbations(seeds, {m, n}, rank) do
-    n_pop = length(seeds)
+    _n_pop = length(seeds)
 
     # Generate all perturbations and stack into batched tensors
     perturbations = Enum.map(seeds, &Perturbation.from_seed({m, n}, rank, 1.0, &1))

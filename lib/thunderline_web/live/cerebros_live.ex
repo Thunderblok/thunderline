@@ -10,12 +10,9 @@ defmodule ThunderlineWeb.CerebrosLive do
   """
   use ThunderlineWeb, :live_view
 
-  alias Ecto.Changeset
   alias Phoenix.PubSub
   alias Thunderline.Thunderbolt.CerebrosBridge
   alias Thunderline.Thunderbolt.CerebrosBridge.Validator
-  alias Thunderline.UUID
-  alias Oban
 
   @tick_interval 1_000
   @run_topic "cerebros:runs"

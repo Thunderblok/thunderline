@@ -259,7 +259,9 @@ defmodule Thunderline.Thunderbolt.Sparse.Grid do
   Parallel map over active cells using Task.async_stream.
   """
   @spec pmap_active(t(), (coord(), cell_value() -> cell_value()), keyword()) :: t()
-  def pmap_active(%__MODULE__{format: :hash, data: data} = grid, fun, opts \\ []) do
+  def pmap_active(grid, fun, opts \\ [])
+
+  def pmap_active(%__MODULE__{format: :hash, data: data} = grid, fun, opts) do
     max_concurrency = Keyword.get(opts, :max_concurrency, System.schedulers_online())
 
     new_data =

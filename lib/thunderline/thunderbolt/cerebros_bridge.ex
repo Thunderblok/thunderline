@@ -30,7 +30,9 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge do
   returns `{:error, :bridge_disabled}`.
   """
   @spec enqueue_run(run_spec(), [enqueue_option()]) :: {:ok, Job.t()} | {:error, term()}
-  def enqueue_run(spec, opts \\ []) when is_map(spec) do
+  def enqueue_run(spec, opts \\ [])
+
+  def enqueue_run(spec, opts) when is_map(spec) do
     if Client.enabled?() do
       RunSaga.enqueue(spec, opts)
     else

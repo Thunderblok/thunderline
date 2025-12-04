@@ -20,15 +20,15 @@ defmodule Thunderline.Thunderbolt.UPM.PACFeatureExtractor do
       # => %{features: Nx.Tensor, labels: Nx.Tensor, metadata: map()}
   """
 
-  alias Thunderline.Thunderpac.Resources.{PAC, PACState, PACIntent}
+  alias Thunderline.Thunderpac.Resources.{PAC, PACState}
   require Logger
 
   @feature_dim 64
   @trait_dim 16
-  @state_dim 8
+  # @state_dim 8 - currently unused
   @memory_dim 24
   @intent_dim 8
-  @temporal_dim 8
+  # @temporal_dim 8 - currently unused
 
   @status_encoding %{
     seed: 0.0,
@@ -98,8 +98,8 @@ defmodule Thunderline.Thunderbolt.UPM.PACFeatureExtractor do
   """
   @spec extract_from_state(PACState.t()) :: map()
   def extract_from_state(%PACState{} = state) do
-    # Decode full state from snapshot
-    full_state = state.full_state || %{}
+    # Decode full state from snapshot (stored in state_data attribute)
+    full_state = state.state_data || %{}
 
     trait_features = extract_traits(Map.get(full_state, :trait_vector, []))
     memory_features = extract_memory(Map.get(full_state, :memory_state, %{}))
@@ -339,25 +339,24 @@ defmodule Thunderline.Thunderbolt.UPM.PACFeatureExtractor do
     # Generate labels for supervised learning
     # These represent "target" behaviors we want to predict/learn
 
-    labels =
-      [
-        # Target: will PAC be active soon? (1.0 if currently active)
-        if(pac.status == :active, do: 1.0, else: 0.0),
-        # Target: intent completion likelihood
-        intent_completion_likelihood(pac.intent_queue),
-        # Target: memory utilization efficiency
-        memory_efficiency(pac.memory_state),
-        # Target: tick efficiency (activity per tick)
-        tick_efficiency(pac),
-        # Padding to match output_dim
-        0.0,
-        0.0,
-        0.0,
-        0.0
-      ]
-      |> pad_or_truncate(32)
-      |> Nx.tensor()
-      |> Nx.reshape({1, 32})
+    [
+      # Target: will PAC be active soon? (1.0 if currently active)
+      if(pac.status == :active, do: 1.0, else: 0.0),
+      # Target: intent completion likelihood
+      intent_completion_likelihood(pac.intent_queue),
+      # Target: memory utilization efficiency
+      memory_efficiency(pac.memory_state),
+      # Target: tick efficiency (activity per tick)
+      tick_efficiency(pac),
+      # Padding to match output_dim
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+    |> pad_or_truncate(32)
+    |> Nx.tensor()
+    |> Nx.reshape({1, 32})
   end
 
   # ═══════════════════════════════════════════════════════════════

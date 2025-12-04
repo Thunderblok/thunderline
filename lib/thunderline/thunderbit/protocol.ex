@@ -487,7 +487,7 @@ defmodule Thunderline.Thunderbit.Protocol do
     end
   end
 
-  defp do_step(bit, event, :critic) do
+  defp do_step(bit, _event, :critic) do
     # Evaluate and produce verdict
     verdict = %{
       allowed: true,
@@ -510,7 +510,7 @@ defmodule Thunderline.Thunderbit.Protocol do
     {:ok, new_bit, [verdict_event]}
   end
 
-  defp do_step(bit, event, :analyzer) do
+  defp do_step(bit, _event, :analyzer) do
     # Extract features
     features = %{
       type: :features,
@@ -536,7 +536,7 @@ defmodule Thunderline.Thunderbit.Protocol do
     {:ok, new_bit, [stored]}
   end
 
-  defp do_step(bit, event, :controller) do
+  defp do_step(bit, _event, :controller) do
     # Emit control event
     control = %{
       type: :control,

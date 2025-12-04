@@ -113,64 +113,16 @@ defmodule Thunderline.Thunderflow.EventBus do
     {:error, reason}
   end
 
-  # --- Legacy helpers removed (blackhole) ---------------------------------
-  defp extract_domain(payload), do: Map.get(payload, :domain)
-
-  defp determine_pipeline_from_topic(topic) do
-    cond do
-      String.contains?(topic, "agent") or String.contains?(topic, "dashboard") or
-          String.contains?(topic, "live") ->
-        :realtime
-
-      String.contains?(topic, "domain") or String.contains?(topic, "orchestration") ->
-        :cross_domain
-
-      true ->
-        :general
-    end
-  end
-
-  defp extract_domains_from_topic(topic) do
-    # Parse topic patterns like "thundercrown:to:thunderbridge" or "domain:from:to"
-    case String.split(topic, ":") do
-      [from_domain, "to", to_domain] -> {from_domain, to_domain}
-      ["domain", from_domain, to_domain] -> {from_domain, to_domain}
-      _ -> nil
-    end
-  end
-
-  defp generate_correlation_id do
-    Thunderline.UUID.v7()
-  end
-
-  # Map legacy or ad-hoc domain strings to taxonomy source atoms.
-  # This is a best-effort transitional mapping; refine as taxonomy hardens.
-  defp map_source_domain(nil), do: :unknown
-  defp map_source_domain("thundergate" <> _), do: :gate
-  defp map_source_domain("thunderflow" <> _), do: :flow
-  defp map_source_domain("thundercrown" <> _), do: :crown
-  defp map_source_domain("thunderbolt" <> _), do: :bolt
-  defp map_source_domain("thunderblock" <> _), do: :block
-  defp map_source_domain("thunderbridge" <> _), do: :bridge
-  defp map_source_domain("thunderlink" <> _), do: :link
-  defp map_source_domain(other) when is_binary(other), do: :unknown
-  defp map_source_domain(atom) when is_atom(atom), do: atom
-
-  defp build_name(source, type) when is_atom(source) and is_atom(type) do
-    # Basic naming: system.<source>.<type>
-    "system." <> Atom.to_string(source) <> "." <> Atom.to_string(type)
-  end
-
-  # build_event removed – explicit construction required upstream.
-
-  # Shared batch construction returning {correlation_id, events, built_count}
-  # Batch build removed – callers must publish individually.
-
-  # batch_table_and_priority removed.
-
-  # Compatibility helper for legacy map-form publish_event clauses.
-  # Ensures we have a deterministic name when only :type is provided.
-  # infer_name_from_type removed.
+  # NOTE: Legacy helpers removed. The following were previously used for
+  # topic-based routing but are now deprecated. Kept commented for reference
+  # during migration period - safe to fully delete after 2025-08.
+  #
+  # defp extract_domain(payload), do: Map.get(payload, :domain)
+  # defp determine_pipeline_from_topic(topic), do: ...
+  # defp extract_domains_from_topic(topic), do: ...
+  # defp generate_correlation_id, do: Thunderline.UUID.v7()
+  # defp map_source_domain(domain), do: ...
+  # defp build_name(source, type), do: ...
 
   defp do_publish(%Thunderline.Event{} = ev, start) do
     pipeline = pipeline_for(ev)

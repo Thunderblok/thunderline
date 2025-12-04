@@ -34,7 +34,6 @@ defmodule Thunderline.Evolution.BehaviorDescriptor do
   """
 
   alias Thunderline.Thunderpac.Resources.PAC
-  alias Thunderline.Thunderbit.CA.Snapshot, as: CASnapshot
 
   @type dimension :: :logic_density | :memory_reuse | :action_volatility | :task_performance | :novelty_score
 

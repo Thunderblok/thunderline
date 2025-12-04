@@ -299,6 +299,18 @@ defmodule Thunderline.Thundergate.Magika do
   end
 
   defp emit_classified_event(classification, correlation_id, causation_id) do
+    base_metadata = %{
+      correlation_id: correlation_id,
+      causation_id: causation_id
+    }
+
+    metadata =
+      if Map.has_key?(classification, :fallback) do
+        Map.put(base_metadata, :fallback, classification.fallback)
+      else
+        base_metadata
+      end
+
     event_attrs = %{
       type: "system.ingest.classified",
       source: "thundergate.magika",
@@ -309,15 +321,8 @@ defmodule Thunderline.Thundergate.Magika do
         filename: classification.filename,
         label: classification.label
       },
-      metadata: %{
-        correlation_id: correlation_id,
-        causation_id: causation_id
-      }
+      metadata: metadata
     }
-
-    if Map.has_key?(classification, :fallback) do
-      event_attrs = put_in(event_attrs.metadata.fallback, classification.fallback)
-    end
 
     case Event.new(event_attrs) do
       {:ok, event} ->

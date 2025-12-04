@@ -260,7 +260,7 @@ defmodule Thunderline.Thunderbolt.UPM.ReplayBuffer do
       |> Enum.sort_by(& &1.window_start, DateTime)
 
     # If forcing, release all. Otherwise, release contiguous sequence
-    {to_release, remaining} =
+    {to_release, _remaining} =
       if force do
         {sorted_windows, []}
       else

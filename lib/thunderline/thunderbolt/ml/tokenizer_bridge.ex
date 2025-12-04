@@ -239,7 +239,8 @@ defmodule Thunderline.Thunderbolt.ML.TokenizerBridge do
   end
 
   defp run_via_snex(code) do
-    case Snex.eval(code) do
+    # Use apply to avoid compile-time warning about undefined Snex module
+    case apply(Snex, :eval, [code]) do
       {:ok, result} when is_map(result) ->
         {:ok, result}
 

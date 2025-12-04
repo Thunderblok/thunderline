@@ -4,7 +4,7 @@ defmodule ThunderlineWeb.FallbackController do
 
   See `Phoenix.Controller.action_fallback/1` for more details.
   """
-  use Phoenix.Controller
+  use Phoenix.Controller, formats: [:html, :json]
   require Logger
 
   def call(conn, {:error, %Ash.Error.Invalid{errors: errors} = error}) do

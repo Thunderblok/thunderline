@@ -34,8 +34,6 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
 
   alias Thunderline.Thunderbolt.Resources.{UpmAdapter, UpmSnapshot}
   alias Thunderline.Thunderbolt.UPM.SnapshotManager
-  alias Thunderline.Thunderflow.EventBus
-  alias Thunderline.UUID
 
   @type state :: %{
           sync_batch_size: pos_integer(),

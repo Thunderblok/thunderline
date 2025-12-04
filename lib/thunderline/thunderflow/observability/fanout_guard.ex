@@ -23,7 +23,8 @@ defmodule Thunderline.Thunderflow.Observability.FanoutGuard do
   use GenServer
   require Logger
 
-  @max_samples Application.compile_env(:thunderline, [:metrics, :max_fanout_samples], 500)
+  # Reserved for future sample limiting (currently handled in FanoutAggregator)
+  @_max_samples Application.compile_env(:thunderline, [:metrics, :max_fanout_samples], 500)
   @burst_threshold Application.compile_env(:thunderline, [:metrics, :fanout_burst_threshold], 100)
   @sampling_window Application.compile_env(:thunderline, [:metrics, :sampling_window_ms], 10_000)
 

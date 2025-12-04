@@ -11,9 +11,9 @@ defmodule ThunderlineWeb.CoreComponents do
   information on how to style your components.
   """
   use Phoenix.Component
+  use Gettext, backend: ThunderlineWeb.Gettext
 
   alias Phoenix.LiveView.JS
-  import ThunderlineWeb.Gettext
 
   @doc """
   Renders a modal.

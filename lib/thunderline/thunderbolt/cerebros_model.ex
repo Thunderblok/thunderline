@@ -167,12 +167,25 @@ defmodule Thunderline.Thunderbolt.CerebrosModel do
     # Direct Nx serialization
     case File.read(checkpoint_path) do
       {:ok, binary} ->
-        model = :erlang.binary_to_term(binary)
+        model_data = :erlang.binary_to_term(binary)
 
         serving =
           Nx.Serving.new(fn batch ->
-            # Assuming model is an Axon model
-            Axon.predict(model, batch)
+            # Handle both new format {model, params} and legacy model-only format
+            case model_data do
+              {model, params} ->
+                Axon.predict(model, params, batch)
+
+              model ->
+                # Legacy format - model may include params or be pre-built
+                # Try to apply it directly as a function
+                if is_function(model) do
+                  model.(batch)
+                else
+                  # For compiled models, try calling predict with empty params
+                  Axon.predict(model, %{}, batch)
+                end
+            end
           end)
 
         {:ok, serving}

@@ -214,7 +214,7 @@ defmodule Thunderline.Thunderbolt.TAE.Engine do
   is guaranteed to not decrease below a threshold.
   """
   @spec safety_prefix(trace(), weight_fn(), value_type(), keyword()) :: trace()
-  def safety_prefix(trace, weight_fn, value_type \\ :lim_sup_avg, opts \\ []) do
+  def safety_prefix(trace, weight_fn, _value_type \\ :lim_sup_avg, opts \\ []) do
     threshold = Keyword.get(opts, :threshold, 0.0)
 
     running_min =

@@ -37,7 +37,8 @@ defmodule Thunderline.Id.Parser do
   @crockford_set MapSet.new(@crockford_alphabet)
 
   # Maximum valid timestamp (48 bits = ~8900 years from epoch)
-  @max_timestamp 0xFFFFFFFFFFFF
+  # Reserved for future timestamp validation
+  @_max_timestamp 0xFFFFFFFFFFFF
 
   @doc """
   Extract the timestamp from a ULID string.

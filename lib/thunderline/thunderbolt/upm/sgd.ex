@@ -25,7 +25,8 @@ defmodule Thunderline.Thunderbolt.UPM.SGD do
   @default_feature_dim 64
   @default_hidden_dim 128
   @default_output_dim 32
-  @epsilon 1.0e-7
+  # Numerical stability constant (reserved for future gradient clipping)
+  @_epsilon 1.0e-7
 
   @doc """
   Initialize model parameters with Xavier/Glorot initialization.
@@ -142,7 +143,7 @@ defmodule Thunderline.Thunderbolt.UPM.SGD do
   @spec mse_loss(Nx.Tensor.t(), Nx.Tensor.t()) :: Nx.Tensor.t()
   def mse_loss(predictions, labels) do
     diff = Nx.subtract(predictions, labels)
-    Nx.mean(Nx.power(diff, 2))
+    Nx.mean(Nx.pow(diff, 2))
   end
 
   # ═══════════════════════════════════════════════════════════════

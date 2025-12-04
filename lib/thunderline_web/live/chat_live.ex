@@ -302,7 +302,7 @@ defmodule ThunderlineWeb.ChatLive do
         github_pre_lang: true,
         unsafe: true
       ],
-      sanitize: MDEx.default_sanitize_options()
+      sanitize: MDEx.Document.default_sanitize_options()
     )
     |> case do
       {:ok, html} ->

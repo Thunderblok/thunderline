@@ -748,7 +748,6 @@ defmodule Thunderline.Thunderlink.Registry do
 
   defp create_or_update_link_session(node_id, attrs, opts) do
     require Ash.Query
-    import Ash.Expr
 
     remote_node_id = attr_value(attrs, :remote_node_id)
 
@@ -911,7 +910,10 @@ defmodule Thunderline.Thunderlink.Registry do
     Enum.reject(nodes, &(&1.status == :offline))
   end
 
-  defp emit_cluster_event(name, payload, opts \\ %{}) when is_binary(name) and is_map(payload) do
+  # Header clause for default values
+  defp emit_cluster_event(name, payload, opts \\ %{})
+
+  defp emit_cluster_event(name, payload, opts) when is_binary(name) and is_map(payload) do
     event_attrs = %{
       name: name,
       source: :thunderlink,

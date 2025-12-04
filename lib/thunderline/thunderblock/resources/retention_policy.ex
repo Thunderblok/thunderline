@@ -42,6 +42,7 @@ defmodule Thunderline.Thunderblock.Resources.RetentionPolicy do
 
     update :configure do
       description "Update retention policy parameters"
+      require_atomic? false
 
       accept [
         :ttl_seconds,

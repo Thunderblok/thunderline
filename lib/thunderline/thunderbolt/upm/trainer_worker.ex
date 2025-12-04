@@ -45,7 +45,7 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
   use GenServer
   require Logger
 
-  alias Thunderline.Thunderbolt.Resources.{UpmTrainer, UpmSnapshot}
+  alias Thunderline.Thunderbolt.Resources.UpmTrainer
   alias Thunderline.Thunderbolt.UPM.{ReplayBuffer, SnapshotManager, SGD}
   alias Thunderline.Features.FeatureWindow
   alias Thunderline.Thunderflow.EventBus
@@ -361,7 +361,7 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
     case Ash.get(FeatureWindow, window_id, tenant: state.tenant_id) do
       {:ok, window} ->
         # Extract features and labels from window
-        features = window.features || %{}
+        _features = window.features || %{}
         labels = window.labels
 
         # Only train on filled windows with labels
@@ -455,7 +455,7 @@ defmodule Thunderline.Thunderbolt.UPM.TrainerWorker do
 
   defp do_create_snapshot(state) do
     version = div(state.window_count, state.snapshot_interval)
-    snapshot_id = UUID.v7()
+    _snapshot_id = UUID.v7()
 
     # Serialize model parameters
     model_data = :erlang.term_to_binary(state.model_params)
