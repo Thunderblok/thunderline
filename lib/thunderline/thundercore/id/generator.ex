@@ -1,4 +1,4 @@
-defmodule Thunderline.Id.Generator do
+defmodule Thunderline.Thundercore.Id.Generator do
   @moduledoc """
   Low-level ULID generation with timestamp and randomness control.
 

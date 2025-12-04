@@ -1,4 +1,4 @@
-defmodule Thunderline.Id.Parser do
+defmodule Thunderline.Thundercore.Id.Parser do
   @moduledoc """
   ULID parsing, validation, and timestamp extraction.
 

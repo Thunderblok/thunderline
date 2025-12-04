@@ -1,4 +1,4 @@
-defmodule Thunderline.Id.Types.ULID do
+defmodule Thunderline.Thundercore.Id.Types.ULID do
   @moduledoc """
   Ash.Type implementation for ULID (Universally Unique Lexicographically Sortable Identifier).
 

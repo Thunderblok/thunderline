@@ -1,4 +1,4 @@
-defmodule Thunderline.Workers.CerebrosTrainer do
+defmodule Thunderline.Thunderbolt.Workers.CerebrosTrainer do
   @moduledoc """
   Oban worker for sending training datasets to Cerebros service.
 

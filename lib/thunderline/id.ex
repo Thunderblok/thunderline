@@ -42,9 +42,9 @@ defmodule Thunderline.Id do
 
   ## See Also
 
-  - `Thunderline.Id.Generator` - Low-level generation with options
-  - `Thunderline.Id.Parser` - Timestamp extraction and parsing
-  - `Thunderline.Id.Types.ULID` - Ash.Type integration for resources
+  - `Thunderline.Thundercore.Id.Generator` - Low-level generation with options
+  - `Thunderline.Thundercore.Id.Parser` - Timestamp extraction and parsing
+  - `Thunderline.Thundercore.Id.Types.ULID` - Ash.Type integration for resources
   """
 
   @type t :: String.t()
@@ -67,7 +67,7 @@ defmodule Thunderline.Id do
       true
   """
   @spec generate() :: t()
-  defdelegate generate(), to: Thunderline.Id.Generator
+  defdelegate generate(), to: Thunderline.Thundercore.Id.Generator
 
   @doc """
   Generate a ULID for a specific timestamp.
@@ -89,7 +89,7 @@ defmodule Thunderline.Id do
       1705320000000
   """
   @spec generate_at(DateTime.t()) :: t()
-  defdelegate generate_at(datetime), to: Thunderline.Id.Generator
+  defdelegate generate_at(datetime), to: Thunderline.Thundercore.Id.Generator
 
   @doc """
   Generate a binary (16-byte) ULID.
@@ -103,7 +103,7 @@ defmodule Thunderline.Id do
       16
   """
   @spec generate_binary() :: ulid_binary()
-  defdelegate generate_binary(), to: Thunderline.Id.Generator
+  defdelegate generate_binary(), to: Thunderline.Thundercore.Id.Generator
 
   @doc """
   Extract the timestamp from a ULID string.
@@ -120,7 +120,7 @@ defmodule Thunderline.Id do
       {:error, :invalid_ulid}
   """
   @spec timestamp(t()) :: {:ok, DateTime.t()} | {:error, :invalid_ulid}
-  defdelegate timestamp(ulid), to: Thunderline.Id.Parser
+  defdelegate timestamp(ulid), to: Thunderline.Thundercore.Id.Parser
 
   @doc """
   Extract timestamp, raising on invalid ULID.
@@ -132,7 +132,7 @@ defmodule Thunderline.Id do
       true
   """
   @spec timestamp!(t()) :: DateTime.t()
-  defdelegate timestamp!(ulid), to: Thunderline.Id.Parser
+  defdelegate timestamp!(ulid), to: Thunderline.Thundercore.Id.Parser
 
   @doc """
   Check if a string is a valid ULID.
@@ -151,7 +151,7 @@ defmodule Thunderline.Id do
       false
   """
   @spec valid?(term()) :: boolean()
-  defdelegate valid?(id), to: Thunderline.Id.Parser
+  defdelegate valid?(id), to: Thunderline.Thundercore.Id.Parser
 
   @doc """
   Convert a binary ULID to its string representation.
@@ -164,7 +164,7 @@ defmodule Thunderline.Id do
       26
   """
   @spec to_string(ulid_binary()) :: t()
-  defdelegate to_string(binary), to: Thunderline.Id.Parser
+  defdelegate to_string(binary), to: Thunderline.Thundercore.Id.Parser
 
   @doc """
   Convert a string ULID to its binary representation.
@@ -176,7 +176,7 @@ defmodule Thunderline.Id do
       16
   """
   @spec to_binary(t()) :: {:ok, ulid_binary()} | {:error, :invalid_ulid}
-  defdelegate to_binary(string), to: Thunderline.Id.Parser
+  defdelegate to_binary(string), to: Thunderline.Thundercore.Id.Parser
 
   @doc """
   Compare two ULIDs chronologically.
@@ -197,7 +197,7 @@ defmodule Thunderline.Id do
       :lt
   """
   @spec compare_time(t(), t()) :: :lt | :eq | :gt
-  defdelegate compare_time(ulid1, ulid2), to: Thunderline.Id.Parser
+  defdelegate compare_time(ulid1, ulid2), to: Thunderline.Thundercore.Id.Parser
 
   @doc """
   Generate a range of ULIDs covering a time window.
@@ -215,5 +215,5 @@ defmodule Thunderline.Id do
       :lt
   """
   @spec range(DateTime.t(), DateTime.t()) :: {t(), t()}
-  defdelegate range(start_dt, end_dt), to: Thunderline.Id.Generator
+  defdelegate range(start_dt, end_dt), to: Thunderline.Thundercore.Id.Generator
 end

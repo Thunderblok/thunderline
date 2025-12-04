@@ -37,7 +37,7 @@ defmodule Thunderline.ObanHelpers do
 
   ## Examples
 
-      Thunderline.Workers.DemoJob.new(%{foo: "bar"})
+      Thunderline.Thunderflow.Jobs.DemoJob.new(%{foo: "bar"})
       |> Thunderline.ObanHelpers.insert_job()
 
       # Or in a pipeline
@@ -56,13 +56,13 @@ defmodule Thunderline.ObanHelpers do
   ## Examples
 
       # Queue a job immediately
-      Thunderline.ObanHelpers.enqueue(Thunderline.Workers.DemoJob, %{foo: "bar"})
+      Thunderline.ObanHelpers.enqueue(Thunderline.Thunderflow.Jobs.DemoJob, %{foo: "bar"})
 
       # Queue a job with options
-      Thunderline.ObanHelpers.enqueue(Thunderline.Workers.DemoJob, %{}, queue: :ml, priority: 1)
+      Thunderline.ObanHelpers.enqueue(Thunderline.Thunderflow.Jobs.DemoJob, %{}, queue: :ml, priority: 1)
 
       # Schedule a job for later
-      Thunderline.ObanHelpers.enqueue(Thunderline.Workers.DemoJob, %{}, schedule_in: {5, :minutes})
+      Thunderline.ObanHelpers.enqueue(Thunderline.Thunderflow.Jobs.DemoJob, %{}, schedule_in: {5, :minutes})
   """
   def enqueue(worker, args, opts \\ []) when is_atom(worker) and is_map(args) and is_list(opts) do
     worker
@@ -77,8 +77,8 @@ defmodule Thunderline.ObanHelpers do
   ## Examples
 
       jobs = [
-        {Thunderline.Workers.DemoJob, %{id: 1}},
-        {Thunderline.Workers.CerebrosTrainer, %{model: "gpt"}},
+        {Thunderline.Thunderflow.Jobs.DemoJob, %{id: 1}},
+        {Thunderline.Thunderbolt.Workers.CerebrosTrainer, %{model: "gpt"}},
       ]
 
       Thunderline.ObanHelpers.enqueue_many(jobs)
