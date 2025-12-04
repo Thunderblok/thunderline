@@ -9,6 +9,7 @@ defmodule Thunderline.Thundercrown.LLM.FixedLLM do
   @behaviour LangChain.ChatModels.ChatModel
 
   alias LangChain.Message
+  alias LangChain.LangChainError
 
   defstruct response: nil, mode: :echo, callbacks: []
 
@@ -68,6 +69,16 @@ defmodule Thunderline.Thundercrown.LLM.FixedLLM do
   end
 
   def restore_from_map(_), do: {:error, "Missing response"}
+
+  @doc """
+  Returns whether this model should retry on a given error.
+
+  For a fixed/deterministic model, we never need to retry since there are
+  no external services that could have transient failures.
+  """
+  @impl true
+  @spec retry_on_fallback?(LangChainError.t()) :: boolean()
+  def retry_on_fallback?(_error), do: false
 
   defp build_echo_reply(messages) do
     messages

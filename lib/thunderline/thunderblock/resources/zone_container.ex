@@ -737,7 +737,7 @@ defmodule Thunderline.Thunderblock.Resources.ZoneContainer do
   @doc false
   def decrease_health_score(changeset, amount) do
     current_score = Ash.Changeset.get_attribute(changeset, :health_score) || Decimal.new("1.0")
-    new_score = max(Decimal.new("0.0"), Decimal.sub(current_score, Decimal.new(amount)))
+    new_score = Decimal.max(Decimal.new("0.0"), Decimal.sub(current_score, Decimal.new(amount)))
     Ash.Changeset.change_attribute(changeset, :health_score, new_score)
   end
 
