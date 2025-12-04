@@ -32,18 +32,37 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
       |> Thunderline.Thunderchief.Jobs.DomainProcessor.new(scheduled_at: tomorrow())
       |> Oban.insert()
 
+  ## PlanTree Integration
+
+  When a `plan_node_id` is provided, the job executes a specific plan node:
+
+      %{domain: "vine", plan_id: "plan_123", plan_node_id: "node_456", context: %{}}
+      |> DomainProcessor.new()
+      |> Oban.insert()
+
+  The job will:
+  1. Load the plan from the registry (or context)
+  2. Mark the node as running
+  3. Call `chief.perform_step/3` for leaf nodes
+  4. Update node result and persist
+
   ## Job Args
 
   - `domain` (required) - Domain key: "bit", "vine", "crown", "ui"
   - `context` - Optional map merged into chief context
   - `action_override` - Force specific action (bypasses choose_action)
   - `skip_logging` - Disable trajectory logging (default: false)
+  - `plan_id` - Plan tree ID for plan-based execution
+  - `plan_node_id` - Specific node to execute within the plan
+  - `plan_tree` - Serialized plan tree (for stateless execution)
 
   ## Telemetry
 
   - `[:thunderline, :thunderchief, :job, :start]` - Job started
   - `[:thunderline, :thunderchief, :job, :stop]` - Job completed
   - `[:thunderline, :thunderchief, :job, :error]` - Job failed
+  - `[:thunderline, :thunderchief, :plan_node, :start]` - Plan node started
+  - `[:thunderline, :thunderchief, :plan_node, :stop]` - Plan node completed
   """
 
   use Oban.Worker,
@@ -55,19 +74,23 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
 
   alias Thunderline.Thunderchief.Logger, as: TrajectoryLogger
   alias Thunderline.Thunderchief.State
+  alias Thunderline.Thunderchief.PlanTree
+  alias Thunderline.Thunderchief.ChiefBehaviour
 
   alias Thunderline.Thunderchief.Chiefs.{
     BitChief,
     VineChief,
     CrownChief,
-    UIChief
+    UIChief,
+    PlanChief
   }
 
   @domain_chiefs %{
     "bit" => BitChief,
     "vine" => VineChief,
     "crown" => CrownChief,
-    "ui" => UIChief
+    "ui" => UIChief,
+    "plan" => PlanChief
   }
 
   @impl Oban.Worker
@@ -79,10 +102,14 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
     action_override = Map.get(args, "action_override")
     skip_logging = Map.get(args, "skip_logging", false)
 
+    # PlanTree execution path
+    plan_node_id = Map.get(args, "plan_node_id")
+    plan_tree_data = Map.get(args, "plan_tree")
+
     :telemetry.execute(
       [:thunderline, :thunderchief, :job, :start],
       %{system_time: System.system_time()},
-      %{domain: domain, job_id: job_id, attempt: attempt}
+      %{domain: domain, job_id: job_id, attempt: attempt, plan_node: plan_node_id}
     )
 
     case Map.get(@domain_chiefs, domain) do
@@ -92,16 +119,91 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
         {:error, error}
 
       chief_module ->
-        execute_chief(
-          chief_module,
-          domain,
-          context,
-          action_override,
-          skip_logging,
-          job_id,
-          start_time
-        )
+        # Route to plan-based or classic execution
+        if plan_node_id && plan_tree_data do
+          execute_plan_node(
+            chief_module,
+            domain,
+            plan_node_id,
+            plan_tree_data,
+            context,
+            job_id,
+            start_time
+          )
+        else
+          execute_chief(
+            chief_module,
+            domain,
+            context,
+            action_override,
+            skip_logging,
+            job_id,
+            start_time
+          )
+        end
     end
+  end
+
+  # ---------------------------------------------------------------------------
+  # PlanTree Node Execution
+  # ---------------------------------------------------------------------------
+
+  defp execute_plan_node(chief_module, domain, node_id, plan_tree_data, context, job_id, start_time) do
+    :telemetry.execute(
+      [:thunderline, :thunderchief, :plan_node, :start],
+      %{system_time: System.system_time()},
+      %{domain: domain, node_id: node_id, job_id: job_id}
+    )
+
+    with {:ok, plan} <- PlanTree.from_map(plan_tree_data),
+         {:ok, {^node_id, node_value}} <- PlanTree.get_node(plan, node_id),
+         {:ok, plan} <- PlanTree.mark_running(plan, node_id),
+         chief_context <- build_chief_context(domain, context, job_id),
+         {:ok, step_result} <- execute_step(chief_module, node_id, node_value, chief_context),
+         {:ok, plan} <- PlanTree.apply_node_result(plan, node_id, step_result) do
+
+      duration = System.monotonic_time() - start_time
+
+      :telemetry.execute(
+        [:thunderline, :thunderchief, :plan_node, :stop],
+        %{duration: duration},
+        %{domain: domain, node_id: node_id, job_id: job_id, status: step_result.status}
+      )
+
+      {:ok, %{
+        domain: domain,
+        node_id: node_id,
+        status: step_result.status,
+        plan_tree: PlanTree.to_map(plan),
+        output: step_result[:output]
+      }}
+    else
+      {:error, reason} = error ->
+        emit_error_telemetry(start_time, domain, job_id, {:plan_node_error, node_id, reason})
+        error
+    end
+  end
+
+  defp execute_step(chief_module, node_id, node_value, context) do
+    # Check if chief supports plan tree interface
+    if ChiefBehaviour.supports_plans?(chief_module) do
+      chief_module.perform_step(node_id, node_value, context)
+    else
+      # Fallback: use the node's action as an action_override
+      action = Map.get(node_value, :action, :noop)
+
+      case chief_module.apply_action(action, context) do
+        {:ok, result} ->
+          {:ok, %{status: :succeeded, output: result}}
+
+        {:error, reason} ->
+          {:ok, %{status: :failed, error: reason}}
+      end
+    end
+  rescue
+    e ->
+      Logger.error("[DomainProcessor] perform_step failed: #{Exception.format(:error, e, __STACKTRACE__)}")
+      {:ok, %{status: :failed, error: Exception.message(e)}}
   end
 
   # ---------------------------------------------------------------------------
@@ -325,4 +427,61 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
   """
   @spec chief_for(String.t()) :: module() | nil
   def chief_for(domain), do: Map.get(@domain_chiefs, domain)
+
+  # ---------------------------------------------------------------------------
+  # PlanTree Convenience Functions
+  # ---------------------------------------------------------------------------
+
+  @doc """
+  Enqueues a job to execute a specific plan node.
+
+  ## Parameters
+
+  - `plan` - The PlanTree struct
+  - `node_id` - ID of the node to execute
+  - `opts` - Options including:
+    - `:priority` - Job priority (default 2)
+    - `:scheduled_at` - Scheduled execution time
+    - `:context` - Additional context to merge
+
+  ## Examples
+
+      DomainProcessor.enqueue_plan_node(plan, "node_123")
+      DomainProcessor.enqueue_plan_node(plan, "node_123", priority: 0)
+  """
+  @spec enqueue_plan_node(PlanTree.t(), binary(), keyword()) ::
+          {:ok, Oban.Job.t()} | {:error, term()}
+  def enqueue_plan_node(plan, node_id, opts \\ []) do
+    context = Keyword.get(opts, :context, %{})
+    oban_opts = Keyword.drop(opts, [:context])
+
+    with {:ok, {^node_id, node_value}} <- PlanTree.get_node(plan, node_id) do
+      domain = node_value[:domain] || plan.metadata[:domain] || "bit"
+      domain_string = if is_atom(domain), do: Atom.to_string(domain), else: domain
+
+      %{
+        domain: domain_string,
+        plan_node_id: node_id,
+        plan_tree: PlanTree.to_map(plan),
+        context: context
+      }
+      |> new(oban_opts)
+      |> Oban.insert()
+    end
+  end
+
+  @doc """
+  Enqueues jobs for all ready nodes in a plan tree.
+
+  Returns list of `{node_id, job_result}` tuples.
+  """
+  @spec enqueue_ready_nodes(PlanTree.t(), keyword()) ::
+          [{binary(), {:ok, Oban.Job.t()} | {:error, term()}}]
+  def enqueue_ready_nodes(plan, opts \\ []) do
+    plan
+    |> PlanTree.schedule_ready_nodes()
+    |> Enum.map(fn {node_id, _node_value} ->
+      {node_id, enqueue_plan_node(plan, node_id, opts)}
+    end)
+  end
 end
