@@ -246,8 +246,243 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
      }}
   end
 
+  # ═══════════════════════════════════════════════════════════════
+  # TPE Bridge Operations (HC-41)
+  # ═══════════════════════════════════════════════════════════════
+
+  defp attempt_snex_invoke(:tpe_bridge, call_spec, timeout_ms, meta) do
+    action = Map.get(call_spec, :action, :suggest)
+
+    task =
+      Task.Supervisor.async_nolink(Thunderline.TaskSupervisor, fn ->
+        call_tpe_bridge(action, call_spec)
+      end)
+
+    case Task.yield(task, timeout_ms) || Task.shutdown(task, :brutal_kill) do
+      {:ok, {:ok, result}} ->
+        {:ok,
+         %{
+           returncode: 0,
+           stdout: Jason.encode!(result),
+           stderr: "",
+           stdout_excerpt: excerpt(result),
+           stderr_excerpt: "",
+           attempts: 1,
+           parsed: result,
+           raw: result
+         }}
+
+      {:ok, {:error, reason}} ->
+        {:error, python_error(:tpe_bridge, reason, meta)}
+
+      nil ->
+        {:error, timeout_error(:tpe_bridge, timeout_ms, meta)}
+    end
+  rescue
+    error ->
+      {:error, unexpected_error(:tpe_bridge, :error, error, meta)}
+  end
+
   defp attempt_snex_invoke(op, _call_spec, _timeout_ms, _meta) do
     {:error, unsupported_op_error(op)}
+  end
+
+  # ═══════════════════════════════════════════════════════════════
+  # TPE Bridge Python Calls
+  # ═══════════════════════════════════════════════════════════════
+
+  defp call_tpe_bridge(:init_study, call_spec) do
+    study_name = Map.get(call_spec, :study_name, "default_study")
+    search_space = Map.get(call_spec, :search_space, [])
+    seed = Map.get(call_spec, :seed)
+    sampler = Map.get(call_spec, :sampler, "TPESampler")
+    sampler_kwargs = Map.get(call_spec, :sampler_kwargs, %{})
+    direction = Map.get(call_spec, :direction, "maximize")
+
+    with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
+         {:ok, env} <- Snex.make_env(interpreter) do
+      python_code = """
+      import sys
+      # Ensure cerebros service path is available
+      cerebros_paths = [
+          'python/cerebros',
+          'python/cerebros/service',
+          'python/cerebros/core'
+      ]
+      for p in cerebros_paths:
+          if p not in sys.path:
+              sys.path.insert(0, p)
+
+      import tpe_bridge
+      result = tpe_bridge.init_study(
+          study_name=study_name,
+          search_space=search_space,
+          seed=seed,
+          sampler=sampler,
+          sampler_kwargs=sampler_kwargs,
+          direction=direction,
+      )
+      """
+
+      variables = %{
+        "study_name" => study_name,
+        "search_space" => normalize_for_python(search_space),
+        "seed" => seed,
+        "sampler" => sampler,
+        "sampler_kwargs" => normalize_for_python(sampler_kwargs),
+        "direction" => direction
+      }
+
+      case Snex.pyeval(env, python_code, variables, returning: "result") do
+        {:ok, %{"status" => "ok"} = result} -> {:ok, result}
+        {:ok, %{"status" => "error", "reason" => reason}} -> {:error, {:tpe_init_failed, reason}}
+        {:ok, result} -> {:ok, result}
+        {:error, error} -> {:error, {:snex_call_failed, error}}
+      end
+    else
+      {:error, reason} -> {:error, {:interpreter_start_failed, reason}}
+    end
+  rescue
+    error -> {:error, {:tpe_init_failed, error}}
+  end
+
+  defp call_tpe_bridge(:suggest, call_spec) do
+    study_name = Map.get(call_spec, :study_name, "default_study")
+
+    with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
+         {:ok, env} <- Snex.make_env(interpreter) do
+      python_code = """
+      import sys
+      cerebros_paths = ['python/cerebros', 'python/cerebros/service']
+      for p in cerebros_paths:
+          if p not in sys.path:
+              sys.path.insert(0, p)
+
+      import tpe_bridge
+      result = tpe_bridge.suggest(study_name=study_name)
+      """
+
+      variables = %{"study_name" => study_name}
+
+      case Snex.pyeval(env, python_code, variables, returning: "result") do
+        {:ok, %{"status" => "ok", "params" => params}} -> {:ok, %{status: "ok", params: params}}
+        {:ok, %{"status" => "error", "reason" => reason}} -> {:error, {:tpe_suggest_failed, reason}}
+        {:ok, result} -> {:ok, result}
+        {:error, error} -> {:error, {:snex_call_failed, error}}
+      end
+    else
+      {:error, reason} -> {:error, {:interpreter_start_failed, reason}}
+    end
+  rescue
+    error -> {:error, {:tpe_suggest_failed, error}}
+  end
+
+  defp call_tpe_bridge(:record, call_spec) do
+    study_name = Map.get(call_spec, :study_name, "default_study")
+    params = Map.get(call_spec, :params, %{})
+    value = Map.get(call_spec, :value, 0.0)
+    trial_id = Map.get(call_spec, :trial_id)
+
+    with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
+         {:ok, env} <- Snex.make_env(interpreter) do
+      python_code = """
+      import sys
+      cerebros_paths = ['python/cerebros', 'python/cerebros/service']
+      for p in cerebros_paths:
+          if p not in sys.path:
+              sys.path.insert(0, p)
+
+      import tpe_bridge
+      result = tpe_bridge.record(
+          study_name=study_name,
+          params=params,
+          value=value,
+          trial_id=trial_id,
+      )
+      """
+
+      variables = %{
+        "study_name" => study_name,
+        "params" => normalize_for_python(params),
+        "value" => value,
+        "trial_id" => trial_id
+      }
+
+      case Snex.pyeval(env, python_code, variables, returning: "result") do
+        {:ok, %{"status" => "ok"} = result} -> {:ok, result}
+        {:ok, %{"status" => "error", "reason" => reason}} -> {:error, {:tpe_record_failed, reason}}
+        {:ok, result} -> {:ok, result}
+        {:error, error} -> {:error, {:snex_call_failed, error}}
+      end
+    else
+      {:error, reason} -> {:error, {:interpreter_start_failed, reason}}
+    end
+  rescue
+    error -> {:error, {:tpe_record_failed, error}}
+  end
+
+  defp call_tpe_bridge(:best_params, call_spec) do
+    study_name = Map.get(call_spec, :study_name, "default_study")
+
+    with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
+         {:ok, env} <- Snex.make_env(interpreter) do
+      python_code = """
+      import sys
+      cerebros_paths = ['python/cerebros', 'python/cerebros/service']
+      for p in cerebros_paths:
+          if p not in sys.path:
+              sys.path.insert(0, p)
+
+      import tpe_bridge
+      result = tpe_bridge.best_params(study_name=study_name)
+      """
+
+      variables = %{"study_name" => study_name}
+
+      case Snex.pyeval(env, python_code, variables, returning: "result") do
+        {:ok, %{"status" => "ok"} = result} -> {:ok, result}
+        {:ok, %{"status" => "error", "reason" => reason}} -> {:error, {:tpe_best_failed, reason}}
+        {:ok, result} -> {:ok, result}
+        {:error, error} -> {:error, {:snex_call_failed, error}}
+      end
+    else
+      {:error, reason} -> {:error, {:interpreter_start_failed, reason}}
+    end
+  rescue
+    error -> {:error, {:tpe_best_failed, error}}
+  end
+
+  defp call_tpe_bridge(:get_status, call_spec) do
+    study_name = Map.get(call_spec, :study_name, "default_study")
+
+    with {:ok, {interpreter, _base_env}} <- get_or_start_interpreter(),
+         {:ok, env} <- Snex.make_env(interpreter) do
+      python_code = """
+      import sys
+      cerebros_paths = ['python/cerebros', 'python/cerebros/service']
+      for p in cerebros_paths:
+          if p not in sys.path:
+              sys.path.insert(0, p)
+
+      import tpe_bridge
+      result = tpe_bridge.get_status(study_name=study_name)
+      """
+
+      variables = %{"study_name" => study_name}
+
+      case Snex.pyeval(env, python_code, variables, returning: "result") do
+        {:ok, result} -> {:ok, result}
+        {:error, error} -> {:error, {:snex_call_failed, error}}
+      end
+    else
+      {:error, reason} -> {:error, {:interpreter_start_failed, reason}}
+    end
+  rescue
+    error -> {:error, {:tpe_status_failed, error}}
+  end
+
+  defp call_tpe_bridge(action, _call_spec) do
+    {:error, {:unknown_tpe_action, action}}
   end
 
   defp call_snex_run_nas(spec, opts) do

@@ -423,9 +423,18 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
     }
 
     case invoker.invoke(:tpe_bridge, args, timeout_ms: 30_000) do
-      {:ok, %{status: "ok"}} -> {:ok, :initialized}
-      {:ok, result} -> {:ok, result}
-      {:error, _} = error -> error
+      {:ok, result} ->
+        # Extract from wrapper format (consistent with run_saga pattern)
+        parsed = Map.get(result, :parsed, result)
+
+        case parsed do
+          %{"status" => "ok"} -> {:ok, :initialized}
+          %{status: "ok"} -> {:ok, :initialized}
+          _ -> {:ok, parsed}
+        end
+
+      {:error, _} = error ->
+        error
     end
   rescue
     e ->
@@ -440,9 +449,18 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
     }
 
     case invoker.invoke(:tpe_bridge, args, timeout_ms: 10_000) do
-      {:ok, %{params: params}} -> {:ok, decode_params(params)}
-      {:ok, _other} -> {:ok, random_params(search_space)}
-      {:error, _} -> {:ok, random_params(search_space)}
+      {:ok, result} ->
+        # Extract from wrapper format (consistent with run_saga pattern)
+        parsed = Map.get(result, :parsed, result)
+
+        case parsed do
+          %{"params" => params} -> {:ok, decode_params(params)}
+          %{params: params} -> {:ok, decode_params(params)}
+          _ -> {:ok, random_params(search_space)}
+        end
+
+      {:error, _} ->
+        {:ok, random_params(search_space)}
     end
   rescue
     _e ->

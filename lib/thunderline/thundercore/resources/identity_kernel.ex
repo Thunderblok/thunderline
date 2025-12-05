@@ -74,7 +74,15 @@ defmodule Thunderline.Thundercore.Resources.IdentityKernel do
       argument :parent_kernel_id, :uuid, allow_nil?: false
 
       change fn changeset, _context ->
-        parent_id = Ash.Changeset.get_argument(changeset, :parent_kernel_id)
+        parent_kernel_id = Ash.Changeset.get_argument(changeset, :parent_kernel_id)
+
+        # Look up the parent kernel by its kernel_id to get its primary key (id)
+        # for the foreign key reference
+        parent_id =
+          case lookup_parent_id(parent_kernel_id) do
+            {:ok, id} -> id
+            :error -> nil
+          end
 
         changeset
         |> Ash.Changeset.change_attribute(:kernel_id, Ash.UUID.generate())
@@ -141,6 +149,19 @@ defmodule Thunderline.Thundercore.Resources.IdentityKernel do
 
   defp generate_seed do
     :crypto.strong_rand_bytes(@seed_bytes)
+  end
+
+  defp lookup_parent_id(parent_kernel_id) do
+    require Ash.Query
+
+    case IdentityKernel
+         |> Ash.Query.filter(kernel_id == ^parent_kernel_id)
+         |> Ash.Query.select([:id])
+         |> Ash.read_one() do
+      {:ok, %{id: id}} -> {:ok, id}
+      {:ok, nil} -> :error
+      {:error, _} -> :error
+    end
   end
 
   defp maybe_set_tick(changeset) do
