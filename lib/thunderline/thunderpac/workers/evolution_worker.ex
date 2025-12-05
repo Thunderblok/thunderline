@@ -165,11 +165,8 @@ defmodule Thunderline.Thunderpac.Workers.EvolutionWorker do
 
     # Query reflex events from event store or collect from PubSub history
     # For now, we'll query from the local event buffer if available
-    events =
-      case fetch_from_event_store(pac_id, since) do
-        {:ok, events} -> events
-        {:error, _} -> []
-      end
+    # fetch_from_event_store/2 always returns {:ok, _} (rescue fallback to synthetic data)
+    {:ok, events} = fetch_from_event_store(pac_id, since)
 
     Logger.debug("[EvolutionWorker] Fetched #{length(events)} reflex events for PAC #{pac_id}")
 

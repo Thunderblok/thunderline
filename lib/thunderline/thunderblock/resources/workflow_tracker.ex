@@ -17,6 +17,22 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
     repo Thunderline.Repo
   end
 
+  # AshOban configuration for orchestration automation
+  oban do
+    triggers do
+      # Auto-cleanup completed workflow trackers
+      trigger :cleanup_completed_trackers do
+        action :destroy
+        scheduler_cron "0 2 * * *"
+
+        scheduler_module_name Thunderline.Thunderblock.WorkflowTracker.Schedulers.CleanupCompletedTrackers
+
+        worker_module_name Thunderline.Thunderblock.WorkflowTracker.Workers.CleanupCompletedTrackers
+        where expr(status == :completed and updated_at < ago(7, :day))
+      end
+    end
+  end
+
   code_interface do
     domain Thunderline.Thunderblock.Domain
 
@@ -73,19 +89,5 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
     attribute :next_step_config, :map, default: %{}
 
     timestamps()
-  end
-
-  # AshOban configuration for orchestration automation
-  oban do
-    triggers do
-      # Auto-cleanup completed workflow trackers
-      trigger :cleanup_completed_trackers do
-        action :destroy
-        scheduler_cron "0 2 * * *"
-        scheduler_module_name Thunderline.Thunderblock.WorkflowTracker.Schedulers.CleanupCompletedTrackers
-        worker_module_name Thunderline.Thunderblock.WorkflowTracker.Workers.CleanupCompletedTrackers
-        where expr(status == :completed and updated_at < ago(7, :day))
-      end
-    end
   end
 end

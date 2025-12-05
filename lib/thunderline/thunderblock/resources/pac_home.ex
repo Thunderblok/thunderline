@@ -92,6 +92,17 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     end
   end
 
+  # ===== OBAN CONFIGURATION =====
+  oban do
+    triggers do
+      trigger :pac_health_check do
+        action :health_check
+        scheduler_cron "*/5 * * * *"
+        where expr(status in [:active, :suspended])
+      end
+    end
+  end
+
   # ===== POLICIES =====
   # policies do
   #   bypass AshAuthentication.Checks.AshAuthenticationInteraction do
@@ -880,17 +891,6 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     # has_many :scheduled_tasks, Thunderbit.Resources.ScheduledTask do
     #   destination_attribute :pac_home_id
     # end
-  end
-
-  # ===== OBAN CONFIGURATION =====
-  oban do
-    triggers do
-      trigger :pac_health_check do
-        action :health_check
-        scheduler_cron "*/5 * * * *"
-        where expr(status in [:active, :suspended])
-      end
-    end
   end
 
   # ===== IDENTITIES =====

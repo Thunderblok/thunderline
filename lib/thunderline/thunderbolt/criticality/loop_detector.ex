@@ -140,7 +140,7 @@ defmodule Thunderline.Thunderbolt.Criticality.LoopDetector do
     if n == 0 do
       []
     else
-      0..(div(n, 2))
+      0..div(n, 2)
       |> Enum.map(fn k ->
         {real, imag} =
           signal
@@ -212,7 +212,8 @@ defmodule Thunderline.Thunderbolt.Criticality.LoopDetector do
         Enum.reduce(signal, 0.0, fn x, acc -> acc + (x - mean) * (x - mean) end)
 
       if variance < 1.0e-10 do
-        1.0  # Constant signal = perfect autocorrelation
+        # Constant signal = perfect autocorrelation
+        1.0
       else
         covariance =
           0..(n - lag - 1)
@@ -232,7 +233,8 @@ defmodule Thunderline.Thunderbolt.Criticality.LoopDetector do
   # ===========================================================================
 
   defp detect_entropy(history, opts) do
-    threshold = Keyword.get(opts, :threshold, 0.3)  # Low entropy = looping
+    # Low entropy = looping
+    threshold = Keyword.get(opts, :threshold, 0.3)
 
     signal = to_signal(history)
     n = length(signal)
@@ -272,7 +274,8 @@ defmodule Thunderline.Thunderbolt.Criticality.LoopDetector do
       range = max_val - min_val
 
       if range < 1.0e-10 do
-        0.0  # Constant = zero entropy
+        # Constant = zero entropy
+        0.0
       else
         # Bin the signal
         num_bins = min(10, max(2, round(:math.sqrt(n))))

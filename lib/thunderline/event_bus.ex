@@ -24,7 +24,8 @@ defmodule Thunderline.EventBus do
       {:ok, %Thunderline.Event{}}
 
   """
-  @spec publish_event(Thunderline.Event.t() | map()) :: {:ok, Thunderline.Event.t()} | {:error, term()}
+  @spec publish_event(Thunderline.Event.t() | map()) ::
+          {:ok, Thunderline.Event.t()} | {:error, term()}
   defdelegate publish_event(event), to: Thunderline.Thunderflow.EventBus
 
   @doc """

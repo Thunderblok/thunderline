@@ -109,9 +109,10 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessorTest do
       context = %{tick: 42, correlation_id: Thunderline.UUID.v7()}
 
       # Test the underlying changeset creation logic
-      changesets = for domain <- DomainProcessor.domains() do
-        DomainProcessor.new(%{domain: domain, context: context})
-      end
+      changesets =
+        for domain <- DomainProcessor.domains() do
+          DomainProcessor.new(%{domain: domain, context: context})
+        end
 
       assert length(changesets) == 4
 
@@ -124,9 +125,10 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessorTest do
     test "all changesets share the same context" do
       context = %{tick: 99, source: :test}
 
-      changesets = for domain <- DomainProcessor.domains() do
-        DomainProcessor.new(%{domain: domain, context: context})
-      end
+      changesets =
+        for domain <- DomainProcessor.domains() do
+          DomainProcessor.new(%{domain: domain, context: context})
+        end
 
       for cs <- changesets do
         assert cs.changes.args.context.tick == 99

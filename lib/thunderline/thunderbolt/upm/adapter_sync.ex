@@ -234,6 +234,7 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
       {:ok, snapshot} ->
         # Get all adapters matching this mode
         query = UpmAdapter |> Ash.Query.filter(mode == ^snapshot.mode)
+
         case Ash.read(query) do
           {:ok, adapters} -> {:ok, adapters}
           {:error, reason} -> {:error, reason}
@@ -244,7 +245,7 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
     end
   end
 
-  defp do_sync_adapter(adapter_id, snapshot_id, state, retry_count \\ 0) do
+  defp do_sync_adapter(adapter_id, snapshot_id, state, _retry_count \\ 0) do
     start_time = System.monotonic_time(:millisecond)
 
     # Emit start telemetry
@@ -257,26 +258,23 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
         case SnapshotManager.load_snapshot(snapshot_id) do
           {:ok, model_data} ->
             # Sync to agent (actual implementation would call ThunderBlock adapter endpoint)
-            case sync_to_agent(adapter_id, snapshot_id, model_data, state.sync_timeout_ms) do
-              :ok ->
-                # Mark synced
-                mark_adapter_synced(adapter_id)
+            # sync_to_agent/4 currently always returns :ok (stub)
+            :ok = sync_to_agent(adapter_id, snapshot_id, model_data, state.sync_timeout_ms)
 
-                duration_ms = System.monotonic_time(:millisecond) - start_time
+            # Mark synced
+            mark_adapter_synced(adapter_id)
 
-                # Emit success telemetry
-                emit_telemetry(:success, %{
-                  adapter_id: adapter_id,
-                  snapshot_id: snapshot_id,
-                  duration_ms: duration_ms
-                })
+            duration_ms = System.monotonic_time(:millisecond) - start_time
 
-                send(self(), {:sync_complete, adapter_id, :ok})
-                :ok
+            # Emit success telemetry
+            emit_telemetry(:success, %{
+              adapter_id: adapter_id,
+              snapshot_id: snapshot_id,
+              duration_ms: duration_ms
+            })
 
-              {:error, reason} ->
-                handle_sync_failure(adapter_id, snapshot_id, reason, retry_count, state)
-            end
+            send(self(), {:sync_complete, adapter_id, :ok})
+            :ok
 
           {:error, reason} ->
             Logger.error("""
@@ -294,44 +292,6 @@ defmodule Thunderline.Thunderbolt.UPM.AdapterSync do
       {:error, reason} ->
         Logger.error("[UPM.AdapterSync] Failed to mark adapter syncing: #{inspect(reason)}")
         {:error, reason}
-    end
-  end
-
-  defp handle_sync_failure(adapter_id, snapshot_id, reason, retry_count, state) do
-    if retry_count < state.max_retries do
-      Logger.warning("""
-      [UPM.AdapterSync] Sync failed, retrying
-        adapter_id: #{adapter_id}
-        attempt: #{retry_count + 1}/#{state.max_retries}
-        error: #{inspect(reason)}
-      """)
-
-      # Exponential backoff
-      backoff_ms = (state.retry_backoff_ms * :math.pow(2, retry_count)) |> round()
-      Process.sleep(backoff_ms)
-
-      # Retry
-      do_sync_adapter(adapter_id, snapshot_id, state, retry_count + 1)
-    else
-      Logger.error("""
-      [UPM.AdapterSync] Sync failed permanently
-        adapter_id: #{adapter_id}
-        attempts: #{state.max_retries}
-        error: #{inspect(reason)}
-      """)
-
-      mark_adapter_errored(adapter_id)
-
-      # Emit failure telemetry
-      emit_telemetry(:failure, %{
-        adapter_id: adapter_id,
-        snapshot_id: snapshot_id,
-        reason: inspect(reason),
-        attempts: state.max_retries
-      })
-
-      send(self(), {:sync_complete, adapter_id, {:error, reason}})
-      {:error, :max_retries_exceeded}
     end
   end
 

@@ -226,14 +226,6 @@ defmodule Thunderline.Thunderwall.OverflowHandler do
 
         :ok
 
-      :dead_letter ->
-        # TODO: Route to dead-letter queue when implemented
-        Logger.warning(
-          "[Thunderwall.OverflowHandler] Dead-letter not implemented, decaying instead"
-        )
-
-        :ok
-
       :discard ->
         # Silently discard (for rate-limited items)
         :ok

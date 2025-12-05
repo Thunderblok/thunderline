@@ -392,7 +392,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               <% end %>
             </div>
           </div>
-
+          
     <!-- Benchmarks -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Benchmarks</h2>
@@ -424,7 +424,7 @@ defmodule ThunderlineWeb.CerebrosLive do
               </div>
             <% end %>
           </div>
-
+          
     <!-- Drift Metrics -->
           <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-semibold">Drift Metrics (Preview)</h2>

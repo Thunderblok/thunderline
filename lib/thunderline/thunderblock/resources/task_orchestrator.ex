@@ -20,6 +20,26 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
     repo Thunderline.Repo
   end
 
+  # AshOban triggers for orchestration automation
+  oban do
+    triggers do
+      # Cleanup old completed workflows
+      trigger :cleanup_old_workflows do
+        action :destroy
+        scheduler_cron "0 3 * * *"
+
+        scheduler_module_name Thunderline.Thunderblock.TaskOrchestrator.Schedulers.CleanupOldWorkflows
+
+        worker_module_name Thunderline.Thunderblock.TaskOrchestrator.Workers.CleanupOldWorkflows
+
+        where expr(
+                status in [:completed, :cancelled] and
+                  completed_at < ago(30, :day)
+              )
+      end
+    end
+  end
+
   actions do
     defaults [:read, :create, :update, :destroy]
 
@@ -269,23 +289,5 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
 
   identities do
     identity :unique_workflow, [:workflow_name, :workflow_version]
-  end
-
-  # AshOban triggers for orchestration automation
-  oban do
-    triggers do
-      # Cleanup old completed workflows
-      trigger :cleanup_old_workflows do
-        action :destroy
-        scheduler_cron "0 3 * * *"
-        scheduler_module_name Thunderline.Thunderblock.TaskOrchestrator.Schedulers.CleanupOldWorkflows
-        worker_module_name Thunderline.Thunderblock.TaskOrchestrator.Workers.CleanupOldWorkflows
-
-        where expr(
-                status in [:completed, :cancelled] and
-                  completed_at < ago(30, :day)
-              )
-      end
-    end
   end
 end

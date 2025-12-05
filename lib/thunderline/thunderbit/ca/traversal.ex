@@ -180,7 +180,8 @@ defmodule Thunderline.Thunderbit.CA.Traversal do
 
   The source cell loses the bit, the destination gains it with an activation boost.
   """
-  @spec migrate_bit(World.t(), String.t(), coord(), coord()) :: {:ok, World.t()} | {:error, term()}
+  @spec migrate_bit(World.t(), String.t(), coord(), coord()) ::
+          {:ok, World.t()} | {:error, term()}
   def migrate_bit(%World{} = world, bit_id, from_coord, to_coord) do
     source_cell = World.get_cell(world, from_coord)
 
@@ -248,7 +249,8 @@ defmodule Thunderline.Thunderbit.CA.Traversal do
   @doc """
   Performs gradient ascent: moves a bit toward higher activation.
   """
-  @spec gradient_ascent(World.t(), String.t(), coord()) :: {:ok, World.t(), coord()} | {:ok, World.t(), nil}
+  @spec gradient_ascent(World.t(), String.t(), coord()) ::
+          {:ok, World.t(), coord()} | {:ok, World.t(), nil}
   def gradient_ascent(%World{} = world, bit_id, from_coord) do
     current_cell = World.get_cell(world, from_coord)
     neighbors = World.neighbors(world, from_coord)

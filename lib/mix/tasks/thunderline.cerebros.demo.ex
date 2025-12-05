@@ -45,6 +45,7 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
         nil -> Path.join(cwd, "python/cerebros")
         env_path -> env_path
       end
+
     repo = opts[:repo] || default_repo
 
     # Look for cerebros_service.py (new structure) or fallback to legacy script
@@ -52,8 +53,13 @@ defmodule Mix.Tasks.Thunderline.Cerebros.Demo do
       cond do
         File.exists?(Path.join(repo, "service/cerebros_service.py")) ->
           Path.join(repo, "service/cerebros_service.py") |> Path.expand()
-        File.exists?(Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py")) ->
-          Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py") |> Path.expand()
+
+        File.exists?(
+          Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py")
+        ) ->
+          Path.join(repo, "generative-proof-of-concept-CPU-preprocessing-in-memory.py")
+          |> Path.expand()
+
         true ->
           Path.join(repo, "service/cerebros_service.py") |> Path.expand()
       end

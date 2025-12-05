@@ -158,11 +158,12 @@ defmodule Thunderline.Thunderchief.Logger do
 
   @impl true
   def handle_cast({:log_episode, chief, steps}, state) do
-    enriched = Enum.with_index(steps)
-               |> Enum.map(fn {step, idx} ->
-                 enrich_step(step, chief)
-                 |> Map.put(:episode_step, idx)
-               end)
+    enriched =
+      Enum.with_index(steps)
+      |> Enum.map(fn {step, idx} ->
+        enrich_step(step, chief)
+        |> Map.put(:episode_step, idx)
+      end)
 
     state = Enum.reduce(enriched, state, &store_step(&2, chief, &1))
     {:noreply, state}
@@ -182,6 +183,7 @@ defmodule Thunderline.Thunderchief.Logger do
       step_counts: state.counters,
       total_steps: state.counters |> Map.values() |> Enum.sum()
     }
+
     {:reply, stats, state}
   end
 
@@ -197,6 +199,7 @@ defmodule Thunderline.Thunderchief.Logger do
     if state.file_handle do
       File.close(state.file_handle)
     end
+
     :ok
   end
 
@@ -240,9 +243,10 @@ defmodule Thunderline.Thunderchief.Logger do
       prune_ets(table, counter - state.max_steps)
     end
 
-    %{state |
-      tables: Map.put(state.tables, chief, table),
-      counters: Map.put(state.counters, chief, counter)
+    %{
+      state
+      | tables: Map.put(state.tables, chief, table),
+        counters: Map.put(state.counters, chief, counter)
     }
   end
 
@@ -291,10 +295,11 @@ defmodule Thunderline.Thunderchief.Logger do
       table ->
         limit = opts[:limit] || state.max_steps
 
-        steps = :ets.tab2list(table)
-                |> Enum.sort_by(&elem(&1, 0))
-                |> Enum.take(-limit)
-                |> Enum.map(&elem(&1, 1))
+        steps =
+          :ets.tab2list(table)
+          |> Enum.sort_by(&elem(&1, 0))
+          |> Enum.take(-limit)
+          |> Enum.map(&elem(&1, 1))
 
         {:ok, format_export(steps, opts[:format] || :map)}
     end
@@ -320,9 +325,11 @@ defmodule Thunderline.Thunderchief.Logger do
   defp do_export(_, _, _), do: {:ok, []}
 
   defp format_export(steps, :map), do: steps
+
   defp format_export(steps, :jsonl) do
     Enum.map(steps, &Jason.encode!/1)
   end
+
   defp format_export(steps, :tensor) do
     # Convert to tensor-ready format
     Enum.map(steps, fn step ->
@@ -340,6 +347,7 @@ defmodule Thunderline.Thunderchief.Logger do
     Enum.each(state.tables, fn {_chief, table} ->
       :ets.delete_all_objects(table)
     end)
+
     %{state | counters: %{}}
   end
 
@@ -348,6 +356,7 @@ defmodule Thunderline.Thunderchief.Logger do
     if state.file_handle do
       File.close(state.file_handle)
     end
+
     if state.path do
       File.write!(state.path, "")
       {:ok, handle} = File.open(state.path, [:append, :utf8])
@@ -385,6 +394,7 @@ defmodule Thunderline.Thunderchief.Logger do
   defp emit_to_broadway(chief, step) do
     # Emit event for Broadway consumption
     event_name = "chief.trajectory.#{chief}"
+
     Thunderline.Thunderflow.EventBus.publish_event(%{
       name: event_name,
       source: :thunderchief,

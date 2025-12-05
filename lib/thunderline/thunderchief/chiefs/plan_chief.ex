@@ -142,18 +142,20 @@ defmodule Thunderline.Thunderchief.Chiefs.PlanChief do
     case node_value[:action] do
       :fetch_data ->
         # Decompose fetch into pagination steps
-        {:ok, [
-          {generate_id("fetch_page"), %{action: :fetch_page, params: %{page: 1}, kind: :leaf}},
-          {generate_id("fetch_page"), %{action: :fetch_page, params: %{page: 2}, kind: :leaf}}
-        ]}
+        {:ok,
+         [
+           {generate_id("fetch_page"), %{action: :fetch_page, params: %{page: 1}, kind: :leaf}},
+           {generate_id("fetch_page"), %{action: :fetch_page, params: %{page: 2}, kind: :leaf}}
+         ]}
 
       :transform ->
         # Decompose transform into parallel steps
-        {:ok, [
-          {generate_id("validate"), %{action: :validate, kind: :leaf}},
-          {generate_id("normalize"), %{action: :normalize, kind: :leaf}},
-          {generate_id("enrich"), %{action: :enrich, kind: :leaf}}
-        ]}
+        {:ok,
+         [
+           {generate_id("validate"), %{action: :validate, kind: :leaf}},
+           {generate_id("normalize"), %{action: :normalize, kind: :leaf}},
+           {generate_id("enrich"), %{action: :enrich, kind: :leaf}}
+         ]}
 
       :persist ->
         # Single step, no expansion needed

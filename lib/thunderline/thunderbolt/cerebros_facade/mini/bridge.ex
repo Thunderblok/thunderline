@@ -79,7 +79,8 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge do
       result.score     # => 0.72
       result.label     # => :high
   """
-  @spec evaluate(map(), Context.t() | nil) :: {:ok, evaluation_result(), Context.t()} | {:error, term()}
+  @spec evaluate(map(), Context.t() | nil) ::
+          {:ok, evaluation_result(), Context.t()} | {:error, term()}
   def evaluate(bit, ctx \\ nil) do
     start_time = System.monotonic_time()
     ctx = ctx || Context.new()
@@ -129,7 +130,8 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge do
   - `{:ok, [result, ...], ctx}` with list of results
   - `{:error, reason}` if batch fails
   """
-  @spec evaluate_batch([map()], Context.t()) :: {:ok, [evaluation_result()], Context.t()} | {:error, term()}
+  @spec evaluate_batch([map()], Context.t()) ::
+          {:ok, [evaluation_result()], Context.t()} | {:error, term()}
   def evaluate_batch(bits, ctx \\ nil) when is_list(bits) do
     start_time = System.monotonic_time()
     ctx = ctx || Context.new()
@@ -174,10 +176,11 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge do
         })
 
         # Emit batch event
-        ctx = emit_event(ctx, :batch_evaluated, %{
-          count: length(results),
-          labels: Enum.frequencies_by(results, & &1.label)
-        })
+        ctx =
+          emit_event(ctx, :batch_evaluated, %{
+            count: length(results),
+            labels: Enum.frequencies_by(results, & &1.label)
+          })
 
         {:ok, results, ctx}
 
@@ -227,10 +230,11 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge do
       case Protocol.mutate(bit, changes, ctx) do
         {:ok, updated_bit, ctx} ->
           # Emit event for mutation
-          ctx = emit_event(ctx, :result_applied, %{
-            bit_id: result.bit_id,
-            changes: Map.keys(changes)
-          })
+          ctx =
+            emit_event(ctx, :result_applied, %{
+              bit_id: result.bit_id,
+              changes: Map.keys(changes)
+            })
 
           {:ok, updated_bit, ctx}
 
@@ -252,7 +256,8 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge do
 
   - `{:ok, [updated_bit, ...], ctx}` with mutated bits
   """
-  @spec evaluate_and_apply_batch([map()], Context.t()) :: {:ok, [map()], Context.t()} | {:error, term()}
+  @spec evaluate_and_apply_batch([map()], Context.t()) ::
+          {:ok, [map()], Context.t()} | {:error, term()}
   def evaluate_and_apply_batch(bits, ctx \\ nil) when is_list(bits) do
     ctx = ctx || Context.new()
 
@@ -349,7 +354,8 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Bridge do
            meta: %{pipeline: :general}
          }) do
       {:ok, _} -> :ok
-      {:error, _} -> :ok  # Non-critical, continue
+      # Non-critical, continue
+      {:error, _} -> :ok
     end
 
     # Also emit to context event log

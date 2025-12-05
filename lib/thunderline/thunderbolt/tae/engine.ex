@@ -160,7 +160,13 @@ defmodule Thunderline.Thunderbolt.TAE.Engine do
   Check equivalence (mutual inclusion).
   """
   @spec trace_equivalent?(trace(), trace(), weight_fn(), value_type(), float()) :: boolean()
-  def trace_equivalent?(trace_a, trace_b, weight_fn, value_type \\ :lim_sup_avg, epsilon \\ 1.0e-10) do
+  def trace_equivalent?(
+        trace_a,
+        trace_b,
+        weight_fn,
+        value_type \\ :lim_sup_avg,
+        epsilon \\ 1.0e-10
+      ) do
     val_a = top_value(trace_a, weight_fn, value_type)
     val_b = top_value(trace_b, weight_fn, value_type)
     abs(val_a - val_b) < epsilon
@@ -373,13 +379,23 @@ defmodule Thunderline.Thunderbolt.TAE.Engine do
 
   defp explore_values([], _succ_fn, _weight_fn, _vt, _visited, values, _max_d, _max_s), do: values
 
-  defp explore_values(_frontier, _succ_fn, _weight_fn, _vt, _visited, values, 0, _max_s), do: values
+  defp explore_values(_frontier, _succ_fn, _weight_fn, _vt, _visited, values, 0, _max_s),
+    do: values
 
   defp explore_values(_frontier, _succ_fn, _weight_fn, _vt, visited, values, _max_d, max_s)
        when map_size(visited) >= max_s,
        do: values
 
-  defp explore_values([{state, trace} | rest], succ_fn, weight_fn, vt, visited, values, max_d, max_s) do
+  defp explore_values(
+         [{state, trace} | rest],
+         succ_fn,
+         weight_fn,
+         vt,
+         visited,
+         values,
+         max_d,
+         max_s
+       ) do
     # Compute value for current trace
     value = top_value(trace, weight_fn, vt)
 

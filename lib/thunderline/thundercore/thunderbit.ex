@@ -182,10 +182,9 @@ defmodule Thunderline.Thundercore.Thunderbit do
   Creates a Thunderbit, raising on error.
   """
   def new!(opts) do
-    case new(opts) do
-      {:ok, bit} -> bit
-      {:error, reason} -> raise ArgumentError, "Failed to create Thunderbit: #{inspect(reason)}"
-    end
+    # new/1 currently always returns {:ok, bit}
+    {:ok, bit} = new(opts)
+    bit
   end
 
   # ===========================================================================

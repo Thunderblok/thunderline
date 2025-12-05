@@ -48,6 +48,7 @@ defmodule Thunderline.Thunderbolt.CerebrosCorpusBuilder do
   defp get_uploads(dataset_id) do
     require Ash.Query
     query = DocumentUpload |> Ash.Query.filter(training_dataset_id == ^dataset_id)
+
     case Ash.read(query) do
       {:ok, uploads} -> {:ok, uploads}
       {:error, _} -> {:error, :failed_to_load_uploads}

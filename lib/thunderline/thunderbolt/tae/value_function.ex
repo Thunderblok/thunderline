@@ -327,6 +327,7 @@ defmodule Thunderline.Thunderbolt.TAE.ValueFunction do
 
   def current_value(%{type: :lim_inf, running_avgs: avgs}) do
     tail = Enum.take(avgs, div(length(avgs), 2))
+
     case tail do
       [] -> 0.0
       _ -> Enum.min(tail)
@@ -335,6 +336,7 @@ defmodule Thunderline.Thunderbolt.TAE.ValueFunction do
 
   def current_value(%{type: :lim_sup, running_avgs: avgs}) do
     tail = Enum.take(avgs, div(length(avgs), 2))
+
     case tail do
       [] -> 0.0
       _ -> Enum.max(tail)
@@ -343,6 +345,7 @@ defmodule Thunderline.Thunderbolt.TAE.ValueFunction do
 
   def current_value(%{type: :lim_inf_avg, running_avgs: avgs}) do
     tail = Enum.take(avgs, div(length(avgs), 2))
+
     case tail do
       [] -> 0.0
       _ -> Enum.min(tail)
@@ -351,6 +354,7 @@ defmodule Thunderline.Thunderbolt.TAE.ValueFunction do
 
   def current_value(%{type: :lim_sup_avg, running_avgs: avgs}) do
     tail = Enum.take(avgs, div(length(avgs), 2))
+
     case tail do
       [] -> 0.0
       _ -> Enum.max(tail)

@@ -233,22 +233,18 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
   def handle_call(:suggest, _from, state) do
     started = System.monotonic_time(:microsecond)
 
-    case suggest_params(state.invoker, state.study_name, state.search_space) do
-      {:ok, params} ->
-        duration_us = System.monotonic_time(:microsecond) - started
+    # suggest_params always returns {:ok, _} (falls back to random on error)
+    {:ok, params} = suggest_params(state.invoker, state.study_name, state.search_space)
 
-        :telemetry.execute(
-          @telemetry_event ++ [:suggest],
-          %{duration_us: duration_us},
-          %{run_id: state.run_id, trial: state.completed_trials}
-        )
+    duration_us = System.monotonic_time(:microsecond) - started
 
-        {:reply, {:ok, params}, state}
+    :telemetry.execute(
+      @telemetry_event ++ [:suggest],
+      %{duration_us: duration_us},
+      %{run_id: state.run_id, trial: state.completed_trials}
+    )
 
-      {:error, reason} = error ->
-        Logger.warning("[TPEBridge] Suggest failed: #{inspect(reason)}")
-        {:reply, error, state}
-    end
+    {:reply, {:ok, params}, state}
   end
 
   @impl true
@@ -257,50 +253,45 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
     elapsed_ms = Keyword.get(opts, :elapsed_ms, 0)
     trial_id = state.completed_trials
 
-    # Record to Optuna
-    case record_trial(state.invoker, state.study_name, params, fitness) do
-      :ok ->
-        # Update local state
-        result = %{
-          params: params,
-          fitness: fitness,
-          trial_id: trial_id,
-          elapsed_ms: elapsed_ms
-        }
+    # Record to Optuna (record_trial always returns :ok - ignores failures)
+    :ok = record_trial(state.invoker, state.study_name, params, fitness)
 
-        {new_best_params, new_best_fitness} =
-          if fitness > state.best_fitness do
-            {params, fitness}
-          else
-            {state.best_params, state.best_fitness}
-          end
+    # Update local state
+    result = %{
+      params: params,
+      fitness: fitness,
+      trial_id: trial_id,
+      elapsed_ms: elapsed_ms
+    }
 
-        new_state = %{
-          state
-          | completed_trials: trial_id + 1,
-            best_params: new_best_params,
-            best_fitness: new_best_fitness,
-            history: [result | state.history]
-        }
+    {new_best_params, new_best_fitness} =
+      if fitness > state.best_fitness do
+        {params, fitness}
+      else
+        {state.best_params, state.best_fitness}
+      end
 
-        # Emit progress event
-        emit_event("bolt.tpe.trial.completed", %{
-          run_id: state.run_id,
-          trial_id: trial_id,
-          fitness: fitness,
-          is_best: fitness > state.best_fitness
-        })
+    new_state = %{
+      state
+      | completed_trials: trial_id + 1,
+        best_params: new_best_params,
+        best_fitness: new_best_fitness,
+        history: [result | state.history]
+    }
 
-        Logger.debug(
-          "[TPEBridge] Trial #{trial_id} fitness=#{Float.round(fitness, 4)} best=#{Float.round(new_best_fitness, 4)}"
-        )
+    # Emit progress event
+    emit_event("bolt.tpe.trial.completed", %{
+      run_id: state.run_id,
+      trial_id: trial_id,
+      fitness: fitness,
+      is_best: fitness > state.best_fitness
+    })
 
-        {:reply, :ok, new_state}
+    Logger.debug(
+      "[TPEBridge] Trial #{trial_id} fitness=#{Float.round(fitness, 4)} best=#{Float.round(new_best_fitness, 4)}"
+    )
 
-      {:error, reason} = error ->
-        Logger.warning("[TPEBridge] Record failed: #{inspect(reason)}")
-        {:reply, error, state}
-    end
+    {:reply, :ok, new_state}
   end
 
   @impl true
@@ -370,59 +361,50 @@ defmodule Thunderline.Thunderbolt.Cerebros.TPEBridge do
   end
 
   defp run_optimization_loop(state, eval_fn, remaining) do
-    case suggest_params(state.invoker, state.study_name, state.search_space) do
-      {:ok, params} ->
-        started = System.monotonic_time(:millisecond)
+    # suggest_params always returns {:ok, _} (falls back to random on error)
+    {:ok, params} = suggest_params(state.invoker, state.study_name, state.search_space)
 
-        case eval_fn.(params) do
-          {:ok, fitness} ->
-            elapsed_ms = System.monotonic_time(:millisecond) - started
+    started = System.monotonic_time(:millisecond)
 
-            # Record result
-            case record_trial(state.invoker, state.study_name, params, fitness) do
-              :ok ->
-                result = %{
-                  params: params,
-                  fitness: fitness,
-                  trial_id: state.completed_trials,
-                  elapsed_ms: elapsed_ms
-                }
+    case eval_fn.(params) do
+      {:ok, fitness} ->
+        elapsed_ms = System.monotonic_time(:millisecond) - started
 
-                {new_best_params, new_best_fitness} =
-                  if fitness > state.best_fitness do
-                    Logger.info(
-                      "[TPEBridge] New best! fitness=#{Float.round(fitness, 4)} params=#{inspect(params)}"
-                    )
+        # Record result (record_trial always returns :ok - ignores failures)
+        :ok = record_trial(state.invoker, state.study_name, params, fitness)
 
-                    {params, fitness}
-                  else
-                    {state.best_params, state.best_fitness}
-                  end
+        result = %{
+          params: params,
+          fitness: fitness,
+          trial_id: state.completed_trials,
+          elapsed_ms: elapsed_ms
+        }
 
-                new_state = %{
-                  state
-                  | completed_trials: state.completed_trials + 1,
-                    best_params: new_best_params,
-                    best_fitness: new_best_fitness,
-                    history: [result | state.history]
-                }
+        {new_best_params, new_best_fitness} =
+          if fitness > state.best_fitness do
+            Logger.info(
+              "[TPEBridge] New best! fitness=#{Float.round(fitness, 4)} params=#{inspect(params)}"
+            )
 
-                run_optimization_loop(new_state, eval_fn, remaining - 1)
+            {params, fitness}
+          else
+            {state.best_params, state.best_fitness}
+          end
 
-              {:error, reason} ->
-                Logger.error("[TPEBridge] Failed to record: #{inspect(reason)}")
-                {state, {:error, reason}}
-            end
+        new_state = %{
+          state
+          | completed_trials: state.completed_trials + 1,
+            best_params: new_best_params,
+            best_fitness: new_best_fitness,
+            history: [result | state.history]
+        }
 
-          {:error, reason} ->
-            Logger.warning("[TPEBridge] Evaluation failed: #{inspect(reason)}")
-            # Continue with remaining trials
-            run_optimization_loop(state, eval_fn, remaining - 1)
-        end
+        run_optimization_loop(new_state, eval_fn, remaining - 1)
 
       {:error, reason} ->
-        Logger.error("[TPEBridge] Failed to suggest: #{inspect(reason)}")
-        {state, {:error, reason}}
+        Logger.warning("[TPEBridge] Evaluation failed: #{inspect(reason)}")
+        # Continue with remaining trials
+        run_optimization_loop(state, eval_fn, remaining - 1)
     end
   end
 

@@ -129,7 +129,8 @@ defmodule Thunderline.Thunderbolt.Evolution.MapElites do
   def run(config, seed_pacs \\ []) do
     Logger.info("[MapElites] Starting with #{config.generations} generations")
 
-    with {:ok, archive_config} <- Archive.new(id: config.archive_id, resolution: config.resolution),
+    with {:ok, archive_config} <-
+           Archive.new(id: config.archive_id, resolution: config.resolution),
          :ok <- initialize_archive(archive_config, seed_pacs, config),
          {:ok, result} <- evolution_loop(archive_config, config, 0) do
       invoke_callback(config, :on_complete, result)
@@ -146,7 +147,11 @@ defmodule Thunderline.Thunderbolt.Evolution.MapElites do
           {:ok, map()} | {:error, term()}
   def run_generation(config, archive_config, generation) do
     with {:ok, elites} <- Archive.elite_descriptors(archive_config),
-         {:ok, parents} <- Archive.sample_elites(archive_config, count: config.batch_size, strategy: config.selection_strategy),
+         {:ok, parents} <-
+           Archive.sample_elites(archive_config,
+             count: config.batch_size,
+             strategy: config.selection_strategy
+           ),
          offspring <- generate_offspring(parents, config),
          {:ok, results} <- evaluate_batch(offspring, config),
          :ok <- update_archive(archive_config, results, generation, elites) do

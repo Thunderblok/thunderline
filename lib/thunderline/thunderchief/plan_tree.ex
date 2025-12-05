@@ -85,7 +85,8 @@ defmodule Thunderline.Thunderchief.PlanTree do
   @type node_kind :: :root | :sequence | :parallel | :choice | :guard | :leaf
 
   @typedoc "Node status"
-  @type node_status :: :pending | :queued | :running | :succeeded | :failed | :cancelled | :skipped
+  @type node_status ::
+          :pending | :queued | :running | :succeeded | :failed | :cancelled | :skipped
 
   @typedoc "Plan node value"
   @type node_value :: %{

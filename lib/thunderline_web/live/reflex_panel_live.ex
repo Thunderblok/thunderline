@@ -167,7 +167,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 <.icon name="hero-forward" class="w-4 h-4" />
               </button>
             </div>
-
+            
     <!-- Heatmap Toggle -->
             <div class="dropdown dropdown-end">
               <label
@@ -316,7 +316,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </button>
               </div>
             </div>
-
+            
     <!-- CA Controls -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
@@ -375,7 +375,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
+            
     <!-- Voxel Stats -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
@@ -399,7 +399,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
               </div>
             </div>
           </div>
-
+          
     <!-- Center Column: Metrics & Visualization -->
           <div class="lg:col-span-6 space-y-4">
             <!-- Criticality Metrics -->
@@ -439,7 +439,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                     tooltip="Lyapunov exponent (chaos indicator)"
                   />
                 </div>
-
+                
     <!-- Edge of Chaos Score -->
                 <div class="bg-base-200 rounded-lg p-3">
                   <div class="flex justify-between items-center mb-2">
@@ -464,7 +464,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
+            
     <!-- Charts Container -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
@@ -486,7 +486,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
+            
     <!-- Voxel Visualization -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
@@ -516,7 +516,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
               </div>
             </div>
           </div>
-
+          
     <!-- Right Column: Events & Fitness -->
           <div class="lg:col-span-3 space-y-4">
             <!-- Fitness History -->
@@ -554,7 +554,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
+            
     <!-- Reflex Events Stream -->
             <div class="card bg-base-300 shadow-xl max-h-96 overflow-hidden">
               <div class="card-body p-4">
@@ -577,7 +577,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 </div>
               </div>
             </div>
-
+            
     <!-- Quick Actions -->
             <div class="card bg-base-300 shadow-xl">
               <div class="card-body p-4">
@@ -606,7 +606,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
             </div>
           </div>
         </div>
-
+        
     <!-- HC-Ω-7 Phase 2: Bit Inspector Modal -->
         <.bit_inspector_modal
           :if={@show_bit_inspector}
@@ -614,7 +614,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
           logs={@bit_logs}
           voxel_data={@voxel_data}
         />
-
+        
     <!-- HC-Ω-7 Phase 2: Stimulus Injection Modal -->
         <.stimulus_modal
           :if={assigns[:show_stimulus_modal]}
@@ -749,7 +749,7 @@ defmodule ThunderlineWeb.ReflexPanelLive do
                 <div class="font-mono text-lg">{Float.round(@bit.lambda_sensitivity || 0.0, 4)}</div>
               </div>
             </div>
-
+            
     <!-- Neighbors & Logs -->
             <div class="space-y-3">
               <div class="bg-base-200 p-3 rounded-lg">

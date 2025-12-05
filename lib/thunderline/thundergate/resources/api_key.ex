@@ -37,8 +37,7 @@ defmodule Thunderline.Thundergate.Resources.ApiKey do
       primary? true
       accept [:user_id, :expires_at, :name, :scopes]
 
-      change {AshAuthentication.Strategy.ApiKey.GenerateApiKey,
-              prefix: :tl, hash: :api_key_hash}
+      change {AshAuthentication.Strategy.ApiKey.GenerateApiKey, prefix: :tl, hash: :api_key_hash}
     end
 
     read :valid do

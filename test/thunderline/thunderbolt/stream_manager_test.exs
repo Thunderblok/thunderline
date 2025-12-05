@@ -157,8 +157,8 @@ defmodule Thunderline.Thunderbolt.StreamManagerTest do
       assert :ok = StreamManager.drop(stream_name)
 
       # Verify drop telemetry was emitted
-      assert_receive {:telemetry, [:thunderline, :thunderbolt, :stream, :drop],
-                      %{count: 1}, %{stream: ^stream_name}},
+      assert_receive {:telemetry, [:thunderline, :thunderbolt, :stream, :drop], %{count: 1},
+                      %{stream: ^stream_name}},
                      500
     end
 
@@ -197,8 +197,8 @@ defmodule Thunderline.Thunderbolt.StreamManagerTest do
       assert :ok = StreamManager.drop(:nonexistent_stream_xyz)
 
       # Telemetry should still be emitted
-      assert_receive {:telemetry, [:thunderline, :thunderbolt, :stream, :drop],
-                      %{count: 1}, %{stream: :nonexistent_stream_xyz}},
+      assert_receive {:telemetry, [:thunderline, :thunderbolt, :stream, :drop], %{count: 1},
+                      %{stream: :nonexistent_stream_xyz}},
                      500
     end
   end

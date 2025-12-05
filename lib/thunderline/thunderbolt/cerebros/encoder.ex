@@ -104,7 +104,8 @@ defmodule Thunderline.Thunderbolt.Cerebros.Encoder do
     bit_count = byte_count * 8
 
     # Count ones by examining each byte
-    ones = binary
+    ones =
+      binary
       |> :binary.bin_to_list()
       |> Enum.map(&count_ones_in_byte/1)
       |> Enum.sum()
@@ -113,11 +114,12 @@ defmodule Thunderline.Thunderbolt.Cerebros.Encoder do
     density = if bit_count > 0, do: ones / bit_count, else: 0.0
 
     # Simple entropy approximation based on density
-    entropy = if density > 0 and density < 1 do
-      -density * :math.log2(density) - (1 - density) * :math.log2(1 - density)
-    else
-      0.0
-    end
+    entropy =
+      if density > 0 and density < 1 do
+        -density * :math.log2(density) - (1 - density) * :math.log2(1 - density)
+      else
+        0.0
+      end
 
     %{
       byte_count: byte_count,
@@ -166,7 +168,8 @@ defmodule Thunderline.Thunderbolt.Cerebros.Encoder do
 
   defp encode_tensor(list, bytes_needed) when is_list(list) do
     # Convert floats/integers to bytes
-    float_bytes = list
+    float_bytes =
+      list
       |> List.flatten()
       |> Enum.map(&number_to_bytes/1)
       |> Enum.join()
@@ -197,7 +200,8 @@ defmodule Thunderline.Thunderbolt.Cerebros.Encoder do
     bits = byte_size(bytes) * 8
     max_val = (1 <<< bits) - 1
 
-    value = bytes
+    value =
+      bytes
       |> :binary.bin_to_list()
       |> Enum.reduce(0, fn byte, acc -> (acc <<< 8) + byte end)
 

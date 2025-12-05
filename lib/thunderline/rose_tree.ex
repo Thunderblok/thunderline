@@ -331,10 +331,10 @@ defmodule Thunderline.RoseTree do
   @spec update_value(t(), node_id(), (value() -> value())) :: {:ok, t()} | {:error, :not_found}
   def update_value(tree, target_id, update_fn) do
     case find_and_update(tree, target_id, fn subtree ->
-      node = root(subtree)
-      updated_node = %{node | value: update_fn.(node.value)}
-      RT.new(updated_node, children(subtree))
-    end) do
+           node = root(subtree)
+           updated_node = %{node | value: update_fn.(node.value)}
+           RT.new(updated_node, children(subtree))
+         end) do
       {:ok, _} = ok -> ok
       :not_found -> {:error, :not_found}
     end

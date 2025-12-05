@@ -81,25 +81,21 @@ defmodule ThunderlineWeb.AutoMLController do
   def register_dataset(conn, params) do
     Logger.info("[AutoMLController] Registering dataset: #{inspect(params)}")
 
-    case DatasetManager.create_phase1_dataset(
-           target_samples: params["samples"] || 10_000,
-           max_context_length: params["max_context_length"] || 512
-         ) do
-      {:ok, dataset_id, actual_samples} ->
-        conn
-        |> put_status(:created)
-        |> json(%{
-          success: true,
-          dataset_id: dataset_id,
-          samples: actual_samples,
-          message: "Dataset registered successfully"
-        })
+    # DatasetManager.create_phase1_dataset/1 currently always returns {:ok, _, _}
+    {:ok, dataset_id, actual_samples} =
+      DatasetManager.create_phase1_dataset(
+        target_samples: params["samples"] || 10_000,
+        max_context_length: params["max_context_length"] || 512
+      )
 
-      {:error, reason} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{success: false, error: inspect(reason)})
-    end
+    conn
+    |> put_status(:created)
+    |> json(%{
+      success: true,
+      dataset_id: dataset_id,
+      samples: actual_samples,
+      message: "Dataset registered successfully"
+    })
   end
 
   # POST /api/datasets/clean - Clean raw text samples

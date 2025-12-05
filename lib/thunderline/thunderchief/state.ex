@@ -144,6 +144,7 @@ defmodule Thunderline.Thunderchief.State do
   @spec to_tensor_input(t()) :: %{names: [atom()], values: [float()]}
   def to_tensor_input(%State{} = state) do
     pairs = to_features(state)
+
     %{
       names: Enum.map(pairs, &elem(&1, 0)),
       values: Enum.map(pairs, &elem(&1, 1))

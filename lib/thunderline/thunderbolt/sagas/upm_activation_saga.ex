@@ -89,10 +89,12 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
     run fn %{snapshot: snapshot, max_drift: max_drift}, _ ->
       require Ash.Query
       # Query recent drift window
-      query = UpmDriftWindow
+      query =
+        UpmDriftWindow
         |> Ash.Query.filter(snapshot_id == ^snapshot.id)
         |> Ash.Query.sort(inserted_at: :desc)
         |> Ash.Query.limit(1)
+
       case Ash.read(query) do
         {:ok, [drift_window | _]} ->
           drift_score = drift_window.drift_score || 0.0
@@ -151,6 +153,7 @@ defmodule Thunderline.Thunderbolt.Sagas.UPMActivationSaga do
       require Ash.Query
       # Find currently active snapshot and demote it
       query = UpmSnapshot |> Ash.Query.filter(status == :active)
+
       case Ash.read(query) do
         {:ok, [active_snapshot | _]} ->
           case Ash.update(active_snapshot, %{status: :archived}) do

@@ -10,13 +10,9 @@ defmodule Thunderline.Thunderbolt.Changes.RunNodeLogic do
     node_type = Ash.Changeset.get_attribute(changeset, node_field)
     input = Ash.Changeset.get_attribute(changeset, input_field) || %{}
 
-    case execute_node(node_type, input) do
-      {:ok, output} ->
-        Ash.Changeset.change_attribute(changeset, output_field, output)
-
-      {:error, _reason} ->
-        changeset
-    end
+    # execute_node/2 currently always returns {:ok, _}
+    {:ok, output} = execute_node(node_type, input)
+    Ash.Changeset.change_attribute(changeset, output_field, output)
   end
 
   defp execute_node(nil, _input), do: {:ok, %{}}

@@ -99,20 +99,14 @@ defmodule Thunderline.Thunderbolt.ReflexHandlers.Stabilization do
 
     Logger.debug("[Stabilization] Processing #{trigger} event for bit #{event[:bit_id]}")
 
-    result =
+    # Pipeline always returns :ok (maybe_update_pac_traits and emit_acknowledgment both return :ok)
+    _pac_id =
       event
       |> extract_pac_id()
       |> maybe_update_pac_traits(event)
       |> emit_acknowledgment(event)
 
-    case result do
-      :ok ->
-        emit_telemetry(:handled, start_time, event)
-
-      {:error, reason} ->
-        emit_telemetry(:error, start_time, %{event: event, reason: reason})
-        Logger.warning("[Stabilization] Failed to process event: #{inspect(reason)}")
-    end
+    emit_telemetry(:handled, start_time, event)
 
     %{state | handled_count: state.handled_count + 1, last_event: event}
   end
@@ -131,10 +125,9 @@ defmodule Thunderline.Thunderbolt.ReflexHandlers.Stabilization do
 
     # Try to update PAC traits if the domain is available
     if Code.ensure_loaded?(Thunderline.Thunderpac.Domain) do
-      case apply_trait_adjustments(pac_id, adjustments) do
-        {:ok, _pac} -> :ok
-        {:error, reason} -> {:error, reason}
-      end
+      # apply_trait_adjustments/2 always returns {:ok, _}
+      {:ok, _pac} = apply_trait_adjustments(pac_id, adjustments)
+      :ok
     else
       # Domain not available, skip update
       Logger.debug("[Stabilization] Thunderpac.Domain not loaded, skipping trait update")
@@ -214,8 +207,6 @@ defmodule Thunderline.Thunderbolt.ReflexHandlers.Stabilization do
 
     :ok
   end
-
-  defp emit_acknowledgment({:error, _} = error, _event), do: error
 
   defp emit_telemetry(status, start_time, metadata) do
     duration = System.monotonic_time() - start_time

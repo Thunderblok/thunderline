@@ -291,6 +291,7 @@ defmodule Thunderline.DashboardMetrics do
     try do
       # Estimate network activity from port count changes
       port_count = length(:erlang.ports())
+
       %{
         latency: "N/A",
         transfer_rate: if(port_count > 10, do: "Active", else: "Idle")
@@ -358,12 +359,13 @@ defmodule Thunderline.DashboardMetrics do
       Thunderline.Thunderblock.Supervisor
     ]
 
-    healthy_count = Enum.count(supervisors, fn sup ->
-      case Process.whereis(sup) do
-        nil -> false
-        pid -> Process.alive?(pid)
-      end
-    end)
+    healthy_count =
+      Enum.count(supervisors, fn sup ->
+        case Process.whereis(sup) do
+          nil -> false
+          pid -> Process.alive?(pid)
+        end
+      end)
 
     cond do
       healthy_count == length(supervisors) -> :healthy
@@ -525,9 +527,12 @@ defmodule Thunderline.DashboardMetrics do
   # Calculate monitoring coverage as percentage of domains with telemetry
   defp calculate_monitoring_coverage do
     domains = [:thundercore, :thunderbit, :thunderlane, :thunderbolt, :thunderblock, :thundergrid]
-    covered = Enum.count(domains, fn d ->
-      get_telemetry_counter([:thunderline, d, :total]) != nil
-    end)
+
+    covered =
+      Enum.count(domains, fn d ->
+        get_telemetry_counter([:thunderline, d, :total]) != nil
+      end)
+
     "#{Float.round(covered / length(domains) * 100, 0)}%"
   end
 
@@ -765,7 +770,9 @@ defmodule Thunderline.DashboardMetrics do
   defp count_broadway_pipelines do
     try do
       case Process.whereis(Broadway.Registry) do
-        nil -> 0
+        nil ->
+          0
+
         _pid ->
           case Registry.select(Broadway.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}]) do
             names when is_list(names) -> length(names)
@@ -779,8 +786,10 @@ defmodule Thunderline.DashboardMetrics do
 
   # Calculate flow rate (events per second estimate)
   defp calculate_flow_rate(0), do: "0/s"
+
   defp calculate_flow_rate(events) do
     {uptime_ms, _} = :erlang.statistics(:wall_clock)
+
     if uptime_ms > 0 do
       rate = Float.round(events / (uptime_ms / 1000), 1)
       "#{rate}/s"
@@ -820,6 +829,7 @@ defmodule Thunderline.DashboardMetrics do
     ratio = Float.round((1 - binary_size / total) * 100, 1)
     "#{ratio}%"
   end
+
   defp estimate_compression_ratio(_, _), do: "N/A"
 
   @doc "Get ThunderLink metrics"
@@ -838,6 +848,7 @@ defmodule Thunderline.DashboardMetrics do
   # Estimate throughput from scheduler activity
   defp estimate_throughput do
     {reductions, _} = :erlang.statistics(:reductions)
+
     cond do
       reductions > 1_000_000_000 -> "High"
       reductions > 100_000_000 -> "Medium"
@@ -990,27 +1001,14 @@ defmodule Thunderline.DashboardMetrics do
   defp get_thundercell_cluster_stats do
     # Try to call ThunderCell Elixir modules for real stats
     try do
-      # First try to get stats from ThunderCell Elixir bridge
-      case get_thundercell_elixir_stats() do
-        {:ok, stats} ->
-          stats
-
-        {:error, _} ->
-          # Fallback to direct cluster call
-          case get_direct_thundercell_stats() do
-            {:ok, stats} -> stats
-            _ -> get_thundergate_fallback_stats()
-          end
+      # Use direct stats or fallback
+      case get_direct_thundercell_stats() do
+        {:ok, stats} -> stats
+        _ -> get_thundergate_fallback_stats()
       end
     rescue
       _ -> get_thundergate_fallback_stats()
     end
-  end
-
-  defp get_thundercell_elixir_stats do
-    # Use ThunderCell Elixir modules directly
-    # Return early if ClusterSupervisor is not running to avoid crashes
-    {:error, :cluster_supervisor_not_running}
   end
 
   defp get_direct_thundercell_stats do
@@ -1333,9 +1331,12 @@ defmodule Thunderline.DashboardMetrics do
   defp calculate_pipeline_load(pipeline_name) do
     try do
       case Process.whereis(pipeline_name) do
-        nil -> "0%"
+        nil ->
+          "0%"
+
         pid ->
           {:message_queue_len, len} = Process.info(pid, :message_queue_len)
+
           cond do
             len > 1000 -> "High"
             len > 100 -> "Medium"

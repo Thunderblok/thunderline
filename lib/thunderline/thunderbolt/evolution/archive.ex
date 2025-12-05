@@ -121,7 +121,8 @@ defmodule Thunderline.Thunderbolt.Evolution.Archive do
     generation = Keyword.get(opts, :generation, 0)
     existing_elites = Keyword.get(opts, :existing_elites, [])
 
-    with {:ok, descriptor} <- BehaviorDescriptor.extract(pac, metrics, existing_elites: existing_elites),
+    with {:ok, descriptor} <-
+           BehaviorDescriptor.extract(pac, metrics, existing_elites: existing_elites),
          coords = BehaviorDescriptor.to_grid_coords(descriptor, resolution: config.resolution),
          cell_key = BehaviorDescriptor.cell_key(coords),
          fitness = Map.get(metrics, :fitness, descriptor.task_performance) do
@@ -334,7 +335,12 @@ defmodule Thunderline.Thunderbolt.Evolution.Archive do
     else
       # Existing elite defended
       # Update challenge count (handled by update_elite action with lower fitness)
-      case EliteEntry.update_elite(existing, new_fitness, existing.pac_snapshot, existing.trait_vector) do
+      case EliteEntry.update_elite(
+             existing,
+             new_fitness,
+             existing.pac_snapshot,
+             existing.trait_vector
+           ) do
         {:ok, _} -> :ok
         {:error, _} -> :ok
       end

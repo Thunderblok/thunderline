@@ -93,15 +93,10 @@ defmodule Thunderline.Thunderbolt.Cerebros.Adapter do
   defp run_legacy(opts) when is_list(opts) do
     emit_progress(:start, %{mode: :legacy_opts})
 
-    case simple_search(opts) do
-      {:ok, result} = _ok ->
-        emit_progress(:complete, result)
-        {:ok, normalize_result(result)}
-
-      {:error, _} = err ->
-        emit_progress(:error, %{error: err})
-        err
-    end
+    # simple_search/1 always returns {:ok, _}
+    {:ok, result} = simple_search(opts)
+    emit_progress(:complete, result)
+    {:ok, normalize_result(result)}
   end
 
   defp run_hybrid(spec) do

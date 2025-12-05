@@ -51,26 +51,20 @@ defmodule Thunderline.Thunderbolt.CA.Runner do
       ) do
     started = System.monotonic_time(:microsecond)
 
-    case Stepper.next(grid, rules) do
-      {:ok, deltas, new_grid} ->
-        msg = %{run_id: run_id, seq: seq + 1, cells: deltas}
-        Phoenix.PubSub.broadcast(Thunderline.PubSub, "ca:#{run_id}", {:ca_delta, msg})
-        duration_ms = (System.monotonic_time(:microsecond) - started) / 1000
+    # Stepper.next/2 always returns {:ok, deltas, new_grid}
+    {:ok, deltas, new_grid} = Stepper.next(grid, rules)
+    msg = %{run_id: run_id, seq: seq + 1, cells: deltas}
+    Phoenix.PubSub.broadcast(Thunderline.PubSub, "ca:#{run_id}", {:ca_delta, msg})
+    duration_ms = (System.monotonic_time(:microsecond) - started) / 1000
 
-        :telemetry.execute(
-          @telemetry_event,
-          %{duration_ms: duration_ms, cells: length(deltas)},
-          %{run_id: run_id}
-        )
+    :telemetry.execute(
+      @telemetry_event,
+      %{duration_ms: duration_ms, cells: length(deltas)},
+      %{run_id: run_id}
+    )
 
-        schedule_tick(tick_ms)
-        {:noreply, %{st | grid: new_grid, seq: seq + 1}}
-
-      {:error, reason} ->
-        Logger.error("[CA.Runner] step error run=#{run_id} reason=#{inspect(reason)}")
-        schedule_tick(tick_ms)
-        {:noreply, st}
-    end
+    schedule_tick(tick_ms)
+    {:noreply, %{st | grid: new_grid, seq: seq + 1}}
   end
 
   defp schedule_tick(interval), do: Process.send_after(self(), :tick, interval)

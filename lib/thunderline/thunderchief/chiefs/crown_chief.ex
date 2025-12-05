@@ -46,11 +46,14 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
 
   alias Thunderline.Thunderchief.{State, Action}
 
-  @violation_threshold 0.1  # 10% violation rate triggers response
+  # 10% violation rate triggers response
+  @violation_threshold 0.1
   # Reserved for future automatic escalation (currently alerts only)
-  @_critical_violation_rate 0.3  # 30% triggers escalation
+  # 30% triggers escalation
+  @_critical_violation_rate 0.3
   _ = @_critical_violation_rate
-  @policy_suspension_threshold 0.5  # 50% failure rate suspends policy
+  # 50% failure rate suspends policy
+  @policy_suspension_threshold 0.5
 
   # ===========================================================================
   # Behaviour Implementation
@@ -79,32 +82,34 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
     # Cross-domain health
     domain_health = assess_domain_health(governance_ctx)
 
-    State.new(:crown, %{
-      # Policy state
-      active_policies: length(policies),
-      suspended_policies: length(suspended_policies),
-      problematic_policies: problematic_policies,
+    State.new(
+      :crown,
+      %{
+        # Policy state
+        active_policies: length(policies),
+        suspended_policies: length(suspended_policies),
+        problematic_policies: problematic_policies,
 
-      # Evaluation metrics
-      total_evaluations: total_evals,
-      violation_count: violation_count,
-      violation_rate: violation_rate,
+        # Evaluation metrics
+        total_evaluations: total_evals,
+        violation_count: violation_count,
+        violation_rate: violation_rate,
 
-      # Critical items
-      critical_violations: critical,
-      unescalated_critical: unescalated,
-      needs_escalation: length(unescalated) > 0,
+        # Critical items
+        critical_violations: critical,
+        unescalated_critical: unescalated,
+        needs_escalation: length(unescalated) > 0,
 
-      # Health
-      policy_stats: policy_stats,
-      domain_health: domain_health,
-      system_healthy: violation_rate < @violation_threshold,
+        # Health
+        policy_stats: policy_stats,
+        domain_health: domain_health,
+        system_healthy: violation_rate < @violation_threshold,
 
-      # Governance directives in flight
-      pending_directives: get_pending_directives(governance_ctx)
-    },
-    tick: Map.get(governance_ctx, :tick, 0),
-    context: governance_ctx
+        # Governance directives in flight
+        pending_directives: get_pending_directives(governance_ctx)
+      },
+      tick: Map.get(governance_ctx, :tick, 0),
+      context: governance_ctx
     )
   end
 
@@ -130,11 +135,13 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
           rate: state.violation_rate,
           expires_at: DateTime.add(DateTime.utc_now(), 5, :minute)
         }
+
         {:ok, {:emit_directive, directive}}
 
       # Priority 4: Resume suspended policies if health restored
       state.suspended_policies > 0 and state.violation_rate < @violation_threshold / 2 ->
         candidate = find_resumable_policy(state)
+
         if candidate do
           {:ok, {:resume_policy, candidate.id}}
         else
@@ -156,17 +163,9 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
     action_struct = Action.from_tuple(action)
     action_struct = Action.mark_executing(action_struct)
 
-    result = do_apply_action(action, governance_ctx)
-
-    case result do
-      {:ok, updated} ->
-        Action.log(Action.mark_completed(action_struct), :executed, %{chief: :crown})
-        {:ok, updated}
-
-      {:error, reason} = error ->
-        Action.log(Action.mark_failed(action_struct, reason), :failed, %{chief: :crown})
-        error
-    end
+    {:ok, updated} = do_apply_action(action, governance_ctx)
+    Action.log(Action.mark_completed(action_struct), :executed, %{chief: :crown})
+    {:ok, updated}
   end
 
   @impl true
@@ -211,9 +210,11 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
   defp do_apply_action({:escalate_violation, violation_id}, ctx) do
     # Mark violation as escalated, notify admins
     violations = ctx[:violations] || []
-    updated = Enum.map(violations, fn v ->
-      if v.id == violation_id, do: Map.put(v, :escalated, true), else: v
-    end)
+
+    updated =
+      Enum.map(violations, fn v ->
+        if v.id == violation_id, do: Map.put(v, :escalated, true), else: v
+      end)
 
     # Emit escalation event
     emit_governance_event(:violation_escalated, %{
@@ -226,15 +227,17 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
 
   defp do_apply_action({:suspend_policy, policy_id}, ctx) do
     policies = ctx[:policies] || []
-    updated = Enum.map(policies, fn p ->
-      if p.id == policy_id do
-        p
-        |> Map.put(:status, :suspended)
-        |> Map.put(:suspended_at, DateTime.utc_now())
-      else
-        p
-      end
-    end)
+
+    updated =
+      Enum.map(policies, fn p ->
+        if p.id == policy_id do
+          p
+          |> Map.put(:status, :suspended)
+          |> Map.put(:suspended_at, DateTime.utc_now())
+        else
+          p
+        end
+      end)
 
     emit_governance_event(:policy_suspended, %{policy_id: policy_id})
     {:ok, Map.put(ctx, :policies, updated)}
@@ -242,15 +245,17 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
 
   defp do_apply_action({:resume_policy, policy_id}, ctx) do
     policies = ctx[:policies] || []
-    updated = Enum.map(policies, fn p ->
-      if p.id == policy_id do
-        p
-        |> Map.put(:status, :active)
-        |> Map.delete(:suspended_at)
-      else
-        p
-      end
-    end)
+
+    updated =
+      Enum.map(policies, fn p ->
+        if p.id == policy_id do
+          p
+          |> Map.put(:status, :active)
+          |> Map.delete(:suspended_at)
+        else
+          p
+        end
+      end)
 
     emit_governance_event(:policy_resumed, %{policy_id: policy_id})
     {:ok, Map.put(ctx, :policies, updated)}
@@ -258,20 +263,24 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
 
   defp do_apply_action({:adjust_threshold, policy_id, new_threshold}, ctx) do
     policies = ctx[:policies] || []
-    updated = Enum.map(policies, fn p ->
-      if p.id == policy_id, do: Map.put(p, :threshold, new_threshold), else: p
-    end)
+
+    updated =
+      Enum.map(policies, fn p ->
+        if p.id == policy_id, do: Map.put(p, :threshold, new_threshold), else: p
+      end)
 
     {:ok, Map.put(ctx, :policies, updated)}
   end
 
   defp do_apply_action({:emit_directive, directive}, ctx) do
     directives = ctx[:directives] || []
-    new_directive = Map.merge(directive, %{
-      id: generate_directive_id(),
-      issued_at: DateTime.utc_now(),
-      status: :pending
-    })
+
+    new_directive =
+      Map.merge(directive, %{
+        id: generate_directive_id(),
+        issued_at: DateTime.utc_now(),
+        status: :pending
+      })
 
     emit_governance_event(:directive_issued, new_directive)
     {:ok, Map.put(ctx, :directives, [new_directive | directives])}
@@ -283,6 +292,7 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
       timestamp: DateTime.utc_now(),
       context_snapshot: summarize_context(ctx)
     })
+
     {:ok, ctx}
   end
 
@@ -332,7 +342,7 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
   defp find_problematic_policies(stats) do
     stats
     |> Enum.filter(&(!&1.healthy))
-    |> Enum.sort_by(& -&1.failure_rate)
+    |> Enum.sort_by(&(-&1.failure_rate))
   end
 
   defp find_resumable_policy(state) do
@@ -367,13 +377,15 @@ defmodule Thunderline.Thunderchief.Chiefs.CrownChief do
   defp emit_governance_event(event_type, payload) do
     # Emit via EventBus
     event_name = "crown.governance.#{event_type}"
+
     case Thunderline.Thunderflow.EventBus.publish_event(%{
-      name: event_name,
-      source: :crown,
-      payload: payload
-    }) do
+           name: event_name,
+           source: :crown,
+           payload: payload
+         }) do
       {:ok, _} -> :ok
-      {:error, _} -> :ok  # Log but don't fail
+      # Log but don't fail
+      {:error, _} -> :ok
     end
   rescue
     _ -> :ok

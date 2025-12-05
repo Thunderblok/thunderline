@@ -254,26 +254,21 @@ defmodule Thunderline.Thunderbolt.IsingMachine do
     start_time = System.monotonic_time(:microsecond)
 
     # Run a quick optimization
-    result = quick_solve(size, size, max_steps: steps, t0: 1.0, t_min: 0.1)
+    # quick_solve/3 currently always returns {:ok, _} (stub)
+    {:ok, optimization_result} = quick_solve(size, size, max_steps: steps, t0: 1.0, t_min: 0.1)
 
     end_time = System.monotonic_time(:microsecond)
     runtime_us = end_time - start_time
 
-    case result do
-      {:ok, optimization_result} ->
-        spins_per_second = size * size * optimization_result.steps / (runtime_us / 1_000_000)
+    spins_per_second = size * size * optimization_result.steps / (runtime_us / 1_000_000)
 
-        %{
-          grid_size: {size, size},
-          steps_completed: optimization_result.steps,
-          total_runtime_us: runtime_us,
-          spins_per_second: round(spins_per_second),
-          final_energy: optimization_result.energy,
-          backend_info: check_acceleration()
-        }
-
-      {:error, reason} ->
-        %{error: reason, backend_info: check_acceleration()}
-    end
+    %{
+      grid_size: {size, size},
+      steps_completed: optimization_result.steps,
+      total_runtime_us: runtime_us,
+      spins_per_second: round(spins_per_second),
+      final_energy: optimization_result.energy,
+      backend_info: check_acceleration()
+    }
   end
 end

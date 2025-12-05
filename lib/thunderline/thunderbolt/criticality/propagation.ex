@@ -62,7 +62,8 @@ defmodule Thunderline.Thunderbolt.Criticality.Propagation do
   Estimates σ from consecutive layer pairs.
   Returns individual ratios for each transition.
   """
-  @spec layer_ratios(list(layer_activation()), keyword()) :: {:ok, list(float())} | {:error, atom()}
+  @spec layer_ratios(list(layer_activation()), keyword()) ::
+          {:ok, list(float())} | {:error, atom()}
   def layer_ratios(activations, opts \\ []) do
     norm_type = Keyword.get(opts, :norm, :l2)
 
@@ -250,7 +251,7 @@ defmodule Thunderline.Thunderbolt.Criticality.Propagation do
     # Simplified power iteration for spectral radius
     # Treats activation sequence as implicit linear operator
 
-    norms = Enum.map(activations, &(compute_norm(&1, :l2)))
+    norms = Enum.map(activations, &compute_norm(&1, :l2))
 
     # Look at growth rate over sequence
     if length(norms) < 3 or Enum.all?(norms, &(&1 < 1.0e-10)) do

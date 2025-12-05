@@ -206,7 +206,7 @@ defmodule ThunderlineWeb.TrainingPromptLive do
             </div>
           <% end %>
         </section>
-
+        
     <!-- Recent Training Jobs -->
         <section class="panel p-6">
           <div class="flex items-center gap-2 mb-4">
@@ -298,7 +298,7 @@ defmodule ThunderlineWeb.TrainingPromptLive do
           </div>
         </section>
       </div>
-
+      
     <!-- UPM Status Panel -->
       <%= if @upm_enabled do %>
         <section class="panel p-6 mt-6">

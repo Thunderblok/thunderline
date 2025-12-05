@@ -277,10 +277,12 @@ defmodule Thunderline.Thunderbolt.UPM.DriftMonitor do
   defp get_current_snapshot_id(trainer) do
     require Ash.Query
     # Get latest shadow snapshot for this trainer
-    query = UpmSnapshot
+    query =
+      UpmSnapshot
       |> Ash.Query.filter(trainer_id == ^trainer.id and status == :shadow)
       |> Ash.Query.sort(version: :desc)
       |> Ash.Query.limit(1)
+
     case Ash.read(query) do
       {:ok, [snapshot]} -> snapshot.id
       {:ok, []} -> nil

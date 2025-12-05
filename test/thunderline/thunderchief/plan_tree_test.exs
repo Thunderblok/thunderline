@@ -72,13 +72,15 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
         RoseTree.new(:root, %{visited: false})
         |> RoseTree.add_child(:child1, %{visited: false})
 
-      updated = RoseTree.map(tree, fn node ->
-        %{node | value: Map.put(node.value, :visited, true)}
-      end)
+      updated =
+        RoseTree.map(tree, fn node ->
+          %{node | value: Map.put(node.value, :visited, true)}
+        end)
 
-      all_visited = RoseTree.fold(updated, true, fn node, acc ->
-        acc && node.value.visited
-      end)
+      all_visited =
+        RoseTree.fold(updated, true, fn node, acc ->
+          acc && node.value.visited
+        end)
 
       assert all_visited
     end
@@ -119,10 +121,11 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "expands root into children" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, domain: :plan}},
-        {"step2", %{action: :transform, domain: :plan}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, domain: :plan}},
+          {"step2", %{action: :transform, domain: :plan}}
+        ])
 
       assert PlanTree.node_count(plan) == 3
       assert PlanTree.depth(plan) == 2
@@ -131,10 +134,11 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "schedules ready leaf nodes" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, kind: :leaf}},
-        {"step2", %{action: :transform, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, kind: :leaf}},
+          {"step2", %{action: :transform, kind: :leaf}}
+        ])
 
       ready = PlanTree.schedule_ready_nodes(plan)
       assert length(ready) == 2
@@ -143,10 +147,11 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "schedules sequence nodes in order" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :first, kind: :leaf}},
-        {"step2", %{action: :second, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :first, kind: :leaf}},
+          {"step2", %{action: :second, kind: :leaf}}
+        ])
 
       # Update root to be a sequence
       {:ok, plan} = update_node_kind(plan, "test_plan", :sequence)
@@ -161,14 +166,16 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "applies node results" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, kind: :leaf}}
+        ])
 
-      {:ok, plan} = PlanTree.apply_node_result(plan, "step1", %{
-        status: :succeeded,
-        output: %{data: "fetched"}
-      })
+      {:ok, plan} =
+        PlanTree.apply_node_result(plan, "step1", %{
+          status: :succeeded,
+          output: %{data: "fetched"}
+        })
 
       {:ok, {_, node_value}} = PlanTree.get_node(plan, "step1")
       assert node_value.status == :succeeded
@@ -178,9 +185,10 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "propagates status to root on completion" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, kind: :leaf}}
+        ])
 
       {:ok, plan} = PlanTree.apply_node_result(plan, "step1", %{status: :succeeded})
 
@@ -191,14 +199,16 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "propagates failure status" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, kind: :leaf}}
+        ])
 
-      {:ok, plan} = PlanTree.apply_node_result(plan, "step1", %{
-        status: :failed,
-        error: "connection timeout"
-      })
+      {:ok, plan} =
+        PlanTree.apply_node_result(plan, "step1", %{
+          status: :failed,
+          error: "connection timeout"
+        })
 
       assert PlanTree.complete?(plan)
       assert PlanTree.status(plan) == :failed
@@ -207,10 +217,11 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "cancels node and descendants" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, kind: :leaf}},
-        {"step2", %{action: :transform, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, kind: :leaf}},
+          {"step2", %{action: :transform, kind: :leaf}}
+        ])
 
       {:ok, plan} = PlanTree.cancel(plan, "step1", :user_cancelled)
 
@@ -221,9 +232,10 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "tick returns ready nodes and updates metadata" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync", tick: 0)
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, kind: :leaf}}
+        ])
 
       {:ok, plan, ready} = PlanTree.tick(plan)
 
@@ -234,9 +246,10 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "serializes to/from map" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync", domain: :plan)
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :fetch, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :fetch, kind: :leaf}}
+        ])
 
       map = PlanTree.to_map(plan)
       {:ok, rebuilt} = PlanTree.from_map(map)
@@ -248,11 +261,12 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
     test "status_summary counts nodes by status" do
       {:ok, plan} = PlanTree.new("test_plan", goal: "sync")
 
-      {:ok, plan} = PlanTree.expand(plan, "test_plan", [
-        {"step1", %{action: :a, kind: :leaf}},
-        {"step2", %{action: :b, kind: :leaf}},
-        {"step3", %{action: :c, kind: :leaf}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "test_plan", [
+          {"step1", %{action: :a, kind: :leaf}},
+          {"step2", %{action: :b, kind: :leaf}},
+          {"step3", %{action: :c, kind: :leaf}}
+        ])
 
       {:ok, plan} = PlanTree.apply_node_result(plan, "step1", %{status: :succeeded})
       {:ok, plan} = PlanTree.apply_node_result(plan, "step2", %{status: :failed})
@@ -324,10 +338,11 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
       {:ok, plan} = PlanTree.new("sync_plan", goal: "sync data", domain: :plan)
 
       # 2. Expand into steps
-      {:ok, plan} = PlanTree.expand(plan, "sync_plan", [
-        {"fetch", %{action: :fetch_data, kind: :leaf, domain: :plan}},
-        {"transform", %{action: :transform, kind: :leaf, domain: :plan}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "sync_plan", [
+          {"fetch", %{action: :fetch_data, kind: :leaf, domain: :plan}},
+          {"transform", %{action: :transform, kind: :leaf, domain: :plan}}
+        ])
 
       assert PlanTree.node_count(plan) == 3
       assert PlanTree.status(plan) == :pending
@@ -355,15 +370,17 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
       assert PlanTree.status(plan) == :succeeded
 
       summary = PlanTree.status_summary(plan)
-      assert summary[:succeeded] == 3  # root + 2 leaves
+      # root + 2 leaves
+      assert summary[:succeeded] == 3
     end
 
     test "handles failure in execution" do
       {:ok, plan} = PlanTree.new("fail_plan", goal: "will fail", domain: :plan)
 
-      {:ok, plan} = PlanTree.expand(plan, "fail_plan", [
-        {"step1", %{action: :unknown_action, kind: :leaf, domain: :plan}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "fail_plan", [
+          {"step1", %{action: :unknown_action, kind: :leaf, domain: :plan}}
+        ])
 
       ready = PlanTree.schedule_ready_nodes(plan)
       [{node_id, node_value}] = ready
@@ -379,9 +396,10 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
       {:ok, plan} = PlanTree.new("deep_plan", goal: "multi-level", domain: :plan)
 
       # First level expansion
-      {:ok, plan} = PlanTree.expand(plan, "deep_plan", [
-        {"level1", %{action: :fetch_data, kind: :sequence, domain: :plan}}
-      ])
+      {:ok, plan} =
+        PlanTree.expand(plan, "deep_plan", [
+          {"level1", %{action: :fetch_data, kind: :sequence, domain: :plan}}
+        ])
 
       # Second level expansion via Chief
       {:ok, children} = PlanChief.expand_node("level1", %{action: :fetch_data}, %{})
@@ -399,8 +417,8 @@ defmodule Thunderline.Thunderchief.PlanTreeTest do
   # Helper to update node kind (for testing sequence behavior)
   defp update_node_kind(%PlanTree{tree: tree} = plan, node_id, kind) do
     case Thunderline.RoseTree.update_value(tree, node_id, fn value ->
-      Map.put(value, :kind, kind)
-    end) do
+           Map.put(value, :kind, kind)
+         end) do
       {:ok, updated_tree} -> {:ok, %{plan | tree: updated_tree}}
       error -> error
     end

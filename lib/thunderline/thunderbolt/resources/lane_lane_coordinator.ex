@@ -280,25 +280,16 @@ defmodule Thunderline.Thunderbolt.Resources.LaneCoordinator do
   # ============================================================================
 
   defp start_coordinator_process(_changeset, coordinator) do
-    case maybe_start_lane_coordinator(coordinator) do
-      {:ok, pid} ->
-        coordinator
-        |> Ash.Changeset.for_update(:update, %{
-          coordinator_pid: inspect(pid),
-          status: :active,
-          last_heartbeat_at: DateTime.utc_now()
-        })
-        |> Ash.update()
+    # maybe_start_lane_coordinator/1 currently always returns {:error, _} (stub)
+    {:error, reason} = maybe_start_lane_coordinator(coordinator)
 
-      {:error, reason} ->
-        coordinator
-        |> Ash.Changeset.for_update(:update, %{
-          status: :error,
-          last_error: "Failed to start coordinator: #{inspect(reason)}",
-          last_error_at: DateTime.utc_now()
-        })
-        |> Ash.update()
-    end
+    coordinator
+    |> Ash.Changeset.for_update(:update, %{
+      status: :error,
+      last_error: "Failed to start coordinator: #{inspect(reason)}",
+      last_error_at: DateTime.utc_now()
+    })
+    |> Ash.update()
   end
 
   defp validate_ruleset(changeset) do

@@ -94,15 +94,15 @@ defmodule Thunderline.Thundergate.Resources.User do
     update_timestamp :updated_at
   end
 
-  identities do
-    identity :unique_email, [:email]
-  end
-
   relationships do
     has_many :valid_api_keys, Thunderline.Thundergate.Resources.ApiKey do
       filter expr(expires_at > now() and is_nil(revoked_at))
     end
 
     has_many :api_keys, Thunderline.Thundergate.Resources.ApiKey
+  end
+
+  identities do
+    identity :unique_email, [:email]
   end
 end

@@ -55,31 +55,33 @@ defmodule Thunderline.Thunderchief.Chiefs.VineChief do
     total_nodes = length(ready_nodes) + length(executing_nodes) + length(completed_nodes)
     completion_rate = if total_nodes > 0, do: length(completed_nodes) / total_nodes, else: 0.0
 
-    State.new(:vine, %{
-      # Graph counts
-      active_graphs: length(graphs),
-      completed_graphs: count_completed(graphs),
+    State.new(
+      :vine,
+      %{
+        # Graph counts
+        active_graphs: length(graphs),
+        completed_graphs: count_completed(graphs),
 
-      # Node states across all graphs
-      ready_nodes: ready_nodes,
-      ready_count: length(ready_nodes),
-      executing_count: length(executing_nodes),
-      completed_count: length(completed_nodes),
-      stalled_count: length(stalled_nodes),
+        # Node states across all graphs
+        ready_nodes: ready_nodes,
+        ready_count: length(ready_nodes),
+        executing_count: length(executing_nodes),
+        completed_count: length(completed_nodes),
+        stalled_count: length(stalled_nodes),
 
-      # Health metrics
-      stalled_nodes: stalled_nodes,
-      has_stalled: length(stalled_nodes) > 0,
-      completion_rate: completion_rate,
+        # Health metrics
+        stalled_nodes: stalled_nodes,
+        has_stalled: length(stalled_nodes) > 0,
+        completion_rate: completion_rate,
 
-      # Compaction candidates
-      compactable: find_compactable(graphs),
+        # Compaction candidates
+        compactable: find_compactable(graphs),
 
-      # Parallelism
-      parallel_capacity: max(0, @max_parallel_nodes - length(executing_nodes))
-    },
-    tick: get_tick(registry),
-    context: registry
+        # Parallelism
+        parallel_capacity: max(0, @max_parallel_nodes - length(executing_nodes))
+      },
+      tick: get_tick(registry),
+      context: registry
     )
   end
 
@@ -94,6 +96,7 @@ defmodule Thunderline.Thunderchief.Chiefs.VineChief do
       # Priority 2: Advance ready nodes if capacity available
       state.ready_count > 0 and state.parallel_capacity > 0 ->
         nodes_to_advance = select_nodes(state.ready_nodes, state.parallel_capacity)
+
         case nodes_to_advance do
           [single] -> {:ok, {:advance_node, single.id}}
           multiple -> {:ok, {:advance_batch, Enum.map(multiple, & &1.id)}}
@@ -148,7 +151,8 @@ defmodule Thunderline.Thunderchief.Chiefs.VineChief do
       },
       trajectory_step: %{
         state: state.features,
-        action: nil, # filled by caller
+        # filled by caller
+        action: nil,
         next_state: state.features,
         timestamp: DateTime.utc_now()
       }
@@ -172,11 +176,9 @@ defmodule Thunderline.Thunderchief.Chiefs.VineChief do
   # ===========================================================================
 
   defp do_apply_action({:advance_node, node_id}, registry) do
-    # Execute a single node
-    case execute_node(registry, node_id) do
-      {:ok, _result} -> {:ok, registry}
-      {:error, reason} -> {:error, {:node_failed, node_id, reason}}
-    end
+    # execute_node/2 always returns {:ok, _} (stub)
+    {:ok, _result} = execute_node(registry, node_id)
+    {:ok, registry}
   end
 
   defp do_apply_action({:advance_batch, node_ids}, registry) do
@@ -245,7 +247,8 @@ defmodule Thunderline.Thunderchief.Chiefs.VineChief do
       %{graphs: graphs} when is_map(graphs) ->
         graphs |> Map.values() |> Enum.filter(&(&1.status != :completed))
 
-      _ -> []
+      _ ->
+        []
     end
   end
 
@@ -268,7 +271,9 @@ defmodule Thunderline.Thunderchief.Chiefs.VineChief do
     executing_nodes
     |> Enum.filter(fn node ->
       case node[:started_at] do
-        nil -> false
+        nil ->
+          false
+
         started ->
           age_ms = DateTime.diff(now, started, :millisecond)
           age_ms > @stall_threshold_ms

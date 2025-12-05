@@ -155,9 +155,7 @@ defmodule Thunderline.Telemetry.IRoPE do
 
     # Gaussian notch centered at `center`
     notch =
-      Nx.exp(
-        Nx.negate(Nx.divide(Nx.pow(Nx.subtract(frequencies, center), 2), 2 * width * width))
-      )
+      Nx.exp(Nx.negate(Nx.divide(Nx.pow(Nx.subtract(frequencies, center), 2), 2 * width * width)))
 
     attenuation = Nx.subtract(1.0, Nx.multiply(notch, depth))
 

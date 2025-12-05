@@ -158,7 +158,10 @@ defmodule Thunderline.Thundercrown.MCPTheta.Regulator do
 
   @impl true
   def handle_cast({:set_enabled, enabled?}, state) do
-    Logger.info("[MCP-Θ Regulator] #{if enabled?, do: "Enabled", else: "Disabled"} for PAC #{state.pac_id}")
+    Logger.info(
+      "[MCP-Θ Regulator] #{if enabled?, do: "Enabled", else: "Disabled"} for PAC #{state.pac_id}"
+    )
+
     {:noreply, %{state | enabled?: enabled?}}
   end
 

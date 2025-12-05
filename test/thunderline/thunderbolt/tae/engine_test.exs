@@ -153,7 +153,8 @@ defmodule Thunderline.Thunderbolt.TAE.EngineTest do
       {:ok, optimal, value} = Engine.select_optimal_trace(traces, :sup)
 
       assert optimal in traces
-      assert value == 10.0  # Max sup across all traces
+      # Max sup across all traces
+      assert value == 10.0
     end
 
     test "handles empty traces list" do
@@ -164,9 +165,12 @@ defmodule Thunderline.Thunderbolt.TAE.EngineTest do
 
     test "selects based on lim_sup_avg" do
       traces = [
-        [{0, 2.0}, {1, 2.0}, {2, 2.0}],  # avg = 2
-        [{0, 1.0}, {1, 3.0}, {2, 2.0}],  # avg = 2
-        [{0, 3.0}, {1, 3.0}, {2, 3.0}]   # avg = 3
+        # avg = 2
+        [{0, 2.0}, {1, 2.0}, {2, 2.0}],
+        # avg = 2
+        [{0, 1.0}, {1, 3.0}, {2, 2.0}],
+        # avg = 3
+        [{0, 3.0}, {1, 3.0}, {2, 3.0}]
       ]
 
       {:ok, optimal, _value} = Engine.select_optimal_trace(traces, :lim_sup_avg)
@@ -180,10 +184,14 @@ defmodule Thunderline.Thunderbolt.TAE.EngineTest do
   describe "pareto_frontier/3" do
     test "computes Pareto frontier over multiple value functions" do
       traces = [
-        [{0, 1.0}, {1, 10.0}],  # sum=11, sup=10
-        [{0, 5.0}, {1, 5.0}],   # sum=10, sup=5
-        [{0, 6.0}, {1, 6.0}],   # sum=12, sup=6
-        [{0, 2.0}, {1, 2.0}]    # sum=4, sup=2 (dominated)
+        # sum=11, sup=10
+        [{0, 1.0}, {1, 10.0}],
+        # sum=10, sup=5
+        [{0, 5.0}, {1, 5.0}],
+        # sum=12, sup=6
+        [{0, 6.0}, {1, 6.0}],
+        # sum=4, sup=2 (dominated)
+        [{0, 2.0}, {1, 2.0}]
       ]
 
       frontier = Engine.pareto_frontier(traces, [:sum, :sup])
@@ -263,8 +271,10 @@ defmodule Thunderline.Thunderbolt.TAE.EngineTest do
         accepting: fn _ -> false end
       }
 
-      invalid1 = %{initial: :start}  # Missing transitions
-      invalid2 = %{transitions: fn _ -> [] end}  # Missing initial
+      # Missing transitions
+      invalid1 = %{initial: :start}
+      # Missing initial
+      invalid2 = %{transitions: fn _ -> [] end}
 
       assert Engine.valid_automaton?(valid)
       refute Engine.valid_automaton?(invalid1)
@@ -278,7 +288,8 @@ defmodule Thunderline.Thunderbolt.TAE.EngineTest do
       automaton = %{
         initial: 0,
         transitions: fn
-          0 -> [{1, 1.0}, {2, 5.0}]  # Two choices
+          # Two choices
+          0 -> [{1, 1.0}, {2, 5.0}]
           1 -> [{3, 1.0}]
           2 -> [{3, 1.0}]
           3 -> []

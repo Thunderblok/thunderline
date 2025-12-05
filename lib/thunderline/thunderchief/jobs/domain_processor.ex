@@ -148,7 +148,15 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
   # PlanTree Node Execution
   # ---------------------------------------------------------------------------
 
-  defp execute_plan_node(chief_module, domain, node_id, plan_tree_data, context, job_id, start_time) do
+  defp execute_plan_node(
+         chief_module,
+         domain,
+         node_id,
+         plan_tree_data,
+         context,
+         job_id,
+         start_time
+       ) do
     :telemetry.execute(
       [:thunderline, :thunderchief, :plan_node, :start],
       %{system_time: System.system_time()},
@@ -161,7 +169,6 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
          chief_context <- build_chief_context(domain, context, job_id),
          {:ok, step_result} <- execute_step(chief_module, node_id, node_value, chief_context),
          {:ok, plan} <- PlanTree.apply_node_result(plan, node_id, step_result) do
-
       duration = System.monotonic_time() - start_time
 
       :telemetry.execute(
@@ -170,13 +177,14 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
         %{domain: domain, node_id: node_id, job_id: job_id, status: step_result.status}
       )
 
-      {:ok, %{
-        domain: domain,
-        node_id: node_id,
-        status: step_result.status,
-        plan_tree: PlanTree.to_map(plan),
-        output: step_result[:output]
-      }}
+      {:ok,
+       %{
+         domain: domain,
+         node_id: node_id,
+         status: step_result.status,
+         plan_tree: PlanTree.to_map(plan),
+         output: step_result[:output]
+       }}
     else
       {:error, reason} = error ->
         emit_error_telemetry(start_time, domain, job_id, {:plan_node_error, node_id, reason})
@@ -202,7 +210,10 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
     end
   rescue
     e ->
-      Logger.error("[DomainProcessor] perform_step failed: #{Exception.format(:error, e, __STACKTRACE__)}")
+      Logger.error(
+        "[DomainProcessor] perform_step failed: #{Exception.format(:error, e, __STACKTRACE__)}"
+      )
+
       {:ok, %{status: :failed, error: Exception.message(e)}}
   end
 
@@ -210,14 +221,21 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
   # Chief Execution
   # ---------------------------------------------------------------------------
 
-  defp execute_chief(chief_module, domain, context, action_override, skip_logging, job_id, start_time) do
+  defp execute_chief(
+         chief_module,
+         domain,
+         context,
+         action_override,
+         skip_logging,
+         job_id,
+         start_time
+       ) do
     chief_context = build_chief_context(domain, context, job_id)
 
     with {:ok, state} <- observe(chief_module, chief_context),
          {:ok, action} <- choose_or_override(chief_module, state, action_override),
          {:ok, updated_context} <- apply_action(chief_module, action, state.context),
          outcome <- report(chief_module, updated_context) do
-
       # Log trajectory unless skipped
       unless skip_logging do
         log_trajectory(domain, state, action, updated_context, outcome)
@@ -265,7 +283,10 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
     {:ok, state}
   rescue
     e ->
-      Logger.error("[DomainProcessor] observe_state failed: #{Exception.format(:error, e, __STACKTRACE__)}")
+      Logger.error(
+        "[DomainProcessor] observe_state failed: #{Exception.format(:error, e, __STACKTRACE__)}"
+      )
+
       {:error, {:observe_failed, e}}
   end
 
@@ -277,7 +298,10 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
     chief_module.choose_action(state)
   rescue
     e ->
-      Logger.error("[DomainProcessor] choose_action failed: #{Exception.format(:error, e, __STACKTRACE__)}")
+      Logger.error(
+        "[DomainProcessor] choose_action failed: #{Exception.format(:error, e, __STACKTRACE__)}"
+      )
+
       {:error, {:choose_failed, e}}
   end
 
@@ -285,7 +309,10 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
     chief_module.apply_action(action, context)
   rescue
     e ->
-      Logger.error("[DomainProcessor] apply_action failed: #{Exception.format(:error, e, __STACKTRACE__)}")
+      Logger.error(
+        "[DomainProcessor] apply_action failed: #{Exception.format(:error, e, __STACKTRACE__)}"
+      )
+
       {:error, {:apply_failed, e}}
   end
 
@@ -321,6 +348,7 @@ defmodule Thunderline.Thunderchief.Jobs.DomainProcessor do
     Map.new(map, fn
       {k, v} when is_binary(k) ->
         {String.to_existing_atom(k), atomize_keys(v)}
+
       {k, v} ->
         {k, atomize_keys(v)}
     end)

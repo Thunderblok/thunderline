@@ -208,6 +208,7 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
     run fn %{run: run}, _ ->
       require Ash.Query
       query = ModelArtifact |> Ash.Query.filter(model_run_id == ^run.id)
+
       case Ash.read(query) do
         {:ok, artifacts} ->
           Logger.info("Collected #{length(artifacts)} artifacts for run #{run.id}")
@@ -358,15 +359,11 @@ defmodule Thunderline.Thunderbolt.Sagas.CerebrosNASSaga do
   defp cancel_training_jobs(correlation_id) do
     # Attempt to cancel training jobs via Cerebros bridge
     if Code.ensure_loaded?(Thunderline.Thunderbolt.CerebrosBridge.Invoker) do
-      case Thunderline.Thunderbolt.CerebrosBridge.Invoker.cancel_jobs(
-             correlation_id: correlation_id
-           ) do
-        {:ok, result} ->
-          {:ok, Map.get(result, :cancelled_count, 0)}
+      # cancel_jobs/1 always returns {:ok, cancelled_count} (stub returns {:ok, 0})
+      {:ok, cancelled_count} =
+        Thunderline.Thunderbolt.CerebrosBridge.Invoker.cancel_jobs(correlation_id: correlation_id)
 
-        {:error, reason} ->
-          {:error, reason}
-      end
+      {:ok, cancelled_count}
     else
       # Cerebros bridge not available, log and continue
       Logger.warning("Cerebros bridge unavailable for job cancellation")

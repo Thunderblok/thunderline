@@ -313,7 +313,10 @@ defmodule Thunderline.Thunderbolt.CA.Snapshot do
 
   defp safe_std(list) do
     mean = safe_mean(list)
-    variance = Enum.reduce(list, 0.0, fn x, acc -> acc + (x - mean) * (x - mean) end) / length(list)
+
+    variance =
+      Enum.reduce(list, 0.0, fn x, acc -> acc + (x - mean) * (x - mean) end) / length(list)
+
     :math.sqrt(variance)
   end
 

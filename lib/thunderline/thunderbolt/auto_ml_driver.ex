@@ -77,13 +77,14 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
 
             case Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker.init() do
               {:ok, {_interpreter, _env}} ->
-                Logger.info("[AutoMLDriver] Snex runtime initialized successfully (via pythonx fallback)")
+                Logger.info(
+                  "[AutoMLDriver] Snex runtime initialized successfully (via pythonx fallback)"
+                )
+
                 %{state | python_ready?: true}
 
               {:error, reason} ->
-                Logger.warning(
-                  "[AutoMLDriver] Snex init failed (non-fatal): #{inspect(reason)}"
-                )
+                Logger.warning("[AutoMLDriver] Snex init failed (non-fatal): #{inspect(reason)}")
 
                 state
             end
@@ -170,10 +171,9 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
         # Start next trial if study not complete
         updated_study =
           if updated_study.trials_completed < updated_study.n_trials do
-            case start_next_trial(updated_study) do
-              {:ok, study_with_trial} -> study_with_trial
-              {:error, _reason} -> updated_study
-            end
+            # start_next_trial/1 always returns {:ok, study}
+            {:ok, study_with_trial} = start_next_trial(updated_study)
+            study_with_trial
           else
             Map.put(updated_study, :status, :completed)
           end
@@ -234,14 +234,11 @@ defmodule Thunderline.Thunderbolt.AutoMLDriver do
     suggestion = generate_suggestion(study.params)
     trial_id = "trial-#{System.unique_integer([:positive])}"
 
-    case HPOExecutor.execute_trial(study.id, trial_id, suggestion) do
-      :ok ->
-        updated_study = Map.update!(study, :trials_running, &(&1 + 1))
-        {:ok, updated_study}
+    # HPOExecutor.execute_trial/3 always returns :ok (enqueues Oban job)
+    :ok = HPOExecutor.execute_trial(study.id, trial_id, suggestion)
 
-      error ->
-        error
-    end
+    updated_study = Map.update!(study, :trials_running, &(&1 + 1))
+    {:ok, updated_study}
   end
 
   defp generate_suggestion(params) do

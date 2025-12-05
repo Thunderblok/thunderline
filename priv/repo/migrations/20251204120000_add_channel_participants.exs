@@ -15,42 +15,48 @@ defmodule Thunderline.Repo.Migrations.AddChannelParticipants do
       add :left_at, :utc_datetime_usec
       add :last_active_at, :utc_datetime_usec, null: false
 
-      add :channel_id, references(:thunderblock_channels, type: :uuid, on_delete: :delete_all), null: false
+      add :channel_id, references(:thunderblock_channels, type: :uuid, on_delete: :delete_all),
+        null: false
+
       add :user_id, references(:users, type: :uuid, on_delete: :delete_all), null: false
 
       timestamps()
     end
 
     create unique_index(:thunderblock_channel_participants, [:channel_id, :user_id],
-      name: "thunderblock_channel_participants_unique_membership_index"
-    )
+             name: "thunderblock_channel_participants_unique_membership_index"
+           )
 
     create index(:thunderblock_channel_participants, [:channel_id, :status],
-      name: "thunderblock_channel_participants_channel_active_index"
-    )
+             name: "thunderblock_channel_participants_channel_active_index"
+           )
 
     create index(:thunderblock_channel_participants, [:user_id, :status],
-      name: "thunderblock_channel_participants_user_active_index"
-    )
+             name: "thunderblock_channel_participants_user_active_index"
+           )
 
     create index(:thunderblock_channel_participants, [:status, :last_active_at],
-      name: "thunderblock_channel_participants_active_recent_index"
-    )
+             name: "thunderblock_channel_participants_active_recent_index"
+           )
   end
 
   def down do
     drop_if_exists index(:thunderblock_channel_participants, [:status, :last_active_at],
-      name: "thunderblock_channel_participants_active_recent_index"
-    )
+                     name: "thunderblock_channel_participants_active_recent_index"
+                   )
+
     drop_if_exists index(:thunderblock_channel_participants, [:user_id, :status],
-      name: "thunderblock_channel_participants_user_active_index"
-    )
+                     name: "thunderblock_channel_participants_user_active_index"
+                   )
+
     drop_if_exists index(:thunderblock_channel_participants, [:channel_id, :status],
-      name: "thunderblock_channel_participants_channel_active_index"
-    )
+                     name: "thunderblock_channel_participants_channel_active_index"
+                   )
+
     drop_if_exists unique_index(:thunderblock_channel_participants, [:channel_id, :user_id],
-      name: "thunderblock_channel_participants_unique_membership_index"
-    )
+                     name: "thunderblock_channel_participants_unique_membership_index"
+                   )
+
     drop table(:thunderblock_channel_participants)
   end
 end

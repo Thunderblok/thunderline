@@ -269,7 +269,11 @@ defmodule Thunderline.Thunderbolt.StreamManager do
         updated_stats =
           case operation do
             :ingest ->
-              %{stats | ingest_count: Map.get(stats, :ingest_count, 0) + count, last_activity: now}
+              %{
+                stats
+                | ingest_count: Map.get(stats, :ingest_count, 0) + count,
+                  last_activity: now
+              }
 
             :drop ->
               %{stats | drop_count: Map.get(stats, :drop_count, 0) + count, last_activity: now}

@@ -123,8 +123,8 @@ defmodule Thunderline.Thunderflow.Consumers.Classifier do
   end
 
   defp validate_event(%Event{type: "ui.command.ingest.received"} = event) do
-    # Extract required fields from event data
-    case event.data do
+    # Extract required fields from event payload (legacy type format)
+    case event.payload do
       %{bytes: bytes, filename: filename} when is_binary(bytes) and is_binary(filename) ->
         correlation_id = get_in(event.metadata, [:correlation_id]) || event.id
         causation_id = event.id

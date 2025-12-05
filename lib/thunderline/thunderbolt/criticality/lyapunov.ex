@@ -71,7 +71,8 @@ defmodule Thunderline.Thunderbolt.Criticality.Lyapunov do
 
     case estimate(trajectory, Keyword.put(opts, :method, :simple)) do
       {:ok, lambda} -> lambda <= threshold
-      {:error, _} -> true  # Assume stable on error
+      # Assume stable on error
+      {:error, _} -> true
     end
   end
 

@@ -46,7 +46,8 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
 
   @default_throttle_ms 100
   @prune_after_ms 60_000
-  @prefetch_threshold 3  # Prefetch when scrolling toward component
+  # Prefetch when scrolling toward component
+  @prefetch_threshold 3
 
   # ===========================================================================
   # Behaviour Implementation
@@ -58,7 +59,7 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
     sessions = get_active_sessions(prism_ctx)
 
     # Component states
-    visible = Enum.filter(components, &(&1.visible))
+    visible = Enum.filter(components, & &1.visible)
     interactive = Enum.filter(components, &(&1.focused || &1.hovered))
     stale = find_stale_components(components)
     offscreen = Enum.filter(components, &(!&1.visible))
@@ -66,7 +67,8 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
     # Session metrics
     session_count = length(sessions)
     avg_latency = calculate_avg_latency(sessions)
-    high_latency = avg_latency > 200  # 200ms threshold
+    # 200ms threshold
+    high_latency = avg_latency > 200
 
     # Render queue
     pending_updates = get_pending_updates(prism_ctx)
@@ -75,34 +77,36 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
     # Predict which components may become visible
     likely_visible = predict_scroll_targets(prism_ctx)
 
-    State.new(:ui, %{
-      # Component counts
-      total_components: length(components),
-      visible_count: length(visible),
-      interactive_count: length(interactive),
-      offscreen_count: length(offscreen),
-      stale_count: length(stale),
+    State.new(
+      :ui,
+      %{
+        # Component counts
+        total_components: length(components),
+        visible_count: length(visible),
+        interactive_count: length(interactive),
+        offscreen_count: length(offscreen),
+        stale_count: length(stale),
 
-      # Interactive state
-      visible_components: visible,
-      interactive_components: interactive,
-      stale_components: stale,
-      likely_visible: likely_visible,
+        # Interactive state
+        visible_components: visible,
+        interactive_components: interactive,
+        stale_components: stale,
+        likely_visible: likely_visible,
 
-      # Session health
-      session_count: session_count,
-      avg_latency: avg_latency,
-      high_latency: high_latency,
+        # Session health
+        session_count: session_count,
+        avg_latency: avg_latency,
+        high_latency: high_latency,
 
-      # Render pressure
-      pending_updates: update_pressure,
-      needs_throttle: update_pressure > 20 or high_latency,
+        # Render pressure
+        pending_updates: update_pressure,
+        needs_throttle: update_pressure > 20 or high_latency,
 
-      # Current settings
-      throttle_rate: prism_ctx[:throttle_rate] || @default_throttle_ms
-    },
-    tick: Map.get(prism_ctx, :tick, 0),
-    context: prism_ctx
+        # Current settings
+        throttle_rate: prism_ctx[:throttle_rate] || @default_throttle_ms
+      },
+      tick: Map.get(prism_ctx, :tick, 0),
+      context: prism_ctx
     )
   end
 
@@ -147,17 +151,9 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
     action_struct = Action.from_tuple(action)
     action_struct = Action.mark_executing(action_struct)
 
-    result = do_apply_action(action, prism_ctx)
-
-    case result do
-      {:ok, updated} ->
-        Action.log(Action.mark_completed(action_struct), :executed, %{chief: :ui})
-        {:ok, updated}
-
-      {:error, reason} = error ->
-        Action.log(Action.mark_failed(action_struct, reason), :failed, %{chief: :ui})
-        error
-    end
+    {:ok, updated} = do_apply_action(action, prism_ctx)
+    Action.log(Action.mark_completed(action_struct), :executed, %{chief: :ui})
+    {:ok, updated}
   end
 
   @impl true
@@ -201,9 +197,10 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
   defp do_apply_action({:prioritize_component, component_id}, ctx) do
     components = ctx[:components] || %{}
 
-    updated = Map.update(components, component_id, nil, fn comp ->
-      if comp, do: Map.put(comp, :priority, :high), else: comp
-    end)
+    updated =
+      Map.update(components, component_id, nil, fn comp ->
+        if comp, do: Map.put(comp, :priority, :high), else: comp
+      end)
 
     {:ok, Map.put(ctx, :components, updated)}
   end
@@ -219,11 +216,13 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
 
     # Remove components not visible for threshold
     now = DateTime.utc_now()
-    pruned = Enum.reject(components, fn {_id, comp} ->
-      not comp.visible and
-        DateTime.diff(now, comp[:last_visible] || now, :millisecond) > @prune_after_ms
-    end)
-    |> Map.new()
+
+    pruned =
+      Enum.reject(components, fn {_id, comp} ->
+        not comp.visible and
+          DateTime.diff(now, comp[:last_visible] || now, :millisecond) > @prune_after_ms
+      end)
+      |> Map.new()
 
     pruned_count = map_size(components) - map_size(pruned)
     emit_ui_event(:components_pruned, %{count: pruned_count})
@@ -235,11 +234,12 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
     # Mark components as prefetching
     components = ctx[:components] || %{}
 
-    updated = Enum.reduce(component_ids, components, fn id, acc ->
-      Map.update(acc, id, nil, fn comp ->
-        if comp, do: Map.put(comp, :prefetching, true), else: comp
+    updated =
+      Enum.reduce(component_ids, components, fn id, acc ->
+        Map.update(acc, id, nil, fn comp ->
+          if comp, do: Map.put(comp, :prefetching, true), else: comp
+        end)
       end)
-    end)
 
     emit_ui_event(:data_prefetch, %{component_ids: component_ids})
     {:ok, Map.put(ctx, :components, updated)}
@@ -249,10 +249,11 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
     components = ctx[:components] || %{}
 
     # Clear stale render cache
-    updated = Enum.map(components, fn {id, comp} ->
-      {id, Map.put(comp, :cached_render, nil)}
-    end)
-    |> Map.new()
+    updated =
+      Enum.map(components, fn {id, comp} ->
+        {id, Map.put(comp, :cached_render, nil)}
+      end)
+      |> Map.new()
 
     emit_ui_event(:stale_flushed, %{count: map_size(components)})
     {:ok, Map.put(ctx, :components, updated)}
@@ -292,6 +293,7 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
   end
 
   defp calculate_avg_latency([]), do: 0.0
+
   defp calculate_avg_latency(sessions) do
     total = Enum.reduce(sessions, 0, &(&1[:latency] || 0 + &2))
     total / length(sessions)
@@ -305,7 +307,8 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
     components
     |> Enum.filter(fn comp ->
       pos = comp[:position] || %{y: 0}
-      margin = @prefetch_threshold * 100  # 300px margin
+      # 300px margin
+      margin = @prefetch_threshold * 100
 
       (pos.y > viewport.bottom and pos.y < viewport.bottom + margin) or
         (pos.y < viewport.top and pos.y > viewport.top - margin)
@@ -323,6 +326,7 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
 
   defp emit_ui_event(event_type, payload) do
     event_name = "prism.ui.#{event_type}"
+
     Thunderline.Thunderflow.EventBus.publish_event(%{
       name: event_name,
       source: :prism,
@@ -338,7 +342,8 @@ defmodule Thunderline.Thunderchief.Chiefs.UIChief do
 
   defp calculate_reward(state) do
     # Reward: low latency, high interactivity, efficient updates
-    latency_penalty = state.features.avg_latency / 100  # Normalize to ~0-5
+    # Normalize to ~0-5
+    latency_penalty = state.features.avg_latency / 100
     interactivity_bonus = state.features.interactive_count * 0.5
     efficiency = if state.features.needs_throttle, do: -5, else: 5
 

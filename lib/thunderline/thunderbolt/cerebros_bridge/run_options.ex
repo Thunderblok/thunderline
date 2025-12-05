@@ -25,7 +25,8 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.RunOptions do
     * `:operator` – string recorded in metadata (defaults to `manual`)
     * `:meta` – additional metadata map merged into the generated metadata
   """
-  @spec prepare(run_spec(), keyword()) :: {run_id(), run_spec(), enqueue_opts()} | {:error, :invalid_spec}
+  @spec prepare(run_spec(), keyword()) ::
+          {run_id(), run_spec(), enqueue_opts()} | {:error, :invalid_spec}
   def prepare(spec, opts \\ [])
 
   def prepare(spec, opts) when is_map(spec) do

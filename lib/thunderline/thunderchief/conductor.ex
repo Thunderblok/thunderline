@@ -260,11 +260,12 @@ defmodule Thunderline.Thunderchief.Conductor do
       %{tick: tick, chiefs: Map.keys(state.chiefs)}
     )
 
-    %{state |
-      tick_count: tick,
-      last_tick: DateTime.utc_now(),
-      chief_states: chief_states,
-      metrics: metrics
+    %{
+      state
+      | tick_count: tick,
+        last_tick: DateTime.utc_now(),
+        chief_states: chief_states,
+        metrics: metrics
     }
   end
 
@@ -355,10 +356,7 @@ defmodule Thunderline.Thunderchief.Conductor do
     alpha = 0.1
     avg = metrics.avg_cycle_ms * (1 - alpha) + cycle_ms * alpha
 
-    %{metrics |
-      total_actions: total,
-      avg_cycle_ms: avg
-    }
+    %{metrics | total_actions: total, avg_cycle_ms: avg}
   end
 
   # ===========================================================================

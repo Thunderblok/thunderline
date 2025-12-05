@@ -100,7 +100,10 @@ defmodule ThunderlineWeb.CerebrosJobsController do
     with {:ok, job} <- get_job_by_id(id),
          phase <- Map.get(conn.params, "phase", job.phase || 0),
          {:ok, _updated_job} <-
-           CerebrosTrainingJob.update_checkpoint(job, %{phase: phase, checkpoint_url: checkpoint_url}) do
+           CerebrosTrainingJob.update_checkpoint(job, %{
+             phase: phase,
+             checkpoint_url: checkpoint_url
+           }) do
       render(conn, :ok, %{})
     end
   end

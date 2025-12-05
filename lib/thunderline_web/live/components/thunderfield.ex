@@ -388,7 +388,10 @@ defmodule ThunderlineWeb.Live.Components.Thunderfield do
   defp extract_position(%{position: %{x: _, y: _} = pos}), do: pos
   defp extract_position(%{geometry: %{position: %{x: _, y: _} = pos}}), do: pos
   defp extract_position(%{"position" => %{"x" => x, "y" => y}}), do: %{x: x, y: y}
-  defp extract_position(%{"geometry" => %{"position" => %{"x" => x, "y" => y}}}), do: %{x: x, y: y}
+
+  defp extract_position(%{"geometry" => %{"position" => %{"x" => x, "y" => y}}}),
+    do: %{x: x, y: y}
+
   defp extract_position(_), do: %{x: 0.5, y: 0.5}
 
   # ===========================================================================
@@ -403,7 +406,12 @@ defmodule ThunderlineWeb.Live.Components.Thunderfield do
 
   def thunderbit_input(assigns) do
     ~H"""
-    <.form for={@form} phx-submit={@on_submit} id="thunderbit-input-form" class={["flex gap-2", @class]}>
+    <.form
+      for={@form}
+      phx-submit={@on_submit}
+      id="thunderbit-input-form"
+      class={["flex gap-2", @class]}
+    >
       <div class="flex-1 relative">
         <input
           type="text"

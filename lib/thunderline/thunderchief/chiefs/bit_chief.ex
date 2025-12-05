@@ -66,35 +66,37 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
     chain_depth = calculate_chain_depth(bits)
     cell_count = length(cells)
 
-    State.new(:bit, %{
-      # Counts
-      pending_count: pending,
-      active_count: active,
-      total_bits: length(bits),
-      cell_count: cell_count,
+    State.new(
+      :bit,
+      %{
+        # Counts
+        pending_count: pending,
+        active_count: active,
+        total_bits: length(bits),
+        cell_count: cell_count,
 
-      # Cerebros
-      needs_cerebros_eval: needs_cerebros_eval,
+        # Cerebros
+        needs_cerebros_eval: needs_cerebros_eval,
 
-      # By category
-      category_counts: category_counts,
-      active_category: current_active_category(bits),
+        # By category
+        category_counts: category_counts,
+        active_category: current_active_category(bits),
 
-      # Energy
-      total_energy: total_energy,
-      avg_energy: avg_energy,
-      energy_level: avg_energy,
+        # Energy
+        total_energy: total_energy,
+        avg_energy: avg_energy,
+        energy_level: avg_energy,
 
-      # Chain depth
-      chain_depth: chain_depth,
-      needs_consolidation: chain_depth > @max_chain_depth,
+        # Chain depth
+        chain_depth: chain_depth,
+        needs_consolidation: chain_depth > @max_chain_depth,
 
-      # Session
-      session_age_ms: session_age(ctx),
-      last_action: Map.get(ctx.metadata, :last_action)
-    },
-    tick: Map.get(ctx.metadata, :tick, 0),
-    context: ctx
+        # Session
+        session_age_ms: session_age(ctx),
+        last_action: Map.get(ctx.metadata, :last_action)
+      },
+      tick: Map.get(ctx.metadata, :tick, 0),
+      context: ctx
     )
   end
 
@@ -138,18 +140,10 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
     action_struct = Action.from_tuple(action)
     action_struct = Action.mark_executing(action_struct)
 
-    result = do_apply_action(action, ctx)
-
-    case result do
-      {:ok, updated_ctx} ->
-        Action.log(Action.mark_completed(action_struct), :executed, %{})
-        updated_ctx = put_in(updated_ctx.metadata[:last_action], action)
-        {:ok, updated_ctx}
-
-      {:error, reason} = error ->
-        Action.log(Action.mark_failed(action_struct, reason), :failed, %{})
-        error
-    end
+    {:ok, updated_ctx} = do_apply_action(action, ctx)
+    Action.log(Action.mark_completed(action_struct), :executed, %{})
+    updated_ctx = put_in(updated_ctx.metadata[:last_action], action)
+    {:ok, updated_ctx}
   end
 
   @impl true
@@ -196,9 +190,10 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   defp do_apply_action(:consolidate, ctx) do
     # Merge activated bits into cells
-    active_bits = ctx.bits_by_id
-                  |> Map.values()
-                  |> Enum.filter(&(&1.status == :active))
+    active_bits =
+      ctx.bits_by_id
+      |> Map.values()
+      |> Enum.filter(&(&1.status == :active))
 
     if length(active_bits) > 0 do
       # Group by category and consolidate
@@ -218,9 +213,10 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
   end
 
   defp do_apply_action({:activate_pending, %{strategy: strategy}}, ctx) do
-    pending = ctx.bits_by_id
-              |> Map.values()
-              |> Enum.filter(&(&1.status == :pending))
+    pending =
+      ctx.bits_by_id
+      |> Map.values()
+      |> Enum.filter(&(&1.status == :pending))
 
     case select_bit(pending, strategy) do
       nil ->
@@ -236,43 +232,50 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   defp do_apply_action({:transition, category}, ctx) when category in @categories do
     # Transition active bits to new category phase
-    active = ctx.bits_by_id
-             |> Map.values()
-             |> Enum.filter(&(&1.status == :active))
+    active =
+      ctx.bits_by_id
+      |> Map.values()
+      |> Enum.filter(&(&1.status == :active))
 
-    updated_bits = Enum.reduce(active, ctx.bits_by_id, fn bit, acc ->
-      # Mark transition in bit metadata
-      updated_bit = put_in(bit[:metadata][:transition], {bit.category, category})
-      Map.put(acc, bit.id, updated_bit)
-    end)
+    updated_bits =
+      Enum.reduce(active, ctx.bits_by_id, fn bit, acc ->
+        # Mark transition in bit metadata
+        updated_bit = put_in(bit[:metadata][:transition], {bit.category, category})
+        Map.put(acc, bit.id, updated_bit)
+      end)
 
     {:ok, %{ctx | bits_by_id: updated_bits}}
   end
 
   defp do_apply_action({:cerebros_evaluate, %{batch_size: batch_size}}, ctx) do
     # Find bits needing Cerebros evaluation
-    bits_to_eval = ctx.bits_by_id
-                   |> Map.values()
-                   |> Enum.filter(&needs_cerebros_eval?/1)
-                   |> Enum.take(batch_size)
+    bits_to_eval =
+      ctx.bits_by_id
+      |> Map.values()
+      |> Enum.filter(&needs_cerebros_eval?/1)
+      |> Enum.take(batch_size)
 
     if length(bits_to_eval) > 0 do
       case CerebrosBridge.evaluate_and_apply_batch(bits_to_eval, ctx) do
         {:ok, updated_bits, updated_ctx} ->
           # Update bits_by_id with evaluated bits
-          new_bits_by_id = Enum.reduce(updated_bits, updated_ctx.bits_by_id, fn bit, acc ->
-            Map.put(acc, bit.id, bit)
-          end)
+          new_bits_by_id =
+            Enum.reduce(updated_bits, updated_ctx.bits_by_id, fn bit, acc ->
+              Map.put(acc, bit.id, bit)
+            end)
 
           updated = %{updated_ctx | bits_by_id: new_bits_by_id}
-          updated = update_in(updated.metadata[:cerebros_evals], &((&1 || 0) + length(updated_bits)))
+
+          updated =
+            update_in(updated.metadata[:cerebros_evals], &((&1 || 0) + length(updated_bits)))
 
           Logger.debug("[BitChief] Cerebros evaluated #{length(updated_bits)} bits")
           {:ok, updated}
 
         {:error, reason} ->
           Logger.warning("[BitChief] Cerebros evaluation failed: #{inspect(reason)}")
-          {:ok, ctx}  # Non-fatal, continue
+          # Non-fatal, continue
+          {:ok, ctx}
       end
     else
       {:ok, ctx}
@@ -361,13 +364,10 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
     cond do
       # Explicitly flagged
       Map.get(bit, :needs_cerebros_eval?, false) == true -> true
-
       # No score yet (never evaluated)
       is_nil(Map.get(bit, :cerebros_score)) -> true
-
       # Stale evaluation (older than 5 minutes)
       stale_cerebros_eval?(bit) -> true
-
       # Otherwise, no need
       true -> false
     end
@@ -375,10 +375,13 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   defp stale_cerebros_eval?(bit) do
     case Map.get(bit, :last_cerebros_eval) do
-      nil -> true
+      nil ->
+        true
+
       last_eval ->
         age = DateTime.diff(DateTime.utc_now(), last_eval, :second)
-        age > 300  # 5 minutes
+        # 5 minutes
+        age > 300
     end
   end
 
@@ -396,6 +399,7 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
 
   defp current_active_category(bits) do
     active = Enum.filter(bits, &(&1.status == :active))
+
     if length(active) > 0 do
       active
       |> Enum.frequencies_by(& &1.category)
@@ -417,7 +421,9 @@ defmodule Thunderline.Thunderchief.Chiefs.BitChief do
     # Reward signal for RL training
     # Higher reward for: throughput, energy efficiency, low chain depth
 
-    throughput = Map.get(ctx.metadata, :bits_processed, 0) / max(state.features.session_age_ms, 1) * 1000
+    throughput =
+      Map.get(ctx.metadata, :bits_processed, 0) / max(state.features.session_age_ms, 1) * 1000
+
     energy_bonus = state.features.energy_level
     depth_penalty = state.features.chain_depth / (@max_chain_depth * 2)
 

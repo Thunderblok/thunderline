@@ -40,7 +40,8 @@ defmodule Thunderline.Thunderbolt.Evolution.Mutation do
   @type pac :: map()
   @type trait_vector :: [float()]
 
-  @trait_dimensions 64  # Default trait vector length
+  # Default trait vector length
+  @trait_dimensions 64
   @min_value 0.0
   @max_value 1.0
 
@@ -409,10 +410,22 @@ defmodule Thunderline.Thunderbolt.Evolution.Mutation do
 
   defp gate_name(index) do
     gates = [
-      :and, :or, :xor, :nand, :nor, :xnor,
-      :buffer, :not, :imply, :nimply,
-      :majority, :minority, :parity, :threshold,
-      :random, :latch
+      :and,
+      :or,
+      :xor,
+      :nand,
+      :nor,
+      :xnor,
+      :buffer,
+      :not,
+      :imply,
+      :nimply,
+      :majority,
+      :minority,
+      :parity,
+      :threshold,
+      :random,
+      :latch
     ]
 
     Enum.at(gates, index, :and)

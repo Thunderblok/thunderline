@@ -106,6 +106,10 @@ defmodule Thunderline.Thunderbolt.UPM.PACFeatureExtractor do
     intent_features = extract_intents(Map.get(full_state, :intent_queue, []))
 
     # State-specific features
+    # Compute derived values from full_state since PACState only stores size_bytes
+    memory_size = byte_size(:erlang.term_to_binary(Map.get(full_state, :memory_state, %{})))
+    intent_count = length(Map.get(full_state, :intent_queue, []))
+
     state_features =
       [
         # Snapshot type encoding
@@ -113,9 +117,9 @@ defmodule Thunderline.Thunderbolt.UPM.PACFeatureExtractor do
         # Checksum entropy (high entropy = more randomness in state)
         checksum_entropy(state.checksum),
         # Normalized sizes
-        normalize(state.state_size_bytes || 0, 0, 100_000),
-        normalize(state.memory_size_bytes || 0, 0, 50_000),
-        normalize(state.intent_count || 0, 0, 100),
+        normalize(state.size_bytes || 0, 0, 100_000),
+        normalize(memory_size, 0, 50_000),
+        normalize(intent_count, 0, 100),
         # Padding
         0.0,
         0.0,

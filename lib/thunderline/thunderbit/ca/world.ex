@@ -150,7 +150,7 @@ defmodule Thunderline.Thunderbit.CA.World do
       # Hub cells at center (roughly)
       x > div(x_max, 3) and x < div(2 * x_max, 3) and
         y > div(y_max, 3) and y < div(2 * y_max, 3) and
-          z > div(z_max, 3) and z < div(2 * z_max, 3) ->
+        z > div(z_max, 3) and z < div(2 * z_max, 3) ->
         :hub
 
       true ->

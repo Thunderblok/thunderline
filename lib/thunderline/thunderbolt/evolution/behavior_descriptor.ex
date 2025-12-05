@@ -35,7 +35,8 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
 
   alias Thunderline.Thunderpac.Resources.PAC
 
-  @type dimension :: :logic_density | :memory_reuse | :action_volatility | :task_performance | :novelty_score
+  @type dimension ::
+          :logic_density | :memory_reuse | :action_volatility | :task_performance | :novelty_score
 
   @type t :: %__MODULE__{
           logic_density: float(),
@@ -54,7 +55,13 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
           novelty_score: non_neg_integer()
         }
 
-  @dimensions [:logic_density, :memory_reuse, :action_volatility, :task_performance, :novelty_score]
+  @dimensions [
+    :logic_density,
+    :memory_reuse,
+    :action_volatility,
+    :task_performance,
+    :novelty_score
+  ]
   @default_resolution 10
 
   defstruct logic_density: 0.0,
@@ -411,7 +418,8 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
       |> Enum.sort()
       |> Enum.take(k)
 
-    avg_distance = if Enum.empty?(distances), do: 1.0, else: Enum.sum(distances) / length(distances)
+    avg_distance =
+      if Enum.empty?(distances), do: 1.0, else: Enum.sum(distances) / length(distances)
 
     # Normalize distance (assuming max dimension distance of sqrt(5) ≈ 2.24)
     normalized = min(1.0, avg_distance / 2.24)

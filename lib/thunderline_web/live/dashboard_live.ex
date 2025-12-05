@@ -253,70 +253,6 @@ defmodule ThunderlineWeb.DashboardLive do
     {:noreply, assign(socket, :gate_auth_stats, updated)}
   end
 
-  # Helper functions to update dashboard state with telemetry data
-  defp update_performance_metrics(socket, telemetry_data) do
-    duration_ms = (telemetry_data.duration || 0) / 1_000_000
-
-    # Get real metrics from DashboardMetrics
-    core_metrics = DashboardMetrics.thundercore_metrics()
-
-    current_metrics =
-      socket.assigns[:performance_metrics] ||
-        %{
-          avg_response_time: 0,
-          throughput: 0,
-          memory_usage: core_metrics.memory_usage,
-          cpu_usage: core_metrics.cpu_usage
-        }
-
-    updated_metrics = %{
-      current_metrics
-      | avg_response_time: Float.round(duration_ms, 2),
-        throughput: current_metrics.throughput + 1,
-        memory_usage: core_metrics.memory_usage,
-        cpu_usage: core_metrics.cpu_usage
-    }
-
-    assign(socket, :performance_metrics, updated_metrics)
-  end
-
-  defp update_domain_activity(socket, telemetry_data) do
-    domain = telemetry_data.domain || :unknown
-    activity_log = socket.assigns[:activity_log] || []
-
-    new_activity = %{
-      timestamp: DateTime.utc_now(),
-      domain: domain,
-      action: telemetry_data.action,
-      resource: telemetry_data.resource,
-      duration: telemetry_data.duration
-    }
-
-    updated_log = [new_activity | Enum.take(activity_log, 9)]
-    assign(socket, :activity_log, updated_log)
-  end
-
-  defp update_system_status(socket, telemetry_data) do
-    # Update system health based on telemetry patterns
-    current_status =
-      socket.assigns[:system_status] ||
-        %{
-          thunderbolt: :healthy,
-          thunderblock: :healthy,
-          thunderflow: :healthy,
-          neural_bridge: :healthy
-        }
-
-    domain = telemetry_data.domain
-    duration_ms = (telemetry_data.duration || 0) / 1_000_000
-
-    # Mark as warning if operation takes too long
-    status = if duration_ms > 5000, do: :warning, else: :healthy
-
-    updated_status = Map.put(current_status, domain, status)
-    assign(socket, :system_status, updated_status)
-  end
-
   def handle_info(:refresh_metrics, socket) do
     # Reset throughput to 0 to reflect recent throughput per interval
     socket =
@@ -335,13 +271,17 @@ defmodule ThunderlineWeb.DashboardLive do
     # Publish real-time system telemetry with live metrics
     core_metrics = DashboardMetrics.thundercore_metrics()
 
-    Phoenix.PubSub.broadcast(Thunderline.PubSub, "system_metrics", {:system_metric_updated,
-     %{
-       type: :live_update,
-       cpu_usage: core_metrics.cpu_usage,
-       memory_usage: core_metrics.memory_bytes,
-       timestamp: DateTime.utc_now()
-     }})
+    Phoenix.PubSub.broadcast(
+      Thunderline.PubSub,
+      "system_metrics",
+      {:system_metric_updated,
+       %{
+         type: :live_update,
+         cpu_usage: core_metrics.cpu_usage,
+         memory_usage: core_metrics.memory_bytes,
+         timestamp: DateTime.utc_now()
+       }}
+    )
 
     {:noreply, socket}
   end
@@ -521,11 +461,6 @@ defmodule ThunderlineWeb.DashboardLive do
      |> assign(:thunderwatch_files, thunderwatch_files)}
   end
 
-  defp count_recent(events, window_us) do
-    cutoff = System.system_time(:microsecond) - window_us
-    Enum.count(events, fn {ts, _} -> ts >= cutoff end)
-  end
-
   # Accept raw ThunderCell aggregate state maps forwarded via PubSub or bridge
   def handle_info(
         %{thundercell_cluster: _cluster, thundercell_telemetry: _telemetry} = state_map,
@@ -627,6 +562,75 @@ defmodule ThunderlineWeb.DashboardLive do
     else
       rendered
     end
+  end
+
+  # Helper functions to update dashboard state with telemetry data
+  defp update_performance_metrics(socket, telemetry_data) do
+    duration_ms = (telemetry_data.duration || 0) / 1_000_000
+
+    # Get real metrics from DashboardMetrics
+    core_metrics = DashboardMetrics.thundercore_metrics()
+
+    current_metrics =
+      socket.assigns[:performance_metrics] ||
+        %{
+          avg_response_time: 0,
+          throughput: 0,
+          memory_usage: core_metrics.memory_usage,
+          cpu_usage: core_metrics.cpu_usage
+        }
+
+    updated_metrics = %{
+      current_metrics
+      | avg_response_time: Float.round(duration_ms, 2),
+        throughput: current_metrics.throughput + 1,
+        memory_usage: core_metrics.memory_usage,
+        cpu_usage: core_metrics.cpu_usage
+    }
+
+    assign(socket, :performance_metrics, updated_metrics)
+  end
+
+  defp update_domain_activity(socket, telemetry_data) do
+    domain = telemetry_data.domain || :unknown
+    activity_log = socket.assigns[:activity_log] || []
+
+    new_activity = %{
+      timestamp: DateTime.utc_now(),
+      domain: domain,
+      action: telemetry_data.action,
+      resource: telemetry_data.resource,
+      duration: telemetry_data.duration
+    }
+
+    updated_log = [new_activity | Enum.take(activity_log, 9)]
+    assign(socket, :activity_log, updated_log)
+  end
+
+  defp update_system_status(socket, telemetry_data) do
+    # Update system health based on telemetry patterns
+    current_status =
+      socket.assigns[:system_status] ||
+        %{
+          thunderbolt: :healthy,
+          thunderblock: :healthy,
+          thunderflow: :healthy,
+          neural_bridge: :healthy
+        }
+
+    domain = telemetry_data.domain
+    duration_ms = (telemetry_data.duration || 0) / 1_000_000
+
+    # Mark as warning if operation takes too long
+    status = if duration_ms > 5000, do: :warning, else: :healthy
+
+    updated_status = Map.put(current_status, domain, status)
+    assign(socket, :system_status, updated_status)
+  end
+
+  defp count_recent(events, window_us) do
+    cutoff = System.system_time(:microsecond) - window_us
+    Enum.count(events, fn {ts, _} -> ts >= cutoff end)
   end
 
   @impl true
@@ -1747,6 +1751,7 @@ defmodule ThunderlineWeb.DashboardLive do
   defp get_initial_performance_metrics do
     try do
       core_metrics = DashboardMetrics.thundercore_metrics()
+
       %{
         avg_response_time: 0.0,
         throughput: 0,

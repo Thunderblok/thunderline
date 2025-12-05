@@ -215,7 +215,11 @@ defmodule Thunderline.Thunderflow.PipelineTelemetry do
           event_count: total_count,
           failure_count: length(failure_events),
           total_duration_ms: total_duration,
-          avg_duration_ms: if(length(throughput_events) > 0, do: total_duration / length(throughput_events), else: 0),
+          avg_duration_ms:
+            if(length(throughput_events) > 0,
+              do: total_duration / length(throughput_events),
+              else: 0
+            ),
           events_per_sec: if(window_ms > 0, do: total_count / (window_ms / 1000), else: 0)
         }
 

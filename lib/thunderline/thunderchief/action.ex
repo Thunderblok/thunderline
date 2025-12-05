@@ -171,10 +171,7 @@ defmodule Thunderline.Thunderchief.Action do
   """
   @spec update_status(t(), status(), map()) :: t()
   def update_status(%Action{} = action, status, additional_meta \\ %{}) do
-    %{action |
-      status: status,
-      metadata: Map.merge(action.metadata, additional_meta)
-    }
+    %{action | status: status, metadata: Map.merge(action.metadata, additional_meta)}
   end
 
   @doc """
@@ -213,17 +210,17 @@ defmodule Thunderline.Thunderchief.Action do
   @spec log(t(), atom(), map()) :: :ok | {:error, term()}
   def log(%Action{} = action, event_type, details \\ %{}) do
     case EventBus.publish_event(%{
-      name: "chief.action.#{event_type}",
-      source: :thunderchief,
-      payload: %{
-        action_id: action.id,
-        action_type: action.type,
-        category: action.category,
-        status: action.status,
-        params: action.params,
-        details: details
-      }
-    }) do
+           name: "chief.action.#{event_type}",
+           source: :thunderchief,
+           payload: %{
+             action_id: action.id,
+             action_type: action.type,
+             category: action.category,
+             status: action.status,
+             params: action.params,
+             details: details
+           }
+         }) do
       {:ok, _} -> :ok
       error -> error
     end

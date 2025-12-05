@@ -98,6 +98,30 @@ defmodule Thunderline.Thunderblock.Resources.VaultAgent do
     end
   end
 
+  # ===== POLICIES =====
+  policies do
+    # Bypass for AshAuthentication internal operations
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    # Read: Allow all authenticated users
+    policy action_type(:read) do
+      authorize_if actor_present()
+    end
+
+    # Create/Update: Require authenticated actor
+    policy action_type([:create, :update]) do
+      authorize_if actor_present()
+    end
+
+    # Destroy: Only creator or admin
+    policy action_type(:destroy) do
+      authorize_if relates_to_actor_via(:created_by_user)
+      authorize_if expr(^actor(:role) == :admin)
+    end
+  end
+
   preparations do
     prepare build(sort: [priority: :desc, inserted_at: :desc])
   end
@@ -195,30 +219,6 @@ defmodule Thunderline.Thunderblock.Resources.VaultAgent do
 
     has_many :memory_records, Thunderline.Thunderblock.Resources.VaultMemoryRecord do
       destination_attribute :agent_id
-    end
-  end
-
-  # ===== POLICIES =====
-  policies do
-    # Bypass for AshAuthentication internal operations
-    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
-      authorize_if always()
-    end
-
-    # Read: Allow all authenticated users
-    policy action_type(:read) do
-      authorize_if actor_present()
-    end
-
-    # Create/Update: Require authenticated actor
-    policy action_type([:create, :update]) do
-      authorize_if actor_present()
-    end
-
-    # Destroy: Only creator or admin
-    policy action_type(:destroy) do
-      authorize_if relates_to_actor_via(:created_by_user)
-      authorize_if expr(^actor(:role) == :admin)
     end
   end
 end

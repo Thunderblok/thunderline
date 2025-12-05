@@ -94,7 +94,8 @@ defmodule Thunderline.Thunderbolt.IsingMachine.Kernel do
     accept = Nx.logical_or(delta_e < 0, random < accept_prob)
 
     # Update spins
-    new_spins = Nx.select(accept, Nx.put_slice(spins, [i, j], Nx.reshape(new_spin, {1, 1})), spins)
+    new_spins =
+      Nx.select(accept, Nx.put_slice(spins, [i, j], Nx.reshape(new_spin, {1, 1})), spins)
 
     {new_spins, accept, new_key}
   end

@@ -163,7 +163,10 @@ defmodule Mix.Tasks.Thunderline.Flags.Audit do
     end
 
     # Usage section
-    IO.puts("\n🔍 CODE USAGES (#{result.summary.usage_count} calls, #{result.summary.unique_flags_used} unique flags):")
+    IO.puts(
+      "\n🔍 CODE USAGES (#{result.summary.usage_count} calls, #{result.summary.unique_flags_used} unique flags):"
+    )
+
     IO.puts(String.duplicate("─", 40))
 
     if length(result.usages) == 0 do

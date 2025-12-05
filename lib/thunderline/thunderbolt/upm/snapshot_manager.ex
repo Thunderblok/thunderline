@@ -495,8 +495,15 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
 
     case compression do
       :zstd ->
-        {:ok, compressed} = :ezstd.compress(data)
-        {compressed, "zstd"}
+        if Code.ensure_loaded?(:ezstd) do
+          # Use apply to avoid compile-time warning about undefined module
+          {:ok, compressed} = apply(:ezstd, :compress, [data])
+          {compressed, "zstd"}
+        else
+          # Fall back to gzip if ezstd not available
+          compressed = :zlib.gzip(data)
+          {compressed, "gzip"}
+        end
 
       :gzip ->
         compressed = :zlib.gzip(data)
@@ -514,8 +521,14 @@ defmodule Thunderline.Thunderbolt.UPM.SnapshotManager do
   defp maybe_decompress(data, "none"), do: data
 
   defp maybe_decompress(data, "zstd") do
-    {:ok, decompressed} = :ezstd.decompress(data)
-    decompressed
+    if Code.ensure_loaded?(:ezstd) do
+      # Use apply to avoid compile-time warning about undefined module
+      {:ok, decompressed} = apply(:ezstd, :decompress, [data])
+      decompressed
+    else
+      # Can't decompress zstd without ezstd module
+      raise "Cannot decompress zstd data: :ezstd module not available"
+    end
   end
 
   defp maybe_decompress(data, "gzip") do

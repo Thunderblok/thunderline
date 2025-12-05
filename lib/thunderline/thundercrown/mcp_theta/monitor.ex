@@ -316,7 +316,10 @@ defmodule Thunderline.Thundercrown.MCPTheta.Monitor do
   end
 
   defp extract_focus(%{focus_score: score}), do: score
-  defp extract_focus(%{weights: weights}) when is_list(weights), do: Enum.max(weights, fn -> 0.5 end)
+
+  defp extract_focus(%{weights: weights}) when is_list(weights),
+    do: Enum.max(weights, fn -> 0.5 end)
+
   defp extract_focus(_), do: 0.5
 
   defp normalize_activation(data) when is_list(data), do: data

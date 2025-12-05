@@ -345,14 +345,6 @@ defmodule Thunderline.Thunderbolt.Evolution.Resources.EliteEntry do
   end
 
   # ═══════════════════════════════════════════════════════════════
-  # IDENTITIES
-  # ═══════════════════════════════════════════════════════════════
-
-  identities do
-    identity :unique_cell, [:archive_id, :cell_key]
-  end
-
-  # ═══════════════════════════════════════════════════════════════
   # CALCULATIONS
   # ═══════════════════════════════════════════════════════════════
 
@@ -383,6 +375,14 @@ defmodule Thunderline.Thunderbolt.Evolution.Resources.EliteEntry do
         end)
       end
     end
+  end
+
+  # ═══════════════════════════════════════════════════════════════
+  # IDENTITIES
+  # ═══════════════════════════════════════════════════════════════
+
+  identities do
+    identity :unique_cell, [:archive_id, :cell_key]
   end
 
   # ═══════════════════════════════════════════════════════════════

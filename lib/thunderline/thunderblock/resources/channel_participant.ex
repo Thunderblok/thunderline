@@ -105,8 +105,14 @@ defmodule Thunderline.Thunderblock.Resources.ChannelParticipant do
 
       change fn changeset, _context ->
         changeset
-        |> Ash.Changeset.change_attribute(:channel_id, Ash.Changeset.get_argument(changeset, :channel_id))
-        |> Ash.Changeset.change_attribute(:user_id, Ash.Changeset.get_argument(changeset, :user_id))
+        |> Ash.Changeset.change_attribute(
+          :channel_id,
+          Ash.Changeset.get_argument(changeset, :channel_id)
+        )
+        |> Ash.Changeset.change_attribute(
+          :user_id,
+          Ash.Changeset.get_argument(changeset, :user_id)
+        )
         |> Ash.Changeset.change_attribute(:role, :member)
         |> Ash.Changeset.change_attribute(:status, :active)
         |> Ash.Changeset.change_attribute(:joined_at, DateTime.utc_now())
@@ -187,6 +193,26 @@ defmodule Thunderline.Thunderblock.Resources.ChannelParticipant do
     end
   end
 
+  # ===== POLICIES =====
+  policies do
+    # All actions require authentication
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    policy action_type(:create) do
+      authorize_if always()
+    end
+
+    policy action_type(:update) do
+      authorize_if always()
+    end
+
+    policy action_type(:destroy) do
+      authorize_if always()
+    end
+  end
+
   # ===== ATTRIBUTES =====
   attributes do
     uuid_primary_key :id
@@ -237,6 +263,19 @@ defmodule Thunderline.Thunderblock.Resources.ChannelParticipant do
     update_timestamp :updated_at
   end
 
+  # ===== RELATIONSHIPS =====
+  relationships do
+    belongs_to :channel, Thunderline.Thunderlink.Resources.Channel do
+      allow_nil? false
+      attribute_writable? true
+    end
+
+    belongs_to :user, Thunderline.Thunderblock.Resources.VaultUser do
+      allow_nil? false
+      attribute_writable? true
+    end
+  end
+
   # ===== CALCULATIONS =====
   calculations do
     calculate :is_active, :boolean, expr(status == :active)
@@ -256,41 +295,8 @@ defmodule Thunderline.Thunderblock.Resources.ChannelParticipant do
               )
   end
 
-  # ===== RELATIONSHIPS =====
-  relationships do
-    belongs_to :channel, Thunderline.Thunderlink.Resources.Channel do
-      allow_nil? false
-      attribute_writable? true
-    end
-
-    belongs_to :user, Thunderline.Thunderblock.Resources.VaultUser do
-      allow_nil? false
-      attribute_writable? true
-    end
-  end
-
   # ===== IDENTITIES =====
   identities do
     identity :unique_channel_user, [:channel_id, :user_id]
-  end
-
-  # ===== POLICIES =====
-  policies do
-    # All actions require authentication
-    policy action_type(:read) do
-      authorize_if always()
-    end
-
-    policy action_type(:create) do
-      authorize_if always()
-    end
-
-    policy action_type(:update) do
-      authorize_if always()
-    end
-
-    policy action_type(:destroy) do
-      authorize_if always()
-    end
   end
 end

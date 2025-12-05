@@ -44,14 +44,18 @@ defmodule Thunderline.Thunderbolt.IsingMachine.API do
   Given a graph as edge list, finds partition minimizing cut weight.
   """
   def solve_max_cut(edges, num_vertices, opts \\ []) do
-    Logger.debug("[IsingMachine.API] solve_max_cut: #{num_vertices} vertices, #{length(edges)} edges")
+    Logger.debug(
+      "[IsingMachine.API] solve_max_cut: #{num_vertices} vertices, #{length(edges)} edges"
+    )
 
     # Stub: return random cut
     {:ok,
      %{
        spins: Nx.broadcast(1, {num_vertices}),
        cut_value: 0.0,
-       partition: {Enum.to_list(0..(div(num_vertices, 2) - 1)), Enum.to_list(div(num_vertices, 2)..(num_vertices - 1))},
+       partition:
+         {Enum.to_list(0..(div(num_vertices, 2) - 1)),
+          Enum.to_list(div(num_vertices, 2)..(num_vertices - 1))},
        steps: Keyword.get(opts, :max_steps, 10_000)
      }}
   end

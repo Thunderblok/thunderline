@@ -237,13 +237,9 @@ defmodule Thunderline.Thunderbolt.Cerebros.DiffLogicCA do
     ticks = Keyword.get(opts, :ticks, 100)
     emit_events = Keyword.get(opts, :emit_events, true)
 
-    case run_ca(state, params, ticks, emit_events) do
-      {:ok, new_state} ->
-        {:reply, :ok, new_state}
-
-      {:error, _reason} = error ->
-        {:reply, error, state}
-    end
+    # run_ca/4 always returns {:ok, new_state}
+    {:ok, new_state} = run_ca(state, params, ticks, emit_events)
+    {:reply, :ok, new_state}
   end
 
   @impl true

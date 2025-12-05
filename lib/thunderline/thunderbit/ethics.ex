@@ -79,10 +79,9 @@ defmodule Thunderline.Thunderbit.Ethics do
   defp check_spawn_policy(_cat, context) do
     # Integration point for Thundercrown policy engine
     # HC-Δ-5.3: Stub for future Thundercrown.PolicyEngine integration
-    case thundercrown_allow?(:thunderbit_spawn, context) do
-      :ok -> :ok
-      {:error, _} = error -> error
-    end
+    # thundercrown_allow?/2 currently always returns :ok (stub)
+    :ok = thundercrown_allow?(:thunderbit_spawn, context)
+    :ok
   end
 
   # ===========================================================================

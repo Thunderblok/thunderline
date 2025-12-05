@@ -958,6 +958,7 @@ defmodule Thunderline.Thunderbolt.Resources.Chunk do
 
   def __silence_unused__ do
     _ = @_keep
+
     _ = [
       &validate_initialization_requirements/2,
       &complete_chunk_initialization/3,

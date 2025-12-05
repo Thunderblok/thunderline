@@ -323,7 +323,8 @@ defmodule Thunderline.Thunderbolt.CA.OuterTotalistic do
 
   List of all generations or just final state.
   """
-  @spec evolve([integer()], non_neg_integer(), non_neg_integer(), keyword()) :: [[integer()]] | [integer()]
+  @spec evolve([integer()], non_neg_integer(), non_neg_integer(), keyword()) ::
+          [[integer()]] | [integer()]
   def evolve(cells, rule_number, generations, opts \\ []) do
     return_type = Keyword.get(opts, :return, :all)
 
@@ -367,10 +368,10 @@ defmodule Thunderline.Thunderbolt.CA.OuterTotalistic do
     # Elementary CA: 8 patterns (3-cell neighborhood)
     # Return tuple keys {left, center, right}
     for pattern <- 0..7, into: %{} do
-      left = (pattern >>> 2) &&& 1
-      center = (pattern >>> 1) &&& 1
+      left = pattern >>> 2 &&& 1
+      center = pattern >>> 1 &&& 1
       right = pattern &&& 1
-      bit = (rule_number >>> pattern) &&& 1
+      bit = rule_number >>> pattern &&& 1
       {{left, center, right}, bit}
     end
   end
@@ -382,14 +383,14 @@ defmodule Thunderline.Thunderbolt.CA.OuterTotalistic do
   defp build_elementary_lookup(rule_number) do
     # Elementary CA: 8 patterns (3-cell neighborhood)
     for pattern <- 0..7, into: %{} do
-      bit = (rule_number >>> pattern) &&& 1
+      bit = rule_number >>> pattern &&& 1
       {pattern, bit}
     end
   end
 
   defp build_rule_lookup(rule_number, num_patterns) do
     for pattern <- 0..(num_patterns - 1), into: %{} do
-      bit = (rule_number >>> rem(pattern, 32)) &&& 1
+      bit = rule_number >>> rem(pattern, 32) &&& 1
       {pattern, bit}
     end
   end

@@ -361,91 +361,65 @@ defmodule Thunderline.Thunderbolt.Resources.CellTopology do
     strategy = Ash.Changeset.get_attribute(changeset, :partitioning_strategy)
     config = Ash.Changeset.get_attribute(changeset, :partitioning_config) || %{}
 
-    case validate_strategy_config(strategy, config) do
-      :ok ->
-        changeset
-
-      {:error, message} ->
-        Ash.Changeset.add_error(changeset, field: :partitioning_config, message: message)
-    end
+    # validate_strategy_config always returns :ok currently
+    :ok = validate_strategy_config(strategy, config)
+    changeset
   end
 
   defp validate_thundercell_nodes(changeset) do
     nodes = Ash.Changeset.get_attribute(changeset, :thundercell_nodes) || %{}
 
     # Validate that all nodes are reachable
-    case validate_node_connectivity(nodes) do
-      :ok ->
-        changeset
-
-      {:error, message} ->
-        Ash.Changeset.add_error(changeset, field: :thundercell_nodes, message: message)
-    end
+    # NOTE: validate_node_connectivity always returns :ok (TODO stub)
+    :ok = validate_node_connectivity(nodes)
+    changeset
   end
 
   defp execute_partitioning(_changeset, topology) do
-    # Execute the partitioning algorithm
-    case Thunderline.Thunderbolt.TopologyPartitioner.partition(topology) do
-      {:ok, partition_result} ->
-        topology
-        |> Ash.Changeset.for_update(:update, %{
-          partition_count: partition_result.partition_count,
-          partition_assignments: partition_result.assignments,
-          cells_per_partition: partition_result.cells_per_partition,
-          max_partition_size: partition_result.max_size,
-          min_partition_size: partition_result.min_size,
-          load_variance: partition_result.load_variance,
-          status: :partitioned
-        })
-        |> Ash.update()
+    # Execute the partitioning algorithm (always succeeds currently)
+    {:ok, partition_result} = Thunderline.Thunderbolt.TopologyPartitioner.partition(topology)
 
-      {:error, reason} ->
-        topology
-        |> Ash.Changeset.for_update(:update, %{status: :error})
-        |> Ash.update()
-        |> case do
-          {:ok, _t} -> {:error, "Partitioning failed: #{reason}"}
-          error -> error
-        end
-    end
+    topology
+    |> Ash.Changeset.for_update(:update, %{
+      partition_count: partition_result.partition_count,
+      partition_assignments: partition_result.assignments,
+      cells_per_partition: partition_result.cells_per_partition,
+      max_partition_size: partition_result.max_size,
+      min_partition_size: partition_result.min_size,
+      load_variance: partition_result.load_variance,
+      status: :partitioned
+    })
+    |> Ash.update()
   end
 
   defp execute_distribution(_changeset, topology) do
-    # Distribute partitions to THUNDERCELL nodes
-    case Thunderline.Thunderbolt.TopologyDistributor.distribute(topology) do
-      {:ok, distribution_result} ->
-        topology
-        |> Ash.Changeset.for_update(:update, %{
-          node_load_balance: distribution_result.load_balance,
-          locality_score: distribution_result.locality_score,
-          communication_overhead: distribution_result.communication_overhead,
-          memory_efficiency: distribution_result.memory_efficiency,
-          distribution_health: distribution_result.health_score,
-          status: :distributed
-        })
-        |> Ash.update()
+    # Distribute partitions to THUNDERCELL nodes (always succeeds currently)
+    {:ok, distribution_result} = Thunderline.Thunderbolt.TopologyDistributor.distribute(topology)
 
-      {:error, reason} ->
-        {:error, "Distribution failed: #{reason}"}
-    end
+    topology
+    |> Ash.Changeset.for_update(:update, %{
+      node_load_balance: distribution_result.load_balance,
+      locality_score: distribution_result.locality_score,
+      communication_overhead: distribution_result.communication_overhead,
+      memory_efficiency: distribution_result.memory_efficiency,
+      distribution_health: distribution_result.health_score,
+      status: :distributed
+    })
+    |> Ash.update()
   end
 
   defp execute_rebalancing(_changeset, topology) do
-    # Rebalance the topology distribution
-    case Thunderline.Thunderbolt.TopologyRebalancer.rebalance(topology) do
-      {:ok, rebalance_result} ->
-        topology
-        |> Ash.Changeset.for_update(:update, %{
-          partition_assignments: rebalance_result.new_assignments,
-          node_load_balance: rebalance_result.load_balance,
-          distribution_health: rebalance_result.health_score,
-          last_rebalance_at: DateTime.utc_now()
-        })
-        |> Ash.update()
+    # Rebalance the topology distribution (always succeeds currently)
+    {:ok, rebalance_result} = Thunderline.Thunderbolt.TopologyRebalancer.rebalance(topology)
 
-      {:error, reason} ->
-        {:error, "Rebalancing failed: #{reason}"}
-    end
+    topology
+    |> Ash.Changeset.for_update(:update, %{
+      partition_assignments: rebalance_result.new_assignments,
+      node_load_balance: rebalance_result.load_balance,
+      distribution_health: rebalance_result.health_score,
+      last_rebalance_at: DateTime.utc_now()
+    })
+    |> Ash.update()
   end
 
   defp calculate_average_neighbors(topology) do

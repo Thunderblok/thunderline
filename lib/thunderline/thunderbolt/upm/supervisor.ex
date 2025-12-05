@@ -189,6 +189,7 @@ defmodule Thunderline.Thunderbolt.UPM.Supervisor do
     require Ash.Query
 
     query = UpmTrainer |> Ash.Query.filter(name == ^name and tenant_id == ^tenant_id)
+
     case Ash.read(query) do
       {:ok, [trainer]} ->
         {:ok, trainer}

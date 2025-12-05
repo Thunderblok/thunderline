@@ -215,13 +215,18 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Feature do
       zone_to_idx(f.zone_id),
       f.category_idx,
       f.energy,
-      min(f.age_ticks, 10000) / 10000.0,  # Normalize age
+      # Normalize age
+      min(f.age_ticks, 10000) / 10000.0,
       f.health,
       f.salience,
-      min(f.chain_depth, 10) / 10.0,  # Normalize chain depth
-      f.role_idx / 7.0,  # Normalize role
-      f.status_idx / 5.0,  # Normalize status
-      min(f.link_count, 20) / 20.0  # Normalize link count
+      # Normalize chain depth
+      min(f.chain_depth, 10) / 10.0,
+      # Normalize role
+      f.role_idx / 7.0,
+      # Normalize status
+      f.status_idx / 5.0,
+      # Normalize link count
+      min(f.link_count, 20) / 20.0
     ]
   end
 
@@ -306,21 +311,31 @@ defmodule Thunderline.Thunderbolt.CerebrosFacade.Mini.Feature do
 
   defp get_pac_id(bit) do
     cond do
-      Map.has_key?(bit, :owner) -> to_string(bit.owner)
-      Map.has_key?(bit, :pac_id) -> to_string(bit.pac_id)
+      Map.has_key?(bit, :owner) ->
+        to_string(bit.owner)
+
+      Map.has_key?(bit, :pac_id) ->
+        to_string(bit.pac_id)
+
       metadata = Map.get(bit, :metadata, %{}) ->
         to_string(Map.get(metadata, :pac_id) || Map.get(metadata, :owner))
-      true -> nil
+
+      true ->
+        nil
     end
   end
 
   defp get_zone_id(bit) do
     cond do
-      Map.has_key?(bit, :zone) -> to_string(bit.zone)
+      Map.has_key?(bit, :zone) ->
+        to_string(bit.zone)
+
       metadata = Map.get(bit, :metadata, %{}) ->
         zone = Map.get(metadata, :zone)
         if zone, do: to_string(zone), else: nil
-      true -> nil
+
+      true ->
+        nil
     end
   end
 

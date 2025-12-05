@@ -60,7 +60,6 @@ defmodule Thunderline.Thunderblock.Jobs.RetentionSweepWorker do
       targets
       |> Enum.reduce_while(:ok, fn target, _acc ->
         case execute_target(target) do
-          :ok -> {:cont, :ok}
           {:ok, _result} -> {:cont, :ok}
           {:error, reason} -> {:halt, {:error, reason}}
         end

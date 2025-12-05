@@ -242,6 +242,7 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
 
           # Record pipeline throughput telemetry
           pipeline = infer_pipeline_type()
+
           Thunderline.Thunderflow.PipelineTelemetry.record_throughput(
             pipeline,
             length(messages),
@@ -261,6 +262,7 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
 
             # Record pipeline failure telemetry
             pipeline = infer_pipeline_type()
+
             Thunderline.Thunderflow.PipelineTelemetry.record_failure(
               pipeline,
               {:batch_exception, e.__struct__},
@@ -312,6 +314,7 @@ defmodule Thunderline.Thunderflow.DomainProcessor do
         # Record pipeline failure telemetry
         pipeline = infer_pipeline_type()
         event_name = extract_event_name(message.data)
+
         Thunderline.Thunderflow.PipelineTelemetry.record_failure(
           pipeline,
           message.status,

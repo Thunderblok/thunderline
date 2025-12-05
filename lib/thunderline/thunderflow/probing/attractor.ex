@@ -49,6 +49,7 @@ defmodule Thunderline.Thunderflow.Probing.Attractor do
     require Ash.Query
     # Stream lap embeddings ordered by lap_index
     query = ProbeLap |> Ash.Query.filter(run_id == ^run_id)
+
     {:ok, laps} =
       Ash.read(query)
       |> case do

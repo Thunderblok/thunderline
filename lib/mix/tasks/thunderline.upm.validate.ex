@@ -208,6 +208,7 @@ defmodule Mix.Tasks.Thunderline.Upm.Validate do
 
     try do
       query = UpmTrainer |> Ash.Query.limit(1)
+
       case Ash.read(query) do
         {:ok, _} ->
           IO.puts("✅ UPM tables exist")
@@ -237,8 +238,9 @@ defmodule Mix.Tasks.Thunderline.Upm.Validate do
     zstd_result =
       if Code.ensure_loaded?(:ezstd) do
         try do
-          compressed = :ezstd.compress(data)
-          decompressed = :ezstd.decompress(compressed)
+          # Use apply to avoid compile-time warning about undefined module
+          compressed = apply(:ezstd, :compress, [data])
+          decompressed = apply(:ezstd, :decompress, [compressed])
           if decompressed == data, do: :ok, else: {:error, :mismatch}
         rescue
           _ -> {:error, :unavailable}

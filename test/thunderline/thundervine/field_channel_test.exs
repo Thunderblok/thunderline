@@ -5,6 +5,7 @@ defmodule Thunderline.Thundervine.FieldChannelTest do
   use ExUnit.Case, async: false
 
   alias Thunderline.Thundervine.FieldChannel
+
   alias Thunderline.Thundervine.FieldChannels.{
     Gravity,
     Mood,
@@ -60,12 +61,12 @@ defmodule Thunderline.Thundervine.FieldChannelTest do
 
     test "read/3 returns error for unknown channel" do
       assert {:error, {:unknown_channel, :fake}} =
-        FieldChannel.read(:fake, %{x: 0, y: 0, z: 0}, @ctx)
+               FieldChannel.read(:fake, %{x: 0, y: 0, z: 0}, @ctx)
     end
 
     test "write/4 returns error for unknown channel" do
       assert {:error, {:unknown_channel, :fake}} =
-        FieldChannel.write(:fake, %{x: 0, y: 0, z: 0}, 1.0, @ctx)
+               FieldChannel.write(:fake, %{x: 0, y: 0, z: 0}, 1.0, @ctx)
     end
   end
 
@@ -85,8 +86,10 @@ defmodule Thunderline.Thundervine.FieldChannelTest do
 
     test "combine_writes/1 sums values and clamps to [-10, 10]" do
       assert Gravity.combine_writes([1.0, 2.0, 3.0]) == 6.0
-      assert Gravity.combine_writes([5.0, 6.0]) == 10.0  # clamped
-      assert Gravity.combine_writes([-5.0, -6.0]) == -10.0  # clamped
+      # clamped
+      assert Gravity.combine_writes([5.0, 6.0]) == 10.0
+      # clamped
+      assert Gravity.combine_writes([-5.0, -6.0]) == -10.0
     end
   end
 
@@ -105,9 +108,12 @@ defmodule Thunderline.Thundervine.FieldChannelTest do
     end
 
     test "combine_writes/1 averages values and clamps to [0, 1]" do
-      assert Mood.combine_writes([0.8, 0.6, 0.4]) == 0.6  # average
-      assert Mood.combine_writes([1.5, 0.5]) == 1.0  # clamped
-      assert Mood.combine_writes([-0.5, 0.5]) == 0.0  # clamped
+      # average
+      assert Mood.combine_writes([0.8, 0.6, 0.4]) == 0.6
+      # clamped
+      assert Mood.combine_writes([1.5, 0.5]) == 1.0
+      # clamped
+      assert Mood.combine_writes([-0.5, 0.5]) == 0.0
     end
 
     test "decay_to_value moves toward neutral (0.5)" do
@@ -142,7 +148,8 @@ defmodule Thunderline.Thundervine.FieldChannelTest do
     end
 
     test "combine_writes/1 sums values and clamps to [0, 5]" do
-      assert Heat.combine_writes([1.0, 2.0, 3.0]) == 5.0  # clamped
+      # clamped
+      assert Heat.combine_writes([1.0, 2.0, 3.0]) == 5.0
       assert Heat.combine_writes([0.5, 0.5]) == 1.0
     end
   end
@@ -159,7 +166,8 @@ defmodule Thunderline.Thundervine.FieldChannelTest do
 
     test "combine_writes/1 takes max strength (not sum)" do
       assert Signal.combine_writes([0.5, 0.8, 0.3]) == 0.8
-      assert Signal.combine_writes([-0.9, 0.5]) == -0.9  # max by absolute value
+      # max by absolute value
+      assert Signal.combine_writes([-0.9, 0.5]) == -0.9
     end
 
     test "decays quickly" do

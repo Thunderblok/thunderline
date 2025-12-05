@@ -103,32 +103,27 @@ defmodule Thunderline.Thundervine.Thunderoll.Nodes.Generation do
   def execute(%{runner: runner}, _context) do
     Logger.info("[Thunderoll.Node.Generation] Starting generation #{runner.generation}")
 
-    case Runner.run_generation(runner) do
-      {:ok, delta, new_runner} ->
-        converged = Runner.converged?(new_runner)
+    # Runner.run_generation/1 always returns {:ok, delta, new_runner}
+    {:ok, delta, new_runner} = Runner.run_generation(runner)
+    converged = Runner.converged?(new_runner)
 
-        output = %{
-          delta: delta,
-          runner: new_runner,
-          converged: converged,
-          generation: new_runner.generation,
-          fitness_stats: %{
-            # Stats would come from the runner in full implementation
-            generation: new_runner.generation
-          }
-        }
+    output = %{
+      delta: delta,
+      runner: new_runner,
+      converged: converged,
+      generation: new_runner.generation,
+      fitness_stats: %{
+        # Stats would come from the runner in full implementation
+        generation: new_runner.generation
+      }
+    }
 
-        Logger.info(
-          "[Thunderoll.Node.Generation] Generation #{runner.generation} complete, " <>
-            "converged=#{converged}"
-        )
+    Logger.info(
+      "[Thunderoll.Node.Generation] Generation #{runner.generation} complete, " <>
+        "converged=#{converged}"
+    )
 
-        {:ok, output}
-
-      {:error, reason} ->
-        Logger.error("[Thunderoll.Node.Generation] Failed: #{inspect(reason)}")
-        {:error, reason}
-    end
+    {:ok, output}
   end
 end
 
