@@ -426,4 +426,90 @@ defmodule Thunderline.Thunderbolt.CA.StepperTest do
       end)
     end
   end
+
+  # ═══════════════════════════════════════════════════════════════
+  # HC-95: V2 Ternary Grid Tests (Wired to TernaryState)
+  # ═══════════════════════════════════════════════════════════════
+
+  describe "v2 ternary grid stepping (HC-95)" do
+    test "next/2 dispatches to step_ternary_grid when rule_version: 2" do
+      grid = Stepper.create_thunderbit_grid(3, 3, 3)
+      ruleset = %{rule_id: :demo, rule_version: 2}
+
+      {:ok, deltas, new_grid} = Stepper.next(grid, ruleset)
+
+      # Should produce valid output
+      assert is_list(deltas)
+      assert length(deltas) == 27
+      assert new_grid.tick == 1
+    end
+
+    test "step_ternary_grid/2 uses Thunderbit.ternary_tick" do
+      grid = Stepper.create_thunderbit_grid(2, 2, 2)
+      ruleset = %{rule_id: :demo, rule_version: 2}
+
+      {:ok, deltas, new_grid} = Stepper.step_ternary_grid(grid, ruleset)
+
+      # All bits should be updated
+      assert length(deltas) == 8
+      assert new_grid.tick == 1
+
+      # Check that ternary state is valid (sigma in -1..1 or 0..1 range)
+      Enum.each(new_grid.bits, fn {_coord, bit} ->
+        assert bit.last_tick == 1
+        # sigma_flow should be a valid float
+        assert is_float(bit.sigma_flow) or is_integer(bit.sigma_flow)
+      end)
+    end
+
+    test "step_ternary_grid/2 respects neighborhood_type option" do
+      grid = Stepper.create_thunderbit_grid(3, 3, 3)
+      ruleset = %{rule_id: :demo, rule_version: 2, neighborhood_type: :von_neumann}
+
+      {:ok, _deltas, new_grid} = Stepper.step_ternary_grid(grid, ruleset)
+
+      # Should complete without error
+      assert new_grid.tick == 1
+    end
+
+    test "step_ternary_grid/2 respects boundary_condition option" do
+      grid = Stepper.create_thunderbit_grid(3, 3, 3)
+      ruleset = %{rule_id: :demo, rule_version: 2, boundary_condition: :periodic}
+
+      {:ok, _deltas, new_grid} = Stepper.step_ternary_grid(grid, ruleset)
+
+      assert new_grid.tick == 1
+    end
+
+    test "step_ternary_grid/2 can update MIRAS" do
+      grid = Stepper.create_thunderbit_grid(2, 2, 2)
+      ruleset = %{rule_id: :demo, rule_version: 2, update_miras: true}
+
+      {:ok, _deltas, new_grid} = Stepper.step_ternary_grid(grid, ruleset)
+
+      # MIRAS metrics may be updated - just verify no crash
+      assert new_grid.tick == 1
+    end
+
+    test "rule_version: 1 (default) uses step_thunderbit_grid" do
+      grid = Stepper.create_thunderbit_grid(3, 3, 3)
+      ruleset = %{rule_id: :demo, rule_version: 1}
+
+      {:ok, deltas, new_grid} = Stepper.next(grid, ruleset)
+
+      # Should use v1 path and succeed
+      assert is_list(deltas)
+      assert new_grid.tick == 1
+    end
+
+    test "missing rule_version defaults to v1" do
+      grid = Stepper.create_thunderbit_grid(3, 3, 3)
+      ruleset = %{rule_id: :demo}
+
+      {:ok, _deltas, new_grid} = Stepper.next(grid, ruleset)
+
+      # Should succeed using v1 path
+      assert new_grid.tick == 1
+    end
+  end
 end

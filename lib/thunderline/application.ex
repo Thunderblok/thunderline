@@ -60,9 +60,10 @@ defmodule Thunderline.Application do
       Thunderline.Thundercore.Supervisor,
       # Tick 1: Core flow & state
       Thunderline.Thunderflow.Supervisor,
-      # Tick 2: Authentication & presence
+      # Tick 2: Authentication & presence + PAC memory (HC-75)
       Thunderline.Thundergate.Supervisor,
       Thunderline.Thunderlink.Supervisor,
+      Thunderline.Thunderpac.Supervisor,
       # Tick 3: Orchestration engine
       Thunderline.Thunderbolt.Supervisor,
       # Tick 4: AI sovereignty

@@ -267,7 +267,9 @@ config :thunderline,
     # Entropy sink / GC / decay - boundary domain (last in cycle)
     Thunderline.Thunderwall.Domain,
     # Evolution domain for MAP-Elites quality-diversity search
-    Thunderline.Evolution.Domain
+    Thunderline.Thunderbolt.Evolution.Domain,
+    # Thunderchief - Persistent plan orchestration (HC-81)
+    Thunderline.Thunderchief.Domain
   ]
 
 # OPTIONAL (disabled right now):

@@ -1,11 +1,13 @@
 defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
   @moduledoc """
   HC-40: Criticality feedback loop monitor for SNN/Photonic integration.
+  HC-76: Extended with surprise metrics for MIRAS/Titans memory integration.
 
   Aggregates multiple criticality metrics to provide real-time feedback for:
   - Perturbation layer intensity (SLiM-style decorrelation)
   - Spiking cell dynamics tuning
   - CA rule adaptation
+  - **NEW**: Surprise-gated memory writes (Titans-style)
 
   ## Metrics Computed
 
@@ -13,6 +15,7 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
   - **Permutation Entropy**: Temporal complexity/order measure
   - **Langton's λ̂**: Non-quiescent rule fraction (edge-of-chaos indicator)
   - **Local Lyapunov Exponent**: Sensitivity to initial conditions
+  - **Surprise** (HC-76): Gradient magnitude proxy for novelty detection
 
   ## Criticality Targets
 
@@ -21,13 +24,22 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
   - PLV moderate (neither fully synchronized nor random)
   - Permutation entropy at intermediate values
 
+  ## Surprise Metrics (MIRAS/Titans)
+
+  Surprise quantifies how "unexpected" current observations are:
+  - Raw surprise = ‖prediction - observation‖₂
+  - Smoothed surprise = β-EMA of raw values
+  - Write trigger when smoothed > threshold
+
   ## Telemetry
 
-  Emits `[:thunderline, :bolt, :ca, :criticality]` with all computed metrics.
+  - `[:thunderline, :bolt, :ca, :criticality]` - Criticality metrics
+  - `[:thunderline, :bolt, :ca, :surprise]` - Surprise metrics (HC-76)
   """
   use GenServer
   require Logger
   alias Thunderline.Thunderbolt.Signal.PLV
+  alias Thunderline.Thunderbolt.Signal.SurpriseMetrics
 
   @type metrics :: %{
           plv: float(),
@@ -35,7 +47,11 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
           lambda_hat: float(),
           lyapunov_local: float(),
           criticality_score: float(),
-          zone: :ordered | :critical | :chaotic
+          zone: :ordered | :critical | :chaotic,
+          # HC-76 additions
+          surprise: float(),
+          smoothed_surprise: float(),
+          should_write: boolean()
         }
 
   @type t :: %__MODULE__{
@@ -45,7 +61,11 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
           buffer_size: pos_integer(),
           lambda_target_min: float(),
           lambda_target_max: float(),
-          last_metrics: metrics() | nil
+          last_metrics: metrics() | nil,
+          # HC-76 additions
+          surprise_state: SurpriseMetrics.surprise_state(),
+          prediction_buffer: list(list(number())),
+          pac_id: String.t() | nil
         }
 
   defstruct phase_buffer: [],
@@ -54,7 +74,11 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
             buffer_size: 64,
             lambda_target_min: 0.25,
             lambda_target_max: 0.35,
-            last_metrics: nil
+            last_metrics: nil,
+            # HC-76 additions
+            surprise_state: nil,
+            prediction_buffer: [],
+            pac_id: nil
 
   # ──────────────────────────────────────────────────────────────────────
   # Client API
@@ -62,19 +86,41 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
 
   @doc """
   Starts the LoopMonitor GenServer.
+
+  ## Options
+
+  - `:name` - GenServer name (default: __MODULE__)
+  - `:buffer_size` - Size of metric buffers (default: 64)
+  - `:lambda_target_min` - Lower bound of critical λ̂ band (default: 0.25)
+  - `:lambda_target_max` - Upper bound of critical λ̂ band (default: 0.35)
+  - `:pac_id` - PAC identifier for surprise metrics (HC-76)
+  - `:surprise_beta` - Momentum coefficient for surprise EMA (default: 0.9)
+  - `:surprise_threshold` - Write trigger threshold (default: 0.1)
   """
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     buffer_size = Keyword.get(opts, :buffer_size, 64)
     lambda_min = Keyword.get(opts, :lambda_target_min, 0.25)
     lambda_max = Keyword.get(opts, :lambda_target_max, 0.35)
+    pac_id = Keyword.get(opts, :pac_id)
+    surprise_beta = Keyword.get(opts, :surprise_beta, 0.9)
+    surprise_threshold = Keyword.get(opts, :surprise_threshold, 0.1)
+
+    # Initialize surprise state (HC-76)
+    surprise_state = SurpriseMetrics.new(
+      pac_id: pac_id,
+      beta: surprise_beta,
+      threshold: surprise_threshold
+    )
 
     GenServer.start_link(
       __MODULE__,
       %__MODULE__{
         buffer_size: buffer_size,
         lambda_target_min: lambda_min,
-        lambda_target_max: lambda_max
+        lambda_target_max: lambda_max,
+        pac_id: pac_id,
+        surprise_state: surprise_state
       },
       name: name
     )
@@ -104,6 +150,37 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
   @spec record_trajectory(GenServer.server(), list(integer())) :: :ok
   def record_trajectory(server \\ __MODULE__, trajectory) when is_list(trajectory) do
     GenServer.cast(server, {:record_trajectory, trajectory})
+  end
+
+  @doc """
+  Records a prediction-observation pair for surprise computation (HC-76).
+  Computes surprise = ‖predicted - actual‖₂ and updates momentum state.
+  Returns `{:ok, should_write?}` indicating if memory write is recommended.
+  """
+  @spec record_surprise(GenServer.server(), list(number()), list(number())) ::
+          {:ok, boolean()} | {:error, term()}
+  def record_surprise(server \\ __MODULE__, predicted, actual)
+      when is_list(predicted) and is_list(actual) do
+    GenServer.call(server, {:record_surprise, predicted, actual})
+  end
+
+  @doc """
+  Records a scalar prediction-observation pair (HC-76).
+  Useful for simple single-value predictions.
+  """
+  @spec record_surprise_scalar(GenServer.server(), number(), number()) ::
+          {:ok, boolean()} | {:error, term()}
+  def record_surprise_scalar(server \\ __MODULE__, predicted, actual)
+      when is_number(predicted) and is_number(actual) do
+    GenServer.call(server, {:record_surprise_scalar, predicted, actual})
+  end
+
+  @doc """
+  Gets the current surprise state and statistics (HC-76).
+  """
+  @spec get_surprise_stats(GenServer.server()) :: map()
+  def get_surprise_stats(server \\ __MODULE__) do
+    GenServer.call(server, :get_surprise_stats)
   end
 
   @doc """
@@ -323,6 +400,51 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
   end
 
   @impl true
+  def handle_call({:record_surprise, predicted, actual}, _from, state) do
+    raw_surprise = SurpriseMetrics.surprise_metric(predicted, actual)
+    {new_surprise_state, should_write} = SurpriseMetrics.update(state.surprise_state, raw_surprise)
+
+    # Emit telemetry
+    SurpriseMetrics.emit_telemetry(
+      state.pac_id,
+      raw_surprise,
+      new_surprise_state.momentum,
+      should_write
+    )
+
+    # Optionally publish event for significant surprises
+    if should_write do
+      SurpriseMetrics.publish_surprise_event(new_surprise_state, raw_surprise, should_write)
+    end
+
+    new_state = %{state | surprise_state: new_surprise_state}
+    {:reply, {:ok, should_write}, new_state}
+  end
+
+  @impl true
+  def handle_call({:record_surprise_scalar, predicted, actual}, _from, state) do
+    raw_surprise = SurpriseMetrics.surprise_scalar(predicted, actual)
+    {new_surprise_state, should_write} = SurpriseMetrics.update(state.surprise_state, raw_surprise)
+
+    # Emit telemetry
+    SurpriseMetrics.emit_telemetry(
+      state.pac_id,
+      raw_surprise,
+      new_surprise_state.momentum,
+      should_write
+    )
+
+    new_state = %{state | surprise_state: new_surprise_state}
+    {:reply, {:ok, should_write}, new_state}
+  end
+
+  @impl true
+  def handle_call(:get_surprise_stats, _from, state) do
+    stats = SurpriseMetrics.statistics(state.surprise_state)
+    {:reply, stats, state}
+  end
+
+  @impl true
   def handle_call(:compute_and_emit, _from, state) do
     metrics = compute_metrics(state)
 
@@ -386,13 +508,28 @@ defmodule Thunderline.Thunderbolt.Signal.LoopMonitor do
     zone = classify_zone(lh, perm_entropy, state.lambda_target_min, state.lambda_target_max)
     crit_score = criticality_score(lh, state.lambda_target_min, state.lambda_target_max)
 
+    # HC-76: Include surprise metrics
+    surprise_state = state.surprise_state || SurpriseMetrics.new()
+    current_surprise = surprise_state.momentum
+    should_write = SurpriseMetrics.should_write?(current_surprise, surprise_state.threshold)
+
+    # Also compute criticality-derived surprise
+    crit_surprise = SurpriseMetrics.surprise_from_criticality(%{
+      criticality_score: crit_score,
+      zone: zone
+    })
+
     %{
       plv: Float.round(plv_val, 4),
       permutation_entropy: Float.round(perm_entropy, 4),
       lambda_hat: Float.round(lh, 4),
       lyapunov_local: Float.round(lyap, 4),
       criticality_score: Float.round(crit_score, 4),
-      zone: zone
+      zone: zone,
+      # HC-76 surprise metrics
+      surprise: Float.round(crit_surprise, 4),
+      smoothed_surprise: Float.round(current_surprise, 4),
+      should_write: should_write
     }
   end
 

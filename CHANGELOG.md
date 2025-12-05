@@ -9,6 +9,14 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 ### Features:
 
+* **v2 Quantum Substrate (HC-86 through HC-95)**: Complete ternary QCA-inspired compute substrate
+  - **HC-86: TernaryState** - `Thunderbolt.TernaryState` module with ternary arithmetic (`add/2`, `multiply/2`) and logic (`ternary_not/1`, `ternary_and/2`, `ternary_or/2`), balanced ternary conversion (`to_balanced/1`, `from_balanced/1`)
+  - **HC-87: Thunderbit v2** - Extended schema with `:state` (ternary), `:state_vector`, Ising physics fields (`:bias`, `:coupling`, `:temperature`), MIRAS fields (`:surprise_metric`, `:retention_gate`, `:momentum_surprise`), and `:rule_version` for CA selection; new `ternary_tick/2` function
+  - **HC-88: 4-Phase Clock** - `Thundercore.Clock` GenServer with QCA-inspired cycle: Switch→Hold→Release→Relax; configurable phase duration; `on_phase/2` subscription API for domain coordination; emits `core.clock.phase` events; 19 tests passing
+  - **HC-89: ReversibleRules** - `Thunderbolt.ReversibleRules` with ternary Toffoli/Feynman gates (`toffoli_ternary/3`, `feynman_ternary/2`), bijection verification (`reversible?/1`), undo trace generation
+  - **HC-90: MIRAS Memory** - `Thunderpac.MemoryModule` GenServer with Titans-style surprise-gated deep memory, momentum-smoothed surprise (β-EMA), weight decay forgetting, read/write/decay API
+  - **HC-95: v2 CA Wiring** - `CA.Stepper.step_ternary_grid/2` using `Thunderbit.ternary_tick/2`, `CA.Runner` dual timing modes (self-timed ~20Hz or Clock-driven via `:hold` phase subscription), `Stepper.next/2` dispatcher with `rule_version` selection (v1 vs v2); 34 stepper tests passing
+
 * **Guerrilla #32: DomainProcessor Oban Worker** - Async per-domain Chief delegation
   - **Module**: `Thunderline.Thunderchief.Jobs.DomainProcessor`
   - **Routing**: Domain-to-Chief mapping (bit→BitChief, vine→VineChief, crown→CrownChief, ui→UIChief)

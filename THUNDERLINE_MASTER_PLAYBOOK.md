@@ -253,6 +253,27 @@
 | **HC-72** | **P1** | **Continuous Event Timestamps** | Event timing is discrete ticks | **CTA-04**: Real-valued temporal indexing in ThunderFlow. **Components**: (1) Continuous timestamp algebra, (2) Sub-tick event interpolation, (3) Temporal range queries with real bounds, (4) Event stream continuous aggregations. **Benefits**: Precise temporal causality, smoother event flow analysis. Cross-domain: **Flow×Core**. | Flow + Core Stewards | Not Started |
 | **HC-73** | **P2** | **Continuous CA Field Dynamics** | CA cells use integer coordinates | **CTA-05**: Continuous spatial fields for Thunderbit lattice. **Components**: (1) Continuous field representation (ϕ, σ, λ̂ as smooth functions), (2) Real-valued neighbor interpolation, (3) Gradient flows between voxel cells, (4) Continuous CAT coefficient storage. **Goal**: CA rules operating on continuous spatial fields. Cross-domain: **Bolt×Block**. | Bolt Steward | Not Started |
 | **HC-74** | **P2** | **Finch.jl Interop Layer** | No connection to Finch sparse compiler | **CTA-06**: Bridge to Finch.jl for optimized sparse tensor operations. **Components**: (1) Protocol for Elixir→Julia tensor exchange, (2) Galley scheduler integration for query optimization, (3) Sparse format translation (CSC/CSR/COO), (4) Nx tensor ↔ Finch tensor conversion. **Benefits**: 1000x speedup on sparse operations via Galley optimizer. Cross-domain: **Bolt**. | Bolt Steward | Not Started |
+| **HC-75** | **P0** | **MIRAS Memory Architecture** | No deep MLP memory substrate | **MIRAS-01**: Implement Titans-style deep MLP memory in Thunderpac. **Research Source**: Google "Titans: Learning to Memorize at Test Time" (2025) + "MIRAS: Unlocking Expressivity" (2025). **Components**: (1) `Thunderpac.MemoryModule` GenServer (deep MLP state container), (2) Surprise-gated memory updates (write only when ‖∇ℓ‖ > θ), (3) Momentum-based surprise smoothing (β-EMA), (4) Asymmetric update rules (fast write/slow forget), (5) Weight decay as forgetting (wd→0.99 for long memory). **4-Choice Framework**: Memory=deep MLP, Attention=cross-attention via context, Retention=weight decay gate, Update=surprise-triggered. **Events**: `pac.memory.write`, `pac.memory.read`, `pac.memory.surprise`. Cross-domain: **Pac×Bolt×Flow**. See §MIRAS/Titans Integration Directive. | Pac + Bolt Stewards | Not Started |
+| **HC-76** | **P0** | **Surprise Metric Computation** | No gradient-based novelty signal | **MIRAS-02**: Extend LoopMonitor with surprise computation. **Components**: (1) `surprise_metric/2` (gradient magnitude ‖∇ℓ‖ as novelty), (2) `momentum_surprise/3` (β-EMA smoothing: s_t = β·s_{t-1} + (1-β)·‖∇ℓ_t‖), (3) Surprise threshold detection (write gate trigger), (4) Integration with existing criticality metrics (PLV, entropy, λ̂, Lyapunov), (5) Telemetry `[:thunderline, :bolt, :ca, :surprise]`. **Goal**: Detect "something new is happening" moments for memory writes. Cross-domain: **Bolt×Flow**. | Bolt Steward | Not Started |
+| **HC-77** | **P1** | **MIRAS Configuration Schema** | No formal 4-choice config | **MIRAS-03**: Define MIRAS configuration Ash resource. **Components**: (1) `Thunderpac.MIRASConfig` resource (memory_architecture, attention_mode, retention_gate, update_algorithm), (2) Preset configurations (`:titans_default`, `:fast_write`, `:long_memory`, `:balanced`), (3) Per-PAC config inheritance (global defaults + local overrides), (4) Runtime config updates via events (`pac.config.update`), (5) Config validation and constraint checking. **Goal**: Declarative memory behavior specification. Cross-domain: **Pac×Crown**. | Pac + Crown Stewards | Not Started |
+| **HC-78** | **P1** | **Cerebros Memory Hyperparameters** | TPE search space lacks memory axes | **MIRAS-04**: Extend Cerebros TPE for MIRAS architecture search. **New axes**: (1) `memory_depth` (1-8 MLP layers), (2) `memory_width` (64-1024 hidden dims), (3) `surprise_threshold` (0.01-1.0), (4) `momentum_beta` (0.8-0.99), (5) `weight_decay` (0.9-0.999), (6) `write_gate_mode` (threshold/softmax/topk), (7) `retention_mode` (decay/gru/none). **Constraints**: Memory capacity vs compute budget tradeoff. **Integration**: Use MAP-Elites quality diversity for memory behavior exploration. Cross-domain: **Bolt×Crown×Pac**. | Bolt + Crown Stewards | Not Started |
+| **HC-79** | **P1** | **MAP-Elites Memory Dimensions** | Behavioral descriptors lack memory metrics | **MIRAS-05**: Add memory-specific behavioral descriptors to MAP-Elites. **New dimensions**: (1) `memory_utilization` (fraction of memory capacity used), (2) `write_frequency` (updates per tick), (3) `retrieval_accuracy` (memory hit rate), (4) `surprise_distribution` (entropy of surprise signal), (5) `temporal_coherence` (memory-output correlation over time). **Goal**: Discover diverse memory phenotypes (fast-writers, long-retainers, selective-memorizers). **Visualization**: Thunderprism heatmap of memory behavior space. Cross-domain: **Bolt×Prism×Pac**. | Bolt + Prism Stewards | Not Started |
+| **HC-80** | **P1** | **Rose Tree Protocol** | No formal multi-branching tree standard | **ROSE-01**: Define Rose Tree as universal hierarchical structure for Thunderline domains. **Research Source**: "Growing Neural Cellular Automata" (Mordvintsev/Distill, 2020) + Plan Tree formalization (High Command, 2025). **Components**: (1) `Thunderline.RoseTree` module with `new_root/2`, `attach_child/3`, `map/2`, `fold/3`, `prune/2`, `path/2`, `flatten/1` operations, (2) Protocol behavior for domain-specific payload types, (3) Zipper navigation for efficient tree traversal, (4) Serialization to/from JSON for persistence. **Use Cases**: PAC Behavior Trees, Crown Plan Trees, Vine DAG Lineage, Crown Governance Trees. Cross-domain: **Core×All**. See §Rose Tree Protocol. | Core Steward | Not Started |
+| **HC-81** | **P1** | **Plan Tree Schema** | No Ash resources for orchestration plans | **PLAN-01**: Create Thunderchief PlanTree and PlanNode Ash resources. **Components**: (1) `Thunderchief.PlanTree` resource (root_id, goal, status, metadata), (2) `Thunderchief.PlanNode` resource (label, payload, parent_id, status: pending/running/done/failed), (3) Relationships: tree has_many nodes, nodes belong_to parent, (4) Actions: `create_plan`, `attach_node`, `update_status`, `get_frontier`. **Goal**: Declarative multi-step orchestration with progress tracking. Cross-domain: **Chief×Crown×Vine**. See §Plan Tree Architecture. | Crown + Vine Stewards | Done |
+| **HC-82** | **P1** | **Plan Tree Lifecycle** | No tick-driven plan execution | **PLAN-02**: Implement tick/tock lifecycle for PlanTree execution. **Components**: (1) `tick/1` on Core emits `plan.tick` event, (2) PlanTree handler computes frontier (nodes with all dependencies done), (3) Frontier nodes dispatched as Oban jobs or direct actions, (4) `tock/1` collects results, updates node statuses, triggers `plan.node.complete` events, (5) Tree completion triggers `plan.complete` event. **Failure Handling**: Node failure → status=failed → parent strategy (retry/skip/abort). Cross-domain: **Chief×Core×Flow×Oban**. | Crown + Core Stewards | Not Started |
+| **HC-83** | **P2** | **Unified Perceptron View** | No conceptual model unifying all domains | **PERC-01**: Document Unified Perceptron mapping for architectural reasoning. **Mapping**: (1) Input=sensor layer (Grid API, Prism UI, Link messages), (2) Gate=domain filtering + auth, (3) Block=persistent memory (DB), (4) Pac=working memory (state), (5) Bolt=nonlinear transform (CA rules, ML), (6) Flow=activation broadcast (events), (7) Crown=output weighting (policy), (8) Core=bias/clock (tick injection), (9) Vine=skip connections (DAG routing). **Purpose**: Conceptual framework for reasoning about domain interactions as single differentiable computation s_t → a_{t+1}. Cross-domain: **Arch (conceptual)**. See §Unified Perceptron Model. | Arch Lead | Not Started |
+| **HC-84** | **P1** | **CA State Vector Schema** | No canonical channel layout for NCA | **NCA-01**: Define 16+ channel state vector layout for Neural Cellular Automata. **Research Source**: "Growing Neural Cellular Automata" (Mordvintsev/Distill, 2020). **Layout**: Channels 0-3 (RGBA visible), 4-11 (hidden state), 12-15 (memory/persistent), 16+ (optional domain-specific). **Invariants**: (1) All channels ∈ [0,1] after σ clipping, (2) Alive mask = α > 0.1, (3) Stochastic update = Bernoulli(p=0.5) per cell. **Integration**: Thunderbolt CA stepper uses this schema; Thunderpac embeds PAC identity in channels 12-15. Cross-domain: **Bolt×Pac**. See §Neural CA Framework. | Bolt Steward | Not Started |
+| **HC-85** | **P1** | **Python CA Service Contract** | No API spec for learned update rules | **NCA-02**: Define HTTP/JSON contract for Python CA model service. **Endpoints**: (1) `POST /step` (batch_state → batch_next_state, latency target <50ms), (2) `GET /health` (model loaded, GPU available), (3) `POST /train` (optional online learning trigger). **Payload Schema**: `{states: [H,W,C], alive_mask: [H,W], step_count: int}`. **Response**: `{next_states: [H,W,C], metrics: {...}}`. **Integration**: Thunderbolt calls service on each CA tick for learned rule application; falls back to local Nx rule if service unavailable. Cross-domain: **Bolt×Python**. See §Neural CA Framework. | Bolt + Python Stewards | Not Started |
+| **HC-86** | **P0** | **Ternary State Primitives** | No ternary arithmetic/logic for Thunderbits | **TQCA-01**: Implement `Thunderbolt.TernaryState` module with ternary arithmetic and logic. **Research Source**: "Ternary Reversible Feynman and Toffoli Gates in TQCA". **Components**: (1) Type `ternary :: :neg \| :zero \| :pos`, (2) Conversion functions `to_balanced/1`, `from_balanced/1`, (3) Arithmetic: `add/2`, `multiply/2`, (4) Logic: `ternary_not/1`, `ternary_and/2`, `ternary_or/2`, (5) Min/max ternary operations. **Use Cases**: Domain status signals, policy predicates, CA state values. Cross-domain: **Bolt×Crown×Gate**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Bolt Steward | Done |
+| **HC-87** | **P0** | **Thunderbit v2 Schema** | Thunderbit lacks ternary state and MIRAS fields | **TQCA-02**: Extend `Thunderbolt.Thunderbit` struct with full v2 schema. **New Fields**: (1) `:state` (ternary), (2) `:state_vector` (multi-channel), (3) `:bias`, `:coupling`, `:temperature` (Ising physics), (4) `:surprise_metric`, `:retention_gate`, `:momentum_surprise` (MIRAS), (5) `:rule_version` for CA rule selection. **Research**: Ternary QCA + Titans/MIRAS integration. Cross-domain: **Bolt×Pac**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Bolt Steward | Done |
+| **HC-88** | **P0** | **4-Phase Thunderclock** | No QCA-style clock phasing | **CLOCK-01**: Implement `Thundercore.Clock` with 4-phase cycle: Switch→Hold→Release→Relax. **Research Source**: QCA 4-phase clocking. **Components**: (1) GenServer maintaining phase state, (2) `core.clock.phase` events on transitions, (3) Phase subscribers per domain, (4) Domain mapping: SWITCH (input), HOLD (compute), RELEASE (output), RELAX (decay). **Goal**: Coordinate domain activity with physics-inspired timing. Cross-domain: **Core×All**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Core Steward | Done |
+| **HC-89** | **P0** | **Reversible CA Rules** | CA rules destroy information | **TQCA-03**: Implement `Thunderbolt.ReversibleRules` with Toffoli/Feynman gates. **Research Source**: Ternary reversible TQCA gates. **Components**: (1) `feynman_ternary/2` (controlled transform), (2) `toffoli_ternary/3` (controlled-controlled flip), (3) `reversible?/1` validation (bijection check), (4) Undo trace generation. **Goal**: Bijective state transitions enable cheap rollback. Cross-domain: **Bolt×Pac**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Bolt Steward | Done |
+| **HC-90** | **P0** | **MIRAS Memory Module** | No surprise-gated deep memory | **MIRAS-06**: Implement `Thunderpac.MemoryModule` GenServer with Titans-style memory. **Research Source**: Google Titans (2025), MIRAS (2025). **Components**: (1) Deep MLP state (Nx tensor), (2) Surprise-gated writes (`\|\|∇ℓ\|\| > θ`), (3) Momentum-smoothed surprise (β-EMA), (4) Weight decay forgetting, (5) Read/write/decay API. **Integration**: Called during RELAX phase for decay. Cross-domain: **Pac×Bolt**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Pac Steward | Done |
+| **HC-91** | **P1** | **Surprise Metric Computation** | No gradient-based novelty measure | **MIRAS-07**: Implement `Thunderbolt.SurpriseMetric` for MIRAS integration. **Components**: (1) `compute_surprise/2` (predicted vs observed gradient magnitude), (2) `momentum_surprise/3` (β-EMA smoothing), (3) `should_write?/2` (threshold check). **Use Cases**: Memory write gating, event prioritization, anomaly detection. Cross-domain: **Bolt×Pac×Flow**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Bolt Steward | Not Started |
+| **HC-92** | **P1** | **Topological Braid Memory** | No corruption-resistant composite structures | **TOPO-01**: Implement `Thunderpac.TopologicalBraid` for stable PAC structures. **Research Source**: Kitaev/Sen anyonic braids. **Components**: (1) `from_pac_state/1` (extract strands), (2) `crossings/1` (compute sequence), (3) `invariant/1` (Jones polynomial), (4) `valid?/1` (integrity check), (5) `corrupted?/1` (tamper detection). **Use Cases**: Agent identity, task state, goal trees, long-term memory. Cross-domain: **Pac×Gate**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Pac Steward | Not Started |
+| **HC-93** | **P1** | **Fault Tolerance Simulation** | No TQCA-style fault modeling | **FAULT-01**: Implement `Thunderbolt.FaultTolerance` for dropout simulation. **Research Source**: TQCA fault tolerance (77-92% resilience). **Components**: (1) `simulate_dropout/2` (random cell omission), (2) `verify_convergence_with_faults/4` (CA still converges), (3) `fault_tolerant_rule?/2` (rule design validation). **Integration**: Test harness for CA rule resilience. Cross-domain: **Bolt×Vine**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Bolt Steward | Not Started |
+| **HC-94** | **P1** | **Ternary Policy Predicates** | Policies lack ternary semantics | **CROWN-04**: Implement `Thundercrown.TernaryPolicy` for ternary policy evaluation. **Components**: (1) `evaluate_access/2` (trust × risk → allow/deny/defer), (2) Ternary predicate combinators, (3) Integration with existing Ash policies. **Use Cases**: Ambiguous authorization (defer = need more info), graduated trust levels. Cross-domain: **Crown×Gate**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Crown Steward | Not Started |
+| **HC-95** | **P0** | **Wire v2 Tick to CA Engine** | CA engine doesn't use v2 ternary tick | **TQCA-05**: Wire `Thunderbit.ternary_tick/2` to CA engine. **Components**: (1) `CA.Stepper.step_ternary_grid/2` using v2 ternary logic, (2) `CA.Runner` Clock-driven mode via `:hold` phase subscription, (3) `Stepper.next/2` dispatcher with `rule_version` selection (v1 vs v2), (4) Dual timing modes (self-timed ~20Hz or Clock-driven). **Goal**: Unified CA execution using ternary physics substrate. Cross-domain: **Bolt×Core**. See §HC_QUANTUM_SUBSTRATE_SPEC.md. | Bolt + Core Stewards | Done |
 
 Legend: P0 launch‑critical; P1 post‑launch hardening; P2 strategic. Status: Not Started | Planned | In Progress | Done.
 
@@ -3962,6 +3983,514 @@ python/cerebros/
 
 ---
 
+## 🧠 MIRAS/TITANS MEMORY INTEGRATION DIRECTIVE (Dec 2025)
+
+**Mission**: Implement deep MLP memory substrate with surprise-gated updates based on Google's Titans ("Learning to Memorize at Test Time") and MIRAS ("Unlocking Expressivity and Safety") research papers. This enables PACs to maintain long-term memory that writes selectively when encountering novel situations.
+
+### Research Foundation
+
+**Papers Integrated**:
+- [Google Titans (2025)](https://arxiv.org/abs/2501.00663) - Deep MLP as memory, surprise metric = gradient magnitude, momentum smoothing
+- [MIRAS Framework (2025)](https://arxiv.org/abs/2501.XXXXX) - Unified 4-design-choice framework: Memory Architecture, Attentional Bias, Retention Gate, Update Algorithm
+
+**Key Insights from Titans**:
+1. **Surprise = Gradient Magnitude**: Write to memory when ‖∇ℓ‖ is large (something unexpected happened)
+2. **Momentum-based Smoothing**: s_t = β·s_{t-1} + (1-β)·‖∇ℓ_t‖ prevents spurious writes
+3. **Asymmetric Updates**: Fast write (high lr), slow forget (wd→0.99 for long retention)
+4. **Weight Decay as Forgetting**: Lower wd = longer memory, configurable per-PAC
+
+**MIRAS 4-Choice Framework**:
+| Choice | Options | Thunderline Mapping |
+|--------|---------|---------------------|
+| **Memory Architecture** | Linear / MLP / Deep MLP | `Thunderpac.MemoryModule` (deep MLP) |
+| **Attentional Bias** | None / Cross-attention / Soft retrieval | `Thundercrown` context + softmax |
+| **Retention Gate** | None / GRU-style / Weight decay | `Thunderwall` + config decay param |
+| **Update Algorithm** | None / Surprise-gated / Momentum | `Thunderbolt.LoopMonitor.surprise_metric` |
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     MIRAS/TITANS MEMORY ARCHITECTURE                        │
+│                                                                             │
+│   ┌───────────────────────────────────────────────────────────────────┐     │
+│   │                      THUNDERPAC DOMAIN                            │     │
+│   │  ┌───────────────────────────────────────────────────────────┐    │     │
+│   │  │                  MemoryModule (GenServer)                 │    │     │
+│   │  │  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐   │    │     │
+│   │  │  │ Layer 1 │──▶│ Layer 2 │──▶│ Layer 3 │──▶│ Output  │   │    │     │
+│   │  │  │ (ReLU)  │   │ (ReLU)  │   │ (ReLU)  │   │ (Linear)│   │    │     │
+│   │  │  └─────────┘   └─────────┘   └─────────┘   └─────────┘   │    │     │
+│   │  │         ▲                                                 │    │     │
+│   │  │         │ WRITE (when surprise > θ)                       │    │     │
+│   │  │         │                                                 │    │     │
+│   │  └─────────┼─────────────────────────────────────────────────┘    │     │
+│   └───────────┬┼──────────────────────────────────────────────────────┘     │
+│               ││                                                            │
+│   ┌───────────▼┼──────────────────────────────────────────────────────┐     │
+│   │            │             THUNDERBOLT DOMAIN                       │     │
+│   │  ┌─────────┴─────────────────────────────────────────────────┐    │     │
+│   │  │              LoopMonitor + SurpriseMetrics                │    │     │
+│   │  │  PLV │ Entropy │ λ̂ │ Lyapunov │ SURPRISE = ‖∇ℓ‖          │    │     │
+│   │  │                                    ▲                      │    │     │
+│   │  │                      β-EMA: s_t = β·s_{t-1} + (1-β)·g_t   │    │     │
+│   │  └───────────────────────────────────────────────────────────┘    │     │
+│   └───────────────────────────────────────────────────────────────────┘     │
+│                                     ▲                                       │
+│   ┌─────────────────────────────────┴─────────────────────────────────┐     │
+│   │                      THUNDERFLOW DOMAIN                           │     │
+│   │  Events: pac.memory.surprise → pac.memory.write → pac.memory.read │     │
+│   └───────────────────────────────────────────────────────────────────┘     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Component Specifications
+
+#### HC-75: Thunderpac.MemoryModule
+
+**Purpose**: Deep MLP state container that serves as long-term memory for PACs.
+
+```elixir
+defmodule Thunderline.Thunderpac.MemoryModule do
+  @moduledoc """
+  Deep MLP memory substrate (Titans-style).
+  Stores compressed state in learnable weight matrices.
+  Updates via surprise-gated writes.
+  """
+  use GenServer
+  alias Thunderline.Thunderflow.EventBus
+  
+  defstruct [
+    :pac_id,
+    :layers,           # List of weight matrices (Nx tensors)
+    :config,           # MIRASConfig struct
+    :momentum_state,   # EMA of surprise signal
+    :last_surprise,    # Most recent surprise value
+    :write_count,      # Total writes since init
+    :read_count        # Total reads since init
+  ]
+  
+  @default_config %{
+    depth: 3,                    # Number of MLP layers
+    width: 256,                  # Hidden dimension
+    surprise_threshold: 0.1,    # Write gate threshold
+    momentum_beta: 0.9,         # Surprise smoothing
+    weight_decay: 0.99,         # Forgetting rate (higher = longer memory)
+    write_lr: 0.01,             # Fast write learning rate
+    activation: :relu           # Activation function
+  }
+  
+  # --- Public API ---
+  
+  def start_link(opts) do
+    pac_id = Keyword.fetch!(opts, :pac_id)
+    config = Keyword.get(opts, :config, @default_config)
+    GenServer.start_link(__MODULE__, {pac_id, config}, name: via(pac_id))
+  end
+  
+  def read(pac_id, query) do
+    GenServer.call(via(pac_id), {:read, query})
+  end
+  
+  def maybe_write(pac_id, input, surprise_signal) do
+    GenServer.cast(via(pac_id), {:maybe_write, input, surprise_signal})
+  end
+  
+  def get_state(pac_id) do
+    GenServer.call(via(pac_id), :get_state)
+  end
+  
+  # --- Callbacks ---
+  
+  @impl true
+  def init({pac_id, config}) do
+    layers = initialize_layers(config.depth, config.width)
+    
+    state = %__MODULE__{
+      pac_id: pac_id,
+      layers: layers,
+      config: config,
+      momentum_state: 0.0,
+      last_surprise: 0.0,
+      write_count: 0,
+      read_count: 0
+    }
+    
+    {:ok, state}
+  end
+  
+  @impl true
+  def handle_call({:read, query}, _from, state) do
+    output = forward_pass(state.layers, query, state.config.activation)
+    new_state = %{state | read_count: state.read_count + 1}
+    
+    emit_read_event(state.pac_id, query, output)
+    {:reply, {:ok, output}, new_state}
+  end
+  
+  @impl true
+  def handle_cast({:maybe_write, input, surprise}, state) do
+    # Update momentum-smoothed surprise
+    smoothed = state.config.momentum_beta * state.momentum_state + 
+               (1 - state.config.momentum_beta) * surprise
+    
+    new_state = if smoothed > state.config.surprise_threshold do
+      # Surprise exceeds threshold - write to memory
+      updated_layers = gradient_write(state.layers, input, state.config)
+      emit_write_event(state.pac_id, input, smoothed)
+      
+      %{state | 
+        layers: updated_layers,
+        momentum_state: smoothed,
+        last_surprise: surprise,
+        write_count: state.write_count + 1
+      }
+    else
+      # No write - just update momentum state
+      %{state | momentum_state: smoothed, last_surprise: surprise}
+    end
+    
+    {:noreply, new_state}
+  end
+  
+  # --- Private ---
+  
+  defp initialize_layers(depth, width) do
+    for _ <- 1..depth do
+      Nx.random_normal({width, width}, 0.0, 0.1)
+    end
+  end
+  
+  defp forward_pass(layers, input, activation) do
+    Enum.reduce(layers, input, fn layer, acc ->
+      acc
+      |> Nx.dot(layer)
+      |> apply_activation(activation)
+    end)
+  end
+  
+  defp apply_activation(tensor, :relu), do: Nx.max(tensor, 0)
+  defp apply_activation(tensor, :tanh), do: Nx.tanh(tensor)
+  defp apply_activation(tensor, _), do: tensor
+  
+  defp gradient_write(layers, input, config) do
+    # Simplified write: outer product update (Hebbian-style)
+    # Full implementation would use actual gradients
+    Enum.map(layers, fn layer ->
+      delta = Nx.outer(input, input)
+      |> Nx.multiply(config.write_lr)
+      
+      layer
+      |> Nx.multiply(config.weight_decay)  # Forgetting
+      |> Nx.add(delta)                     # Writing
+    end)
+  end
+  
+  defp emit_write_event(pac_id, input, surprise) do
+    EventBus.publish_event(%{
+      name: "pac.memory.write",
+      source: :thunderpac,
+      payload: %{pac_id: pac_id, surprise: surprise, input_shape: Nx.shape(input)}
+    })
+  end
+  
+  defp emit_read_event(pac_id, query, output) do
+    EventBus.publish_event(%{
+      name: "pac.memory.read",
+      source: :thunderpac,
+      payload: %{pac_id: pac_id, query_shape: Nx.shape(query), output_shape: Nx.shape(output)}
+    })
+  end
+  
+  defp via(pac_id), do: {:via, Registry, {Thunderline.Thunderpac.Registry, {:memory, pac_id}}}
+end
+```
+
+#### HC-76: Surprise Metric Computation
+
+**Extension to existing LoopMonitor** (`lib/thunderline/thunderbolt/signal/loop_monitor.ex`):
+
+```elixir
+defmodule Thunderline.Thunderbolt.Signal.LoopMonitor.SurpriseMetrics do
+  @moduledoc """
+  Surprise metric computation for MIRAS/Titans memory integration.
+  Surprise = gradient magnitude (proxy for novelty).
+  """
+  
+  @doc """
+  Compute surprise as L2 norm of gradient-like signal.
+  Uses prediction error as proxy for gradient magnitude.
+  """
+  def surprise_metric(predicted, actual) when is_list(predicted) and is_list(actual) do
+    predicted
+    |> Enum.zip(actual)
+    |> Enum.map(fn {p, a} -> (a - p) * (a - p) end)
+    |> Enum.sum()
+    |> :math.sqrt()
+  end
+  
+  def surprise_metric(predicted, actual) do
+    # Nx tensor version
+    Nx.subtract(actual, predicted)
+    |> Nx.pow(2)
+    |> Nx.sum()
+    |> Nx.sqrt()
+    |> Nx.to_number()
+  end
+  
+  @doc """
+  Momentum-smoothed surprise signal.
+  s_t = β * s_{t-1} + (1-β) * ‖∇ℓ_t‖
+  """
+  def momentum_surprise(current_surprise, prev_momentum, beta \\ 0.9) do
+    beta * prev_momentum + (1 - beta) * current_surprise
+  end
+  
+  @doc """
+  Check if surprise exceeds write threshold.
+  """
+  def should_write?(smoothed_surprise, threshold \\ 0.1) do
+    smoothed_surprise > threshold
+  end
+  
+  @doc """
+  Emit surprise telemetry event.
+  """
+  def emit_surprise_telemetry(pac_id, raw_surprise, smoothed_surprise, wrote?) do
+    :telemetry.execute(
+      [:thunderline, :bolt, :ca, :surprise],
+      %{
+        raw_surprise: raw_surprise,
+        smoothed_surprise: smoothed_surprise
+      },
+      %{
+        pac_id: pac_id,
+        wrote_to_memory: wrote?
+      }
+    )
+  end
+end
+```
+
+#### HC-77: MIRAS Configuration Resource
+
+```elixir
+defmodule Thunderline.Thunderpac.MIRASConfig do
+  @moduledoc """
+  MIRAS 4-choice configuration for PAC memory behavior.
+  """
+  use Ash.Resource,
+    domain: Thunderline.Thunderpac.Domain,
+    data_layer: AshPostgres.DataLayer
+  
+  postgres do
+    table "miras_configs"
+    repo Thunderline.Repo
+  end
+  
+  attributes do
+    uuid_primary_key :id
+    
+    # Memory Architecture
+    attribute :memory_depth, :integer, default: 3
+    attribute :memory_width, :integer, default: 256
+    attribute :activation, :atom, default: :relu, constraints: [one_of: [:relu, :tanh, :gelu]]
+    
+    # Update Algorithm
+    attribute :surprise_threshold, :float, default: 0.1
+    attribute :momentum_beta, :float, default: 0.9
+    attribute :write_lr, :float, default: 0.01
+    
+    # Retention Gate
+    attribute :weight_decay, :float, default: 0.99
+    attribute :retention_mode, :atom, default: :decay, constraints: [one_of: [:decay, :gru, :none]]
+    
+    # Attention Mode
+    attribute :attention_mode, :atom, default: :none, constraints: [one_of: [:none, :cross, :soft]]
+    
+    # Preset name (for quick config)
+    attribute :preset, :atom, constraints: [one_of: [:titans_default, :fast_write, :long_memory, :balanced, :custom]]
+    
+    timestamps()
+  end
+  
+  relationships do
+    belongs_to :pac, Thunderline.Thunderpac.PAC
+  end
+  
+  calculations do
+    calculate :effective_memory_span, :integer, expr(
+      # Approximate number of ticks before memory fades to 1%
+      # ln(0.01) / ln(weight_decay) ≈ -4.6 / ln(wd)
+      fragment("CAST(FLOOR(-4.6 / LN(?)) AS INTEGER)", weight_decay)
+    )
+  end
+  
+  actions do
+    defaults [:read, :destroy]
+    
+    create :create do
+      accept [:memory_depth, :memory_width, :activation, :surprise_threshold, 
+              :momentum_beta, :write_lr, :weight_decay, :retention_mode, 
+              :attention_mode, :preset, :pac_id]
+    end
+    
+    update :update do
+      accept [:surprise_threshold, :momentum_beta, :write_lr, :weight_decay]
+    end
+    
+    read :get_for_pac do
+      argument :pac_id, :uuid, allow_nil?: false
+      filter expr(pac_id == ^arg(:pac_id))
+    end
+  end
+  
+  code_interface do
+    define :create
+    define :get_for_pac, args: [:pac_id]
+  end
+  
+  @presets %{
+    titans_default: %{
+      memory_depth: 3,
+      memory_width: 256,
+      surprise_threshold: 0.1,
+      momentum_beta: 0.9,
+      weight_decay: 0.99,
+      write_lr: 0.01
+    },
+    fast_write: %{
+      memory_depth: 2,
+      memory_width: 128,
+      surprise_threshold: 0.05,
+      momentum_beta: 0.5,
+      weight_decay: 0.95,
+      write_lr: 0.05
+    },
+    long_memory: %{
+      memory_depth: 4,
+      memory_width: 512,
+      surprise_threshold: 0.2,
+      momentum_beta: 0.95,
+      weight_decay: 0.999,
+      write_lr: 0.005
+    },
+    balanced: %{
+      memory_depth: 3,
+      memory_width: 256,
+      surprise_threshold: 0.1,
+      momentum_beta: 0.85,
+      weight_decay: 0.98,
+      write_lr: 0.01
+    }
+  }
+  
+  def preset_config(preset_name), do: Map.get(@presets, preset_name, @presets.titans_default)
+end
+```
+
+### Event Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1. PAC processes input (CA step, sensor data, etc.)                     │
+│    └─▶ LoopMonitor computes prediction error (actual vs expected)       │
+│                                                                          │
+│ 2. Surprise computation                                                  │
+│    └─▶ surprise = ‖actual - predicted‖₂                                  │
+│    └─▶ smoothed = β * prev_smoothed + (1-β) * surprise                  │
+│    └─▶ Emit: pac.memory.surprise {pac_id, raw, smoothed}                │
+│                                                                          │
+│ 3. Memory gate check                                                     │
+│    └─▶ IF smoothed > threshold:                                          │
+│        └─▶ MemoryModule.maybe_write(pac_id, input, smoothed)            │
+│        └─▶ Emit: pac.memory.write {pac_id, surprise, input_shape}       │
+│    └─▶ ELSE:                                                             │
+│        └─▶ Update momentum state only (no write)                         │
+│                                                                          │
+│ 4. Memory read (on PAC action selection)                                 │
+│    └─▶ output = MemoryModule.read(pac_id, query)                        │
+│    └─▶ Emit: pac.memory.read {pac_id, query_shape, output_shape}        │
+│                                                                          │
+│ 5. Telemetry                                                             │
+│    └─▶ [:thunderline, :bolt, :ca, :surprise] {raw, smoothed, wrote?}    │
+│    └─▶ [:thunderline, :pac, :memory, :write] {latency, success}         │
+│    └─▶ [:thunderline, :pac, :memory, :read] {latency, hit_rate}         │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation Phases
+
+**Phase 1 (Week 1): Foundation — HC-75, HC-76**
+- [ ] Create `lib/thunderline/thunderpac/memory_module.ex` GenServer
+- [ ] Extend `lib/thunderline/thunderbolt/signal/loop_monitor.ex` with SurpriseMetrics
+- [ ] Add event taxonomy entries: `pac.memory.*`
+- [ ] Unit tests for MemoryModule CRUD operations
+- [ ] Unit tests for surprise computation accuracy
+
+**Phase 2 (Week 2): Configuration — HC-77**
+- [ ] Create `Thunderpac.MIRASConfig` Ash resource
+- [ ] Database migration for `miras_configs` table
+- [ ] Preset configurations (titans_default, fast_write, long_memory, balanced)
+- [ ] Per-PAC config inheritance (global defaults + local overrides)
+- [ ] Integration tests for config→memory behavior
+
+**Phase 3 (Week 3): Cerebros Integration — HC-78**
+- [ ] Extend TPE search space with memory hyperparameters
+- [ ] Add memory metrics to trial objectives
+- [ ] Trial lifecycle events for memory experiments
+- [ ] Integration with existing TPE orchestrator
+
+**Phase 4 (Week 4): MAP-Elites — HC-79**
+- [ ] Add memory behavioral descriptors to MAP-Elites grid
+- [ ] Implement memory utilization metric
+- [ ] Implement write frequency tracker
+- [ ] Visualization in Thunderprism heatmap
+- [ ] Discovery of diverse memory phenotypes
+
+### Key Files
+
+```
+lib/thunderline/thunderpac/
+├── memory_module.ex           # GenServer for deep MLP memory (HC-75)
+├── miras_config.ex            # Ash resource for 4-choice config (HC-77)
+└── resources/
+    └── memory_cell.ex         # EXISTING discrete memory (unchanged)
+
+lib/thunderline/thunderbolt/signal/
+├── loop_monitor.ex            # EXISTING criticality metrics
+└── surprise_metrics.ex        # NEW surprise computation (HC-76)
+
+lib/thunderline/thunderbolt/cerebros/
+└── tpe_memory_space.ex        # TPE search space extension (HC-78)
+
+lib/thunderline/thunderprism/
+└── map_elites_memory.ex       # Memory behavioral descriptors (HC-79)
+```
+
+### Success Criteria
+
+1. **MemoryModule** stores and retrieves state with <10ms latency
+2. **Surprise metric** correlates with actual novelty (validation on test sequences)
+3. **Memory writes** occur only when genuine novelty detected (false positive rate <10%)
+4. **Long-term retention** persists for configured tick count (±5% of theoretical)
+5. **TPE discovers** memory configurations outperforming defaults by >15%
+6. **MAP-Elites** produces >10 distinct memory phenotypes
+
+### Integration with Existing Systems
+
+| System | Integration Point | Benefit |
+|--------|-------------------|---------|
+| **LoopMonitor** | Surprise feeds into criticality metrics | Unified "edge of chaos" + "edge of surprise" |
+| **MemoryCell** | Coexists (discrete vs continuous memory) | Different memory needs, same PAC |
+| **Cerebros TPE** | Memory params in search space | Automated memory architecture discovery |
+| **MAP-Elites** | Memory dimensions in behavior grid | Quality diversity in memory strategies |
+| **Thundercrown** | Policy for memory budgets | Governance of memory resource allocation |
+| **Thunderwall** | Decay expired memory modules | Memory GC via Wall entropy sink |
+
+---
+
 ### ML Infrastructure Status (Updated Nov 2025)
 
 **Python ML Stack** ✅ **PRODUCTION READY**
@@ -4108,6 +4637,957 @@ Status summary for the ThunderBolt ML ledger, Cerebros bridge boundary, and NAS 
 4. Implement resilient search/exploration strategy (replace `simple_search.ex` stub) and feed outcomes back into trials queue.
 4. Publish walkthrough for executing NAS loop via Thunderhelm (Livebook → Cerebros runner → MLflow) including feature flag prerequisites.
 5. Add `mix thunderline.ml.validate` (planned) to verify bridge config, dataset availability, and event emission paths before enabling flag.
+
+---
+
+## 🌳 ROSE TREE PROTOCOL (Dec 2025)
+
+**Mission**: Define Rose Tree as the universal hierarchical structure for multi-branching trees across all Thunderline domains. A Rose Tree differs from binary trees by allowing arbitrary fanout at each node, making it ideal for behavior trees, plan trees, governance hierarchies, and DAG lineage.
+
+### Research Foundation
+
+**Papers & Sources**:
+- "Growing Neural Cellular Automata" (Mordvintsev et al., Distill 2020) - Multi-scale hierarchical pattern formation
+- "Functional Programming with Bananas, Lenses, Envelopes and Barbed Wire" (Meijer et al., 1991) - Rose tree recursion schemes
+- High Command Plan Tree Specification (2025) - Thunderchief orchestration via rose trees
+
+**Core Definition**:
+```
+RoseTree<T> = Node(label: T, children: [RoseTree<T>])
+```
+
+A rose tree is a tree where each node contains:
+1. **Label**: Domain-specific payload (e.g., plan step, behavior node, governance rule)
+2. **Children**: A list (possibly empty) of subtrees
+
+### Module Specification (HC-80)
+
+```elixir
+defmodule Thunderline.RoseTree do
+  @moduledoc """
+  Rose Tree: multi-branching tree structure for hierarchical data.
+  
+  A rose tree differs from binary trees by allowing arbitrary fanout.
+  Each node has a label (payload) and a list of children (subtrees).
+  
+  Use cases:
+  - PAC Behavior Trees (Thunderpac)
+  - Plan Trees (Thunderchief)
+  - Governance Hierarchies (Thundercrown)
+  - DAG Lineage (Thundervine)
+  """
+  
+  @type t(a) :: %__MODULE__{
+    label: a,
+    children: [t(a)]
+  }
+  
+  defstruct [:label, children: []]
+  
+  @doc "Create a new leaf node (no children)"
+  @spec new_root(label :: term()) :: t(term())
+  def new_root(label), do: %__MODULE__{label: label, children: []}
+  
+  @doc "Attach a child tree to a parent node"
+  @spec attach_child(parent :: t(a), child :: t(a)) :: t(a) when a: var
+  def attach_child(%__MODULE__{children: cs} = parent, child) do
+    %{parent | children: cs ++ [child]}
+  end
+  
+  @doc "Map a function over all labels in the tree"
+  @spec map(tree :: t(a), fun :: (a -> b)) :: t(b) when a: var, b: var
+  def map(%__MODULE__{label: l, children: cs}, fun) do
+    %__MODULE__{
+      label: fun.(l),
+      children: Enum.map(cs, &map(&1, fun))
+    }
+  end
+  
+  @doc "Fold (reduce) the tree bottom-up"
+  @spec fold(tree :: t(a), fun :: (a, [b] -> b)) :: b when a: var, b: var
+  def fold(%__MODULE__{label: l, children: cs}, fun) do
+    child_results = Enum.map(cs, &fold(&1, fun))
+    fun.(l, child_results)
+  end
+  
+  @doc "Prune nodes matching a predicate"
+  @spec prune(tree :: t(a), pred :: (a -> boolean())) :: t(a) | nil when a: var
+  def prune(%__MODULE__{label: l, children: cs} = tree, pred) do
+    if pred.(l) do
+      nil
+    else
+      pruned_children = 
+        cs
+        |> Enum.map(&prune(&1, pred))
+        |> Enum.reject(&is_nil/1)
+      %{tree | children: pruned_children}
+    end
+  end
+  
+  @doc "Find path from root to a node matching predicate"
+  @spec path(tree :: t(a), pred :: (a -> boolean())) :: [a] | nil when a: var
+  def path(%__MODULE__{label: l, children: cs}, pred) do
+    if pred.(l) do
+      [l]
+    else
+      Enum.find_value(cs, fn child ->
+        case path(child, pred) do
+          nil -> nil
+          p -> [l | p]
+        end
+      end)
+    end
+  end
+  
+  @doc "Flatten tree to list (pre-order traversal)"
+  @spec flatten(tree :: t(a)) :: [a] when a: var
+  def flatten(%__MODULE__{label: l, children: cs}) do
+    [l | Enum.flat_map(cs, &flatten/1)]
+  end
+  
+  @doc "Convert to JSON-serializable map"
+  @spec to_map(tree :: t(a)) :: map() when a: var
+  def to_map(%__MODULE__{label: l, children: cs}) do
+    %{
+      "label" => l,
+      "children" => Enum.map(cs, &to_map/1)
+    }
+  end
+end
+```
+
+### Domain Applications
+
+| Domain | Rose Tree Use Case | Label Type |
+|--------|-------------------|------------|
+| **Thunderpac** | Behavior Trees | `%BehaviorNode{type: :sequence\|:selector\|:action}` |
+| **Thunderchief** | Plan Trees | `%PlanNode{goal: str, status: atom}` |
+| **Thundercrown** | Governance Trees | `%PolicyNode{rule: str, priority: int}` |
+| **Thundervine** | DAG Lineage | `%LineageNode{resource_id: uuid, operation: atom}` |
+| **Thunderprism** | UI Component Trees | `%ComponentNode{type: atom, props: map}` |
+
+### Zipper Navigation (Optional Enhancement)
+
+For efficient tree traversal and modification:
+
+```elixir
+defmodule Thunderline.RoseTree.Zipper do
+  @moduledoc "Zipper for efficient rose tree navigation"
+  
+  defstruct [:focus, :crumbs]
+  
+  def from_tree(tree), do: %__MODULE__{focus: tree, crumbs: []}
+  
+  def down(%__MODULE__{focus: %{children: [h | _]} = f} = z) do
+    %{z | focus: h, crumbs: [{f.label, [], tl(f.children)} | z.crumbs]}
+  end
+  
+  def up(%__MODULE__{focus: f, crumbs: [{label, lefts, rights} | rest]}) do
+    parent = %Thunderline.RoseTree{
+      label: label,
+      children: Enum.reverse(lefts) ++ [f] ++ rights
+    }
+    %__MODULE__{focus: parent, crumbs: rest}
+  end
+  
+  def right(%__MODULE__{focus: f, crumbs: [{label, lefts, [r | rs]} | rest]} = z) do
+    %{z | focus: r, crumbs: [{label, [f | lefts], rs} | rest]}
+  end
+  
+  def to_tree(%__MODULE__{crumbs: []} = z), do: z.focus
+  def to_tree(z), do: z |> up() |> to_tree()
+end
+```
+
+---
+
+## 🎯 PLAN TREE ARCHITECTURE (Thunderchief v1) (Dec 2025)
+
+**Mission**: Implement orchestration via rose trees in the new Thunderchief domain. Plan Trees decompose high-level goals into executable action sequences with dependency tracking and progress monitoring.
+
+### Relationship to Existing Domains
+
+| Concern | Domain | Role |
+|---------|--------|------|
+| **Goal decomposition** | Thunderchief (NEW) | Owns PlanTree, PlanNode resources |
+| **Policy evaluation** | Thundercrown | Provides governance constraints |
+| **Task execution** | Oban | Executes leaf actions as jobs |
+| **Progress events** | Thunderflow | Broadcasts `plan.*` events |
+| **Lineage tracking** | Thundervine | Records DAG edges for plan execution |
+
+### PlanTree Structure
+
+A Plan Tree has three levels:
+1. **Goal** (root): What we want to achieve
+2. **Strategy** (internal nodes): How to achieve it
+3. **Action** (leaves): Concrete steps to execute
+
+```
+Goal: "Deploy application to production"
+├── Strategy: "Prepare deployment artifacts"
+│   ├── Action: "Run test suite"
+│   ├── Action: "Build Docker image"
+│   └── Action: "Push to registry"
+└── Strategy: "Execute deployment"
+    ├── Action: "Update Kubernetes manifests"
+    ├── Action: "Apply to cluster"
+    └── Action: "Verify health checks"
+```
+
+### Ash Resources (HC-81) ✅ IMPLEMENTED
+
+**Status**: Done as of Dec 5, 2025
+
+**Implementation Notes**:
+- Created hybrid approach: existing struct-based `PlanTree` for fast in-memory execution + Ash resources for persistence
+- Resources at `lib/thunderline/thunderchief/resources/{plan_tree.ex, plan_node.ex}`
+- Domain at `lib/thunderline/thunderchief/domain.ex` with AshAdmin/AshGraphql extensions
+- Tables: `chief_plan_trees`, `chief_plan_nodes`
+- Bidirectional conversion: `from_struct/2` and `to_struct/1` functions for serialization
+- Code interfaces: `create_plan_tree!`, `create_plan_node!`, `list_plan_trees`, etc.
+
+**Reference Implementation** (actual code in `lib/thunderline/thunderchief/resources/`):
+
+```elixir
+defmodule Thunderline.Thunderchief.PlanTree do
+  @moduledoc "Root container for a plan tree"
+  use Ash.Resource,
+    domain: Thunderline.Thunderchief,
+    data_layer: AshPostgres.DataLayer
+  
+  postgres do
+    table "plan_trees"
+    repo Thunderline.Repo
+  end
+  
+  attributes do
+    uuid_primary_key :id
+    attribute :goal, :string, allow_nil?: false
+    attribute :status, :atom do
+      constraints one_of: [:pending, :running, :completed, :failed, :cancelled]
+      default :pending
+    end
+    attribute :metadata, :map, default: %{}
+    attribute :started_at, :utc_datetime_usec
+    attribute :completed_at, :utc_datetime_usec
+    timestamps()
+  end
+  
+  relationships do
+    has_many :nodes, Thunderline.Thunderchief.PlanNode
+    belongs_to :root_node, Thunderline.Thunderchief.PlanNode
+  end
+  
+  actions do
+    defaults [:read, :destroy]
+    
+    create :create_plan do
+      accept [:goal, :metadata]
+      change fn changeset, _ctx ->
+        # Create root node automatically
+        Ash.Changeset.after_action(changeset, fn _cs, tree ->
+          {:ok, root} = Thunderline.Thunderchief.create_node!(%{
+            plan_tree_id: tree.id,
+            label: tree.goal,
+            node_type: :goal,
+            status: :pending
+          })
+          Ash.Changeset.force_change_attribute(changeset, :root_node_id, root.id)
+          {:ok, %{tree | root_node_id: root.id}}
+        end)
+      end
+    end
+    
+    update :start do
+      change set_attribute(:status, :running)
+      change set_attribute(:started_at, &DateTime.utc_now/0)
+    end
+    
+    update :complete do
+      change set_attribute(:status, :completed)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+    end
+    
+    update :fail do
+      change set_attribute(:status, :failed)
+      change set_attribute(:completed_at, &DateTime.utc_now/0)
+    end
+    
+    read :get_frontier do
+      @doc "Get all nodes ready to execute (dependencies met)"
+      prepare fn query, _ctx ->
+        # This would filter to nodes where all parent/sibling dependencies are done
+        query
+      end
+    end
+  end
+end
+
+defmodule Thunderline.Thunderchief.PlanNode do
+  @moduledoc "Single node in a plan tree (goal, strategy, or action)"
+  use Ash.Resource,
+    domain: Thunderline.Thunderchief,
+    data_layer: AshPostgres.DataLayer
+  
+  postgres do
+    table "plan_nodes"
+    repo Thunderline.Repo
+  end
+  
+  attributes do
+    uuid_primary_key :id
+    attribute :label, :string, allow_nil?: false
+    attribute :node_type, :atom do
+      constraints one_of: [:goal, :strategy, :action]
+      allow_nil?: false
+    end
+    attribute :status, :atom do
+      constraints one_of: [:pending, :running, :done, :failed, :skipped]
+      default :pending
+    end
+    attribute :payload, :map, default: %{}  # Action-specific data
+    attribute :result, :map                  # Execution result
+    attribute :error, :string               # Error message if failed
+    attribute :order, :integer, default: 0  # Sibling ordering
+    timestamps()
+  end
+  
+  relationships do
+    belongs_to :plan_tree, Thunderline.Thunderchief.PlanTree, allow_nil?: false
+    belongs_to :parent, Thunderline.Thunderchief.PlanNode
+    has_many :children, Thunderline.Thunderchief.PlanNode, destination_attribute: :parent_id
+  end
+  
+  actions do
+    defaults [:read, :destroy]
+    
+    create :create do
+      accept [:label, :node_type, :payload, :order, :plan_tree_id, :parent_id]
+    end
+    
+    update :start do
+      change set_attribute(:status, :running)
+    end
+    
+    update :complete do
+      accept [:result]
+      change set_attribute(:status, :done)
+    end
+    
+    update :fail do
+      accept [:error]
+      change set_attribute(:status, :failed)
+    end
+    
+    update :skip do
+      change set_attribute(:status, :skipped)
+    end
+  end
+  
+  calculations do
+    calculate :ready?, :boolean, expr(
+      status == :pending and
+      (is_nil(parent_id) or parent.status == :done)
+    )
+  end
+end
+```
+
+### Tick/Tock Lifecycle (HC-82)
+
+```elixir
+defmodule Thunderline.Thunderchief.PlanExecutor do
+  @moduledoc """
+  Tick/tock lifecycle handler for plan tree execution.
+  
+  On each tick:
+  1. Compute frontier (nodes ready to execute)
+  2. Dispatch frontier nodes as Oban jobs
+  3. Emit plan.frontier events
+  
+  On tock (job completion):
+  1. Update node status
+  2. Check for tree completion
+  3. Emit plan.node.complete or plan.complete events
+  """
+  use GenServer
+  alias Thunderline.Thunderchief.{PlanTree, PlanNode}
+  alias Thunderline.Thunderflow.EventBus
+  
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+  
+  def init(_opts) do
+    # Subscribe to system tick
+    Phoenix.PubSub.subscribe(Thunderline.PubSub, "system.tick")
+    {:ok, %{active_plans: MapSet.new()}}
+  end
+  
+  def handle_info({:tick, tick_number}, state) do
+    # Process all running plans
+    running_plans = PlanTree |> Ash.Query.filter(status == :running) |> Ash.read!()
+    
+    Enum.each(running_plans, fn plan ->
+      frontier = compute_frontier(plan)
+      dispatch_frontier(frontier, plan)
+    end)
+    
+    {:noreply, state}
+  end
+  
+  defp compute_frontier(plan) do
+    PlanNode
+    |> Ash.Query.filter(plan_tree_id == ^plan.id)
+    |> Ash.Query.filter(status == :pending)
+    |> Ash.Query.filter(parent_id == nil or parent.status == :done)
+    |> Ash.read!()
+  end
+  
+  defp dispatch_frontier(nodes, plan) do
+    Enum.each(nodes, fn node ->
+      # Only dispatch leaf actions
+      if node.node_type == :action do
+        # Create Oban job for action execution
+        %{plan_id: plan.id, node_id: node.id, payload: node.payload}
+        |> Thunderline.Thunderchief.ActionWorker.new()
+        |> Oban.insert!()
+        
+        # Mark as running
+        Ash.update!(node, :start)
+        
+        # Emit event
+        EventBus.publish_event!(%{
+          name: "plan.node.dispatched",
+          source: :chief,
+          payload: %{plan_id: plan.id, node_id: node.id, label: node.label}
+        })
+      end
+    end)
+  end
+  
+  # Called by ActionWorker on completion
+  def handle_node_complete(node_id, result) do
+    node = PlanNode |> Ash.get!(node_id)
+    Ash.update!(node, :complete, %{result: result})
+    
+    EventBus.publish_event!(%{
+      name: "plan.node.complete",
+      source: :chief,
+      payload: %{node_id: node_id, result: result}
+    })
+    
+    # Check if parent strategy is complete
+    maybe_complete_parent(node)
+    
+    # Check if entire plan is complete
+    maybe_complete_plan(node.plan_tree_id)
+  end
+  
+  defp maybe_complete_parent(%{parent_id: nil}), do: :ok
+  defp maybe_complete_parent(node) do
+    siblings = PlanNode
+      |> Ash.Query.filter(parent_id == ^node.parent_id)
+      |> Ash.read!()
+    
+    if Enum.all?(siblings, &(&1.status in [:done, :skipped])) do
+      parent = Ash.get!(PlanNode, node.parent_id)
+      Ash.update!(parent, :complete, %{result: %{children_complete: true}})
+    end
+  end
+  
+  defp maybe_complete_plan(plan_id) do
+    nodes = PlanNode
+      |> Ash.Query.filter(plan_tree_id == ^plan_id)
+      |> Ash.read!()
+    
+    if Enum.all?(nodes, &(&1.status in [:done, :skipped])) do
+      plan = Ash.get!(PlanTree, plan_id)
+      Ash.update!(plan, :complete)
+      
+      EventBus.publish_event!(%{
+        name: "plan.complete",
+        source: :chief,
+        payload: %{plan_id: plan_id}
+      })
+    end
+  end
+end
+```
+
+---
+
+## 🧬 NEURAL CELLULAR AUTOMATA FRAMEWORK (Dec 2025)
+
+**Mission**: Implement Neural Cellular Automata (NCA) for Thunderbolt's learned CA rules, based on Mordvintsev et al.'s "Growing Neural Cellular Automata" (Distill, 2020). This enables self-organizing, differentiable pattern formation that can learn complex behaviors.
+
+### Research Foundation
+
+**Primary Source**: [Growing Neural Cellular Automata](https://distill.pub/2020/growing-ca/) (Mordvintsev, Randazzo, Niklasson, Levin - Distill 2020)
+
+**Key Insights**:
+1. **Differentiable CA**: Update rules are neural networks, enabling gradient-based learning
+2. **Local Perception**: Each cell perceives only its 3×3 neighborhood via Sobel filters
+3. **Self-Organization**: Complex patterns emerge from simple local rules
+4. **Robustness**: Learned patterns resist perturbation and can regenerate
+
+### State Vector Schema (HC-84)
+
+The state vector defines what information each cell carries:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    16-CHANNEL STATE VECTOR                      │
+├─────────────────────────────────────────────────────────────────┤
+│  Ch 0-3:  RGBA (visible layer, rendered to UI)                  │
+│  Ch 4-11: Hidden state (learned internal representation)        │
+│  Ch 12-15: Memory/Persistent (PAC identity, long-term state)    │
+│  Ch 16+:  Domain-specific extensions (optional)                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Elixir Representation**:
+```elixir
+defmodule Thunderline.Thunderbolt.NCA.StateVector do
+  @moduledoc """
+  16+ channel state vector for Neural Cellular Automata.
+  
+  Layout:
+  - Channels 0-3: RGBA (visible)
+  - Channels 4-11: Hidden state
+  - Channels 12-15: Memory/persistent
+  - Channels 16+: Domain extensions
+  """
+  
+  @rgba_channels 0..3
+  @hidden_channels 4..11
+  @memory_channels 12..15
+  
+  defstruct [
+    :tensor,           # Nx tensor of shape [H, W, C]
+    :height,
+    :width,
+    :channels
+  ]
+  
+  @doc "Create a state grid initialized to zeros with a seed"
+  def new(height, width, channels \\ 16, seed_pos \\ nil) do
+    tensor = Nx.broadcast(0.0, {height, width, channels})
+    
+    tensor = if seed_pos do
+      {y, x} = seed_pos
+      # Set seed cell: full alpha, hidden state initialized
+      tensor
+      |> Nx.put_slice([y, x, 3], Nx.tensor([1.0]))  # Alpha = 1
+      |> Nx.put_slice([y, x, 4], Nx.tensor([1.0]))  # Hidden init
+    else
+      tensor
+    end
+    
+    %__MODULE__{tensor: tensor, height: height, width: width, channels: channels}
+  end
+  
+  @doc "Get RGBA channels for visualization"
+  def rgba(%__MODULE__{tensor: t}), do: t[[.., .., 0..3]]
+  
+  @doc "Get hidden state channels"
+  def hidden(%__MODULE__{tensor: t}), do: t[[.., .., 4..11]]
+  
+  @doc "Get memory channels"
+  def memory(%__MODULE__{tensor: t}), do: t[[.., .., 12..15]]
+  
+  @doc "Compute alive mask (alpha > threshold)"
+  def alive_mask(%__MODULE__{tensor: t}, threshold \\ 0.1) do
+    alpha = t[[.., .., 3]]
+    Nx.greater(alpha, threshold)
+  end
+  
+  @doc "Apply alive masking (dead cells have zero state)"
+  def apply_alive_mask(%__MODULE__{tensor: t} = state, mask) do
+    # Expand mask to all channels and multiply
+    expanded = Nx.broadcast(mask, {state.height, state.width, state.channels})
+    %{state | tensor: Nx.multiply(t, expanded)}
+  end
+end
+```
+
+### Perception Layer
+
+Each cell perceives its neighborhood via Sobel filters:
+
+```elixir
+defmodule Thunderline.Thunderbolt.NCA.Perception do
+  @moduledoc "Sobel-based perception for NCA cells"
+  
+  # Sobel kernels for gradient detection
+  @sobel_x Nx.tensor([
+    [-1, 0, 1],
+    [-2, 0, 2],
+    [-1, 0, 1]
+  ]) |> Nx.divide(8)
+  
+  @sobel_y Nx.tensor([
+    [-1, -2, -1],
+    [ 0,  0,  0],
+    [ 1,  2,  1]
+  ]) |> Nx.divide(8)
+  
+  @doc """
+  Compute perception vector for each cell.
+  Returns [H, W, 3*C] tensor (identity + sobel_x + sobel_y per channel).
+  """
+  def perceive(state_tensor) do
+    # For each channel, compute identity + sobel_x + sobel_y
+    {h, w, c} = Nx.shape(state_tensor)
+    
+    identity = state_tensor
+    grad_x = apply_sobel(state_tensor, @sobel_x)
+    grad_y = apply_sobel(state_tensor, @sobel_y)
+    
+    # Concatenate along channel dimension
+    Nx.concatenate([identity, grad_x, grad_y], axis: 2)
+  end
+  
+  defp apply_sobel(tensor, kernel) do
+    # Apply Sobel kernel to each channel
+    Nx.conv(tensor, kernel, padding: :same)
+  end
+end
+```
+
+### Update Rule (Neural Network)
+
+```elixir
+defmodule Thunderline.Thunderbolt.NCA.UpdateRule do
+  @moduledoc """
+  Neural network update rule for NCA.
+  
+  Architecture:
+  1. Perception: 3×3 Sobel filters → [H,W,3C] perception vector
+  2. Dense layers: perception → hidden → delta_state
+  3. Stochastic update: Apply delta with probability p
+  4. Alive masking: Dead cells (α<0.1) remain dead
+  """
+  
+  defstruct [:model, :params]
+  
+  @doc "Create update rule with random initialization"
+  def new(channels \\ 16, hidden_size \\ 128) do
+    perception_size = channels * 3  # identity + sobel_x + sobel_y
+    
+    model = Axon.input("perception", shape: {nil, nil, perception_size})
+      |> Axon.dense(hidden_size, activation: :relu)
+      |> Axon.dense(channels, activation: :linear)
+      |> Axon.bias(initializer: :zeros)  # Initialize to zero delta
+    
+    {init_fn, _} = Axon.build(model)
+    params = init_fn.(Nx.template({1, 1, perception_size}, :f32), %{})
+    
+    %__MODULE__{model: model, params: params}
+  end
+  
+  @doc "Apply update rule to state"
+  def step(%__MODULE__{model: model, params: params}, state, opts \\ []) do
+    update_prob = Keyword.get(opts, :update_prob, 0.5)
+    
+    # 1. Perceive neighborhood
+    perception = Thunderline.Thunderbolt.NCA.Perception.perceive(state.tensor)
+    
+    # 2. Compute state delta via neural network
+    {predict_fn, _} = Axon.build(model)
+    delta = predict_fn.(params, perception)
+    
+    # 3. Stochastic update mask
+    update_mask = Nx.random_uniform(state.tensor) |> Nx.less(update_prob)
+    
+    # 4. Apply delta where update_mask is true
+    new_tensor = Nx.add(state.tensor, Nx.multiply(delta, update_mask))
+    
+    # 5. Clip to [0, 1]
+    new_tensor = Nx.clip(new_tensor, 0.0, 1.0)
+    
+    # 6. Apply alive masking
+    pre_alive = Thunderline.Thunderbolt.NCA.StateVector.alive_mask(state)
+    post_alive = Nx.greater(new_tensor[[.., .., 3]], 0.1)
+    alive = Nx.logical_and(
+      Nx.logical_or(pre_alive, post_alive),
+      max_pool_alive(post_alive)  # Neighbor must be alive
+    )
+    
+    new_state = %{state | tensor: new_tensor}
+    Thunderline.Thunderbolt.NCA.StateVector.apply_alive_mask(new_state, alive)
+  end
+  
+  defp max_pool_alive(alive_mask) do
+    # A cell stays alive if any neighbor is alive
+    Nx.window_max(alive_mask, {3, 3}, padding: :same)
+  end
+end
+```
+
+### Python CA Service Contract (HC-85)
+
+For learned rules trained in Python/JAX:
+
+```yaml
+# API Contract: Python CA Service
+
+endpoints:
+  POST /step:
+    description: "Apply learned update rule to batch of states"
+    request:
+      states: "[B, H, W, C] float32 tensor (batch of state grids)"
+      alive_mask: "[B, H, W] bool tensor (which cells are alive)"
+      step_count: "int (how many steps to run)"
+    response:
+      next_states: "[B, H, W, C] float32 tensor"
+      metrics:
+        alive_fraction: "float (proportion of alive cells)"
+        mean_activity: "float (mean hidden state magnitude)"
+        step_time_ms: "float (inference latency)"
+    latency_target: "<50ms for 64x64 grid"
+    
+  GET /health:
+    description: "Check service health"
+    response:
+      status: "healthy | degraded | unhealthy"
+      model_loaded: "bool"
+      gpu_available: "bool"
+      version: "string"
+      
+  POST /train:
+    description: "Trigger online learning (optional)"
+    request:
+      target_pattern: "[H, W, C] float32 (target to learn)"
+      steps: "int (training steps)"
+    response:
+      loss: "float (final loss)"
+      training_time_s: "float"
+```
+
+**Elixir Client**:
+```elixir
+defmodule Thunderline.Thunderbolt.NCA.PythonService do
+  @moduledoc "Client for Python CA service with learned update rules"
+  
+  @base_url "http://localhost:8765"  # Configurable
+  
+  def step(states, alive_mask, step_count \\ 1) do
+    body = %{
+      states: Nx.to_list(states),
+      alive_mask: Nx.to_list(alive_mask),
+      step_count: step_count
+    }
+    
+    case Req.post("#{@base_url}/step", json: body) do
+      {:ok, %{status: 200, body: resp}} ->
+        next_states = Nx.tensor(resp["next_states"])
+        {:ok, next_states, resp["metrics"]}
+        
+      {:ok, %{status: status}} ->
+        {:error, {:http_error, status}}
+        
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+  
+  def health do
+    case Req.get("#{@base_url}/health") do
+      {:ok, %{status: 200, body: resp}} -> {:ok, resp}
+      _ -> {:error, :unhealthy}
+    end
+  end
+end
+```
+
+### Integration with Thunderbolt
+
+```elixir
+defmodule Thunderline.Thunderbolt.CA.NCAStep do
+  @moduledoc "NCA step implementation for Thunderbolt CA stepper"
+  
+  alias Thunderline.Thunderbolt.NCA.{StateVector, UpdateRule, PythonService}
+  
+  @doc "Execute one CA step using learned or local rules"
+  def step(state, opts \\ []) do
+    use_python = Keyword.get(opts, :use_python, false)
+    
+    if use_python do
+      # Use Python service for learned rules
+      case PythonService.health() do
+        {:ok, %{"status" => "healthy"}} ->
+          alive_mask = StateVector.alive_mask(state)
+          case PythonService.step(state.tensor, alive_mask) do
+            {:ok, next, metrics} ->
+              emit_telemetry(metrics)
+              {:ok, %{state | tensor: next}}
+            {:error, _} ->
+              # Fallback to local rule
+              step_local(state, opts)
+          end
+          
+        _ ->
+          step_local(state, opts)
+      end
+    else
+      step_local(state, opts)
+    end
+  end
+  
+  defp step_local(state, opts) do
+    rule = Keyword.get(opts, :rule, UpdateRule.new())
+    {:ok, UpdateRule.step(rule, state, opts)}
+  end
+  
+  defp emit_telemetry(metrics) do
+    :telemetry.execute(
+      [:thunderline, :bolt, :nca, :step],
+      %{
+        latency_ms: metrics["step_time_ms"],
+        alive_fraction: metrics["alive_fraction"]
+      },
+      %{source: :python}
+    )
+  end
+end
+```
+
+---
+
+## 🔷 UNIFIED PERCEPTRON MODEL (Dec 2025)
+
+**Mission**: Document the conceptual mapping of all 12 Thunderline domains to components of a unified perceptron/neural network architecture. This provides a mental model for reasoning about domain interactions as a single differentiable computation.
+
+### Conceptual Framework (HC-83)
+
+The Unified Perceptron View maps each domain to a component in a giant neural network that transforms state s_t into action a_{t+1}:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      UNIFIED PERCEPTRON MODEL                               │
+│                                                                             │
+│   s_t (world state) ──────────────────────────────────────────▶ a_{t+1}     │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                         INPUT LAYER                                 │   │
+│   │  ┌─────────┐   ┌─────────┐   ┌─────────┐                           │   │
+│   │  │  GRID   │   │  PRISM  │   │  LINK   │  ← Sensory interfaces     │   │
+│   │  │  (API)  │   │  (UI)   │   │ (comms) │                           │   │
+│   │  └────┬────┘   └────┬────┘   └────┬────┘                           │   │
+│   └───────┼─────────────┼─────────────┼─────────────────────────────────┘   │
+│           │             │             │                                     │
+│           ▼             ▼             ▼                                     │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                         GATE LAYER                                  │   │
+│   │              (authentication, authorization, filtering)             │   │
+│   │                          THUNDERGATE                                │   │
+│   └───────────────────────────┬─────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                        MEMORY LAYER                                 │   │
+│   │  ┌─────────────┐                    ┌─────────────┐                 │   │
+│   │  │   BLOCK     │                    │    PAC      │                 │   │
+│   │  │ (persistent │                    │  (working   │                 │   │
+│   │  │   memory)   │                    │   memory)   │                 │   │
+│   │  └──────┬──────┘                    └──────┬──────┘                 │   │
+│   └─────────┼──────────────────────────────────┼────────────────────────┘   │
+│             │                                  │                            │
+│             ▼                                  ▼                            │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                      TRANSFORM LAYER                                │   │
+│   │                                                                     │   │
+│   │                          THUNDERBOLT                                │   │
+│   │              (CA rules, ML inference, nonlinear f(x))               │   │
+│   │                                                                     │   │
+│   └───────────────────────────┬─────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                      BROADCAST LAYER                                │   │
+│   │                                                                     │   │
+│   │                          THUNDERFLOW                                │   │
+│   │            (event propagation, activation distribution)             │   │
+│   │                                                                     │   │
+│   └───────────────────────────┬─────────────────────────────────────────┘   │
+│                               │                                             │
+│                               ▼                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                       OUTPUT LAYER                                  │   │
+│   │  ┌─────────────┐                    ┌─────────────┐                 │   │
+│   │  │   CROWN     │                    │    CHIEF    │                 │   │
+│   │  │  (policy    │                    │   (plan     │                 │   │
+│   │  │  weighting) │                    │  execution) │                 │   │
+│   │  └──────┬──────┘                    └──────┬──────┘                 │   │
+│   └─────────┼──────────────────────────────────┼────────────────────────┘   │
+│             │                                  │                            │
+│             └──────────────┬───────────────────┘                            │
+│                            │                                                │
+│                            ▼                                                │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                        BIAS / CLOCK                                 │   │
+│   │                                                                     │   │
+│   │                         THUNDERCORE                                 │   │
+│   │              (tick injection, universe time, identity)              │   │
+│   │                                                                     │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   SKIP CONNECTIONS (residual paths):                                        │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                          THUNDERVINE                                │   │
+│   │              (DAG routing, lineage, cross-layer paths)              │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   REGULARIZATION (entropy/decay):                                           │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                          THUNDERWALL                                │   │
+│   │            (boundary damping, noise injection, GC)                  │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Domain-to-Component Mapping
+
+| Domain | Perceptron Component | Function |
+|--------|---------------------|----------|
+| **Grid** | Input (sensors) | API endpoints, external data ingestion |
+| **Prism** | Input (sensors) | UI events, user interactions |
+| **Link** | Input (sensors) | Messages, WebRTC data, Discord events |
+| **Gate** | Gate layer | Auth filtering, permission masking |
+| **Block** | Long-term memory | Persistent storage (database) |
+| **Pac** | Working memory | Runtime state, MIRAS memory |
+| **Bolt** | Nonlinear transform | CA rules, ML inference, f(x) |
+| **Flow** | Activation broadcast | Event propagation, PubSub |
+| **Crown** | Output weighting | Policy evaluation, governance |
+| **Chief** | Output execution | Plan tree dispatch, action selection |
+| **Core** | Bias / clock | Tick injection, time signal |
+| **Vine** | Skip connections | DAG routing, residual paths |
+| **Wall** | Regularization | Entropy, decay, boundary conditions |
+
+### Forward Pass Description
+
+One "forward pass" of the Thunderline perceptron:
+
+1. **Input Collection** (Grid/Prism/Link): Gather external signals into input tensor
+2. **Gate Filtering** (Gate): Apply auth masks, filter unauthorized signals
+3. **Memory Read** (Block/Pac): Retrieve persistent and working memory
+4. **Transform** (Bolt): Apply CA rules, ML models, nonlinear transformations
+5. **Broadcast** (Flow): Distribute activations via events
+6. **Output Selection** (Crown/Chief): Weight outputs by policy, select actions
+7. **Tick Injection** (Core): Add temporal bias signal
+8. **Skip Connections** (Vine): Route residuals across layers
+9. **Regularization** (Wall): Apply decay, noise, boundary damping
+
+### Benefits of This Model
+
+1. **Reasoning Aid**: Think about domain interactions as neural network forward passes
+2. **Architecture Validation**: Each domain has a clear role; no overlaps
+3. **Gradient Intuition**: Understand how "credit assignment" flows back through domains
+4. **Scaling Model**: Adding capacity = increasing hidden dims in Bolt layer
+
+**Note**: This is a **conceptual model** for reasoning, not a literal implementation. The actual system uses Ash resources, OTP processes, and event-driven architecture.
 
 ---
 

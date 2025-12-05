@@ -5,11 +5,13 @@ defmodule Thunderline.Thundercore.Supervisor do
   Manages:
   - SystemClock - Monotonic time service
   - TickEmitter - System heartbeat generator
+  - Clock - 4-Phase QCA-inspired clock (HC-88)
 
   ## Startup Order
 
   SystemClock starts first to provide time services, then TickEmitter
-  starts to begin broadcasting heartbeat events.
+  starts to begin broadcasting heartbeat events, then Clock starts
+  for phase-aware domain coordination.
   """
 
   use Supervisor
@@ -25,7 +27,9 @@ defmodule Thunderline.Thundercore.Supervisor do
       # SystemClock first - provides time services
       Thunderline.Thundercore.SystemClock,
       # TickEmitter second - broadcasts heartbeat
-      Thunderline.Thundercore.TickEmitter
+      Thunderline.Thundercore.TickEmitter,
+      # Clock third - 4-phase QCA timing (HC-88)
+      Thunderline.Thundercore.Clock
     ]
 
     Logger.info("[Thundercore.Supervisor] Starting with #{length(children)} children")

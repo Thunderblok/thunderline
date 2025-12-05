@@ -8,6 +8,7 @@ This module:
 - Reports progress back to Thunderline
 - Logs to MLflow
 - Saves checkpoints
+- Integrates memory layer for MIRAS/Titans architecture (HC-78)
 """
 import os
 import json
@@ -24,6 +25,9 @@ import numpy as np
 # MLflow for experiment tracking
 import mlflow
 import mlflow.keras
+
+# Memory layer integration (HC-76, HC-77, HC-78)
+from .memory_layer import MemoryLayer, MemoryConfig
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +100,21 @@ class JobExecutor:
                 seq_length = hyperparams.get("seq_length", 100)
                 epochs = hyperparams.get("epochs", 3)
                 learning_rate = hyperparams.get("learning_rate", 0.001)
+                
+                # Memory hyperparameters (HC-78: MIRAS/Titans)
+                memory_enabled = hyperparams.get("memory_enabled", False)
+                memory_depth = hyperparams.get("memory_depth", 2)
+                memory_width = hyperparams.get("memory_width", 128)
+                memory_heads = hyperparams.get("memory_heads", 4)
+                surprise_threshold = hyperparams.get("surprise_threshold", 0.1)
+                write_gate_mode = hyperparams.get("write_gate_mode", "threshold")
+                write_lr = hyperparams.get("write_lr", 0.01)
+                momentum_beta = hyperparams.get("momentum_beta", 0.95)
+                weight_decay = hyperparams.get("weight_decay", 0.99)
+                retention_mode = hyperparams.get("retention_mode", "decay")
+                attentional_bias = hyperparams.get("attentional_bias", "softmax")
+                retention_gate_enabled = hyperparams.get("retention_gate_enabled", False)
+                memory_slots = hyperparams.get("memory_slots", 64)
 
                 # Prepare data (matching POC)
                 char2idx, idx2char = self._build_vocab(text, vocab_size)
@@ -111,6 +130,21 @@ class JobExecutor:
                     rnn_units=rnn_units,
                     batch_size=batch_size,
                     learning_rate=learning_rate,
+                    memory_enabled=memory_enabled,
+                    memory_config=MemoryConfig(
+                        depth=memory_depth,
+                        width=memory_width,
+                        heads=memory_heads,
+                        surprise_threshold=surprise_threshold,
+                        write_gate_mode=write_gate_mode,
+                        write_lr=write_lr,
+                        momentum_beta=momentum_beta,
+                        weight_decay=weight_decay,
+                        retention_mode=retention_mode,
+                        attentional_bias=attentional_bias,
+                        retention_gate_enabled=retention_gate_enabled,
+                        memory_slots=memory_slots,
+                    ) if memory_enabled else None,
                 )
 
                 # Train with callbacks
@@ -271,9 +305,11 @@ class JobExecutor:
         rnn_units: int,
         batch_size: int,
         learning_rate: float,
+        memory_enabled: bool = False,
+        memory_config: Optional[MemoryConfig] = None,
     ):
         """
-        Build character-level RNN model (matching POC architecture).
+        Build character-level RNN model with optional memory layer.
 
         Args:
             vocab_size: Vocabulary size
@@ -281,24 +317,37 @@ class JobExecutor:
             rnn_units: RNN units
             batch_size: Batch size
             learning_rate: Learning rate
+            memory_enabled: Whether to add memory layer (HC-78)
+            memory_config: Memory configuration (if enabled)
 
         Returns:
             Compiled Keras model
         """
-        model = keras.Sequential(
-            [
-                layers.Embedding(
-                    vocab_size, embedding_dim, batch_input_shape=[batch_size, None]
-                ),
-                layers.LSTM(
-                    rnn_units,
-                    return_sequences=True,
-                    stateful=True,
-                    recurrent_initializer="glorot_uniform",
-                ),
-                layers.Dense(vocab_size),
-            ]
-        )
+        # Input layer
+        inputs = keras.Input(batch_shape=[batch_size, None], dtype=tf.int32)
+        
+        # Embedding
+        x = layers.Embedding(vocab_size, embedding_dim)(inputs)
+        
+        # LSTM
+        x = layers.LSTM(
+            rnn_units,
+            return_sequences=True,
+            stateful=True,
+            recurrent_initializer="glorot_uniform",
+        )(x)
+        
+        # Optional memory layer (HC-76, HC-77, HC-78: MIRAS/Titans)
+        if memory_enabled and memory_config is not None:
+            logger.info(f"Adding memory layer: depth={memory_config.depth}, width={memory_config.width}")
+            memory_layer = MemoryLayer(memory_config, name="titans_memory")
+            x, _ = memory_layer(x)  # Ignore metrics dict during model build
+        
+        # Output projection
+        outputs = layers.Dense(vocab_size)(x)
+        
+        # Build functional model
+        model = keras.Model(inputs=inputs, outputs=outputs)
 
         # Compile
         model.compile(
@@ -306,7 +355,7 @@ class JobExecutor:
             loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         )
 
-        logger.info(f"Built model: vocab_size={vocab_size}, embedding_dim={embedding_dim}, rnn_units={rnn_units}")
+        logger.info(f"Built model: vocab_size={vocab_size}, embedding_dim={embedding_dim}, rnn_units={rnn_units}, memory_enabled={memory_enabled}")
 
         return model
 

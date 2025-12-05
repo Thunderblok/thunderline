@@ -67,6 +67,13 @@ Thunderline is architected around **twelve specialized domains** (the "Pantheon"
 - **ThunderPac** *(#2)*: PAC lifecycle, state containers, role/intent management
 
 #### Recent Additions
+- **v2 Quantum Substrate** *(HC-86→HC-95)*: QCA-inspired ternary compute layer
+  - `TernaryState`: Balanced ternary arithmetic/logic (neg/zero/pos)
+  - `Thunderbit` v2: Extended schema with ternary state, MIRAS fields, Ising physics
+  - `4-Phase Clock`: QCA-style phasing (Switch→Hold→Release→Relax), domain coordination
+  - `ReversibleRules`: Toffoli/Feynman ternary gates, bijection verification
+  - `MemoryModule`: Titans-style surprise-gated deep MLP memory
+  - CA engine v2: `step_ternary_grid/2`, Clock-driven execution, rule_version dispatch
 - **Thunderbit Category Protocol** *(HC-Δ-5)*: Executable ontology with 8 categories, spawnable computational building blocks
 - **Thunderfield** *(HC-Δ-5.3)*: Real-time LiveView visualization of Thunderbit graphs
 - **Thundercell Substrate** *(HC-Δ-8)*: Raw data chunk abstraction (file/dataset/embedding blocks), CA lattice grounding

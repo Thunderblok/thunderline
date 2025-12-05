@@ -1,6 +1,6 @@
 defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
   @moduledoc """
-  Defines behavior dimensions for MAP-Elites quality-diversity search (HC-Δ-4).
+  Defines behavior dimensions for MAP-Elites quality-diversity search (HC-Δ-4, HC-79).
 
   Each dimension represents a distinct axis of agent behavior that defines
   a "niche" in the behavior space. The archive stores the best-performing
@@ -8,21 +8,38 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
 
   ## Behavior Dimensions
 
+  ### Core Dimensions (HC-Δ-4)
   1. **LogicDensity** - Number of active gates in agent's CA ruleset
   2. **MemoryReuse** - Frequency of state pattern reuse (0.0-1.0)
   3. **ActionVolatility** - Rate of behavioral change over time (0.0-1.0)
   4. **TaskPerformance** - Objective fitness score (0.0-1.0)
   5. **NoveltyScore** - Distance from existing elites (0.0-1.0)
 
+  ### Memory Dimensions (HC-79: MIRAS/Titans)
+  6. **MemoryUtilization** - Fraction of memory capacity used (0.0-1.0)
+  7. **WriteFrequency** - Memory updates per tick (0.0-1.0)
+  8. **RetrievalAccuracy** - Memory hit rate / relevance (0.0-1.0)
+  9. **SurpriseDistribution** - Entropy of surprise signal (0.0-1.0)
+  10. **TemporalCoherence** - Memory-output correlation over time (0.0-1.0)
+
+  ## Memory Phenotypes (HC-79)
+
+  The memory dimensions enable discovery of diverse memory behaviors:
+  - **Fast Writers** - High write frequency, low temporal coherence
+  - **Long Retainers** - High memory utilization, low write frequency
+  - **Selective Memorizers** - High retrieval accuracy, moderate writes
+  - **Surprise Seekers** - High surprise distribution entropy
+
   ## Grid Resolution
 
   Each dimension is discretized into bins. Default resolution is 10 bins
-  per dimension, creating a 5D grid with 10^5 = 100,000 possible cells.
+  per dimension. With 10 dimensions, this creates 10^10 possible cells,
+  though in practice only a sparse subset are occupied.
 
   ## Usage
 
   ```elixir
-  # Extract behavior descriptors from a PAC snapshot
+  # Extract behavior descriptors from a PAC snapshot (with memory metrics)
   {:ok, descriptors} = BehaviorDescriptor.extract(pac, metrics)
 
   # Convert to grid coordinates
@@ -30,13 +47,29 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
 
   # Get cell key for archive lookup
   cell_key = BehaviorDescriptor.cell_key(coords)
+
+  # Use core-only dimensions for backward compatibility
+  coords = BehaviorDescriptor.to_grid_coords(descriptors, 
+    resolution: 10, 
+    dimensions: :core
+  )
   ```
   """
 
   alias Thunderline.Thunderpac.Resources.PAC
 
   @type dimension ::
-          :logic_density | :memory_reuse | :action_volatility | :task_performance | :novelty_score
+          :logic_density
+          | :memory_reuse
+          | :action_volatility
+          | :task_performance
+          | :novelty_score
+          # HC-79: Memory dimensions
+          | :memory_utilization
+          | :write_frequency
+          | :retrieval_accuracy
+          | :surprise_distribution
+          | :temporal_coherence
 
   @type t :: %__MODULE__{
           logic_density: float(),
@@ -44,6 +77,12 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
           action_volatility: float(),
           task_performance: float(),
           novelty_score: float(),
+          # HC-79: Memory dimensions
+          memory_utilization: float(),
+          write_frequency: float(),
+          retrieval_accuracy: float(),
+          surprise_distribution: float(),
+          temporal_coherence: float(),
           raw_values: map()
         }
 
@@ -52,16 +91,35 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
           memory_reuse: non_neg_integer(),
           action_volatility: non_neg_integer(),
           task_performance: non_neg_integer(),
-          novelty_score: non_neg_integer()
+          novelty_score: non_neg_integer(),
+          # HC-79: Memory dimensions
+          memory_utilization: non_neg_integer(),
+          write_frequency: non_neg_integer(),
+          retrieval_accuracy: non_neg_integer(),
+          surprise_distribution: non_neg_integer(),
+          temporal_coherence: non_neg_integer()
         }
 
-  @dimensions [
+  # Core dimensions (original HC-Δ-4)
+  @core_dimensions [
     :logic_density,
     :memory_reuse,
     :action_volatility,
     :task_performance,
     :novelty_score
   ]
+
+  # Memory dimensions (HC-79: MIRAS/Titans)
+  @memory_dimensions [
+    :memory_utilization,
+    :write_frequency,
+    :retrieval_accuracy,
+    :surprise_distribution,
+    :temporal_coherence
+  ]
+
+  # All dimensions combined
+  @dimensions @core_dimensions ++ @memory_dimensions
   @default_resolution 10
 
   defstruct logic_density: 0.0,
@@ -69,6 +127,12 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
             action_volatility: 0.0,
             task_performance: 0.0,
             novelty_score: 0.0,
+            # HC-79: Memory dimensions
+            memory_utilization: 0.0,
+            write_frequency: 0.0,
+            retrieval_accuracy: 0.0,
+            surprise_distribution: 0.0,
+            temporal_coherence: 0.0,
             raw_values: %{}
 
   # ═══════════════════════════════════════════════════════════════
@@ -80,6 +144,18 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
   """
   @spec dimensions() :: [dimension()]
   def dimensions, do: @dimensions
+
+  @doc """
+  Returns the list of core behavior dimensions (original HC-Δ-4).
+  """
+  @spec core_dimensions() :: [dimension()]
+  def core_dimensions, do: @core_dimensions
+
+  @doc """
+  Returns the list of memory dimensions (HC-79: MIRAS/Titans).
+  """
+  @spec memory_dimensions() :: [dimension()]
+  def memory_dimensions, do: @memory_dimensions
 
   @doc """
   Returns the default grid resolution per dimension.
@@ -108,19 +184,37 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
          {:ok, memory_reuse} <- extract_memory_reuse(pac, metrics),
          {:ok, action_volatility} <- extract_action_volatility(pac, metrics),
          {:ok, task_performance} <- extract_task_performance(metrics),
-         {:ok, novelty_score} <- calculate_novelty(pac, metrics, existing_elites) do
+         {:ok, novelty_score} <- calculate_novelty(pac, metrics, existing_elites),
+         # HC-79: Extract memory dimensions
+         {:ok, memory_utilization} <- extract_memory_utilization(pac, metrics),
+         {:ok, write_frequency} <- extract_write_frequency(pac, metrics),
+         {:ok, retrieval_accuracy} <- extract_retrieval_accuracy(pac, metrics),
+         {:ok, surprise_distribution} <- extract_surprise_distribution(pac, metrics),
+         {:ok, temporal_coherence} <- extract_temporal_coherence(pac, metrics) do
       descriptor = %__MODULE__{
+        # Core dimensions
         logic_density: normalize(logic_density, :logic_density),
         memory_reuse: normalize(memory_reuse, :memory_reuse),
         action_volatility: normalize(action_volatility, :action_volatility),
         task_performance: normalize(task_performance, :task_performance),
         novelty_score: normalize(novelty_score, :novelty_score),
+        # HC-79: Memory dimensions
+        memory_utilization: normalize(memory_utilization, :memory_utilization),
+        write_frequency: normalize(write_frequency, :write_frequency),
+        retrieval_accuracy: normalize(retrieval_accuracy, :retrieval_accuracy),
+        surprise_distribution: normalize(surprise_distribution, :surprise_distribution),
+        temporal_coherence: normalize(temporal_coherence, :temporal_coherence),
         raw_values: %{
           logic_density: logic_density,
           memory_reuse: memory_reuse,
           action_volatility: action_volatility,
           task_performance: task_performance,
-          novelty_score: novelty_score
+          novelty_score: novelty_score,
+          memory_utilization: memory_utilization,
+          write_frequency: write_frequency,
+          retrieval_accuracy: retrieval_accuracy,
+          surprise_distribution: surprise_distribution,
+          temporal_coherence: temporal_coherence
         }
       }
 
@@ -142,14 +236,21 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
   @spec to_grid_coords(t(), keyword()) :: grid_coords()
   def to_grid_coords(%__MODULE__{} = descriptor, opts \\ []) do
     resolution = Keyword.get(opts, :resolution, @default_resolution)
+    dimension_set = Keyword.get(opts, :dimensions, :all)
 
-    %{
-      logic_density: discretize(descriptor.logic_density, resolution),
-      memory_reuse: discretize(descriptor.memory_reuse, resolution),
-      action_volatility: discretize(descriptor.action_volatility, resolution),
-      task_performance: discretize(descriptor.task_performance, resolution),
-      novelty_score: discretize(descriptor.novelty_score, resolution)
-    }
+    dims =
+      case dimension_set do
+        :core -> @core_dimensions
+        :memory -> @memory_dimensions
+        :all -> @dimensions
+        custom when is_list(custom) -> custom
+      end
+
+    dims
+    |> Enum.reduce(%{}, fn dim, acc ->
+      value = Map.get(descriptor, dim, 0.0)
+      Map.put(acc, dim, discretize(value, resolution))
+    end)
   end
 
   @doc """
@@ -215,9 +316,33 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
   Creates a descriptor from a vector representation.
   """
   @spec from_vector([float()]) :: {:ok, t()} | {:error, :invalid_vector}
-  def from_vector(vector) when is_list(vector) and length(vector) == 5 do
+  def from_vector(vector) when is_list(vector) and length(vector) == 10 do
     values =
       @dimensions
+      |> Enum.zip(vector)
+      |> Map.new()
+
+    {:ok,
+     %__MODULE__{
+       # Core dimensions
+       logic_density: values.logic_density,
+       memory_reuse: values.memory_reuse,
+       action_volatility: values.action_volatility,
+       task_performance: values.task_performance,
+       novelty_score: values.novelty_score,
+       # HC-79: Memory dimensions
+       memory_utilization: values.memory_utilization,
+       write_frequency: values.write_frequency,
+       retrieval_accuracy: values.retrieval_accuracy,
+       surprise_distribution: values.surprise_distribution,
+       temporal_coherence: values.temporal_coherence
+     }}
+  end
+
+  # Backward compatibility: accept 5-element vectors (core dimensions only)
+  def from_vector(vector) when is_list(vector) and length(vector) == 5 do
+    values =
+      @core_dimensions
       |> Enum.zip(vector)
       |> Map.new()
 
@@ -228,6 +353,7 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
        action_volatility: values.action_volatility,
        task_performance: values.task_performance,
        novelty_score: values.novelty_score
+       # Memory dimensions default to 0.0
      }}
   end
 
@@ -239,6 +365,7 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
   @spec dimension_metadata(dimension()) :: map()
   def dimension_metadata(dim) do
     case dim do
+      # Core dimensions (HC-Δ-4)
       :logic_density ->
         %{
           name: "Logic Density",
@@ -282,6 +409,52 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
           min_raw: 0.0,
           max_raw: 1.0,
           unit: "normalized distance"
+        }
+
+      # HC-79: Memory dimensions (MIRAS/Titans)
+      :memory_utilization ->
+        %{
+          name: "Memory Utilization",
+          description: "Fraction of memory capacity actively used",
+          min_raw: 0.0,
+          max_raw: 1.0,
+          unit: "ratio"
+        }
+
+      :write_frequency ->
+        %{
+          name: "Write Frequency",
+          description: "Rate of memory updates per tick",
+          min_raw: 0.0,
+          max_raw: 1.0,
+          unit: "updates/tick"
+        }
+
+      :retrieval_accuracy ->
+        %{
+          name: "Retrieval Accuracy",
+          description: "Memory hit rate / retrieval relevance",
+          min_raw: 0.0,
+          max_raw: 1.0,
+          unit: "accuracy"
+        }
+
+      :surprise_distribution ->
+        %{
+          name: "Surprise Distribution",
+          description: "Entropy of surprise signal over time",
+          min_raw: 0.0,
+          max_raw: 1.0,
+          unit: "normalized entropy"
+        }
+
+      :temporal_coherence ->
+        %{
+          name: "Temporal Coherence",
+          description: "Memory-output correlation over time window",
+          min_raw: 0.0,
+          max_raw: 1.0,
+          unit: "correlation"
         }
     end
   end
@@ -391,6 +564,127 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
     end
   end
 
+  # ═══════════════════════════════════════════════════════════════
+  # HC-79: MEMORY DIMENSION EXTRACTORS (MIRAS/Titans)
+  # ═══════════════════════════════════════════════════════════════
+
+  defp extract_memory_utilization(pac, metrics) do
+    cond do
+      # From memory module metrics
+      is_map(metrics) and Map.has_key?(metrics, :memory_utilization) ->
+        {:ok, metrics.memory_utilization}
+
+      # From PAC memory context
+      is_map(pac) and Map.has_key?(pac, :memory_module) ->
+        mem = pac.memory_module || %{}
+        used = Map.get(mem, :slots_used, 0)
+        total = Map.get(mem, :total_slots, 1)
+        {:ok, min(1.0, used / max(total, 1))}
+
+      # From memory stats in metrics
+      is_map(metrics) and Map.has_key?(metrics, :memory_stats) ->
+        stats = metrics.memory_stats
+        {:ok, Map.get(stats, :utilization, 0.0)}
+
+      # Default
+      true ->
+        {:ok, 0.0}
+    end
+  end
+
+  defp extract_write_frequency(_pac, metrics) do
+    cond do
+      # Direct write frequency
+      is_map(metrics) and Map.has_key?(metrics, :write_frequency) ->
+        {:ok, metrics.write_frequency}
+
+      # From memory write count / tick count
+      is_map(metrics) and Map.has_key?(metrics, :memory_writes) and Map.has_key?(metrics, :tick_count) ->
+        writes = metrics.memory_writes
+        ticks = max(metrics.tick_count, 1)
+        # Normalize: expect ~0.1-0.5 writes per tick
+        normalized = min(1.0, (writes / ticks) * 2.0)
+        {:ok, normalized}
+
+      # From memory stats
+      is_map(metrics) and Map.has_key?(metrics, :memory_stats) ->
+        stats = metrics.memory_stats
+        {:ok, Map.get(stats, :write_rate, 0.0)}
+
+      # Default
+      true ->
+        {:ok, 0.0}
+    end
+  end
+
+  defp extract_retrieval_accuracy(_pac, metrics) do
+    cond do
+      # Direct retrieval accuracy
+      is_map(metrics) and Map.has_key?(metrics, :retrieval_accuracy) ->
+        {:ok, metrics.retrieval_accuracy}
+
+      # From hit/miss ratio
+      is_map(metrics) and Map.has_key?(metrics, :memory_hits) and Map.has_key?(metrics, :memory_queries) ->
+        hits = metrics.memory_hits
+        queries = max(metrics.memory_queries, 1)
+        {:ok, hits / queries}
+
+      # From memory stats
+      is_map(metrics) and Map.has_key?(metrics, :memory_stats) ->
+        stats = metrics.memory_stats
+        {:ok, Map.get(stats, :hit_rate, 0.0)}
+
+      # Default
+      true ->
+        {:ok, 0.0}
+    end
+  end
+
+  defp extract_surprise_distribution(_pac, metrics) do
+    cond do
+      # Direct surprise entropy
+      is_map(metrics) and Map.has_key?(metrics, :surprise_entropy) ->
+        {:ok, metrics.surprise_entropy}
+
+      # From surprise history
+      is_map(metrics) and Map.has_key?(metrics, :surprise_history) ->
+        history = metrics.surprise_history || []
+        entropy = calculate_entropy(history)
+        # Normalize assuming max entropy of ~3 bits
+        {:ok, min(1.0, entropy / 3.0)}
+
+      # From memory stats
+      is_map(metrics) and Map.has_key?(metrics, :memory_stats) ->
+        stats = metrics.memory_stats
+        {:ok, Map.get(stats, :surprise_distribution, 0.0)}
+
+      # Default
+      true ->
+        {:ok, 0.0}
+    end
+  end
+
+  defp extract_temporal_coherence(_pac, metrics) do
+    cond do
+      # Direct temporal coherence
+      is_map(metrics) and Map.has_key?(metrics, :temporal_coherence) ->
+        {:ok, metrics.temporal_coherence}
+
+      # From memory-output correlation
+      is_map(metrics) and Map.has_key?(metrics, :memory_output_correlation) ->
+        {:ok, abs(metrics.memory_output_correlation)}
+
+      # From memory stats
+      is_map(metrics) and Map.has_key?(metrics, :memory_stats) ->
+        stats = metrics.memory_stats
+        {:ok, Map.get(stats, :temporal_coherence, 0.0)}
+
+      # Default
+      true ->
+        {:ok, 0.0}
+    end
+  end
+
   defp calculate_novelty(_pac, _metrics, []) do
     # No existing elites, maximum novelty
     {:ok, 1.0}
@@ -471,5 +765,34 @@ defmodule Thunderline.Thunderbolt.Evolution.BehaviorDescriptor do
       |> Kernel./(n)
 
     variance
+  end
+
+  # HC-79: Calculate entropy for surprise distribution
+  defp calculate_entropy([]), do: 0.0
+
+  defp calculate_entropy(values) when is_list(values) do
+    # Bin values into histogram (10 bins from 0 to 1)
+    bins = 10
+    counts = Enum.reduce(values, List.duplicate(0, bins), fn val, acc ->
+      bin = min(bins - 1, trunc(val * bins))
+      List.update_at(acc, bin, &(&1 + 1))
+    end)
+
+    total = length(values)
+    if total == 0 do
+      0.0
+    else
+      # Calculate Shannon entropy
+      counts
+      |> Enum.map(fn count ->
+        if count == 0 do
+          0.0
+        else
+          p = count / total
+          -p * :math.log2(p)
+        end
+      end)
+      |> Enum.sum()
+    end
   end
 end

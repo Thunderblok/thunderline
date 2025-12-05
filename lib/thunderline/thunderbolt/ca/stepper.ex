@@ -65,16 +65,31 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   @doc """
   Compute next step deltas returning `{:ok, deltas, new_grid}`.
 
-  Dispatches to legacy or Thunderbit mode based on grid structure.
+  Dispatches based on:
+  1. Grid structure (legacy 2D vs Thunderbit 3D)
+  2. Rule version (1 = classic dynamics, 2 = ternary/reversible)
+
+  For Thunderbit grids with `rule_version: 2`, uses the v2 ternary
+  stepping which leverages HC-86/87/89/90 components.
   """
   @spec next(grid(), ruleset()) :: {:ok, [delta()], grid()}
   def next(%{bits: _} = grid, ruleset) do
-    step_thunderbit_grid(grid, ruleset)
+    case get_rule_version(ruleset) do
+      2 -> step_ternary_grid(grid, ruleset)
+      _ -> step_thunderbit_grid(grid, ruleset)
+    end
   end
 
   def next(%{size: _} = grid, ruleset) do
     step_legacy_grid(grid, ruleset)
   end
+
+  # Extract rule version from ruleset (default: 1 for backward compat)
+  defp get_rule_version(ruleset) when is_map(ruleset) do
+    Map.get(ruleset, :rule_version, 1)
+  end
+
+  defp get_rule_version(_), do: 1
 
   # ═══════════════════════════════════════════════════════════════
   # Thunderbit Grid Stepping
@@ -155,7 +170,76 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
     %{bounds: bounds, bits: bits, tick: 0}
   end
 
-  # Get neighbor bit states for a coordinate
+  # ═══════════════════════════════════════════════════════════════
+  # Ternary Grid Stepping (v2 - HC-86/87/89)
+  # ═══════════════════════════════════════════════════════════════
+
+  @doc """
+  Steps a Thunderbit grid using v2 ternary rules.
+
+  Uses `Thunderbit.ternary_tick/2` which implements:
+  - Ternary state transitions (HC-86)
+  - Reversible rules: Feynman/Toffoli/majority (HC-89)
+  - MIRAS memory updates (HC-90)
+  - Ising physics energy computation (HC-87)
+
+  The ruleset should contain:
+  - `:rule_id` - The ternary CA rule (:majority, :feynman, :toffoli, :weighted_vote)
+  - `:neighborhood_type` - Type of neighborhood (default: :von_neumann)
+  - `:boundary_condition` - How to handle edges (default: :clip)
+  - `:update_miras` - Whether to update MIRAS memory (default: true)
+  """
+  @spec step_ternary_grid(thunderbit_grid(), ruleset()) ::
+          {:ok, [thunderbit_delta()], thunderbit_grid()}
+  def step_ternary_grid(%{bounds: bounds, bits: bits, tick: tick} = grid, ruleset) do
+    rule_id = get_rule(ruleset)
+    neighborhood_type = Map.get(ruleset, :neighborhood_type, :von_neumann)
+    boundary_condition = Map.get(ruleset, :boundary_condition, :clip)
+    update_miras = Map.get(ruleset, :update_miras, true)
+    new_tick = tick + 1
+
+    # Compute new states for all bits using ternary_tick
+    {updated_bits, deltas} =
+      bits
+      |> Task.async_stream(
+        fn {coord, bit} ->
+          # Get neighbor Thunderbits (not just states)
+          neighbors =
+            get_neighbor_bits(coord, bits, bounds, neighborhood_type, boundary_condition)
+
+          # Apply ternary tick
+          new_bit =
+            bit
+            |> Thunderbit.ternary_tick(neighbors: neighbors, rule: rule_id, tick: new_tick)
+            |> maybe_update_miras(update_miras)
+
+          {coord, new_bit}
+        end,
+        timeout: :infinity,
+        ordered: false
+      )
+      |> Enum.reduce({%{}, []}, fn {:ok, {coord, new_bit}}, {bits_acc, deltas_acc} ->
+        delta = Thunderbit.to_delta(new_bit)
+        {Map.put(bits_acc, coord, new_bit), [delta | deltas_acc]}
+      end)
+
+    new_grid = %{grid | bits: updated_bits, tick: new_tick}
+    {:ok, deltas, new_grid}
+  end
+
+  # Get neighbor Thunderbit structs (not just states) for ternary_tick
+  defp get_neighbor_bits(coord, bits, bounds, neighborhood_type, boundary_condition) do
+    coord
+    |> Neighborhood.compute(bounds, neighborhood_type, boundary_condition)
+    |> Enum.map(fn neighbor_coord -> Map.get(bits, neighbor_coord) end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  # Conditionally update MIRAS memory parameters
+  defp maybe_update_miras(bit, true), do: Thunderbit.update_miras(bit)
+  defp maybe_update_miras(bit, false), do: bit
+
+  # Get neighbor bit states for a coordinate (legacy, returns {coord, bit} tuples)
   defp get_neighbor_states(coord, bits, bounds, neighborhood_type, boundary_condition) do
     coord
     |> Neighborhood.compute(bounds, neighborhood_type, boundary_condition)

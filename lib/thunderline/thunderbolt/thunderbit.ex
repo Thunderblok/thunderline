@@ -34,10 +34,17 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
     :coord,
 
     # ─────────────────────────────────────────────────────────────
-    # CA State
+    # CA State (v2: Ternary)
     # ─────────────────────────────────────────────────────────────
+    # Ternary state: :neg | :zero | :pos (v2)
+    ternary_state: :zero,
+    # Legacy binary/integer state (v1 compat)
     state: 0,
+    # Multi-channel state vector for NCA (v2)
+    state_vector: [],
     rule_id: :demo,
+    # Rule version: 1 = classic, 2 = ternary/reversible
+    rule_version: 1,
     neighborhood: [],
 
     # ─────────────────────────────────────────────────────────────
@@ -49,6 +56,28 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
     sigma_flow: 1.0,
     # Local FTLE (Finite-Time Lyapunov Exponent) - chaos/stability indicator (λ̂)
     lambda_sensitivity: 0.0,
+
+    # ─────────────────────────────────────────────────────────────
+    # Ising Physics (v2: HC-87)
+    # ─────────────────────────────────────────────────────────────
+    # External field / policy pressure
+    bias: 0.0,
+    # Local energy coupling coefficient
+    coupling: 1.0,
+    # Noise/randomness parameter (Boltzmann T)
+    temperature: 0.1,
+
+    # ─────────────────────────────────────────────────────────────
+    # MIRAS Memory (v2: HC-90, HC-91)
+    # ─────────────────────────────────────────────────────────────
+    # Current |predicted - observed| gradient magnitude
+    surprise_metric: 0.0,
+    # Memory decay control [0, 1]
+    retention_gate: 1.0,
+    # β-EMA smoothed surprise
+    momentum_surprise: 0.0,
+    # Previous ternary state (for second-order reversibility)
+    previous_state: :zero,
 
     # ─────────────────────────────────────────────────────────────
     # Routing & Trust
@@ -91,16 +120,32 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
 
   @type coord :: {integer(), integer(), integer()}
   @type bloom_filter :: binary() | nil
+  @type ternary :: :neg | :zero | :pos
 
   @type t :: %__MODULE__{
           id: Ecto.UUID.t() | String.t(),
           coord: coord(),
+          # v2 ternary state
+          ternary_state: ternary(),
           state: term(),
+          state_vector: [float()],
           rule_id: atom() | integer(),
+          rule_version: 1 | 2,
           neighborhood: [coord()],
+          # Physics
           phi_phase: float(),
           sigma_flow: float(),
           lambda_sensitivity: float(),
+          # v2 Ising
+          bias: float(),
+          coupling: float(),
+          temperature: float(),
+          # v2 MIRAS
+          surprise_metric: float(),
+          retention_gate: float(),
+          momentum_surprise: float(),
+          previous_state: ternary(),
+          # Routing & Trust
           trust_score: float(),
           presence_vector: map(),
           relay_weight: float(),
@@ -375,4 +420,180 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
   defp state_color(%__MODULE__{sigma_flow: flow}) when flow > 0.7, do: 0x00FF00
   defp state_color(%__MODULE__{sigma_flow: flow}) when flow > 0.3, do: 0xFFFF00
   defp state_color(_), do: 0x333333
+
+  # ═══════════════════════════════════════════════════════════════
+  # v2 Ternary State Operations (HC-86/HC-87)
+  # ═══════════════════════════════════════════════════════════════
+
+  alias Thunderline.Thunderbolt.TernaryState
+
+  @doc """
+  Performs a ternary CA tick using reversible rules.
+
+  Updates ternary_state based on neighbor states, stores previous_state for
+  reversibility, and updates Ising physics parameters.
+
+  ## Options
+
+  - `:neighbors` - List of neighbor Thunderbits (required)
+  - `:rule` - Rule atom (:feynman, :toffoli, :fredkin, :majority) (default: :majority)
+  - `:tick` - Current tick number
+  """
+  @spec ternary_tick(t(), keyword()) :: t()
+  def ternary_tick(%__MODULE__{ternary_state: current} = bit, opts) do
+    neighbors = Keyword.fetch!(opts, :neighbors)
+    rule = Keyword.get(opts, :rule, :majority)
+    tick = Keyword.get(opts, :tick, bit.last_tick + 1)
+
+    # Extract neighbor ternary states
+    neighbor_states = Enum.map(neighbors, & &1.ternary_state)
+
+    # Compute new state based on rule
+    new_state =
+      case rule do
+        :majority ->
+          TernaryState.majority(neighbor_states)
+
+        :feynman when length(neighbor_states) >= 1 ->
+          # Feynman gate: control + target mod 3
+          TernaryState.feynman(current, hd(neighbor_states))
+
+        :toffoli when length(neighbor_states) >= 2 ->
+          # Toffoli gate: returns {c1, c2, new_target} - we want new_target
+          [c1, c2 | _] = neighbor_states
+          {_c1, _c2, new_target} = TernaryState.toffoli(c1, c2, current)
+          new_target
+
+        :weighted_vote ->
+          # Use neighbor trust scores as weights
+          weights = Enum.map(neighbors, fn n -> {n.ternary_state, n.trust_score} end)
+          TernaryState.weighted_vote(weights)
+
+        _ ->
+          TernaryState.majority(neighbor_states)
+      end
+
+    # Compute local Ising energy
+    new_energy = compute_ising_energy(bit, neighbor_states)
+
+    %{bit |
+      previous_state: current,
+      ternary_state: new_state,
+      sigma_flow: new_energy,
+      last_tick: tick,
+      updated_at: DateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Updates MIRAS memory parameters based on surprise from state change.
+
+  The surprise metric measures how unexpected the state transition was.
+  Uses exponential moving average for momentum smoothing.
+
+  ## Options
+
+  - `:beta` - Momentum smoothing factor (default: 0.9)
+  - `:alpha` - Learning rate for retention gate (default: 0.1)
+  """
+  @spec update_miras(t(), keyword()) :: t()
+  def update_miras(%__MODULE__{} = bit, opts \\ []) do
+    beta = Keyword.get(opts, :beta, 0.9)
+    alpha = Keyword.get(opts, :alpha, 0.1)
+
+    # Compute surprise as state change magnitude
+    surprise = compute_surprise(bit.previous_state, bit.ternary_state)
+
+    # Update momentum with EMA
+    new_momentum = beta * bit.momentum_surprise + (1.0 - beta) * surprise
+
+    # Update retention gate based on surprise (high surprise = more retention)
+    new_retention = bit.retention_gate + alpha * (surprise - bit.retention_gate)
+    new_retention = max(0.0, min(1.0, new_retention))
+
+    %{bit |
+      surprise_metric: surprise,
+      momentum_surprise: new_momentum,
+      retention_gate: new_retention,
+      updated_at: DateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Converts legacy state to ternary state based on threshold.
+
+  Used for v1 → v2 migration. Maps arbitrary state values to ternary.
+  """
+  @spec to_ternary(t(), keyword()) :: t()
+  def to_ternary(%__MODULE__{state: state} = bit, opts \\ []) do
+    neg_threshold = Keyword.get(opts, :neg_threshold, -0.33)
+    pos_threshold = Keyword.get(opts, :pos_threshold, 0.33)
+
+    ternary =
+      cond do
+        is_number(state) and state < neg_threshold -> :neg
+        is_number(state) and state > pos_threshold -> :pos
+        state == 0 or state == :zero -> :zero
+        state == 1 or state == :pos or state == true -> :pos
+        state == -1 or state == :neg or state == false -> :neg
+        true -> :zero
+      end
+
+    %{bit | ternary_state: ternary, rule_version: 2, updated_at: DateTime.utc_now()}
+  end
+
+  @doc """
+  Returns true if this Thunderbit is using v2 ternary rules.
+  """
+  @spec v2?(t()) :: boolean()
+  def v2?(%__MODULE__{rule_version: 2}), do: true
+  def v2?(_), do: false
+
+  @doc """
+  Returns true if the Thunderbit is in a "frozen" state (high retention, low surprise).
+  """
+  @spec frozen?(t(), float()) :: boolean()
+  def frozen?(%__MODULE__{retention_gate: r, momentum_surprise: m}, threshold \\ 0.1) do
+    r > 0.9 and m < threshold
+  end
+
+  @doc """
+  Returns true if the Thunderbit is "excited" (high surprise, state change expected).
+  """
+  @spec excited?(t(), float()) :: boolean()
+  def excited?(%__MODULE__{momentum_surprise: m}, threshold \\ 0.7) do
+    m > threshold
+  end
+
+  @doc """
+  Computes the one-hot vector representation for ML integration.
+  """
+  @spec to_one_hot(t()) :: [float()]
+  def to_one_hot(%__MODULE__{ternary_state: state}) do
+    TernaryState.to_one_hot(state)
+  end
+
+  @doc """
+  Updates ternary state from one-hot vector (argmax selection).
+  """
+  @spec from_one_hot(t(), [float()]) :: t()
+  def from_one_hot(%__MODULE__{} = bit, one_hot) do
+    new_state = TernaryState.from_one_hot(one_hot)
+    %{bit | previous_state: bit.ternary_state, ternary_state: new_state, updated_at: DateTime.utc_now()}
+  end
+
+  # ═══════════════════════════════════════════════════════════════
+  # Private Helpers
+  # ═══════════════════════════════════════════════════════════════
+
+  defp compute_ising_energy(%__MODULE__{ternary_state: s, bias: h, coupling: j}, neighbor_states) do
+    TernaryState.ising_energy(s, neighbor_states, coupling: j, bias: h)
+  end
+
+  defp compute_surprise(old_state, new_state) when old_state == new_state, do: 0.0
+  defp compute_surprise(:zero, _), do: 0.5
+  defp compute_surprise(_, :zero), do: 0.5
+  defp compute_surprise(:neg, :pos), do: 1.0
+  defp compute_surprise(:pos, :neg), do: 1.0
+  defp compute_surprise(_, _), do: 0.3
 end
