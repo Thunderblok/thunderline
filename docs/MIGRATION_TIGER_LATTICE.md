@@ -1,9 +1,9 @@
 # Migration Guide: Operation TIGER LATTICE
 
 > **Date**: December 6, 2025
-> **Scope**: Thunderprism → Thundergrid.Prism consolidation, Reward Loop, Side-Quest Metrics
+> **Scope**: Thunderprism → Thundergrid.Prism consolidation, Reward Loop, Side-Quest Metrics, **Doctrine Layer**
 
-This guide helps developers migrate code that used the old Thunderprism domain to the new Thundergrid.Prism namespace.
+This guide helps developers migrate code that used the old Thunderprism domain to the new Thundergrid.Prism namespace, and documents new Doctrine Layer features (algotype classification, hidden channels, delayed gratification detection).
 
 ---
 
@@ -17,6 +17,10 @@ This guide helps developers migrate code that used the old Thunderprism domain t
 | `Thunderline.Thunderprism.MLTap` | `Thunderline.Thundergrid.Prism.MLTap` | Async logging moved |
 | N/A | `Thunderline.Thundergrid.Prism.AutomataSnapshot` | **NEW** - automata metrics |
 | N/A | `Thunderline.Thundercore.Reward.*` | **NEW** - reward loop system |
+| N/A | `Thunderline.Thundercore.Doctrine` | **NEW** - Ising spin encoding |
+| N/A | `Thunderline.Thundercore.Reward.DelayedGratificationDetector` | **NEW** - dip/recover detection |
+| N/A | `Thunderline.Thundercore.Telemetry` | **NEW** - doctrine telemetry |
+| N/A | `Thunderline.Thunderbolt.Rules.HiddenDiffusion` | **NEW** - hidden channel demo |
 
 ---
 
@@ -291,6 +295,110 @@ The canonical 11-domain Thunderline architecture is now:
 | 11 | **Thunderforge** | Compilers, parsers, learning |
 
 **Thunderprism** is now `Thundergrid.Prism` (a submodule, not a domain).
+
+---
+
+## New Features: Doctrine Layer (Dec 6, 2025)
+
+The Doctrine Layer adds algotype (behavioral classification) and hidden channels to Thunderbits.
+
+### Thunderbit Fields
+
+All Thunderbits now have:
+
+```elixir
+%Thunderbit{
+  # ... existing fields ...
+  doctrine: :general,                    # :router | :healer | :compressor | :explorer | :guardian | :general
+  hidden_state: %{v: [], dim: 0}         # Hidden channel vector for inter-bit communication
+}
+```
+
+### Doctrine Module
+
+```elixir
+alias Thunderline.Thundercore.Doctrine
+
+# Spin encoding for Ising model
+Doctrine.encode_spin(:router)    # => 1.0 (cooperative)
+Doctrine.encode_spin(:explorer)  # => -1.0 (exploratory)
+Doctrine.encode_spin(:general)   # => 0.0 (neutral)
+
+# Interaction energy
+Doctrine.interaction_energy(:router, :healer)    # => -1.0 (favorable)
+Doctrine.interaction_energy(:router, :explorer)  # => 1.0 (unfavorable)
+
+# Distribution analysis
+bits = [%{doctrine: :router}, %{doctrine: :router}, %{doctrine: :explorer}]
+Doctrine.distribution(bits)         # => %{router: 2, explorer: 1}
+Doctrine.distribution_entropy(bits) # => 0.63 (normalized entropy)
+```
+
+### New Algotype Metrics
+
+SideQuestMetrics now includes:
+
+| Metric | Description |
+|--------|-------------|
+| `algotype_clustering` | Same-doctrine spatial clustering [0, 1] |
+| `algotype_ising_energy` | Ising energy from doctrine spins |
+| `doctrine_distribution` | Map of doctrine → count |
+
+### Delayed Gratification Detection
+
+```elixir
+alias Thunderline.Thundercore.Reward.DelayedGratificationDetector
+
+# Analyze reward history for dip-then-recover patterns
+history = [0.5, 0.5, 0.3, 0.2, 0.15, 0.25, 0.4, 0.5]
+events = DelayedGratificationDetector.analyze(history)
+# => [%{tick_start: 2, tick_bottom: 4, tick_recover: 7, depth: 0.35, duration: 5}]
+```
+
+### New GraphQL Queries
+
+```graphql
+# Get doctrine distribution for a run
+query {
+  doctrine_distribution(run_id: "run-123") {
+    algotype_clustering
+    algotype_ising_energy
+    doctrine_distribution
+    doctrine_entropy
+    algotype_score
+  }
+}
+
+# Get doctrine history
+query {
+  doctrine_history(run_id: "run-123", limit: 50) {
+    tick
+    algotype_clustering
+    algotype_ising_energy
+  }
+}
+```
+
+### Telemetry Events
+
+```elixir
+# Attach handlers
+Thunderline.Thundercore.Telemetry.attach_handlers(log_level: :info)
+
+# Events emitted:
+# [:thunderbolt, :automata, :algotype] - algotype metrics
+# [:thundercore, :reward, :delayed_gratification] - gratification detected
+```
+
+### HiddenDiffusion Rule (Demo)
+
+```elixir
+# Use the HiddenDiffusion rule to test hidden channels
+ruleset = %{
+  rule_module: Thunderline.Thunderbolt.Rules.HiddenDiffusion,
+  rule_params: %{dim: 4, diffusion_rate: 0.3, noise_scale: 0.01}
+}
+```
 
 ---
 

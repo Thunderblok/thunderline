@@ -1,6 +1,6 @@
 # 🚀 THUNDERLINE MASTER PLAYBOOK: From Zero to AI Automation
 
-> **Architecture Status (Dec 6, 2025 - MVP COMPLETE)**: Overall Grade **A+ (10/10)** - **11 canonical domains** (Prism absorbed into Grid), ~160 Ash resources, **Operation TIGER LATTICE complete**. All 4 Boss Fights cleared. Edge-of-chaos reward loop operational. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
+> **Architecture Status (Dec 6, 2025 - MVP COMPLETE + DOCTRINE LAYER)**: Overall Grade **A+ (10/10)** - **11 canonical domains** (Prism absorbed into Grid), ~160 Ash resources, **Operation TIGER LATTICE complete + Doctrine Layer extension**. All 4 Boss Fights cleared. Edge-of-chaos reward loop operational. Algotype (doctrine) metrics + hidden channels + delayed gratification detection online. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
 >
 > High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-68). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
 >
@@ -356,6 +356,154 @@ ruleset = %{
 | Thunderprism | Standalone domain | → Thundergrid.Prism (submodule) |
 | Thunderforge | N/A | New domain for compilers/parsers |
 | Domain count | 12 | 11 (Prism absorbed) |
+
+---
+
+## ⚡ DOCTRINE LAYER EXTENSION (Dec 6, 2025)
+
+> **Objective**: Add algotype (behavioral doctrine) classification and hidden channel infrastructure to Thunderbits, enabling observation of emergent "side-quest" behaviors like clustering and delayed gratification.
+
+### What's New
+
+**Thunderbit Fields**:
+- `doctrine` — Behavioral classification (`:router`, `:healer`, `:compressor`, `:explorer`, `:guardian`, `:general`)
+- `hidden_state` — Latent vector bus `%{v: [float()], dim: integer}` for inter-bit communication
+
+**New Modules**:
+| Module | Purpose |
+|--------|---------|
+| `Thundercore.Doctrine` | Ising spin encoding, interaction energy, distribution analysis |
+| `Thundercore.Reward.DelayedGratificationDetector` | Detects "dip-then-recover" reward patterns |
+| `Thunderbolt.Rules.HiddenDiffusion` | Toy rule demonstrating hidden channel diffusion |
+| `Thundercore.Telemetry` | Telemetry handlers for algotype + gratification events |
+
+### Doctrine Spin Encoding (Ising Model)
+
+| Doctrine | Spin | Behavior |
+|----------|------|----------|
+| `:router`, `:healer` | +1.0 | Cooperative (stabilizing) |
+| `:explorer` | -1.0 | Exploratory (disruptive) |
+| `:compressor`, `:guardian`, `:general` | 0.0 | Neutral |
+
+**Interaction Energy**: `E = -J * s_i * s_j`
+- Low (negative) energy = like doctrines cluster
+- High (positive) energy = unlike doctrines adjacent
+
+### Algotype Metrics (SideQuestMetrics)
+
+| Metric | Description | Range |
+|--------|-------------|-------|
+| `algotype_clustering` | Same-doctrine spatial clustering | [0, 1] |
+| `algotype_ising_energy` | Ising energy from doctrine spins | unbounded |
+| `doctrine_distribution` | Map of doctrine → count | map |
+| `doctrine_entropy` | Diversity of doctrines | [0, 1] |
+
+### Delayed Gratification Detection
+
+Detects "sacrifice now, gain later" patterns in reward signals:
+```
+reward
+  ^
+  |      ___________
+  |     /           \
+  | ___/             \___  <- baseline
+  |                      \
+  |                       \_____  <- dip
+  |                              \____/  <- recovery
+  +---------------------------------> tick
+       ^start     ^bottom    ^recover
+```
+
+**Configuration**:
+- `dip_threshold`: 0.15 (how deep to trigger)
+- `min_dip_ticks`: 3 (minimum dip duration)
+- `max_recovery_ticks`: 20 (timeout)
+
+### Telemetry Events
+
+| Event | When |
+|-------|------|
+| `[:thunderbolt, :automata, :algotype]` | Algotype metrics computed |
+| `[:thundercore, :reward, :delayed_gratification]` | Gratification pattern detected |
+| `[:thundercore, :doctrine, :distribution]` | Doctrine distribution changed |
+
+### GraphQL Queries
+
+```graphql
+# Get latest doctrine distribution for a run
+query {
+  doctrine_distribution(run_id: "run-123") {
+    algotype_clustering
+    algotype_ising_energy
+    doctrine_distribution
+    doctrine_entropy
+    algotype_score
+  }
+}
+
+# Get doctrine history over time
+query {
+  doctrine_history(run_id: "run-123", limit: 50) {
+    tick
+    algotype_clustering
+    algotype_ising_energy
+    doctrine_distribution
+  }
+}
+```
+
+### Developer Quick Start
+
+```elixir
+# 1. Create Thunderbit with doctrine
+bit = Thunderline.Thunderbolt.Thunderbit.new({0, 0, 0},
+  doctrine: :router,
+  hidden_state: %{v: [1.0, 0.0, 0.0, 0.0], dim: 4}
+)
+
+# 2. Check spin encoding
+Thunderline.Thundercore.Doctrine.encode_spin(:router)
+# => 1.0
+
+# 3. Check interaction energy
+Thunderline.Thundercore.Doctrine.interaction_energy(:router, :healer)
+# => -1.0 (favorable - both cooperative)
+
+Thunderline.Thundercore.Doctrine.interaction_energy(:router, :explorer)
+# => 1.0 (unfavorable - cooperative vs exploratory)
+
+# 4. Run HiddenDiffusion rule
+ruleset = %{
+  rule_module: Thunderline.Thunderbolt.Rules.HiddenDiffusion,
+  rule_params: %{dim: 4, diffusion_rate: 0.3, noise_scale: 0.01}
+}
+
+# 5. Attach telemetry handlers
+Thunderline.Thundercore.Telemetry.attach_handlers(log_level: :info)
+
+# 6. Analyze gratification in reward history
+history = [0.5, 0.5, 0.3, 0.2, 0.15, 0.2, 0.35, 0.5, 0.55]
+events = Thunderline.Thundercore.Reward.DelayedGratificationDetector.analyze(history)
+```
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `lib/thunderline/thundercore/doctrine.ex` | Doctrine classification + Ising spin encoding |
+| `lib/thunderline/thundercore/reward/delayed_gratification_detector.ex` | Dip-then-recover detection |
+| `lib/thunderline/thundercore/telemetry.ex` | Telemetry handlers for doctrine events |
+| `lib/thunderline/thunderbolt/rules/hidden_diffusion.ex` | Hidden channel diffusion demo rule |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `lib/thunderline/thundercore/thunderbit.ex` | Added `doctrine` + `hidden_state` types |
+| `lib/thunderline/thunderbolt/thunderbit.ex` | Added `doctrine` + `hidden_state` fields, updated `to_delta/1` |
+| `lib/thunderline/thunderbolt/ca/side_quest_metrics.ex` | Added algotype metrics |
+| `lib/thunderline/thundergrid/prism/automata_snapshot.ex` | Added doctrine fields + GraphQL queries |
+| `lib/thunderline/thundergrid/domain.ex` | Added `doctrine_distribution` + `doctrine_history` queries |
 
 ---
 

@@ -140,7 +140,12 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
 
   # ===== ACTIONS =====
   actions do
-    defaults [:read, :destroy]
+    defaults [:destroy]
+
+    read :read do
+      primary? true
+      pagination keyset?: true, default_limit: 25, max_page_size: 100
+    end
 
     create :create do
       description "Create and provision a new PAC home"
