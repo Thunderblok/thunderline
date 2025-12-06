@@ -25,6 +25,12 @@ defmodule Thunderline.Thundergrid.Prism.AutomataSnapshot do
   - Pattern stability
   - Emergence score
 
+  **Doctrine Layer (TIGER LATTICE):**
+  - Algotype clustering (same-doctrine spatial clustering)
+  - Algotype Ising energy (doctrine spin interactions)
+  - Doctrine distribution (map of doctrine -> count)
+  - Doctrine entropy (diversity of doctrines)
+
   ## GraphQL
 
   Exposed via Thundergrid.Domain as `automata_snapshot` type.
@@ -68,7 +74,12 @@ defmodule Thunderline.Thundergrid.Prism.AutomataSnapshot do
         :emergence_score,
         :grid_tick,
         :cell_count,
-        :meta
+        :meta,
+        # Doctrine Layer fields
+        :algotype_clustering,
+        :algotype_ising_energy,
+        :doctrine_distribution,
+        :doctrine_entropy
       ]
     end
 
@@ -94,6 +105,21 @@ defmodule Thunderline.Thundergrid.Prism.AutomataSnapshot do
     read :critical_snapshots do
       filter expr(zone == :critical)
       prepare build(sort: [edge_score: :desc])
+    end
+
+    read :doctrine_distribution do
+      description "Get latest doctrine distribution for a CA run"
+      argument :run_id, :string, allow_nil?: false
+      filter expr(run_id == ^arg(:run_id) and not is_nil(doctrine_distribution))
+      prepare build(sort: [tick: :desc], limit: 1)
+    end
+
+    read :doctrine_history do
+      description "Get doctrine distribution history for a CA run"
+      argument :run_id, :string, allow_nil?: false
+      argument :limit, :integer, default: 50
+      filter expr(run_id == ^arg(:run_id) and not is_nil(algotype_clustering))
+      prepare build(sort: [tick: :desc], limit: arg(:limit))
     end
   end
 
@@ -170,6 +196,27 @@ defmodule Thunderline.Thundergrid.Prism.AutomataSnapshot do
       description "Novel structure detection [0,1]"
     end
 
+    # Doctrine Layer metrics (Operation TIGER LATTICE)
+    attribute :algotype_clustering, :float do
+      public? true
+      description "Same-doctrine spatial clustering [0,1]"
+    end
+
+    attribute :algotype_ising_energy, :float do
+      public? true
+      description "Ising energy from doctrine spin interactions"
+    end
+
+    attribute :doctrine_distribution, :map do
+      public? true
+      description "Map of doctrine atom -> count"
+    end
+
+    attribute :doctrine_entropy, :float do
+      public? true
+      description "Normalized entropy of doctrine distribution [0,1]"
+    end
+
     # Grid state
     attribute :grid_tick, :integer do
       public? true
@@ -212,6 +259,12 @@ defmodule Thunderline.Thundergrid.Prism.AutomataSnapshot do
       (clustering * 0.3) + (emergence_score * 0.4) + (pattern_stability * 0.3)
     ) do
       description "Composite side-quest score"
+    end
+
+    calculate :algotype_score, :float, expr(
+      (algotype_clustering * 0.5) + ((1.0 - abs(algotype_ising_energy)) * 0.5)
+    ) do
+      description "Composite algotype health score (high clustering + low energy = good)"
     end
   end
 

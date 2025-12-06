@@ -31,16 +31,28 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
 
   Publishes `bolt.automata.side_quest.snapshot` events for Thundercore.
 
+  ## Algotype Metrics (Operation TIGER LATTICE - Doctrine Layer)
+
+  Additional metrics from the bubble-sort "side quest" research:
+
+  | Metric | Description | Range |
+  |--------|-------------|-------|
+  | algotype_clustering | Same-doctrine spatial clustering | [0,1] |
+  | algotype_ising_energy | Ising model energy from doctrine spins | unbounded |
+
+  These metrics are observation-only and do not feed into RewardSchema.
+
   ## Reference
 
   - Lex & Friedman "Learning to Be Efficient" (2023)
-  - HC Orders: Operation TIGER LATTICE, Thread 2
+  - HC Orders: Operation TIGER LATTICE, Thread 2 + Doctrine Layer
   """
 
   require Logger
 
   alias Thunderline.Event
   alias Thunderline.Thunderflow.EventBus
+  alias Thunderline.Thundercore.Doctrine
 
   @telemetry_event [:thunderbolt, :automata, :side_quest]
 
@@ -56,6 +68,9 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
           emergence_score: float(),
           entropy: float(),
           divergence: float(),
+          algotype_clustering: float(),
+          algotype_ising_energy: float(),
+          doctrine_distribution: map(),
           tick: non_neg_integer(),
           timestamp: integer()
         }
@@ -79,9 +94,10 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
   def compute(deltas, rule_metrics \\ %{}, opts \\ []) do
     tick = Keyword.get(opts, :tick, 0)
     history = Keyword.get(opts, :history, [])
+    lattice = Keyword.get(opts, :lattice, nil)
 
     try do
-      metrics = do_compute(deltas, rule_metrics, history, tick)
+      metrics = do_compute(deltas, rule_metrics, history, tick, lattice)
       {:ok, metrics}
     rescue
       e ->
@@ -107,11 +123,14 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
         pattern_stability: metrics.pattern_stability,
         emergence_score: metrics.emergence_score,
         entropy: metrics.entropy,
-        divergence: metrics.divergence
+        divergence: metrics.divergence,
+        algotype_clustering: metrics.algotype_clustering,
+        algotype_ising_energy: metrics.algotype_ising_energy
       },
       %{
         run_id: run_id,
-        tick: tick
+        tick: tick,
+        doctrine_distribution: metrics.doctrine_distribution
       }
     )
 
@@ -149,7 +168,7 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
   # Metric Computation
   # ═══════════════════════════════════════════════════════════════
 
-  defp do_compute(deltas, rule_metrics, history, tick) do
+  defp do_compute(deltas, rule_metrics, history, tick, lattice) do
     # Extract from rule metrics (local averages)
     local_clustering = Map.get(rule_metrics, :clustering, 0.5)
     local_entropy = Map.get(rule_metrics, :entropy, 0.5)
@@ -169,6 +188,10 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
         local_clustering
       end
 
+    # Algotype metrics (Doctrine Layer - Operation TIGER LATTICE)
+    {algotype_clustering, algotype_ising_energy, doctrine_distribution} =
+      compute_algotype_metrics(deltas, lattice)
+
     %{
       clustering: Float.round(clustering, 4),
       sortedness: Float.round(sortedness, 4),
@@ -177,6 +200,9 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
       emergence_score: Float.round(emergence_score, 4),
       entropy: Float.round(local_entropy, 4),
       divergence: Float.round(local_divergence, 4),
+      algotype_clustering: Float.round(algotype_clustering, 4),
+      algotype_ising_energy: Float.round(algotype_ising_energy, 4),
+      doctrine_distribution: doctrine_distribution,
       tick: tick,
       timestamp: System.monotonic_time(:millisecond)
     }
@@ -411,6 +437,156 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
   end
 
   # ═══════════════════════════════════════════════════════════════
+  # Algotype Metrics (Doctrine Layer)
+  # ═══════════════════════════════════════════════════════════════
+
+  # Computes all algotype-related metrics.
+  # Returns {clustering, ising_energy, distribution}.
+  # If no lattice is provided, extracts doctrines from deltas (if present).
+  defp compute_algotype_metrics(deltas, lattice) do
+    # Build coord -> doctrine map from lattice or deltas
+    doctrine_map = build_doctrine_map(deltas, lattice)
+
+    if map_size(doctrine_map) < 2 do
+      # Not enough data for meaningful metrics
+      {0.5, 0.0, %{}}
+    else
+      clustering = compute_algotype_clustering(doctrine_map)
+      ising_energy = compute_algotype_ising_energy(doctrine_map)
+      distribution = Doctrine.distribution(Map.values(doctrine_map) |> Enum.map(&%{doctrine: &1}))
+
+      {clustering, ising_energy, distribution}
+    end
+  end
+
+  # Computes algotype clustering coefficient.
+  # Measures the tendency for cells with the same doctrine to cluster together.
+  # Returns [0, 1] where:
+  # - 1.0 = perfect segregation (same doctrines always adjacent)
+  # - 0.5 = random distribution
+  # - 0.0 = perfect anti-clustering (opposite doctrines adjacent)
+  defp compute_algotype_clustering(doctrine_map) when map_size(doctrine_map) < 3, do: 0.5
+
+  defp compute_algotype_clustering(doctrine_map) do
+    coords = Map.keys(doctrine_map)
+
+    # Count same-doctrine neighbor pairs vs total neighbor pairs
+    {same_count, total_count} =
+      coords
+      |> Enum.reduce({0, 0}, fn coord, {same_acc, total_acc} ->
+        my_doctrine = Map.get(doctrine_map, coord)
+        neighbors = get_neighbor_coords(coord)
+
+        neighbor_matches =
+          neighbors
+          |> Enum.reduce({0, 0}, fn neighbor_coord, {s, t} ->
+            case Map.get(doctrine_map, neighbor_coord) do
+              nil -> {s, t}  # Neighbor not in grid
+              ^my_doctrine -> {s + 1, t + 1}  # Same doctrine
+              _ -> {s, t + 1}  # Different doctrine
+            end
+          end)
+
+        {same_acc + elem(neighbor_matches, 0), total_acc + elem(neighbor_matches, 1)}
+      end)
+
+    if total_count == 0 do
+      0.5
+    else
+      same_count / total_count
+    end
+  end
+
+  # Computes the total Ising energy from doctrine spins.
+  # Uses the Ising model: E = -Σ J * s_i * s_j over all neighbor pairs.
+  # Low (negative) energy = like doctrines cluster together.
+  # High (positive) energy = unlike doctrines are adjacent.
+  # Returns the normalized energy per edge.
+  defp compute_algotype_ising_energy(doctrine_map) when map_size(doctrine_map) < 2, do: 0.0
+
+  defp compute_algotype_ising_energy(doctrine_map) do
+    coords = Map.keys(doctrine_map)
+
+    # Compute total Ising energy and count edges
+    {total_energy, edge_count} =
+      coords
+      |> Enum.reduce({0.0, 0}, fn coord, {energy_acc, count_acc} ->
+        my_doctrine = Map.get(doctrine_map, coord)
+        neighbors = get_neighbor_coords(coord)
+
+        # Only count each edge once (when coord < neighbor_coord lexicographically)
+        edge_contribution =
+          neighbors
+          |> Enum.reduce({0.0, 0}, fn neighbor_coord, {e, c} ->
+            case Map.get(doctrine_map, neighbor_coord) do
+              nil ->
+                {e, c}
+
+              neighbor_doctrine when coord < neighbor_coord ->
+                # Count this edge (ordered to avoid double-counting)
+                interaction = Doctrine.interaction_energy(my_doctrine, neighbor_doctrine)
+                {e + interaction, c + 1}
+
+              _ ->
+                # Skip - already counted from the other direction
+                {e, c}
+            end
+          end)
+
+        {energy_acc + elem(edge_contribution, 0), count_acc + elem(edge_contribution, 1)}
+      end)
+
+    if edge_count == 0 do
+      0.0
+    else
+      total_energy / edge_count
+    end
+  end
+
+  # Builds a coord -> doctrine map from lattice or deltas.
+  defp build_doctrine_map(deltas, nil) do
+    # No lattice provided - extract from deltas if they have doctrine
+    deltas
+    |> Enum.reduce(%{}, fn delta, acc ->
+      coord = extract_coord(delta)
+      doctrine = extract_doctrine_from_delta(delta)
+
+      if coord != nil and doctrine != nil do
+        Map.put(acc, coord, doctrine)
+      else
+        acc
+      end
+    end)
+  end
+
+  defp build_doctrine_map(deltas, lattice) when is_map(lattice) do
+    # Lattice is a map - extract doctrines from Thunderbits
+    deltas
+    |> Enum.reduce(%{}, fn delta, acc ->
+      coord = extract_coord(delta)
+
+      if coord != nil do
+        # Look up in lattice
+        case Map.get(lattice, coord) do
+          %{doctrine: doctrine} -> Map.put(acc, coord, doctrine)
+          _ -> acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  defp build_doctrine_map(deltas, _lattice) do
+    # Fallback to delta extraction
+    build_doctrine_map(deltas, nil)
+  end
+
+  defp extract_doctrine_from_delta(%{doctrine: d}), do: d
+  defp extract_doctrine_from_delta(%{bit: %{doctrine: d}}), do: d
+  defp extract_doctrine_from_delta(_), do: nil
+
+  # ═══════════════════════════════════════════════════════════════
   # Helpers
   # ═══════════════════════════════════════════════════════════════
 
@@ -476,6 +652,9 @@ defmodule Thunderline.Thunderbolt.CA.SideQuestMetrics do
       emergence_score: metrics.emergence_score,
       entropy: metrics.entropy,
       divergence: metrics.divergence,
+      algotype_clustering: metrics.algotype_clustering,
+      algotype_ising_energy: metrics.algotype_ising_energy,
+      doctrine_distribution: metrics.doctrine_distribution,
       sampled_at: System.system_time(:millisecond)
     }
 

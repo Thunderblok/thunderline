@@ -46,6 +46,10 @@ defmodule Thunderline.Thundergrid.Domain do
       list Thunderline.Thundergrid.Prism.AutomataSnapshot, :automata_snapshots, :by_run
       list Thunderline.Thundergrid.Prism.AutomataSnapshot, :recent_automata_snapshots, :recent
       list Thunderline.Thundergrid.Prism.AutomataSnapshot, :critical_snapshots, :critical_snapshots
+
+      # Doctrine Layer queries (Operation TIGER LATTICE)
+      list Thunderline.Thundergrid.Prism.AutomataSnapshot, :doctrine_distribution, :doctrine_distribution
+      list Thunderline.Thundergrid.Prism.AutomataSnapshot, :doctrine_history, :doctrine_history
     end
 
     mutations do

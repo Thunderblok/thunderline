@@ -63,6 +63,16 @@ defmodule Thunderline.Thundercore.Thunderbit do
 
   @type position :: %{x: float(), y: float(), z: float()}
 
+  @type doctrine ::
+          :router
+          | :healer
+          | :compressor
+          | :explorer
+          | :guardian
+          | :general
+
+  @type hidden_state :: %{v: [float()], dim: non_neg_integer()}
+
   @type t :: %__MODULE__{
           id: String.t(),
           kind: kind(),
@@ -78,6 +88,8 @@ defmodule Thunderline.Thundercore.Thunderbit do
           maxims: [String.t()],
           owner: String.t() | nil,
           status: status(),
+          doctrine: doctrine(),
+          hidden_state: hidden_state(),
           inserted_at: DateTime.t(),
           metadata: map()
         }
@@ -98,7 +110,9 @@ defmodule Thunderline.Thundercore.Thunderbit do
     :owner,
     :status,
     :inserted_at,
-    :metadata
+    :metadata,
+    doctrine: :general,
+    hidden_state: %{v: [], dim: 0}
   ]
 
   # ===========================================================================
@@ -141,12 +155,17 @@ defmodule Thunderline.Thundercore.Thunderbit do
   - `:owner` - Responsible agent (default: nil)
   - `:links` - Related bit IDs (default: [])
   - `:thundercell_ids` - Associated Thundercell IDs (default: [])
+  - `:doctrine` - Behavioral doctrine (default: :general)
+  - `:hidden_state` - Hidden state for inter-bit communication (default: %{v: [], dim: 0})
   - `:metadata` - Additional data (default: %{})
 
   ## Examples
 
       iex> Thunderbit.new(kind: :question, content: "What is happening?")
       {:ok, %Thunderbit{kind: :question, ...}}
+
+      iex> Thunderbit.new(kind: :command, content: "Route message", doctrine: :router)
+      {:ok, %Thunderbit{doctrine: :router, ...}}
   """
   def new(opts) do
     kind = Keyword.fetch!(opts, :kind)
@@ -155,6 +174,10 @@ defmodule Thunderline.Thundercore.Thunderbit do
     ontology_path = ontology_path_for_kind(kind)
     primary = Enum.at(ontology_path, 1, :proposition)
     maxims = Ontology.maxims_for(primary)
+
+    # Get doctrine and hidden state
+    doctrine = Keyword.get(opts, :doctrine, :general)
+    hidden_state = Keyword.get(opts, :hidden_state, %{v: [], dim: 0})
 
     bit = %__MODULE__{
       id: generate_id(),
@@ -171,6 +194,8 @@ defmodule Thunderline.Thundercore.Thunderbit do
       maxims: maxims,
       owner: Keyword.get(opts, :owner),
       status: :spawning,
+      doctrine: doctrine,
+      hidden_state: hidden_state,
       inserted_at: DateTime.utc_now(),
       metadata: Keyword.get(opts, :metadata, %{})
     }

@@ -110,6 +110,15 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
     cat_coefficients: nil,
 
     # ─────────────────────────────────────────────────────────────
+    # Doctrine Layer (Operation TIGER LATTICE)
+    # ─────────────────────────────────────────────────────────────
+    # Behavioral doctrine (algotype): router, healer, compressor, explorer, guardian, general
+    doctrine: :general,
+    # Hidden channels for inter-bit communication (NCA-style)
+    # %{v: [float()], dim: non_neg_integer()}
+    hidden_state: %{v: [], dim: 0},
+
+    # ─────────────────────────────────────────────────────────────
     # Timestamps
     # ─────────────────────────────────────────────────────────────
     # Last CA tick that updated this bit
@@ -394,6 +403,7 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
 
     %{
       id: bit.id,
+      coord: bit.coord,
       x: x,
       y: y,
       z: z,
@@ -405,7 +415,10 @@ defmodule Thunderline.Thunderbolt.Thunderbit do
       phase: bit.phi_phase,
       lambda: bit.lambda_sensitivity,
       channel: bit.channel_id,
-      tick: bit.last_tick
+      tick: bit.last_tick,
+      # Doctrine Layer fields
+      doctrine: bit.doctrine,
+      hidden_state: bit.hidden_state
     }
   end
 
