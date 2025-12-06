@@ -128,5 +128,8 @@ defmodule Thunderline.Thunderblock.Domain do
 
     # Channel participation tracking
     resource Thunderline.Thunderblock.Resources.ChannelParticipant
+
+    # Thunderforge-lite: Universal data chunks for automata substrate
+    resource Thunderline.Thunderblock.Resources.Thundercell
   end
 end

@@ -404,11 +404,11 @@ defmodule Thunderline.Thunderbolt.Resources.RuleSet do
   end
 
   defp maybe_optimize_with_thunderlearn(ruleset) do
-    if Code.ensure_loaded?(Thunderlearn.LocalTuner) and
-         function_exported?(Thunderlearn.LocalTuner, :optimize_async, 1) do
-      Thunderlearn.LocalTuner.optimize_async(ruleset)
+    if Code.ensure_loaded?(Thunderline.Thunderforge.Learn) and
+         function_exported?(Thunderline.Thunderforge.Learn, :tune_async, 2) do
+      Thunderline.Thunderforge.Learn.tune_async(ruleset, [])
     else
-      Logger.debug("[RuleSet] Thunderlearn.LocalTuner unavailable, skipping optimization")
+      Logger.debug("[RuleSet] Thunderforge.Learn unavailable, skipping optimization")
       :ok
     end
   end

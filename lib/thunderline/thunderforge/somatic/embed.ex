@@ -1,4 +1,4 @@
-defmodule Thunderline.Somatic.Embed do
+defmodule Thunderline.Thunderforge.Somatic.Embed do
   @moduledoc """
   Somatic Embed - Text embedding and similarity for signal processing.
 
@@ -14,10 +14,10 @@ defmodule Thunderline.Somatic.Embed do
 
   ## Usage
 
-      vec = Thunderline.Somatic.Embed.vec("hello world")
+      vec = Thunderline.Thunderforge.Somatic.Embed.vec("hello world")
       # => [0.1, 0.2, 0.3, ...]
 
-      similarity = Thunderline.Somatic.Embed.cosine(vec1, vec2)
+      similarity = Thunderline.Thunderforge.Somatic.Embed.cosine(vec1, vec2)
       # => 0.95
   """
 
@@ -30,7 +30,7 @@ defmodule Thunderline.Somatic.Embed do
 
   ## Examples
 
-      iex> vec = Thunderline.Somatic.Embed.vec("hello")
+      iex> vec = Thunderline.Thunderforge.Somatic.Embed.vec("hello")
       iex> is_list(vec)
       true
   """
@@ -57,12 +57,12 @@ defmodule Thunderline.Somatic.Embed do
 
       iex> v1 = [1.0, 0.0, 0.0]
       iex> v2 = [1.0, 0.0, 0.0]
-      iex> Thunderline.Somatic.Embed.cosine(v1, v2)
+      iex> Thunderline.Thunderforge.Somatic.Embed.cosine(v1, v2)
       1.0
 
       iex> v1 = [1.0, 0.0]
       iex> v2 = [0.0, 1.0]
-      iex> Thunderline.Somatic.Embed.cosine(v1, v2)
+      iex> Thunderline.Thunderforge.Somatic.Embed.cosine(v1, v2)
       0.0
   """
   @spec cosine([float()], [float()]) :: float()

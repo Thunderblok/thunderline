@@ -1,4 +1,4 @@
-defmodule Thunderline.Telemetry.TickObserver do
+defmodule Thunderline.Thunderflow.Telemetry.TickObserver do
   @moduledoc """
   Observes domain ticks and feeds near-critical dynamics to LoopMonitor.
 
@@ -19,7 +19,7 @@ defmodule Thunderline.Telemetry.TickObserver do
   Start in your supervision tree:
 
       children = [
-        {Thunderline.Telemetry.TickObserver, []}
+        {Thunderline.Thunderflow.Telemetry.TickObserver, []}
       ]
 
   Register a domain to observe:
@@ -45,7 +45,7 @@ defmodule Thunderline.Telemetry.TickObserver do
   use GenServer
   require Logger
 
-  alias Thunderline.Telemetry.{LoopMonitor, IRoPE}
+  alias Thunderline.Thunderflow.Telemetry.{LoopMonitor, IRoPE}
 
   @pubsub_topic "system:domain_tick"
   @default_observe_interval 5

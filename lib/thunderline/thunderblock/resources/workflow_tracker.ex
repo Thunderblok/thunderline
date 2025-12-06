@@ -23,6 +23,7 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
       # Auto-cleanup completed workflow trackers
       trigger :cleanup_completed_trackers do
         action :destroy
+        read_action :read
         scheduler_cron "0 2 * * *"
 
         scheduler_module_name Thunderline.Thunderblock.WorkflowTracker.Schedulers.CleanupCompletedTrackers
@@ -42,7 +43,16 @@ defmodule Thunderline.Thunderblock.Resources.WorkflowTracker do
   end
 
   actions do
-    defaults [:create, :read, :update, :destroy]
+    defaults [:create, :update]
+
+    read :read do
+      primary? true
+      pagination keyset?: true, default_limit: 25, max_page_size: 100
+    end
+
+    destroy :destroy do
+      primary? true
+    end
 
     update :increment_count do
       require_atomic? false

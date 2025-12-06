@@ -1,4 +1,4 @@
-defmodule Thunderline.Telemetry.IRoPE do
+defmodule Thunderline.Thunderflow.Telemetry.IRoPE do
   @moduledoc """
   iRoPE (Interleaved Rotary Position Embedding) Intervention System.
 

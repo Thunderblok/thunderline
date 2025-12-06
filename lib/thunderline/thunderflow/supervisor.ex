@@ -37,11 +37,11 @@ defmodule Thunderline.Thunderflow.Supervisor do
       {Thunderline.Thunderflow.EventBuffer, []},
       {Thunderline.Thunderflow.Blackboard, []},
       # Near-critical dynamics monitoring (Cinderforge Lab paper)
-      {Thunderline.Telemetry.LoopMonitor, [name: Thunderline.Telemetry.LoopMonitor]},
-      {Thunderline.Telemetry.TickObserver,
+      {Thunderline.Thunderflow.Telemetry.LoopMonitor, [name: Thunderline.Thunderflow.Telemetry.LoopMonitor]},
+      {Thunderline.Thunderflow.Telemetry.TickObserver,
        [
-         name: Thunderline.Telemetry.TickObserver,
-         loop_monitor: Thunderline.Telemetry.LoopMonitor,
+         name: Thunderline.Thunderflow.Telemetry.TickObserver,
+         loop_monitor: Thunderline.Thunderflow.Telemetry.LoopMonitor,
          observe_interval: 5,
          auto_irope: true
        ]}
@@ -93,8 +93,8 @@ defmodule Thunderline.Thunderflow.Supervisor do
       Logger.debug("[Thunderflow] Health check at tick #{tick_count}")
 
       # Get LoopMonitor summary if available
-      if Process.whereis(Thunderline.Telemetry.LoopMonitor) do
-        summary = Thunderline.Telemetry.LoopMonitor.summary()
+      if Process.whereis(Thunderline.Thunderflow.Telemetry.LoopMonitor) do
+        summary = Thunderline.Thunderflow.Telemetry.LoopMonitor.summary()
 
         :telemetry.execute(
           [:thunderline, :thunderflow, :health_check],

@@ -1,48 +1,60 @@
 defmodule Thunderline.Thunderprism.Domain do
   @moduledoc """
-  ThunderPrism Domain - DAG scratchpad for ML decision trails.
+  ThunderPrism Domain - DEPRECATED, consolidated into Thundergrid.Prism
 
-  This domain provides persistent "memory rails" that record ML decision nodes
-  and their connections, enabling visualization and AI context querying.
+  This module is kept for backward compatibility.
+  All Prism functionality has been moved to `Thunderline.Thundergrid.Prism`.
 
-  Resources:
-  - PrismNode: Individual ML decision points (pac_id, iteration, model selection)
-  - PrismEdge: Connections between nodes (sequential decisions, relationships)
+  ## Migration Guide
 
-  Phase 4.0 - November 15, 2025
+  Old:
+      alias Thunderline.Thunderprism.{Domain, PrismNode, PrismEdge, MLTap}
+      Domain.create_prism_node!(...)
+
+  New:
+      alias Thunderline.Thundergrid.Prism
+      alias Thunderline.Thundergrid.Prism.{PrismNode, PrismEdge, MLTap}
+      Prism.log_decision(...)
+
+  Resources are now part of Thundergrid.Domain and exposed via GraphQL.
   """
-  use Ash.Domain
 
-  resources do
-    resource Thunderline.Thunderprism.PrismNode do
-      define :create_prism_node,
-        action: :create,
-        args: [
-          :pac_id,
-          :iteration,
-          :chosen_model,
-          :model_probabilities,
-          :model_distances,
-          :meta,
-          :timestamp
-        ]
+  # Delegate to new Prism module
+  defdelegate log_decision(attrs), to: Thunderline.Thundergrid.Prism
+  defdelegate log_edge(attrs), to: Thunderline.Thundergrid.Prism
+  defdelegate log_with_edge(attrs, prev_node_id \\ nil), to: Thunderline.Thundergrid.Prism
 
-      define :get_prism_node, action: :read, get_by: [:id]
-      define :list_prism_nodes, action: :read
+  # Legacy code interface shims (deprecated)
+  def create_prism_node!(pac_id, iteration, chosen_model, probs, distances, meta, timestamp) do
+    attrs = %{
+      pac_id: pac_id,
+      iteration: iteration,
+      chosen_model: to_string(chosen_model),
+      model_probabilities: probs || %{},
+      model_distances: distances || %{},
+      meta: meta || %{},
+      timestamp: timestamp
+    }
+
+    task = Thunderline.Thundergrid.Prism.log_decision(attrs)
+    case Task.await(task, 5000) do
+      {:ok, node} -> node
+      {:error, reason} -> raise "PrismNode creation failed: #{inspect(reason)}"
     end
+  end
 
-    resource Thunderline.Thunderprism.PrismEdge do
-      define :create_prism_edge,
-        action: :create,
-        args: [
-          :from_id,
-          :to_id,
-          :relation_type,
-          :meta
-        ]
+  def create_prism_edge!(from_id, to_id, relation_type, meta) do
+    attrs = %{
+      from_id: from_id,
+      to_id: to_id,
+      relation_type: relation_type || "sequential",
+      meta: meta || %{}
+    }
 
-      define :get_prism_edge, action: :read, get_by: [:id]
-      define :list_prism_edges, action: :read
+    task = Thunderline.Thundergrid.Prism.log_edge(attrs)
+    case Task.await(task, 5000) do
+      {:ok, edge} -> edge
+      {:error, reason} -> raise "PrismEdge creation failed: #{inspect(reason)}"
     end
   end
 end

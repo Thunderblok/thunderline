@@ -262,8 +262,8 @@ config :thunderline,
     Thunderline.Thundergate.ServiceRegistry,
     # Heavy compute & UPM resources now active
     Thunderline.Thunderbolt.Domain,
-    # ThunderPrism - DAG scratchpad for ML decision trails (Phase 4.0)
-    Thunderline.Thunderprism.Domain,
+    # Thundergrid - Spatial grid + Prism (consolidated from Thunderprism)
+    Thunderline.Thundergrid.Domain,
     # Entropy sink / GC / decay - boundary domain (last in cycle)
     Thunderline.Thunderwall.Domain,
     # Evolution domain for MAP-Elites quality-diversity search
@@ -468,5 +468,5 @@ config :ash_admin, AshAdmin,
     Thunderline.Thundercrown.Domain,
     Thunderline.Thundergate.Domain,
     Thunderline.Thunderbolt.Domain,
-    Thunderline.Thunderprism.Domain
+    Thunderline.Thundergrid.Domain
   ]

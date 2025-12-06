@@ -1,4 +1,4 @@
-defmodule Thunderline.Telemetry.LoopMonitor do
+defmodule Thunderline.Thunderflow.Telemetry.LoopMonitor do
   @moduledoc """
   Monitors domain health and near-critical dynamics using observables.
 
@@ -13,7 +13,7 @@ defmodule Thunderline.Telemetry.LoopMonitor do
   Start the monitor in your supervision tree:
 
       children = [
-        {Thunderline.Telemetry.LoopMonitor, name: :ml_loop_monitor}
+        {Thunderline.Thunderflow.Telemetry.LoopMonitor, name: :ml_loop_monitor}
       ]
 
   Then observe domain states:

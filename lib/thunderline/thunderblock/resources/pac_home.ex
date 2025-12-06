@@ -97,6 +97,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     triggers do
       trigger :pac_health_check do
         action :health_check
+        read_action :read
         scheduler_cron "*/5 * * * *"
         where expr(status in [:active, :suspended])
       end
@@ -139,7 +140,12 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
 
   # ===== ACTIONS =====
   actions do
-    defaults [:read, :destroy]
+    defaults [:destroy]
+
+    read :read do
+      primary? true
+      pagination keyset?: true, default_limit: 25, max_page_size: 100
+    end
 
     create :create do
       description "Create and provision a new PAC home"

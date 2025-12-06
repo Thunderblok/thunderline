@@ -26,6 +26,7 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
       # Cleanup old completed workflows
       trigger :cleanup_old_workflows do
         action :destroy
+        read_action :read
         scheduler_cron "0 3 * * *"
 
         scheduler_module_name Thunderline.Thunderblock.TaskOrchestrator.Schedulers.CleanupOldWorkflows
@@ -41,7 +42,16 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
   end
 
   actions do
-    defaults [:read, :create, :update, :destroy]
+    defaults [:create, :update]
+
+    read :read do
+      primary? true
+      pagination keyset?: true, default_limit: 25, max_page_size: 100
+    end
+
+    destroy :destroy do
+      primary? true
+    end
 
     create :create_workflow do
       accept [
