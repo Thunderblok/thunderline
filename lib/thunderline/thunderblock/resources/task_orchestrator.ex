@@ -42,11 +42,15 @@ defmodule Thunderline.Thunderblock.Resources.TaskOrchestrator do
   end
 
   actions do
-    defaults [:create, :update, :destroy]
+    defaults [:create, :update]
 
     read :read do
       primary? true
       pagination keyset?: true, default_limit: 25, max_page_size: 100
+    end
+
+    destroy :destroy do
+      primary? true
     end
 
     create :create_workflow do
