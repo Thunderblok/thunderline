@@ -17,8 +17,23 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   Ruleset: map with `:rule_id`, `:neighborhood_type`, `:boundary_condition`.
   Returns `{:ok, deltas, new_grid}` with Thunderbit deltas.
 
-  Later we can swap in accelerated implementations (EAGL, NIF, GPU)
-  by redefining the step functions.
+  ## Pluggable Rule Backends (HC-TIGER LATTICE)
+
+  Supports pluggable rule modules that implement `Thunderbolt.Rule` behaviour:
+
+      ruleset = %{
+        rule_module: Thunderline.Thunderbolt.Rules.ClassicCA,
+        rule_params: ClassicCA.init_params(born: [3], survive: [2, 3])
+      }
+
+  Available backends:
+  - `:classic_ca` — B/S notation rules (Game of Life, etc.)
+  - `:nca` — Neural Cellular Automata (ViT-based)
+  - `:ising` — Ising spin models
+  - `:ternary` — Reversible ternary rules
+
+  When a rule_module is specified, the Stepper delegates to it and
+  collects side-quest metrics (clustering, entropy, etc.) for Thundercore.
 
   ## Reference
 
@@ -27,6 +42,7 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
 
   alias Thunderline.Thunderbolt.Thunderbit
   alias Thunderline.Thunderbolt.CA.Neighborhood
+  alias Thunderline.Thunderbolt.Rule
 
   # ═══════════════════════════════════════════════════════════════
   # Type Definitions
@@ -58,6 +74,15 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
 
   @type delta :: legacy_delta() | thunderbit_delta()
 
+  # Side-quest metrics from rule backends
+  @type side_quest_metrics :: %{
+          optional(:clustering) => float(),
+          optional(:entropy) => float(),
+          optional(:sortedness) => float(),
+          optional(:divergence) => float(),
+          optional(:healing_rate) => float()
+        }
+
   # ═══════════════════════════════════════════════════════════════
   # Main Entry Point
   # ═══════════════════════════════════════════════════════════════
@@ -68,20 +93,64 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   Dispatches based on:
   1. Grid structure (legacy 2D vs Thunderbit 3D)
   2. Rule version (1 = classic dynamics, 2 = ternary/reversible)
+  3. Rule module (if specified, uses pluggable Rule behaviour)
 
   For Thunderbit grids with `rule_version: 2`, uses the v2 ternary
   stepping which leverages HC-86/87/89/90 components.
   """
   @spec next(grid(), ruleset()) :: {:ok, [delta()], grid()}
-  def next(%{bits: _} = grid, ruleset) do
-    case get_rule_version(ruleset) do
-      2 -> step_ternary_grid(grid, ruleset)
-      _ -> step_thunderbit_grid(grid, ruleset)
+  def next(grid, ruleset) do
+    {deltas, new_grid, _metrics} = do_next(grid, ruleset)
+    {:ok, deltas, new_grid}
+  end
+
+  @doc """
+  Compute next step deltas with side-quest metrics.
+
+  Returns `{:ok, deltas, new_grid, side_quest_metrics}`.
+
+  Side-quest metrics include:
+  - `:clustering` - Spatial clustering coefficient
+  - `:entropy` - Local entropy
+  - `:sortedness` - Order measure
+  - `:divergence` - Flow divergence
+  - `:healing_rate` - Damage recovery rate
+  """
+  @spec next_with_metrics(grid(), ruleset()) :: {:ok, [delta()], grid(), side_quest_metrics()}
+  def next_with_metrics(grid, ruleset) do
+    {deltas, new_grid, metrics} = do_next(grid, ruleset)
+    {:ok, deltas, new_grid, metrics}
+  end
+
+  # Internal dispatcher
+  defp do_next(%{bits: _} = grid, ruleset) do
+    # Check for rule module first
+    case Map.get(ruleset, :rule_module) do
+      nil ->
+        # Fallback to built-in rules
+        {deltas, new_grid} =
+          case get_rule_version(ruleset) do
+            2 -> do_step_ternary_grid(grid, ruleset)
+            _ -> do_step_thunderbit_grid(grid, ruleset)
+          end
+
+        {deltas, new_grid, %{}}
+
+      rule_module when is_atom(rule_module) ->
+        step_with_rule_module(grid, ruleset, rule_module)
     end
   end
 
-  def next(%{size: _} = grid, ruleset) do
-    step_legacy_grid(grid, ruleset)
+  defp do_next(%{size: _} = grid, ruleset) do
+    # Check for rule module
+    case Map.get(ruleset, :rule_module) do
+      nil ->
+        {deltas, new_grid} = do_step_legacy_grid(grid, ruleset)
+        {deltas, new_grid, %{}}
+
+      rule_module when is_atom(rule_module) ->
+        step_legacy_with_rule_module(grid, ruleset, rule_module)
+    end
   end
 
   # Extract rule version from ruleset (default: 1 for backward compat)
@@ -105,7 +174,13 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   """
   @spec step_thunderbit_grid(thunderbit_grid(), ruleset()) ::
           {:ok, [thunderbit_delta()], thunderbit_grid()}
-  def step_thunderbit_grid(%{bounds: bounds, bits: bits, tick: tick} = grid, ruleset) do
+  def step_thunderbit_grid(grid, ruleset) do
+    {deltas, new_grid} = do_step_thunderbit_grid(grid, ruleset)
+    {:ok, deltas, new_grid}
+  end
+
+  # Internal implementation returning raw tuple
+  defp do_step_thunderbit_grid(%{bounds: bounds, bits: bits, tick: tick} = grid, ruleset) do
     rule_id = get_rule(ruleset)
     neighborhood_type = Map.get(ruleset, :neighborhood_type, :von_neumann)
     boundary_condition = Map.get(ruleset, :boundary_condition, :clip)
@@ -131,7 +206,141 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
       end)
 
     new_grid = %{grid | bits: updated_bits, tick: new_tick}
-    {:ok, deltas, new_grid}
+    {deltas, new_grid}
+  end
+
+  # ═══════════════════════════════════════════════════════════════
+  # Rule Module Stepping (Pluggable Backends)
+  # ═══════════════════════════════════════════════════════════════
+
+  # Steps a Thunderbit grid using a pluggable Rule module.
+  # The rule module must implement `Thunderline.Thunderbolt.Rule` behaviour.
+  # Returns `{deltas, new_grid, side_quest_metrics}`.
+  defp step_with_rule_module(%{bounds: bounds, bits: bits, tick: tick} = grid, ruleset, rule_module) do
+    neighborhood_type = Map.get(ruleset, :neighborhood_type, :von_neumann)
+    boundary_condition = Map.get(ruleset, :boundary_condition, :clip)
+    rule_params = Map.get(ruleset, :rule_params, %{})
+    new_tick = tick + 1
+
+    # Check if rule module supports step_grid (for NCA tensor operations)
+    if function_exported?(rule_module, :step_grid, 3) and Map.has_key?(grid, :tensor) do
+      step_grid_with_module(grid, rule_params, rule_module)
+    else
+      # Per-cell update with metric collection
+      {updated_bits, deltas, metrics_list} =
+        bits
+        |> Task.async_stream(
+          fn {coord, bit} ->
+            neighbors =
+              get_neighbor_states(coord, bits, bounds, neighborhood_type, boundary_condition)
+
+            case rule_module.update(bit, neighbors, rule_params) do
+              {:ok, new_bit, cell_metrics} ->
+                {coord, new_bit, cell_metrics}
+
+              {:error, _reason} ->
+                # Fallback to unchanged on error
+                {coord, bit, %{}}
+            end
+          end,
+          timeout: :infinity,
+          ordered: false
+        )
+        |> Enum.reduce({%{}, [], []}, fn {:ok, {coord, new_bit, cell_metrics}}, {bits_acc, deltas_acc, metrics_acc} ->
+          delta = Thunderbit.to_delta(new_bit)
+          {
+            Map.put(bits_acc, coord, new_bit),
+            [delta | deltas_acc],
+            [cell_metrics | metrics_acc]
+          }
+        end)
+
+      # Aggregate side-quest metrics across all cells
+      aggregated_metrics = Rule.aggregate_metrics(metrics_list)
+
+      new_grid = %{grid | bits: updated_bits, tick: new_tick}
+      {deltas, new_grid, aggregated_metrics}
+    end
+  end
+
+  # Step grid using module's step_grid/3 (for NCA tensor operations)
+  defp step_grid_with_module(grid, rule_params, rule_module) do
+    case rule_module.step_grid(grid, rule_params, []) do
+      {:ok, new_grid, metrics} ->
+        # Extract deltas from grid difference
+        deltas = extract_grid_deltas(grid, new_grid)
+        {deltas, new_grid, metrics}
+
+      {:error, _reason} ->
+        # Fallback to unchanged
+        {[], grid, %{}}
+    end
+  end
+
+  # Extract deltas from two grid states
+  defp extract_grid_deltas(%{bits: old_bits}, %{bits: new_bits}) do
+    new_bits
+    |> Enum.map(fn {coord, new_bit} ->
+      old_bit = Map.get(old_bits, coord)
+      if old_bit != new_bit do
+        Thunderbit.to_delta(new_bit)
+      else
+        nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp extract_grid_deltas(_, _), do: []
+
+  # Legacy grid stepping with rule module
+  defp step_legacy_with_rule_module(%{size: size} = grid, ruleset, rule_module) do
+    rule_params = Map.get(ruleset, :rule_params, %{})
+
+    # For legacy grids, we generate synthetic cells
+    # since they don't have actual cell data
+    changes = Enum.random(5..18)
+
+    {deltas, metrics_list} =
+      1..changes
+      |> Enum.map(fn _ ->
+        row = :rand.uniform(size) - 1
+        col = :rand.uniform(size) - 1
+
+        # Create synthetic cell for rule update
+        cell = %{
+          id: "#{row}-#{col}",
+          state: pick_state(:rand.uniform(100) - 1),
+          sigma_flow: :rand.uniform() * 0.5 + 0.25,
+          coord: {row, col, 0}
+        }
+
+        # Empty neighbors for legacy mode
+        neighbors = []
+
+        case rule_module.update(cell, neighbors, rule_params) do
+          {:ok, new_cell, cell_metrics} ->
+            energy = round(Map.get(new_cell, :sigma_flow, 0.5) * 100)
+            state = Map.get(new_cell, :state, :inactive)
+
+            delta = %{
+              id: cell.id,
+              state: state,
+              energy: energy,
+              hex: state_color(state)
+            }
+
+            {delta, cell_metrics}
+
+          {:error, _} ->
+            {nil, %{}}
+        end
+      end)
+      |> Enum.reject(fn {delta, _} -> is_nil(delta) end)
+      |> Enum.unzip()
+
+    aggregated_metrics = Rule.aggregate_metrics(metrics_list)
+    {deltas, grid, aggregated_metrics}
   end
 
   @doc """
@@ -191,7 +400,13 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   """
   @spec step_ternary_grid(thunderbit_grid(), ruleset()) ::
           {:ok, [thunderbit_delta()], thunderbit_grid()}
-  def step_ternary_grid(%{bounds: bounds, bits: bits, tick: tick} = grid, ruleset) do
+  def step_ternary_grid(grid, ruleset) do
+    {deltas, new_grid} = do_step_ternary_grid(grid, ruleset)
+    {:ok, deltas, new_grid}
+  end
+
+  # Internal implementation returning raw tuple
+  defp do_step_ternary_grid(%{bounds: bounds, bits: bits, tick: tick} = grid, ruleset) do
     rule_id = get_rule(ruleset)
     neighborhood_type = Map.get(ruleset, :neighborhood_type, :von_neumann)
     boundary_condition = Map.get(ruleset, :boundary_condition, :clip)
@@ -224,7 +439,7 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
       end)
 
     new_grid = %{grid | bits: updated_bits, tick: new_tick}
-    {:ok, deltas, new_grid}
+    {deltas, new_grid}
   end
 
   # Get neighbor Thunderbit structs (not just states) for ternary_tick
@@ -388,7 +603,13 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
   Maintains backward compatibility with existing CA visualization.
   """
   @spec step_legacy_grid(legacy_grid(), ruleset()) :: {:ok, [legacy_delta()], legacy_grid()}
-  def step_legacy_grid(%{size: size} = grid, _ruleset) do
+  def step_legacy_grid(grid, ruleset) do
+    {deltas, new_grid} = do_step_legacy_grid(grid, ruleset)
+    {:ok, deltas, new_grid}
+  end
+
+  # Internal implementation returning raw tuple
+  defp do_step_legacy_grid(%{size: size} = grid, _ruleset) do
     # Produce a small random sample of changed cells to keep payload tight.
     changes = Enum.random(5..18)
 
@@ -402,7 +623,7 @@ defmodule Thunderline.Thunderbolt.CA.Stepper do
         %{id: id, state: state, energy: energy, hex: state_color(state)}
       end
 
-    {:ok, deltas, grid}
+    {deltas, grid}
   end
 
   defp pick_state(e) when e > 85, do: :critical

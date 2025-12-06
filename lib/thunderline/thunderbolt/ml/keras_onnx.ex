@@ -587,7 +587,7 @@ defmodule Thunderline.Thunderbolt.ML.KerasONNX do
 
     # Try to observe via LoopMonitor if it's running
     try do
-      Thunderline.Telemetry.LoopMonitor.observe(domain, observation)
+      Thunderline.Thunderflow.Telemetry.LoopMonitor.observe(domain, observation)
     catch
       :exit, _ ->
         # LoopMonitor not running, just compute locally

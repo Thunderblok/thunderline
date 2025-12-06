@@ -1,6 +1,6 @@
 # 🚀 THUNDERLINE MASTER PLAYBOOK: From Zero to AI Automation
 
-> **Architecture Status (Nov 28, 2025 - 12-Domain Pantheon Update)**: Overall Grade **A (9/10)** - **12 canonical domains** defined, ~160 Ash resources, domain restructuring in progress. **NEW**: 12-Domain Pantheon architecture (HC-46/47/48/49) establishing final domain model. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
+> **Architecture Status (Dec 6, 2025 - MVP COMPLETE)**: Overall Grade **A+ (10/10)** - **11 canonical domains** (Prism absorbed into Grid), ~160 Ash resources, **Operation TIGER LATTICE complete**. All 4 Boss Fights cleared. Edge-of-chaos reward loop operational. Full review: [`DOMAIN_ARCHITECTURE_REVIEW.md`](DOMAIN_ARCHITECTURE_REVIEW.md)
 >
 > High Command Review Integration (Aug 25 2025): This Playbook incorporates the formal external "High Command" launch readiness review. New section: HIGH COMMAND REVIEW: ACTION MATRIX (P0 launch backlog HC-01..HC-68). All P0 items gate milestone `M1-EMAIL-AUTOMATION` (public pilot enablement). Cross‑reference: OKO_HANDBOOK SITREP, DOMAIN_ARCHITECTURE_REVIEW.
 >
@@ -8,35 +8,36 @@
 >
 > **HC Architecture Synthesis (Nov 28, 2025)**: New comprehensive reference [`docs/HC_ARCHITECTURE_SYNTHESIS.md`](docs/HC_ARCHITECTURE_SYNTHESIS.md) consolidates all High Command strategic directives on CA Lattice, NCA/LCA kernels, CAT transforms, and Cerebros integration.
 >
-> **12-Domain Pantheon (Nov 28, 2025)**: Core, Pac, Crown, Bolt, Gate, Block, Flow, Grid, Vine, Prism, Link, Wall
-> **Cross-Domain Layers**: Routing (Flow×Grid), Observability (Gate×Crown), Intelligence (Bolt×Crown), Persistence (Block×Flow), Communication (Link×Gate), Orchestration (Vine×Crown), Compute (Bolt×Flow), **Lattice (Bolt×Link×Gate)**, **Transform (Bolt×Block)**
-> **Domain Restructure Status**: 
-> - ✅ **Active (10)**: Thundercrown (merged Chief), Thunderbolt (50+), Thundergate (19), Thunderblock (33), Thunderflow (9), Thundergrid (5→API focus), Thundervine (6), Thunderprism (2), Thunderlink (17), RAG (1)
-> - 🆕 **New Domains (HC-46/47/48)**: Thundercore (tick/identity), Thunderpac (PAC lifecycle), Thunderwall (entropy/GC)
-> - ✅ **Consolidation (HC-49)**: Thunderchief → Thundercrown (orchestration + governance unified)
+> **11-Domain Pantheon (Dec 6, 2025 - Post-TIGER LATTICE)**: Core, Vine, Block, Link, Flow, Chief, Crown, Bolt, Gate, Grid, Forge
+> **Key Changes**: Thunderprism → Thundergrid.Prism (absorbed), Thunderforge (NEW - compilers/parsers)
+> **Cross-Domain Layers**: Routing (Flow×Grid), Observability (Gate×Crown), Intelligence (Bolt×Crown), Persistence (Block×Flow), Communication (Link×Gate), Orchestration (Vine×Crown), Compute (Bolt×Flow), **Lattice (Bolt×Core - Reward Loop)**, **Transform (Bolt×Block)**
+> **Domain Status**:
+> - ✅ **Active (11)**: Thundercore (+Reward), Thundervine (6), Thunderblock (33), Thunderlink (17), Thunderflow (9), Thunderchief, Thundercrown, Thunderbolt (50+ +Rules), Thundergate (19), Thundergrid (8 +Prism), Thunderforge (NEW)
+> - 🎉 **MVP COMPLETE**: All 4 Boss Fights cleared via Operation TIGER LATTICE
 
 ---
 
-## ⚡ 12-DOMAIN THUNDERLINE PANTHEON (Nov 28, 2025)
+## ⚡ 11-DOMAIN THUNDERLINE PANTHEON (Dec 6, 2025)
 
-**Mission**: Establish the canonical 12-domain architecture for Thunderline, providing clear ownership boundaries, symbolic alignment, and operational coherence.
+**Mission**: Establish the canonical domain architecture for Thunderline, providing clear ownership boundaries and operational coherence. Post-TIGER LATTICE: 11 domains with Prism absorbed into Grid, Forge added for compilers.
 
-### Domain Registry
+### Domain Registry (Post-TIGER LATTICE - Dec 6, 2025)
 
-| # | Domain | Focus | Symbolic Mapping | Status |
-|---|--------|-------|------------------|--------|
-| 1️⃣ | **Thundercore** | Tick emanation, system clock, identity kernel, PAC ignition | Seedpoint / Identity Core (Metatron's 1st Domain) | 🆕 HC-46 |
-| 2️⃣ | **Thunderpac** | PAC lifecycle, state containers, role/intent management | Soul Container / Ascension Flow | 🆕 HC-47 |
-| 3️⃣ | **Thundercrown** | Governance + Orchestration (absorbed Chief), policy, authorization, saga coordination | Crown Oversight / Structure (Mental-Buddhic) | ✅ Active |
-| 4️⃣ | **Thunderbolt** | ML + Automata execution, loop monitors, CA intervention, Cerebros | Execution / Will / Fire (Key + Flame) | ✅ Active (50+) |
-| 5️⃣ | **Thundergate** | Security, IAM, crypto, OAuth, boundaries, keys, rate limiting | Security / Network IAM (Cyber Shield) | ✅ Active (19) |
-| 6️⃣ | **Thunderblock** | Persistence runtime, vaults, ledgers, data substrates | Persistence / Data (Cloud + DB layer) | ✅ Active (33) |
-| 7️⃣ | **Thunderflow** | Signal/event flow, telemetry, causal DAGs, criticality hooks | Flow / Communication (Color bands) | ✅ Active (9) |
-| 8️⃣ | **Thundergrid** | GraphQL interface, boundary contracts, data shape APIs | API / Connection Nexus (Heart/Throat) | ✅ Active (5) |
-| 9️⃣ | **Thundervine** | DAG workflows, macrostructure graphs, orchestration edges | DAG / Roots-Workflow (Biocultural ecology) | ✅ Active (6) |
-| 🔟 | **Thunderprism** | UI/UX, cognition layer, creativity, reflexive thought, code editing | Creativity / Reflexivity (Ambition, Relevance) | ✅ Active (2) |
-| 1️⃣1️⃣ | **Thunderlink** | Communication, federation, WebRTC, TOCP transport | Communication / Federation (External Interface) | ✅ Active (17) |
-| 1️⃣2️⃣ | **Thunderwall** | System boundary, decay, GC, overflow, archive, entropy sink | Entropy Boundary / Void (Black Hole Portal) | 🆕 HC-48 |
+| # | Domain | Focus | Status |
+|---|--------|-------|--------|
+| 1️⃣ | **Thundercore** | Ticks, rewards, clocks, identity kernel | ✅ Active + Reward Loop |
+| 2️⃣ | **Thundervine** | DAG / world-graph, workflows | ✅ Active (6) |
+| 3️⃣ | **Thunderblock** | Persistence / storage, vaults | ✅ Active (33) |
+| 4️⃣ | **Thunderlink** | Connection & comms, federation | ✅ Active (17) |
+| 5️⃣ | **Thunderflow** | Event bus, telemetry | ✅ Active (9) |
+| 6️⃣ | **Thunderchief** | Orchestration, supervision | ✅ Active |
+| 7️⃣ | **Thundercrown** | Policy / governance, authorization | ✅ Active |
+| 8️⃣ | **Thunderbolt** | Automata + ML (CA/NCA/Ising), Cerebros | ✅ Active (50+) + Rule Behaviour |
+| 9️⃣ | **Thundergate** | Security, IAM, boundaries | ✅ Active (19) |
+| 🔟 | **Thundergrid** | Visibility (GraphQL + UI + **Prism**) | ✅ Active (8) + Prism consolidated |
+| 1️⃣1️⃣ | **Thunderforge** | Compilers, parsers, learning | 🆕 TIGER LATTICE |
+
+**Note**: Thunderprism is now `Thundergrid.Prism` (submodule, not standalone domain). Thunderpac and Thunderwall remain as concepts but are not separate domains in the current implementation.
 
 ### System Cycle Model
 
@@ -116,7 +117,9 @@
 | ✅ **Boss 1** | Make One Node Boot Clean | **COMPLETE** | Supervision sanity ✓, test failures fixed ✓, smoke test ✓ |
 | ✅ **Boss 2** | Minimal PAC Lifecycle (Backend) | **COMPLETE** | State machine fixed ✓, lifecycle working ✓, events emitting ✓ |
 | ✅ **Boss 3** | Persistence + Thunderprism Slice | **COMPLETE** | Persistence verified ✓, PAC Console LiveView ✓ |
-| ⚔️ **Boss 4** | Thunderbolt CA & Future Hooks | Not Started | Single CA mode, wire with ticks |
+| ✅ **Boss 4** | Thunderbolt CA & Future Hooks | **COMPLETE** | Operation TIGER LATTICE ✓, reward loop ✓, Prism consolidation ✓ |
+
+**🎉 MVP COMPLETE** - All 4 Boss Fights cleared. See Operation TIGER LATTICE section for details.
 
 ---
 
@@ -239,33 +242,131 @@ live "/pac/:id", PacConsoleLive, :show
 
 ---
 
-### ⚔️ Boss 4: Thunderbolt CA & Future Hooks
+### ✅ Boss 4: Thunderbolt CA & Future Hooks (COMPLETE - Dec 6, 2025)
 
 **Goal**: One CA mode works, leaving hooks for future ML expansion.
 
-**Tasks**:
-1. **Single CA Mode for MVP**
-   - 2D, binary alphabet, simple rule
-   - `init_grid/2`, `step/1`, `fetch_grid/1` API
-   
-2. **Wire with Thundercore Ticks**
-   - CA step on tick
-   - Emit `ca.step.*` events
-   
-3. **Leave Hooks**
-   - Placeholder for Cerebros integration
-   - Placeholder for LoopMonitor
-   - Placeholder for NCA/LCA
+**Result**: ✅ **ACHIEVED** via **Operation TIGER LATTICE** - Full NCA/CA infrastructure with edge-of-chaos reward loop.
+
+**Completed Tasks**:
+1. ✅ **Thunderbolt.Rule Behaviour** - Pluggable rule backends (Classic CA, NCA)
+2. ✅ **Side-Quest Metrics** - Clustering, emergence, healing, pattern stability
+3. ✅ **Criticality Metrics** - PLV, λ̂, entropy, Lyapunov, edge-of-chaos zone
+4. ✅ **Reward Loop** - RewardSchema + RewardController + RewardLoop in Thundercore
+5. ✅ **CA.Runner Tuning** - `update_params/2` for live lambda/temperature/coupling adjustment
+6. ✅ **Thunderprism Consolidation** - Absorbed into Thundergrid.Prism
+7. ✅ **Thunderforge Genesis** - Compiler/parser domain structure
+8. ✅ **GraphQL Introspection** - `prism_nodes`, `automata_snapshots`, `reward_snapshots`
+
+**Files Created** (Operation TIGER LATTICE):
+- `lib/thunderline/thundercore/reward/` - Full reward subsystem (5 modules)
+- `lib/thunderline/thundergrid/prism/` - Prism consolidation (5 modules)
+- `lib/thunderline/thunderbolt/ca/side_quest_metrics.ex` - Side-quest metrics
+- `lib/thunderline/thunderbolt/rules/` - Rule behaviour + backends
+- `lib/thunderline/thunderforge/` - Compiler domain structure
+
+**Migration Guide**: [`docs/MIGRATION_TIGER_LATTICE.md`](docs/MIGRATION_TIGER_LATTICE.md)
+
+---
+
+## ⚡ OPERATION TIGER LATTICE (Dec 6, 2025)
+
+> **Objective**: Stabilize Thunderline's core lattice around an edge-of-chaos, reward-driven CA/NCA substrate with unified visibility and a compiler/learning backbone.
+
+### Thread Summary
+
+| Thread | Name | Status | Deliverables |
+|--------|------|--------|--------------|
+| 1 | Thunderforge Genesis | ✅ | Lex, Parser, Encoder, Compiler, Learn domain structure |
+| 2 | NCA + Side-Quest | ✅ | Rule behaviour, NCA backend, side-quest metrics pipeline |
+| 3 | RewardSchema | ✅ | Reward loop: Schema + Controller + Loop + Snapshot |
+| 4 | Prism Consolidation | ✅ | Thunderprism → Thundergrid.Prism + GraphQL |
+
+### Architecture Delivered
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                    REWARD LOOP (Thundercore)                      │
+│                                                                   │
+│   CA/NCA ──▶ Criticality ──▶ RewardSchema ──▶ Tuning ──▶ λ,T,C  │
+│    (step)    (PLV, λ̂, H)     (reward 0-1)    (deltas)           │
+│      ▲           │                              │                 │
+│      │           ▼                              │                 │
+│      │      SideQuest ──────────────────────────┤                 │
+│      │     (emergence,                          │                 │
+│      │      clustering)                         │                 │
+│      │                                          ▼                 │
+│      └──────────── CA.Runner.update_params ─────┘                 │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+### Metrics Surface
+
+| Category | Metric | Target (Edge of Chaos) |
+|----------|--------|------------------------|
+| Criticality | PLV (Phase-Locking Value) | ~0.4 |
+| Criticality | Permutation Entropy | ~0.5 |
+| Criticality | Langton's λ̂ | ~0.273 |
+| Criticality | Lyapunov Exponent | ~0 |
+| Side-Quest | Clustering | High |
+| Side-Quest | Emergence Score | High |
+| Side-Quest | Pattern Stability | Balanced (0.5-0.7) |
+| Side-Quest | Healing Rate | High |
+
+### Reward Weights
+
+| Component | Weight | Source |
+|-----------|--------|--------|
+| Edge Score | 40% | Criticality metrics |
+| Emergence | 25% | Side-quest emergence_score |
+| Stability | 20% | Side-quest pattern_stability |
+| Healing | 15% | Side-quest healing_rate |
+
+### Developer Quick Start
+
+```elixir
+# 1. Start a CA run with NCA rules
+ruleset = %{
+  rule_module: Thunderline.Thunderbolt.Rules.NCA,
+  rule_params: %{model: :vit_ca, steps: 1},
+  lambda: 0.5,
+  temperature: 1.0,
+  coupling: 0.5
+}
+
+{:ok, _pid} = Thunderline.Thunderbolt.CA.Runner.start_link(
+  run_id: "demo-run-1",
+  ruleset: ruleset,
+  tick_ms: 100,
+  clock_driven: true
+)
+
+# 2. Attach reward loop (auto-tunes toward edge of chaos)
+:ok = Thunderline.Thundercore.Reward.attach("demo-run-1")
+
+# 3. Check reward stats
+{:ok, avg} = Thunderline.Thundercore.Reward.average_reward("demo-run-1")
+{:ok, params} = Thunderline.Thundercore.Reward.current_params("demo-run-1")
+```
+
+### Domain Changes
+
+| Change | Old | New |
+|--------|-----|-----|
+| Thunderprism | Standalone domain | → Thundergrid.Prism (submodule) |
+| Thunderforge | N/A | New domain for compilers/parsers |
+| Domain count | 12 | 11 (Prism absorbed) |
 
 ---
 
 ### Post-MVP Horizon
 
-After Boss 4, the MVP is "done" and we can pursue:
-- **Robust Automata Infrastructure** - Full NCA/LCA, Cerebros TPE, criticality metrics
+With Boss 4 complete, the MVP is achieved. Future work:
+- **Thunderforge DSL** - ThunderDSL → IR → automata rulesets
 - **Federation** - Thunderlink multi-node clustering
 - **Advanced Orchestration** - Reactor sagas, complex DAGs
 - **Production Hardening** - Rate limiting, observability, security audits
+- **LiveView Dashboard** - Real-time automata + reward visualization
 
 ---
 

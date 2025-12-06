@@ -1,4 +1,4 @@
-defmodule Thunderline.Somatic.Engine do
+defmodule Thunderline.Thunderforge.Somatic.Engine do
   @moduledoc """
   Somatic Engine - Token tagging and sentiment analysis.
 
@@ -14,7 +14,7 @@ defmodule Thunderline.Somatic.Engine do
 
   ## Usage
 
-      Thunderline.Somatic.Engine.tag("hello")
+      Thunderline.Thunderforge.Somatic.Engine.tag("hello")
       # => %{valence: 0.5, arousal: 0.3, dominance: 0.5, ...}
   """
 
@@ -34,10 +34,10 @@ defmodule Thunderline.Somatic.Engine do
 
   ## Examples
 
-      iex> Thunderline.Somatic.Engine.tag("wonderful")
+      iex> Thunderline.Thunderforge.Somatic.Engine.tag("wonderful")
       %{valence: 0.8, arousal: 0.6, dominance: 0.5, ...}
 
-      iex> Thunderline.Somatic.Engine.tag("afraid")
+      iex> Thunderline.Thunderforge.Somatic.Engine.tag("afraid")
       %{valence: -0.7, arousal: 0.8, dominance: 0.2, ...}
   """
   @spec tag(String.t() | any()) :: map()

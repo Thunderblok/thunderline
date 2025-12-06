@@ -291,9 +291,9 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
   defp short(x), do: x
 
   defp somatic_tag(token) do
-    if Code.ensure_loaded?(Thunderline.Somatic.Engine) and
-         function_exported?(Thunderline.Somatic.Engine, :tag, 1) do
-      Thunderline.Somatic.Engine.tag(token)
+    if Code.ensure_loaded?(Thunderline.Thunderforge.Somatic.Engine) and
+         function_exported?(Thunderline.Thunderforge.Somatic.Engine, :tag, 1) do
+      Thunderline.Thunderforge.Somatic.Engine.tag(token)
     else
       %{}
     end
@@ -328,9 +328,9 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
 
   defp embed_vec(string) when is_binary(string) do
     cond do
-      Code.ensure_loaded?(Thunderline.Somatic.Embed) and
-          function_exported?(Thunderline.Somatic.Embed, :vec, 1) ->
-        Thunderline.Somatic.Embed.vec(string)
+      Code.ensure_loaded?(Thunderline.Thunderforge.Somatic.Embed) and
+          function_exported?(Thunderline.Thunderforge.Somatic.Embed, :vec, 1) ->
+        Thunderline.Thunderforge.Somatic.Embed.vec(string)
 
       true ->
         fallback_vec(string)
@@ -341,9 +341,9 @@ defmodule Thunderline.Thunderbolt.Signal.Sensor do
 
   defp embed_cosine(lhs, rhs) do
     cond do
-      Code.ensure_loaded?(Thunderline.Somatic.Embed) and
-          function_exported?(Thunderline.Somatic.Embed, :cosine, 2) ->
-        Thunderline.Somatic.Embed.cosine(lhs, rhs)
+      Code.ensure_loaded?(Thunderline.Thunderforge.Somatic.Embed) and
+          function_exported?(Thunderline.Thunderforge.Somatic.Embed, :cosine, 2) ->
+        Thunderline.Thunderforge.Somatic.Embed.cosine(lhs, rhs)
 
       true ->
         fallback_cosine(lhs, rhs)
