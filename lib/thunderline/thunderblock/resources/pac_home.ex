@@ -97,6 +97,7 @@ defmodule Thunderline.Thunderblock.Resources.PACHome do
     triggers do
       trigger :pac_health_check do
         action :health_check
+        read_action :read
         scheduler_cron "*/5 * * * *"
         where expr(status in [:active, :suspended])
       end
