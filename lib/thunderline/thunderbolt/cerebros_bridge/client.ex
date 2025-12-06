@@ -161,6 +161,33 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.Client do
   end
 
   @doc """
+  Invoke the Cerebros bridge NAS loop contract.
+  """
+  @spec run_nas(map(), keyword()) :: {:ok, map()} | {:error, ErrorClass.t()}
+  def run_nas(payload, opts \\ []) do
+    with_bridge(fn config ->
+      encoded = Translator.encode(:run_nas, payload, config, opts)
+      meta = Map.get(encoded, :meta, %{})
+
+      result =
+        maybe_cache(encoded.cache_key, opts, config, fn ->
+          with {:ok, raw} <- Invoker.invoke(:run_nas, encoded, config: config, meta: meta) do
+            {:ok, Translator.decode(:run_nas, payload, raw, config)}
+          end
+        end)
+
+      case result do
+        {:ok, decoded} ->
+          # Emit event if needed, for now just return
+          {:ok, decoded}
+
+        {:error, error} ->
+          {:error, error}
+      end
+    end)
+  end
+
+  @doc """
   Invoke the Cerebros bridge finalize-run contract. Emits stop/exception events.
   """
   @spec finalize_run(Contracts.RunFinalizedV1.t(), keyword()) ::

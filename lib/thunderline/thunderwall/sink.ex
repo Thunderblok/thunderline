@@ -144,84 +144,95 @@ defmodule Thunderline.Thunderwall.Sink do
   - `run_id` - ID of the DiffLogic CA run
   - `reason` - Why the run failed
   - `metadata` - Additional context (metrics, config, etc.)
+  - `opts` - Options including `:server` (defaults to __MODULE__)
   """
-  @spec quarantine_ca_run(String.t(), quarantine_reason(), map()) ::
+  @spec quarantine_ca_run(String.t(), quarantine_reason(), map(), keyword()) ::
           {:ok, sink_entry()} | {:error, term()}
-  def quarantine_ca_run(run_id, reason, metadata \\ %{}) do
-    GenServer.call(__MODULE__, {:quarantine, :ca_run, run_id, reason, metadata})
+  def quarantine_ca_run(run_id, reason, metadata \\ %{}, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:quarantine, :ca_run, run_id, reason, metadata})
   end
 
   @doc """
   Quarantine a chaotic Thunderbit.
   """
-  @spec quarantine_thunderbit(String.t(), map()) :: {:ok, sink_entry()} | {:error, term()}
-  def quarantine_thunderbit(bit_id, metadata \\ %{}) do
-    GenServer.call(__MODULE__, {:quarantine, :thunderbit, bit_id, :chaos_spike, metadata})
+  @spec quarantine_thunderbit(String.t(), map(), keyword()) :: {:ok, sink_entry()} | {:error, term()}
+  def quarantine_thunderbit(bit_id, metadata \\ %{}, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:quarantine, :thunderbit, bit_id, :chaos_spike, metadata})
   end
 
   @doc """
   Archive an unstable PAC lineage.
   """
-  @spec archive_pac_lineage(String.t(), list(), map()) :: {:ok, sink_entry()} | {:error, term()}
-  def archive_pac_lineage(pac_id, lineage, metadata \\ %{}) do
-    GenServer.call(__MODULE__, {:archive_lineage, pac_id, lineage, metadata})
+  @spec archive_pac_lineage(String.t(), list(), map(), keyword()) :: {:ok, sink_entry()} | {:error, term()}
+  def archive_pac_lineage(pac_id, lineage, metadata \\ %{}, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:archive_lineage, pac_id, lineage, metadata})
   end
 
   @doc """
   Quarantine a failed TPE trial.
   """
-  @spec quarantine_trial(String.t(), quarantine_reason(), map()) ::
+  @spec quarantine_trial(String.t(), quarantine_reason(), map(), keyword()) ::
           {:ok, sink_entry()} | {:error, term()}
-  def quarantine_trial(trial_id, reason, metadata \\ %{}) do
-    GenServer.call(__MODULE__, {:quarantine, :trial, trial_id, reason, metadata})
+  def quarantine_trial(trial_id, reason, metadata \\ %{}, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:quarantine, :trial, trial_id, reason, metadata})
   end
 
   @doc """
   Get all quarantined entries.
   """
-  @spec list_quarantine() :: [sink_entry()]
-  def list_quarantine do
-    GenServer.call(__MODULE__, :list_quarantine)
+  @spec list_quarantine(keyword()) :: [sink_entry()]
+  def list_quarantine(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :list_quarantine)
   end
 
   @doc """
   Get all archived entries.
   """
-  @spec list_archive() :: [sink_entry()]
-  def list_archive do
-    GenServer.call(__MODULE__, :list_archive)
+  @spec list_archive(keyword()) :: [sink_entry()]
+  def list_archive(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :list_archive)
   end
 
   @doc """
   Get extracted failure patterns.
   """
-  @spec list_patterns() :: [pattern()]
-  def list_patterns do
-    GenServer.call(__MODULE__, :list_patterns)
+  @spec list_patterns(keyword()) :: [pattern()]
+  def list_patterns(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :list_patterns)
   end
 
   @doc """
   Get sink statistics.
   """
-  @spec stats() :: map()
-  def stats do
-    GenServer.call(__MODULE__, :stats)
+  @spec stats(keyword()) :: map()
+  def stats(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :stats)
   end
 
   @doc """
   Manually trigger GC on quarantine/archive.
   """
-  @spec run_gc() :: {:ok, non_neg_integer()}
-  def run_gc do
-    GenServer.call(__MODULE__, :run_gc)
+  @spec run_gc(keyword()) :: {:ok, non_neg_integer()}
+  def run_gc(opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, :run_gc)
   end
 
   @doc """
   Restore an entry from quarantine (if still valid).
   """
-  @spec restore(String.t()) :: {:ok, sink_entry()} | {:error, :not_found | :already_archived}
-  def restore(entry_id) do
-    GenServer.call(__MODULE__, {:restore, entry_id})
+  @spec restore(String.t(), keyword()) :: {:ok, sink_entry()} | {:error, :not_found | :already_archived}
+  def restore(entry_id, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:restore, entry_id})
   end
 
   # ═══════════════════════════════════════════════════════════════
@@ -633,7 +644,9 @@ defmodule Thunderline.Thunderwall.Sink do
 
   defp pattern_key(pattern) do
     # Create a unique key from pattern signature
-    :erlang.phash2({pattern.type, pattern.signature.reason})
+    # Handle different pattern types - lineages don't have :reason
+    reason = Map.get(pattern.signature, :reason, pattern.type)
+    :erlang.phash2({pattern.type, reason})
   end
 
   # ═══════════════════════════════════════════════════════════════

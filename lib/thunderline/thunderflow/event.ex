@@ -394,7 +394,9 @@ defmodule Thunderline.Event do
     bridge: ["system", "ui.command", "ai"],
     unknown: ["system", "ai"],
     # Custom evt.* experimental namespaces (tight, explicit allow-list)
-    bolt_evt: ["evt.action.ca"]
+    bolt_evt: ["evt.action.ca"],
+    # PAC domain - lifecycle, evolution, intent, state, tick events
+    pac: ["pac.lifecycle", "pac.evolution", "pac.intent", "pac.state", "pac.tick", "system"]
   }
 
   defp category_allowed?(source, name) when is_atom(source) and is_binary(name) do

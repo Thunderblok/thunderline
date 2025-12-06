@@ -195,10 +195,36 @@ defmodule Thunderline.Application do
         {Thunderline.Thunderbolt.ML.ModelSelectionConsumer, controller_pid: :ml_controller},
         # File classification consumer
         Thunderline.Thunderflow.Consumers.Classifier
+      ] ++ training_pipeline_children()
+    else
+      []
+    end
+  end
+
+  # Training pipeline for ML model development (Boss 4)
+  defp training_pipeline_children do
+    if Feature.enabled?(:training_pipeline, default: true) do
+      [
+        # Training Supervisor - manages TrajectoryLogger + TPEClient
+        {Thunderline.Thunderbolt.Training.Supervisor, training_supervisor_config()}
       ]
     else
       []
     end
+  end
+
+  defp training_supervisor_config do
+    [
+      trajectory_logger: [
+        backend: :ets,
+        export_path: "priv/training_data/trajectories",
+        max_steps: Application.get_env(:thunderline, :training_max_steps, 100_000)
+      ],
+      tpe_client: [
+        python_path: Application.get_env(:thunderline, :python_path, "python3.13")
+      ],
+      enable_tpe: Application.get_env(:thunderline, :enable_tpe, true)
+    ]
   end
 
   defp model_server_config do

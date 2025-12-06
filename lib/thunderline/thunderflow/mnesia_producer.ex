@@ -87,7 +87,7 @@ defmodule Thunderline.Thunderflow.MnesiaProducer do
         messages = convert_events_to_messages(events, state.ack_ref, state.table)
         remaining_demand = max(0, new_demand - length(messages))
 
-        Logger.debug("MnesiaProducer: Delivering #{length(messages)} events")
+        # NOTE: Removed delivery debug log - too noisy for dev
 
         {:noreply, messages, %{state | demand: remaining_demand}}
 
@@ -171,7 +171,8 @@ defmodule Thunderline.Thunderflow.MnesiaProducer do
 
     case :mnesia.transaction(fn -> :mnesia.write(record_tuple) end) do
       {:atomic, :ok} ->
-        Logger.debug("MnesiaProducer: Enqueued event #{elem(record_tuple, 1)} into #{table}")
+        # NOTE: Removed debug log here - was causing massive log spam in dev
+        # Use Logger.debug only when MNESIA_PRODUCER_DEBUG=1 for troubleshooting
         :ok
 
       {:aborted, reason} ->
@@ -204,7 +205,7 @@ defmodule Thunderline.Thunderflow.MnesiaProducer do
 
     case :mnesia.transaction(fn -> Enum.each(tuples, &:mnesia.write/1) end) do
       {:atomic, :ok} ->
-        Logger.debug("MnesiaProducer: Enqueued #{length(events)} events into #{table}")
+        # NOTE: Removed debug log here - was causing log spam in dev
         :ok
 
       {:aborted, reason} ->

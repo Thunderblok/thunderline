@@ -171,32 +171,31 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
 
   describe "GenServer operations" do
     setup do
-      # Start Evolution GenServer for tests
-      {:ok, pid} = Evolution.start_link(name: :"Evolution_#{System.unique_integer([:positive])}")
-      Process.register(pid, Thunderline.Thunderpac.Evolution)
-      on_exit(fn -> Process.unregister(Thunderline.Thunderpac.Evolution) end)
-      {:ok, pid: pid}
+      # Start Evolution GenServer with unique name for async test isolation
+      test_name = :"Evolution_#{System.unique_integer([:positive])}"
+      {:ok, pid} = Evolution.start_link(name: test_name)
+      {:ok, pid: pid, server: test_name}
     end
 
-    test "starts evolution session", %{pid: _pid} do
+    test "starts evolution session", %{server: server} do
       pac_id = "test_pac_#{System.unique_integer([:positive])}"
 
-      {:ok, session_id} = Evolution.start_session(pac_id, profile: :explorer)
+      {:ok, session_id} = Evolution.start_session(pac_id, profile: :explorer, server: server)
 
       assert String.starts_with?(session_id, "evo_#{pac_id}")
     end
 
-    test "starts session with custom profile", %{pid: _pid} do
+    test "starts session with custom profile", %{server: server} do
       pac_id = "test_pac_#{System.unique_integer([:positive])}"
 
-      {:ok, _session_id} = Evolution.start_session(pac_id, profile: :aggressive)
+      {:ok, _session_id} = Evolution.start_session(pac_id, profile: :aggressive, server: server)
 
       # Session should be created (verifiable via best_params)
-      result = Evolution.best_params(pac_id)
+      result = Evolution.best_params(pac_id, server: server)
       assert match?({:error, :no_evolution_yet}, result)
     end
 
-    test "performs evolution step", %{pid: _pid} do
+    test "performs evolution step", %{server: server} do
       pac = %{
         id: "test_pac_step_#{System.unique_integer([:positive])}",
         trait_vector: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.3, 0.5, 0.4, 0.5],
@@ -213,7 +212,7 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
         lyapunov: 0.0
       }
 
-      {:ok, evolved_pac, fitness} = Evolution.step(pac, metrics)
+      {:ok, evolved_pac, fitness} = Evolution.step(pac, metrics, server: server)
 
       assert is_map(evolved_pac)
       assert evolved_pac.persona["evolved"] == true
@@ -221,7 +220,7 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
       assert Map.has_key?(fitness, :components)
     end
 
-    test "gets best params after evolution", %{pid: _pid} do
+    test "gets best params after evolution", %{server: server} do
       pac = %{
         id: "test_pac_best_#{System.unique_integer([:positive])}",
         trait_vector: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.3, 0.5, 0.4, 0.5],
@@ -235,17 +234,17 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
 
       # Run a few steps
       for _ <- 1..3 do
-        Evolution.step(pac, metrics)
+        Evolution.step(pac, metrics, server: server)
       end
 
-      {:ok, best} = Evolution.best_params(pac.id)
+      {:ok, best} = Evolution.best_params(pac.id, server: server)
 
       assert is_map(best)
       # Should have trait keys
       assert Map.has_key?(best, :aggression) or Map.has_key?(best, :lambda_sensitivity)
     end
 
-    test "gets lineage after evolution", %{pid: _pid} do
+    test "gets lineage after evolution", %{server: server} do
       pac = %{
         id: "test_pac_lineage_#{System.unique_integer([:positive])}",
         trait_vector: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.3, 0.5, 0.4, 0.5],
@@ -258,9 +257,9 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
       metrics = %{plv: 0.4, entropy: 0.5, lambda_hat: 0.273, lyapunov: 0.0}
 
       # Run evolution
-      Evolution.step(pac, metrics)
+      Evolution.step(pac, metrics, server: server)
 
-      {:ok, lineage} = Evolution.get_lineage(pac.id)
+      {:ok, lineage} = Evolution.get_lineage(pac.id, server: server)
 
       assert is_list(lineage)
       assert length(lineage) >= 1
@@ -271,16 +270,16 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
       assert Map.has_key?(entry, :traits)
     end
 
-    test "switches profile", %{pid: _pid} do
+    test "switches profile", %{server: server} do
       pac_id = "test_pac_switch_#{System.unique_integer([:positive])}"
 
-      {:ok, _} = Evolution.start_session(pac_id, profile: :balanced)
-      :ok = Evolution.switch_profile(pac_id, :explorer)
+      {:ok, _} = Evolution.start_session(pac_id, profile: :balanced, server: server)
+      :ok = Evolution.switch_profile(pac_id, :explorer, server: server)
 
       # Profile switch should succeed without error
     end
 
-    test "spawns child from parent", %{pid: _pid} do
+    test "spawns child from parent", %{server: server} do
       parent_pac = %{
         id: "parent_pac_#{System.unique_integer([:positive])}",
         trait_vector: [0.6, 0.7, 0.4, 0.5, 0.8, 0.3, 0.273, 0.5, 0.4, 0.6],
@@ -293,10 +292,10 @@ defmodule Thunderline.Thunderpac.EvolutionTest do
       metrics = %{plv: 0.4, entropy: 0.5, lambda_hat: 0.273, lyapunov: 0.0}
 
       # Run parent evolution first
-      {:ok, _, _} = Evolution.step(parent_pac, metrics)
+      {:ok, _, _} = Evolution.step(parent_pac, metrics, server: server)
 
       # Spawn child
-      {:ok, child_pac} = Evolution.spawn_child(parent_pac.id, mutation_rate: 0.1)
+      {:ok, child_pac} = Evolution.spawn_child(parent_pac.id, mutation_rate: 0.1, server: server)
 
       assert child_pac.persona["lineage"]["parent_id"] == parent_pac.id
       assert is_list(child_pac.trait_vector)

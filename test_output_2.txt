@@ -1,0 +1,149 @@
+    warning: variable "key" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+    │
+ 62 │     {b1, key} = Nx.Random.normal(key, 0.0, 0.01, shape: {@hidden_dim})
+    │          ~~~
+    │
+    └─ lib/thunderline/thunderbolt/nca/vit_ca_update_rule.ex:62:10: Thunderline.Thunderbolt.NCA.ViTCAUpdateRule.initialize_params/1
+
+    warning: unused import Nx.Defn
+    │
+ 31 │   import Nx.Defn
+    │   ~
+    │
+    └─ lib/thunderline/thunderbolt/nca/vit_ca_update_rule.ex:31:3
+
+     warning: the following clause will never match:
+
+         {:ok, _result}
+
+     because it attempts to match on the result of:
+
+         Thunderline.Thunderbolt.CerebrosBridge.cancel_run(run_id)
+
+     which has type:
+
+         dynamic({:error, :not_implemented})
+
+     typing violation found at:
+     │
+ 121 │       {:ok, _result} ->
+     │       ~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/thunderline_web/live/cerebros_live.ex:121: ThunderlineWeb.CerebrosLive.handle_event/3
+
+     warning: the following clause will never match:
+
+         {:ok, results}
+
+     because it attempts to match on the result of:
+
+         Thunderline.Thunderbolt.CerebrosBridge.get_run_results(run_id)
+
+     which has type:
+
+         dynamic({:error, :not_implemented})
+
+     typing violation found at:
+     │
+ 131 │       {:ok, results} ->
+     │       ~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/thunderline_web/live/cerebros_live.ex:131: ThunderlineWeb.CerebrosLive.handle_event/3
+
+     warning: the following clause will never match:
+
+         {:ok, report_path}
+
+     because it attempts to match on the result of:
+
+         Thunderline.Thunderbolt.CerebrosBridge.download_report(run_id)
+
+     which has type:
+
+         dynamic({:error, :not_implemented})
+
+     typing violation found at:
+     │
+ 142 │       {:ok, report_path} ->
+     │       ~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/thunderline_web/live/cerebros_live.ex:142: ThunderlineWeb.CerebrosLive.handle_event/3
+
+    warning: AshAuthentication.Token.verify/2 is undefined (module AshAuthentication.Token is not available or is yet to be defined)
+    │
+ 67 │   defp verify_token(token), do: Token.verify(Thunderline.Thundergate, token)
+    │                                       ~
+    │
+    └─ lib/thunderline_web/user_socket.ex:67:39: ThunderlineWeb.UserSocket.verify_token/1
+
+     warning: unknown key .goal in expression:
+
+         struct_tree.goal
+
+     the given type does not have the given key:
+
+         dynamic(%Thunderline.Thunderchief.PlanTree{tree: term(), metadata: term()})
+
+     where "struct_tree" was given the type:
+
+         # type: dynamic(%Thunderline.Thunderchief.PlanTree{})
+         # from: lib/thunderline/thunderchief/resources/plan_tree.ex:308:37
+         %Thunderline.Thunderchief.PlanTree{} = struct_tree
+
+     typing violation found at:
+     │
+ 313 │       goal: struct_tree.goal || struct_tree.id,
+     │                         ~~~~
+     │
+     └─ lib/thunderline/thunderchief/resources/plan_tree.ex:313:25: Thunderline.Thunderchief.Resources.PlanTree.from_struct/2
+
+     warning: List.zip/1 is deprecated. Use Enum.zip/1 instead
+     │
+ 414 │     |> List.zip()
+     │             ~
+     │
+     └─ lib/thunderline/thunderpac/memory_module.ex:414:13: Thunderline.Thunderpac.MemoryModule.transpose/1
+
+    warning: variable "key" is unused (there is a variable with the same name in the context, use the pin operator (^) to match on it or prefix this variable with underscore if it is not meant to be used)
+    │
+ 63 │     {b1, key} = Nx.Random.normal(key, 0.0, 0.01, shape: {@hidden_dim})
+    │          ~~~
+    │
+    └─ lib/thunderline/thunderbolt/nca/vit_ca_update_rule_v2.ex:63:10: Thunderline.Thunderbolt.NCA.ViTCAUpdateRuleV2.initialize_params/1
+
+    warning: unused import Nx.Defn
+    │
+ 25 │   import Nx.Defn
+    │   ~
+    │
+    └─ lib/thunderline/thunderbolt/nca/vit_ca_update_rule_v2.ex:25:3
+
+Getting extensions in current project...
+Running setup for AshPostgres.DataLayer...
+[otel] opentelemetry_exporter not available; telemetry export disabled.
+[features] enabled: []
+Running ExUnit with seed: 793883, max_cases: 40
+
+Starting NAS run...
+
+
+  1) test full training loop: train -> onnx -> inference (Thunderline.Thunderbolt.CerebrosBridge.FullLoopTest)
+     test/thunderline/thunderbolt/cerebros_bridge/full_loop_test.exs:43
+     match (=) failed
+     code:  assert {:ok, res} = result
+     left:  {:ok, res}
+     right: {:error,
+             %Thunderline.Thunderflow.ErrorClass{
+               origin: :cerebros_bridge,
+               class: :validation,
+               severity: :warning,
+               visibility: :external,
+               raw: nil,
+               context: %{reason: :bridge_disabled, op: :start_run}
+             }}
+     stacktrace:
+       test/thunderline/thunderbolt/cerebros_bridge/full_loop_test.exs:67: (test)
+
+
+Finished in 0.2 seconds (0.00s async, 0.2s sync)
+1 test, 1 failure

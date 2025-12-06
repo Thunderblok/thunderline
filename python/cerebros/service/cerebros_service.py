@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "deploy"))
 
 from thunderline_client import ThunderlineClient
 from job_executor import JobExecutor
+from .direct_entry import run_nas
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"

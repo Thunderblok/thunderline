@@ -95,6 +95,180 @@
 
 ---
 
+## 🎯 MVP CLOSING PATH: 4 BOSS FIGHTS (Dec 2025)
+
+> **High Command Directive (Dec 2025)**: Define MVP as one working Thunderline node demonstrating end-to-end capability. Rather than attempting everything at once, structure the remaining work as 4 sequential "Boss Fights" that can be tackled incrementally.
+
+### MVP Definition
+
+**One working node** that:
+1. ✅ Boots core loop (supervision tree, core tick)
+2. ✅ Creates a PAC (Thunderpac lifecycle)
+3. ✅ Runs basic PAC actions
+4. ✅ Emits events (Thunderflow EventBus)
+5. ✅ Persists state (Thunderblock Ash resources)
+6. ✅ Shows a UI slice (Thunderprism LiveView)
+
+### Boss Fight Progress
+
+| Boss | Name | Status | Key Tasks |
+|------|------|--------|-----------|
+| ✅ **Boss 1** | Make One Node Boot Clean | **COMPLETE** | Supervision sanity ✓, test failures fixed ✓, smoke test ✓ |
+| ✅ **Boss 2** | Minimal PAC Lifecycle (Backend) | **COMPLETE** | State machine fixed ✓, lifecycle working ✓, events emitting ✓ |
+| ✅ **Boss 3** | Persistence + Thunderprism Slice | **COMPLETE** | Persistence verified ✓, PAC Console LiveView ✓ |
+| ⚔️ **Boss 4** | Thunderbolt CA & Future Hooks | Not Started | Single CA mode, wire with ticks |
+
+---
+
+### ✅ Boss 1: Make One Node Boot Clean (COMPLETE - Dec 6, 2025)
+
+**Goal**: `mix phx.server` boots without crashes, supervision tree healthy.
+
+**Result**: ✅ **ACHIEVED** - Node boots clean in ~3 seconds, all supervisors healthy.
+
+**Completed Tasks**:
+1. ✅ **Application Supervision Sanity Pass** - Audit `lib/thunderline/application.ex`
+   - All core supervisors start: Repo, Thundercore, Thunderpac, Thunderflow, Thundervine, Thunderwall
+   - Conditional starts properly configured
+   
+2. ✅ **Fix Remaining Test Failures**
+   - Thunderlink: 10 tests pass (Registry uses ETS cache, self-initializing)
+   - Thundergate: 23 tests pass (deprecated bridge tests handle missing infra gracefully)
+   - Thunderbolt UPM/sagas: Deferred (not blocking MVP)
+   
+3. ✅ **Smoke Test**
+   - `mix phx.server` boots cleanly (no errors)
+   - No supervision restarts
+   - All 12 domains register and activate in sequence
+   - Features enabled: ai_chat_panel, ca_viz, cerebros_bridge, ml_nas, rag_enabled, reward_signal
+   - Endpoints: LiveDebugger :4007, ThunderlineWeb :5001
+
+**Warnings (Non-blocking)**: 
+- CerebrosLive: Unreachable `{:ok, _}` clauses (CerebrosBridge returns `:error`)
+- AshAuthentication.Token.verify/2 undefined (not compiled yet)
+- PlanTree missing `.goal` field
+- `List.zip/1` deprecated warning
+
+**Domain Test Status (Dec 6, 2025 - Updated)**:
+| Domain | Tests | Status |
+|--------|-------|--------|
+| Thundercore | 75 | ✅ Pass |
+| Thunderpac | 20 | ✅ Pass |
+| Thundercrown | 28 | ✅ Pass |
+| Thunderbolt | ~200+ | ⚠️ Partial (UPM/sagas need Registry) |
+| Thundergate | 23 | ✅ Pass |
+| Thunderblock | - | ⏭️ No tests yet |
+| Thunderflow | 62 | ✅ Pass |
+| Thundergrid | - | ⏭️ No tests yet |
+| Thundervine | 33 | ✅ Pass |
+| Thunderprism | - | ⏭️ No tests yet |
+| Thunderlink | 10 | ✅ Pass |
+| Thunderwall | 37 | ✅ Pass |
+
+---
+
+### ✅ Boss 2: Minimal PAC Lifecycle (Backend Only) (COMPLETE - Dec 6, 2025)
+
+**Goal**: Create, run, and track a PAC through code interfaces.
+
+**Result**: ✅ **ACHIEVED** - Full PAC lifecycle working: spawn → ignite → activate → suspend → reactivate → archive
+
+**Completed Tasks**:
+1. ✅ **Lock Thunderpac API** - Clean code interface defined in PAC resource
+   - `spawn/4`, `ignite/2`, `activate/2`, `suspend/3`, `archive/2`, `tick/2`
+   - `active_pacs/1`, `by_status/2`, `with_history/2`
+   
+2. ✅ **Wire PAC into Ticks** - Thunderpac.Supervisor ticks active PACs
+   - Registry tracks active PACs
+   - Tick events propagate through PAC lifecycle
+   
+3. ✅ **Emit Events** - PAC actions emit `pac.*` events via EventBus
+   - `pac.lifecycle.spawned`, `pac.lifecycle.activated`, etc.
+   - Events flow through Thunderflow pipeline
+   
+4. ✅ **Fix AshStateMachine Integration**
+   - Added `state_attribute :status` to state_machine DSL (was defaulting to `:state`)
+   - Fixed `context.arguments` → `Ash.Changeset.get_argument/2` in suspend action
+   
+5. ✅ **Expose Thundervine Read Path** - Added `with_history/2` action for PAC lineage
+
+**Validated Lifecycle**:
+```
+spawn:      seed     ✅
+ignite:     dormant  ✅
+activate:   active   ✅
+suspend:    suspended ✅
+reactivate: active   ✅
+archive:    archived ✅
+```
+
+---
+
+### ✅ Boss 3: Persistence + Thunderprism Slice (COMPLETE - Dec 7, 2025)
+
+**Goal**: PAC state persists to DB, viewable in browser.
+
+**Result**: ✅ **ACHIEVED** - PAC persistence verified (was already working via AshPostgres), PAC Console LiveView created.
+
+**Completed Tasks**:
+1. ✅ **Thunderblock MVP Persistence**
+   - PACs persist via AshPostgres (tables: `thunderpac_pacs`, `thunderpac_roles`, `thunderpac_states`, `thunderpac_traits_evolution_jobs`)
+   - Event log captures PAC lifecycle (table: `thunderline_events`)
+   - Verified existing PACs survive server restarts
+   
+2. ✅ **Thunderprism "PAC Console" LiveView**
+   - Routes: `/pac` (list), `/pac/:id` (detail)
+   - List view: All PACs sorted by creation date
+   - Detail view:
+     - State machine visualization (seed → dormant → active → suspended → archived)
+     - Lifecycle action buttons (ignite, activate, suspend, archive, reactivate)
+     - Memory state display (JSON)
+     - Trait vector display
+     - Intent queue display
+     - Real-time event stream via PubSub
+   - Uses: PubSub channels `pac:lifecycle:{id}`, `pac.state.changed`
+
+**Files Created**:
+- `lib/thunderline_web/live/pac_console_live.ex` (~465 lines)
+
+**Routes Added** (router.ex):
+```elixir
+live "/pac", PacConsoleLive, :index
+live "/pac/:id", PacConsoleLive, :show
+```
+
+---
+
+### ⚔️ Boss 4: Thunderbolt CA & Future Hooks
+
+**Goal**: One CA mode works, leaving hooks for future ML expansion.
+
+**Tasks**:
+1. **Single CA Mode for MVP**
+   - 2D, binary alphabet, simple rule
+   - `init_grid/2`, `step/1`, `fetch_grid/1` API
+   
+2. **Wire with Thundercore Ticks**
+   - CA step on tick
+   - Emit `ca.step.*` events
+   
+3. **Leave Hooks**
+   - Placeholder for Cerebros integration
+   - Placeholder for LoopMonitor
+   - Placeholder for NCA/LCA
+
+---
+
+### Post-MVP Horizon
+
+After Boss 4, the MVP is "done" and we can pursue:
+- **Robust Automata Infrastructure** - Full NCA/LCA, Cerebros TPE, criticality metrics
+- **Federation** - Thunderlink multi-node clustering
+- **Advanced Orchestration** - Reactor sagas, complex DAGs
+- **Production Hardening** - Rate limiting, observability, security audits
+
+---
+
 ## 📊 NOVEMBER 18, 2025 ARCHITECTURE REVIEW SUMMARY
 
 ### Domain Architecture Status
@@ -224,9 +398,9 @@
 | **HC-43** | **P1** | **Agent0 Co-Evolution Loop** | No self-improving agent training | **Agent0-01**: Curriculum+Executor LLM co-evolution. **Components**: (1) Ash resources `CurriculumAgent`, `ExecutorAgent`, (2) Snex Python bridge for RL updates (GRPO/ADPO), (3) Zero-shot bootstrapping (no external data), (4) Episodic training with uncertainty×tool-use rewards, (5) ONNX model export/import via Ortex. **Goal**: Self-reinforcing training cycle. | Bolt + Crown Stewards | Not Started |
 | **HC-44** | **P1** | **Agent0 Swarm Orchestration** | No multi-agent parallel execution | **Agent0-02**: Swarm scheduling in Thunderflow/Thunderchief. **Components**: (1) Reactor DAG for agent-spawn nodes, (2) Dynamic scaling (GenStage backpressure, K8s HPA), (3) Routing heuristics (round-robin, skill-based), (4) Task patterns (batching, sharding, voting), (5) Result aggregation and scoring. Cross-domain layer: **Flow×Crown**. | Flow + Crown Stewards | Not Started |
 | **HC-45** | **P1** | **Event-Driven Agent Triggers** | No automata-based agent activation | **Agent0-03**: Thundercell triggers for agent spawning. **Components**: (1) Voxel state sensors (entropy burst, event-band), (2) Thunderbolt automata watchers, (3) Cool-off periods and rate limits, (4) Nerves edge constraints (central check-in), (5) LoopMonitor integration for runaway prevention. | Bolt + Gate Stewards | Not Started |
-| **HC-46** | **P0** | **Thundercore Domain** | No unified tick/identity origin | **Pantheon-01**: Create Thundercore domain for tick emanation, system clock, identity kernel, PAC ignition. **Components**: (1) `Thundercore.Domain` Ash domain, (2) `TickEmitter` GenServer (system heartbeat), (3) `IdentityKernel` resource (PAC seedpoints), (4) `SystemClock` monotonic time service, (5) Event categories `core.tick.*`, `core.identity.*`. **Files**: `lib/thunderline/thundercore/`. | Core Steward | Not Started |
-| **HC-47** | **P0** | **Thunderpac Domain** | PAC lifecycle scattered across domains | **Pantheon-02**: Create Thunderpac domain for PAC lifecycle management. **Components**: (1) `Thunderpac.Domain` Ash domain, (2) Extract PAC resources from Thunderbolt/Thunderblock, (3) `PAC` resource (state containers), (4) `PACRole` (role definitions), (5) `PACIntent` (intent management), (6) Lifecycle state machine (`:dormant`, `:active`, `:suspended`, `:archived`). **Files**: `lib/thunderline/thunderpac/`. | Pac Steward | Not Started |
-| **HC-48** | **P0** | **Thunderwall Domain** | No entropy/decay boundary | **Pantheon-03**: Create Thunderwall domain for system boundary, entropy sink, GC. **Components**: (1) `Thunderwall.Domain` Ash domain, (2) `DecayProcessor` (archive expired resources), (3) `OverflowHandler` (reject stream management), (4) `EntropyMetrics` (system decay telemetry), (5) `GCScheduler` (garbage collection coordination), (6) Event categories `wall.decay.*`, `wall.archive.*`. **Files**: `lib/thunderline/thunderwall/`. Cross-domain: **Wall = final destination for all domains' expired/rejected data**. | Wall Steward | Not Started |
+| **HC-46** | **P0** | **Thundercore Domain** | No unified tick/identity origin | **Pantheon-01**: Create Thundercore domain for tick emanation, system clock, identity kernel, PAC ignition. **Components**: (1) `Thundercore.Domain` Ash domain, (2) `TickEmitter` GenServer (system heartbeat), (3) `IdentityKernel` resource (PAC seedpoints), (4) `SystemClock` monotonic time service, (5) Event categories `core.tick.*`, `core.identity.*`. **Files**: `lib/thunderline/thundercore/`. | Core Steward | **Done** (75 tests pass) |
+| **HC-47** | **P0** | **Thunderpac Domain** | PAC lifecycle scattered across domains | **Pantheon-02**: Create Thunderpac domain for PAC lifecycle management. **Components**: (1) `Thunderpac.Domain` Ash domain, (2) Extract PAC resources from Thunderbolt/Thunderblock, (3) `PAC` resource (state containers), (4) `PACRole` (role definitions), (5) `PACIntent` (intent management), (6) Lifecycle state machine (`:dormant`, `:active`, `:suspended`, `:archived`). **Files**: `lib/thunderline/thunderpac/`. | Pac Steward | **Done** (20 tests pass) |
+| **HC-48** | **P0** | **Thunderwall Domain** | No entropy/decay boundary | **Pantheon-03**: Create Thunderwall domain for system boundary, entropy sink, GC. **Components**: (1) `Thunderwall.Domain` Ash domain, (2) `DecayProcessor` (archive expired resources), (3) `OverflowHandler` (reject stream management), (4) `EntropyMetrics` (system decay telemetry), (5) `GCScheduler` (garbage collection coordination), (6) Event categories `wall.decay.*`, `wall.archive.*`. **Files**: `lib/thunderline/thunderwall/`. Cross-domain: **Wall = final destination for all domains' expired/rejected data**. | Wall Steward | **Done** (37 tests pass) |
 | **HC-49** | **P0** | **Crown←Chief Consolidation** | Orchestration split from governance | **Pantheon-04**: Complete Thunderchief → Thundercrown merger. **Components**: (1) Move remaining Thunderchief modules to Thundercrown, (2) Update all `Thunderchief.*` references to `Thundercrown.*`, (3) Delete Thunderchief domain directory, (4) Update imports/aliases across codebase, (5) Event categories `chief.*` → `crown.*`. **Rationale**: Orchestration + Governance = unified authority (saga planners + policy = single control plane). | Crown Steward | Not Started |
 | **HC-50** | **P0** | **ThunderCell Lattice Communications** | No CA-based communication fabric | **Lattice-01**: Implement hybrid CA/WebRTC communication layer. **Architecture**: (1) 3D hexagonal Thunderbit lattice as routing/signaling fabric, (2) WebRTC for high-bandwidth payload transport, (3) CA rules for presence detection, route discovery, topology healing. **Components**: `Thunderbolt.Thunderbit` (voxel cell struct), `Thunderbolt.CAChannel` (lattice path definition), `Thunderbolt.CAStepper` (automaton tick engine), `Thunderlink.CACircuit` (WebRTC over CA routes). **Security**: mTLS/DTLS tunnels, per-hop XOR encryption, geometric secrecy (only path-aware endpoints reconstruct). **Events**: `ca.channel.*`, `ca.presence.*`, `ca.route.*`. Cross-domain: **Bolt×Link×Gate** (CA compute + transport + crypto). See §ThunderCell Lattice Architecture. | Bolt + Link + Gate Stewards | Not Started |
 | **HC-51** | **P0** | **CA Channel Mesh Resources** | No Ash resources for CA channels | **Lattice-02**: Define Ash resources for CA communication. **Resources**: (1) `Thunderbolt.CAChannel` (id, path coords, rule version, key_id, ttl_ticks), (2) `Thunderbolt.CAEndpoint` (pac_id, coord, presence_state), (3) `Thundervine.CARoute` (DAG edge for channel topology), (4) `Thundergate.CASession` (session keys, DTLS state). **Actions**: `create_channel`, `teardown_channel`, `refresh_keys`, `reroute_path`. **Queries**: `list_channels_for_pac`, `get_channel_health`, `find_path`. | Bolt + Vine + Gate Stewards | Not Started |

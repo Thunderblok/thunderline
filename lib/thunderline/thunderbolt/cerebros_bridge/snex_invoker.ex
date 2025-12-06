@@ -182,6 +182,15 @@ defmodule Thunderline.Thunderbolt.CerebrosBridge.SnexInvoker do
     end
   end
 
+  @doc """
+  Directly run NAS training via Snex.
+  Convenience wrapper around invoke(:start_run, ...).
+  """
+  @spec run_nas(map(), map()) :: {:ok, map()} | {:error, ErrorClass.t()}
+  def run_nas(spec, opts \\ %{}) do
+    invoke(:start_run, %{spec: spec, opts: opts})
+  end
+
   # -- Internal Helpers ------------------------------------------------------
 
   defp attempt_snex_invoke(:start_run, call_spec, timeout_ms, meta) do

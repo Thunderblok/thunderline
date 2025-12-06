@@ -9,6 +9,12 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 ### Features:
 
+* **HC-46: Thundercore Domain Tests** - Complete test coverage for Origin/Seedpoint domain
+  - **IdentityKernel Resource Tests**: 16 tests covering ignite, derive, by_kernel_id, identity constraints, lineage relationships, metadata handling
+  - **TickState Resource Tests**: 19 tests covering snapshot, recent, by_type, prune_before_tick, identity constraints
+  - **Bug Fix**: Fixed `derive` action FK constraint error - was incorrectly using `kernel_id` as `lineage_id` instead of resolving parent's primary key `id`
+  - **Total Coverage**: 75 tests passing (40 existing GenServer + 35 new resource tests)
+
 * **v2 Quantum Substrate (HC-86 through HC-95)**: Complete ternary QCA-inspired compute substrate
   - **HC-86: TernaryState** - `Thunderbolt.TernaryState` module with ternary arithmetic (`add/2`, `multiply/2`) and logic (`ternary_not/1`, `ternary_and/2`, `ternary_or/2`), balanced ternary conversion (`to_balanced/1`, `from_balanced/1`)
   - **HC-87: Thunderbit v2** - Extended schema with `:state` (ternary), `:state_vector`, Ising physics fields (`:bias`, `:coupling`, `:temperature`), MIRAS fields (`:surprise_metric`, `:retention_gate`, `:momentum_surprise`), and `:rule_version` for CA selection; new `ternary_tick/2` function

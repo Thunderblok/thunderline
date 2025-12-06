@@ -258,7 +258,8 @@ defmodule Thunderline.Thunderpac.Evolution do
   """
   @spec start_session(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def start_session(pac_id, opts \\ []) do
-    GenServer.call(__MODULE__, {:start_session, pac_id, opts})
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:start_session, pac_id, opts})
   end
 
   @doc """
@@ -269,15 +270,17 @@ defmodule Thunderline.Thunderpac.Evolution do
   """
   @spec step(map(), map(), keyword()) :: {:ok, map(), fitness_result()} | {:error, term()}
   def step(pac, metrics, opts \\ []) do
-    GenServer.call(__MODULE__, {:step, pac, metrics, opts}, 30_000)
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:step, pac, metrics, opts}, 30_000)
   end
 
   @doc """
   Gets the best parameters found for a PAC evolution session.
   """
-  @spec best_params(String.t()) :: {:ok, map()} | {:error, term()}
-  def best_params(pac_id) do
-    GenServer.call(__MODULE__, {:best_params, pac_id})
+  @spec best_params(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
+  def best_params(pac_id, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:best_params, pac_id})
   end
 
   @doc """
@@ -308,9 +311,10 @@ defmodule Thunderline.Thunderpac.Evolution do
   @doc """
   Gets the lineage history for a PAC.
   """
-  @spec get_lineage(String.t()) :: {:ok, [lineage_entry()]} | {:error, term()}
-  def get_lineage(pac_id) do
-    GenServer.call(__MODULE__, {:get_lineage, pac_id})
+  @spec get_lineage(String.t(), keyword()) :: {:ok, [lineage_entry()]} | {:error, term()}
+  def get_lineage(pac_id, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:get_lineage, pac_id})
   end
 
   @doc """
@@ -333,9 +337,10 @@ defmodule Thunderline.Thunderpac.Evolution do
   @doc """
   Switches evolution profile for an active session.
   """
-  @spec switch_profile(String.t(), profile()) :: :ok | {:error, term()}
-  def switch_profile(pac_id, new_profile) do
-    GenServer.call(__MODULE__, {:switch_profile, pac_id, new_profile})
+  @spec switch_profile(String.t(), profile(), keyword()) :: :ok | {:error, term()}
+  def switch_profile(pac_id, new_profile, opts \\ []) do
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:switch_profile, pac_id, new_profile})
   end
 
   @doc """
@@ -345,7 +350,8 @@ defmodule Thunderline.Thunderpac.Evolution do
   """
   @spec spawn_child(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def spawn_child(parent_pac_id, opts \\ []) do
-    GenServer.call(__MODULE__, {:spawn_child, parent_pac_id, opts})
+    server = Keyword.get(opts, :server, __MODULE__)
+    GenServer.call(server, {:spawn_child, parent_pac_id, opts})
   end
 
   # ═══════════════════════════════════════════════════════════════

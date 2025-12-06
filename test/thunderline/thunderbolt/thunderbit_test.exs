@@ -147,7 +147,8 @@ defmodule Thunderline.Thunderbolt.ThunderbitTest do
     end
 
     test "decay_presence/2 removes presence below threshold" do
-      bit = Thunderbit.new({0, 0, 0}, presence_vector: %{"pac-123" => 0.02, "pac-456" => 0.5})
+      # 0.019 * 0.5 = 0.0095 < 0.01 threshold, should be removed
+      bit = Thunderbit.new({0, 0, 0}, presence_vector: %{"pac-123" => 0.019, "pac-456" => 0.5})
 
       updated = Thunderbit.decay_presence(bit, 0.5)
 

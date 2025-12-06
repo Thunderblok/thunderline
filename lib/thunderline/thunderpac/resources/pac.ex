@@ -61,6 +61,7 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
   # ═══════════════════════════════════════════════════════════════
 
   state_machine do
+    state_attribute :status
     initial_states([:seed])
     default_initial_state(:seed)
 
@@ -100,6 +101,7 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
     define :active_pacs, action: :active_pacs
     define :by_status, args: [:status]
     define :by_kernel, args: [:kernel_id]
+    define :with_history, action: :with_history, get_by: [:id]
   end
 
   # ═══════════════════════════════════════════════════════════════
@@ -164,8 +166,8 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
 
       change transition_state(:suspended)
 
-      change after_action(fn _changeset, pac, context ->
-               reason = Map.get(context.arguments, :reason, "manual suspension")
+      change after_action(fn changeset, pac, _context ->
+               reason = Ash.Changeset.get_argument(changeset, :reason) || "manual suspension"
                emit_lifecycle_event(pac, :suspended, %{reason: reason})
                {:ok, pac}
              end)
@@ -292,6 +294,12 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
       description "Find PAC by identity kernel"
       argument :kernel_id, :uuid, allow_nil?: false
       filter expr(identity_kernel_id == ^arg(:kernel_id))
+    end
+
+    read :with_history do
+      description "Get PAC with full lineage history (state snapshots, intents)"
+      prepare build(load: [:state_snapshots, :intents, :active_role])
+      prepare build(sort: [inserted_at: :desc])
     end
   end
 
@@ -433,6 +441,9 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
   end
 
   defp emit_lifecycle_event(pac, event_type, extra \\ %{}) do
+    alias Thunderline.Thunderflow.EventBus
+    alias Thunderline.Event
+
     event = %{
       type: :"pac_lifecycle_#{event_type}",
       domain: :pac,
@@ -466,6 +477,22 @@ defmodule Thunderline.Thunderpac.Resources.PAC do
         payload: %{pac_id: pac.id, status: pac.status, event_type: event_type}
       }
     )
+
+    # Emit to central EventBus for unified event flow
+    case Event.new(
+           name: "pac.lifecycle.#{event_type}",
+           source: :pac,
+           payload: event.payload
+         ) do
+      {:ok, event_bus_event} ->
+        case EventBus.publish_event(event_bus_event) do
+          {:ok, _} -> :ok
+          {:error, _reason} -> :ok
+        end
+
+      {:error, _reason} ->
+        :ok
+    end
 
     :telemetry.execute(
       [:thunderline, :pac, :lifecycle, event_type],

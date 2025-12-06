@@ -207,7 +207,81 @@ defmodule Thunderline.Thunderpac.Supervisor do
       Logger.debug("[Thunderpac] Health check at tick #{tick_count}: #{stats.total_count} memory modules")
     end
 
+    # Tick active PACs every 20 system ticks (~1 second at 50ms tick rate)
+    state =
+      if rem(tick_count, 20) == 0 do
+        tick_active_pacs(tick_count, state)
+      else
+        state
+      end
+
     {:noreply, %{state | tick_count: tick_count}}
+  end
+
+  # Tick all active PACs and emit events
+  defp tick_active_pacs(tick_count, state) do
+    alias Thunderline.Thunderpac.Resources.PAC
+
+    # Get active PACs using code interface
+    case PAC.active_pacs(authorize?: false) do
+      {:ok, active_pacs} when is_list(active_pacs) and length(active_pacs) > 0 ->
+        pacs_ticked =
+          Enum.reduce(active_pacs, 0, fn pac, count ->
+            case PAC.tick(pac, authorize?: false) do
+              {:ok, _updated_pac} ->
+                # Emit tick event for this PAC
+                emit_pac_tick_event(pac, tick_count)
+                count + 1
+
+              {:error, reason} ->
+                Logger.warning("[Thunderpac] Failed to tick PAC #{pac.id}: #{inspect(reason)}")
+                count
+            end
+          end)
+
+        :telemetry.execute(
+          [:thunderline, :pac, :tick_batch],
+          %{tick: tick_count, pacs_ticked: pacs_ticked, total_active: length(active_pacs)},
+          %{domain: "thunderpac"}
+        )
+
+        Logger.debug(
+          "[Thunderpac] Ticked #{pacs_ticked}/#{length(active_pacs)} active PACs at tick #{tick_count}"
+        )
+
+        Map.put(state, :last_pac_tick, tick_count)
+
+      {:ok, []} ->
+        state
+
+      {:error, reason} ->
+        Logger.warning("[Thunderpac] Failed to list active PACs: #{inspect(reason)}")
+        state
+    end
+  end
+
+  defp emit_pac_tick_event(pac, tick_count) do
+    alias Thunderline.Thunderflow.EventBus
+    alias Thunderline.Event
+
+    payload = %{
+      pac_id: pac.id,
+      pac_name: pac.name,
+      tick_count: tick_count,
+      total_active_ticks: pac.total_active_ticks,
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    case Event.new(name: "pac.tick.processed", source: :pac, payload: payload) do
+      {:ok, event} ->
+        case EventBus.publish_event(event) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Logger.debug("[Thunderpac] Event publish failed: #{inspect(reason)}")
+        end
+
+      {:error, reason} ->
+        Logger.debug("[Thunderpac] Event creation failed: #{inspect(reason)}")
+    end
   end
 
   @impl Thunderline.Thunderblock.DomainActivation

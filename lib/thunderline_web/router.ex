@@ -117,6 +117,10 @@ defmodule ThunderlineWeb.Router do
       # ThunderPrism 3D DAG Visualizer - ML decision trail exploration
       live "/thunderprism", ThunderprismLive, :index
 
+      # PAC Console - Personal Autonomous Construct viewer (Boss 3)
+      live "/pac", PacConsoleLive, :index
+      live "/pac/:id", PacConsoleLive, :show
+
       # Reflex Panel - Self-optimizing CA visualization (HC-Ω-3)
       live "/reflex", ReflexPanelLive, :index
 
